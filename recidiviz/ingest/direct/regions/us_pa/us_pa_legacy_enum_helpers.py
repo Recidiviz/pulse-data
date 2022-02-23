@@ -35,7 +35,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     get_most_relevant_supervision_type,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
     invert_enum_to_str_mappings,
 )
 

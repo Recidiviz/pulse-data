@@ -23,10 +23,10 @@ import attr
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.utils.regions import get_region

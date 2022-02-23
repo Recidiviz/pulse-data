@@ -20,7 +20,7 @@ import unittest
 from typing import Dict
 
 from flask import Flask
-from mock import ANY, patch, Mock
+from mock import ANY, Mock, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.justice_counts import control
@@ -28,7 +28,7 @@ from recidiviz.ingest.justice_counts import control
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
 @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
-class TestDirectIngestControl(unittest.TestCase):
+class TestJusticeCountsControl(unittest.TestCase):
     """Tests for requests to the Direct Ingest API."""
 
     def setUp(self) -> None:

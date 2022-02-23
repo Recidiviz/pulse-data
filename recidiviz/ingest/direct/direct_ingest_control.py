@@ -32,23 +32,11 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlready
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
-    UploadStateFilesToIngestBucketController,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
-    DirectIngestRawDataTableLatestViewUpdater,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import (
-    DirectIngestRawUpdateCloudTaskManager,
-)
-from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
-    DownloadFilesFromSftpController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -61,19 +49,31 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
     DirectIngestCloudTaskManagerImpl,
 )
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
+    DirectIngestRawDataTableLatestViewUpdater,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_update_cloud_task_manager import (
+    DirectIngestRawUpdateCloudTaskManager,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
-from recidiviz.ingest.direct.errors import (
-    DirectIngestError,
-    DirectIngestErrorType,
-    DirectIngestInstanceError,
+from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller import (
+    UploadStateFilesToIngestBucketController,
+)
+from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
+    DownloadFilesFromSftpController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
     DirectIngestInstanceFactory,
 )
 from recidiviz.ingest.direct.types.direct_ingest_types import CloudTaskArgs
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+    DirectIngestInstanceError,
+)
 from recidiviz.utils import metadata, monitoring, regions
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey

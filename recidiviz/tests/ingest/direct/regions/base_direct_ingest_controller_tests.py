@@ -35,14 +35,14 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -71,10 +71,12 @@ from recidiviz.persistence.persistence import (
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
-from recidiviz.tests.ingest.direct.direct_ingest_util import (
-    build_gcsfs_controller_for_tests,
+from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     ingest_args_for_fixture_file,
     run_task_queues_to_empty,
+)
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    build_fake_direct_ingest_controller,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
@@ -147,7 +149,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             self.operations_database_key
         )
 
-        self.controller = build_gcsfs_controller_for_tests(
+        self.controller = build_fake_direct_ingest_controller(
             self.controller_cls(),
             ingest_instance=self._main_ingest_instance(),
             run_async=False,

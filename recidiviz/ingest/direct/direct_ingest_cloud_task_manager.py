@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
 )
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance

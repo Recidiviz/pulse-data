@@ -18,10 +18,8 @@
 """The queries below can be used to generate the raw data tables of Missouri Department
 of Corrections data that we export to BQ for pre-processing.
 """
-
+import os
 from typing import List, Optional, Tuple
-
-from recidiviz.ingest.direct.query_utils import output_sql_queries
 
 # Y?YYddd e.g. January 1, 2016 --> 116001; November 2, 1982 --> 82306;
 julian_format_lower_bound_update_date = 0
@@ -255,8 +253,43 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     ]
 
 
+def _output_sql_queries(
+    query_name_to_query_list: List[Tuple[str, str]], dir_path: Optional[str] = None
+) -> None:
+    """If |dir_path| is unspecified, prints the provided |query_name_to_query_list| to the console. Otherwise
+    writes the provided |query_name_to_query_list| to the specified |dir_path|.
+    """
+    if not dir_path:
+        _print_all_queries_to_console(query_name_to_query_list)
+    else:
+        _write_all_queries_to_files(dir_path, query_name_to_query_list)
+
+
+def _write_all_queries_to_files(
+    dir_path: str, query_name_to_query_list: List[Tuple[str, str]]
+) -> None:
+    """Writes the provided queries to files in the provided path."""
+    if not os.path.exists(dir_path):
+        os.mkdir(dir_path)
+
+    for query_name, query_str in query_name_to_query_list:
+        with open(
+            os.path.join(dir_path, f"{query_name}.sql"), "w", encoding="utf-8"
+        ) as output_path:
+            output_path.write(query_str)
+
+
+def _print_all_queries_to_console(
+    query_name_to_query_list: List[Tuple[str, str]]
+) -> None:
+    """Prints all the provided queries onto the console."""
+    for query_name, query_str in query_name_to_query_list:
+        print(f"\n\n/* {query_name.upper()} */\n")
+        print(query_str)
+
+
 if __name__ == "__main__":
     # Uncomment the os.path clause below (change the directory as desired) if you want the queries to write out to
     # separate files instead of to the console.
     output_dir: Optional[str] = None  # os.path.expanduser('~/Downloads/mo_queries')
-    output_sql_queries(get_query_name_to_query_list(), output_dir)
+    _output_sql_queries(get_query_name_to_query_list(), output_dir)

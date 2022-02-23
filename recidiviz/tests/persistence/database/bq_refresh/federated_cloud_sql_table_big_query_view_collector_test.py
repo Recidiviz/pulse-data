@@ -20,7 +20,7 @@ import unittest
 from unittest import mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.persistence.database.base_schema import JailsBase, OperationsBase

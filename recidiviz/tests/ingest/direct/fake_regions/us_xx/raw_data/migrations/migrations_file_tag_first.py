@@ -19,7 +19,7 @@
 import datetime
 from typing import List
 
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
     RawTableMigration,
     UpdateRawTableMigration,

@@ -47,21 +47,21 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileConfig,
-    augment_raw_data_df_with_metadata_columns,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileConfig,
+    augment_raw_data_df_with_metadata_columns,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     UPDATE_DATETIME_PARAM_NAME,
     DirectIngestPreProcessedIngestView,
     DirectIngestPreProcessedIngestViewBuilder,
     RawTableViewType,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path

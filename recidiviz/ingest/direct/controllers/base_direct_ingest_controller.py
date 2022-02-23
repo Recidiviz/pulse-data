@@ -55,17 +55,8 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
     DirectIngestIngestViewExportManager,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
@@ -83,22 +74,11 @@ from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
     IngestViewProcessorImpl,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
-    LegacyIngestViewProcessor,
-    LegacyIngestViewProcessorDelegate,
-)
-from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     build_handle_new_files_task_id,
     build_scheduler_task_id,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    check_is_region_launched_in_env,
-)
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
     MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewFileParser,
@@ -107,16 +87,36 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate im
     IngestViewFileParserDelegateImpl,
     yaml_mappings_filepath,
 )
+from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
+    LegacyIngestViewProcessor,
+    LegacyIngestViewProcessorDelegate,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestFileMetadataManager,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileImportManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
     DirectIngestInstanceFactory,
+)
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
 )
-from recidiviz.utils import regions, trace
+from recidiviz.utils import environment, regions, trace
 from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -1210,3 +1210,15 @@ class BaseDirectIngestController:
         output_paths = [path for path, _ in delegate.output_paths_with_columns]
 
         return output_paths
+
+
+def check_is_region_launched_in_env(region: Region) -> None:
+    """Checks if direct ingest has been launched for the provided |region| in the current GCP env and throws if it has
+    not."""
+    if not region.is_ingest_launched_in_env():
+        gcp_env = environment.get_gcp_environment()
+        error_msg = f"Bad environment [{gcp_env}] for region [{region.region_code}]."
+        logging.error(error_msg)
+        raise DirectIngestError(
+            msg=error_msg, error_type=DirectIngestErrorType.ENVIRONMENT_ERROR
+        )

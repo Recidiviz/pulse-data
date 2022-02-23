@@ -38,26 +38,12 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
-)
-from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
-    UploadStateFilesToIngestBucketController,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
-    DirectIngestRawDataTableLatestViewUpdater,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import (
-    DirectIngestRawUpdateCloudTaskManager,
-)
-from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
-    DownloadFilesFromSftpController,
-    SftpAuth,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -71,11 +57,30 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
 )
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
+    DirectIngestRawDataTableLatestViewUpdater,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_update_cloud_task_manager import (
+    DirectIngestRawUpdateCloudTaskManager,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
+    BaseSftpDownloadDelegate,
+)
+from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller import (
+    UploadStateFilesToIngestBucketController,
+)
+from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
+    DownloadFilesFromSftpController,
+    SftpAuth,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestErrorType,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
@@ -1053,19 +1058,17 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
-    )
-    @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1138,18 +1141,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1207,18 +1208,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1277,18 +1276,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1346,18 +1343,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1412,18 +1407,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1488,18 +1481,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1554,18 +1545,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(
@@ -1620,18 +1609,16 @@ class TestDirectIngestControl(unittest.TestCase):
         ),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
     @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region"
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
     )
     @patch(
-        "recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.download_files_from_sftp."
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
         "DownloadFilesFromSftpController"
     )
     @patch(
-        "recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller."
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
         "UploadStateFilesToIngestBucketController"
     )
     @patch.object(

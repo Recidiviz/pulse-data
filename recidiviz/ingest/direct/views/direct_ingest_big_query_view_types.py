@@ -24,14 +24,14 @@ from typing import Dict, List, Optional
 import attr
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileConfig,
-    DirectIngestRegionRawFileConfig,
-)
-from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
 )
 from recidiviz.utils.string import StrictStringFormatter
 

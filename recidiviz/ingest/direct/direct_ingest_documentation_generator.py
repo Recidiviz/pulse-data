@@ -26,17 +26,17 @@ from pytablewriter import MarkdownTableWriter
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
-)
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_latest_views_dataset_for_region,
-    raw_tables_dataset_for_region,
 )
 from recidiviz.utils import regions
 from recidiviz.utils.string import StrictStringFormatter

@@ -38,16 +38,16 @@ from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
-from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    ColumnEnumValueInfo,
-    DirectIngestRawFileConfig,
-    RawTableColumnInfo,
-)
-from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
-from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    ColumnEnumValueInfo,
+    DirectIngestRawFileConfig,
+    RawTableColumnInfo,
+    get_region_raw_file_config,
+)
+from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.raw_data_config_writer import (
     RawDataConfigWriter,
 )

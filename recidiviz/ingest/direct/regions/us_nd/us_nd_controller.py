@@ -42,7 +42,10 @@ from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
+    create_if_not_exists,
+)
+from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
@@ -50,7 +53,15 @@ from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestRowPrehookCallable,
     LegacyIngestViewProcessorDelegate,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists
+from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
+    IngestGatingContext,
+    copy_name_to_alias,
+    gen_convert_person_ids_to_external_id_objects,
+    gen_label_single_external_id_hook,
+    gen_normalize_county_codes_posthook,
+    gen_set_agent_type,
+    gen_set_is_life_sentence_hook,
+)
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     normalized_county_code,
 )
@@ -62,15 +73,6 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_referenc
 )
 from recidiviz.ingest.direct.regions.us_nd.us_nd_legacy_enum_helpers import (
     generate_enum_overrides,
-)
-from recidiviz.ingest.direct.state_shared_row_posthooks import (
-    IngestGatingContext,
-    copy_name_to_alias,
-    gen_convert_person_ids_to_external_id_objects,
-    gen_label_single_external_id_hook,
-    gen_normalize_county_codes_posthook,
-    gen_set_agent_type,
-    gen_set_is_life_sentence_hook,
 )
 from recidiviz.ingest.extractor.csv_data_extractor import (
     AncestorChainOverridesCallable,
