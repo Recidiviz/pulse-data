@@ -127,7 +127,7 @@ const FormBox = styled.div`
   }
 `;
 
-const Checkbox = styled(Input).attrs({
+const Checkbox = styled.input.attrs({
   type: "checkbox",
 })`
   height: 9px;
