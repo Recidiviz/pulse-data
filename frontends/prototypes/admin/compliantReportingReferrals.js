@@ -19,8 +19,6 @@ import fs from "fs";
 import yargs from "yargs";
 import { deleteCollection, getDb } from "./firestoreUtils.js";
 import _ from "lodash";
-import { parseISO } from "date-fns";
-import { titleCase } from "title-case";
 
 const argv = yargs(process.argv.slice(2))
   .option("file", {
@@ -34,7 +32,7 @@ const argv = yargs(process.argv.slice(2))
   .alias("help", "h").argv;
 
 const COLLECTIONS = {
-  compliantReportingCases: "compliantReportingCases",
+  compliantReportingReferrals: "compliantReportingReferrals",
 };
 
 function camelCaseKeys(obj) {
@@ -44,7 +42,7 @@ function camelCaseKeys(obj) {
 const db = getDb();
 
 console.log("wiping existing data ...");
-await deleteCollection(db, COLLECTIONS.compliantReportingCases);
+await deleteCollection(db, COLLECTIONS.compliantReportingReferrals);
 
 console.log("loading new data...");
 const bulkWriter = db.bulkWriter();
@@ -65,36 +63,23 @@ const SUPERVISION_TYPE_MAPPING = {
 
 // Iterate through each record
 rawCases.forEach((record) => {
-  if (record.district !== 'DISTRICT 50') return;
-  
   const docData = camelCaseKeys(record);
 
-  // transform complex fields
-  const lastDrun = docData.lastDrun.map(parseISO);
-
-  const nameParts = JSON.parse(docData.personName);
-  const personName = titleCase(`${nameParts.given_names} ${nameParts.surname}`.toLowerCase());
-
-  const supervisionLevelStart = parseISO(docData.supervisionLevelStart);
+  const offenseType = JSON.parse(docData.offenseType);
 
   const supervisionType =
     SUPERVISION_TYPE_MAPPING[docData.supervisionType] ??
     docData.supervisionType;
-  const supervisionLevel = titleCase(docData.supervisionLevel.toLowerCase());
 
-  bulkWriter.create(db.collection(COLLECTIONS.compliantReportingCases).doc(), {
+  bulkWriter.create(db.collection(COLLECTIONS.compliantReportingReferrals).doc(), {
     ...docData,
-    lastDrun,
-    supervisionLevelStart,
-    personName,
-    nameParts,
-    supervisionType,
-    supervisionLevel,
+    offenseType,
+      supervisionType,
   });
 });
 
 bulkWriter
   .close()
   .then(() =>
-    console.log("new compliant reporting case data loaded successfully")
+    console.log("new compliant reporting referral data loaded successfully")
   );

@@ -17,7 +17,7 @@
 import { Card, Modal } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import { rem } from "polished";
-import React from "react";
+import React, { HTMLAttributes } from "react";
 import styled from "styled-components/macro";
 
 import { useDataStore } from "../StoreProvider";
@@ -34,48 +34,47 @@ const UnpaddedModal = styled(Modal)`
 `;
 
 const DRAWER_MARGIN = 24;
-const DRAWER_WIDTH = 555;
+export const FORM_WIDTH = 742;
+export const PROFILE_WIDTH = 555;
 
-const DrawerModal = styled(UnpaddedModal)`
+const DrawerModal = styled(UnpaddedModal)<{ includeForm?: boolean }>`
+  --drawer-width: ${(props) =>
+    props.includeForm ? FORM_WIDTH + PROFILE_WIDTH : PROFILE_WIDTH}px;
+
   /* need extra specificity to override base */
   && .ReactModal__Content {
     height: calc(100vh - ${rem(DRAWER_MARGIN * 2)});
     max-height: unset;
     max-width: calc(100vw - ${rem(DRAWER_MARGIN * 2)});
-    width: ${rem(DRAWER_WIDTH)};
+    width: var(--drawer-width);
 
     /* transition: slide out from side instead of zooming from center */
     left: unset;
     right: ${rem(DRAWER_MARGIN)};
-    transform: translate(${rem(DRAWER_WIDTH)}, -50%) !important;
+    transform: translate(var(--drawer-width), -50%) !important;
 
     &.ReactModal__Content--after-open {
       transform: translate(0, -50%) !important;
     }
 
     &.ReactModal__Content--before-close {
-      transform: translate(${rem(DRAWER_WIDTH)}, -50%) !important;
+      transform: translate(var(--drawer-width), -50%) !important;
     }
   }
 `;
 
-const ProfileWrapper = styled.div`
-  height: 100%;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(0px, 1fr);
-`;
+export const ProfileDrawer: React.FC<{ includeForm: boolean }> = observer(
+  ({ children, includeForm }) => {
+    const { caseStore } = useDataStore();
 
-export const ProfileDrawer: React.FC = observer(({ children }) => {
-  const { caseStore } = useDataStore();
-
-  return (
-    <DrawerModal
-      isOpen={Boolean(caseStore.activeClientId)}
-      onRequestClose={() => caseStore.setActiveClient()}
-    >
-      <ProfileWrapper>{children}</ProfileWrapper>
-    </DrawerModal>
-  );
-});
+    return (
+      <DrawerModal
+        isOpen={Boolean(caseStore.activeClientId)}
+        onRequestClose={() => caseStore.setActiveClient()}
+        includeForm={includeForm}
+      >
+        {children}
+      </DrawerModal>
+    );
+  }
+);
