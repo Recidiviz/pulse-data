@@ -28,8 +28,8 @@ After running the script, be sure to either fill in or delete any blank descript
 Example Usage:
     python -m recidiviz.tools.ingest.development.fetch_column_values_for_state --state-code US_ND \
         --project-id recidiviz-staging \
-        [--file-tag-filters RAW_TABLE_1 RAW_TABLE_2]
-        [--sandbox-dataset-prefix SANDBOX_DATASET_PREFIX] \
+        [--file-tag-filters RAW_TABLE_1 RAW_TABLE_2] \
+        [--sandbox_dataset_prefix SANDBOX_DATASET_PREFIX]
 """
 import argparse
 import logging
@@ -209,8 +209,7 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--sandbox-dataset-prefix",
-        dest="sandbox_dataset_prefix",
+        "--sandbox_dataset_prefix",
         help="Prefix of sandbox dataset to search for raw data tables. If not set, "
         "will search in us_xx_raw_data for a given state US_XX. If set, will search in "
         "my_prefix_us_xx_raw_data.",
