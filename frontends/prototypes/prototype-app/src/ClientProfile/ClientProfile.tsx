@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { observer } from "mobx-react-lite";
-import React, { HTMLAttributes } from "react";
+import React from "react";
 import styled from "styled-components/macro";
 
 import FormViewer from "../Forms/FormViewer";
@@ -50,7 +50,7 @@ const ClientProfile: React.FC = observer(() => {
     (cr) => cr.tdocId === String(caseStore.activeClientId)
   );
   const showPrefilledForm =
-    caseStore.activeClient?.status === "ELIGIBLE" && prefilledForm;
+    caseStore.activeClient?.status === "ELIGIBLE" && !!prefilledForm;
 
   return (
     <ProfileDrawer includeForm={showPrefilledForm}>
