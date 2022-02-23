@@ -4,6 +4,8 @@
   "scripts": {
     "cr": "FIRESTORE_EMULATOR_HOST=\"localhost:8080\" GOOGLE_APPLICATION_CREDENTIALS=service_account.json node compliantReportingCases.js",
     "cr:prod": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json node compliantReportingCases.js",
+    "crr": "FIRESTORE_EMULATOR_HOST=\"localhost:8080\" GOOGLE_APPLICATION_CREDENTIALS=service_account.json node compliantReportingReferrals.js",
+    "crr:prod": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json node compliantReportingReferrals.js",
     "users": "FIRESTORE_EMULATOR_HOST=\"localhost:8080\" GOOGLE_APPLICATION_CREDENTIALS=service_account.json node users.js",
     "users:prod": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json node users.js"
   },
