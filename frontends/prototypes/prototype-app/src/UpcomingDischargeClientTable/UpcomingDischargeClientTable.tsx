@@ -23,6 +23,7 @@ import styled from "styled-components/macro";
 import { UpcomingDischargeCase } from "../DataStores/CaseStore";
 import { Pill } from "../Pill";
 import { useDataStore } from "../StoreProvider";
+import Tooltip from "../Tooltip";
 import { daysFromNow } from "../utils";
 
 const Table = styled.table`
@@ -61,27 +62,77 @@ const DischargeDate = styled.span`
   color: ${palette.slate85};
 `;
 
-const DischargeDateCell: React.FC<{ record: UpcomingDischargeCase }> = ({
-  record,
+const InlineUpdate = styled.span`
+  color: ${palette.signal.links};
+`;
+
+const TooltipContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  font-size: 1rem;
+  row-gap: ${spacing.sm}px;
+  padding: ${spacing.md}px;
+`;
+
+const TooltipSourceLine = styled.div`
+  color: ${palette.marble1};
+`;
+
+const TooltipUpdateLine = styled.div`
+  color: ${palette.signal.highlight};
+`;
+
+const DischargeDateTooltipContent: React.FC<{ dischargeSource: string }> = ({
+  dischargeSource,
 }) => {
-  if (!record.expectedDischargeDate) {
-    return <>No date in TOMIS</>;
-  }
-
-  const daysAway = daysFromNow(record.expectedDischargeDate.toDate());
-
-  const daysString =
-    daysAway > 0 ? `In ${daysAway} days` : `${-daysAway} days ago`;
-
   return (
-    <>
-      {daysString}{" "}
-      <DischargeDate>
-        ({record.expectedDischargeDate.toDate().toLocaleDateString("en-US")})
-      </DischargeDate>
-    </>
+    <TooltipContent>
+      <TooltipSourceLine>{dischargeSource}</TooltipSourceLine>
+      <TooltipUpdateLine>Click to Update</TooltipUpdateLine>
+    </TooltipContent>
   );
 };
+
+const DischargeDateCell: React.FC<{ record: UpcomingDischargeCase }> = observer(
+  ({ record }) => {
+    const { caseStore } = useDataStore();
+
+    if (!record.expectedDischargeDate) {
+      return (
+        <div onClick={() => caseStore.setEditingActiveClientDischarge(true)}>
+          No date in TOMIS <InlineUpdate>Update</InlineUpdate>
+        </div>
+      );
+    }
+
+    const daysAway = daysFromNow(record.expectedDischargeDate.toDate());
+
+    const daysString =
+      daysAway > 0 ? `In ${daysAway} days` : `${-daysAway} days ago`;
+
+    const dischargeSource = record.updatedBy
+      ? `Set by ${
+          caseStore.officers[record.updatedBy]?.name ?? record.updatedBy
+        }`
+      : "According to TOMIS";
+
+    return (
+      <Tooltip
+        title={
+          <DischargeDateTooltipContent dischargeSource={dischargeSource} />
+        }
+      >
+        <div onClick={() => caseStore.setEditingActiveClientDischarge(true)}>
+          {daysString}{" "}
+          <DischargeDate>
+            ({record.expectedDischargeDate.toDate().toLocaleDateString("en-US")}
+            )
+          </DischargeDate>
+        </div>
+      </Tooltip>
+    );
+  }
+);
 
 type UpcomingDischargeClientTableProps = {
   showUnknownDates?: boolean;

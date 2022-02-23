@@ -32,6 +32,7 @@ import {
 import {
   CompliantReportingStatusRecord,
   CompliantReportingUpdateContents,
+  UpcomingDischargeOverrideContents,
 } from "../DataStores/CaseStore";
 
 const firebaseConfig = {
@@ -74,8 +75,9 @@ const COLLECTIONS = {
   compliantReportingCases: "compliantReportingCases",
   compliantReportingStatus: "compliantReportingStatus",
   compliantReportingUpdates: "compliantReportingUpdates",
-  upcomingDischargeCases: "upcomingDischargeCases",
   compliantReportingReferrals: "compliantReportingReferrals",
+  upcomingDischargeCases: "upcomingDischargeCases",
+  upcomingDischargeOverrides: "upcomingDischargeOverrides",
   users: "users",
   officers: "officers",
 };
@@ -134,3 +136,23 @@ export const upcomingDischargeCasesQuery = query(
   collection(db, COLLECTIONS.upcomingDischargeCases),
   orderBy("expectedDischargeDate")
 );
+
+export const upcomingDischargeOverridesQuery = query(
+  collection(db, COLLECTIONS.upcomingDischargeOverrides)
+);
+
+export function saveUpcomingDischargeOverride(
+  updateContents: UpcomingDischargeOverrideContents
+): Promise<void> {
+  return setDoc(
+    doc(
+      db,
+      COLLECTIONS.upcomingDischargeOverrides,
+      updateContents.personExternalId
+    ),
+    {
+      ...updateContents,
+      createdAt: serverTimestamp(),
+    }
+  );
+}
