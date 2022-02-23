@@ -50,7 +50,8 @@ const ClientProfile: React.FC = observer(() => {
     (cr) => cr.tdocId === String(caseStore.activeClientId)
   );
   const showPrefilledForm =
-    caseStore.activeClient?.status === "ELIGIBLE" && !!prefilledForm;
+    caseStore.activeClient?.compliantReportingCase?.status === "ELIGIBLE" &&
+    !!prefilledForm;
 
   return (
     <ProfileDrawer includeForm={showPrefilledForm}>

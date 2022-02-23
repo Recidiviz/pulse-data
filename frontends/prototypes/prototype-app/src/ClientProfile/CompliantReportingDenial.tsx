@@ -59,15 +59,20 @@ const CompliantReportingDenial: React.FC = () => {
   const client = caseStore.activeClient;
   if (!client) return null;
 
+  const { compliantReportingCase } = client;
+  if (!compliantReportingCase) return null;
+
   let deniedCodes = "";
-  if (client.deniedReasons?.length) {
-    deniedCodes = `: ${client.deniedReasons.join(", ")}`;
+  if (compliantReportingCase.deniedReasons?.length) {
+    deniedCodes = `: ${compliantReportingCase.deniedReasons.join(", ")}`;
   }
 
   return (
     <Dropdown>
       <DropdownToggle
-        kind={client.status === "DENIED" ? "primary" : "secondary"}
+        kind={
+          compliantReportingCase.status === "DENIED" ? "primary" : "secondary"
+        }
         shape="block"
       >
         Not Eligible{deniedCodes}
@@ -80,7 +85,9 @@ const CompliantReportingDenial: React.FC = () => {
               caseStore.setCompliantReportingStatus("DENIED", code);
             }}
           >
-            {client.deniedReasons?.includes(code) ? <Checkmark /> : null}
+            {compliantReportingCase.deniedReasons?.includes(code) ? (
+              <Checkmark />
+            ) : null}
             {code}: {desc}
           </DropdownMenuItem>
         ))}

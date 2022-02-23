@@ -31,6 +31,7 @@ import {
   officersQuery,
   saveCompliantReportingNote,
   saveCompliantReportingStatus,
+  upcomingDischargeCasesQuery,
 } from "../firebase";
 import type { RootStore } from "./RootStore";
 
@@ -114,7 +115,6 @@ type CompliantReportingExportedCase = {
   offenseType: string[];
   lastDrun: Timestamp[];
   lastSanction: string | null;
-  updateCount: number;
 };
 
 type CompliantReportingStatusCode = "ELIGIBLE" | "DENIED";
@@ -130,7 +130,10 @@ export type CompliantReportingStatusRecord = {
 };
 
 export type CompliantReportingCase = CompliantReportingExportedCase &
-  Partial<CompliantReportingStatusRecord> & { officerName: string };
+  Partial<CompliantReportingStatusRecord> & {
+    officerName: string;
+    updateCount: number;
+  };
 
 export type CompliantReportingUpdateContents = {
   creator: string;
@@ -142,9 +145,33 @@ export type CompliantReportingUpdate = CompliantReportingUpdateContents & {
   createdAt: Date;
 };
 
+export type UpcomingDischargeExportedCase = {
+  personExternalId: string;
+  personName: string;
+  officerId: string;
+  supervisionType: string;
+  judicialDistrict: string;
+  expectedDischargeDate: Timestamp | null;
+};
+
+export type UpcomingDischargeCase = UpcomingDischargeExportedCase & {
+  officerName: string;
+  updateCount: number;
+};
+
 type OfficerInfo = { name: string };
 
 type OfficerMapping = Record<string, OfficerInfo>;
+
+export type Client = {
+  personExternalId: string;
+  personName: string;
+  officerId: string;
+  officerName: string;
+  supervisionType: string;
+  compliantReportingCase: CompliantReportingCase | undefined;
+  upcomingDischargeCase: UpcomingDischargeCase | undefined;
+};
 
 export default class CaseStore {
   readonly rootStore: RootStore;
@@ -156,6 +183,8 @@ export default class CaseStore {
   compliantReportingUpdates: CompliantReportingUpdate[] = [];
 
   compliantReportingReferrals: CompliantReportingExportedReferral[] = [];
+
+  upcomingDischargeExportedCases: UpcomingDischargeExportedCase[] = [];
 
   officers: OfficerMapping = {};
 
@@ -191,6 +220,10 @@ export default class CaseStore {
           this.updateCompliantReportingReferrals(snapshot)
         );
 
+        onSnapshot(upcomingDischargeCasesQuery, (snapshot) =>
+          this.updateUpcomingDischargeExportedCases(snapshot)
+        );
+
         onSnapshot(officersQuery, (snapshot) => this.updateOfficers(snapshot));
       }
     );
@@ -200,10 +233,39 @@ export default class CaseStore {
     this.activeClientId = clientId;
   }
 
-  get activeClient(): CompliantReportingCase | undefined {
-    return this.compliantReportingCases.find(
+  get activeClient(): Client | undefined {
+    if (!this.activeClientId) {
+      return undefined;
+    }
+    const compliantReportingCase = this.compliantReportingCases.find(
       (record) => record.personExternalId === this.activeClientId
     );
+    const upcomingDischargeCase = this.upcomingDischargeCases.find(
+      (record) => record.personExternalId === this.activeClientId
+    );
+    if (compliantReportingCase || upcomingDischargeCase) {
+      return {
+        personExternalId: this.activeClientId,
+        personName:
+          compliantReportingCase?.personName ??
+          upcomingDischargeCase?.personName ??
+          "Unknown",
+        officerId:
+          compliantReportingCase?.officerId ??
+          upcomingDischargeCase?.officerId ??
+          "Unknown",
+        officerName:
+          compliantReportingCase?.officerName ??
+          upcomingDischargeCase?.officerName ??
+          "Unknown",
+        supervisionType:
+          compliantReportingCase?.supervisionType ??
+          upcomingDischargeCase?.supervisionType ??
+          "Unknown",
+        compliantReportingCase,
+        upcomingDischargeCase,
+      };
+    }
   }
 
   get activeClientUpdates(): CompliantReportingUpdate[] {
@@ -227,6 +289,21 @@ export default class CaseStore {
         const officerName =
           this.officers[caseData.officerId]?.name || caseData.officerId;
         return assign({}, caseData, status, { updateCount, officerName });
+      });
+  }
+
+  get upcomingDischargeCases(): UpcomingDischargeCase[] {
+    return this.upcomingDischargeExportedCases
+      .filter((caseData) =>
+        this.rootStore.userStore.includedOfficers.includes(caseData.officerId)
+      )
+      .map((caseData) => {
+        const updateCount = this.compliantReportingUpdates.filter(
+          (u) => u.personExternalId === caseData.personExternalId
+        ).length;
+        const officerName =
+          this.officers[caseData.officerId]?.name || caseData.officerId;
+        return assign({}, caseData, { updateCount, officerName });
       });
   }
 
@@ -289,6 +366,16 @@ export default class CaseStore {
     this.compliantReportingReferrals = updateRecords;
   }
 
+  private updateUpcomingDischargeExportedCases(
+    querySnapshot: QuerySnapshot<DocumentData>
+  ): void {
+    const cases: UpcomingDischargeExportedCase[] = [];
+    querySnapshot.forEach((doc) => {
+      cases.push(doc.data() as UpcomingDischargeExportedCase);
+    });
+    this.upcomingDischargeExportedCases = cases;
+  }
+
   updateOfficers(querySnapshot: QuerySnapshot<DocumentData>): void {
     querySnapshot.forEach((doc) => {
       this.officers[doc.id] = doc.data() as OfficerInfo;
@@ -299,9 +386,14 @@ export default class CaseStore {
     newStatus: CompliantReportingStatusCode,
     toggleDeniedReason?: string
   ): void {
-    if (!this.activeClient || !this.rootStore.userStore.userEmail) return;
+    if (
+      !this.activeClient?.compliantReportingCase ||
+      !this.rootStore.userStore.userEmail
+    )
+      return;
 
-    const { personExternalId, deniedReasons } = this.activeClient;
+    const { personExternalId, deniedReasons } =
+      this.activeClient.compliantReportingCase;
 
     let newDeniedReasons: string[] = [];
     if (toggleDeniedReason) {

@@ -22,7 +22,8 @@ import styled from "styled-components/macro";
 import { useDataStore } from "../StoreProvider";
 
 const InputWrapper = styled.div`
-  grid-area: 2/1;
+  grid-column: 1;
+  grid-order: 3;
   height: 80px;
   width: 100%;
   padding: 32px;
