@@ -21,9 +21,9 @@ import React from "react";
 import styled from "styled-components/macro";
 
 import { UpcomingDischargeCase } from "../DataStores/CaseStore";
+import DischargeTooltip from "../DischargeTooltip";
 import { Pill } from "../Pill";
 import { useDataStore } from "../StoreProvider";
-import Tooltip from "../Tooltip";
 import { daysFromNow } from "../utils";
 
 const Table = styled.table`
@@ -60,38 +60,12 @@ const Cell = styled.td`
 
 const DischargeDate = styled.span`
   color: ${palette.slate85};
+  text-decoration: underline;
 `;
 
 const InlineUpdate = styled.span`
   color: ${palette.signal.links};
 `;
-
-const TooltipContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  font-size: 1rem;
-  row-gap: ${spacing.sm}px;
-  padding: ${spacing.md}px;
-`;
-
-const TooltipSourceLine = styled.div`
-  color: ${palette.marble1};
-`;
-
-const TooltipUpdateLine = styled.div`
-  color: ${palette.signal.highlight};
-`;
-
-const DischargeDateTooltipContent: React.FC<{ dischargeSource: string }> = ({
-  dischargeSource,
-}) => {
-  return (
-    <TooltipContent>
-      <TooltipSourceLine>{dischargeSource}</TooltipSourceLine>
-      <TooltipUpdateLine>Click to Update</TooltipUpdateLine>
-    </TooltipContent>
-  );
-};
 
 const DischargeDateCell: React.FC<{ record: UpcomingDischargeCase }> = observer(
   ({ record }) => {
@@ -107,29 +81,24 @@ const DischargeDateCell: React.FC<{ record: UpcomingDischargeCase }> = observer(
 
     const daysAway = daysFromNow(record.expectedDischargeDate.toDate());
 
+    const daysPlural = Math.abs(daysAway) > 1;
     const daysString =
-      daysAway > 0 ? `In ${daysAway} days` : `${-daysAway} days ago`;
-
-    const dischargeSource = record.updatedBy
-      ? `Set by ${
-          caseStore.officers[record.updatedBy]?.name ?? record.updatedBy
-        }`
-      : "According to TOMIS";
+      // eslint-disable-next-line no-nested-ternary
+      daysAway > 0
+        ? `In ${daysAway} day${daysPlural ? "s" : ""}`
+        : daysAway === 0
+        ? "Today"
+        : `${-daysAway} day${daysPlural ? "s" : ""} ago`;
 
     return (
-      <Tooltip
-        title={
-          <DischargeDateTooltipContent dischargeSource={dischargeSource} />
-        }
-      >
+      <DischargeTooltip record={record}>
         <div onClick={() => caseStore.setEditingActiveClientDischarge(true)}>
-          {daysString}{" "}
           <DischargeDate>
-            ({record.expectedDischargeDate.toDate().toLocaleDateString("en-US")}
-            )
-          </DischargeDate>
+            {record.expectedDischargeDate.toDate().toLocaleDateString("en-US")}
+          </DischargeDate>{" "}
+          ({daysString})
         </div>
-      </Tooltip>
+      </DischargeTooltip>
     );
   }
 );
@@ -167,7 +136,9 @@ const UpcomingDischargeClientTable: React.FC<
               key={record.personExternalId}
               onClick={() => caseStore.setActiveClient(record.personExternalId)}
             >
-              <Cell>{record.personName} </Cell>
+              <Cell>
+                {record.personName} ({record.personExternalId})
+              </Cell>
               <Cell>
                 {record.updateCount > 0 && (
                   <Pill kind="neutral" filled>
