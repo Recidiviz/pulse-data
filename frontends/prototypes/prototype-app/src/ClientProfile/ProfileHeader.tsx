@@ -30,8 +30,9 @@ import React from "react";
 import styled from "styled-components/macro";
 
 import CalendarDatePicker from "../CalendarDatePicker";
-import DisplayDate from "../DisplayDate";
+import DischargeTooltip from "../DischargeTooltip";
 import { useDataStore } from "../StoreProvider";
+import Tooltip from "../Tooltip";
 
 export const CloseButton = styled(Button).attrs({
   kind: "borderless",
@@ -70,10 +71,9 @@ const ProfileHeader: React.FC = () => {
   const { caseStore } = useDataStore();
 
   const client = caseStore.activeClient;
-  if (!client) return null;
+  if (!client || !client.upcomingDischargeCase) return null;
 
-  const expectedDischargeDate =
-    client?.upcomingDischargeCase?.expectedDischargeDate;
+  const { expectedDischargeDate } = client.upcomingDischargeCase;
 
   const expectedDischargeDateComponent = (
     <CalendarDatePicker
@@ -86,6 +86,7 @@ const ProfileHeader: React.FC = () => {
       placeholderText="Unknown in TOMIS"
       startOpen={caseStore.editingActiveClientDischarge}
       onClose={() => caseStore.setEditingActiveClientDischarge(false)}
+      record={client.upcomingDischargeCase}
     />
   );
 

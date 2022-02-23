@@ -22,15 +22,20 @@ import React, { forwardRef } from "react";
 import DatePicker from "react-datepicker";
 import styled from "styled-components/macro";
 
+import { UpcomingDischargeCase } from "../DataStores/CaseStore";
+import DischargeTooltip from "../DischargeTooltip";
 import DisplayDate from "../DisplayDate";
 
 const DatePickerContainer = styled.div`
+  display: inline-block;
+
   .calendar-date-picker__display-button {
     background: none;
     border: none;
     color: ${palette.slate80};
     cursor: pointer;
     padding: 0;
+    text-decoration: underline;
 
     &:hover {
       color: ${palette.signal.links};
@@ -97,12 +102,15 @@ const DatePickerContainer = styled.div`
   }
 `;
 
+const DatePickerStyled = styled(DatePicker)``;
+
 type DatePickerProps = {
   onPickDate: (date: Date | null) => void;
   currentDate: Date | null;
   placeholderText: string;
   startOpen?: boolean;
   onClose?: () => void;
+  record: UpcomingDischargeCase;
 };
 
 const CalendarDatePicker: React.FC<DatePickerProps> = ({
@@ -112,17 +120,20 @@ const CalendarDatePicker: React.FC<DatePickerProps> = ({
   startOpen = false,
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onClose = () => {},
+  record,
 }) => {
   const DisplayDateElement = forwardRef<HTMLButtonElement>((props, ref) => (
-    <button
-      ref={ref}
-      // @ts-ignore
-      onClick={props.onClick}
-      className="calendar-date-picker__display-button"
-      type="button"
-    >
-      {currentDate ? <DisplayDate date={currentDate} /> : placeholderText}
-    </button>
+    <DischargeTooltip record={record}>
+      <button
+        ref={ref}
+        // @ts-ignore
+        onClick={props.onClick}
+        className="calendar-date-picker__display-button"
+        type="button"
+      >
+        {currentDate ? <DisplayDate date={currentDate} /> : placeholderText}
+      </button>
+    </DischargeTooltip>
   ));
 
   return (

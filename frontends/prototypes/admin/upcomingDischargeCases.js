@@ -45,6 +45,17 @@ function titleCase(input) {
   return _.startCase(_.lowerCase(input));
 };
 
+// cleaner display values for raw TN values
+const SUPERVISION_TYPE_MAPPING = {
+  DIVERSION: "Diversion",
+  "TN PROBATIONER": "Probation",
+  "TN PAROLEE": "Parole",
+  "ISC FROM OTHER JURISDICTION": "ISC",
+  "DETERMINATE RLSE PROBATIONER": "Determinate Release Probation",
+  "SPCL ALT INCARCERATION UNIT": "SAIU",
+  "MISDEMEANOR PROBATIONER": "Misdemeanor Probation",
+};
+
 const db = getDb();
 
 console.log("wiping existing data ...");
@@ -65,7 +76,10 @@ for await (const record of parser) {
 
   const expectedDischargeDate = docData.expDate && parseISO(docData.expDate);
 
-  const supervisionType = titleCase(docData.supervisionType);
+  const supervisionType =
+    SUPERVISION_TYPE_MAPPING[docData.supervisionType] ??
+    docData.supervisionType;
+  
 
   // delete unneeded fields
   delete docData.expDate;

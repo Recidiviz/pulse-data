@@ -17,6 +17,7 @@
 
 import { observer } from "mobx-react-lite";
 import React from "react";
+import { useMatch } from "react-router-dom";
 import styled from "styled-components/macro";
 
 import FormViewer from "../Forms/FormViewer";
@@ -46,12 +47,15 @@ const FormWrapper = styled.div`
 
 const ClientProfile: React.FC = observer(() => {
   const { caseStore } = useDataStore();
+  const isDischarge = useMatch("/discharge") !== null;
+
   const prefilledForm = caseStore.compliantReportingReferrals.find(
     (cr) => cr.tdocId === String(caseStore.activeClientId)
   );
   const showPrefilledForm =
     caseStore.activeClient?.compliantReportingCase?.status === "ELIGIBLE" &&
-    !!prefilledForm;
+    !!prefilledForm &&
+    !isDischarge;
 
   return (
     <ProfileDrawer includeForm={showPrefilledForm}>
