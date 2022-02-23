@@ -31,7 +31,9 @@ import {
   officersQuery,
   saveCompliantReportingNote,
   saveCompliantReportingStatus,
+  saveUpcomingDischargeOverride,
   upcomingDischargeCasesQuery,
+  upcomingDischargeOverridesQuery,
 } from "../firebase";
 import type { RootStore } from "./RootStore";
 
@@ -154,10 +156,21 @@ export type UpcomingDischargeExportedCase = {
   expectedDischargeDate: Timestamp | null;
 };
 
-export type UpcomingDischargeCase = UpcomingDischargeExportedCase & {
-  officerName: string;
-  updateCount: number;
+export type UpcomingDischargeOverrideContents = {
+  updatedBy: string;
+  expectedDischargeDate: Timestamp;
+  personExternalId: string;
 };
+
+export type UpcomingDischargeOverride = UpcomingDischargeOverrideContents & {
+  updatedAt: Date;
+};
+
+export type UpcomingDischargeCase = UpcomingDischargeExportedCase &
+  Partial<UpcomingDischargeOverride> & {
+    officerName: string;
+    updateCount: number;
+  };
 
 type OfficerInfo = { name: string };
 
@@ -186,9 +199,13 @@ export default class CaseStore {
 
   upcomingDischargeExportedCases: UpcomingDischargeExportedCase[] = [];
 
+  upcomingDischargeOverrides: UpcomingDischargeOverride[] = [];
+
   officers: OfficerMapping = {};
 
   activeClientId?: string;
+
+  editingActiveClientDischarge = false;
 
   constructor({ rootStore }: ConstructorProps) {
     makeAutoObservable(this, { rootStore: false });
@@ -224,6 +241,10 @@ export default class CaseStore {
           this.updateUpcomingDischargeExportedCases(snapshot)
         );
 
+        onSnapshot(upcomingDischargeOverridesQuery, (snapshot) =>
+          this.updateUpcomingDischargeOverridesCases(snapshot)
+        );
+
         onSnapshot(officersQuery, (snapshot) => this.updateOfficers(snapshot));
       }
     );
@@ -231,6 +252,10 @@ export default class CaseStore {
 
   setActiveClient(clientId?: string): void {
     this.activeClientId = clientId;
+  }
+
+  setEditingActiveClientDischarge(editing: boolean): void {
+    this.editingActiveClientDischarge = editing;
   }
 
   get activeClient(): Client | undefined {
@@ -303,7 +328,10 @@ export default class CaseStore {
         ).length;
         const officerName =
           this.officers[caseData.officerId]?.name || caseData.officerId;
-        return assign({}, caseData, { updateCount, officerName });
+        const override = this.upcomingDischargeOverrides.find(
+          (o) => o.personExternalId === caseData.personExternalId
+        );
+        return assign({}, caseData, override, { updateCount, officerName });
       });
   }
 
@@ -376,6 +404,16 @@ export default class CaseStore {
     this.upcomingDischargeExportedCases = cases;
   }
 
+  private updateUpcomingDischargeOverridesCases(
+    querySnapshot: QuerySnapshot<DocumentData>
+  ): void {
+    const overrides: UpcomingDischargeOverride[] = [];
+    querySnapshot.forEach((doc) => {
+      overrides.push(doc.data() as UpcomingDischargeOverride);
+    });
+    this.upcomingDischargeOverrides = overrides;
+  }
+
   updateOfficers(querySnapshot: QuerySnapshot<DocumentData>): void {
     querySnapshot.forEach((doc) => {
       this.officers[doc.id] = doc.data() as OfficerInfo;
@@ -419,6 +457,19 @@ export default class CaseStore {
       text,
       personExternalId: this.activeClientId,
       creator: this.rootStore.userStore.userEmail,
+    });
+  }
+
+  async sendUpcomingDischargeOverride(updatedDischargeDate: Date) {
+    if (!this.activeClientId || !this.rootStore.userStore.userEmail) return;
+
+    console.log(
+      `Sending upcoming discharge override for ${this.activeClientId} to ${this.rootStore.userStore.userEmail}`
+    );
+    await saveUpcomingDischargeOverride({
+      personExternalId: this.activeClientId,
+      expectedDischargeDate: Timestamp.fromDate(updatedDischargeDate),
+      updatedBy: this.rootStore.userStore.userEmail,
     });
   }
 }
