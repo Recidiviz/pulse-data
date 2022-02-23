@@ -17,7 +17,7 @@
 import { Card, Modal } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import { rem } from "polished";
-import React, { HTMLAttributes } from "react";
+import React from "react";
 import styled from "styled-components/macro";
 
 import { useDataStore } from "../StoreProvider";

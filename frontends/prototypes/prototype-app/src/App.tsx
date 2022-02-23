@@ -7,6 +7,7 @@ import GlobalStyles from "./GlobalStyles";
 import Logout from "./Logout";
 import CompliantReporting from "./pages/CompliantReporting";
 import StoreProvider from "./StoreProvider";
+import UpcomingDischarge from "./pages/UpcomingDischarge";
 
 const App: React.FC = () => {
   return (
@@ -20,6 +21,7 @@ const App: React.FC = () => {
           />
           <Routes>
             <Route path="/" element={<CompliantReporting />} />
+            <Route path="/discharge" element={<UpcomingDischarge />} />
           </Routes>
         </AuthWall>
       </StoreProvider>

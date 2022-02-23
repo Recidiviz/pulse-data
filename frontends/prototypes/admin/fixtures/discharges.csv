@@ -1,0 +1,7 @@
+person_name,person_external_id,officer_id,supervision_type,judicial_district,exp_date
+"{""given_names"": ""TONYE"", ""surname"": ""THOMPSON"", ""middle_names"": ""BARBY""}","100","OFFICER1","PAROLE","17","2022-02-02"
+"{""given_names"": ""LINET"", ""surname"": ""HANSEN""}","101","OFFICER1","PROBATION","14","2021-12-12"
+"{""given_names"": ""REBEKAH"", ""surname"": ""CORTES"", ""middle_names"": ""HATTI""}","102","OFFICER1","PROBATION","17","2022-04-18"
+"{""given_names"": ""RAMONDA"", ""surname"": ""UNDERWOOD""}","104","OFFICER2","PROBATION","17",
+"{""given_names"": ""BOB"", ""surname"": ""SMITH""}","110","OFFICER2","PAROLE","14",
+"{""given_names"": ""GRANT"", ""surname"": ""SOAP"", ""middle_names"": ""BARRY""}","112","OFFICER2","PAROLE","14","2024-02-29"

@@ -37,3 +37,9 @@ export function getUserName(email: string, users: UserMapping): string {
 export function formatTimestampRelative(ts: Timestamp): string {
   return formatDistanceToNow(ts.toDate()).replace("about ", "");
 }
+
+export function daysFromNow(date: Date) {
+  const now = new Date();
+  const diff = date.getTime() - now.getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}

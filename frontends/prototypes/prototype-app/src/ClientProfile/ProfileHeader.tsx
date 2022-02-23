@@ -21,6 +21,7 @@ import {
   H3,
   Icon,
   IconSVG,
+  palette,
   spacing,
 } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
@@ -28,6 +29,7 @@ import { rem } from "polished";
 import React from "react";
 import styled from "styled-components/macro";
 
+import DisplayDate from "../DisplayDate";
 import { useDataStore } from "../StoreProvider";
 
 export const CloseButton = styled(Button).attrs({
@@ -50,13 +52,17 @@ const ClientProfileHeading = styled(CardSection)`
   padding-bottom: ${rem(spacing.md)};
   display: flex;
   flex-wrap: wrap;
-  grid-area: 1 / 1;
 `;
 
-const ClientInfo = styled.div`
+const ClientInfoContiainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  column-gap: ${rem(spacing.sm)};
   font-size: 14px;
   width: 100%;
   line-height: 1.3;
+  color: ${palette.slate80};
+  padding-top: ${rem(spacing.sm)};
 `;
 
 const ProfileHeader: React.FC = () => {
@@ -64,6 +70,23 @@ const ProfileHeader: React.FC = () => {
 
   const client = caseStore.activeClient;
   if (!client) return null;
+
+  const expectedDischargeDate =
+    client?.upcomingDischargeCase?.expectedDischargeDate;
+
+  const expectedDischargeDateString = expectedDischargeDate ? (
+    <DisplayDate date={expectedDischargeDate.toDate()} />
+  ) : (
+    "Unknown in TOMIS"
+  );
+
+  let clientInfo = `${client.supervisionType}, `;
+
+  if (client.compliantReportingCase?.supervisionLevel) {
+    clientInfo += `${client.compliantReportingCase.supervisionLevel}, `;
+  }
+
+  clientInfo += client.personExternalId;
 
   return (
     <ClientProfileHeading>
@@ -73,9 +96,10 @@ const ProfileHeader: React.FC = () => {
         <Icon kind={IconSVG.Close} size={14} />
       </CloseButton>
 
-      <ClientInfo>
-        {client.personExternalId}, {client.officerName}
-      </ClientInfo>
+      <ClientInfoContiainer>
+        <div>{clientInfo}</div>
+        <div>Expiration date: {expectedDischargeDateString}</div>
+      </ClientInfoContiainer>
     </ClientProfileHeading>
   );
 };
