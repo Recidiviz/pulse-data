@@ -438,6 +438,7 @@ const FormCR3947Rev0518: React.FC<FormCR3947Rev0518Props> = ({ form }) => {
               <Item as="label">
                 <Checkbox
                   defaultChecked={
+                    form.specialConditionsCounselingType &&
                     form.specialConditionsCounselingType.indexOf(
                       "ANGER_MANAGEMENT"
                     ) !== -1
@@ -448,6 +449,7 @@ const FormCR3947Rev0518: React.FC<FormCR3947Rev0518Props> = ({ form }) => {
               <Item as="label">
                 <Checkbox
                   defaultChecked={
+                    form.specialConditionsCounselingType &&
                     form.specialConditionsCounselingType.indexOf(
                       "MENTAL_HEALTH"
                     ) !== -1
@@ -461,6 +463,7 @@ const FormCR3947Rev0518: React.FC<FormCR3947Rev0518Props> = ({ form }) => {
                 <Item as="label">
                   <Checkbox
                     defaultChecked={
+                      form.specialConditionsCounselingType &&
                       form.specialConditionsCounselingType.indexOf(
                         "ANGER_MANAGEMENT"
                       ) !== -1 &&
@@ -477,6 +480,7 @@ const FormCR3947Rev0518: React.FC<FormCR3947Rev0518Props> = ({ form }) => {
                 <Item as="label">
                   <Checkbox
                     defaultChecked={
+                      form.specialConditionsCounselingType &&
                       form.specialConditionsCounselingType.indexOf(
                         "MENTAL_HEALTH"
                       ) !== -1 &&
