@@ -82,7 +82,8 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
             state_code=self.test_region.region_code,
             project_id=self.project_id,
             bq_client=self.mock_big_query_client,
-            sandbox_dataset_prefix=None,
+            views_sandbox_dataset_prefix=None,
+            raw_tables_sandbox_dataset_prefix=None,
         )
 
         with local_project_id_override(self.project_id):
@@ -127,14 +128,15 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
                 [mock.call(views_dataset, default_table_expiration_ms=None)]
             )
 
-    def test_update_tables_for_state_with_prefix(self) -> None:
+    def test_update_tables_for_state_with_sandbox_views_dataset(self) -> None:
         self.mock_raw_file_configs = self.mock_region_config.raw_file_configs
 
         self.update_controller = DirectIngestRawDataTableLatestViewUpdater(
             state_code=self.test_region.region_code,
             project_id=self.project_id,
             bq_client=self.mock_big_query_client,
-            sandbox_dataset_prefix="my_prefix",
+            views_sandbox_dataset_prefix="my_prefix",
+            raw_tables_sandbox_dataset_prefix=None,
         )
 
         with local_project_id_override(self.project_id):
@@ -188,6 +190,70 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
                 ]
             )
 
+    def test_update_tables_for_state_with_sandbox_views_and_raw_datasets(self) -> None:
+        self.mock_raw_file_configs = self.mock_region_config.raw_file_configs
+
+        self.update_controller = DirectIngestRawDataTableLatestViewUpdater(
+            state_code=self.test_region.region_code,
+            project_id=self.project_id,
+            bq_client=self.mock_big_query_client,
+            views_sandbox_dataset_prefix="my_prefix",
+            raw_tables_sandbox_dataset_prefix="my_other_prefix",
+        )
+
+        with local_project_id_override(self.project_id):
+            self.update_controller.update_views_for_state()
+
+            self.assertEqual(
+                self.mock_big_query_client.create_or_update_view.call_count, 2
+            )
+
+            raw_data_dataset = DatasetReference(
+                self.project_id, "my_other_prefix_us_xx_raw_data"
+            )
+            self.mock_big_query_client.table_exists.assert_has_calls(
+                [
+                    mock.call(raw_data_dataset, "tagA"),
+                    mock.call(raw_data_dataset, "tagB"),
+                    mock.call(raw_data_dataset, "tagC"),
+                    mock.call(raw_data_dataset, "tagWeDoNotIngest"),
+                ]
+            )
+
+            expected_dataset_overrides = {
+                "us_xx_raw_data_up_to_date_views": "my_prefix_us_xx_raw_data_up_to_date_views"
+            }
+
+            expected_views = [
+                DirectIngestRawDataTableLatestView(
+                    region_code=self.test_region.region_code,
+                    raw_file_config=self.mock_raw_file_configs["tagA"],
+                    dataset_overrides=expected_dataset_overrides,
+                ),
+                DirectIngestRawDataTableLatestView(
+                    region_code=self.test_region.region_code,
+                    raw_file_config=self.mock_raw_file_configs["tagC"],
+                    dataset_overrides=expected_dataset_overrides,
+                ),
+            ]
+
+            self.mock_big_query_client.create_or_update_view.assert_has_calls(
+                [mock.call(x) for x in expected_views]
+            )
+
+            expected_views_dataset = DatasetReference(
+                self.project_id, "my_prefix_us_xx_raw_data_up_to_date_views"
+            )
+
+            self.mock_big_query_client.create_dataset_if_necessary.assert_called_once()
+            self.mock_big_query_client.create_dataset_if_necessary.assert_has_calls(
+                [
+                    mock.call(
+                        expected_views_dataset, default_table_expiration_ms=86400000
+                    )
+                ]
+            )
+
     def test_failed_view_update(self) -> None:
         self.mock_raw_file_configs = self.mock_region_config.raw_file_configs
 
@@ -195,7 +261,8 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
             state_code=self.test_region.region_code,
             project_id=self.project_id,
             bq_client=self.mock_big_query_client,
-            sandbox_dataset_prefix=None,
+            views_sandbox_dataset_prefix=None,
+            raw_tables_sandbox_dataset_prefix=None,
         )
 
         self.mock_big_query_client.create_or_update_view.side_effect = Exception
