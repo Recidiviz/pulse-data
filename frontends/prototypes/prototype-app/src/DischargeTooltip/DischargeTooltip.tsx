@@ -51,13 +51,13 @@ const DischargeDateTooltipContent: React.FC<{ dischargeSource: string }> = ({
   );
 };
 
-const DischargeTooltip: React.FC<{ record: UpcomingDischargeCase }> = ({
+const DischargeTooltip: React.FC<{ record?: UpcomingDischargeCase }> = ({
   children,
   record,
 }) => {
   const { caseStore } = useDataStore();
 
-  const dischargeSource = record.updatedBy
+  const dischargeSource = record?.updatedBy
     ? `Set by ${caseStore.officers[record.updatedBy]?.name ?? record.updatedBy}`
     : "According to TOMIS";
 
