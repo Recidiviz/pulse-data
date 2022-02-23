@@ -29,6 +29,7 @@ import { rem } from "polished";
 import React from "react";
 import styled from "styled-components/macro";
 
+import CalendarDatePicker from "../CalendarDatePicker";
 import DisplayDate from "../DisplayDate";
 import { useDataStore } from "../StoreProvider";
 
@@ -74,10 +75,18 @@ const ProfileHeader: React.FC = () => {
   const expectedDischargeDate =
     client?.upcomingDischargeCase?.expectedDischargeDate;
 
-  const expectedDischargeDateString = expectedDischargeDate ? (
-    <DisplayDate date={expectedDischargeDate.toDate()} />
-  ) : (
-    "Unknown in TOMIS"
+  const expectedDischargeDateComponent = (
+    <CalendarDatePicker
+      currentDate={
+        expectedDischargeDate ? expectedDischargeDate.toDate() : null
+      }
+      onPickDate={(date) => {
+        if (date) caseStore.sendUpcomingDischargeOverride(date);
+      }}
+      placeholderText="Unknown in TOMIS"
+      startOpen={caseStore.editingActiveClientDischarge}
+      onClose={() => caseStore.setEditingActiveClientDischarge(false)}
+    />
   );
 
   let clientInfo = `${client.supervisionType}, `;
@@ -98,7 +107,7 @@ const ProfileHeader: React.FC = () => {
 
       <ClientInfoContiainer>
         <div>{clientInfo}</div>
-        <div>Expiration date: {expectedDischargeDateString}</div>
+        <div>Expiration date: {expectedDischargeDateComponent}</div>
       </ClientInfoContiainer>
     </ClientProfileHeading>
   );
