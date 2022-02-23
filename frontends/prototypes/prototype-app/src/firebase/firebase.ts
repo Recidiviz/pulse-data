@@ -74,6 +74,7 @@ const COLLECTIONS = {
   compliantReportingCases: "compliantReportingCases",
   compliantReportingStatus: "compliantReportingStatus",
   compliantReportingUpdates: "compliantReportingUpdates",
+  upcomingDischargeCases: "upcomingDischargeCases",
   compliantReportingReferrals: "compliantReportingReferrals",
   users: "users",
   officers: "officers",
@@ -127,4 +128,9 @@ export const compliantReportingCasesQuery = query(
 );
 export const compliantReportingReferralsQuery = query(
   collection(db, COLLECTIONS.compliantReportingReferrals)
+);
+
+export const upcomingDischargeCasesQuery = query(
+  collection(db, COLLECTIONS.upcomingDischargeCases),
+  orderBy("expectedDischargeDate")
 );

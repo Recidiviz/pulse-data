@@ -27,22 +27,27 @@ import { useDataStore } from "../StoreProvider";
 import UserName from "../UserName";
 import { formatTimestampRelative } from "../utils";
 import CompliantReportingDenial from "./CompliantReportingDenial";
+import ProfileUpcomingDischarge from "./ProfileUpcomingDischarge";
 import SummaryItem from "./SummaryItem";
 import UpdatesInput from "./UpdatesInput";
 
 const ProfileContents = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr auto;
   height: 100%;
   width: 100%;
-  grid-area: 2 / 1;
+
+  & > *:not(:last-child) {
+    border-top: 1px solid ${palette.slate20};
+  }
 `;
 
 const ContentsWrapper = styled.div`
-  grid-area: 1/1;
+  grid-column: 1;
   padding: 32px;
   overflow: auto;
+  grid-order: 2;
 `;
 
 const CriteriaList = styled.ul`
@@ -98,81 +103,95 @@ const UpdateText = styled.div``;
 const ProfileCompliantReporting: React.FC = () => {
   const { caseStore } = useDataStore();
 
-  const client = caseStore.activeClient;
-  if (!client) return null;
+  const compliantReportingCase = caseStore.activeClient?.compliantReportingCase;
 
   return (
     <ProfileContents>
+      <ProfileUpcomingDischarge />
       <ContentsWrapper>
-        <H4>Compliant Reporting</H4>
-        <CriteriaList>
-          <Criterion>
-            <SummaryItem>
-              Supervision Type: {client.supervisionType}
-            </SummaryItem>
-          </Criterion>
-          <Criterion>
-            <SummaryItem>
-              Supervision Level: {client.supervisionLevel} for{" "}
-              {formatTimestampRelative(client.supervisionLevelStart)}
-            </SummaryItem>
-          </Criterion>
-          <Criterion>
-            <SummaryItem>
-              Offense Type:{" "}
-              {client.offenseType.map((o, index, arr) => (
-                <>
-                  {o}
-                  {index !== arr.length - 1 && "; "}
-                </>
-              ))}
-            </SummaryItem>
-          </Criterion>
-          <Criterion>
-            <SummaryItem>
-              Negative Drug Screens (past 12 mo):{" "}
-              {client.lastDrun.map((d, index, arr) => (
-                <>
-                  <DisplayDate date={d.toDate()} />
-                  {index !== arr.length - 1 && "; "}
-                </>
-              ))}
-            </SummaryItem>
-          </Criterion>
-          <Criterion>
-            <SummaryItem>
-              Last Sanction (past 12 mo):{" "}
-              {client.lastSanction || "No previous sanctions"}
-            </SummaryItem>
-          </Criterion>
-          <Criterion>
-            <SummaryItem>
-              Judicial District: {client.judicialDistrict}
-            </SummaryItem>
-          </Criterion>
-        </CriteriaList>
+        {!compliantReportingCase ? (
+          <div />
+        ) : (
+          <>
+            <H4>Compliant Reporting</H4>
+            <CriteriaList>
+              <Criterion>
+                <SummaryItem>
+                  Supervision Type: {compliantReportingCase.supervisionType}
+                </SummaryItem>
+              </Criterion>
+              <Criterion>
+                <SummaryItem>
+                  Supervision Level: {compliantReportingCase.supervisionLevel}{" "}
+                  for{" "}
+                  {formatTimestampRelative(
+                    compliantReportingCase.supervisionLevelStart
+                  )}
+                </SummaryItem>
+              </Criterion>
+              <Criterion>
+                <SummaryItem>
+                  Offense Type:{" "}
+                  {compliantReportingCase.offenseType.map((o, index, arr) => (
+                    <>
+                      {o}
+                      {index !== arr.length - 1 && "; "}
+                    </>
+                  ))}
+                </SummaryItem>
+              </Criterion>
+              <Criterion>
+                <SummaryItem>
+                  Negative Drug Screens (past 12 mo):{" "}
+                  {compliantReportingCase.lastDrun.map((d, index, arr) => (
+                    <>
+                      <DisplayDate date={d.toDate()} />
+                      {index !== arr.length - 1 && "; "}
+                    </>
+                  ))}
+                </SummaryItem>
+              </Criterion>
+              <Criterion>
+                <SummaryItem>
+                  Last Sanction (past 12 mo):{" "}
+                  {compliantReportingCase.lastSanction ||
+                    "No previous sanctions"}
+                </SummaryItem>
+              </Criterion>
+              <Criterion>
+                <SummaryItem>
+                  Judicial District: {compliantReportingCase.judicialDistrict}
+                </SummaryItem>
+              </Criterion>
+            </CriteriaList>
 
-        <StatusHeading>Status</StatusHeading>
-        <StatusRow>
-          <StatusItem>
-            <Button
-              kind={client.status === "ELIGIBLE" ? "primary" : "secondary"}
-              shape="block"
-              onClick={() => {
-                caseStore.setCompliantReportingStatus("ELIGIBLE");
-              }}
-            >
-              Eligible
-            </Button>
-          </StatusItem>
-          <StatusItem>
-            <CompliantReportingDenial />
-          </StatusItem>
-        </StatusRow>
-        {client.statusUpdated && (
-          <StatusMetadata>
-            <StatusUpdated updated={client.statusUpdated} />
-          </StatusMetadata>
+            <StatusHeading>Status</StatusHeading>
+            <StatusRow>
+              <StatusItem>
+                <Button
+                  kind={
+                    compliantReportingCase.status === "ELIGIBLE"
+                      ? "primary"
+                      : "secondary"
+                  }
+                  shape="block"
+                  onClick={() => {
+                    caseStore.setCompliantReportingStatus("ELIGIBLE");
+                  }}
+                >
+                  Eligible
+                </Button>
+              </StatusItem>
+              <StatusItem>
+                <CompliantReportingDenial />
+              </StatusItem>
+            </StatusRow>
+            {compliantReportingCase.statusUpdated && (
+              <StatusMetadata>
+                <StatusUpdated updated={compliantReportingCase.statusUpdated} />
+              </StatusMetadata>
+            )}
+          </>
         )}
 
         {caseStore.activeClientUpdates.map((update) => (
