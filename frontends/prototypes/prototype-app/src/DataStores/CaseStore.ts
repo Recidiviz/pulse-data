@@ -332,7 +332,15 @@ export default class CaseStore {
           (o) => o.personExternalId === caseData.personExternalId
         );
         return assign({}, caseData, override, { updateCount, officerName });
-      });
+      })
+      .sort((a, b) =>
+        // eslint-disable-next-line no-nested-ternary
+        a.expectedDischargeDate > b.expectedDischargeDate
+          ? 1
+          : a.expectedDischargeDate < b.expectedDischargeDate
+          ? -1
+          : 0
+      );
   }
 
   private updateCompliantReportingExportedCases(
