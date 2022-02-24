@@ -469,7 +469,11 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         SELECT 
             *,
             metric_source = 'INFERRED'
-                AND prev_end_reason IN ('SENTENCE_SERVED','COMMUTED','DISCHARGE','EXPIRATION','PARDONED') AS inferred_release,
+                AND prev_end_reason IN (
+                        'SENTENCE_SERVED','COMMUTED','DISCHARGE','EXPIRATION','PARDONED',
+                        'RELEASED_FROM_ERRONEOUS_ADMISSION', 'RELEASED_FROM_TEMPORARY_CUSTODY',
+                        'TEMPORARY_RELEASE'
+                    )  AS inferred_release,
             metric_source = 'INFERRED' 
                 AND (prev_end_reason IN ('ABSCONSION','ESCAPE')
                      OR next_start_reason IN ('RETURN_FROM_ABSCONSION','RETURN_FROM_ESCAPE')
@@ -485,15 +489,15 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                     OR (next_start_reason IN ('REVOCATION', 'SANCTION_ADMISSION'))) AS inferred_pending_custody,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'INCARCERATION'
-                AND prev_end_reason = 'CONDITIONAL_RELEASE' AS inferred_pending_supervision,
+                AND prev_end_reason IN ('CONDITIONAL_RELEASE', 'RELEASED_TO_SUPERVISION') AS inferred_pending_supervision,
             metric_source = 'INFERRED'
                 AND prev_end_reason = 'TRANSFER_TO_OTHER_JURISDICTION' AS inferred_oos,
             metric_source = 'INFERRED'
                 AND prev_end_reason = 'SUSPENSION' AS inferred_suspension,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = outflow_to_level_1 AND inflow_from_level_2 = outflow_to_level_2
-                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
-                AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')  
+                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
+                AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
                 AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date, DAY) <= {mo_data_gap_days}) AS inferred_missing_data, 
             metric_source = 'INFERRED'
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
