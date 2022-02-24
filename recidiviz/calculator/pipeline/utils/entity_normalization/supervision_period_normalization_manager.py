@@ -25,6 +25,12 @@ from typing import List, Optional, Type
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
@@ -365,3 +371,13 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             updated_periods.append(sp)
 
         return updated_periods
+
+    @classmethod
+    def convert_sps_to_normalized_sps(
+        cls,
+        supervision_periods: List[StateSupervisionPeriod],
+    ) -> List[NormalizedStateSupervisionPeriod]:
+        return convert_entity_trees_to_normalized_versions(
+            root_entities=supervision_periods,
+            normalized_entity_class=NormalizedStateSupervisionPeriod,
+        )

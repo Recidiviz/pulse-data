@@ -976,7 +976,7 @@ def _is_property_flat_field(obj: Union[list, Entity], property_name: str) -> boo
     return is_flat_field(attribute)
 
 
-def _update_reverse_references_on_related_entities(
+def update_reverse_references_on_related_entities(
     updated_entity: EntityT,
     new_related_entities: List[EntityT],
     reverse_relationship_field: str,
@@ -992,7 +992,7 @@ def _update_reverse_references_on_related_entities(
         # If the reverse relationship field is a forward ref, set the updated entity
         # directly as the value.
         for new_related_entity in new_related_entities:
-            new_related_entity.set_field(reverse_relationship_field, updated_entity)
+            setattr(new_related_entity, reverse_relationship_field, updated_entity)
         return
 
     if reverse_relationship_field_type != BuildableAttrFieldType.LIST:
@@ -1001,8 +1001,8 @@ def _update_reverse_references_on_related_entities(
         )
 
     for new_related_entity in new_related_entities:
-        reverse_relationship_list = new_related_entity.get_field(
-            reverse_relationship_field
+        reverse_relationship_list = getattr(
+            new_related_entity, reverse_relationship_field
         )
 
         if updated_entity not in reverse_relationship_list:
@@ -1076,7 +1076,7 @@ def deep_entity_update(
 
         # This relationship is bidirectional, so we will update the reference
         # on all related entities to point to the new updated_entity
-        _update_reverse_references_on_related_entities(
+        update_reverse_references_on_related_entities(
             new_related_entities=new_related_entities,
             reverse_relationship_field=reverse_relationship_field,
             reverse_relationship_field_type=reverse_relationship_field_type,
