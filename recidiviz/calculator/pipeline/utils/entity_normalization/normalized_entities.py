@@ -149,7 +149,6 @@ class SequencedEntityMixin:
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateIncarcerationPeriod(
@@ -165,7 +164,6 @@ class NormalizedStateIncarcerationPeriod(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateProgramAssignment(
@@ -179,7 +177,6 @@ class NormalizedStateProgramAssignment(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionPeriod(
@@ -192,7 +189,6 @@ class NormalizedStateSupervisionPeriod(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionCaseTypeEntry(
@@ -206,11 +202,10 @@ class NormalizedStateSupervisionCaseTypeEntry(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolation(
-    StateSupervisionViolation, NormalizedStateEntity, SequencedEntityMixin
+    StateSupervisionViolation, NormalizedStateEntity
 ):
     """Stores instances of StateSupervisionViolation entities that have been
     normalized and are prepared to be used in calculations."""
@@ -219,7 +214,6 @@ class NormalizedStateSupervisionViolation(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolationTypeEntry(
@@ -232,7 +226,6 @@ class NormalizedStateSupervisionViolationTypeEntry(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolatedConditionEntry(
@@ -245,7 +238,6 @@ class NormalizedStateSupervisionViolatedConditionEntry(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolationResponse(
@@ -258,7 +250,6 @@ class NormalizedStateSupervisionViolationResponse(
 @attr.s(
     eq=False,
     kw_only=True,
-    frozen=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolationResponseDecisionEntry(

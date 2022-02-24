@@ -54,7 +54,7 @@ def collect_all_pipeline_names() -> List[str]:
     """Collects all of the pipeline names from all of the implementations of the
     PipelineRunDelegate. A PipelineRunDelegate must exist inside one of the modules
     listed in the TOP_LEVEL_PIPELINE_MODULES for it to be included."""
-    run_delegates = collect_all_pipeline_run_delegates()
+    run_delegates = collect_all_pipeline_run_delegate_classes()
 
     return [
         run_delegate.pipeline_config().pipeline_name.lower()
@@ -62,7 +62,8 @@ def collect_all_pipeline_names() -> List[str]:
     ]
 
 
-def collect_all_pipeline_run_delegates() -> List[Type[PipelineRunDelegate]]:
+def collect_all_pipeline_run_delegate_modules() -> List[ModuleType]:
+    """Collects all of the modules storing PipelineRunDelegate implementations."""
     pipeline_submodules: List[ModuleType] = []
 
     for top_level_pipeline_module in TOP_LEVEL_PIPELINE_MODULES:
@@ -72,21 +73,38 @@ def collect_all_pipeline_run_delegates() -> List[Type[PipelineRunDelegate]]:
             )
         )
 
-    run_delegates: List[Type[PipelineRunDelegate]] = []
+    pipeline_file_modules: List[ModuleType] = []
 
     for module in pipeline_submodules:
         pipeline_modules = ModuleCollectorMixin.get_submodules(
             module, submodule_name_prefix_filter="pipeline"
         )
 
-        for pipeline_module in pipeline_modules:
-            for attribute_name in dir(pipeline_module):
-                attribute = getattr(pipeline_module, attribute_name)
-                if inspect.isclass(attribute):
-                    if issubclass(
-                        attribute, PipelineRunDelegate
-                    ) and not inspect.isabstract(attribute):
-                        run_delegates.append(attribute)
+        if len(pipeline_modules) > 1:
+            raise ValueError(
+                "More than one submodule found named 'pipeline' in "
+                f"module: {module}. Found: [{pipeline_modules}]."
+            )
+        if pipeline_modules:
+            pipeline_file_modules.append(pipeline_modules[0])
+
+    return pipeline_file_modules
+
+
+def collect_all_pipeline_run_delegate_classes() -> List[Type[PipelineRunDelegate]]:
+    """Collects all of the versions of the PipelineRunDelegate."""
+
+    pipeline_modules = collect_all_pipeline_run_delegate_modules()
+    run_delegates: List[Type[PipelineRunDelegate]] = []
+
+    for pipeline_module in pipeline_modules:
+        for attribute_name in dir(pipeline_module):
+            attribute = getattr(pipeline_module, attribute_name)
+            if inspect.isclass(attribute):
+                if issubclass(
+                    attribute, PipelineRunDelegate
+                ) and not inspect.isabstract(attribute):
+                    run_delegates.append(attribute)
 
     return run_delegates
 
@@ -94,7 +112,7 @@ def collect_all_pipeline_run_delegates() -> List[Type[PipelineRunDelegate]]:
 def _delegate_cls_for_pipeline_name(pipeline_name: str) -> Type[PipelineRunDelegate]:
     """Finds the PipelineRunDelegate class corresponding to the pipeline with the
     given |pipeline_name|."""
-    all_run_delegates = collect_all_pipeline_run_delegates()
+    all_run_delegates = collect_all_pipeline_run_delegate_classes()
     delegates_with_pipeline_name = [
         delegate
         for delegate in all_run_delegates
