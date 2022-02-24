@@ -319,13 +319,15 @@ function deploy_terraform_infrastructure {
         PLAN_FILE_NAME=${DOCKER_IMAGE_TAG}-${GIT_HASH}-${CURRENT_TIME}.tfplan
         PLAN_FILE_PATH=gs://${PROJECT_ID}-tf-state/tf-plans/${PLAN_FILE_NAME}
         echo "Storing plan to ${PLAN_FILE_PATH} for posterity..."
-        run_cmd gsutil cp ${BASH_SOURCE_DIR}/terraform/tfplan $PLAN_FILE_PATH
+        run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform show tfplan > ${BASH_SOURCE_DIR}/terraform/tfplan.json
+        run_cmd gsutil cp ${BASH_SOURCE_DIR}/terraform/tfplan.json $PLAN_FILE_PATH
 
         echo "Applying the terraform plan..."
         # not using run_cmd because we don't want to exit_on_fail
         terraform -chdir=./recidiviz/tools/deploy/terraform apply tfplan | indent_output
         return_code=$?
         rm ./recidiviz/tools/deploy/terraform/tfplan
+        rm ./recidiviz/tools/deploy/terraform/tfplan.json
 
         if [[ $return_code -eq 0 ]]; then
             break
