@@ -17,7 +17,7 @@ either version 3 of the License, or (at your option) any later version.
 
 The data that we have gathered from criminal justice systems has been sanitized, de-duplicated, and standardized in a
 single schema. This processed data is central to our purposes but may be useful to others, as well. If you would like
-access to the processed data, in whole or in part, please reach out to us at `team@recidiviz.com`. We evaluate such
+access to the processed data, in whole or in part, please reach out to us at `hello@recidiviz.org`. We evaluate such
 requests on a case-by-case basis, in conjunction with our partners.
 
 Calculated metrics can also be made available through the same process, though we anticipate publishing our analysis
@@ -29,7 +29,7 @@ The Recidiviz data system is provided as open source software - for transparency
 help jump-start similar projects in other spaces, and to ensure continuity if Recidiviz itself ever becomes inactive.
 
 If you plan to fork the project for work in the criminal justice space (to ingest from the same systems we are, or similar),
-we ask that you first [contact us](mailto:team@recidiviz.org) for a quick consultation. We work carefully to ensure
+we ask that you first [contact us](mailto:hello@recidiviz.org) for a quick consultation. We work carefully to ensure
 that our ingest activities don't disrupt other users' experiences with the public data services we read, but if
 multiple ingest processes are running against the same systems, without knowing about one another, it may place excessive
 strain on them and impact the services those systems provide.
@@ -39,7 +39,7 @@ best way to get it done.
 
 ## Development
 
-If you are contributing to this repository regularly for an extended period of time, [request GitHub collaborator access](mailto:team@recidiviz.com?subject=GitHub%20collaborator%20request&body=) to commit directly to the main repository. If you are contributing on occasion, [fork this repository](https://github.com/Recidiviz/pulse-data/fork) before making any commits.
+If you are contributing to this repository regularly for an extended period of time, [request GitHub collaborator access](mailto:hello@recidiviz.org?subject=GitHub%20collaborator%20request&body=) to commit directly to the main repository.
 
 ### Local Development
 
@@ -60,8 +60,7 @@ mkdir ~/.pyenv
 Then, add the following to your `~/.zshrc` (or equivalent):
 
 ```
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 if command -v pyenv 1>/dev/null 2>&1; then
 eval "$(pyenv init -)"
 fi
@@ -71,6 +70,10 @@ Then run:
 
 ```
 pyenv install 3.8.8
+if [[ $(arch) = "arm64" ]]; then
+  # See https://github.com/pyenv/pyenv/issues/1768
+  pyenv install --patch 3.8.8 <<(curl -sSL https://raw.githubusercontent.com/Homebrew/formula-patches/master/python/3.8.7.patch)
+fi
 pyenv global 3.8.8
 ```
 
@@ -83,7 +86,12 @@ python -V
 Once python is installed, you can install `libpq` and `openssl` with:
 
 ```bash
-$ brew install postgresql openssl
+$ brew install postgresql@13 openssl
+```
+
+and add the following to your `~/.zshrc` (or equivalent):
+```
+export PATH="/opt/homebrew/opt/postgresql@13/bin:$PATH"
 ```
 
 On Ubuntu 18.04,`openssl` is installed by default, you can install `python3.8` and `libpq` with:
@@ -156,20 +164,10 @@ To activate your pipenv environment, run:
 $ pipenv shell
 ```
 
-Finally, run `pytest`. If no tests fail, you are ready to develop!
-
-**NOTE**: If some `recidiviz/tests/ingest/aggregate` tests fail, you may need to install the Java Runtime Environment (JRE) version 7 or higher.
-
-You can ignore those tests with:
-
-```bash
-$ pytest --ignore=recidiviz/tests/ingest/aggregate
-```
-
 On a Mac with [Homebrew](https://brew.sh/), you can install the JRE with:
 
 ```bash
-$ brew cask install java
+$ brew install java
 ```
 
 On Ubuntu 18.04, you can install the JRE with:
@@ -190,21 +188,23 @@ On Ubuntu 18.04, you can install jq with:
 $ apt update -y && apt install -y jq
 ```
 
+Finally, run `pytest`. As of Feb 2022, one might expect ~200 tests to fail locally, with errors
+mainly falling into one of two categories: `Receiver() takes no arguments` and
+`Already initialized database/ValueError: Accessing SQLite in-memory database on multiple threads`.
+The former error is due to an incompatibility with Cython that may be due to newer Mac models or
+python versions, and the latter is due to tests not properly cleaning up after themselves. All of
+these tests pass in CI.
+You can ignore any failing tests with (for example):
+
+```bash
+$ pytest --ignore=recidiviz/tests/ingest/aggregate
+```
+
 ##### Option 2: Docker container
 
 If you can't install `python3.8` locally, you can use Docker instead.
 
-Follow these instructions to install Docker on Linux:
-
-- [Debian](https://docs.docker.com/install/linux/docker-ce/debian/#install-using-the-repository)
-- [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-repository)
-
-Click the following links to directly download Docker installation binaries for Mac and Windows:
-
-- [Mac](https://download.docker.com/mac/stable/Docker.dmg)
-- [Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe)
-
-Once Docker is installed, [fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone it locally, and enter its directory:
+See [below](#docker) for installation instructions. Once Docker is installed, [fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone it locally, and enter its directory:
 
 ```bash
 $ git clone git@github.com:your_github_username/pulse-data.git
@@ -249,7 +249,7 @@ $ pipenv shell
 
 Finally, run `pytest`. If no tests fail, you are ready to develop!
 
-Using this Docker container, you can edit your local repository files and use `git` as usual within your local shell environment, but execute code and run tests within the Docker container's shell environment.
+Using this Docker container, you can edit your local repository files and use `git` as usual within your local shell environment, but execute code and run tests within the Docker container's shell environment. Depending on your IDE, you may need to install additional plugins to allow running tests in the container from the IDE.
 
 #### Google Cloud
 
@@ -274,6 +274,36 @@ with local_project_id_override(GCP_PROJECT_STAGING):
 ```
 
 Now the code run in the above context will interact directly with our staging services. Use conservatively & exercise caution!
+
+#### Terraform
+
+Run the following to install Terraform:
+```
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform
+```
+
+To test your installation, run:
+```
+terraform -chdir=recidiviz/tools/deploy/terraform init -backend-config "bucket=recidiviz-staging-tf-state"
+recidiviz/tools/deploy/terraform_plan.sh recidiviz-staging
+```
+
+If the above commands succeed, the installation was successful. For employees, see more information
+on running Terraform at go/terraform.
+
+#### Docker
+
+Docker is needed for deploying new versions of our applications.
+
+Follow these instructions to install Docker on Linux:
+
+- [Debian](https://docs.docker.com/install/linux/docker-ce/debian/#install-using-the-repository)
+- [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-repository)
+
+Go to [this page](https://www.docker.com/products/docker-desktop) to download Docker Desktop for Mac and Windows.
+
+Once installed, increase the memory available to Docker to ensure it has enough resources to build the container. On Docker Desktop, you can do this by going to Settings > Resources and increasing Memory to 4GB.
 
 #### Adding secrets
 
