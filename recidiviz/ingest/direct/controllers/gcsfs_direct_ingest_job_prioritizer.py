@@ -19,25 +19,30 @@ for a given region, given the desired file ordering.
 """
 
 import datetime
-from typing import List, Dict, Optional, Set
+from typing import Dict, List, Optional, Set
 
 import pytz
 
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
-    filename_parts_from_path,
-    GcsfsDirectIngestFileType,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsBucketPath,
+from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer import (
+    ExtractAndMergeJobPrioritizer,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    LegacyExtractAndMergeArgs,
+    filename_parts_from_path,
 )
 
 
-class GcsfsDirectIngestJobPrioritizer:
+# TODO(#9717): This class will be replaced by an implementation of
+#  ExtractAndMergeJobPrioritizer that looks at materialized ingest view results in BQ
+#  to select the next job.
+class GcsfsDirectIngestJobPrioritizer(
+    ExtractAndMergeJobPrioritizer[LegacyExtractAndMergeArgs]
+):
     """Class that handles logic for deciding which file should be processed next
     for a given directory, given the desired file ordering.
     """
@@ -55,24 +60,20 @@ class GcsfsDirectIngestJobPrioritizer:
         )
 
     def get_next_job_args(
-        self, date_str: Optional[str] = None
-    ) -> Optional[GcsfsIngestArgs]:
+        self,
+    ) -> Optional[LegacyExtractAndMergeArgs]:
         """Returns args for the next job to run based on the files currently
         in cloud storage.
-
-        Args:
-            date_str: (string) If not None, this function will only return jobs
-                for files uploaded on the specified date.
         """
-        next_file_path = self._get_next_valid_unprocessed_file_path(date_str)
+        next_file_path = self._get_next_valid_unprocessed_file_path()
         if not next_file_path:
             return None
 
-        return GcsfsIngestArgs(
+        return LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(tz=pytz.UTC), file_path=next_file_path
         )
 
-    def are_next_args_expected(self, next_args: GcsfsIngestArgs) -> bool:
+    def are_next_args_expected(self, next_args: LegacyExtractAndMergeArgs) -> bool:
         """Returns True if the provided args are the args we expect to run next,
         i.e. there are no other files with different file tags we expect to
         see uploaded on this day before we process the specified file.
@@ -105,21 +106,14 @@ class GcsfsDirectIngestJobPrioritizer:
         return self._get_expected_next_sort_key_prefix_for_day(date_str) is not None
 
     def _get_next_valid_unprocessed_file_path(
-        self, date_str: Optional[str]
+        self,
     ) -> Optional[GcsfsFilePath]:
         """Returns the path of the unprocessed file in the ingest cloud storage
         bucket that should be processed next.
         """
-        if date_str:
-            unprocessed_paths = self.fs.get_unprocessed_file_paths_for_day(
-                self.ingest_bucket_path,
-                date_str,
-                GcsfsDirectIngestFileType.INGEST_VIEW,
-            )
-        else:
-            unprocessed_paths = self.fs.get_unprocessed_file_paths(
-                self.ingest_bucket_path, GcsfsDirectIngestFileType.INGEST_VIEW
-            )
+        unprocessed_paths = self.fs.get_unprocessed_file_paths(
+            self.ingest_bucket_path, GcsfsDirectIngestFileType.INGEST_VIEW
+        )
 
         if not unprocessed_paths:
             return None

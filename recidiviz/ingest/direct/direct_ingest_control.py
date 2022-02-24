@@ -40,9 +40,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
-    GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
@@ -511,11 +511,11 @@ def process_job() -> Tuple[str, HTTPStatus]:
 
         if not ingest_args:
             raise DirectIngestError(
-                msg="process_job was called with no GcsfsIngestArgs.",
+                msg="process_job was called with no LegacyExtractAndMergeArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        if not isinstance(ingest_args, GcsfsIngestArgs):
+        if not isinstance(ingest_args, LegacyExtractAndMergeArgs):
             raise DirectIngestError(
                 msg=f"process_job was called with incorrect args type [{type(ingest_args)}].",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
@@ -542,7 +542,9 @@ def process_job() -> Tuple[str, HTTPStatus]:
                 raise e
 
             try:
-                controller.run_ingest_job_and_kick_scheduler_on_completion(ingest_args)
+                controller.run_extract_and_merge_job_and_kick_scheduler_on_completion(
+                    ingest_args
+                )
             except GCSPseudoLockAlreadyExists as e:
                 logging.warning(str(e))
                 return str(e), HTTPStatus.CONFLICT

@@ -34,6 +34,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     GcsfsFilePath,
 )
+from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.common.serialization import (
     attr_from_json_dict,
@@ -48,9 +49,10 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_STORAGE_SUBDIR,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    ExtractAndMergeArgs,
     GcsfsDirectIngestFileType,
-    GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
+    LegacyExtractAndMergeArgs,
     filename_parts_from_path,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
@@ -110,11 +112,14 @@ class BaseDirectIngestControllerForTests(BaseDirectIngestController):
         pass
 
     def _get_contents_handle(
-        self, args: GcsfsIngestArgs
-    ) -> Optional[LocalFileContentsHandle]:
+        self, args: ExtractAndMergeArgs
+    ) -> Optional[ContentsHandle]:
         handle = super()._get_contents_handle(args)
         if handle:
-            self.local_paths.add(handle.local_file_path)
+            # TODO(#9717): Once ingest view file elimination complete, we should never
+            #  have persisted local ingest files. Remove this check.
+            if isinstance(handle, LocalFileContentsHandle):
+                self.local_paths.add(handle.local_file_path)
         return handle
 
     def has_temp_paths_in_disk(self) -> bool:
@@ -155,7 +160,7 @@ class CrashingStateTestDirectIngestController(StateTestDirectIngestController):
     def get_file_tag_rank_list(self) -> List[str]:
         return ["tagC"]
 
-    def _run_ingest_job(self, args: GcsfsIngestArgs) -> bool:
+    def _run_ingest_job(self, args: ExtractAndMergeArgs) -> bool:
         raise Exception("insta-crash")
 
 
@@ -1918,6 +1923,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         run_task_queues_to_empty(controller)
 
+    # TODO(#9717): Create an analogous test for the BQ-based ExtractAndMergeArgs type.
     def test_serialize_gcsfs_ingest_args(self) -> None:
         now = datetime.datetime.now()
 
@@ -1926,7 +1932,7 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertTrue(now, now_converted)
 
-        args = GcsfsIngestArgs(
+        args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             file_path=GcsfsFilePath.from_absolute_path("foo/bar.csv"),
         )

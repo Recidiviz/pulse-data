@@ -21,11 +21,7 @@ from mock import patch
 from mock.mock import MagicMock, Mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.io.file_contents_handle import (
-    FileContentsHandle,
-    FileContentsRowType,
-    IoType,
-)
+from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.ingest.direct.regions.us_pa.us_pa_sftp_download_delegate import (
     UsPaSftpDownloadDelegate,
 )
@@ -43,7 +39,7 @@ class TestFakeGCSFileSystem(FakeGCSFileSystem):
     def upload_from_contents_handle_stream(
         self,
         path: GcsfsFilePath,
-        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        contents_handle: FileContentsHandle,
         content_type: str,
     ) -> None:
         return None

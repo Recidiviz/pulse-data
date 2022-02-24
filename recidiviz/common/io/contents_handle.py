@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,20 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines an abstract interface that can be used to access file contents."""
+"""Defines an abstract interface that can be used to access contents of a data source.
+"""
 import abc
-from contextlib import contextmanager
 from typing import Generic, Iterator, TypeVar
 
-from recidiviz.common.io.contents_handle import ContentsHandle, ContentsRowType
+# Type for a single row/chunk returned by the contents iterator.
+ContentsRowType = TypeVar("ContentsRowType")
 
-IoType = TypeVar("IoType")
 
-
-class FileContentsHandle(ContentsHandle, Generic[ContentsRowType, IoType]):
-    """Defines an abstract interface that can be used to access file contents."""
+class ContentsHandle(Generic[ContentsRowType]):
+    """Defines an abstract interface that can be used to access contents of a data
+    source.
+    """
 
     @abc.abstractmethod
-    @contextmanager
-    def open(self, mode: str = "r") -> Iterator[IoType]:
-        """Should be overridden by subclasses to return a way to open a file stream."""
+    def get_contents_iterator(self) -> Iterator[ContentsRowType]:
+        """Should be overridden by subclasses to return an iterator over contents of
+        the desired format. Will throw if the contents could not be read (i.e. if they
+        no longer exist).
+        """

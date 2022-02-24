@@ -36,9 +36,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
-    GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
@@ -263,7 +263,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
             queue_name="queue_name", task_names=[]
         )
 
-        gcsfs_args = GcsfsIngestArgs(
+        gcsfs_args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             file_path=self.ingest_view_file_path,
         )
@@ -282,7 +282,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
 
     def test_info_single_task(self) -> None:
         # Arrange
-        gcsfs_args = GcsfsIngestArgs(
+        gcsfs_args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             file_path=self.ingest_view_file_path,
         )
@@ -297,7 +297,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
                 f"projects/path/to/{full_task_name}",
             ],
         )
-        gcsfs_args = GcsfsIngestArgs(
+        gcsfs_args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             file_path=self.ingest_view_file_path,
         )
@@ -320,7 +320,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
 
     def test_info_tasks_both_instances(self) -> None:
         # Arrange
-        gcsfs_args = GcsfsIngestArgs(
+        gcsfs_args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             file_path=self.ingest_view_file_path,
         )
@@ -344,7 +344,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
                 for full_task_name in full_task_names
             ],
         )
-        gcsfs_args = GcsfsIngestArgs(
+        gcsfs_args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             file_path=self.ingest_view_file_path,
         )
@@ -472,13 +472,13 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             ),
         )
 
-        ingest_args = GcsfsIngestArgs(
+        ingest_args = LegacyExtractAndMergeArgs(
             datetime.datetime(year=2019, month=7, day=20),
             file_path=file_path,
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "GcsfsIngestArgs",
+            "args_type": "LegacyExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"
@@ -531,13 +531,13 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             ),
         )
 
-        ingest_args = GcsfsIngestArgs(
+        ingest_args = LegacyExtractAndMergeArgs(
             datetime.datetime(year=2019, month=7, day=20),
             file_path=file_path,
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "GcsfsIngestArgs",
+            "args_type": "LegacyExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"
@@ -592,13 +592,13 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             ),
         )
 
-        ingest_args = GcsfsIngestArgs(
+        ingest_args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime(year=2019, month=7, day=20),
             file_path=file_path,
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "GcsfsIngestArgs",
+            "args_type": "LegacyExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"

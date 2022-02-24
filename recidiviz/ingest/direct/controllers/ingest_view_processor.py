@@ -23,12 +23,11 @@ import abc
 from typing import List, cast
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
+    ExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
-    FileFormat,
     IngestViewFileParser,
 )
 from recidiviz.persistence import persistence
@@ -47,8 +46,8 @@ class IngestViewProcessor:
     @abc.abstractmethod
     def parse_and_persist_contents(
         self,
-        args: GcsfsIngestArgs,
-        contents_handle: LocalFileContentsHandle,
+        args: ExtractAndMergeArgs,
+        contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
         pass
@@ -65,14 +64,13 @@ class IngestViewProcessorImpl(IngestViewProcessor):
 
     def parse_and_persist_contents(
         self,
-        args: GcsfsIngestArgs,
-        contents_handle: LocalFileContentsHandle,
+        args: ExtractAndMergeArgs,
+        contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
         parsed_entities = self.ingest_view_file_parser.parse(
             file_tag=args.file_tag,
             contents_handle=contents_handle,
-            file_format=FileFormat.CSV,
         )
 
         if all(isinstance(e, state_entities.StatePerson) for e in parsed_entities):

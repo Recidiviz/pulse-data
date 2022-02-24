@@ -45,11 +45,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
     GcsfsPath,
 )
-from recidiviz.common.io.file_contents_handle import (
-    FileContentsHandle,
-    FileContentsRowType,
-    IoType,
-)
+from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -272,7 +268,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def upload_from_contents_handle_stream(
         self,
         path: GcsfsFilePath,
-        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        contents_handle: FileContentsHandle,
         content_type: str,
     ) -> None:
         return self.gcs_file_system.upload_from_contents_handle_stream(
@@ -342,22 +338,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         """
         return self._ls_with_file_prefix(
             directory_path, DIRECT_INGEST_UNPROCESSED_PREFIX, file_type_filter
-        )
-
-    def get_unprocessed_file_paths_for_day(
-        self,
-        directory_path: GcsfsDirectoryPath,
-        date_str: str,
-        file_type_filter: Optional[GcsfsDirectIngestFileType],
-    ) -> List[GcsfsFilePath]:
-        """Returns all paths in the given directory that were uploaded on the
-        day specified in date_str that have yet to be processed. If |file_type_filter| is specified, returns only files
-        with that file type and throws if encountering a file with UNSPECIFIED file type.
-        """
-        return self._ls_with_file_prefix(
-            directory_path,
-            f"{DIRECT_INGEST_UNPROCESSED_PREFIX}_{date_str}",
-            file_type_filter,
         )
 
     def get_processed_file_paths(
