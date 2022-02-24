@@ -25,7 +25,6 @@ from typing import List, Sequence
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
-    FileFormat,
     IngestViewFileParser,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
@@ -120,7 +119,6 @@ class StateIngestViewParserTestBase:
         parsed_output = parser.parse(
             file_tag=file_tag,
             contents_handle=LocalFileContentsHandle(fixture_path, cleanup_file=False),
-            file_format=FileFormat.CSV,
         )
 
         if debug:

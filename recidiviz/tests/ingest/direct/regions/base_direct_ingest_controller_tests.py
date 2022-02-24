@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestViewExportArgs,
+    LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
@@ -272,11 +273,15 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 ingest_file_export_job_args
             )
         else:
-            fixture_util.add_direct_ingest_path(
-                self.controller.fs.gcs_file_system,
-                args.file_path,
-                region_code=self.controller.region_code(),
-            )
+            if isinstance(args, LegacyExtractAndMergeArgs):
+                fixture_util.add_direct_ingest_path(
+                    self.controller.fs.gcs_file_system,
+                    args.file_path,
+                    region_code=self.controller.region_code(),
+                )
+            else:
+                # TODO(#9717): Implement for BQ-based extract and merge args.
+                raise ValueError(f"Unexpected args type: [{type(args)}]")
 
         # pylint:disable=protected-access
         fixture_contents_handle = self.controller._get_contents_handle(args)

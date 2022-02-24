@@ -42,6 +42,7 @@ from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
@@ -87,7 +88,7 @@ def get_filename(blob_name: str) -> str:
 
 def create_table(
     bq_client: BigQueryClientImpl,
-    local_file: LocalFileContentsHandle,
+    local_file: ContentsHandle,
     dataset_id: str,
     dataset_ref: str,
     table_id: str,

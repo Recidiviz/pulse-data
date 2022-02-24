@@ -31,7 +31,6 @@ from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
-    FileFormat,
     IngestViewFileParser,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
@@ -226,7 +225,6 @@ class IngestViewFileParserTest(unittest.TestCase):
                 ),
                 cleanup_file=False,
             ),
-            file_format=FileFormat.CSV,
         )
 
     def _run_parse_manifest_for_tag(

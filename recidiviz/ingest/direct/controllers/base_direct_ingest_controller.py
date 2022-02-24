@@ -46,7 +46,7 @@ from recidiviz.common.ingest_metadata import (
     LegacyStateAndJailsIngestMetadata,
     SystemLevel,
 )
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_SUFFIX,
     DirectIngestGCSFileSystem,
@@ -58,14 +58,18 @@ from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manage
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
+from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer import (
+    ExtractAndMergeJobPrioritizer,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    ExtractAndMergeArgs,
     GcsfsDirectIngestFileType,
-    GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
     filename_parts_from_path,
     gcsfs_direct_ingest_storage_directory_path_for_region,
     gcsfs_direct_ingest_temporary_output_directory_path,
@@ -177,10 +181,15 @@ class BaseDirectIngestController:
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
 
-        self.file_prioritizer = GcsfsDirectIngestJobPrioritizer(
-            self.fs,
-            self.ingest_bucket_path,
-            self.get_file_tag_rank_list(),
+        # TODO(#9717): We will need to select the prioritizer based on where we are
+        #  reading ingest view results from (BQ vs GCS). Eventually this will always be
+        #  set to the BQ-based implementation.
+        self.job_prioritizer: ExtractAndMergeJobPrioritizer = (
+            GcsfsDirectIngestJobPrioritizer(
+                self.fs,
+                self.ingest_bucket_path,
+                self.get_file_tag_rank_list(),
+            )
         )
 
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
@@ -229,9 +238,14 @@ class BaseDirectIngestController:
     def region_code(cls) -> str:
         pass
 
+    # TODO(#9717): Rename this to something like `get_ingest_view_processing_order`
+    #  since ingest view results will soon no longer be file-based.
     @abc.abstractmethod
     def get_file_tag_rank_list(self) -> List[str]:
-        pass
+        """Returns the list of ingest view names for ingest views that are shipped in
+        the current environment and whose results can be processed and commiteed to
+        our central data model.
+        """
 
     @property
     def system_level(self) -> SystemLevel:
@@ -342,7 +356,7 @@ class BaseDirectIngestController:
 
         if not next_job_args:
             logging.info(
-                "No more jobs to run for region [%s] - returning",
+                "No more extract and merge to run for region [%s] - returning",
                 self.region.region_code,
             )
             return
@@ -351,7 +365,7 @@ class BaseDirectIngestController:
             self.region_code(), next_job_args
         ):
             logging.info(
-                "Already have task queued for next job [%s] - returning.",
+                "Already have task queued for next extract and merge job [%s] - returning.",
                 next_job_args.job_tag(),
             )
             return
@@ -362,12 +376,19 @@ class BaseDirectIngestController:
             )
             return
 
-        logging.info("Creating cloud task to run job [%s]", next_job_args.job_tag())
-        self.cloud_task_manager.create_direct_ingest_process_job_task(
-            region=self.region,
-            ingest_args=next_job_args,
+        logging.info(
+            "Creating cloud task to run extract and merge job [%s]",
+            next_job_args.job_tag(),
         )
-        self._on_job_scheduled(next_job_args)
+
+        # TODO(#9717): Implement queueing for BQ-based extract and merge job.
+        if isinstance(next_job_args, LegacyExtractAndMergeArgs):
+            self.cloud_task_manager.create_direct_ingest_process_job_task(
+                region=self.region,
+                ingest_args=next_job_args,
+            )
+        else:
+            raise ValueError(f"Unexpected args type: [{type(next_job_args)}]")
 
     def _schedule_any_pre_ingest_tasks(self) -> bool:
         """Schedules any tasks related to SQL preprocessing of new files in preparation
@@ -486,33 +507,34 @@ class BaseDirectIngestController:
 
         return did_schedule
 
-    def _get_next_job_args(self) -> Optional[GcsfsIngestArgs]:
+    def _get_next_job_args(self) -> Optional[ExtractAndMergeArgs]:
         """Returns args for the next ingest job, or None if there is nothing to process."""
-        args = self.file_prioritizer.get_next_job_args()
+        args = self.job_prioritizer.get_next_job_args()
 
         if not args:
             return None
 
-        discovered = self.file_metadata_manager.has_ingest_view_file_been_discovered(
-            args.file_path
-        )
-
-        if not discovered:
-            # If the file path has not actually been discovered by the controller yet, it likely was just added and a
-            # subsequent call to handle_files will register it and trigger another call to this function so we can
-            # schedule the appropriate job.
-            logging.info(
-                "Found args [%s] for a file that has not been discovered by the metadata manager yet - not scheduling.",
-                args,
+        # TODO(#9717): We will not need this logic anymore once we've migrated to a
+        #  BQ-based implementation, but we may need to add other checks to manage
+        #  race conditions between results generation and processing.
+        if isinstance(args, LegacyExtractAndMergeArgs):
+            discovered = (
+                self.file_metadata_manager.has_ingest_view_file_been_discovered(
+                    args.file_path
+                )
             )
-            return None
+
+            if not discovered:
+                # If the file path has not actually been discovered by the controller yet, it likely was just added and a
+                # subsequent call to handle_files will register it and trigger another call to this function so we can
+                # schedule the appropriate job.
+                logging.info(
+                    "Found args [%s] for a file that has not been discovered by the metadata manager yet - not scheduling.",
+                    args,
+                )
+                return None
 
         return args
-
-    def _on_job_scheduled(self, ingest_args: GcsfsIngestArgs) -> None:
-        """Called from the scheduler queue when an individual direct ingest job
-        is scheduled.
-        """
 
     # =================== #
     # SINGLE JOB RUN CODE #
@@ -526,8 +548,8 @@ class BaseDirectIngestController:
         will de facto relinquish their hold on the acquired lock."""
         return 3600
 
-    def run_ingest_job_and_kick_scheduler_on_completion(
-        self, args: GcsfsIngestArgs
+    def run_extract_and_merge_job_and_kick_scheduler_on_completion(
+        self, args: ExtractAndMergeArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
@@ -554,11 +576,11 @@ class BaseDirectIngestController:
             self.kick_scheduler(just_finished_job=True)
             logging.info("Done running task. Returning.")
 
-    def _run_ingest_job(self, args: GcsfsIngestArgs) -> bool:
+    def _run_ingest_job(self, args: ExtractAndMergeArgs) -> bool:
         """
-        Runs the full ingest process for this controller - reading and parsing
-        raw input data, transforming it to our schema, then writing to the
-        database.
+        Runs the full extract and merge process for this controller - reading and
+        parsing ingest view query results, transforming it to Python objects that model
+        our schema, then writing to the database.
         Returns:
             True if we should try to schedule the next job on completion. False,
              otherwise.
@@ -568,40 +590,52 @@ class BaseDirectIngestController:
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", args.job_tag())
 
-        if not self.fs.exists(args.file_path):
+        if not self._contents_exist_for_args(args):
             logging.warning(
-                "Path [%s] does not exist - returning.",
-                args.file_path.abs_path(),
+                "Contents does not exist for ingest run [%s] - returning.",
+                args.job_tag(),
             )
             return False
 
-        if not self._can_proceed_with_ingest_for_contents(args):
+        if isinstance(args, LegacyExtractAndMergeArgs):
+            # TODO(#9717): We should be able to delete this check once we're reading
+            #   chunks of data directly from BigQuery.
+            if not self._ingest_view_file_contents_meet_scale_requirements(args):
+                logging.warning(
+                    "Cannot proceed with contents for ingest run [%s] - returning.",
+                    args.job_tag(),
+                )
+                # If we get here, we've failed to properly split a file picked up
+                # by the scheduler. We don't want to schedule a new job after
+                # returning here, otherwise we'll get ourselves in a loop where we
+                # continually try to schedule this file.
+                return False
+
+        contents_handle = self._get_contents_handle(args)
+
+        if contents_handle is None:
             logging.warning(
-                "Cannot proceed with contents for ingest run [%s] - returning.",
+                "Failed to get contents handle for ingest run [%s] - returning.",
                 args.job_tag(),
             )
-            # If we get here, we've failed to properly split a file picked up
-            # by the scheduler. We don't want to schedule a new job after
-            # returning here, otherwise we'll get ourselves in a loop where we
-            # continually try to schedule this file.
-            return False
+            # If the file no-longer exists, we do want to kick the scheduler
+            # again to pick up the next file to run. We expect this to happen
+            # occasionally as a race when the scheduler picks up a file before
+            # it has been properly moved.
+            return True
 
         logging.info("Successfully read contents for ingest run [%s]", args.job_tag())
 
-        if not self._are_contents_empty(args):
-            contents_handle = self._get_contents_handle(args)
+        # TODO(#9717): Implement ability to check for empty BQ-based ingest view
+        #  results.
+        if isinstance(args, LegacyExtractAndMergeArgs):
+            contents_are_empty = self._are_contents_empty(args)
+        else:
+            raise ValueError(
+                f"Unsupported extract and merge args type: [{type(args)}]."
+            )
 
-            if contents_handle is None:
-                logging.warning(
-                    "Failed to get contents handle for ingest run [%s] - returning.",
-                    args.job_tag(),
-                )
-                # If the file no-longer exists, we do want to kick the scheduler
-                # again to pick up the next file to run. We expect this to happen
-                # occasionally as a race when the scheduler picks up a file before
-                # it has been properly moved.
-                return True
-
+        if not contents_are_empty:
             self._parse_and_persist_contents(args, contents_handle)
         else:
             logging.warning(
@@ -621,7 +655,12 @@ class BaseDirectIngestController:
 
         return True
 
-    def get_ingest_view_processor(self, args: GcsfsIngestArgs) -> IngestViewProcessor:
+    def get_ingest_view_processor(
+        self, args: ExtractAndMergeArgs
+    ) -> IngestViewProcessor:
+        """Returns the appropriate ingest view processor for this extract and merge
+        job.
+        """
         yaml_mappings_dict = YAMLDict.from_path(
             yaml_mappings_filepath(self.region, args.file_tag)
         )
@@ -660,7 +699,7 @@ class BaseDirectIngestController:
 
     @trace.span
     def _parse_and_persist_contents(
-        self, args: GcsfsIngestArgs, contents_handle: LocalFileContentsHandle
+        self, args: ExtractAndMergeArgs, contents_handle: ContentsHandle
     ) -> None:
         """
         Runs the full ingest process for this controller for files with
@@ -681,7 +720,7 @@ class BaseDirectIngestController:
 
         logging.info("Successfully persisted for ingest run [%s]", args.job_tag())
 
-    def _get_ingest_metadata(self, args: GcsfsIngestArgs) -> IngestMetadata:
+    def _get_ingest_metadata(self, args: ExtractAndMergeArgs) -> IngestMetadata:
         if isinstance(self, LegacyIngestViewProcessorDelegate):
             # TODO(#8905): Remove this block once we have migrated all direct ingest
             #  states to ingest mappings v2.
@@ -707,24 +746,26 @@ class BaseDirectIngestController:
         )
 
     def _get_contents_handle(
-        self, args: GcsfsIngestArgs
-    ) -> Optional[LocalFileContentsHandle]:
-        """Returns a handle to the contents allows us to iterate over the contents and
-        also manages cleanup of resources once we are done with the contents.
+        self, args: ExtractAndMergeArgs
+    ) -> Optional[ContentsHandle]:
+        """Returns a handle to the ingest view contents allows us to iterate over the
+        contents and also manages cleanup of resources once we are done with the
+        contents.
 
         Will return None if the contents could not be read (i.e. if they no
         longer exist).
         """
-        return self._get_contents_handle_from_path(args.file_path)
+        if isinstance(args, LegacyExtractAndMergeArgs):
+            return self.fs.download_to_temp_file(args.file_path)
 
-    def _get_contents_handle_from_path(
-        self, path: GcsfsFilePath
-    ) -> Optional[LocalFileContentsHandle]:
-        return self.fs.download_to_temp_file(path)
+        # TODO(#9717): Implement for BQ-based ingest view results.
+        raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
 
+    # TODO(#9717): We should be able to delete this function once we're reading
+    #   chunks of data directly from BigQuery.
     def _are_contents_empty(
         self,
-        args: GcsfsIngestArgs,
+        args: LegacyExtractAndMergeArgs,
     ) -> bool:
         """Returns true if the CSV file is empty, i.e. it contains no non-header
         rows.
@@ -735,28 +776,54 @@ class BaseDirectIngestController:
         )
         return delegate.df is None
 
-    def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
-        """Does necessary cleanup once file contents have been successfully persisted to
-        Postgres.
+    def _do_cleanup(self, args: ExtractAndMergeArgs) -> None:
+        """Does necessary cleanup once ingest view contents have been successfully
+        persisted to Postgres.
         """
-        self.fs.mv_path_to_processed_path(args.file_path)
+        if isinstance(args, LegacyExtractAndMergeArgs):
+            self.fs.mv_path_to_processed_path(args.file_path)
 
-        self.file_metadata_manager.mark_ingest_view_file_as_processed(args.file_path)
+            self.file_metadata_manager.mark_ingest_view_file_as_processed(
+                args.file_path
+            )
 
-        parts = filename_parts_from_path(args.file_path)
-        self._move_processed_files_to_storage_as_necessary(
-            last_processed_date_str=parts.date_str
-        )
+            parts = filename_parts_from_path(args.file_path)
+            self._move_processed_files_to_storage_as_necessary(
+                last_processed_date_str=parts.date_str
+            )
+            return
 
-    def _can_proceed_with_ingest_for_contents(self, args: GcsfsIngestArgs) -> bool:
+        # TODO(#9717): Implement clean up for BQ-based ingest view results.
+        raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
+
+    def _contents_exist_for_args(self, args: ExtractAndMergeArgs) -> bool:
+        if isinstance(args, LegacyExtractAndMergeArgs):
+            if not self.fs.exists(args.file_path):
+                logging.warning(
+                    "Path [%s] does not exist - returning.",
+                    args.file_path.abs_path(),
+                )
+                return False
+            return True
+
+        # TODO(#9717): Implement clean up for BQ-based ingest view results.
+        raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
+
+    # TODO(#9717): We should be able to delete this check once we're reading
+    #   chunks of data directly from BigQuery.
+    def _ingest_view_file_contents_meet_scale_requirements(
+        self, args: LegacyExtractAndMergeArgs
+    ) -> bool:
         """Given a pointer to the contents, returns whether the controller can continue
-        ingest.
+        ingest for a file of this size.
         """
         parts = filename_parts_from_path(args.file_path)
         return self._are_contents_empty(args) or not self._must_split_contents(
             parts.file_type, args.file_path
         )
 
+    # TODO(#9717): We should be able to delete this check once we're reading
+    #   chunks of data directly from BigQuery.
     def _must_split_contents(
         self, file_type: GcsfsDirectIngestFileType, path: GcsfsFilePath
     ) -> bool:
@@ -767,6 +834,8 @@ class BaseDirectIngestController:
             self.ingest_file_split_line_limit, path
         )
 
+    # TODO(#9717): We should be able to delete this check once we're reading
+    #   chunks of data directly from BigQuery.
     def _file_meets_file_line_limit(self, line_limit: int, path: GcsfsFilePath) -> bool:
         """Returns True if the file meets the expected line limit, false otherwise."""
         delegate = ReadOneGcsfsCsvReaderDelegate()
@@ -787,23 +856,33 @@ class BaseDirectIngestController:
         # size, file meets line limit.
         return len(delegate.df) <= line_limit
 
+    # TODO(#9717): This whole function will be deleted once we have migrated to BQ-based
+    #   ingest view results processing.
     def _move_processed_files_to_storage_as_necessary(
         self, last_processed_date_str: str
     ) -> None:
         """Moves files that have already been ingested/processed, up to and including the given date, into storage,
         if there is nothing more left to ingest/process, i.e. we are not expecting more files."""
-        next_args = self.file_prioritizer.get_next_job_args()
+
+        if not isinstance(self.job_prioritizer, GcsfsDirectIngestJobPrioritizer):
+            raise ValueError(
+                f"Unexpected job_prioritizer type: [{self.job_prioritizer}]"
+            )
+
+        next_args = self.job_prioritizer.get_next_job_args()
 
         should_move_last_processed_date = False
         if not next_args:
             are_more_jobs_expected = (
-                self.file_prioritizer.are_more_jobs_expected_for_day(
+                self.job_prioritizer.are_more_jobs_expected_for_day(
                     last_processed_date_str
                 )
             )
             if not are_more_jobs_expected:
                 should_move_last_processed_date = True
         else:
+            if not isinstance(next_args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{type(next_args)}]")
             next_date_str = filename_parts_from_path(next_args.file_path).date_str
             if next_date_str < last_processed_date_str:
                 logging.info(
@@ -1034,6 +1113,8 @@ class BaseDirectIngestController:
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
         self.kick_scheduler(just_finished_job=True)
 
+    # TODO(#9717): This function can be deleted once ingest views are materialized in
+    #   BQ and we no longer need to export the results to files.
     def do_ingest_view_export(
         self, ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> None:

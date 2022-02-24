@@ -19,12 +19,12 @@
 """
 import csv
 import os
-from enum import Enum, auto
 from typing import Dict, Iterator, List, Set, Tuple
 
 from more_itertools import one
 
 from recidiviz.common.common_utils import bidirectional_set_difference
+from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
@@ -40,15 +40,12 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
-class FileFormat(Enum):
-    CSV = auto()
-
-
 # This key tracks the version number for the actual mappings manifest structure,
 # allowing us to gate any breaking changes in the file syntax etc.
 MANIFEST_LANGUAGE_VERSION_KEY = "manifest_language"
 
 
+# TODO(#9717): Rename this class to `IngestViewResultsParser`.
 class IngestViewFileParser:
     """Class that parses ingest view file contents into entities based on the manifest
     file for this ingest view.
@@ -58,20 +55,16 @@ class IngestViewFileParser:
         self.delegate = delegate
 
     @staticmethod
-    def _row_iterator(
-        contents_handle: LocalFileContentsHandle, file_format: FileFormat
-    ) -> Iterator[Dict]:
-        if file_format == FileFormat.CSV:
+    def _row_iterator(contents_handle: ContentsHandle) -> Iterator[Dict]:
+        if isinstance(contents_handle, LocalFileContentsHandle):
             return csv.DictReader(contents_handle.get_contents_iterator())
-        raise ValueError(f"Unsupported file format: [{file_format}].")
+        # TODO(#9717): Add support for reading from a contents handle that pulls results
+        #  from BigQuery.
+        raise ValueError(
+            f"Unsupported contents handle type: [{type(contents_handle)}]."
+        )
 
-    def parse(
-        self,
-        *,
-        file_tag: str,
-        contents_handle: LocalFileContentsHandle,
-        file_format: FileFormat,
-    ) -> List[Entity]:
+    def parse(self, *, file_tag: str, contents_handle: ContentsHandle) -> List[Entity]:
         """Parses ingest view file contents into entities based on the manifest file for
         this ingest view.
         """
@@ -79,7 +72,7 @@ class IngestViewFileParser:
         manifest_path = self.delegate.get_ingest_view_manifest_path(file_tag)
         output_manifest, expected_input_columns = self.parse_manifest(manifest_path)
         result = []
-        for i, row in enumerate(self._row_iterator(contents_handle, file_format)):
+        for i, row in enumerate(self._row_iterator(contents_handle)):
             self._validate_row_columns(i, row, expected_input_columns)
             output_tree = output_manifest.build_from_row(row)
             if not output_tree:

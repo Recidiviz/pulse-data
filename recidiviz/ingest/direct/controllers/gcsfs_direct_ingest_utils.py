@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Util functions and types used by GCSFileSystem Direct Ingest code."""
-
+import abc
 import datetime
 import os
 import re
@@ -80,7 +80,9 @@ _FILENAME_SUFFIX_REGEX = re.compile(
     r".*(_file_split(_size(?P<file_split_size_str>\d+))?)$"
 )
 
-
+# TODO(#9717): We should be able to eliminate this enum entirely once we have eliminated
+#  file-based materialization for ingest view results. The only type of file in the
+#  GCS ingest buckets will be raw data files.
 class GcsfsDirectIngestFileType(Enum):
     """Denotes the type of a file encountered by the BaseDirectIngestController. Files will have their type added to
     the normalized name and this type will be used to determine how to handle the file (import to BigQuery vs ingest
@@ -90,6 +92,8 @@ class GcsfsDirectIngestFileType(Enum):
     # Raw data received directly from state
     RAW_DATA = "raw"
 
+    # TODO(#9717): Usages of this enum value should be deleted as part of the work to
+    #  migrate ingest view query materialization to BQ.
     # Ingest-ready file
     INGEST_VIEW = "ingest_view"
 
@@ -142,8 +146,40 @@ class GcsfsFilenameParts:
 
 
 @attr.s(frozen=True)
-class GcsfsIngestArgs(CloudTaskArgs):
+class ExtractAndMergeArgs(CloudTaskArgs):
+    """Arguments for a task that extracts Python schema objects from the row-based
+    results of an ingest view query, then merges those schema objects into our central
+    data model.
+    """
+
+    # The time this extract and merge task was scheduled.
     ingest_time: datetime.datetime = attr.ib()
+
+    @abc.abstractmethod
+    def task_id_tag(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def ingest_instance(self) -> DirectIngestInstance:
+        pass
+
+    @abc.abstractmethod
+    def job_tag(self) -> str:
+        """Returns a (short) string tag to identify an ingest run in logs."""
+
+    # TODO(#9717): Rename this to ingest_view_name.
+    @property
+    @abc.abstractmethod
+    def file_tag(self) -> str:
+        pass
+
+
+# TODO(#9717): Eliminate all usages of this class in favor of a non-file-based
+#  implementation of ExtractAndMergeArgs.
+@attr.s(frozen=True)
+class LegacyExtractAndMergeArgs(ExtractAndMergeArgs):
+    """The legacy argument type for the persist step of ingest."""
+
     file_path: GcsfsFilePath = attr.ib()
 
     def task_id_tag(self) -> str:
@@ -165,6 +201,7 @@ class GcsfsIngestArgs(CloudTaskArgs):
             f"{region_code.lower()}/{self.file_path.file_name}:" f"{self.ingest_time}"
         )
 
+    # TODO(#9717): Rename this to ingest_view_name.
     @property
     def file_tag(self) -> str:
         return filename_parts_from_path(self.file_path).file_tag
