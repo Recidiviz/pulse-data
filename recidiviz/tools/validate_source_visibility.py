@@ -32,28 +32,10 @@ from typing import Dict, Iterable, List, Optional, Set
 import attr
 import pygtrie
 
-from recidiviz.calculator.pipeline.metrics.incarceration import (
-    pipeline as incarceration_pipeline,
-)
-from recidiviz.calculator.pipeline.metrics.program import pipeline as program_pipeline
-from recidiviz.calculator.pipeline.metrics.recidivism import (
-    pipeline as recidivism_pipeline,
-)
-from recidiviz.calculator.pipeline.metrics.supervision import (
-    pipeline as supervision_pipeline,
-)
-from recidiviz.calculator.pipeline.metrics.violation import (
-    pipeline as violation_pipeline,
+from recidiviz.tools.pipeline_launch_util import (
+    collect_all_pipeline_run_delegate_modules,
 )
 from recidiviz.vendor.modulefinder import modulefinder
-
-PIPELINES = {
-    incarceration_pipeline,
-    program_pipeline,
-    recidivism_pipeline,
-    supervision_pipeline,
-    violation_pipeline,
-}
 
 
 def make_module_matcher(modules: Iterable[str]) -> pygtrie.PrefixSet:
@@ -213,7 +195,7 @@ def main() -> int:
     # TODO(#6861): Support enforcing which external packages can be used as well.
     success = True
 
-    for pipeline in PIPELINES:
+    for pipeline in collect_all_pipeline_run_delegate_modules():
         if pipeline.__file__ is None:
             raise ValueError(f"No file associated with {pipeline}.")
         success &= check_dependencies_for_entrypoint(

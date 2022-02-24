@@ -25,13 +25,20 @@ from recidiviz.calculator.pipeline.normalization.comprehensive import (
     entity_normalizer,
     pipeline,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateEntity,
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateProgramAssignment,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -39,6 +46,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolationResponse,
+)
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalized_entities_utils_test import (
+    get_normalized_violation_tree,
+    get_violation_tree,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
@@ -76,9 +87,7 @@ class TestNormalizeEntities(unittest.TestCase):
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         state_code_override: Optional[str] = None,
-        # TODO(#10724): Change this to Sequence[NormalizedStateEntity] once the
-        #  conversion to Normalized entities is built
-    ) -> Dict[str, Sequence[Entity]]:
+    ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
 
         state_specific_delegate_patcher = mock.patch(
@@ -109,32 +118,94 @@ class TestNormalizeEntities(unittest.TestCase):
         return self.entity_normalizer.normalize_entities(all_kwargs)
 
     def test_normalize_entities(self) -> None:
-        normalized_ips = deepcopy(self.full_graph_person.incarceration_periods)
+        normalized_ips: List[NormalizedStateIncarcerationPeriod] = []
 
-        for ip in normalized_ips:
-            ip.specialized_purpose_for_incarceration = (
-                StateSpecializedPurposeForIncarceration.GENERAL
+        for index, ip in enumerate(self.full_graph_person.incarceration_periods):
+            normalized_ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+                **{
+                    **ip.__dict__,
+                    **{
+                        "specialized_purpose_for_incarceration": StateSpecializedPurposeForIncarceration.GENERAL,
+                        "sequence_num": index,
+                    },
+                }
             )
 
-        normalized_sps = deepcopy(self.full_graph_person.supervision_periods)
+            normalized_ips.append(normalized_ip)
 
-        normalized_vrs = deepcopy(self.violation_responses)
+        normalized_sps: List[NormalizedStateSupervisionPeriod] = []
 
-        normalized_pas = deepcopy(self.full_graph_person.program_assignments)
+        for index, sp in enumerate(self.full_graph_person.supervision_periods):
+            normalized_case_type_entries: Sequence[
+                NormalizedStateSupervisionCaseTypeEntry
+            ] = [
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    **{
+                        field: value
+                        for field, value in cte.__dict__.items()
+                        if field != "supervision_period"
+                    }
+                )
+                for cte in sp.case_type_entries
+            ]
+
+            sp_copy = deepcopy(sp)
+            sp_copy.case_type_entries = []
+            normalized_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+                **{
+                    **{
+                        field: value
+                        for field, value in sp_copy.__dict__.items()
+                        if field not in ("supervising_officer", "case_type_entries")
+                    },
+                    **{
+                        "sequence_num": index,
+                        "case_type_entries": normalized_case_type_entries,
+                    },
+                }
+            )
+
+            normalized_sps.append(normalized_sp)
+
+            for cte in normalized_case_type_entries:
+                cte.supervision_period = normalized_sp
+
+        normalized_pas: List[NormalizedStateProgramAssignment] = []
+
+        for index, pa in enumerate(self.full_graph_person.program_assignments):
+            normalized_pa = NormalizedStateProgramAssignment.new_with_defaults(
+                **{
+                    **{
+                        field: value
+                        for field, value in pa.__dict__.items()
+                        if field != "referring_agent"
+                    },
+                    **{
+                        "sequence_num": index,
+                    },
+                }
+            )
+
+            normalized_pas.append(normalized_pa)
 
         normalized_entities = self._run_normalize_entities(
             incarceration_periods=self.full_graph_person.incarceration_periods,
             supervision_periods=self.full_graph_person.supervision_periods,
-            violation_responses=self.violation_responses,
+            violation_responses=get_violation_tree().supervision_violation_responses,
             program_assignments=self.full_graph_person.program_assignments,
         )
 
-        # TODO(#10724): Update this expected output once the conversion to Normalized
-        #  entities is built
-        expected_normalized_entities: Dict[str, Sequence[Entity]] = {
+        # For mypy
+        normalized_responses = [
+            response
+            for response in get_normalized_violation_tree().supervision_violation_responses
+            if isinstance(response, NormalizedStateSupervisionViolationResponse)
+        ]
+
+        expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {
             StateIncarcerationPeriod.__name__: normalized_ips,
             StateSupervisionPeriod.__name__: normalized_sps,
-            StateSupervisionViolationResponse.__name__: normalized_vrs,
+            StateSupervisionViolationResponse.__name__: normalized_responses,
             StateProgramAssignment.__name__: normalized_pas,
         }
 
@@ -144,30 +215,41 @@ class TestNormalizeEntities(unittest.TestCase):
     def test_normalize_entities_missing_entities(self) -> None:
         """Tests that calling normalize_entities will still work even when a person
         doesn't have instances of all of the entities that get normalized."""
-        normalized_ips = deepcopy(self.full_graph_person.incarceration_periods)
+        normalized_ips: List[NormalizedStateIncarcerationPeriod] = []
 
-        for ip in normalized_ips:
-            ip.specialized_purpose_for_incarceration = (
-                StateSpecializedPurposeForIncarceration.GENERAL
+        for index, ip in enumerate(self.full_graph_person.incarceration_periods):
+            normalized_ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+                **{
+                    **ip.__dict__,
+                    **{
+                        "specialized_purpose_for_incarceration": StateSpecializedPurposeForIncarceration.GENERAL,
+                        "sequence_num": index,
+                    },
+                }
             )
 
-        normalized_vrs = deepcopy(self.violation_responses)
+            normalized_ips.append(normalized_ip)
 
         normalized_entities = self._run_normalize_entities(
             incarceration_periods=self.full_graph_person.incarceration_periods,
             supervision_periods=None,
-            violation_responses=self.violation_responses,
+            violation_responses=get_violation_tree().supervision_violation_responses,
             program_assignments=None,
         )
 
-        # TODO(#10724): Update this expected output once the conversion to Normalized
-        #  entities is built
-        expected_normalized_entities: Dict[str, Sequence[Entity]] = {
+        # For mypy
+        normalized_responses = [
+            response
+            for response in get_normalized_violation_tree().supervision_violation_responses
+            if isinstance(response, NormalizedStateSupervisionViolationResponse)
+        ]
+
+        expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {
             StateIncarcerationPeriod.__name__: normalized_ips,
             StateSupervisionPeriod.__name__: [],
-            StateSupervisionViolationResponse.__name__: normalized_vrs,
+            StateSupervisionViolationResponse.__name__: normalized_responses,
             StateProgramAssignment.__name__: [],
         }
 
-        for entity_name, entities in normalized_entities.items():
-            self.assertEqual(expected_normalized_entities[entity_name], entities)
+        for entity_name, entity_list in normalized_entities.items():
+            self.assertEqual(expected_normalized_entities[entity_name], entity_list)

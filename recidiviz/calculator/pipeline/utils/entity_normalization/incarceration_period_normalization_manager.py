@@ -19,12 +19,18 @@ that they are ready to be used in pipeline calculations."""
 import logging
 from copy import deepcopy
 from datetime import date
-from typing import Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -1206,3 +1212,34 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             updated_periods.append(ip)
 
         return updated_periods
+
+    @classmethod
+    def convert_ips_to_normalized_ips(
+        cls,
+        incarceration_periods: List[StateIncarcerationPeriod],
+        ip_id_to_pfi_subtype: Dict[int, Optional[str]],
+    ) -> List[NormalizedStateIncarcerationPeriod]:
+        additional_attributes_map: Dict[str, Dict[int, Dict[str, Any]]] = {
+            StateIncarcerationPeriod.__name__: {}
+        }
+
+        for ip in incarceration_periods:
+            if not ip.incarceration_period_id:
+                raise ValueError(
+                    "Expected non-null incarceration_period_id values "
+                    f"at this point. Found {ip}."
+                )
+
+            additional_attributes_map[StateIncarcerationPeriod.__name__][
+                ip.incarceration_period_id
+            ] = {
+                "purpose_for_incarceration_subtype": ip_id_to_pfi_subtype[
+                    ip.incarceration_period_id
+                ],
+            }
+
+        return convert_entity_trees_to_normalized_versions(
+            root_entities=incarceration_periods,
+            normalized_entity_class=NormalizedStateIncarcerationPeriod,
+            additional_attributes_map=additional_attributes_map,
+        )

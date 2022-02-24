@@ -24,6 +24,12 @@ from typing import List, Type
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateProgramAssignment,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -103,3 +109,13 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
             or datetime.date.min
         )
         return program_assignments
+
+    @classmethod
+    def convert_pas_to_normalized_pas(
+        cls,
+        program_assignments: List[StateProgramAssignment],
+    ) -> List[NormalizedStateProgramAssignment]:
+        return convert_entity_trees_to_normalized_versions(
+            root_entities=program_assignments,
+            normalized_entity_class=NormalizedStateProgramAssignment,
+        )

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the normalized_entities_utils.py file."""
+import datetime
 import unittest
 from typing import Set
 
@@ -28,14 +29,26 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionViolatedConditionEntry,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
     bq_schema_for_normalized_state_entity,
+    convert_entity_trees_to_normalized_versions,
     fields_unique_to_normalized_class,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolationResponse,
+)
+from recidiviz.tests.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager_test import (
+    hydrate_bidirectional_relationships_on_expected_response,
+)
 
 
 class TestNormalizedEntityClassesCoverage(unittest.TestCase):
@@ -123,3 +136,252 @@ class TestFieldsUniqueToNormalizedClass(unittest.TestCase):
         self.assertEqual(
             expected_unique_fields, fields_unique_to_normalized_class(entity)
         )
+
+
+class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
+    """Tests the convert_entity_trees_to_normalized_versions function."""
+
+    def test_convert_entity_trees_to_normalized_versions(self):
+        violation_with_tree = get_violation_tree()
+
+        additional_attributes_map = {
+            StateSupervisionViolationResponse.__name__: {
+                111: {"sequence_num": 0},
+                222: {"sequence_num": 1},
+            }
+        }
+
+        normalized_trees = convert_entity_trees_to_normalized_versions(
+            root_entities=[violation_with_tree],
+            normalized_entity_class=NormalizedStateSupervisionViolation,
+            additional_attributes_map=additional_attributes_map,
+        )
+
+        self.assertEqual([get_normalized_violation_tree()], normalized_trees)
+
+    def test_convert_entity_trees_to_normalized_versions_ips(self):
+        ips = [
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                incarceration_period_id=111,
+            ),
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                incarceration_period_id=222,
+            ),
+        ]
+
+        additional_attributes_map = {
+            StateIncarcerationPeriod.__name__: {
+                111: {"purpose_for_incarceration_subtype": "XYZ"},
+                222: {"purpose_for_incarceration_subtype": "AAA"},
+            }
+        }
+
+        normalized_trees = convert_entity_trees_to_normalized_versions(
+            root_entities=ips,
+            normalized_entity_class=NormalizedStateIncarcerationPeriod,
+            additional_attributes_map=additional_attributes_map,
+        )
+
+        expected_normalized_ips = [
+            NormalizedStateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                incarceration_period_id=111,
+                sequence_num=0,
+                purpose_for_incarceration_subtype="XYZ",
+            ),
+            NormalizedStateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                incarceration_period_id=222,
+                sequence_num=1,
+                purpose_for_incarceration_subtype="AAA",
+            ),
+        ]
+
+        self.assertEqual(expected_normalized_ips, normalized_trees)
+
+    def test_convert_entity_trees_to_normalized_versions_bad_root(self):
+        """Tests that an error is raised if we try to normalize an entity where there
+        are reverse relationship fields that are lists.
+
+        We cannot send in StateSupervisionViolationResponses as root entities to
+        normalization because the StateSupervisionViolation, a related entity,
+        stores a list of StateSupervisionViolationResponses.
+        """
+        violation_with_tree = get_violation_tree()
+
+        with self.assertRaises(ValueError) as e:
+            _ = convert_entity_trees_to_normalized_versions(
+                root_entities=violation_with_tree.supervision_violation_responses,
+                normalized_entity_class=NormalizedStateSupervisionViolationResponse,
+            )
+
+        self.assertEqual(
+            "Recursive normalization conversion cannot support "
+            "reverse fields that store lists. Found entity of type "
+            f"{entities.StateSupervisionViolation.__name__} with the field "
+            f"[supervision_violation_responses] that stores a list of type "
+            f"{StateSupervisionViolationResponse.__name__}. Try normalizing "
+            f"this entity tree with the {entities.StateSupervisionViolation.__name__} class as the "
+            f"root instead.",
+            e.exception.args[0],
+        )
+
+    def test_convert_entity_trees_to_normalized_versions_empty_list(self):
+        normalized_trees = convert_entity_trees_to_normalized_versions(
+            root_entities=[],
+            normalized_entity_class=NormalizedStateIncarcerationPeriod,
+        )
+
+        self.assertEqual([], normalized_trees)
+
+
+def get_violation_tree() -> entities.StateSupervisionViolation:
+    """Returns a tree of entities connected to the StateSupervisionViolation
+    for use in tests that normalize violation data.
+
+    DO NOT UPDATE THIS WITHOUT ALSO UPDATING get_normalized_violation_tree.
+    """
+    supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
+        supervision_violation_id=123,
+        violation_date=datetime.date(year=2004, month=9, day=1),
+        state_code="US_XX",
+        is_violent=False,
+        supervision_violation_types=[
+            entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+                supervision_violation_type_entry_id=456,
+                state_code="US_XX",
+                violation_type=entities.StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="TECHNICAL",
+            ),
+        ],
+        supervision_violated_conditions=[
+            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+                supervision_violated_condition_entry_id=789,
+                state_code="US_XX",
+                condition="MISSED CURFEW",
+            )
+        ],
+    )
+
+    supervision_violation_response_1 = entities.StateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response_id=111,
+        response_type=entities.StateSupervisionViolationResponseType.CITATION,
+        response_date=datetime.date(year=2004, month=9, day=2),
+        state_code="US_XX",
+        deciding_body_type=entities.StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+        supervision_violation=supervision_violation,
+        supervision_violation_response_decisions=[
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_response_decision_entry_id=1,
+                decision_raw_text="X",
+            )
+        ],
+    )
+
+    supervision_violation_response_2 = entities.StateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response_id=222,
+        response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
+        response_date=datetime.date(year=2004, month=10, day=3),
+        state_code="US_XX",
+        deciding_body_type=entities.StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+        supervision_violation=supervision_violation,
+        supervision_violation_response_decisions=[
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_response_decision_entry_id=2,
+                decision_raw_text="Y",
+            )
+        ],
+    )
+
+    hydrate_bidirectional_relationships_on_expected_response(
+        supervision_violation_response_1
+    )
+
+    hydrate_bidirectional_relationships_on_expected_response(
+        supervision_violation_response_2
+    )
+
+    supervision_violation.supervision_violation_responses = [
+        supervision_violation_response_1,
+        supervision_violation_response_2,
+    ]
+
+    return supervision_violation
+
+
+def get_normalized_violation_tree() -> NormalizedStateSupervisionViolation:
+    """Returns a tree of normalized versions of the entities returned by
+    _get_violation_response_tree."""
+    supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        supervision_violation_id=123,
+        violation_date=datetime.date(year=2004, month=9, day=1),
+        state_code="US_XX",
+        is_violent=False,
+        supervision_violation_types=[
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_type_entry_id=456,
+                violation_type=entities.StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="TECHNICAL",
+            ),
+        ],
+        supervision_violated_conditions=[
+            NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
+                supervision_violated_condition_entry_id=789,
+                state_code="US_XX",
+                condition="MISSED CURFEW",
+            )
+        ],
+    )
+
+    supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response_id=111,
+        response_type=entities.StateSupervisionViolationResponseType.CITATION,
+        response_date=datetime.date(year=2004, month=9, day=2),
+        state_code="US_XX",
+        deciding_body_type=entities.StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+        sequence_num=0,
+        supervision_violation=supervision_violation,
+        supervision_violation_response_decisions=[
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_response_decision_entry_id=1,
+                decision_raw_text="X",
+            )
+        ],
+    )
+
+    supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response_id=222,
+        response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
+        response_date=datetime.date(year=2004, month=10, day=3),
+        state_code="US_XX",
+        deciding_body_type=entities.StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+        sequence_num=1,
+        supervision_violation=supervision_violation,
+        supervision_violation_response_decisions=[
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_response_decision_entry_id=2,
+                decision_raw_text="Y",
+            )
+        ],
+    )
+
+    hydrate_bidirectional_relationships_on_expected_response(
+        supervision_violation_response_1
+    )
+    hydrate_bidirectional_relationships_on_expected_response(
+        supervision_violation_response_2
+    )
+
+    supervision_violation.supervision_violation_responses = [
+        supervision_violation_response_1,
+        supervision_violation_response_2,
+    ]
+
+    return supervision_violation

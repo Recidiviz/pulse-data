@@ -20,7 +20,9 @@ from typing import Any, Dict, Sequence
 
 import attr
 
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateEntity,
+)
 
 EntityNormalizerContext = Dict[str, Any]
 
@@ -33,7 +35,5 @@ class BaseEntityNormalizer(abc.ABC):
     def normalize_entities(
         self,
         normalizer_args: EntityNormalizerContext,
-        # TODO(#10724): Change this to Sequence[NormalizedStateEntity] once the
-        #  conversion to Normalized entities is built
-    ) -> Dict[str, Sequence[Entity]]:
+    ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Define the function to normalize entities."""

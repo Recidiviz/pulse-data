@@ -32,6 +32,9 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateEntity,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     TableRow,
     kwargs_for_entity_lists,
@@ -111,7 +114,7 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
     PipelineConfig,
 )
 @with_output_types(
-    beam.typehints.Dict[str, Sequence[Entity]],
+    beam.typehints.Dict[str, Sequence[NormalizedStateEntity]],
 )
 class NormalizeEntities(beam.DoFn):
     """Normalizes entities."""
@@ -123,9 +126,7 @@ class NormalizeEntities(beam.DoFn):
         state_code: str,
         entity_normalizer: BaseEntityNormalizer,
         pipeline_config: PipelineConfig,
-        # TODO(#10724): Change this to Sequence[NormalizedStateEntity] once the
-        #  conversion to Normalized entities is built
-    ) -> Generator[Dict[str, Sequence[Entity]], None, None]:
+    ) -> Generator[Dict[str, Sequence[NormalizedStateEntity]], None, None]:
         """Runs the entities through normalization."""
         _, person_entities = element
 
