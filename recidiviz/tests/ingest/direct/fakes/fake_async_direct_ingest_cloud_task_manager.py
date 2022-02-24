@@ -20,9 +20,9 @@ from typing import Any, Callable
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     IngestViewExportCloudTaskQueueInfo,
@@ -74,7 +74,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_args: GcsfsIngestArgs,
+        ingest_args: LegacyExtractAndMergeArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -85,7 +85,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             with_monitoring(
                 region.region_code,
                 ingest_args.ingest_instance(),
-                self.controller.run_ingest_job_and_kick_scheduler_on_completion,
+                self.controller.run_extract_and_merge_job_and_kick_scheduler_on_completion,
             ),
             ingest_args,
         )

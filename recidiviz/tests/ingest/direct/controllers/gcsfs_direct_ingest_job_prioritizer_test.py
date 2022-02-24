@@ -20,28 +20,26 @@ import os
 import unittest
 from typing import List
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
-)
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsBucketPath,
+    to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    filename_parts_from_path,
     GcsfsDirectIngestFileType,
+    filename_parts_from_path,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
 
-
 _NO_FIXTURES_REGION = "us_ab"
 
 
+# TODO(#9717): Replace these tests with tests for the new BQ-based implementation of
+#  the ExtractAndMergeJobPrioritizer.
 class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
     """Tests for the GcsfsDirectIngestJobPrioritizer."""
 

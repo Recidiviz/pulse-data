@@ -31,11 +31,7 @@ from paramiko.hostkeys import HostKeyEntry
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.common.io.file_contents_handle import (
-    FileContentsHandle,
-    FileContentsRowType,
-    IoType,
-)
+from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
@@ -148,7 +144,7 @@ class BrokenGCSFSFakeSystem(FakeGCSFileSystem):
     def upload_from_contents_handle_stream(
         self,
         path: GcsfsFilePath,
-        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        contents_handle: FileContentsHandle,
         content_type: str,
     ) -> None:
         if "file1" in path.abs_path():

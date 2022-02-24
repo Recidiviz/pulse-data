@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,20 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines an abstract interface that can be used to access file contents."""
+"""Defines an interface for a class that handles logic for deciding which extract and
+merge job should run next given the desired data import ordering.
+"""
 import abc
-from contextlib import contextmanager
-from typing import Generic, Iterator, TypeVar
+from typing import Generic, Optional, TypeVar
 
-from recidiviz.common.io.contents_handle import ContentsHandle, ContentsRowType
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    ExtractAndMergeArgs,
+)
 
-IoType = TypeVar("IoType")
+ExtractAndMergeArgsT = TypeVar("ExtractAndMergeArgsT", bound=ExtractAndMergeArgs)
 
 
-class FileContentsHandle(ContentsHandle, Generic[ContentsRowType, IoType]):
-    """Defines an abstract interface that can be used to access file contents."""
+class ExtractAndMergeJobPrioritizer(Generic[ExtractAndMergeArgsT]):
+    """Interface for a class that handles logic for deciding which extract and merge
+    job should run next given the desired data import ordering.
+    """
 
     @abc.abstractmethod
-    @contextmanager
-    def open(self, mode: str = "r") -> Iterator[IoType]:
-        """Should be overridden by subclasses to return a way to open a file stream."""
+    def get_next_job_args(
+        self,
+    ) -> Optional[ExtractAndMergeArgsT]:
+        """Returns a set of args defining the next chunk of data to process."""

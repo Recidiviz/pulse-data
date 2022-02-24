@@ -47,9 +47,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
-    GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
@@ -229,14 +229,14 @@ class TestDirectIngestControl(unittest.TestCase):
             f"{bucket_name}/ingest_view_name.csv",
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
-        ingest_args = GcsfsIngestArgs(
+        ingest_args = LegacyExtractAndMergeArgs(
             datetime.datetime(year=2019, month=7, day=20),
             file_path=GcsfsFilePath.from_absolute_path(file_path),
         )
         request_args = {"region": self.region_code, "file_path": file_path}
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "GcsfsIngestArgs",
+            "args_type": "LegacyExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
 
@@ -249,7 +249,7 @@ class TestDirectIngestControl(unittest.TestCase):
             data=body_encoded,
         )
         self.assertEqual(200, response.status_code)
-        mock_controller.run_ingest_job_and_kick_scheduler_on_completion.assert_called_with(
+        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_called_with(
             ingest_args
         )
 
@@ -274,7 +274,7 @@ class TestDirectIngestControl(unittest.TestCase):
             f"{bucket_name}/ingest_view_name.csv",
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
-        ingest_args = GcsfsIngestArgs(
+        ingest_args = LegacyExtractAndMergeArgs(
             datetime.datetime(year=2019, month=7, day=20),
             file_path=GcsfsFilePath.from_absolute_path(file_path),
         )
@@ -284,7 +284,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "GcsfsIngestArgs",
+            "args_type": "LegacyExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
 
@@ -574,7 +574,7 @@ class TestDirectIngestControl(unittest.TestCase):
             ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
         )
         mock_controller.schedule_next_ingest_task.assert_not_called()
-        mock_controller.run_ingest_job_and_kick_scheduler_on_completion.assert_not_called()
+        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_not_called()
         mock_controller.handle_new_files.assert_called_with(
             current_task_id=task_id, can_start_ingest=False
         )

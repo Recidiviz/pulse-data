@@ -36,11 +36,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsPath,
 )
 from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
-from recidiviz.common.io.file_contents_handle import (
-    FileContentsHandle,
-    FileContentsRowType,
-    IoType,
-)
+from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 
 BYTES_CONTENT_TYPE = "application/octet-stream"
@@ -143,7 +139,7 @@ class GCSFileSystem:
     def upload_from_contents_handle_stream(
         self,
         path: GcsfsFilePath,
-        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        contents_handle: FileContentsHandle,
         content_type: str,
     ) -> None:
         """Uploads contents in handle via a file stream to a file path."""
@@ -399,7 +395,7 @@ class GCSFileSystemImpl(GCSFileSystem):
     def upload_from_contents_handle_stream(
         self,
         path: GcsfsFilePath,
-        contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+        contents_handle: FileContentsHandle,
         content_type: str,
     ) -> None:
         bucket = self.storage_client.bucket(path.bucket_name)

@@ -39,9 +39,10 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
 )
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
+    ExtractAndMergeArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
@@ -134,7 +135,9 @@ def build_ingest_view_export_task_id(
     )
 
 
-def build_process_job_task_id(region: Region, ingest_args: GcsfsIngestArgs) -> str:
+def build_process_job_task_id(
+    region: Region, ingest_args: LegacyExtractAndMergeArgs
+) -> str:
     return _build_task_id(
         region.region_code,
         ingest_args.ingest_instance(),
@@ -287,7 +290,7 @@ class ProcessIngestJobCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     """
 
     def is_task_already_queued(
-        self, region_code: str, ingest_args: GcsfsIngestArgs
+        self, region_code: str, ingest_args: ExtractAndMergeArgs
     ) -> bool:
         """Returns true if the ingest_args correspond to a task currently in
         the queue.
@@ -400,13 +403,13 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_args: GcsfsIngestArgs,
+        ingest_args: LegacyExtractAndMergeArgs,
     ) -> None:
         """Queues a direct ingest process job task. All direct ingest data
         processing should happen through this endpoint.
         Args:
             region: `Region` direct ingest region.
-            ingest_args: `GcsfsIngestArgs` args for the current direct ingest task.
+            ingest_args: `LegacyExtractAndMergeArgs` args for the current direct ingest task.
         """
 
     @abc.abstractmethod
@@ -486,8 +489,8 @@ class DirectIngestCloudTaskManager:
         if "cloud_task_args" in json_data and "args_type" in json_data:
             args_type = json_data["args_type"]
             cloud_task_args_dict = json_data["cloud_task_args"]
-            if args_type == GcsfsIngestArgs.__name__:
-                return GcsfsIngestArgs.from_serializable(cloud_task_args_dict)
+            if args_type == LegacyExtractAndMergeArgs.__name__:
+                return LegacyExtractAndMergeArgs.from_serializable(cloud_task_args_dict)
             if args_type == GcsfsRawDataBQImportArgs.__name__:
                 return GcsfsRawDataBQImportArgs.from_serializable(cloud_task_args_dict)
             if args_type == GcsfsIngestViewExportArgs.__name__:
@@ -618,7 +621,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_args: GcsfsIngestArgs,
+        ingest_args: LegacyExtractAndMergeArgs,
     ) -> None:
         task_id = build_process_job_task_id(region, ingest_args)
         params = {
