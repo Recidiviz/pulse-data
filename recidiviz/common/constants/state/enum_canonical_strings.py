@@ -299,6 +299,7 @@ state_supervision_violation_response_decision_continuance = "CONTINUANCE"
 state_supervision_violation_response_decision_delayed_action = "DELAYED_ACTION"
 state_supervision_violation_response_decision_extension = "EXTENSION"
 state_supervision_violation_response_decision_new_conditions = "NEW_CONDITIONS"
+state_supervision_violation_response_decision_no_sanction = "NO_SANCTION"
 state_supervision_violation_response_decision_other = "OTHER"
 state_supervision_violation_response_decision_revocation = "REVOCATION"
 state_supervision_violation_response_decision_privileges_revoked = "PRIVILEGES_REVOKED"
@@ -314,6 +315,9 @@ state_supervision_violation_response_decision_treatment_in_prison = (
     "TREATMENT_IN_PRISON"
 )
 state_supervision_violation_response_decision_treatment_in_field = "TREATMENT_IN_FIELD"
+state_supervision_violation_response_decision_violation_unfounded = (
+    "VIOLATION_UNFOUNDED"
+)
 state_supervision_violation_response_decision_warning = "WARNING"
 state_supervision_violation_response_decision_warrant_issued = "WARRANT_ISSUED"
 

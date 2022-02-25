@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violations` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Violation_Id
+  - Client_Id
+  - Start_Date
+  - Finding_Date
+  - Violation_Finding_Descr_Tx
+  - Violation_Type_Desc
+  - Disposition_Desc
+  - Served_At_Desc
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Client_Id
+          id_type: $literal("US_ME_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - Client_Id
+                - Violation_Id
+          violation_date: Start_Date
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                # TODO(#11292): Look into the text of Violation_Descr_Tx to determine if it would be of further help,
+                # and also if it might be able to help hydrate state_supervision_violated_condition_entry
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: Violation_Type_Desc
+                    $mappings:
+                      StateSupervisionViolationType.FELONY:
+                        - "Felony"
+                        - "Felony (Not Charged)"
+                      StateSupervisionViolationType.LAW:
+                        - "Migration - New Offense"
+                      StateSupervisionViolationType.MISDEMEANOR:
+                        - "Misdemeanor"
+                        - "Misdemeanor (Not Charged)"
+                      StateSupervisionViolationType.TECHNICAL:
+                        - "Technical"
+                    $ignore:
+                      - "Migration - Unknown"
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - Client_Id
+                      - Violation_Id
+                response_date: Finding_Date
+                response_type:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - Violation_Finding_Descr_Tx
+                          - Disposition_Desc
+                        $include_nulls: True
+                    $custom_parser: us_me_custom_enum_parsers.parse_supervision_violation_response_type
+                    $ignore:
+                      - "Dismissed by Court@@NONE"
+                      - "Not Approved by Prosecuting Attorney@@NONE"
+                      - "Violation Not Found@@NONE"
+                      - "Withdrawn by Officer@@NONE"
+                response_subtype: Served_At_Desc
+                deciding_body_type:
+                  $enum_mapping:
+                    $raw_text: Violation_Finding_Descr_Tx
+                    $mappings:
+                      StateSupervisionViolationResponseDecidingBodyType.COURT:
+                        # By default, the court has final say. So unless this is a direct officer action, it's the court
+                        - "Absconded - Facility Notified"
+                        - "Dismissed by Court"
+                        - "Not Approved by Prosecuting Attorney"
+                        - "Violation Found"
+                        - "Violation Not Found"
+                      StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER:
+                        # These indicate a final finding/action taken directly by the officer without court involvement
+                        - "Graduated Sanction By Officer"
+                        - "Return to Facility by Officer"
+                        - "Warning By Officer"
+                        - "Withdrawn by Officer"
+                supervision_violation_response_decisions:
+                  - StateSupervisionViolationResponseDecisionEntry:
+                      decision:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $separator: "@@"
+                              $values:
+                                - Violation_Finding_Descr_Tx
+                                - Disposition_Desc
+                              $include_nulls: True
+                          $custom_parser: us_me_custom_enum_parsers.parse_supervision_violation_response_decision
