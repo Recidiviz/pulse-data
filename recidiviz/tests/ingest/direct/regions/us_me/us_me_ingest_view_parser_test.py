@@ -17,7 +17,6 @@
 """Ingest view parser tests for US_ME direct ingest."""
 import unittest
 from datetime import date
-from typing import Optional
 
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
@@ -37,17 +36,15 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.regions.us_me.us_me_custom_enum_parsers import (
-    DOC_FACILITY_LOCATION_TYPES,
-    FURLOUGH_MOVEMENT_TYPES,
-    OTHER_JURISDICTION_STATUSES,
-    SUPERVISION_PRECEDING_INCARCERATION_STATUSES,
-    SUPERVISION_STATUSES,
-    SUPERVISION_VIOLATION_TRANSFER_REASONS,
-    parse_admission_reason,
-    parse_release_reason,
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
 )
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecidingBodyType,
+    StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseType,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
@@ -57,6 +54,10 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
@@ -518,268 +519,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             "CURRENT_STATUS_incarceration_periods", expected_output
         )
 
-    ######################################
-    # Release Reasons Custom Parser
-    ######################################
-    @staticmethod
-    def _build_release_reason_raw_text(
-        current_status: Optional[str] = "NONE",
-        next_status: Optional[str] = "NONE",
-        next_movement_type: Optional[str] = "NONE",
-        transfer_reason: Optional[str] = "NONE",
-        location_type: Optional[str] = "NONE",
-        next_location_type: Optional[str] = "NONE",
-    ) -> str:
-        return (
-            f"{current_status}@@{next_status}@@{next_movement_type}"
-            f"@@{transfer_reason}@@{location_type}@@{next_location_type}"
-        )
-
-    def test_parse_release_reason_sentence_served(self) -> None:
-        # Next movement type is Discharge
-        release_reason_raw_text = self._build_release_reason_raw_text(
-            next_movement_type="Discharge"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            parse_release_reason(release_reason_raw_text),
-        )
-
-    def test_parse_release_reason_escape(self) -> None:
-        # Next status is Escape
-        release_reason_raw_text = self._build_release_reason_raw_text(
-            next_status="Escape"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.ESCAPE,
-            parse_release_reason(release_reason_raw_text),
-        )
-
-        # Next movement type is Escape
-        release_reason_raw_text = self._build_release_reason_raw_text(
-            next_movement_type="Escape"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.ESCAPE,
-            parse_release_reason(release_reason_raw_text),
-        )
-
-    def test_parse_release_reason_temporary_custody(self) -> None:
-        # Current status is County Jail and location type is a DOC Facility
-        for location_type in DOC_FACILITY_LOCATION_TYPES:
-            release_reason_raw_text = self._build_release_reason_raw_text(
-                current_status="County Jail", location_type=location_type
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-                parse_release_reason(release_reason_raw_text),
-            )
-
-        # Current status is County Jail and location type is not a DOC Facility
-        release_reason_raw_text = self._build_release_reason_raw_text(
-            current_status="County Jail", location_type="9"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            parse_release_reason(release_reason_raw_text),
-        )
-
-        # Transfer reason is temporary custody
-        release_reason_raw_text = self._build_release_reason_raw_text(
-            transfer_reason="Safe Keepers",
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            parse_release_reason(release_reason_raw_text),
-        )
-
-    def test_parse_release_reason_transfer_jurisdiction(self) -> None:
-        # Next status is either incarceration or other jurisdiction and next location is not a DOC Facility
-        for next_status in [
-            "Incarcerated",
-            "County Jail",
-        ] + OTHER_JURISDICTION_STATUSES:
-            release_reason_raw_text = self._build_release_reason_raw_text(
-                next_status=next_status, location_type="13"
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
-                parse_release_reason(release_reason_raw_text),
-            )
-
-    def test_parse_release_reason_temporary_release(self) -> None:
-        # Next movement type is Furlough or Furlough Hospital
-        for next_movement_type in ["Furlough", "Furlough Hospital"]:
-            release_reason_raw_text = self._build_release_reason_raw_text(
-                next_movement_type=next_movement_type
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
-                parse_release_reason(release_reason_raw_text),
-            )
-
-    def test_parse_release_reason_transfer(self) -> None:
-        # Next movement type is Transfer
-        release_reason_raw_text = self._build_release_reason_raw_text(
-            next_movement_type="Transfer"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.TRANSFER,
-            parse_release_reason(release_reason_raw_text),
-        )
-
-    ######################################
-    # Admission Reasons Custom Parser
-    ######################################
-    @staticmethod
-    def _build_admission_reason_raw_text(
-        previous_status: Optional[str] = "NONE",
-        current_status: Optional[str] = "NONE",
-        movement_type: Optional[str] = "NONE",
-        transfer_type: Optional[str] = "NONE",
-        transfer_reason: Optional[str] = "NONE",
-        location_type: Optional[str] = "NONE",
-    ) -> str:
-        return (
-            f"{previous_status}@@{current_status}@@{movement_type}@@{transfer_type}"
-            f"@@{transfer_reason}@@{location_type}"
-        )
-
-    def test_parse_admission_reason_new_admission(self) -> None:
-        # Transfer reason is Sentence/Disposition
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_reason="Sentence/Disposition"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
-    def test_parse_admission_reason_new_admission_movement(self) -> None:
-        # Movement type is Sentence/Disposition
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            movement_type="Sentence/Disposition"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
-    def test_parse_admission_reason_revocation(self) -> None:
-        # Next status is supervision
-        for supervision_status in (
-            SUPERVISION_STATUSES + SUPERVISION_PRECEDING_INCARCERATION_STATUSES
-        ):
-            admission_reason_raw_text = self._build_admission_reason_raw_text(
-                transfer_reason="Sentence/Disposition",
-                previous_status=supervision_status,
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                parse_admission_reason(admission_reason_raw_text),
-            )
-
-    def test_parse_admission_reason_temporary_custody(self) -> None:
-        # Current status is County Jail and location type is a DOC Facility
-        for location_type in DOC_FACILITY_LOCATION_TYPES:
-            admission_reason_raw_text = self._build_admission_reason_raw_text(
-                current_status="County Jail", location_type=location_type
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                parse_admission_reason(admission_reason_raw_text),
-            )
-
-        # Transfer reason is temporary custody
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_reason="Safe Keepers",
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
-    def test_parse_admission_reason_transfer_jurisdiction(self) -> None:
-        # Transfer type is out of other jurisdiction transfer type
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_type="Non-DOC In"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
-        # Transfer reason is Other Jurisdiction
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            transfer_reason="Other Jurisdiction"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
-        # Previous status from other jurisdiction
-        for previous_status in OTHER_JURISDICTION_STATUSES:
-            admission_reason_raw_text = self._build_admission_reason_raw_text(
-                previous_status=previous_status
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
-                parse_admission_reason(admission_reason_raw_text),
-            )
-
-    def test_parse_admission_reason_temporary_release(self) -> None:
-        # Movement type is Furlough or Furlough Hospital
-        for movement_type in FURLOUGH_MOVEMENT_TYPES:
-            admission_reason_raw_text = self._build_admission_reason_raw_text(
-                movement_type=movement_type
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
-                parse_admission_reason(admission_reason_raw_text),
-            )
-
-    def test_parse_admission_reason_escape(self) -> None:
-        # Previous status or movement type is Escape
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            movement_type="Escape"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            previous_status="Escape"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
-    def test_parse_admission_reason_revocation_no_previous_status(self) -> None:
-        # previous_status is NULL and transfer_reason is a violation reason
-        for violation_reason in SUPERVISION_VIOLATION_TRANSFER_REASONS:
-            admission_reason_raw_text = self._build_admission_reason_raw_text(
-                transfer_reason=violation_reason
-            )
-            self.assertEqual(
-                StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                parse_admission_reason(admission_reason_raw_text),
-            )
-
-    def test_parse_admission_reason_transfer(self) -> None:
-        # Next movement type is Transfer
-        admission_reason_raw_text = self._build_admission_reason_raw_text(
-            movement_type="Transfer"
-        )
-        self.assertEqual(
-            StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            parse_admission_reason(admission_reason_raw_text),
-        )
-
     def test_parse_assessments(self) -> None:
-        self.maxDiff = None
         expected_output = [
             StatePerson(
                 state_code="US_ME",
@@ -908,3 +648,220 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         ]
 
         self._run_parse_ingest_view_test("assessments", expected_output)
+
+    def test_parse_supervision_violations(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000001",
+                        id_type="US_ME_DOC",
+                    ),
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ME",
+                        external_id="00000001-101",
+                        violation_date=date(2018, 1, 2),
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ME",
+                                violation_type=StateSupervisionViolationType.TECHNICAL,
+                                violation_type_raw_text="TECHNICAL",
+                            ),
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ME",
+                                external_id="00000001-101",
+                                response_type_raw_text="VIOLATION NOT FOUND@@NONE",
+                                response_date=date(2018, 1, 31),
+                                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
+                                deciding_body_type_raw_text="VIOLATION NOT FOUND",
+                                supervision_violation_response_decisions=[
+                                    StateSupervisionViolationResponseDecisionEntry(
+                                        state_code="US_ME",
+                                        decision=StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED,
+                                        decision_raw_text="VIOLATION NOT FOUND@@NONE",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000001",
+                        id_type="US_ME_DOC",
+                    ),
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ME",
+                        external_id="00000001-102",
+                        violation_date=date(2018, 12, 28),
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ME",
+                                violation_type=StateSupervisionViolationType.TECHNICAL,
+                                violation_type_raw_text="TECHNICAL",
+                            ),
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ME",
+                                external_id="00000001-102",
+                                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                                response_type_raw_text="GRADUATED SANCTION BY OFFICER@@VIOLATION FOUND - CONDITIONS AMENDED",
+                                response_date=date(2019, 2, 18),
+                                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+                                deciding_body_type_raw_text="GRADUATED SANCTION BY OFFICER",
+                                supervision_violation_response_decisions=[
+                                    StateSupervisionViolationResponseDecisionEntry(
+                                        state_code="US_ME",
+                                        decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+                                        decision_raw_text="GRADUATED SANCTION BY OFFICER@@VIOLATION FOUND - CONDITIONS AMENDED",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000002",
+                        id_type="US_ME_DOC",
+                    ),
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ME",
+                        external_id="00000002-201",
+                        violation_date=date(2019, 11, 5),
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ME",
+                                violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                                violation_type_raw_text="MISDEMEANOR",
+                            ),
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ME",
+                                external_id="00000002-201",
+                                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                                response_type_raw_text="VIOLATION FOUND@@FULL REVOCATION",
+                                response_subtype="DOC FACILITY",
+                                response_date=date(2019, 12, 10),
+                                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
+                                deciding_body_type_raw_text="VIOLATION FOUND",
+                                supervision_violation_response_decisions=[
+                                    StateSupervisionViolationResponseDecisionEntry(
+                                        state_code="US_ME",
+                                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                                        decision_raw_text="VIOLATION FOUND@@FULL REVOCATION",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000002",
+                        id_type="US_ME_DOC",
+                    ),
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ME",
+                        external_id="00000002-202",
+                        violation_date=date(2009, 3, 27),
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ME",
+                                violation_type=StateSupervisionViolationType.TECHNICAL,
+                                violation_type_raw_text="TECHNICAL",
+                            ),
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ME",
+                                external_id="00000002-202",
+                                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                                response_type_raw_text="VIOLATION FOUND@@VIOLATION FOUND - CONDITIONS AMENDED",
+                                response_date=date(2009, 4, 12),
+                                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
+                                deciding_body_type_raw_text="VIOLATION FOUND",
+                                supervision_violation_response_decisions=[
+                                    StateSupervisionViolationResponseDecisionEntry(
+                                        state_code="US_ME",
+                                        decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+                                        decision_raw_text="VIOLATION FOUND@@VIOLATION FOUND - CONDITIONS AMENDED",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000002",
+                        id_type="US_ME_DOC",
+                    ),
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ME",
+                        external_id="00000002-203",
+                        violation_date=date(2018, 4, 3),
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ME",
+                                violation_type=StateSupervisionViolationType.FELONY,
+                                violation_type_raw_text="FELONY",
+                            ),
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ME",
+                                external_id="00000002-203",
+                                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                                response_type_raw_text="VIOLATION FOUND@@FULL REVOCATION",
+                                response_subtype="DOC FACILITY",
+                                response_date=date(2018, 5, 24),
+                                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
+                                deciding_body_type_raw_text="VIOLATION FOUND",
+                                supervision_violation_response_decisions=[
+                                    StateSupervisionViolationResponseDecisionEntry(
+                                        state_code="US_ME",
+                                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                                        decision_raw_text="VIOLATION FOUND@@FULL REVOCATION",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("supervision_violations", expected_output)

@@ -29,6 +29,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseType,
+)
 
 FURLOUGH_MOVEMENT_TYPES = ["Furlough", "Furlough Hospital"]
 
@@ -224,3 +228,113 @@ def parse_release_reason(
         return StateIncarcerationPeriodReleaseReason.TRANSFER
 
     return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
+
+
+def parse_supervision_violation_response_decision(
+    raw_text: str,
+) -> Optional[StateSupervisionViolationResponseDecision]:
+    """Parses the supervision violation response decision from a combination of the violation finding and the
+    disposition raw texts.
+
+    If the disposition contains a known non-null value, it can be directly mapped to a particular decision. If it
+    doesn't, however, then we need to examine the violation finding.
+    """
+    (
+        violation_finding_description,
+        disposition_description,
+    ) = raw_text.split("@@")
+
+    normalized_violation_finding = violation_finding_description.upper()
+    normalized_disposition = disposition_description.upper()
+
+    if "REVOCATION" in normalized_disposition:
+        return StateSupervisionViolationResponseDecision.REVOCATION
+
+    if normalized_disposition == "VIOLATION FOUND - CONDITIONS AMENDED":
+        return StateSupervisionViolationResponseDecision.NEW_CONDITIONS
+
+    if normalized_disposition == "VIOLATION FOUND - NO SANCTION":
+        return StateSupervisionViolationResponseDecision.NO_SANCTION
+
+    if normalized_violation_finding == "WARNING BY OFFICER":
+        return StateSupervisionViolationResponseDecision.WARNING
+
+    if normalized_violation_finding in (
+        "DISMISSED BY COURT",
+        "NOT APPROVED BY PROSECUTING ATTORNEY",
+        "VIOLATION NOT FOUND",
+        "WITHDRAWN BY OFFICER",
+    ):
+        # In each case, there was no official/formal/final violation response provided
+        return StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED
+
+    if normalized_violation_finding == "GRADUATED SANCTION BY OFFICER":
+        return StateSupervisionViolationResponseDecision.OTHER
+
+    if normalized_violation_finding in (
+        "RETURN TO FACILITY BY OFFICER",
+        "ABSCONDED - FACILITY NOTIFIED",
+    ):
+        # Each case leads to a return to a DOC facility, hence the mapping to REVOCATION. Both codes are fairly rare
+        return StateSupervisionViolationResponseDecision.REVOCATION
+
+    if normalized_violation_finding == "VIOLATION FOUND":
+        # At this point, it's acknowledged that a violation was found but no disposition is available
+        return StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN
+
+    return StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN
+
+
+def parse_supervision_violation_response_type(
+    raw_text: str,
+) -> Optional[StateSupervisionViolationResponseType]:
+    """Parses the supervision violation response decision from a combination of the violation finding and the
+    disposition raw texts.
+
+    If the disposition contains a known non-null value, it can be directly mapped to a particular type. If it
+    doesn't, however, then we need to examine the violation finding.
+    """
+    (
+        violation_finding_description,
+        disposition_description,
+    ) = raw_text.split("@@")
+
+    normalized_violation_finding = violation_finding_description.upper()
+    normalized_disposition = disposition_description.upper()
+
+    if "REVOCATION" in normalized_disposition:
+        return StateSupervisionViolationResponseType.PERMANENT_DECISION
+
+    if normalized_disposition == "VIOLATION FOUND - CONDITIONS AMENDED":
+        return StateSupervisionViolationResponseType.PERMANENT_DECISION
+
+    if normalized_disposition == "VIOLATION FOUND - NO SANCTION":
+        return StateSupervisionViolationResponseType.VIOLATION_REPORT
+
+    if normalized_violation_finding == "WARNING BY OFFICER":
+        return StateSupervisionViolationResponseType.CITATION
+
+    if normalized_violation_finding in (
+        "DISMISSED BY COURT",
+        "NOT APPROVED BY PROSECUTING ATTORNEY",
+        "VIOLATION NOT FOUND",
+        "WITHDRAWN BY OFFICER",
+    ):
+        # This should never happen because we have set these values as ignorable in the YAML manifest for US_ME,
+        # but we leave this here to throw a loud error in the case that some derivation on this ends up in the raw data
+        return None
+
+    if normalized_violation_finding == "GRADUATED SANCTION BY OFFICER":
+        return StateSupervisionViolationResponseType.PERMANENT_DECISION
+
+    if normalized_violation_finding in (
+        "RETURN TO FACILITY BY OFFICER",
+        "ABSCONDED - FACILITY NOTIFIED",
+    ):
+        return StateSupervisionViolationResponseType.PERMANENT_DECISION
+
+    if normalized_violation_finding == "VIOLATION FOUND":
+        # At this point, it's acknowledged that a violation was found but no disposition is available
+        return StateSupervisionViolationResponseType.VIOLATION_REPORT
+
+    return None
