@@ -23,6 +23,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import flask
+import freezegun
 import pytest
 from flask import Blueprint, Flask
 
@@ -159,6 +160,7 @@ class ReportingEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(b"Invalid email address format: [foo]", response.data)
 
+    @freezegun.freeze_time(datetime.datetime(2022, 2, 25))
     @patch("recidiviz.reporting.email_reporting_utils.generate_batch_id")
     @patch("recidiviz.reporting.data_retrieval.start")
     def test_integration_generate_emails(
@@ -198,6 +200,7 @@ class ReportingEndpointTests(TestCase):
                 f"New batch started for {self.state_code}", str(response.data)
             )
 
+    @freezegun.freeze_time(datetime.datetime(2022, 2, 25))
     @patch("recidiviz.reporting.email_reporting_utils.generate_batch_id")
     @patch("recidiviz.reporting.data_retrieval.start")
     def test_integration_generate_emails_with_no_allowlist(
