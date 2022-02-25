@@ -63,6 +63,10 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
     NEW_CONDITIONS = (
         state_enum_strings.state_supervision_violation_response_decision_new_conditions
     )
+    # Though a violation was officially found/recorded, no particular sanction has been levied in response
+    NO_SANCTION = (
+        state_enum_strings.state_supervision_violation_response_decision_no_sanction
+    )
     OTHER = state_enum_strings.state_supervision_violation_response_decision_other
     REVOCATION = (
         state_enum_strings.state_supervision_violation_response_decision_revocation
@@ -87,6 +91,10 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
     )
     TREATMENT_IN_FIELD = (
         state_enum_strings.state_supervision_violation_response_decision_treatment_in_field
+    )
+    # Ultimately, the original violation was not found/formalized, e.g. because it was withdrawn by the officer
+    VIOLATION_UNFOUNDED = (
+        state_enum_strings.state_supervision_violation_response_decision_violation_unfounded
     )
     WARNING = state_enum_strings.state_supervision_violation_response_decision_warning
     WARRANT_ISSUED = (
@@ -136,6 +144,7 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     "EXTENSION": StateSupervisionViolationResponseDecision.EXTENSION,
     "INTERNAL UNKNOWN": StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
     "NEW CONDITIONS": StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+    "NO SANCTION": StateSupervisionViolationResponseDecision.NO_SANCTION,
     "OTHER": StateSupervisionViolationResponseDecision.OTHER,
     "PRIVILEGES REVOKED": StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
     "REVOCATION": StateSupervisionViolationResponseDecision.REVOCATION,
@@ -145,6 +154,7 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     "SUSPENSION": StateSupervisionViolationResponseDecision.SUSPENSION,
     "TREATMENT IN PRISON": StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
     "TREATMENT IN FIELD": StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
+    "VIOLATION UNFOUNDED": StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED,
     "WARNING": StateSupervisionViolationResponseDecision.WARNING,
     "WARRANT ISSUED": StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
 }

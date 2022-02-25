@@ -13,7 +13,10 @@ columns:
     description: The client that is associated with this violation entry.
   - name : Cis_1016_Extradition_Cd
   - name : Cis_4009_Client_Loc_Cd
-    description: The type of location the client was in when the violation took place.
+    description: |-
+      Where the client is located during the tolling time. This can change over time as the Toll Violation code
+      (Cis_4009_Toll_Violation_Cd) is updated. If the client has been summonsed or a warrant was requested, they would
+      still be in the Community. If they have been arrested, they would be in a County Jail or DOC Facility.
     known_values:
       - value: 66
         description: DOC Facility
