@@ -81,6 +81,7 @@ const IngestOperationsView = (): JSX.Element => {
     useState<boolean>(true);
   const [ingestInstance, setIngestInstance] =
     useState<DirectIngestInstance | undefined>(undefined);
+  const [actionConfirmed, setActionConfirmed] = useState<boolean>(false);
 
   const ingestQueueActions = [
     IngestActions.PauseIngestQueues,
@@ -99,7 +100,7 @@ const IngestOperationsView = (): JSX.Element => {
 
   useEffect(() => {
     getData();
-  }, [getData]);
+  }, [getData, actionConfirmed]);
 
   const stateCodeChange = (value: StateCodeInfo) => {
     setStateCode(value.code);
@@ -141,31 +142,37 @@ const IngestOperationsView = (): JSX.Element => {
     setIsConfirmationModalVisible(false);
     if (stateCode) {
       setQueueStatesLoading(true);
+      setActionConfirmed(false);
       const unsupportedIngestAction = "Unsupported ingest action";
       switch (ingestActionToExecute) {
         case IngestActions.StartIngestRun:
           if (ingestInstance) {
             await startIngestRun(stateCode, ingestInstance);
+            setActionConfirmed(true);
           }
           break;
         case IngestActions.PauseIngestQueues:
           await updateIngestQueuesState(stateCode, QueueState.PAUSED);
           await fetchQueueStates(stateCode);
+          setActionConfirmed(true);
           break;
         case IngestActions.ResumeIngestQueues:
           await updateIngestQueuesState(stateCode, QueueState.RUNNING);
           await fetchQueueStates(stateCode);
+          setActionConfirmed(true);
           break;
         case IngestActions.PauseIngestInstance:
           if (ingestInstance) {
             await pauseDirectIngestInstance(stateCode, ingestInstance);
             await getIngestInstanceSummaries(stateCode);
+            setActionConfirmed(true);
           }
           break;
         case IngestActions.UnpauseIngestInstance:
           if (ingestInstance) {
             await unpauseDirectIngestInstance(stateCode, ingestInstance);
             await getIngestInstanceSummaries(stateCode);
+            setActionConfirmed(true);
           }
           break;
         case IngestActions.ExportToGCS:
@@ -178,6 +185,7 @@ const IngestOperationsView = (): JSX.Element => {
             } else {
               message.success("GCS Export succeeded!");
             }
+            setActionConfirmed(true);
           }
           break;
         default:
