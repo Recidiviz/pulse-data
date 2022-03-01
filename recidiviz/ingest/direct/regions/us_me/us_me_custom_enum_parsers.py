@@ -30,6 +30,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
@@ -337,4 +338,46 @@ def parse_supervision_violation_response_type(
         # At this point, it's acknowledged that a violation was found but no disposition is available
         return StateSupervisionViolationResponseType.VIOLATION_REPORT
 
+    return None
+
+
+def parse_deciding_body_type(
+    raw_text: str,
+) -> Optional[StateSupervisionViolationResponseDecidingBodyType]:
+    """Parses the supervision violation response deciding body type from a combination of the violation finding and the
+    disposition raw texts.
+    """
+    (
+        violation_finding_description,
+        disposition_description,
+    ) = raw_text.split("@@")
+
+    normalized_violation_finding = violation_finding_description.upper()
+    normalized_disposition = disposition_description.upper()
+
+    # By default, the court has final say. So unless this is a direct officer action, it's the court
+    if normalized_violation_finding in (
+        "ABSCONDED - FACILITY NOTIFIED",
+        "DISMISSED BY COURT",
+        "NOT APPROVED BY PROSECUTING ATTORNEY",
+        "VIOLATION NOT FOUND",
+        "VIOLATION FOUND",
+    ):
+        return StateSupervisionViolationResponseDecidingBodyType.COURT
+
+    # These indicate a final finding/action taken directly by the officer without court involvement
+    if normalized_violation_finding in (
+        "GRADUATED SANCTION BY OFFICER",
+        "RETURN TO FACILITY BY OFFICER",
+        "WARNING BY OFFICER",
+        "WITHDRAWN BY OFFICER",
+    ):
+        return StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER
+
+    # Capture cases where the violation finding is NONE but there was a disposition
+    if normalized_disposition != "NONE":
+        return StateSupervisionViolationResponseDecidingBodyType.COURT
+
+    # This is unreachable since we are filtering out NONE@@NONE in the enum_mapping conditional, and we should
+    # never be returning None from this function.
     return None
