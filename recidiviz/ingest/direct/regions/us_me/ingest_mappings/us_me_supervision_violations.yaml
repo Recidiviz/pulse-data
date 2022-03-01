@@ -65,28 +65,31 @@ output:
                         $include_nulls: True
                     $custom_parser: us_me_custom_enum_parsers.parse_supervision_violation_response_type
                     $ignore:
+                      - "NONE@@NONE"
                       - "Dismissed by Court@@NONE"
                       - "Not Approved by Prosecuting Attorney@@NONE"
                       - "Violation Not Found@@NONE"
                       - "Withdrawn by Officer@@NONE"
                 response_subtype: Served_At_Desc
                 deciding_body_type:
-                  $enum_mapping:
-                    $raw_text: Violation_Finding_Descr_Tx
-                    $mappings:
-                      StateSupervisionViolationResponseDecidingBodyType.COURT:
-                        # By default, the court has final say. So unless this is a direct officer action, it's the court
-                        - "Absconded - Facility Notified"
-                        - "Dismissed by Court"
-                        - "Not Approved by Prosecuting Attorney"
-                        - "Violation Found"
-                        - "Violation Not Found"
-                      StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER:
-                        # These indicate a final finding/action taken directly by the officer without court involvement
-                        - "Graduated Sanction By Officer"
-                        - "Return to Facility by Officer"
-                        - "Warning By Officer"
-                        - "Withdrawn by Officer"
+                  $conditional:
+                    - $if:
+                        $not_null:
+                          $concat:
+                            $values:
+                              - Violation_Finding_Descr_Tx
+                              - Disposition_Desc
+                            $include_nulls: False
+                      $then:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $separator: '@@'
+                              $values:
+                                - Violation_Finding_Descr_Tx
+                                - Disposition_Desc
+                              $include_nulls: True
+                          $custom_parser: us_me_custom_enum_parsers.parse_deciding_body_type
                 supervision_violation_response_decisions:
                   - StateSupervisionViolationResponseDecisionEntry:
                       decision:
