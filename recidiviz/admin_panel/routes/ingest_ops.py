@@ -366,7 +366,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             state_code = StateCode(data["stateCode"])
             sandbox_dataset_prefix = data["sandboxDatasetPrefix"]
             source_bucket = GcsfsBucketPath(data["sourceBucket"])
-            file_tag_filter_regex = data["fileTagFilterRegex"]
+            file_tag_filter_regex = data.get("fileTagFilterRegex", None)
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
@@ -378,11 +378,23 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
                 file_tag_filter_regex=file_tag_filter_regex,
             )
 
+        if import_status.to_serializable()["errorMessage"] is not None:
+            return (
+                jsonify(
+                    {
+                        "fileStatusList": import_status.to_serializable()[
+                            "fileStatuses"
+                        ],
+                        "errorMessage": import_status.to_serializable()["errorMessage"],
+                    }
+                ),
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
         return (
             jsonify(
                 {
                     "fileStatusList": import_status.to_serializable()["fileStatuses"],
-                    "errorMessage": import_status.to_serializable()["errorMessage"],
                 }
             ),
             HTTPStatus.OK,

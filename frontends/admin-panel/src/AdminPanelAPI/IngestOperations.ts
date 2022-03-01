@@ -162,3 +162,28 @@ export const unpauseDirectIngestInstance = async (
     }
   );
 };
+
+// Import raw files to BiqQuery Sandbox
+export const importRawDataToSandbox = async (
+  stateCode: string,
+  sandboxDatasetPrefix: string,
+  sourceBucket: string,
+  fileTagFilterRegex: string | undefined
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/direct/sandbox_raw_data_import`,
+    {
+      stateCode,
+      sandboxDatasetPrefix,
+      sourceBucket,
+      fileTagFilterRegex,
+    }
+  );
+};
+
+// Get list of sandbox buckets
+export const listSandboxBuckets = async (): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/direct/list_sandbox_buckets`
+  );
+};
