@@ -61,6 +61,7 @@ SESSIONS_FIELDS_TO_SERIALIZE: Dict[str, List[str]] = {
         "offense_type",
         "offense_type_short",
         "ncic_code",
+        "felony_class",
     ],
     "violations_sessions": [
         "violations_array",
@@ -118,7 +119,7 @@ def export_csg_files(
         except Exception as e:
             logging.error("Failed to export data: %s", e)
         finally:
-            client.delete_dataset(TEMP_DATASET_NAME)
+            client.delete_dataset(TEMP_DATASET_NAME, delete_contents=True)
 
 
 def generate_metric_export_configs(
