@@ -170,6 +170,11 @@ class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMe
     TEMPORARY_CUSTODY = (
         state_enum_strings.state_specialized_purpose_for_incarceration_temporary_custody
     )
+    # Denotes that someone is incarcerated as part of a program/sentence where they
+    # are released during the week to go to work, then readmitted every weekend.
+    WEEKEND_CONFINEMENT = (
+        state_enum_strings.state_specialized_purpose_for_incarceration_weekend_confinement
+    )
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSpecializedPurposeForIncarceration"]:
@@ -481,4 +486,5 @@ _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {
     "SHOCK INCARCERATION": StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
     "TREATMENT IN PRISON": StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
     "TEMPORARY CUSTODY": StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+    "WEEKEND CONFINEMENT": StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT,
 }
