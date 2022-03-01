@@ -28,6 +28,10 @@ from recidiviz.utils.metadata import local_project_id_override
 US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
 US_PA_RAW_DATASET = "us_pa_raw_data_up_to_date_views"
 
+# date range for covid-era early release policies to take effect
+COVID_POLICY_START_DATE = "2020-02-01"
+COVID_POLICY_END_DATE = "2021-02-01"
+
 PERSON_ASSIGNMENTS_VIEW_NAME = "person_assignments"
 
 PERSON_ASSIGNMENTS_VIEW_DESCRIPTION = (
@@ -138,6 +142,7 @@ geo_cis_referral_matched AS (
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
     WHERE
         compartment_level_2 = "COMMUNITY_CONFINEMENT"
+        AND start_date BETWEEN "{covid_start}" AND "{covid_end}"
     GROUP BY 1, 2, 3, 4
 )
 
@@ -157,6 +162,8 @@ geo_cis_referral_matched AS (
     ON
         a.external_id = b.external_id
         AND b.id_type = "US_PA_INMATE"
+    WHERE
+        reprieve_date BETWEEN "{covid_start}" AND "{covid_end}"
 )
 
 -- Covid-related furlough cohort in PA
@@ -187,6 +194,8 @@ geo_cis_referral_matched AS (
     ON
         a.Inmate_Number = b.external_id
         AND b.id_type = "US_PA_INMATE"
+    WHERE
+        DATE(Status_Dt) BETWEEN "{covid_start}" AND "{covid_end}"
     GROUP BY 1, 2, 3, 4
 )
 
@@ -230,6 +239,8 @@ PERSON_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     us_id_raw_dataset=US_ID_RAW_DATASET,
     us_pa_raw_dataset=US_PA_RAW_DATASET,
+    covid_start=COVID_POLICY_START_DATE,
+    covid_end=COVID_POLICY_END_DATE,
     should_materialize=True,
     clustering_fields=["experiment_id"],
 )
