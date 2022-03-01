@@ -933,7 +933,12 @@ class BigQueryClientImpl(BigQueryClient):
 
         logging.info("Waiting on [%d] extract jobs to finish", len(extract_jobs))
         for job in extract_jobs:
-            job.result()
+            try:
+                job.result()
+            except Exception:
+                logging.exception(
+                    "Extraction failed for table: %s", job.source.table_id
+                )
         logging.info("Completed [%d] extract jobs.", len(extract_jobs))
 
         logging.info(
