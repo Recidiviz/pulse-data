@@ -679,7 +679,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                 response_type_raw_text="VIOLATION NOT FOUND@@NONE",
                                 response_date=date(2018, 1, 31),
                                 deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-                                deciding_body_type_raw_text="VIOLATION NOT FOUND",
+                                deciding_body_type_raw_text="VIOLATION NOT FOUND@@NONE",
                                 supervision_violation_response_decisions=[
                                     StateSupervisionViolationResponseDecisionEntry(
                                         state_code="US_ME",
@@ -721,7 +721,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                 response_type_raw_text="GRADUATED SANCTION BY OFFICER@@VIOLATION FOUND - CONDITIONS AMENDED",
                                 response_date=date(2019, 2, 18),
                                 deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
-                                deciding_body_type_raw_text="GRADUATED SANCTION BY OFFICER",
+                                deciding_body_type_raw_text="GRADUATED SANCTION BY OFFICER@@VIOLATION FOUND - CONDITIONS AMENDED",
                                 supervision_violation_response_decisions=[
                                     StateSupervisionViolationResponseDecisionEntry(
                                         state_code="US_ME",
@@ -764,7 +764,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                 response_subtype="DOC FACILITY",
                                 response_date=date(2019, 12, 10),
                                 deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-                                deciding_body_type_raw_text="VIOLATION FOUND",
+                                deciding_body_type_raw_text="VIOLATION FOUND@@FULL REVOCATION",
                                 supervision_violation_response_decisions=[
                                     StateSupervisionViolationResponseDecisionEntry(
                                         state_code="US_ME",
@@ -806,7 +806,7 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                 response_type_raw_text="VIOLATION FOUND@@VIOLATION FOUND - CONDITIONS AMENDED",
                                 response_date=date(2009, 4, 12),
                                 deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-                                deciding_body_type_raw_text="VIOLATION FOUND",
+                                deciding_body_type_raw_text="VIOLATION FOUND@@VIOLATION FOUND - CONDITIONS AMENDED",
                                 supervision_violation_response_decisions=[
                                     StateSupervisionViolationResponseDecisionEntry(
                                         state_code="US_ME",
@@ -849,12 +849,98 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                                 response_subtype="DOC FACILITY",
                                 response_date=date(2018, 5, 24),
                                 deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-                                deciding_body_type_raw_text="VIOLATION FOUND",
+                                deciding_body_type_raw_text="VIOLATION FOUND@@FULL REVOCATION",
                                 supervision_violation_response_decisions=[
                                     StateSupervisionViolationResponseDecisionEntry(
                                         state_code="US_ME",
                                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                                         decision_raw_text="VIOLATION FOUND@@FULL REVOCATION",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000003",
+                        id_type="US_ME_DOC",
+                    ),
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ME",
+                        external_id="00000003-204",
+                        violation_date=date(2018, 4, 3),
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ME",
+                                violation_type=StateSupervisionViolationType.FELONY,
+                                violation_type_raw_text="FELONY",
+                            ),
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ME",
+                                external_id="00000003-204",
+                                response_type=None,
+                                response_type_raw_text="NONE@@NONE",
+                                response_subtype="DOC FACILITY",
+                                response_date=date(2018, 5, 24),
+                                deciding_body_type=None,
+                                deciding_body_type_raw_text=None,
+                                supervision_violation_response_decisions=[
+                                    StateSupervisionViolationResponseDecisionEntry(
+                                        state_code="US_ME",
+                                        decision=StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+                                        decision_raw_text="NONE@@NONE",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME",
+                        external_id="00000003",
+                        id_type="US_ME_DOC",
+                    ),
+                ],
+                supervision_violations=[
+                    StateSupervisionViolation(
+                        state_code="US_ME",
+                        external_id="00000003-205",
+                        violation_date=date(2018, 4, 3),
+                        supervision_violation_types=[
+                            StateSupervisionViolationTypeEntry(
+                                state_code="US_ME",
+                                violation_type=StateSupervisionViolationType.FELONY,
+                                violation_type_raw_text="FELONY",
+                            ),
+                        ],
+                        supervision_violation_responses=[
+                            StateSupervisionViolationResponse(
+                                state_code="US_ME",
+                                external_id="00000003-205",
+                                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                                response_type_raw_text="NONE@@VIOLATION FOUND - NO SANCTION",
+                                response_subtype="DOC FACILITY",
+                                response_date=date(2018, 5, 24),
+                                deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
+                                deciding_body_type_raw_text="NONE@@VIOLATION FOUND - NO SANCTION",
+                                supervision_violation_response_decisions=[
+                                    StateSupervisionViolationResponseDecisionEntry(
+                                        state_code="US_ME",
+                                        decision=StateSupervisionViolationResponseDecision.NO_SANCTION,
+                                        decision_raw_text="NONE@@VIOLATION FOUND - NO SANCTION",
                                     ),
                                 ],
                             ),

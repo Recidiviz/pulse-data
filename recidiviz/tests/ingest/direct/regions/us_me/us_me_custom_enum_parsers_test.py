@@ -24,6 +24,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
@@ -35,6 +36,7 @@ from recidiviz.ingest.direct.regions.us_me.us_me_custom_enum_parsers import (
     SUPERVISION_STATUSES,
     SUPERVISION_VIOLATION_TRANSFER_REASONS,
     parse_admission_reason,
+    parse_deciding_body_type,
     parse_release_reason,
     parse_supervision_violation_response_decision,
     parse_supervision_violation_response_type,
@@ -455,4 +457,38 @@ class UsMeCustomEnumParsersTest(unittest.TestCase):
 
         self.assertEqual(
             StateSupervisionViolationResponseType.VIOLATION_REPORT, parsed_decision
+        )
+
+    def test_parse_deciding_body_type_violation_finding_court(self) -> None:
+        court_violation_findings = [
+            "ABSCONDED - FACILITY NOTIFIED",
+            "DISMISSED BY COURT",
+            "NOT APPROVED BY PROSECUTING ATTORNEY",
+            "VIOLATION NOT FOUND",
+            "VIOLATION FOUND",
+        ]
+        for violation_finding in court_violation_findings:
+            self.assertEqual(
+                StateSupervisionViolationResponseDecidingBodyType.COURT,
+                parse_deciding_body_type(f"{violation_finding}@@NONE"),
+            )
+
+    def test_parse_deciding_body_type_violation_finding_officer(self) -> None:
+        officer_violation_findings = [
+            "GRADUATED SANCTION BY OFFICER",
+            "RETURN TO FACILITY BY OFFICER",
+            "WARNING BY OFFICER",
+            "WITHDRAWN BY OFFICER",
+        ]
+        for violation_finding in officer_violation_findings:
+            self.assertEqual(
+                StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+                parse_deciding_body_type(f"{violation_finding}@@NONE"),
+            )
+
+    def test_parse_deciding_body_type_disposition_only(self) -> None:
+        disposition_description = "VIOLATION FOUND - NO SANCTION"
+        self.assertEqual(
+            StateSupervisionViolationResponseDecidingBodyType.COURT,
+            parse_deciding_body_type(f"NONE@@{disposition_description}"),
         )

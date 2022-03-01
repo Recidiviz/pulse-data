@@ -480,9 +480,11 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             response_type_raw_text: str,
             response_subtype: Optional[str],
             response_date: datetime.date,
-            deciding_body_type: StateSupervisionViolationResponseDecidingBodyType,
-            deciding_body_type_raw_text: str,
-            decision: StateSupervisionViolationResponseDecision,
+            deciding_body_type: Optional[
+                StateSupervisionViolationResponseDecidingBodyType
+            ],
+            deciding_body_type_raw_text: Optional[str],
+            decision: Optional[StateSupervisionViolationResponseDecision],
             decision_raw_text: str,
         ) -> StateSupervisionViolation:
             """Creates a hydrated graph of violation-related entities, with all cross-references populated,
@@ -543,7 +545,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             response_subtype=None,
             response_date=datetime.date(year=2018, month=1, day=31),
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-            deciding_body_type_raw_text="VIOLATION NOT FOUND",
+            deciding_body_type_raw_text="VIOLATION NOT FOUND@@NONE",
             decision=StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED,
             decision_raw_text="VIOLATION NOT FOUND@@NONE",
         )
@@ -559,7 +561,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             response_subtype=None,
             response_date=datetime.date(year=2019, month=2, day=18),
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
-            deciding_body_type_raw_text="GRADUATED SANCTION BY OFFICER",
+            deciding_body_type_raw_text="GRADUATED SANCTION BY OFFICER@@VIOLATION FOUND - CONDITIONS AMENDED",
             decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
             decision_raw_text="GRADUATED SANCTION BY OFFICER@@VIOLATION FOUND - CONDITIONS AMENDED",
         )
@@ -577,7 +579,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             response_subtype="DOC FACILITY",
             response_date=datetime.date(year=2019, month=12, day=10),
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-            deciding_body_type_raw_text="VIOLATION FOUND",
+            deciding_body_type_raw_text="VIOLATION FOUND@@FULL REVOCATION",
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text="VIOLATION FOUND@@FULL REVOCATION",
         )
@@ -593,7 +595,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             response_subtype=None,
             response_date=datetime.date(year=2009, month=4, day=12),
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-            deciding_body_type_raw_text="VIOLATION FOUND",
+            deciding_body_type_raw_text="VIOLATION FOUND@@VIOLATION FOUND - CONDITIONS AMENDED",
             decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
             decision_raw_text="VIOLATION FOUND@@VIOLATION FOUND - CONDITIONS AMENDED",
         )
@@ -609,12 +611,46 @@ class TestUsMeController(BaseDirectIngestControllerTests):
             response_subtype="DOC FACILITY",
             response_date=datetime.date(year=2018, month=5, day=24),
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
-            deciding_body_type_raw_text="VIOLATION FOUND",
+            deciding_body_type_raw_text="VIOLATION FOUND@@FULL REVOCATION",
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text="VIOLATION FOUND@@FULL REVOCATION",
         )
 
         person_2.supervision_violations = [violation_201, violation_202, violation_203]
+
+        violation_204 = _assemble_violation_instances(
+            person=person_3,
+            violation_id="00000003-204",
+            violation_date=datetime.date(year=2018, month=4, day=3),
+            violation_type=StateSupervisionViolationType.FELONY,
+            violation_type_raw_text="FELONY",
+            response_type=None,
+            response_type_raw_text="NONE@@NONE",
+            response_subtype="DOC FACILITY",
+            response_date=datetime.date(year=2018, month=5, day=24),
+            deciding_body_type=None,
+            deciding_body_type_raw_text=None,
+            decision=StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+            decision_raw_text="NONE@@NONE",
+        )
+
+        violation_205 = _assemble_violation_instances(
+            person=person_3,
+            violation_id="00000003-205",
+            violation_date=datetime.date(year=2018, month=4, day=3),
+            violation_type=StateSupervisionViolationType.FELONY,
+            violation_type_raw_text="FELONY",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_type_raw_text="NONE@@VIOLATION FOUND - NO SANCTION",
+            response_subtype="DOC FACILITY",
+            response_date=datetime.date(year=2018, month=5, day=24),
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.COURT,
+            deciding_body_type_raw_text="NONE@@VIOLATION FOUND - NO SANCTION",
+            decision=StateSupervisionViolationResponseDecision.NO_SANCTION,
+            decision_raw_text="NONE@@VIOLATION FOUND - NO SANCTION",
+        )
+
+        person_3.supervision_violations = [violation_205, violation_204]
 
         # Act
         self._run_ingest_job_for_filename("supervision_violations")

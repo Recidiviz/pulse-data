@@ -4,3 +4,5 @@ Violation_Id,Client_Id,Start_Date,Finding_Date,Violation_Finding_Descr_Tx,Violat
 201,00000002,2019-11-05 00:00:00,2019-12-10 00:00:00,Violation Found,Misdemeanor,Full Revocation,DOC Facility
 202,00000002,2009-03-27 00:00:00,2009-04-12 00:00:00,Violation Found,Technical,Violation Found - Conditions Amended,
 203,00000002,2018-04-03 00:00:00,2018-05-24 00:00:00,Violation Found,Felony,Full Revocation,DOC Facility
+204,00000003,2018-04-03 00:00:00,2018-05-24 00:00:00,,Felony,,DOC Facility
+205,00000003,2018-04-03 00:00:00,2018-05-24 00:00:00,,Felony,Violation Found - No Sanction,DOC Facility
