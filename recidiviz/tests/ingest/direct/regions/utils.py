@@ -296,6 +296,7 @@ def add_supervision_sentence_to_person(
     min_length_days: Optional[int] = None,
     max_length_days: Optional[int] = None,
     sentence_metadata: Optional[str] = None,
+    conditions: Optional[str] = None,
 ) -> entities.StateSupervisionSentence:
     """Append a supervision sentence to the person (updates the person entity in place)."""
 
@@ -314,6 +315,7 @@ def add_supervision_sentence_to_person(
         min_length_days=min_length_days,
         max_length_days=max_length_days,
         sentence_metadata=sentence_metadata,
+        conditions=conditions,
         person=person,
     )
 
@@ -341,6 +343,7 @@ def add_incarceration_sentence_to_person(
     is_life: Optional[bool] = False,
     is_capital_punishment: Optional[bool] = False,
     sentence_metadata: Optional[str] = None,
+    conditions: Optional[str] = None,
 ) -> entities.StateIncarcerationSentence:
     """Append an incarceration sentence to the person (updates the person entity in place)."""
 
@@ -363,6 +366,7 @@ def add_incarceration_sentence_to_person(
         is_capital_punishment=is_capital_punishment,
         initial_time_served_days=initial_time_served_days,
         sentence_metadata=sentence_metadata,
+        conditions=conditions,
         person=person,
     )
 

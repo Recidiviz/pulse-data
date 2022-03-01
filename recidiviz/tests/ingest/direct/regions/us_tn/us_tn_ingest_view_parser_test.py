@@ -527,6 +527,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         is_life=False,
                         is_capital_punishment=False,
                         initial_time_served_days=0,
+                        conditions="[{'NOTE_UPDATE_DATE': '2003-10-27T00:00:00', 'CONDITIONS_ON_DATE': 'DEFENDANT TO SERVE 60 DAYS JAIL TIME IN THE, COUNTY JAIL NO J/C LISTED'}]",
                         charges=[
                             StateCharge(
                                 external_id="00000002-088-2021-S51773-13",

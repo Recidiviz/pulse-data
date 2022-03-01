@@ -17,6 +17,7 @@ input_columns:
   - EarliestPossibleReleaseDate
   - FullExpirationDate
   - ExpirationDate
+  - Conditions
   - CalculatedMinimumSentenceDays
   - CalculatedMaximumSentenceDays
   - PretrialJailCredits
@@ -172,6 +173,7 @@ output:
                       - $literal("L")  # Life Sentence
                       - $literal("W")  # Life sentence without parole
                       - $literal("H")  # Habitual (equivalent to life sentence)
+                conditions: Conditions
                 sentence_metadata: $variable(sentence_metadata)
                 initial_time_served_days: PretrialJailCredits
                 charges:
@@ -233,6 +235,7 @@ output:
                           - SentencedTo
                     # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
                     $custom_parser: us_tn_custom_parsers.parse_supervision_type
+                conditions: Conditions
                 sentence_metadata: $variable(sentence_metadata)
                 charges:
                   - StateCharge:

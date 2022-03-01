@@ -30,16 +30,46 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH order_sentence_actions_by_date_per_sentence AS (
     SELECT 
-        OffenderID, 
-        ConvictionCounty, 
-        CaseYear, 
-        CaseNumber, 
+        OrderedSentenceAction.OffenderID, 
+        OrderedSentenceAction.ConvictionCounty, 
+        OrderedSentenceAction.CaseYear, 
+        OrderedSentenceAction.CaseNumber, 
+        OrderedSentenceAction.CountNumber,
+        OrderedSentenceAction.SentenceAction as MostRecentSentenceAction
+    FROM (
+        SELECT 
+            OrderedSentenceAction.*,
+            ROW_NUMBER() OVER ( PARTITION BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber ORDER BY ActionDate DESC ) as SentenceActionNumber
+        FROM {SentenceAction} OrderedSentenceAction
+    ) OrderedSentenceAction
+    WHERE SentenceActionNumber = 1
+),
+special_conditions_date_grouping AS (
+    SELECT 
+        OffenderID,
+        ConvictionCounty,
+        CaseYear,
+        CaseNumber,
         CountNumber,
-        SentenceAction as MostRecentSentenceAction
-    FROM {SentenceAction} 
-    -- Only pull in the most recent sentence action associated with a sentence.
-    WHERE TRUE
-    QUALIFY ROW_NUMBER() OVER ( PARTITION BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber ORDER BY ActionDate DESC ) = 1
+        # Escape quotes for correct parsing for string aggregation and array creation
+        STRING_AGG( REPLACE(SpecialConditions, '"', '\"'), ' ' ORDER BY CAST(PageNumber AS INT64) ASC, CAST(LineNumber AS INT64) ASC) as ConditionsOnDate,
+        DATE_TRUNC(CAST(LastUpdateDate as DATETIME), DAY) as NoteUpdateDate
+    FROM {JOSpecialConditions}
+    GROUP BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber, NoteUpdateDate
+),
+special_conditions_aggregation AS (
+    SELECT
+        OffenderID,
+        ConvictionCounty,
+        CaseYear,
+        CaseNumber,
+        CountNumber,
+        # Include underscores for column names when converting to JSON for better readability 
+        TO_JSON_STRING(
+            ARRAY_AGG(STRUCT<note_update_date DATETIME, conditions_on_date string>(NoteUpdateDate,ConditionsOnDate) ORDER BY NoteUpdateDate)
+        ) as Conditions
+    FROM special_conditions_date_grouping 
+    GROUP BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber
 )
 SELECT
     OffenderID,
@@ -55,9 +85,10 @@ SELECT
     Sentence.EarliestPossibleReleaseDate,
     Sentence.FullExpirationDate,
     Sentence.ExpirationDate,
+    JOSpecialConditions.Conditions as Conditions,
     IF(SentenceMisc.AlternateSentenceImposeDate is not null, SentenceMisc.AlternateSentenceImposeDate, JOCharge.SentenceImposedDate) as SentenceImposeDate,
-    DATE_DIFF(DATE(Sentence.EarliestPossibleReleaseDate), DATE(Sentence.SentenceEffectiveDate), DAY) as CalculatedMinimumSentenceDays,
-    DATE_DIFF(DATE(Sentence.FullExpirationDate), DATE(Sentence.SentenceEffectiveDate), DAY) as CalculatedMaximumSentenceDays, 
+    DATE_DIFF(CAST(Sentence.EarliestPossibleReleaseDate AS DATETIME), CAST(Sentence.SentenceEffectiveDate AS DATETIME), DAY) as CalculatedMinimumSentenceDays,
+    DATE_DIFF(CAST(Sentence.FullExpirationDate AS DATETIME), CAST(Sentence.SentenceEffectiveDate AS DATETIME), DAY) as CalculatedMaximumSentenceDays,
     GREATEST(JOSentence.PretrialJailCredits, JOSentence.CalculatedPretrialCredits) as PretrialJailCredits,
     JOSentence.LifeDeathHabitual,
     -- The most accurate consecutive sentence information can be found in the `Sentence` table.
@@ -89,6 +120,8 @@ USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 LEFT JOIN {JOMiscellaneous} JOMiscellaneous
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 LEFT JOIN {JOIdentification} JOIdentification
+USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
+LEFT JOIN special_conditions_aggregation JOSpecialConditions 
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 LEFT JOIN {OffenderStatute} OffenderStatute
 ON JOCharge.ChargeOffense = OffenderStatute.Offense

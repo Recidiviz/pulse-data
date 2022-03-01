@@ -1,0 +1,3 @@
+OffenderID,ConvictionCounty,CaseYear,CaseNumber,CountNumber,FirstName,MiddleName,LastName,SuffixName,BirthDate,SocialSecurityNumber,IndictmentNumber,WarrantNumber,JudicialDistrict,JudicialDivision,DefenseAttorneyName,DistrictAttorneyName,DefenseAttorneyType,SIDNumber,CountyOffenderID,PostedDate,VictimRelation,VictimAge,ArrestedDate,LastUpdateUserID,LastUpdateDate
+02015206,024,1988,3186,0,JAMES,LEE,CARTER,,1970-01-17 00:00:00,408151406,3186,3186,25,01,,ELIZABETH RICE,,,,1992-02-01 00:00:00,,0,,AG03776,1992-02-01 02:16:39.000000
+02015206,079,1994,9204829,0,JAMES,,CARTER,,1970-01-17 00:00:00,408151406,92-04829,,30,03,L.LAMBERT,J.LAMMEY,PD,,,1995-02-02 00:00:00,,0,,BI01127,1995-02-02 09:38:01.680910

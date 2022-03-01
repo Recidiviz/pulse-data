@@ -372,6 +372,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             county_code="088",
             max_length_days=730,
             initial_time_served_days=0,
+            conditions="[{'NOTE_UPDATE_DATE': '2003-10-27T00:00:00', 'CONDITIONS_ON_DATE': 'DEFENDANT TO SERVE 60 DAYS JAIL TIME IN THE, COUNTY JAIL NO J/C LISTED'}]",
         )
 
         person_2_charge = entities.StateCharge(
