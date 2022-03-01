@@ -61,8 +61,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
                 DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
             FROM `{project_id}.{reference_views_dataset}.supervision_to_liberty_transitions`
         )
-        WHERE state_code = 'US_ND'
-            AND transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
+        WHERE transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),
     get_last_updated AS ({get_pathways_supervision_last_updated_date})
 
