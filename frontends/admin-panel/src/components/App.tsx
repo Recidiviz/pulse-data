@@ -28,6 +28,7 @@ import ColumnView from "./ColumnView";
 import DataDiscoveryView from "./DataDiscoveryView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./DatasetView";
+import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
 import POEmailsView from "./POEmailsView";
@@ -99,6 +100,11 @@ const App = (): JSX.Element => {
                 Actions &amp; Summaries
               </Link>
             </Menu.Item>
+            <Menu.Item key={IngestOperations.DIRECT_SANDBOX_RAW_IMPORT}>
+              <Link to={IngestOperations.DIRECT_SANDBOX_RAW_IMPORT}>
+                Sandbox Raw Data Import
+              </Link>
+            </Menu.Item>
             <Menu.Item key={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}>
               <Link to={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}>
                 Flash Database
@@ -165,6 +171,11 @@ const App = (): JSX.Element => {
             exact
             path={IngestOperations.INGEST_ACTIONS_ROUTE}
             component={IngestOperationsView}
+          />
+          <Route
+            exact
+            path={IngestOperations.DIRECT_SANDBOX_RAW_IMPORT}
+            component={DirectSandboxRawImport}
           />
           <Route
             exact

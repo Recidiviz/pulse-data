@@ -245,12 +245,8 @@ const ValidationStatusView = (): JSX.Element => {
       />
       <Title level={3}>Table of Contents</Title>
       <Anchor affix={false}>
-        <div>
-          <Anchor.Link
-            className="validation-anchor-link"
-            href="#summary-failures"
-            title="Failure Summary"
-          />
+        <div className="validation-anchor-link">
+          <Anchor.Link href="#summary-failures" title="Failure Summary" />
         </div>
         <div className="validation-anchor-link-child validation-anchor-link">
           <Anchor.Link href="#hard-failures" title="Hard Failures" />
