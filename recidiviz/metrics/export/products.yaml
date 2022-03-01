@@ -101,7 +101,7 @@ products:
       - state_code: US_ID
         environment: production
       - state_code: US_ND
-        environment: staging
+        environment: production
       - state_code: US_TN
         environment: staging
   - name: Pathways Prison Module
