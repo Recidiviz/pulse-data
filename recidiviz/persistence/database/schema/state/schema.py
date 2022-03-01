@@ -478,6 +478,7 @@ state_specialized_purpose_for_incarceration = Enum(
     state_enum_strings.state_specialized_purpose_for_incarceration_shock_incarceration,
     state_enum_strings.state_specialized_purpose_for_incarceration_treatment_in_prison,
     state_enum_strings.state_specialized_purpose_for_incarceration_temporary_custody,
+    state_enum_strings.state_specialized_purpose_for_incarceration_weekend_confinement,
     name="state_specialized_purpose_for_incarceration",
 )
 

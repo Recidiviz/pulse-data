@@ -348,6 +348,7 @@ state_specialized_purpose_for_incarceration_parole_board_hold = "PAROLE_BOARD_HO
 state_specialized_purpose_for_incarceration_shock_incarceration = "SHOCK_INCARCERATION"
 state_specialized_purpose_for_incarceration_treatment_in_prison = "TREATMENT_IN_PRISON"
 state_specialized_purpose_for_incarceration_temporary_custody = "TEMPORARY_CUSTODY"
+state_specialized_purpose_for_incarceration_weekend_confinement = "WEEKEND_CONFINEMENT"
 
 # state_early_discharge.py
 
