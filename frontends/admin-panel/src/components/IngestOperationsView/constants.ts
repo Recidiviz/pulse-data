@@ -80,3 +80,13 @@ export type StateCodeInfo = {
   code: string;
   name: string;
 };
+
+export interface FileStatus {
+  fileTag: string | undefined;
+  status: string | undefined;
+  errorMessage: string | undefined;
+}
+
+export type FileStatusList = {
+  fileStatusList: FileStatus[];
+};

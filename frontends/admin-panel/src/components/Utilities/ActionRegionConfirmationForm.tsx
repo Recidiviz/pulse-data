@@ -47,50 +47,52 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
       : regionCode.toUpperCase().concat("_", action.toUpperCase());
 
     return (
-      <Modal
-        visible={visible}
-        title={actionName || ""}
-        okText="Ok"
-        cancelText="Cancel"
-        onCancel={onCancel}
-        onOk={() => {
-          form
-            .validateFields()
-            .then((values) => {
-              form.resetFields();
-              onConfirm(action);
-            })
-            .catch((info) => {
-              form.resetFields();
-            });
-        }}
-      >
-        <p>
-          Are you sure you want to
-          <b> {actionName?.toLowerCase()} </b>
-          for
-          <b>{ingestInstance ? ` ${ingestInstance}` : ""}</b>
-          {ingestInstance ? " ingest instance in " : " "}
-          <b>{regionCode.toUpperCase()}</b>?
-        </p>
-        <p>
-          Type <b>{confirmationRegEx}</b> below to confirm.
-        </p>
-        <Form form={form} layout="vertical" name="form_in_modal">
-          <Form.Item
-            name="region_code"
-            rules={[
-              {
-                required: true,
-                message: "Please input the region code",
-                pattern: RegExp(confirmationRegEx),
-              },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <>
+        <Modal
+          visible={visible}
+          title={actionName || ""}
+          okText="Ok"
+          cancelText="Cancel"
+          onCancel={onCancel}
+          onOk={() => {
+            form
+              .validateFields()
+              .then((values) => {
+                form.resetFields();
+                onConfirm(action);
+              })
+              .catch((info) => {
+                form.resetFields();
+              });
+          }}
+        >
+          <p>
+            Are you sure you want to
+            <b> {actionName?.toLowerCase()} </b>
+            for
+            <b>{ingestInstance ? ` ${ingestInstance}` : ""}</b>
+            {ingestInstance ? " ingest instance in " : " "}
+            <b>{regionCode.toUpperCase()}</b>?
+          </p>
+          <p>
+            Type <b>{confirmationRegEx}</b> below to confirm.
+          </p>
+          <Form form={form} layout="vertical" name="form_in_modal">
+            <Form.Item
+              name="region_code"
+              rules={[
+                {
+                  required: true,
+                  message: "Please input the region code",
+                  pattern: RegExp(confirmationRegEx),
+                },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </>
     );
   };
 
