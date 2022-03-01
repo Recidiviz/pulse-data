@@ -1,14 +1,23 @@
 file_tag: CIS_9903_PROFESSIONAL_TYPE
 file_description: |-
-  TODO(#10734): Add raw data descriptions
+  This table lists all of the plea types that are applicable within MDOC.
 primary_key_cols: []
 columns:
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_Professional_Type_Desc
+    description: |-
+      A human-readable text description of the professional type.
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Professional_Type_Cd
+    description: |-
+      The primary key for this table. A short enum code representing the professional type.
+    known_values:
+    - value: 33
+      description: Judge
+    - value: 36
+      description: Justice

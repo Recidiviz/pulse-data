@@ -1,16 +1,42 @@
 file_tag: CIS_4002_PLEA_TYPE
 file_description: |-
-  TODO(#10734): Add raw data descriptions
-primary_key_cols: []
+  This table lists all of the plea types that are applicable within MDOC.
+primary_key_cols:
+  - Plea_Type_Cd
 columns:
   - name : Adult_Ind
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_Plea_Type_Desc
+    description: |-
+      A human-readable text description of the plea.
   - name : Juvenile_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Plea_Type_Cd
+    description: |-
+      The primary key for this table. A short enum code representing the plea.
+    known_values:
+      - value: CG
+        description: CONDITIONAL GUILTY PLEA
+      - value: NCR
+        description: NOT CRIMINALLY RESPONSIBLE
+      - value: NG
+        description: NOT GUILTY
+      - value: GLTY
+        description: GUILTY
+      - value: WVR
+        description: WAIVER
+      - value: ADM
+        description: ADMIT
+      - value: DNY
+        description: DENY
+      - value: NA
+        description: NO ANSWER
+      - value: NOLO
+        description: NOLO (Nolo contendere, which is essentially a plea of "no contest")
+      - value: "?"
+        description: DC CONV (Exact meaning unclear, usage is rare)
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx

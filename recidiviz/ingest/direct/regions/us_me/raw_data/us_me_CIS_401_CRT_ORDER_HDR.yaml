@@ -115,7 +115,11 @@ columns:
       - value: 129
         description: Plea Bargain
   - name: Cis_401_Court_Order_Id
-    description: This field is not a unique ID and refers to a Court_Id value in the same table. There's one row per charge within a single court order date.
+    description: |-
+      This field is not the unique primary key of the table. Rather, it refers to whichever other sentence in this
+      table this particular sentence is being served consecutively with, if any. If a row has a null value for this
+      field, it means this sentence is not to be served consecutively with other sentences (unless a later sentence
+      is set to serve consecutively with this one).
   - name: Cis_4010_Crt_Order_Status_Cd
     description: |-
       Current status of the court order
@@ -208,6 +212,7 @@ columns:
   - name: Cis_9902_Court_Cd
     description: The court where the order originated from, see CIS_9902_COURT for all possible values.
   - name: Cis_9904_Judge_Prof_Id
+    description: The ID of the professional (judge or justice) who tried the court case.
   - name: Cis_9910_Def_Att_Id
   - name: Cis_9910_Pros_Att_Id
   - name: Comm_Override_Notes_Tx
@@ -223,6 +228,8 @@ columns:
   - name: Comments_Tx
   - name: Count_Num
   - name: Court_Finding_Date
+    description: The date that the finding of the court was made, e.g. when conviction or acquittal occurred.
+    is_datetime: True
   - name: Court_Order_Date
   - name: Court_Order_Id
     description: Primary key field
@@ -287,9 +294,12 @@ columns:
   - name: Prob_Mths_Num
     description: The number of months in the probation sentence.
   - name: Prob_Start_Date
+    description: The date that a sentence to probation starts, if applicable.
+    is_datetime: True
   - name: Prob_Yrs_Num
     description: The number of years in the probation sentence.
   - name: Probation_Term_Ind
+    description: Indicates that this is a sentence to a period of incarceration as a result of the revocation of probation.
   - name: Process_Adjustment_Ind
   - name: Resentence_Comments_Tx
   - name: Resentence_Ind
