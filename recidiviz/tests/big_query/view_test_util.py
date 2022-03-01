@@ -835,6 +835,14 @@ class BaseViewTest(unittest.TestCase):
 
         # Postgres does not have LOGICAL_OR operator, use BOOL_OR instead
         query = _replace_iter(query, r"LOGICAL_OR", "BOOL_OR")
+
+        # Postgres doesn't support TO_JSON_STRING so we replace with ARRAY_TO_JSON
+        query = _replace_iter(
+            query,
+            r"TO_JSON_STRING\(",
+            "ARRAY_TO_JSON(",
+            flags=re.IGNORECASE,
+        )
         return query
 
     BQ_TIMESTAMP_DATE_FORMAT_TO_POSTGRES = {
