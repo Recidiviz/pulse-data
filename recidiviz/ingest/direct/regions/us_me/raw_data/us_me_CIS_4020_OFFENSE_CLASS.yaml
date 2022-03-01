@@ -12,7 +12,32 @@ columns:
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Offense_Class_Cd
-    description: The primary key of the table.
+    description: The primary key of the table. A short enum code representing the plea.
+    known_values:
+      - value: M
+        description: M (Murder)
+      - value: A
+        description: A
+      - value: B
+        description: B
+      - value: C
+        description: C
+      - value: D
+        description: D (Includes Criminal Contempt)
+      - value: E
+        description: E
+      - value: V
+        description: V (Civil Violation)
+      - value: U
+        description: U (Unclassified Misdemeanors)
+      - value: F
+        description: F (Unclassified Felonies)
+      - value: T
+        description: T
+      - value: X
+        description: Migration - class unknown in source
+      - value: Z
+        description: Migration - class invalid in source
   - name : Offense_Class_Desc
     description: The offense class that maps to the code.
   - name : System_Ref_Comments_Tx

@@ -1,22 +1,32 @@
 file_tag: CIS_9904_PROFESSIONAL
 file_description: |-
-  TODO(#10734): Add raw data descriptions
-primary_key_cols: []
+  This table contains a list of known "professional" agents referenced in other tables. At present, this appears to
+  include only judges and justices.
+primary_key_cols:
+  - Professional_Id
 columns:
   - name : Cis_9902_Mejis_Crt_Abrv
   - name : Cis_9902_Mejis_Crt_Hierarch
   - name : Cis_9903_Professional_Type_Cd
+    description: |-
+      The type of professional, see CIS_9903_PROFESSIONAL_TYPE for possible values.
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Effct_Date
   - name : First_Name
+    description: |-
+      First name of the professional.
   - name : Ineffct_Date
   - name : Last_Name
+    description: |-
+      Last name of the professional.
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Phone_Num
   - name : Professional_Id
+    description: |-
+      The primary key for this table. A unique ID assigned to each distinct professional.
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
