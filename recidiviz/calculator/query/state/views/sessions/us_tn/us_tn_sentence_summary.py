@@ -58,13 +58,14 @@ US_TN_SENTENCE_SUMMARY_QUERY_TEMPLATE = """
     a level other than level 1, which means that it is indeed a case of a child sentence being longer than the parent. In these cases, we are still calling
     the longest sentence the primary one.
     */
-    -- TODO(#11161): Consider creating both a "primary" sentence id (based on level) and a "most severe" sentence level based on sentence length. This would allow us to handle cases where the parent sentence is not the longest  
     SELECT DISTINCT
         person_id,
         state_code,
         sentence_group_id,
-        FIRST_VALUE(sentence_id) OVER(longest_sentence_within_group) AS primary_sentence_id,
-        FIRST_VALUE(sentence_level) OVER(longest_sentence_within_group) AS sentence_level,
+        FIRST_VALUE(sentence_id) OVER(longest_sentence_within_group) AS most_severe_sentence_id,
+        FIRST_VALUE(sentence_level) OVER(longest_sentence_within_group) AS most_severe_sentence_level,
+        FIRST_VALUE(sentence_id) OVER(first_sentence_within_group) AS primary_sentence_id,
+        #TODO(#11364): Add `last_sentence_id` to capture last "leaf" child sentences in sentence group
         #TODO(#11250): Add additional logic for handling credit accumulation from parents with different concurrent credits
         SUM(max_sentence_length_days_calculated) OVER(PARTITION BY person_id, sentence_group_id) AS total_max_sentence_length_days_calculated,
         SUM(total_credits_sentence_expiration) OVER(PARTITION BY person_id, sentence_group_id) AS total_credits_sentence_expiration,
@@ -73,7 +74,9 @@ US_TN_SENTENCE_SUMMARY_QUERY_TEMPLATE = """
         SUM(total_ppsc_credits) OVER(PARTITION BY person_id, sentence_group_id) AS total_ppsc_credits,
         SUM(total_other_credits) OVER(PARTITION BY person_id, sentence_group_id) AS total_other_credits,
     FROM cte
-    WINDOW longest_sentence_within_group AS (PARTITION BY person_id, sentence_group_id ORDER BY max_sentence_length_days_calculated DESC, sentence_level ASC)
+    WINDOW 
+        longest_sentence_within_group AS (PARTITION BY person_id, sentence_group_id ORDER BY max_sentence_length_days_calculated DESC, sentence_level ASC),
+        first_sentence_within_group AS (PARTITION BY person_id, sentence_group_id ORDER BY sentence_level ASC, max_sentence_length_days_calculated DESC)
     ORDER BY 1,2,3
 """
 
