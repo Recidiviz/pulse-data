@@ -39,21 +39,27 @@ US_TN_COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         ss.person_id,
         ss.primary_sentence_id,
         ss.sentence_group_id,
-        ss.sentence_level,
+        ss.most_severe_sentence_level AS sentence_level,
         ss.state_code,
-        sp.full_expiration_date,
+        #TODO(#11364): Use `last_sentence_id` to capture expiration date associated with latest child sentences
+        sms.full_expiration_date,
         sp.sentence_imposed_date,
         sp.sentence_effective_date,
-        sp.offense_description,
-        sp.expiration_date,
-        sp.earliest_possible_release_date,
-        sp.conviction_class,
-        sp.max_sentence_length_days_calculated,
+        sms.offense_description,
+        sms.expiration_date,
+        sms.earliest_possible_release_date,
+        sms.conviction_class,
+        sms.max_sentence_length_days_calculated,
         ss.total_max_sentence_length_days_calculated,
     FROM `{project_id}.{sessions_dataset}.us_tn_sentence_summary_materialized` ss
+    -- Retrieves attributes of the longest parent sentence in the sentence group
     JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` sp
         ON ss.person_id = sp.person_id
         AND ss.primary_sentence_id = sp.sentence_id
+    -- Retrieves attributes of the longest (most severe) sentence in the sentence group
+    JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` sms
+        ON ss.person_id = sms.person_id
+        AND ss.most_severe_sentence_id = sms.sentence_id
     )
     ,
     primary_sentences_with_session_id AS 
