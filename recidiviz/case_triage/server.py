@@ -104,10 +104,7 @@ limiter = Limiter(
 )
 
 if in_development():
-    # Only import in development
-    from recidiviz.tools.postgres import local_postgres_helpers
-
-    db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+    db_url = os.environ.get("CASE_TRIAGE_DEVELOPMENT_POSTGRES_URL")
 else:
     db_url = SQLAlchemyEngineManager.get_server_postgres_instance_url(
         database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)

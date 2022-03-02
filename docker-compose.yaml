@@ -25,11 +25,7 @@ services:
       - FLASK_ENV=development
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
-      - SQLALCHEMY_DB_HOST=db
-      - SQLALCHEMY_DB_NAME=postgres
-      - SQLALCHEMY_DB_USER=postgres
-      - SQLALCHEMY_DB_PASSWORD=example
-      - SQLALCHEMY_USE_SSL=0
+      - CASE_TRIAGE_DEVELOPMENT_POSTGRES_URL=postgresql://postgres:example@db/postgres
     links:
       - "redis:rate_limit_cache"
       - "redis:sessions_cache"
@@ -57,11 +53,6 @@ services:
       - GOOGLE_CLOUD_PROJECT=recidiviz-staging
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
-      - SQLALCHEMY_DB_HOST=db
-      - SQLALCHEMY_DB_NAME=postgres
-      - SQLALCHEMY_DB_USER=postgres
-      - SQLALCHEMY_DB_PASSWORD=example
-      - SQLALCHEMY_USE_SSL=0
 
   migrations:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
