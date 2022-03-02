@@ -176,6 +176,7 @@ class DirectIngestIngestViewExportManager:
 
         logging.info("Generating new ingest jobs.")
         for ingest_view_name, export_state in ingest_view_to_export_state.items():
+            ingest_view = self.ingest_views_by_name[ingest_view_name]
             lower_bound_datetime_exclusive = (
                 export_state.last_export_metadata.datetimes_contained_upper_bound_inclusive
                 if export_state.last_export_metadata
@@ -187,6 +188,17 @@ class DirectIngestIngestViewExportManager:
                 _date,
                 upper_bound_datetime_inclusive,
             ) in export_state.max_update_datetime_by_date:
+                # If the view requires a reverse date diff (i.e. only outputting what
+                # is found from Date 1 that's not in Date 2), then no work is necessary
+                # when we have no lower bound date. We do not create an ingest view
+                # materialization task for it in this case.
+                if (
+                    not lower_bound_datetime_exclusive
+                    and ingest_view.do_reverse_date_diff
+                ):
+                    lower_bound_datetime_exclusive = upper_bound_datetime_inclusive
+                    continue
+
                 args = GcsfsIngestViewExportArgs(
                     ingest_view_name=ingest_view_name,
                     upper_bound_datetime_prev=lower_bound_datetime_exclusive,
@@ -441,17 +453,14 @@ class DirectIngestIngestViewExportManager:
             ingest_view_export_args.ingest_view_name
         ]
 
-        # TODO(#4268): Clean up - do not create ingest view export args in the first place for reverse date diff views
-        #  if there is no upper_bound_datetime_prev.
-        # If the view requires a reverse date diff (i.e. only outputting what is found from Date 1 that's not in Date
-        # 2), then no work is necessary when we only have one date. We mark the ingest view as "exported" so that
-        # to mark that all work is done for it.
         if (
             ingest_view.do_reverse_date_diff
             and not ingest_view_export_args.upper_bound_datetime_prev
         ):
-            self.file_metadata_manager.mark_ingest_view_exported(metadata)
-            return True
+            raise ValueError(
+                f"Attempting to process reverse date diff view "
+                f"[{ingest_view.ingest_view_name}] with no lower bound date."
+            )
 
         logging.info(
             "Start loading results of individual date queries into intermediate tables."
