@@ -14,24 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines an interface for a class that handles logic for deciding which extract and
-merge job should run next given the desired data import ordering.
-"""
-import abc
-from typing import Generic, Optional, TypeVar
-
-from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
-
-ExtractAndMergeArgsT = TypeVar("ExtractAndMergeArgsT", bound=ExtractAndMergeArgs)
-
-
-class ExtractAndMergeJobPrioritizer(Generic[ExtractAndMergeArgsT]):
-    """Interface for a class that handles logic for deciding which extract and merge
-    job should run next given the desired data import ordering.
-    """
-
-    @abc.abstractmethod
-    def get_next_job_args(
-        self,
-    ) -> Optional[ExtractAndMergeArgsT]:
-        """Returns a set of args defining the next chunk of data to process."""

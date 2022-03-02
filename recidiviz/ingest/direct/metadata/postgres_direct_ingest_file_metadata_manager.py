@@ -23,20 +23,18 @@ from typing import List, Optional
 import pytz
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    GcsfsIngestViewExportArgs,
-    filename_parts_from_path,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestFileMetadataManager,
     DirectIngestIngestFileMetadataManager,
     DirectIngestRawFileMetadataManager,
     DirectIngestSftpFileMetadataManager,
 )
+from recidiviz.ingest.direct.types.cloud_task_args import GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import dao, schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (

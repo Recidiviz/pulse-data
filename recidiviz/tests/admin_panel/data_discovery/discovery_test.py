@@ -26,24 +26,22 @@ import pandas as pd
 
 from recidiviz.admin_panel.data_discovery.arguments import (
     Condition,
-    DataDiscoveryArgs,
     ConditionGroup,
+    DataDiscoveryArgs,
 )
 from recidiviz.admin_panel.data_discovery.cache_ingest_file_as_parquet import (
     SingleIngestFileParquetCache,
 )
 from recidiviz.admin_panel.data_discovery.discovery import (
-    get_filters,
     collect_file_paths,
+    get_filters,
     load_dataframe,
 )
 from recidiviz.admin_panel.data_discovery.file_configs import (
     DataDiscoveryStandardizedFileConfig,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 
 
 class TestDataDiscovery(TestCase):

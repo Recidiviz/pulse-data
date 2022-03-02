@@ -24,17 +24,15 @@ from typing import Dict, List, Optional, Set
 import pytz
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
-)
 from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer import (
     ExtractAndMergeJobPrioritizer,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    LegacyExtractAndMergeArgs,
-    filename_parts_from_path,
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    DirectIngestGCSFileSystem,
 )
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.types.cloud_task_args import LegacyExtractAndMergeArgs
 
 
 # TODO(#9717): This class will be replaced by an implementation of
