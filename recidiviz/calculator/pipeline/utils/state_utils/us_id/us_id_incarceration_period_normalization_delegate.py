@@ -53,6 +53,12 @@ class UsIdIncarcerationNormalizationDelegate(
 ):
     """US_ID implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 
+    # TODO(#11363): Delete this once fuzzy-matched IPs are being handled in US_ID
+    def drop_fuzzy_matched_periods(self) -> bool:
+        """We need to drop all fuzzy-matched periods in US_ID until they are being
+        properly handled in ingest and by normalization."""
+        return True
+
     def normalize_period_if_commitment_from_supervision(
         self,
         incarceration_period_list_index: int,

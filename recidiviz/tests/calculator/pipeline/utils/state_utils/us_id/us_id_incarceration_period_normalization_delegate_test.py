@@ -96,6 +96,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_ID"
         initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -106,6 +107,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="3",
             state_code=state_code,
             admission_date=date(2012, 12, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -149,6 +151,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_ID"
         initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -159,6 +162,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="3",
             state_code=state_code,
             admission_date=date(2012, 12, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -174,6 +178,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         collapsed_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=initial_incarceration_period.incarceration_period_id,
+            external_id=initial_incarceration_period.external_id,
             state_code=state_code,
             admission_date=initial_incarceration_period.admission_date,
             admission_reason=initial_incarceration_period.admission_reason,
@@ -734,6 +739,42 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[supervision_period],
                 collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual([expected_period], validated_incarceration_periods)
+
+    # TODO(#11363): Delete this once fuzzy-matched IPs are being handled in US_ID
+    def test_us_id_normalized_incarceration_periods_drop_fuzzy_matched(self) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="12345-3",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        fuzzy_matched_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="199999-11111-FUZZY_MATCHED",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+        )
+
+        expected_period = attr.evolve(incarceration_period)
+
+        validated_incarceration_periods = (
+            self._normalized_incarceration_periods_for_calculations(
+                incarceration_periods=[
+                    incarceration_period,
+                    fuzzy_matched_incarceration_period,
+                ],
             )
         )
 
