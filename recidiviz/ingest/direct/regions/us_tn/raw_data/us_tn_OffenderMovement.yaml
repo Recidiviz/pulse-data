@@ -362,11 +362,19 @@ columns:
       - value: VIOLW
         description: VIOLATION WARRANT-NEW CHARGE
       - value: WKEND
-        description: SERVING WEEKEND
+        description: |-
+          SERVING WEEKEND - This person is serving a "periodic confinement" sentence
+          under which they are released to supervision at the beginning of every week
+          and readmitted for the weekend. This status is used for the readmission to
+          prison.
       - value: WKREL
         description: WORK/RELEASE
       - value: WKRET
-        description: WEEKEND RETURN
+        description: |-
+          WEEKEND RETURN - This person is serving a "periodic confinement" sentence
+          under which they are released to supervision at the beginning of every week
+          and readmitted for the weekend. This status is used for the re-release to
+          supervision.
   - name: FromLocationID
     description: |-
       This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.
