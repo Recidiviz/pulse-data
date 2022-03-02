@@ -481,7 +481,7 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
-            controller.do_ingest_view_export(ingest_view_export_args)
+            controller.do_ingest_view_materialization(ingest_view_export_args)
     return "", HTTPStatus.OK
 
 

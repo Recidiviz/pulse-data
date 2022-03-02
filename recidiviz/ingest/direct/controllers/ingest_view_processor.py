@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Interface and standard implementation for a class that will take the contents of
-an ingest view file and persist the contents appropriately to the Recidiviz schema
-in Postgres.
+"""Interface and standard implementation for a class that will take ingest view query
+results and persist the contents appropriately to the Recidiviz schema in Postgres.
 """
 
 import abc
@@ -24,8 +23,8 @@ from typing import List, cast
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
-    IngestViewFileParser,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
+    IngestViewResultsParser,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
 from recidiviz.persistence import persistence
@@ -37,8 +36,8 @@ from recidiviz.persistence.ingest_info_converter.base_converter import (
 
 
 class IngestViewProcessor:
-    """Interface for a class that will take the contents of an ingest view file and
-    persist the contents appropriately to the Recidiviz schema in Postgres.
+    """Interface for a class that will take ingest view query results and persist the
+    contents appropriately to the Recidiviz schema in Postgres.
     """
 
     @abc.abstractmethod
@@ -52,12 +51,12 @@ class IngestViewProcessor:
 
 
 class IngestViewProcessorImpl(IngestViewProcessor):
-    """Standard (new) implementation of the IngestViewProcessor, which takes the
-    contents of an ingest view file and persists the contents appropriately to the
-    Recidiviz schema in Postgres.
+    """Standard (new) implementation of the IngestViewProcessor, which takes ingest view
+    query results and persists the contents appropriately to the Recidiviz schema in
+    Postgres.
     """
 
-    def __init__(self, ingest_view_file_parser: IngestViewFileParser):
+    def __init__(self, ingest_view_file_parser: IngestViewResultsParser):
         self.ingest_view_file_parser = ingest_view_file_parser
 
     def parse_and_persist_contents(
@@ -67,7 +66,7 @@ class IngestViewProcessorImpl(IngestViewProcessor):
         ingest_metadata: IngestMetadata,
     ) -> bool:
         parsed_entities = self.ingest_view_file_parser.parse(
-            file_tag=args.file_tag,
+            ingest_view_name=args.ingest_view_name,
             contents_handle=contents_handle,
         )
 

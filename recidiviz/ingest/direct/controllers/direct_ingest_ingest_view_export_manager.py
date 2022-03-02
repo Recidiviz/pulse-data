@@ -70,7 +70,7 @@ TABLE_NAME_DATE_FORMAT = "%Y_%m_%d_%H_%M_%S"
 class _IngestViewExportState:
     """Represents the current state of data exported from a particular ingest view."""
 
-    ingest_view_file_tag: str = attr.ib()
+    ingest_view_name: str = attr.ib()
 
     # The last ingest metadata row written for the view this represents. May be for an export job that has not yet
     # completed.
@@ -126,7 +126,7 @@ class DirectIngestIngestViewExportManager:
         view_collector: BigQueryViewCollector[
             DirectIngestPreProcessedIngestViewBuilder
         ],
-        launched_file_tags: List[str],
+        launched_ingest_views: List[str],
     ):
 
         self.region = region
@@ -135,10 +135,10 @@ class DirectIngestIngestViewExportManager:
         self.ingest_instance = ingest_instance
         self.big_query_client = big_query_client
         self.file_metadata_manager = file_metadata_manager
-        self.ingest_views_by_tag = {
-            builder.file_tag: builder.build()
+        self.ingest_views_by_name = {
+            builder.ingest_view_name: builder.build()
             for builder in view_collector.collect_view_builders()
-            if builder.file_tag in launched_file_tags
+            if builder.ingest_view_name in launched_ingest_views
         }
 
     def get_ingest_view_export_task_args(self) -> List[GcsfsIngestViewExportArgs]:
@@ -151,12 +151,12 @@ class DirectIngestIngestViewExportManager:
                 f"Ingest not enabled for region [{self.region.region_code}]"
             )
 
-        logging.info("Gathering export state for each ingest tag")
+        logging.info("Gathering export state for each ingest view")
         ingest_view_to_export_state = {}
-        for ingest_view_tag, ingest_view in self.ingest_views_by_tag.items():
+        for ingest_view_name, ingest_view in self.ingest_views_by_name.items():
             export_state = self._get_export_state_for_ingest_view(ingest_view)
-            ingest_view_to_export_state[ingest_view_tag] = export_state
-        logging.info("Done gathering export state for each ingest tag")
+            ingest_view_to_export_state[ingest_view_name] = export_state
+        logging.info("Done gathering export state for each ingest view")
 
         # At this point we know that we have no new raw data backfills that should invalidate either pending or past
         # completed ingest view exports (checked in _get_export_state_for_ingest_view()). We can now generate any new
@@ -175,7 +175,7 @@ class DirectIngestIngestViewExportManager:
         )
 
         logging.info("Generating new ingest jobs.")
-        for ingest_view_tag, export_state in ingest_view_to_export_state.items():
+        for ingest_view_name, export_state in ingest_view_to_export_state.items():
             lower_bound_datetime_exclusive = (
                 export_state.last_export_metadata.datetimes_contained_upper_bound_inclusive
                 if export_state.last_export_metadata
@@ -188,13 +188,15 @@ class DirectIngestIngestViewExportManager:
                 upper_bound_datetime_inclusive,
             ) in export_state.max_update_datetime_by_date:
                 args = GcsfsIngestViewExportArgs(
-                    ingest_view_name=ingest_view_tag,
+                    ingest_view_name=ingest_view_name,
                     upper_bound_datetime_prev=lower_bound_datetime_exclusive,
                     upper_bound_datetime_to_export=upper_bound_datetime_inclusive,
                     output_bucket_name=self.output_bucket_name,
                 )
                 logging.info(
-                    "Generating job args for tag [%s]: [%s].", ingest_view_tag, args
+                    "Generating job args for ingest view [%s]: [%s].",
+                    ingest_view_name,
+                    args,
                 )
 
                 self.file_metadata_manager.register_ingest_file_export_job(args)
@@ -297,7 +299,9 @@ class DirectIngestIngestViewExportManager:
         only work if the intermediate tables have been exported via the
         _load_individual_date_queries_into_intermediate_tables function.
         """
-        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+        ingest_view = self.ingest_views_by_name[
+            ingest_view_export_args.ingest_view_name
+        ]
         export_query = StrictStringFormatter().format(
             SELECT_SUBQUERY,
             project_id=self.big_query_client.project_id,
@@ -332,7 +336,9 @@ class DirectIngestIngestViewExportManager:
     ) -> None:
         """Loads query results from the upper and lower bound queries for this export job into intermediate tables."""
 
-        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+        ingest_view = self.ingest_views_by_name[
+            ingest_view_export_args.ingest_view_name
+        ]
 
         single_date_table_export_jobs = []
 
@@ -362,7 +368,9 @@ class DirectIngestIngestViewExportManager:
     def _delete_intermediate_tables(
         self, ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> None:
-        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+        ingest_view = self.ingest_views_by_name[
+            ingest_view_export_args.ingest_view_name
+        ]
 
         single_date_table_ids = [
             self._get_upper_bound_intermediate_table_name(ingest_view_export_args)
@@ -429,7 +437,9 @@ class DirectIngestIngestViewExportManager:
                 metadata, output_path
             )
 
-        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+        ingest_view = self.ingest_views_by_name[
+            ingest_view_export_args.ingest_view_name
+        ]
 
         # TODO(#4268): Clean up - do not create ingest view export args in the first place for reverse date diff views
         #  if there is no upper_bound_datetime_prev.
@@ -487,12 +497,12 @@ class DirectIngestIngestViewExportManager:
     @classmethod
     def debug_query_for_args(
         cls,
-        ingest_views_by_tag: Dict[str, DirectIngestPreProcessedIngestView],
+        ingest_views_by_name: Dict[str, DirectIngestPreProcessedIngestView],
         ingest_view_export_args: GcsfsIngestViewExportArgs,
     ) -> str:
         """Returns a version of the export query for the provided args that can be run in the BigQuery UI."""
         query, query_params = cls._debug_generate_unified_query(
-            ingest_views_by_tag[ingest_view_export_args.ingest_view_name],
+            ingest_views_by_name[ingest_view_export_args.ingest_view_name],
             ingest_view_export_args,
         )
 
@@ -614,10 +624,12 @@ class DirectIngestIngestViewExportManager:
         ingest_view_export_args: GcsfsIngestViewExportArgs,
         metadata: DirectIngestIngestFileMetadata,
     ) -> GcsfsFilePath:
-        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+        ingest_view = self.ingest_views_by_name[
+            ingest_view_export_args.ingest_view_name
+        ]
         if not metadata.normalized_file_name:
             output_file_name = to_normalized_unprocessed_file_name(
-                f"{ingest_view.file_tag}.csv",
+                f"{ingest_view.ingest_view_name}.csv",
                 GcsfsDirectIngestFileType.INGEST_VIEW,
                 dt=ingest_view_export_args.upper_bound_datetime_to_export,
             )
@@ -638,7 +650,7 @@ class DirectIngestIngestViewExportManager:
         process new files.
         """
         last_export_metadata = self.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job(
-            ingest_view.file_tag
+            ingest_view.ingest_view_name
         )
         last_job_time = (
             last_export_metadata.job_creation_time if last_export_metadata else None
@@ -676,7 +688,7 @@ class DirectIngestIngestViewExportManager:
                     raw_table_dependency_updated_metadatas.append(raw_file_metadata)
 
         return _IngestViewExportState(
-            ingest_view_file_tag=ingest_view.file_tag,
+            ingest_view_name=ingest_view.ingest_view_name,
             last_export_metadata=last_export_metadata,
             raw_table_dependency_updated_metadatas=raw_table_dependency_updated_metadatas,
         )
@@ -707,13 +719,13 @@ if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         region_ = regions.get_region(region_code_, is_direct_ingest=True)
         view_collector_ = DirectIngestPreProcessedIngestViewCollector(region_, [])
-        views_by_tag_ = {
-            builder.file_tag: builder.build()
+        views_by_name_ = {
+            builder.ingest_view_name: builder.build()
             for builder in view_collector_.collect_view_builders()
         }
 
         debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
-            views_by_tag_,
+            views_by_name_,
             GcsfsIngestViewExportArgs(
                 ingest_view_name=ingest_view_name_,
                 upper_bound_datetime_prev=upper_bound_datetime_prev_,

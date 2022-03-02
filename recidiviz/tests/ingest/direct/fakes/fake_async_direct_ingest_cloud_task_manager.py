@@ -178,7 +178,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             with_monitoring(
                 region.region_code,
                 ingest_view_export_args.ingest_instance(),
-                self.controller.do_ingest_view_export,
+                self.controller.do_ingest_view_materialization,
             ),
             ingest_view_export_args,
         )

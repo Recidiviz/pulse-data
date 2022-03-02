@@ -238,7 +238,7 @@ def main(
 
     view_builder = DirectIngestPreProcessedIngestViewCollector(
         get_region(region_code, is_direct_ingest=True), []
-    ).get_view_builder_by_file_tag(ingest_view_tag)
+    ).get_view_builder_by_view_name(ingest_view_tag)
 
     ingest_view_raw_table_configs = view_builder.build().raw_table_dependency_configs
 

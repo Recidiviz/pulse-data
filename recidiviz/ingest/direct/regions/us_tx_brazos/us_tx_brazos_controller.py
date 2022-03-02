@@ -33,5 +33,5 @@ class UsTxBrazosController(BaseDirectIngestController):
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
 
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
         return []

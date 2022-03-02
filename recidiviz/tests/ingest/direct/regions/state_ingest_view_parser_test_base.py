@@ -24,16 +24,16 @@ from typing import List, Sequence
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
-    IngestViewFileParser,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
-    IngestViewFileParserDelegateImpl,
-    ingest_view_manifest_dir,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EnumMappingManifest,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
+    IngestViewResultsParser,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegateImpl,
+    ingest_view_manifest_dir,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -79,10 +79,10 @@ class StateIngestViewParserTestBase:
         # should always have the latest ingest logic updates released to it.
         return DirectIngestInstance.SECONDARY
 
-    def _build_parser(self) -> IngestViewFileParser:
+    def _build_parser(self) -> IngestViewResultsParser:
         region = self._region()
-        return IngestViewFileParser(
-            delegate=IngestViewFileParserDelegateImpl(
+        return IngestViewResultsParser(
+            delegate=IngestViewResultsParserDelegateImpl(
                 region, self.schema_type(), self._main_ingest_instance()
             )
         )
@@ -107,17 +107,20 @@ class StateIngestViewParserTestBase:
             _ = enum_parser_manifest.build_from_row(row)
 
     def _run_parse_ingest_view_test(
-        self, file_tag: str, expected_output: Sequence[Entity], debug: bool = False
+        self,
+        ingest_view_name: str,
+        expected_output: Sequence[Entity],
+        debug: bool = False,
     ) -> None:
-        self._check_test_matches_file_tag(file_tag)
+        self._check_test_matches_file_tag(ingest_view_name)
 
         parser = self._build_parser()
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
-            file_name=f"{file_tag}.csv",
+            file_name=f"{ingest_view_name}.csv",
         )
         parsed_output = parser.parse(
-            file_tag=file_tag,
+            ingest_view_name=ingest_view_name,
             contents_handle=LocalFileContentsHandle(fixture_path, cleanup_file=False),
         )
 

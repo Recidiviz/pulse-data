@@ -52,8 +52,6 @@ class CloudTaskArgs:
         return converter.structure(serializable, cls)
 
 
-# TODO(#9717): Eliminate all usages of this class in favor of a non-file-based
-#  implementation of ExtractAndMergeArgs.
 @attr.s(frozen=True)
 class ExtractAndMergeArgs(CloudTaskArgs):
     """Arguments for a task that extracts Python schema objects from the row-based
@@ -76,13 +74,14 @@ class ExtractAndMergeArgs(CloudTaskArgs):
     def job_tag(self) -> str:
         """Returns a (short) string tag to identify an ingest run in logs."""
 
-    # TODO(#9717): Rename this to ingest_view_name.
     @property
     @abc.abstractmethod
-    def file_tag(self) -> str:
+    def ingest_view_name(self) -> str:
         pass
 
 
+# TODO(#9717): Eliminate all usages of this class in favor of a non-file-based
+#  implementation of ExtractAndMergeArgs.
 @attr.s(frozen=True)
 class LegacyExtractAndMergeArgs(ExtractAndMergeArgs):
     """The legacy argument type for the persist step of ingest."""
@@ -108,9 +107,8 @@ class LegacyExtractAndMergeArgs(ExtractAndMergeArgs):
             f"{region_code.lower()}/{self.file_path.file_name}:" f"{self.ingest_time}"
         )
 
-    # TODO(#9717): Rename this to ingest_view_name.
     @property
-    def file_tag(self) -> str:
+    def ingest_view_name(self) -> str:
         return filename_parts_from_path(self.file_path).file_tag
 
 
@@ -129,13 +127,10 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
 
 
 @attr.s(frozen=True)
-class GcsfsIngestViewExportArgs(CloudTaskArgs):
+class IngestViewMaterializationArgs(CloudTaskArgs):
     # The file tag of the ingest view to export. Used to determine which query to run
     # to generate the exported file.
     ingest_view_name: str = attr.ib()
-
-    # The bucket to output the generated ingest view to.
-    output_bucket_name: str = attr.ib()
 
     # The lower bound date for updates this query should include. Any rows that have not
     # changed since this date will not be included.
@@ -144,6 +139,20 @@ class GcsfsIngestViewExportArgs(CloudTaskArgs):
     # The upper bound date for updates this query should include. Updates will only
     # reflect data received up until this date.
     upper_bound_datetime_to_export: datetime.datetime = attr.ib()
+
+    @abc.abstractmethod
+    def task_id_tag(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def ingest_instance(self) -> DirectIngestInstance:
+        pass
+
+
+@attr.s(frozen=True)
+class GcsfsIngestViewExportArgs(IngestViewMaterializationArgs):
+    # The bucket to output the generated ingest view to.
+    output_bucket_name: str = attr.ib()
 
     def task_id_tag(self) -> str:
         tag = f"ingest_view_export_{self.ingest_view_name}-{self.output_bucket_name}"

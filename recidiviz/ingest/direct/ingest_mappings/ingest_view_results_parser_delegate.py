@@ -50,13 +50,13 @@ from recidiviz.utils import environment
 from recidiviz.utils.regions import Region
 
 
-class IngestViewFileParserDelegate:
+class IngestViewResultsParserDelegate:
     """Interface and for a delegate that abstracts state/schema specific logic from the
     ingest view parser.
     """
 
     @abc.abstractmethod
-    def get_ingest_view_manifest_path(self, file_tag: str) -> str:
+    def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
         """Returns the path to the ingest view manifest for a given file tag."""
 
     @abc.abstractmethod
@@ -119,15 +119,15 @@ def ingest_view_manifest_dir(region: Region) -> str:
     )
 
 
-def yaml_mappings_filepath(region: Region, file_tag: str) -> str:
+def yaml_mappings_filepath(region: Region, ingest_view_name: str) -> str:
     return os.path.join(
         ingest_view_manifest_dir(region),
-        f"{region.region_code.lower()}_{file_tag}.yaml",
+        f"{region.region_code.lower()}_{ingest_view_name}.yaml",
     )
 
 
-class IngestViewFileParserDelegateImpl(
-    IngestViewFileParserDelegate, ModuleCollectorMixin
+class IngestViewResultsParserDelegateImpl(
+    IngestViewResultsParserDelegate, ModuleCollectorMixin
 ):
     """Standard implementation of the IngestViewFileParserDelegate, for use in
     production code.
@@ -145,8 +145,8 @@ class IngestViewFileParserDelegateImpl(
         self.entity_cls_cache: Dict[str, Type[Entity]] = {}
         self.enum_cls_cache: Dict[str, Type[Enum]] = {}
 
-    def get_ingest_view_manifest_path(self, file_tag: str) -> str:
-        return yaml_mappings_filepath(self.region, file_tag)
+    def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
+        return yaml_mappings_filepath(self.region, ingest_view_name)
 
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         if self.schema_type == SchemaType.STATE:
