@@ -18,7 +18,7 @@
 Tool to migrate Case Triage officer action data in the case that the officer's composite primary key changes.
 
 python -m recidiviz.tools.case_triage.migrate_officer_action_data \
-  --project_id=PROJECT_ID \
+  --project-id=PROJECT_ID \
   --old-officer-external-id=OLD_OFFICER_EXTERNAL_ID \
   --new-officer-external-id=NEW_OFFICER_EXTERNAL_ID \
   --dry-run=true
