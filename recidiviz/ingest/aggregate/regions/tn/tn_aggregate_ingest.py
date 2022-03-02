@@ -170,7 +170,12 @@ def _parse_table(
 def _parse_date(filename: str) -> datetime.date:
     # Slashes are converted to underscores in the GCS bucket. This
     # assumes there are no underscores in the URL basename.
-    base_filename = filename.split("_")[-1].replace("female", "")
+    # However, if there are slashes because user is running locally
+    # it can also handle it.
+    if "/" in filename:
+        base_filename = filename.split("/")[-1].replace("female", "")
+    else:
+        base_filename = filename.split("_")[-1].replace("female", "")
     end = base_filename.index(".pdf")
     start = 4
     d = str_field_utils.parse_date(base_filename[start:end])
@@ -314,6 +319,7 @@ def _pretend_facility_is_county(facility_name: str) -> str:
         "Work Center",
         "Workhouse",
         "WRC/Penal",
+        "(temp. closed)",
     ]
     for delimiter in words_after_county_name:
         facility_name = facility_name.split(delimiter)[0]
