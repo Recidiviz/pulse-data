@@ -185,6 +185,8 @@ output:
 
                 # TEMPORARY_CUSTODY statuses are for when a person is being brought into a jail following a
                 # violation on supervision, prior to their formal revocation admission to a state prison.
+                # It may also be used in cases where someone is being admitted for a known
+                # short amount of time, e.g. when serving a weekend confinement sentence.
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
                   - PAFA-VIOLT  # Technical warrant violation
                   - PAFA-VIOLW  # Warrant violation (new charge)
@@ -197,6 +199,9 @@ output:
                   - CCFA-NEWCH  # New charges
                   - CCFA-VIOLT  # Technical warrant violation
                   - CCFA-VIOLW  # Warrant violation (new charge)
+                  # Weekend confinement admissions
+                  - PRFA-WKEND  # Probation to facility - serving weekend
+                  - CCFA-WKEND  # Serving weekend
 
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
                   - FUFA-RTFUR  # Furlough pass to Facility - Return from furlough
@@ -299,9 +304,6 @@ output:
                   - PAFA-DETAN  # Parole to facility - Detainer
                   - PAFA-EXPIR  # Parole to facility - Expiration
 
-                StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
-                  - PRFA-WKEND  # Probation to facility - serving weekend
-                  - CCFA-WKEND  # Serving weekend
           release_reason:
             $enum_mapping:
               $raw_text:
@@ -320,7 +322,6 @@ output:
                   - FAPR-SPLIT  # Split confinement
                   - FAPR-DETDT  # Determinate release with detainer
                   - FAPR-BOOTC  # Boot camp
-                  - FAPR-WKRET  # Weekend return
                   - FAPR-JUDDE  # Judicial release/detainer
                   - FAPR-SPLTD  # Split confinement/detainer
                   - FAPR-BCDET  # Boot camp/detainer
@@ -329,7 +330,6 @@ output:
                   - FACC-JUDRE  # Judicial release
                   - FACC-RETSP  # Return from split confinement
                   - FACC-SPLIT  # Split confinement
-                  - FACC-WKRET  # Weekend return
                   - FACC-JUDDE  # Judicial release/detainer
                   - FACC-SPLTD  # Split confinement/detainer
                   # The following are all movements from facility to parole (FAPA).
@@ -460,6 +460,9 @@ output:
                   - CCFA-PTVOK  # Partial revocation
                   - PAFA-RECIS  # Rescission
                   - DVCT-PRVOK  # Revocation
+                  # Returns to supervision after serving a stint of weekend confinement.
+                  - FAPR-WKRET  # Weekend return
+                  - FACC-WKRET  # Weekend return
 
                 StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
                   # Statuses that terminate in 'FA', 'CT', or 'FH' are admissions into a facility that
