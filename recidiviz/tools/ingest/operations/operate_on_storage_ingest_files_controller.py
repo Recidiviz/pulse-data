@@ -31,12 +31,10 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     normalize_relative_path,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     SPLIT_FILE_STORAGE_SUBDIR,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_cp,
     gsutil_get_storage_subdirs_containing_file_types,

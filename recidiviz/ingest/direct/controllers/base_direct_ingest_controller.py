@@ -47,11 +47,6 @@ from recidiviz.common.ingest_metadata import (
     SystemLevel,
 )
 from recidiviz.common.io.contents_handle import ContentsHandle
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    SPLIT_FILE_SUFFIX,
-    DirectIngestGCSFileSystem,
-    to_normalized_unprocessed_file_path,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
     DirectIngestIngestViewExportManager,
 )
@@ -64,16 +59,6 @@ from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer impor
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    ExtractAndMergeArgs,
-    GcsfsDirectIngestFileType,
-    GcsfsIngestViewExportArgs,
-    GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
-    filename_parts_from_path,
-    gcsfs_direct_ingest_storage_directory_path_for_region,
-    gcsfs_direct_ingest_temporary_output_directory_path,
-)
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
     IngestViewProcessorImpl,
@@ -83,6 +68,17 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_handle_new_files_task_id,
     build_scheduler_task_id,
 )
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    SPLIT_FILE_SUFFIX,
+    DirectIngestGCSFileSystem,
+    to_normalized_unprocessed_file_path,
+)
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_temporary_output_directory_path,
+)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
     MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewFileParser,
@@ -103,6 +99,12 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
+)
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    ExtractAndMergeArgs,
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (

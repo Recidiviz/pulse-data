@@ -31,16 +31,6 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_name,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    GcsfsIngestViewExportArgs,
-    GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
-    gcsfs_direct_ingest_bucket_for_region,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     DirectIngestQueueType,
@@ -48,6 +38,18 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     ProcessIngestJobCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
     _build_task_id,
+)
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_file_name,
+)
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_direct_ingest_bucket_for_region,
+)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import regions

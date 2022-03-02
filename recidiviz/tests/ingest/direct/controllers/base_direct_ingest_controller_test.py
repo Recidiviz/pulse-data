@@ -45,24 +45,24 @@ from recidiviz.common.serialization import (
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    SPLIT_FILE_STORAGE_SUBDIR,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    ExtractAndMergeArgs,
-    GcsfsDirectIngestFileType,
-    GcsfsIngestViewExportArgs,
-    LegacyExtractAndMergeArgs,
-    filename_parts_from_path,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_scheduler_task_id,
 )
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    SPLIT_FILE_STORAGE_SUBDIR,
+)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
+)
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    ExtractAndMergeArgs,
+    GcsfsIngestViewExportArgs,
+    LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError

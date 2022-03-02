@@ -28,7 +28,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
