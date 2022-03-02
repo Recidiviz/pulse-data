@@ -236,6 +236,14 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         """
         return False
 
+    # TODO(#11363): Delete this once fuzzy-matched IPs are being handled in US_ID
+    def drop_fuzzy_matched_periods(self) -> bool:
+        """Whether or not fuzzy-matched periods should be dropped for the state.
+        Fuzzy-matched periods are identified by having the string 'FUZZY_MATCHED' in the
+        external_id
+        """
+        return False
+
 
 class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of
@@ -328,6 +336,12 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
                 # Drop placeholder IPs with no start and no end dates
                 mid_processing_periods = self._drop_missing_date_periods(
+                    mid_processing_periods
+                )
+
+                # TODO(#11363): Delete this step once fuzzy-matched IPs are being
+                #  handled in US_ID
+                mid_processing_periods = self._handle_fuzzy_matched_periods(
                     mid_processing_periods
                 )
 
@@ -1243,3 +1257,18 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             normalized_entity_class=NormalizedStateIncarcerationPeriod,
             additional_attributes_map=additional_attributes_map,
         )
+
+    # TODO(#11363): Delete this once fuzzy-matched IPs are being handled in US_ID
+    def _handle_fuzzy_matched_periods(
+        self, mid_processing_periods: List[StateIncarcerationPeriod]
+    ) -> List[StateIncarcerationPeriod]:
+        """Drops IPs with the string 'FUZZY_MATCHED' in the external_id if
+        fuzzy-matched periods should be dropped for the given state."""
+        if not self.normalization_delegate.drop_fuzzy_matched_periods():
+            return mid_processing_periods
+
+        return [
+            ip
+            for ip in mid_processing_periods
+            if ip.external_id and "FUZZY_MATCHED" not in ip.external_id
+        ]
