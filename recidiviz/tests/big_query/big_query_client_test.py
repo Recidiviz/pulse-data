@@ -1104,8 +1104,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_transfer_client.create_transfer_config.assert_called_once()
         mock_transfer_client.get_transfer_run.assert_has_calls(
             [
-                mock.call(name=run_name),
-                mock.call(name=run_name),
+                mock.call(name=run_name, timeout=30),
+                mock.call(name=run_name, timeout=30),
             ]
         )
         mock_transfer_client.delete_transfer_config.assert_called_once()
@@ -1167,8 +1167,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_transfer_client.create_transfer_config.assert_called_once()
         mock_transfer_client.get_transfer_run.assert_has_calls(
             [
-                mock.call(name=run_name),
-                mock.call(name=run_name),
+                mock.call(name=run_name, timeout=30),
+                mock.call(name=run_name, timeout=30),
             ]
         )
         # Important that we still delete the config
@@ -1228,9 +1228,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_transfer_client.create_transfer_config.assert_called_once()
         mock_transfer_client.get_transfer_run.assert_has_calls(
             [
-                mock.call(name=run_name),  # Runs immediately
-                mock.call(name=run_name),  # Runs at .1 seconds
-                mock.call(name=run_name),  # Runs at .2 seconds - timeout after this
+                mock.call(name=run_name, timeout=30),  # Runs immediately
+                mock.call(name=run_name, timeout=30),  # Runs at .1 seconds
+                mock.call(
+                    name=run_name, timeout=30
+                ),  # Runs at .2 seconds - timeout after this
             ]
         )
         # Important that we still delete the config
