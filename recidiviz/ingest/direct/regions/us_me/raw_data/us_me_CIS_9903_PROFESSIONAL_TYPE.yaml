@@ -1,7 +1,8 @@
 file_tag: CIS_9903_PROFESSIONAL_TYPE
 file_description: |-
   This table lists all of the plea types that are applicable within MDOC.
-primary_key_cols: []
+primary_key_cols:
+  - Professional_Type_Cd
 columns:
   - name : Created_By_Tx
   - name : Created_On_Date
