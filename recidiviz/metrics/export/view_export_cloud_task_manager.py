@@ -27,7 +27,7 @@ from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueManager,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    BIGQUERY_QUEUE_V2,
+    METRIC_VIEW_EXPORT_QUEUE,
 )
 
 
@@ -36,7 +36,7 @@ class ViewExportCloudTaskManager:
 
     def __init__(self) -> None:
         self.cloud_task_queue_manager = CloudTaskQueueManager(
-            queue_info_cls=CloudTaskQueueInfo, queue_name=BIGQUERY_QUEUE_V2
+            queue_info_cls=CloudTaskQueueInfo, queue_name=METRIC_VIEW_EXPORT_QUEUE
         )
 
     def create_metric_view_data_export_task(

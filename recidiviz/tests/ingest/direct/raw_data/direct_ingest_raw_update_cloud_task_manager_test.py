@@ -28,7 +28,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    BIGQUERY_QUEUE_V2,
+    STATE_RAW_DATA_LATEST_VIEW_UPDATE_QUEUE,
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_update_cloud_task_manager
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_update_cloud_task_manager import (
@@ -87,10 +87,13 @@ class TestDirectIngestRawUpdateCloudTaskManager(unittest.TestCase):
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
+            self.mock_project_id, QUEUES_REGION, STATE_RAW_DATA_LATEST_VIEW_UPDATE_QUEUE
         )
         mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
+            self.mock_project_id,
+            QUEUES_REGION,
+            STATE_RAW_DATA_LATEST_VIEW_UPDATE_QUEUE,
+            task_id,
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
