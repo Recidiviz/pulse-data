@@ -124,6 +124,8 @@ def _parse_table(filename: str) -> pd.DataFrame:
                 "Reported Population (Total and Male/Female)"
             ].replace({"(": "0"})
         df = df.replace("`", "", regex=True)
+        # Remove only exact match of cell contents
+        df = df.replace("-", "0")
 
         # Cast everything to int before summing below
         df = df.fillna(0)
