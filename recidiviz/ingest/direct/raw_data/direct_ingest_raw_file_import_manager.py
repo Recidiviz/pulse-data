@@ -47,13 +47,11 @@ from recidiviz.cloud_storage.gcsfs_path import (
 )
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    filename_parts_from_path,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )

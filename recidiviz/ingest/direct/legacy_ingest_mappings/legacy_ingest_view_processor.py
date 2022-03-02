@@ -21,15 +21,12 @@ info objects and legacy ingest mappings files.
 #  ingest mappings design.
 import abc
 import logging
-from typing import Callable, Dict, List, Optional, Iterable
+from typing import Callable, Dict, Iterable, List, Optional
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    ExtractAndMergeArgs,
-)
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
 )
@@ -39,6 +36,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate im
 from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
     IngestGatingContext,
 )
+from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,

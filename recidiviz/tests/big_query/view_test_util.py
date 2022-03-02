@@ -47,9 +47,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     augment_raw_data_df_with_metadata_columns,

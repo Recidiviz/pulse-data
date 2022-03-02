@@ -19,18 +19,18 @@
 
 import unittest
 
-from mock import create_autospec, patch, call
+from mock import call, create_autospec, patch
 
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 class ValidateTest(unittest.TestCase):

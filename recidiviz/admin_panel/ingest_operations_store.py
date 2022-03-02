@@ -25,18 +25,18 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    gcsfs_direct_ingest_bucket_for_region,
-    gcsfs_direct_ingest_storage_directory_path_for_region,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     get_direct_ingest_queues_for_state,
 )
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    DirectIngestGCSFileSystem,
+)
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_storage_directory_path_for_region,
+)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )

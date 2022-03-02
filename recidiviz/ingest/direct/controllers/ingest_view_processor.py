@@ -24,12 +24,10 @@ from typing import List, cast
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    ExtractAndMergeArgs,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
     IngestViewFileParser,
 )
+from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
 from recidiviz.persistence import persistence
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities

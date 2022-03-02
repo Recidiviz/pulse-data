@@ -37,14 +37,14 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 from recidiviz.common.results import MultiRequestResultWithSkipped
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_sftp_download_bucket_path_for_region,
 )
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )

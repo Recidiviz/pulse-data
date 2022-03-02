@@ -19,11 +19,6 @@ asynchronously on background threads."""
 from typing import Any, Callable
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestViewExportArgs,
-    GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     IngestViewExportCloudTaskQueueInfo,
     ProcessIngestJobCloudTaskQueueInfo,
@@ -36,6 +31,11 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_raw_data_import_task_id,
     build_scheduler_task_id,
     build_sftp_download_task_id,
+)
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+    LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (

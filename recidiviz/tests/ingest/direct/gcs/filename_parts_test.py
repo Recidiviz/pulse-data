@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,160 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for gcsfs_direct_ingest_utils.py."""
+"""Tests for filename_parts.py."""
 import datetime
 from unittest import TestCase
 
-from mock import Mock, patch
-
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    GcsfsIngestViewExportArgs,
-    filename_parts_from_path,
-    gcsfs_direct_ingest_bucket_for_region,
-    gcsfs_direct_ingest_storage_directory_path_for_region,
-    gcsfs_sftp_download_bucket_path_for_region,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.errors import DirectIngestError
 
 
-class GcsfsDirectIngestUtilsTest(TestCase):
-    """Tests for gcsfs_direct_ingest_utils.py."""
-
-    @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-123"))
-    def test_get_county_storage_directory_path(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code="us_tx_brazos",
-                system_level=SystemLevel.COUNTY,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-            ).abs_path(),
-            "recidiviz-123-direct-ingest-county-storage/us_tx_brazos",
-        )
-
-    @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-123"))
-    def test_get_county_storage_directory_path_secondary(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code="us_tx_brazos",
-                system_level=SystemLevel.COUNTY,
-                ingest_instance=DirectIngestInstance.SECONDARY,
-            ).abs_path(),
-            "recidiviz-123-direct-ingest-county-storage-secondary/us_tx_brazos",
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_get_state_storage_directory_path(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code="us_nd",
-                system_level=SystemLevel.STATE,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-            ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-storage/us_nd",
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_get_state_storage_directory_path_secondary(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code="us_nd",
-                system_level=SystemLevel.STATE,
-                ingest_instance=DirectIngestInstance.SECONDARY,
-            ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-storage-secondary/us_nd",
-        )
-
-    @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-123"))
-    def test_get_county_storage_directory_path_raw(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code="us_tx_brazos",
-                system_level=SystemLevel.COUNTY,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                file_type=GcsfsDirectIngestFileType.RAW_DATA,
-            ).abs_path(),
-            "recidiviz-123-direct-ingest-county-storage/us_tx_brazos/raw",
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_get_state_storage_directory_path_file_type_raw(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code="us_nd",
-                system_level=SystemLevel.STATE,
-                ingest_instance=DirectIngestInstance.SECONDARY,
-                file_type=GcsfsDirectIngestFileType.RAW_DATA,
-            ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-storage-secondary/us_nd/raw",
-        )
-
-    @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-123"))
-    def test_get_county_ingest_bucket_path_for_region(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_bucket_for_region(
-                region_code="us_tx_brazos",
-                system_level=SystemLevel.COUNTY,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-            ).abs_path(),
-            "recidiviz-123-direct-ingest-county-us-tx-brazos",
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_get_state_ingest_bucket_path_for_region(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_bucket_for_region(
-                region_code="us_nd",
-                system_level=SystemLevel.STATE,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-            ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-us-nd",
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_get_state_ingest_bucket_path_for_region_secondary(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_bucket_for_region(
-                region_code="us_nd",
-                system_level=SystemLevel.STATE,
-                ingest_instance=DirectIngestInstance.SECONDARY,
-            ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-us-nd-secondary",
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_gcsfs_sftp_download_directory_path_for_region(self) -> None:
-        self.assertEqual(
-            gcsfs_sftp_download_bucket_path_for_region("us_nd", SystemLevel.STATE),
-            GcsfsBucketPath("recidiviz-staging-direct-ingest-state-us-nd-sftp"),
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_gcsfs_sftp_download_directory_path_fails_for_county(self) -> None:
-        sftp_download_bucket = gcsfs_sftp_download_bucket_path_for_region(
-            "us_xx_yyyy", SystemLevel.COUNTY
-        )
-        self.assertEqual(
-            sftp_download_bucket,
-            GcsfsBucketPath("recidiviz-staging-direct-ingest-county-us-xx-yyyy-sftp"),
-        )
+class TestFilenamePartsFromPath(TestCase):
+    """Tests for filename_parts.py."""
 
     def test_filename_parts_from_path_invalid_filename(self) -> None:
         with self.assertRaises(DirectIngestError):
@@ -452,31 +310,3 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.is_file_split, False)
         self.assertEqual(parts.file_split_size, None)
-
-    def test_gcsfs_ingest_view_export_args(self) -> None:
-        dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
-        dt_upper = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-
-        args = GcsfsIngestViewExportArgs(
-            ingest_view_name="my_file_tag",
-            output_bucket_name="an_ingest_bucket",
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=dt_upper,
-        )
-
-        self.assertEqual(
-            "ingest_view_export_my_file_tag-an_ingest_bucket-None-2019_11_22_11_22_33_444444",
-            args.task_id_tag(),
-        )
-
-        args = GcsfsIngestViewExportArgs(
-            ingest_view_name="my_file_tag",
-            output_bucket_name="an_ingest_bucket",
-            upper_bound_datetime_prev=dt_lower,
-            upper_bound_datetime_to_export=dt_upper,
-        )
-
-        self.assertEqual(
-            "ingest_view_export_my_file_tag-an_ingest_bucket-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
-            args.task_id_tag(),
-        )

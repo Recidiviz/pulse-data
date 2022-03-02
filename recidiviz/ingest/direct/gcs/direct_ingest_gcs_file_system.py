@@ -47,10 +47,8 @@ from recidiviz.cloud_storage.gcsfs_path import (
 )
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-    filename_parts_from_path,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 
 DIRECT_INGEST_UNPROCESSED_PREFIX = "unprocessed"
 DIRECT_INGEST_PROCESSED_PREFIX = "processed"

@@ -55,9 +55,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     get_cloud_task_json_body,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.types import assert_type

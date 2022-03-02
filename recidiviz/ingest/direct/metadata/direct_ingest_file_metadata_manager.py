@@ -21,9 +21,7 @@ from abc import ABC
 from typing import List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestViewExportArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import GcsfsIngestViewExportArgs
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,

@@ -23,9 +23,7 @@ from recidiviz.admin_panel.data_discovery.file_configs import (
     DataDiscoveryStandardizedFileConfig,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsDirectIngestFileType,
-)
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 
 ConfigsByFileType = Dict[
     GcsfsDirectIngestFileType, Dict[str, DataDiscoveryStandardizedFileConfig]

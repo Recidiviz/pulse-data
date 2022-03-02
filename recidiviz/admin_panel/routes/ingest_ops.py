@@ -35,11 +35,11 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
+)
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
