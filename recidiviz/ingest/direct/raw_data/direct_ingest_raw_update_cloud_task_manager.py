@@ -27,7 +27,7 @@ from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueManager,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    BIGQUERY_QUEUE_V2,
+    STATE_RAW_DATA_LATEST_VIEW_UPDATE_QUEUE,
 )
 
 
@@ -38,7 +38,8 @@ class DirectIngestRawUpdateCloudTaskManager:
 
     def __init__(self) -> None:
         self.cloud_task_queue_manager = CloudTaskQueueManager(
-            queue_info_cls=CloudTaskQueueInfo, queue_name=BIGQUERY_QUEUE_V2
+            queue_info_cls=CloudTaskQueueInfo,
+            queue_name=STATE_RAW_DATA_LATEST_VIEW_UPDATE_QUEUE,
         )
 
     def create_raw_data_latest_view_update_task(self, region_code: str) -> None:
