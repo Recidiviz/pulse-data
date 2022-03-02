@@ -22,8 +22,6 @@ output:
           id_type: $literal("US_TN_DOC")
     incarceration_periods:
       # TODO(#2912): include facility type once pulled in from `Site` table.
-      # NOTE: We hydrate `specialized_purpose_for_incarceration` in incarceration period
-      # preprocessing.
       - StateIncarcerationPeriod:
           external_id:
             $concat:
@@ -55,6 +53,112 @@ output:
                   - CV  # Conversion (Deprecated after 1992)
                   - IJ  # Institutional Juvenile
                   - TC  # TN DOC Central Office
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - StartMovementType
+                    - StartMovementReason
+              # !! NOTE: If you add a new value to $mappings, you must also update the
+              # !! OffenderMovementIncarcerationPeriod_StartMovementTypeStartMovementReason
+              # !! fixture file.
+              $mappings:
+                StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT:
+                  - PRFA-WKEND  # Probation to facility - serving weekend
+                  - CCFA-WKEND  # Serving weekend
+                StateSpecializedPurposeForIncarceration.GENERAL:
+                  - BOFA-BONDR  # Bond to Facility - Bond return
+                  - BOFA-INTRS  # Bond to Facility - in transit
+                  - CTFA-NEWAD  # Court to Facility - new admission
+                  # Only 2 instances, both in 1991. Seems to have been accidental.
+                  - PAFA-RTCHG  # Return with charges
+                  - DIFA-ADMCO  # Discharge to facility - Administrative correction/court ordered
+                  - NCFA-RTCUS  # Not in custody to Facility - Return to custody
+                  - CCFA-SPLIT  # Community corrections to facility - Split confinement
+                  - PRFA-SPLIT  # Probation to facility - Split confinement
+                  - PAFA-VIOLT  # Technical warrant violation
+                  - PAFA-VIOLW  # Warrant violation (new charge)
+                  - PRFA-VIOLT  # Technical warrant violation
+                  - PRFA-VIOLW  # Warrant violation (new charge)
+                  - PRFA-NEWCH  # New charges
+                  - PRFA-NEWCV  # New conviction
+                  - PAFA-NEWCH # New charges
+                  - CCFA-NEWCV  # New conviction
+                  - CCFA-NEWCH  # New charges
+                  - CCFA-VIOLT  # Technical warrant violation
+                  - CCFA-VIOLW  # Warrant violation (new charge)
+                  - FUFA-RTFUR  # Furlough pass to Facility - Return from furlough
+                  - WRFA-RETWK  # Work release to Facility - Return from work release
+                  - FUFA-INTRS  # Furlough pass to Facility - In transit
+                  - FACT-OUTYS  # Out to court (charges)
+                  - FACT-OUTNO  # Out to court (no charges)
+                  - FACT-SARET  # Safekeeping (returned)
+                  - CTFA-SAREC  # Safekeeping (received)
+                  - CTFA-INTRS  # Court to facility - in transit
+                  - CTFA-OUTYS  # Court to facility (charges)
+                  - CTFA-OUTNO  # Court to facility (no charges)
+                  - CTFA-RTCHG  # Court to Facility - return charges
+                  - CTFA-RETNO  # Court to Facility - return no charges
+                  - FAFA-JAILT  # Jail transfer
+                  - FAFA-CLASN  # Classification assignment
+                  - FAFA-JAORD  # Jail order
+                  - FAFA-INTRS  # In transit
+                  - FAFA-POPMG  # Population management
+                  - FAFA-ADMIN  # Administrative transfer
+                  - FAFA-CONIN  # Conduct incentive
+                  - FAFA-DISCI  # Disciplinary
+                  - FAFA-BOOTC  # Bootcamp
+                  - FAFA-COURT  # Court ordered
+                  - FAFA-ADSEG  # Administrative segregation
+                  - FAFA-CUSTY  # Custody level change
+                  - FAFA-JOBAS  # Job assignment
+                  - FAFA-INCIB  # Behavioral incident
+                  - FAFA-PANEL  # Panel appearance
+                  - FAFA-RESEG  # Release from admin segregation
+                  # Last instance was in 1995.
+                  - FAFA-61DAY  # 61 Day permanent resident
+                  - FAFA-SEXOF  # Sex offender treatment
+                  - FAFA-NELIG  # Not eligible due to law
+                  - FAFA-PGMCO  # Program completion
+                  - FAFA-JOBTE  # Job assignment (temporary)
+                  - FAFA-INCOM  # Incompatible
+                  - FAFA-INCVI  # Incident (violent or threat)
+                  - FAFA-INCIE  # Incident (escape or threat)
+                  - FAFA-RCPAR  # Already recommended parole (occurs only 13 times since 1960s, and they are
+                  # all associated with physical movements from one location to another).
+                  - FAFA-FAILB  # Failed boot camp
+                  - FAFA-APPDI  # Appeal disposition
+                  - FAFA-MEDTE  # Medical (temporary)
+                  - FAFA-MEDRE  # Medical (regular)
+                  - FAFA-MEDAD  # Medical admin
+                  - FAFA-SICKB  # Sick bed visit
+                  - FAFH-MEDTE  # Medical (temporary)
+                  - FAFH-SICKB  # Sick bed visit
+                  - FHFA-FHOSP  # From free world hospital
+                  - FHFA-INTRS  # In transit.
+                  - OJFA-RTFED  # Return from federal
+                  - OJFA-RTOUT  # Return from out to court
+                  - OJFA-ISC  # Interstate compact
+                  - OJFA-RTIAD  # Return from interstate on detainer
+                  - OJFA-RTMED  # Return from medical/other jurisdiction
+                  - OJFA-RTDET  # Return from detainer
+                  - PAFA-PAVOK  # Parole Revoked
+                  - PAFA-REVOK  # Revocation
+                  - PRFA-PRVOK  # Probation revoked
+                  - PRFA-PTVOK  # Partial revocation
+                  - CCFA-REVOK  # Revocation
+                  - CCFA-PTVOK  # Partial revocation
+                  - PAFA-RECIS  # Rescission
+                  - DVCT-PRVOK # Diversion to Court - probation revoked
+                  - PAFA-RTABS  # Parole to facility - Return from absconsion
+                  - PAFA-RTESC  # Parole to facility - Return from escape
+                  - DIFA-RTABS  # Discharge to facility - Return from absconsion
+                  - EIFA-RTESC  # Escape information center to facility - Return from escape
+                  - ESFA-RTESC  # Escape to facility - Return from escape
+                  # These only happen once, each in the very early 1990s.
+                  - PAFA-DETAN  # Parole to facility - Detainer
+                  - PAFA-EXPIR  # Parole to facility - Expiration
           admission_reason:
             $enum_mapping:
               $raw_text:
@@ -62,6 +166,9 @@ output:
                   $values:
                     - StartMovementType
                     - StartMovementReason
+              # !! NOTE: If you add a new value to $mappings, you must also update the
+              # !! OffenderMovementIncarcerationPeriod_StartMovementTypeStartMovementReason
+              # !! fixture file.
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   - BOFA-BONDR  # Bond to Facility - Bond return

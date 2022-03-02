@@ -41,6 +41,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -175,6 +176,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="CTFA-NEWAD",
             release_reason=None,
             release_reason_raw_text=None,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="CTFA-NEWAD",
         )
 
         # Person 3 moves from parole to facility.
@@ -191,6 +194,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="PAFA-VIOLW",
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="FAFA-JAILT",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="PAFA-VIOLW",
         )
         # Person 3 transfers facilities.
         add_incarceration_period_to_person(
@@ -206,6 +211,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="FAFA-JAILT",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
             release_reason_raw_text="PAFA-PAVOK",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="FAFA-JAILT",
         )
         # Person 3 is released to supervision.
         add_incarceration_period_to_person(
@@ -221,6 +228,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="PAFA-PAVOK",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
             release_reason_raw_text="FAPA-RELEL",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="PAFA-PAVOK",
         )
 
         expected_people = [person_1, person_2, person_3, person_4]

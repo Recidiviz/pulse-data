@@ -42,6 +42,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -218,6 +219,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         admission_reason_raw_text="CTFA-NEWAD",
                         release_reason=None,
                         release_reason_raw_text=None,
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                        specialized_purpose_for_incarceration_raw_text="CTFA-NEWAD",
                     )
                 ],
             ),
@@ -244,6 +247,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         admission_reason_raw_text="PAFA-VIOLW",
                         release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
                         release_reason_raw_text="FAFA-JAILT",
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                        specialized_purpose_for_incarceration_raw_text="PAFA-VIOLW",
                     )
                 ],
             ),
@@ -270,6 +275,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         admission_reason_raw_text="FAFA-JAILT",
                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
                         release_reason_raw_text="PAFA-PAVOK",
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                        specialized_purpose_for_incarceration_raw_text="FAFA-JAILT",
                     )
                 ],
             ),
@@ -296,6 +303,8 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         admission_reason_raw_text="PAFA-PAVOK",
                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
                         release_reason_raw_text="FAPA-RELEL",
+                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                        specialized_purpose_for_incarceration_raw_text="PAFA-PAVOK",
                     )
                 ],
             ),
@@ -314,7 +323,23 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
             .field_manifests["admission_reason"]
         )
         self._parse_enum_manifest_test(
-            "OffenderMovementIncarcerationPeriod_AdmissionReasons", enum_parser_manifest
+            "OffenderMovementIncarcerationPeriod_StartMovementTypeStartMovementReason",
+            enum_parser_manifest,
+        )
+
+    def test_parse_OffenderMovementIncarcerationPeriod_PurposeForIncarceration(
+        self,
+    ) -> None:
+        manifest_ast = self._parse_manifest("OffenderMovementIncarcerationPeriod")
+        enum_parser_manifest = (
+            # Drill down to get admission reasons.
+            manifest_ast.field_manifests["incarceration_periods"]
+            .child_manifests[0]  # type: ignore[attr-defined]
+            .field_manifests["specialized_purpose_for_incarceration"]
+        )
+        self._parse_enum_manifest_test(
+            "OffenderMovementIncarcerationPeriod_StartMovementTypeStartMovementReason",
+            enum_parser_manifest,
         )
 
     def test_parse_OffenderMovementIncarcerationPeriod_ReleaseReasons(self) -> None:
@@ -335,7 +360,9 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
     def test_parse_OffenderMovementIncarcerationPeriod_AdmissionReasonIsSubsetOfReleaseReason(
         self,
     ) -> None:
-        admission_reason_file = "OffenderMovementIncarcerationPeriod_AdmissionReasons"
+        admission_reason_file = (
+            "OffenderMovementIncarcerationPeriod_StartMovementTypeStartMovementReason"
+        )
         release_reason_file = "OffenderMovementIncarcerationPeriod_ReleaseReasons"
 
         admissions_fixture_path = direct_ingest_fixture_path(
