@@ -1,0 +1,21 @@
+file_tag: DailyCommunitySupervisionForRecidiviz
+file_description: |-
+  This table contains one occurence for each person on supervision on each ReportingDate
+primary_key_cols:
+  - SiteID
+  - StaffID
+  - OffenderID
+  - ReportingDate
+columns:
+  - name: SiteID
+    description: |-
+      This is the site associated with a person's supervision
+  - name: StaffID
+    description: |-
+      This is the StaffID of the person on supervision's assigned staff member
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number
+  - name: ReportingDate
+    description: |-
+      This is the date that reports that the associated person is on supervision 
