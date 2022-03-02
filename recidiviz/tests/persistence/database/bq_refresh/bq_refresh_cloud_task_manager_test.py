@@ -31,8 +31,8 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    BIGQUERY_QUEUE_V2,
-    JOB_MONITOR_QUEUE_V2,
+    CLOUD_SQL_TO_BQ_REFRESH_QUEUE,
+    CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE,
 )
 from recidiviz.persistence.database.bq_refresh import bq_refresh_cloud_task_manager
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
@@ -92,10 +92,13 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2
+            self.mock_project_id, QUEUES_REGION, CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE
         )
         mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2, task_id
+            self.mock_project_id,
+            QUEUES_REGION,
+            CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE,
+            task_id,
         )
 
         expected_task = tasks_v2.types.task_pb2.Task(
@@ -149,10 +152,10 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
+            self.mock_project_id, QUEUES_REGION, CLOUD_SQL_TO_BQ_REFRESH_QUEUE
         )
         mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
+            self.mock_project_id, QUEUES_REGION, CLOUD_SQL_TO_BQ_REFRESH_QUEUE, task_id
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task

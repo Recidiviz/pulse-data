@@ -19,17 +19,16 @@
 import json
 import unittest
 
+from freezegun import freeze_time
 from google.cloud import tasks_v2
 from mock import patch
-
-from freezegun import freeze_time
 from parameterized import parameterized
 
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    BIGQUERY_QUEUE_V2,
+    METRIC_VIEW_EXPORT_QUEUE,
 )
 from recidiviz.metrics.export import view_export_cloud_task_manager
 from recidiviz.metrics.export.view_export_cloud_task_manager import (
@@ -101,10 +100,10 @@ class ViewExportCloudTaskManagerTest(unittest.TestCase):
 
         # Assert
         self.mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
+            self.mock_project_id, QUEUES_REGION, METRIC_VIEW_EXPORT_QUEUE
         )
         self.mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
+            self.mock_project_id, QUEUES_REGION, METRIC_VIEW_EXPORT_QUEUE, task_id
         )
         self.mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -151,10 +150,10 @@ class ViewExportCloudTaskManagerTest(unittest.TestCase):
 
         # Assert
         self.mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
+            self.mock_project_id, QUEUES_REGION, METRIC_VIEW_EXPORT_QUEUE
         )
         self.mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
+            self.mock_project_id, QUEUES_REGION, METRIC_VIEW_EXPORT_QUEUE, task_id
         )
         self.mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
