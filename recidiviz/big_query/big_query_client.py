@@ -70,6 +70,8 @@ BIG_QUERY_CLIENT_MAX_CONNECTIONS = 10
 DATASET_BACKUP_TABLE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000  # 7 days
 
 CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC = 10
+# Timeout for just checking the status of the cross-region copy.
+DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC = 30
 DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC = 10 * 60
 # Required value for the data_source_id field when copying datasets between regions
 CROSS_REGION_COPY_DATA_SOURCE_ID = "cross_region_copy"
@@ -1670,7 +1672,10 @@ class BigQueryClientImpl(BigQueryClient):
                 seconds=timeout_sec
             )
             while True:
-                run = transfer_client.get_transfer_run(name=run.name)
+                logging.info("Checking status of transfer run [%s]", run.name)
+                run = transfer_client.get_transfer_run(
+                    name=run.name, timeout=DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC
+                )
                 if run.state == TransferState.SUCCEEDED:
                     logging.info("Transfer run succeeded")
                     break
