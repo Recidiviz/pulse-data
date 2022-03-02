@@ -279,6 +279,6 @@ class DirectIngestDocumentationGenerator:
             ingest_view = builder.build()
             dependency_configs = ingest_view.raw_table_dependency_configs
             for config in dependency_configs:
-                views_by_raw_file[config.file_tag].append(ingest_view.file_tag)
+                views_by_raw_file[config.file_tag].append(ingest_view.ingest_view_name)
 
         return views_by_raw_file

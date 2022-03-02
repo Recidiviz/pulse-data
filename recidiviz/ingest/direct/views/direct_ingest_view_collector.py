@@ -37,13 +37,13 @@ _INGEST_VIEW_FILE_PREFIX = "view_"
 class DirectIngestPreProcessedIngestViewCollector(
     BigQueryViewCollector[DirectIngestPreProcessedIngestViewBuilder]
 ):
-    """An implementation of the BigQueryViewCollector for collecting direct ingest SQL preprocessing views for a given
-    region.
+    """An implementation of the BigQueryViewCollector for collecting direct ingest SQL
+    preprocessing views for a given region.
     """
 
-    def __init__(self, region: Region, controller_tag_rank_list: List[str]):
+    def __init__(self, region: Region, controller_ingest_view_rank_list: List[str]):
         self.region = region
-        self.controller_tag_rank_list = controller_tag_rank_list
+        self.controller_ingest_view_rank_list = controller_ingest_view_rank_list
 
     def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
         if self.region.region_module.__file__ is None:
@@ -66,28 +66,33 @@ class DirectIngestPreProcessedIngestViewCollector(
 
         return ingest_view_builders
 
-    def get_view_builder_by_file_tag(
-        self, file_tag: str
+    def get_view_builder_by_view_name(
+        self, ingest_view_name: str
     ) -> DirectIngestPreProcessedIngestViewBuilder:
         return one(
-            view for view in self.collect_view_builders() if view.file_tag == file_tag
+            view
+            for view in self.collect_view_builders()
+            if view.ingest_view_name == ingest_view_name
         )
 
     def _validate_ingest_views(
         self, ingest_view_builders: List[DirectIngestPreProcessedIngestViewBuilder]
     ) -> None:
-        found_ingest_view_tags = [builder.file_tag for builder in ingest_view_builders]
-        found_ingest_view_tags_set = set(found_ingest_view_tags)
-        if len(found_ingest_view_tags) > len(found_ingest_view_tags_set):
+        found_ingest_view_names = [
+            builder.ingest_view_name for builder in ingest_view_builders
+        ]
+        found_ingest_view_names_set = set(found_ingest_view_names)
+        if len(found_ingest_view_names) > len(found_ingest_view_names_set):
             raise ValueError(
-                f"Found duplicate tags in the view directory. Found: [{found_ingest_view_tags}]."
+                f"Found duplicate ingest view names in the view directory. Found: [{found_ingest_view_names}]."
             )
 
-        controller_view_tags_set = set(self.controller_tag_rank_list)
-        controller_tags_no_view_defined = controller_view_tags_set.difference(
-            found_ingest_view_tags_set
+        controller_view_names_set = set(self.controller_ingest_view_rank_list)
+        controller_names_no_view_defined = controller_view_names_set.difference(
+            found_ingest_view_names_set
         )
-        if self.region.is_ingest_launched_in_env() and controller_tags_no_view_defined:
+        if self.region.is_ingest_launched_in_env() and controller_names_no_view_defined:
             raise ValueError(
-                f"Found controller file tags with no corresponding view defined: {controller_tags_no_view_defined}"
+                f"Found controller ingest view names with no corresponding view "
+                f"defined: {controller_names_no_view_defined}"
             )

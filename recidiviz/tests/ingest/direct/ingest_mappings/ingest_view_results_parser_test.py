@@ -30,14 +30,14 @@ from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHand
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
-    IngestViewFileParser,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
-    IngestViewFileParserDelegate,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
+    IngestViewResultsParser,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity
@@ -126,15 +126,17 @@ class FakeChargeFactory(EntityFactory):
 #### End Fake Schema Factories ####
 
 
-class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
+class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate):
     """Fake implementation of IngestViewFileParserDelegate for parser unittests."""
 
     def __init__(self, ingest_instance: DirectIngestInstance, is_production: bool):
         self.ingest_instance = ingest_instance
         self.is_production = is_production
 
-    def get_ingest_view_manifest_path(self, file_tag: str) -> str:
-        return os.path.join(os.path.dirname(manifests.__file__), f"{file_tag}.yaml")
+    def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
+        return os.path.join(
+            os.path.dirname(manifests.__file__), f"{ingest_view_name}.yaml"
+        )
 
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         return {"fake_state_code": StateCode.US_XX.value}
@@ -206,39 +208,40 @@ class IngestViewFileParserTest(unittest.TestCase):
     """Tests for IngestViewFileParser."""
 
     @staticmethod
-    def _run_parse_for_tag(
-        file_tag: str,
+    def _run_parse_for_ingest_view(
+        ingest_view_name: str,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
     ) -> List[Entity]:
-        """Runs a single parsing test for the given fixture file tag, returning the
-        parsed entities.
+        """Runs a single parsing test for a fixture ingest view with the given name,
+        returning the parsed entities.
         """
-        parser = IngestViewFileParser(
-            FakeSchemaIngestViewFileParserDelegate(ingest_instance, is_production)
+        parser = IngestViewResultsParser(
+            FakeSchemaIngestViewResultsParserDelegate(ingest_instance, is_production)
         )
         return parser.parse(
-            file_tag=file_tag,
+            ingest_view_name=ingest_view_name,
             contents_handle=LocalFileContentsHandle(
                 os.path.join(
-                    os.path.dirname(ingest_view_files.__file__), f"{file_tag}.csv"
+                    os.path.dirname(ingest_view_files.__file__),
+                    f"{ingest_view_name}.csv",
                 ),
                 cleanup_file=False,
             ),
         )
 
-    def _run_parse_manifest_for_tag(
+    def _run_parse_manifest_for_ingest_view(
         self,
-        file_tag: str,
+        ingest_view_name: str,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
     ) -> EntityTreeManifest:
-        delegate = FakeSchemaIngestViewFileParserDelegate(
+        delegate = FakeSchemaIngestViewResultsParserDelegate(
             ingest_instance, is_production
         )
-        parser = IngestViewFileParser(delegate)
+        parser = IngestViewResultsParser(delegate)
         manifest_ast, _ = parser.parse_manifest(
-            manifest_path=delegate.get_ingest_view_manifest_path(file_tag),
+            manifest_path=delegate.get_ingest_view_manifest_path(ingest_view_name),
         )
         return manifest_ast
 
@@ -265,7 +268,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("simple_person")
+        parsed_output = self._run_parse_for_ingest_view("simple_person")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -286,7 +289,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("simple_agent")
+        parsed_output = self._run_parse_for_ingest_view("simple_agent")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -327,7 +330,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("list_field")
+        parsed_output = self._run_parse_for_ingest_view("list_field")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -355,7 +358,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_field")
+        parsed_output = self._run_parse_for_ingest_view("boolean_field")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -399,7 +402,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("list_field_from_list_col")
+        parsed_output = self._run_parse_for_ingest_view("list_field_from_list_col")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -459,7 +462,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("list_field_from_multiple_list_col")
+        parsed_output = self._run_parse_for_ingest_view(
+            "list_field_from_multiple_list_col"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -499,7 +504,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("single_child_field")
+        parsed_output = self._run_parse_for_ingest_view("single_child_field")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -547,7 +552,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("reused_column")
+        parsed_output = self._run_parse_for_ingest_view("reused_column")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -610,7 +615,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("simple_enums")
+        parsed_output = self._run_parse_for_ingest_view("simple_enums")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -649,7 +654,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("simple_enums_no_ignores")
+        parsed_output = self._run_parse_for_ingest_view("simple_enums_no_ignores")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -708,7 +713,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("enums_complex_capitalization")
+        parsed_output = self._run_parse_for_ingest_view("enums_complex_capitalization")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -720,7 +725,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("simple_enum_literal")
+        parsed_output = self._run_parse_for_ingest_view("simple_enum_literal")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -732,7 +737,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("enum_literal_in_conditional")
+        parsed_output = self._run_parse_for_ingest_view("enum_literal_in_conditional")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -742,7 +747,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         with self.assertRaisesRegex(
             EnumParsingError, "Could not parse X when building <enum 'FakeGender'>"
         ):
-            _ = self._run_parse_for_tag("enums_ignores_caps_mismatch")
+            _ = self._run_parse_for_ingest_view("enums_ignores_caps_mismatch")
 
     def test_enum_parsing_mappings_caps_mismatch(self) -> None:
         # Act
@@ -751,7 +756,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             EnumParsingError,
             "Could not parse MALE when building <enum 'FakeGender'>",
         ):
-            _ = self._run_parse_for_tag("enums_mappings_caps_mismatch")
+            _ = self._run_parse_for_ingest_view("enums_mappings_caps_mismatch")
 
     def test_simple_enum_entity_parsing(self) -> None:
         expected_output = [
@@ -803,7 +808,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("simple_enum_entity")
+        parsed_output = self._run_parse_for_ingest_view("simple_enum_entity")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -867,7 +872,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("enum_entity_list")
+        parsed_output = self._run_parse_for_ingest_view("enum_entity_list")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -922,7 +927,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("enum_custom_parser")
+        parsed_output = self._run_parse_for_ingest_view("enum_custom_parser")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -963,7 +968,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("enum_custom_parser_concatenated_raw")
+        parsed_output = self._run_parse_for_ingest_view(
+            "enum_custom_parser_concatenated_raw"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -975,7 +982,9 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Unexpected manifest node type: \[<enum 'FakeRace'>\]. "
             r"Expected result_type: \[<enum 'FakeGender'>\].",
         ):
-            _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_return_type")
+            _ = self._run_parse_manifest_for_ingest_view(
+                "enum_custom_parser_bad_return_type"
+            )
 
     def test_enum_custom_parser_bad_arg_name(self) -> None:
         # Act
@@ -984,7 +993,9 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found extra, unexpected arguments for function "
             r"\[fake_custom_enum_parsers.enum_parser_bad_arg_name\] in module \[[a-z_\.]+\]: {'bad_arg'}",
         ):
-            _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_arg_name")
+            _ = self._run_parse_manifest_for_ingest_view(
+                "enum_custom_parser_bad_arg_name"
+            )
 
     def test_enum_custom_parser_extra_arg(self) -> None:
         # Act
@@ -993,7 +1004,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found extra, unexpected arguments for function "
             r"\[fake_custom_enum_parsers.enum_parser_extra_arg\] in module \[[a-z_\.]+\]: {'another_arg'}",
         ):
-            _ = self._run_parse_manifest_for_tag("enum_custom_parser_extra_arg")
+            _ = self._run_parse_manifest_for_ingest_view("enum_custom_parser_extra_arg")
 
     def test_enum_custom_parser_missing_arg(self) -> None:
         # Act
@@ -1002,7 +1013,9 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Missing expected arguments for function \[fake_custom_enum_parsers.enum_parser_missing_arg\] "
             r"in module \[[a-z_\.]+\]: {'raw_text'}",
         ):
-            _ = self._run_parse_manifest_for_tag("enum_custom_parser_missing_arg")
+            _ = self._run_parse_manifest_for_ingest_view(
+                "enum_custom_parser_missing_arg"
+            )
 
     def test_enum_custom_parser_bad_arg_type(self) -> None:
         # Act
@@ -1012,7 +1025,9 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"\[fake_custom_enum_parsers.enum_parser_bad_arg_type\] in module \[[a-z_\.]+\]. Expected "
             r"\[<class 'str'>], found \[<class 'bool'>\].",
         ):
-            _ = self._run_parse_manifest_for_tag("enum_custom_parser_bad_arg_type")
+            _ = self._run_parse_manifest_for_ingest_view(
+                "enum_custom_parser_bad_arg_type"
+            )
 
     def test_serialize_json(self) -> None:
         # Arrange
@@ -1064,7 +1079,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("serialize_json")
+        parsed_output = self._run_parse_for_ingest_view("serialize_json")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1128,7 +1143,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("serialize_json_complex")
+        parsed_output = self._run_parse_for_ingest_view("serialize_json_complex")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1179,7 +1194,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("concatenate_values")
+        parsed_output = self._run_parse_for_ingest_view("concatenate_values")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1234,7 +1249,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("concatenate_values_custom_separator")
+        parsed_output = self._run_parse_for_ingest_view(
+            "concatenate_values_custom_separator"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1261,7 +1278,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("concatenate_values_filter_nulls")
+        parsed_output = self._run_parse_for_ingest_view(
+            "concatenate_values_filter_nulls"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1329,7 +1348,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("concatenate_values_enum_raw_text")
+        parsed_output = self._run_parse_for_ingest_view(
+            "concatenate_values_enum_raw_text"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1352,7 +1373,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("person_name_simple")
+        parsed_output = self._run_parse_for_ingest_view("person_name_simple")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1378,7 +1399,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("person_name_complex")
+        parsed_output = self._run_parse_for_ingest_view("person_name_complex")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1414,7 +1435,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("physical_address")
+        parsed_output = self._run_parse_for_ingest_view("physical_address")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1438,7 +1459,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition")
+        parsed_output = self._run_parse_for_ingest_view("boolean_condition")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1464,7 +1485,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag(
+        parsed_output = self._run_parse_for_ingest_view(
             "boolean_condition_env_property",
             ingest_instance=DirectIngestInstance.SECONDARY,
             is_production=True,
@@ -1489,7 +1510,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag(
+        parsed_output = self._run_parse_for_ingest_view(
             "boolean_condition_env_property",
             ingest_instance=DirectIngestInstance.PRIMARY,
             is_production=False,
@@ -1522,7 +1543,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag(
+        parsed_output = self._run_parse_for_ingest_view(
             "boolean_condition_env_property",
             ingest_instance=DirectIngestInstance.PRIMARY,
             is_production=True,
@@ -1587,7 +1608,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition_enum_raw_text")
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_enum_raw_text"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1646,7 +1669,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition_enum_mappings")
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_enum_mappings"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1677,7 +1702,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition_entity_tree")
+        parsed_output = self._run_parse_for_ingest_view("boolean_condition_entity_tree")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1709,7 +1734,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition_simple_null")
+        parsed_output = self._run_parse_for_ingest_view("boolean_condition_simple_null")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1723,7 +1748,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition_complex_null")
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_complex_null"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1754,7 +1781,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition_equals_and_or")
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_equals_and_or"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1795,7 +1824,9 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("boolean_condition_multi_branch")
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_multi_branch"
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1824,7 +1855,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("custom_parsers")
+        parsed_output = self._run_parse_for_ingest_view("custom_parsers")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1838,7 +1869,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("custom_conditional")
+        parsed_output = self._run_parse_for_ingest_view("custom_conditional")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1859,7 +1890,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("enum_entity_enum_literal")
+        parsed_output = self._run_parse_for_ingest_view("enum_entity_enum_literal")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1899,7 +1930,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("foreach_conditional")
+        parsed_output = self._run_parse_for_ingest_view("foreach_conditional")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1932,7 +1963,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("json_extract_value")
+        parsed_output = self._run_parse_for_ingest_view("json_extract_value")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -1964,7 +1995,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("json_list")
+        parsed_output = self._run_parse_for_ingest_view("json_list")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -2012,7 +2043,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("filter_predicate")
+        parsed_output = self._run_parse_for_ingest_view("filter_predicate")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -2036,7 +2067,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("simple_variables")
+        parsed_output = self._run_parse_for_ingest_view("simple_variables")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -2060,7 +2091,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("chained_variables")
+        parsed_output = self._run_parse_for_ingest_view("chained_variables")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -2074,7 +2105,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("custom_function_variable")
+        parsed_output = self._run_parse_for_ingest_view("custom_function_variable")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -2113,7 +2144,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_tag("enum_variable")
+        parsed_output = self._run_parse_for_ingest_view("enum_variable")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
@@ -2124,7 +2155,9 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"^Enum \$mappings should only contain mappings for one enum type but found "
             r"multiple: \['FakeGender', 'FakeRace'\]",
         ):
-            _ = self._run_parse_manifest_for_tag("enums_bad_mapping_mixed_enums")
+            _ = self._run_parse_manifest_for_ingest_view(
+                "enums_bad_mapping_mixed_enums"
+            )
 
     def test_bad_variable_type_throws(self) -> None:
         with self.assertRaisesRegex(
@@ -2132,18 +2165,18 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Unexpected manifest node type: \[<class 'bool'>\]\. "
             r"Expected result_type: \[<class 'str'>\]\.",
         ):
-            _ = self._run_parse_for_tag("bad_variable_type")
+            _ = self._run_parse_for_ingest_view("bad_variable_type")
 
     def test_nested_foreach(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             r"^Unexpected \$iter_item key value in row: \{.*\}. Nested loops not supported.$",
         ):
-            _ = self._run_parse_for_tag("nested_foreach")
+            _ = self._run_parse_for_ingest_view("nested_foreach")
 
     def test_no_unused_columns(self) -> None:
         # Shouldn't crash
-        _ = self._run_parse_manifest_for_tag("no_unused_columns")
+        _ = self._run_parse_manifest_for_ingest_view("no_unused_columns")
 
     def test_does_not_use_all_columns_in_input_cols(self) -> None:
         with self.assertRaisesRegex(
@@ -2151,7 +2184,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found columns listed in |input_columns| that are not referenced in "
             r"|output| or listed in |unused_columns|: {'SSN'}",
         ):
-            _ = self._run_parse_manifest_for_tag("unused_input_column")
+            _ = self._run_parse_manifest_for_ingest_view("unused_input_column")
 
     def test_referenced_col_not_listed(self) -> None:
         with self.assertRaisesRegex(
@@ -2159,21 +2192,21 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found columns referenced in |output| that are not listed in "
             r"|input_columns|: {'AGENTNAME'}",
         ):
-            _ = self._run_parse_manifest_for_tag("unlisted_referenced_column")
+            _ = self._run_parse_manifest_for_ingest_view("unlisted_referenced_column")
 
     def test_duplicate_input_col(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             r"Found item listed multiple times in |input_columns|: \[PERSONNAME\]",
         ):
-            _ = self._run_parse_manifest_for_tag("duplicate_input_column")
+            _ = self._run_parse_manifest_for_ingest_view("duplicate_input_column")
 
     def test_duplicate_unused_col(self) -> None:
         with self.assertRaisesRegex(
             jsonschema.exceptions.ValidationError,
             r"Failed validating 'uniqueItems' in schema\['properties'\]\['unused_columns'\]",
         ):
-            _ = self._run_parse_manifest_for_tag("duplicate_unused_column")
+            _ = self._run_parse_manifest_for_ingest_view("duplicate_unused_column")
 
     def test_csv_does_not_have_input_column(self) -> None:
         with self.assertRaisesRegex(
@@ -2181,7 +2214,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found columns in manifest |input_columns| list that are missing from "
             r"file row [0]: {'DOB'}",
         ):
-            _ = self._run_parse_for_tag("input_col_not_in_csv")
+            _ = self._run_parse_for_ingest_view("input_col_not_in_csv")
 
     def test_unused_col_not_in_csv(self) -> None:
         with self.assertRaisesRegex(
@@ -2189,7 +2222,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found columns in manifest |input_columns| list that are missing from "
             r"file row [0]: {'DOB'}",
         ):
-            _ = self._run_parse_for_tag("unused_col_not_in_csv")
+            _ = self._run_parse_for_ingest_view("unused_col_not_in_csv")
 
     def test_extra_column_in_csv(self) -> None:
         with self.assertRaisesRegex(
@@ -2197,7 +2230,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found columns in input file row [0] not present in manifest "
             r"|input_columns| list: {'SSN'}",
         ):
-            _ = self._run_parse_for_tag("extra_csv_column")
+            _ = self._run_parse_for_ingest_view("extra_csv_column")
 
     def test_unused_col_not_in_input_cols_list(self) -> None:
         with self.assertRaisesRegex(
@@ -2205,14 +2238,18 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found values listed in |unused_columns| that were not also listed in "
             r"|input_columns|: {'SSN'}",
         ):
-            _ = self._run_parse_manifest_for_tag("unused_col_not_in_input_columns")
+            _ = self._run_parse_manifest_for_ingest_view(
+                "unused_col_not_in_input_columns"
+            )
 
     def test_input_cols_do_not_start_with_dollar_sign(self) -> None:
         with self.assertRaisesRegex(
             jsonschema.exceptions.ValidationError,
             r"'\$DOB' is not of type",
         ):
-            _ = self._run_parse_manifest_for_tag("column_starts_with_dollar_sign")
+            _ = self._run_parse_manifest_for_ingest_view(
+                "column_starts_with_dollar_sign"
+            )
 
     def test_throws_if_primary_key_set(self) -> None:
         with self.assertRaisesRegex(
@@ -2220,10 +2257,10 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Cannot set autogenerated database primary key field \[fake_agent_id\] in "
             r"the ingest manifest. Did you mean to set the 'external_id' field?",
         ):
-            self._run_parse_manifest_for_tag("set_primary_key_has_external_id")
+            self._run_parse_manifest_for_ingest_view("set_primary_key_has_external_id")
         with self.assertRaisesRegex(
             ValueError,
             r"Cannot set autogenerated database primary key field \[fake_person_id\] "
             r"in the ingest manifest.$",
         ):
-            self._run_parse_manifest_for_tag("set_primary_key_no_external_id")
+            self._run_parse_manifest_for_ingest_view("set_primary_key_no_external_id")

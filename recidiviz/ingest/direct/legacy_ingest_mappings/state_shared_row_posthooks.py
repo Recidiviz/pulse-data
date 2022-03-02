@@ -53,7 +53,7 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 @attr.s(frozen=True, kw_only=True)
 class IngestGatingContext:
-    file_tag: str = attr.ib()
+    ingest_view_name: str = attr.ib()
     ingest_instance: DirectIngestInstance = attr.ib()
 
 
@@ -313,7 +313,7 @@ def gen_convert_person_ids_to_external_id_objects(
         ingest_info: IngestInfo,
         cache: Optional[IngestObjectCache],
     ) -> None:
-        id_type = get_id_type(gating_context.file_tag)
+        id_type = get_id_type(gating_context.ingest_view_name)
         if not id_type:
             return
 

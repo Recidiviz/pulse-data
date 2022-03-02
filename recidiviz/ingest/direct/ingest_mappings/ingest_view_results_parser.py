@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class that parses ingest view file contents into entities based on the manifest file
- for this ingest view.
+"""Class that parses the results of an ingest view query into entities based on the
+manifest file for this ingest view.
 """
 import csv
 import os
@@ -27,31 +27,29 @@ from recidiviz.common.common_utils import bidirectional_set_difference
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
-    IngestViewFileParserDelegate,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EntityTreeManifestFactory,
     VariableManifestNode,
     build_manifest_from_raw_typed,
 )
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegate,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.yaml_dict import YAMLDict
-
 
 # This key tracks the version number for the actual mappings manifest structure,
 # allowing us to gate any breaking changes in the file syntax etc.
 MANIFEST_LANGUAGE_VERSION_KEY = "manifest_language"
 
 
-# TODO(#9717): Rename this class to `IngestViewResultsParser`.
-class IngestViewFileParser:
-    """Class that parses ingest view file contents into entities based on the manifest
+class IngestViewResultsParser:
+    """Class that parses ingest view query results into entities based on the manifest
     file for this ingest view.
     """
 
-    def __init__(self, delegate: IngestViewFileParserDelegate):
+    def __init__(self, delegate: IngestViewResultsParserDelegate):
         self.delegate = delegate
 
     @staticmethod
@@ -64,12 +62,14 @@ class IngestViewFileParser:
             f"Unsupported contents handle type: [{type(contents_handle)}]."
         )
 
-    def parse(self, *, file_tag: str, contents_handle: ContentsHandle) -> List[Entity]:
-        """Parses ingest view file contents into entities based on the manifest file for
+    def parse(
+        self, *, ingest_view_name: str, contents_handle: ContentsHandle
+    ) -> List[Entity]:
+        """Parses ingest view query results into entities based on the manifest file for
         this ingest view.
         """
 
-        manifest_path = self.delegate.get_ingest_view_manifest_path(file_tag)
+        manifest_path = self.delegate.get_ingest_view_manifest_path(ingest_view_name)
         output_manifest, expected_input_columns = self.parse_manifest(manifest_path)
         result = []
         for i, row in enumerate(self._row_iterator(contents_handle)):
@@ -88,18 +88,18 @@ class IngestViewFileParser:
         there are missing or extra columns.
         """
         input_columns = set(row.keys())
-        missing_from_manifest, missing_from_file = bidirectional_set_difference(
+        missing_from_manifest, missing_from_results = bidirectional_set_difference(
             input_columns, expected_columns
         )
         if missing_from_manifest:
             raise ValueError(
-                f"Found columns in input file row [{row_number}] not present in manifest "
-                f"|input_columns| list: {missing_from_manifest}"
+                f"Found columns in input results row [{row_number}] not present in "
+                f"manifest |input_columns| list: {missing_from_manifest}"
             )
-        if missing_from_file:
+        if missing_from_results:
             raise ValueError(
                 f"Found columns in manifest |input_columns| list that are missing from "
-                f"file row [{row_number}]: {missing_from_file}"
+                f"results row [{row_number}]: {missing_from_results}"
             )
 
     def parse_manifest(self, manifest_path: str) -> Tuple[EntityTreeManifest, Set[str]]:

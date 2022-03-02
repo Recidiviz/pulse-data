@@ -192,7 +192,11 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offenderchargestable": _state_charge_ancestor_chain_overrides,
         }
 
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
+        """Returns a list of string ingest view names in the order they should be
+        processed for data we received on a particular date.
+        """
+
         # NOTE: The order of ingest here is important! Do not change unless you know what you're doing!
         tags = [
             # Elite - incarceration-focused
@@ -375,7 +379,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         external_id = row.get("SID")
         if not external_id:
             raise ValueError(
-                f"File [{_gating_context.file_tag}] is missing an SID external id"
+                f"File [{_gating_context.ingest_view_name}] is missing an SID external id"
             )
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionCaseTypeEntry):

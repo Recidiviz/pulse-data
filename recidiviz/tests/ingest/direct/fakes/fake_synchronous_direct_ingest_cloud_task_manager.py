@@ -304,7 +304,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         with monitoring.push_region_tag(
             self.controller.region.region_code, self.controller.ingest_instance.value
         ):
-            self.controller.do_ingest_view_export(ingest_view_export_args=args)
+            self.controller.do_ingest_view_materialization(ingest_view_export_args=args)
 
         self.num_finished_ingest_view_export_tasks += 1
 

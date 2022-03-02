@@ -475,8 +475,11 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     }
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
-    def get_file_tag_rank_list(self) -> List[str]:
-        launched_file_tags = [
+    def get_ingest_view_rank_list(self) -> List[str]:
+        """Returns a list of string ingest view names in the order they should be
+        processed for data we received on a particular date.
+        """
+        launched_ingest_views = [
             # Data source: Mixed
             "person_external_ids",
             # Data source: DOC
@@ -497,15 +500,15 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_period_v4",
         ]
 
-        unlaunched_file_tags: List[str] = [
+        unlaunched_ingest_views: List[str] = [
             # Empty for now
         ]
 
-        file_tags = launched_file_tags
+        ingest_views = launched_ingest_views
         if not environment.in_gcp():
-            file_tags += unlaunched_file_tags
+            ingest_views += unlaunched_ingest_views
 
-        return file_tags
+        return ingest_views
 
     @classmethod
     def generate_enum_overrides(cls) -> EnumOverrides:
@@ -722,11 +725,11 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         """Concatenates the incarceration period admission reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if gating_context.file_tag in ("sci_incarceration_period",):
+                if gating_context.ingest_view_name in ("sci_incarceration_period",):
                     obj.admission_reason = (
                         concatenate_sci_incarceration_period_start_codes(row)
                     )
-                elif gating_context.file_tag == "ccis_incarceration_period":
+                elif gating_context.ingest_view_name == "ccis_incarceration_period":
                     obj.admission_reason = (
                         concatenate_ccis_incarceration_period_start_codes(row)
                     )
@@ -742,11 +745,11 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date:
-                    if gating_context.file_tag in ("sci_incarceration_period",):
+                    if gating_context.ingest_view_name in ("sci_incarceration_period",):
                         obj.release_reason = (
                             concatenate_sci_incarceration_period_end_codes(row)
                         )
-                    elif gating_context.file_tag == "ccis_incarceration_period":
+                    elif gating_context.ingest_view_name == "ccis_incarceration_period":
                         obj.release_reason = (
                             concatenate_ccis_incarceration_period_end_codes(row)
                         )
@@ -761,11 +764,11 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         """Concatenates the incarceration period specialized purpose-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if gating_context.file_tag in ("sci_incarceration_period",):
+                if gating_context.ingest_view_name in ("sci_incarceration_period",):
                     obj.specialized_purpose_for_incarceration = (
                         concatenate_sci_incarceration_period_purpose_codes(row)
                     )
-                elif gating_context.file_tag == "ccis_incarceration_period":
+                elif gating_context.ingest_view_name == "ccis_incarceration_period":
                     obj.specialized_purpose_for_incarceration = (
                         concatenate_ccis_incarceration_period_purpose_codes(row)
                     )
@@ -780,11 +783,11 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if gating_context.file_tag in ("sci_incarceration_period",):
+                if gating_context.ingest_view_name in ("sci_incarceration_period",):
                     # TODO(#10502): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on
                     #  IC sentence status + location codes? Ask PA about this!
                     obj.incarceration_type = "SCI"
-                elif gating_context.file_tag == "ccis_incarceration_period":
+                elif gating_context.ingest_view_name == "ccis_incarceration_period":
                     obj.incarceration_type = "CCIS"
 
     @staticmethod

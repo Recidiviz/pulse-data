@@ -224,7 +224,7 @@ class DirectIngestRegionDirStructureBase:
                 )
 
             builders = DirectIngestPreProcessedIngestViewCollector(
-                region, controller.get_file_tag_rank_list()
+                region, controller.get_ingest_view_rank_list()
             ).collect_view_builders()
 
             raw_file_manager = DirectIngestRegionRawFileConfig(
@@ -294,19 +294,19 @@ class DirectIngestRegionDirStructureBase:
                         )
 
                     builders = DirectIngestPreProcessedIngestViewCollector(
-                        region, controller.get_file_tag_rank_list()
+                        region, controller.get_ingest_view_rank_list()
                     ).collect_view_builders()
                     for builder in builders:
                         builder.build()
                         path = GcsfsFilePath.from_directory_and_file_name(
                             GcsfsBucketPath("fake-bucket"),
                             to_normalized_unprocessed_file_name(
-                                f"{builder.file_tag}.csv",
+                                f"{builder.ingest_view_name}.csv",
                                 GcsfsDirectIngestFileType.INGEST_VIEW,
                             ),
                         )
                         parts = filename_parts_from_path(path)
-                        self.test.assertEqual(parts.file_tag, builder.file_tag)
+                        self.test.assertEqual(parts.file_tag, builder.ingest_view_name)
 
     def test_collect_and_build_raw_table_migrations(self) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-789"):

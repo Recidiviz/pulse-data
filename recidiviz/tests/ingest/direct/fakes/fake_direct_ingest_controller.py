@@ -193,8 +193,8 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
 class FakeDirectIngestPreProcessedIngestViewCollector(
     DirectIngestPreProcessedIngestViewCollector
 ):
-    def __init__(self, region: Region, controller_tag_rank_list: List[str]):
-        super().__init__(region, controller_tag_rank_list)
+    def __init__(self, region: Region, controller_ingest_view_rank_list: List[str]):
+        super().__init__(region, controller_ingest_view_rank_list)
 
     def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
         builders = [
@@ -204,7 +204,7 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
                 view_query_template=f"SELECT * FROM {{{tag}}}",
                 order_by_cols="",
             )
-            for tag in self.controller_tag_rank_list
+            for tag in self.controller_ingest_view_rank_list
         ]
 
         builders.append(

@@ -563,7 +563,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             )
 
     @property
-    def file_tag(self) -> str:
+    def ingest_view_name(self) -> str:
         """The file tag that should be written to any file export of this query."""
         return self.view_id
 
@@ -1001,10 +1001,6 @@ class DirectIngestPreProcessedIngestViewBuilder(
         )
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
         self.materialized_address_override = None
-
-    @property
-    def file_tag(self) -> str:
-        return self.ingest_view_name
 
     # pylint: disable=unused-argument
     def _build(

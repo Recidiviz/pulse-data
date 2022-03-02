@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Legacy implementation of the ingest view file parser, which uses intermediate ingest
-info objects and legacy ingest mappings files.
+"""Legacy implementation of the ingest view query results processor, which uses
+intermediate ingest info objects and legacy ingest mappings files.
 """
 # TODO(#8905): Delete everything in this file once we have fully migrated to the new
 #  ingest mappings design.
@@ -30,7 +30,7 @@ from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHand
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
@@ -69,9 +69,7 @@ IngestAncestorChainOverridesCallable = Callable[
 
 
 class LegacyIngestViewProcessorDelegate(metaclass=abc.ABCMeta):
-    """Legacy implementation of the ingest view file parser, which uses intermediate ingest
-    info objects and legacy ingest mappings files.
-    """
+    """Delegate object for the LegacyIngestViewProcessor."""
 
     @abc.abstractmethod
     def get_enum_overrides(self) -> EnumOverrides:
@@ -125,8 +123,8 @@ class LegacyIngestViewProcessorDelegate(metaclass=abc.ABCMeta):
 
 
 class LegacyIngestViewProcessor(IngestViewProcessor):
-    """Legacy implementation of the ingest view file parser, which uses intermediate ingest
-    info objects and legacy ingest mappings files.
+    """Legacy implementation of the ingest view query result processor, which uses
+    intermediate ingest info objects and legacy ingest mappings files.
     """
 
     def __init__(
@@ -169,27 +167,35 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
         contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> ingest_info.IngestInfo:
-        """Parses ingest view file contents into an IngestInfo object."""
-        file_tag = args.file_tag
+        """Parses ingest view query results into an IngestInfo object."""
+        ingest_view_name = args.ingest_view_name
         gating_context = IngestGatingContext(
-            file_tag=file_tag, ingest_instance=self.ingest_instance
+            ingest_view_name=ingest_view_name, ingest_instance=self.ingest_instance
         )
 
-        file_mapping = yaml_mappings_filepath(self.region, file_tag)
+        file_mapping = yaml_mappings_filepath(self.region, ingest_view_name)
 
-        row_pre_processors = self.delegate.get_row_pre_processors_for_file(file_tag)
-        row_post_processors = self.delegate.get_row_post_processors_for_file(file_tag)
-        file_post_processors = self.delegate.get_file_post_processors_for_file(file_tag)
+        row_pre_processors = self.delegate.get_row_pre_processors_for_file(
+            ingest_view_name
+        )
+        row_post_processors = self.delegate.get_row_post_processors_for_file(
+            ingest_view_name
+        )
+        file_post_processors = self.delegate.get_file_post_processors_for_file(
+            ingest_view_name
+        )
         # pylint: disable=assignment-from-none
         primary_key_override_callback = self.delegate.get_primary_key_override_for_file(
-            file_tag
+            ingest_view_name
         )
         # pylint: disable=assignment-from-none
         ancestor_chain_overrides_callback = (
-            self.delegate.get_ancestor_chain_overrides_callback_for_file(file_tag)
+            self.delegate.get_ancestor_chain_overrides_callback_for_file(
+                ingest_view_name
+            )
         )
         should_set_with_empty_values = (
-            gating_context.file_tag
+            gating_context.ingest_view_name
             in self.delegate.get_files_to_set_with_empty_values()
         )
 

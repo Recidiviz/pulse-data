@@ -226,11 +226,11 @@ class _FakeDirectIngestViewBuilder(
 
     def __init__(
         self,
-        tag: str,
+        ingest_view_name: str,
         is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
     ):
-        self.tag = tag
+        self.ingest_view_name = ingest_view_name
         self.is_detect_row_deletion_view = is_detect_row_deletion_view
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
@@ -248,7 +248,7 @@ class _FakeDirectIngestViewBuilder(
             [] if not self.is_detect_row_deletion_view else ["tagFullHistoricalExport"]
         )
         return DirectIngestPreProcessedIngestView(
-            ingest_view_name=self.tag,
+            ingest_view_name=self.ingest_view_name,
             view_query_template=query,
             region_raw_table_config=region_config,
             order_by_cols="colA, colC",
@@ -263,10 +263,6 @@ class _FakeDirectIngestViewBuilder(
     def should_build(self) -> bool:
         return True
 
-    @property
-    def file_tag(self) -> str:
-        return self.tag
-
 
 class _ViewCollector(BigQueryViewCollector[_FakeDirectIngestViewBuilder]):
     """Fake ViewCollector for tests."""
@@ -274,23 +270,23 @@ class _ViewCollector(BigQueryViewCollector[_FakeDirectIngestViewBuilder]):
     def __init__(
         self,
         region: Region,
-        controller_file_tags: List[str],
+        controller_view_names: List[str],
         is_detect_row_deletion_view: bool,
         materialize_raw_data_table_views: bool,
     ):
         self.region = region
-        self.controller_file_tags = controller_file_tags
+        self.controller_view_names = controller_view_names
         self.is_detect_row_deletion_view = is_detect_row_deletion_view
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
     def collect_view_builders(self) -> List[_FakeDirectIngestViewBuilder]:
         builders = [
             _FakeDirectIngestViewBuilder(
-                tag=tag,
+                ingest_view_name=ingest_view_name,
                 is_detect_row_deletion_view=self.is_detect_row_deletion_view,
                 materialize_raw_data_table_views=self.materialize_raw_data_table_views,
             )
-            for tag in self.controller_file_tags
+            for ingest_view_name in self.controller_view_names
         ]
 
         return builders
@@ -356,13 +352,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         region: Region,
         is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
-        controller_file_tags: Optional[List[str]] = None,
+        controller_view_names: Optional[List[str]] = None,
     ) -> DirectIngestIngestViewExportManager:
         metadata_manager = PostgresDirectIngestFileMetadataManager(
             region.region_code, self.ingest_database_name
         )
-        controller_file_tags = (
-            ["ingest_view"] if controller_file_tags is None else controller_file_tags
+        controller_view_names = (
+            ["ingest_view"] if controller_view_names is None else controller_view_names
         )
         return DirectIngestIngestViewExportManager(
             region=region,
@@ -373,11 +369,11 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             file_metadata_manager=metadata_manager,
             view_collector=_ViewCollector(  # type: ignore[arg-type]
                 region,
-                controller_file_tags=controller_file_tags,
+                controller_view_names=controller_view_names,
                 is_detect_row_deletion_view=is_detect_row_deletion_view,
                 materialize_raw_data_table_views=materialize_raw_data_table_views,
             ),
-            launched_file_tags=controller_file_tags,
+            launched_ingest_views=controller_view_names,
         )
 
     @staticmethod
@@ -493,7 +489,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         CODE_TABLE_TAG = "RECIDIVIZ_REFERENCE_ingest_view"
         region = self.create_fake_region(environment="production")
         export_manager = self.create_export_manager(
-            region, controller_file_tags=[CODE_TABLE_TAG]
+            region, controller_view_names=[CODE_TABLE_TAG]
         )
         export_manager.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job = Mock(  # type: ignore
             return_value=DirectIngestIngestFileMetadata(
@@ -1017,7 +1013,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_manager = self.create_export_manager(region)
         with freeze_time(_DATE_5.isoformat()):
             debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
-                export_manager.ingest_views_by_tag, export_args
+                export_manager.ingest_views_by_name, export_args
             )
 
         expected_debug_query = """CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound AS (
@@ -1183,7 +1179,7 @@ ORDER BY colA, colC;"""
             )
         with freeze_time(_DATE_5.isoformat()):
             debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
-                export_manager.ingest_views_by_tag, export_args
+                export_manager.ingest_views_by_name, export_args
             )
 
         expected_debug_query = """CREATE TEMP TABLE upper_file_tag_first_generated_view AS (

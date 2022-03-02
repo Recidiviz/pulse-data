@@ -545,8 +545,11 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
-    def get_file_tag_rank_list(self) -> List[str]:
-        shared_file_tags = [
+    def get_ingest_view_rank_list(self) -> List[str]:
+        """Returns a list of string ingest view names in the order they should be
+        processed for data we received on a particular date.
+        """
+        return [
             "offender_ofndr_dob_address",
             "ofndr_tst_ofndr_tst_cert",
             "mittimus_judge_sentence_offense_sentprob_incarceration_sentences",
@@ -562,8 +565,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "sprvsn_cntc_v3",
             "agnt_case_updt",
         ]
-
-        return shared_file_tags
 
     @classmethod
     def generate_enum_overrides(cls) -> EnumOverrides:

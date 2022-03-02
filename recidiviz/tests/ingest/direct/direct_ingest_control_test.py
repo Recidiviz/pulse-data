@@ -853,7 +853,7 @@ class TestDirectIngestControl(unittest.TestCase):
             data=body_encoded,
         )
         self.assertEqual(200, response.status_code)
-        mock_controller.do_ingest_view_export.assert_called_with(export_args)
+        mock_controller.do_ingest_view_materialization.assert_called_with(export_args)
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch("recidiviz.utils.environment.get_gcp_environment")
