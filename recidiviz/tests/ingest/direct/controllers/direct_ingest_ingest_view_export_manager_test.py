@@ -530,6 +530,56 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         # New code tables are backdated but don't need to be re-ingested, so ignore them.
         self.assertListEqual(args, [])
 
+    def test_getIngestViewExportTaskArgs_reverseDateDiff(self) -> None:
+        # Arrange
+        region = self.create_fake_region(environment="production")
+        export_manager = self.create_export_manager(
+            region, is_detect_row_deletion_view=True
+        )
+        export_manager.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job = Mock(  # type: ignore
+            return_value=None
+        )
+        export_manager.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock(  # type: ignore
+            return_value=[
+                DirectIngestRawFileMetadata(
+                    file_id=2,
+                    region_code=region.region_code,
+                    file_tag="ingest_view",
+                    discovery_time=_DATE_1,
+                    normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
+                    processed_time=None,
+                    datetimes_contained_upper_bound_inclusive=_DATE_1,
+                ),
+                DirectIngestRawFileMetadata(
+                    file_id=2,
+                    region_code=region.region_code,
+                    file_tag="ingest_view",
+                    discovery_time=_DATE_2,
+                    normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
+                    processed_time=None,
+                    datetimes_contained_upper_bound_inclusive=_DATE_2,
+                ),
+            ]
+        )
+
+        # Act
+        args = export_manager.get_ingest_view_export_task_args()
+
+        # Assert
+        self.assertListEqual(
+            args,
+            [
+                # We create args for the time between DATE 1 and DATE 2 but not for
+                # the time between None and DATE 1 (e.g. the historical query).
+                GcsfsIngestViewExportArgs(
+                    ingest_view_name="ingest_view",
+                    output_bucket_name=self.output_bucket_name,
+                    upper_bound_datetime_prev=_DATE_1,
+                    upper_bound_datetime_to_export=_DATE_2,
+                )
+            ],
+        )
+
     @patch(
         "recidiviz.utils.environment.get_gcp_environment",
         Mock(return_value="production"),
@@ -887,9 +937,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
                 ingest_database_name=self.ingest_database_name,
             )
-            expected_metadata = attr.evolve(
-                self.to_entity(metadata), export_time=_DATE_5
-            )
 
             session.add(metadata)
 
@@ -899,20 +946,17 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 region, is_detect_row_deletion_view=True
             )
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.export_view_for_args(export_args)
+            with self.assertRaisesRegex(
+                ValueError,
+                r"Attempting to process reverse date diff view \[ingest_view\] with "
+                r"no lower bound date.",
+            ):
+                export_manager.export_view_for_args(export_args)
 
         # Assert
         self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as assert_session:
-            found_metadata = self.to_entity(
-                one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
-            )
-            self.assertEqual(expected_metadata, found_metadata)
 
     def test_exportViewForArgs_detectRowDeletionView(self) -> None:
         # Arrange
