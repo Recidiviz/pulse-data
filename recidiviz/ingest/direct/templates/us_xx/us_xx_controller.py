@@ -35,6 +35,10 @@ class UsXxController(BaseDirectIngestController):
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path, region_module_override=templates)
 
-    def get_file_tag_rank_list(self) -> List[str]:
-        # Add ingest view file tags to this list as you add mappings for them.
+    def get_ingest_view_rank_list(self) -> List[str]:
+        """Returns a list of string ingest view names in the order they should be
+        processed for data we received on a particular date.
+        """
+
+        # Add ingest view names to this list as you add mappings for them.
         return []

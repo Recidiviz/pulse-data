@@ -70,7 +70,7 @@ from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base im
 
 
 class UsNdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
-    """Parser unit tests for each US_ND ingest view file to be ingested."""
+    """Parser unit tests for each US_ND ingest view query results to be ingested."""
 
     state_code = "US_ND"
 

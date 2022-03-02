@@ -49,8 +49,8 @@ from recidiviz.common.attr_mixins import (
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
-    IngestViewFileParserDelegate,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegate,
 )
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.entity_deserialize import (
@@ -206,7 +206,7 @@ class EntityTreeManifestFactory:
         cls,
         *,
         raw_fields_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
         entity_cls: Type[EntityT],
     ) -> "EntityTreeManifest":
@@ -572,7 +572,7 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "ExpandableListItemManifest":
         return ExpandableListItemManifest(
@@ -723,7 +723,7 @@ class EnumLiteralFieldManifest(ManifestNode[EnumT]):
         cls,
         *,
         raw_manifest: str,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
     ) -> "EnumLiteralFieldManifest":
         match = re.match(
             EnumLiteralFieldManifest.ENUM_LITERAL_VALUE_REGEX,
@@ -794,7 +794,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
         cls,
         *,
         field_enum_mappings_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "EnumMappingManifest":
         """Factory method for building an enum field manifest."""
@@ -834,7 +834,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
     @classmethod
     def _build_field_enum_overrides(
         cls,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         ignores_list: Optional[List[str]],
         direct_mappings_manifest: Optional[YAMLDict],
         custom_parser_function_reference: Optional[str],
@@ -977,7 +977,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
         expected_return_type: Type[ManifestNodeT],
     ) -> "CustomFunctionManifest[ManifestNodeT]":
@@ -1100,7 +1100,7 @@ class JSONExtractKeyManifest(ManifestNode[str]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "JSONExtractKeyManifest":
         return JSONExtractKeyManifest(
@@ -1180,7 +1180,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "ConcatenatedStringsManifest":
         raw_concat_manifests = pop_raw_manifest_nodes_list(
@@ -1266,7 +1266,7 @@ class PhysicalAddressManifest(ManifestNode[str]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "PhysicalAddressManifest":
         raw_address_2_manifest = pop_raw_flat_field_manifest_optional(
@@ -1353,7 +1353,7 @@ class PersonNameManifest(ManifestNode[str]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "PersonNameManifest":
         name_parts_to_manifest: Dict[str, ManifestNode[str]] = {}
@@ -1420,7 +1420,7 @@ class ContainsConditionManifest(ManifestNode[bool]):
         cls,
         *,
         raw_function_manifest: YAMLDict,
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "ContainsConditionManifest":
         return ContainsConditionManifest(
@@ -1469,7 +1469,7 @@ class IsNullConditionManifest(ManifestNode[bool]):
         cls,
         *,
         raw_function_manifest: Union[str, YAMLDict],
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "IsNullConditionManifest":
         return IsNullConditionManifest(
@@ -1521,7 +1521,7 @@ class EqualsConditionManifest(ManifestNode[bool]):
         cls,
         *,
         raw_value_manifests: List[Union[str, YAMLDict]],
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "EqualsConditionManifest":
         return EqualsConditionManifest(
@@ -1578,7 +1578,7 @@ class AndConditionManifest(ManifestNode[bool]):
         cls,
         *,
         raw_condition_manifests: List[Union[str, YAMLDict]],
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "AndConditionManifest":
         return AndConditionManifest(
@@ -1635,7 +1635,7 @@ class OrConditionManifest(ManifestNode[bool]):
         cls,
         *,
         raw_condition_manifests: List[Union[str, YAMLDict]],
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "OrConditionManifest":
         return OrConditionManifest(
@@ -1705,7 +1705,7 @@ class BooleanLiteralManifest(ManifestNode[bool]):
 
     @classmethod
     def for_env_property(
-        cls, raw_property_manifest: str, delegate: IngestViewFileParserDelegate
+        cls, raw_property_manifest: str, delegate: IngestViewResultsParserDelegate
     ) -> "BooleanLiteralManifest":
         return BooleanLiteralManifest(
             value=delegate.get_env_property(property_name=raw_property_manifest)
@@ -1805,7 +1805,7 @@ class BooleanConditionManifestFactory:
         cls,
         *,
         raw_condition_manifests: List[YAMLDict],
-        delegate: IngestViewFileParserDelegate,
+        delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
         expected_result_type: Type[ManifestNodeT],
     ) -> "BooleanConditionManifest[ManifestNodeT]":
@@ -1913,7 +1913,7 @@ def pop_raw_flat_field_manifest(
 
 def build_str_manifest_from_raw(
     raw_field_manifest: Union[str, YAMLDict],
-    delegate: IngestViewFileParserDelegate,
+    delegate: IngestViewResultsParserDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
 ) -> ManifestNode[str]:
     """Builds a ManifestNode[str] from the provided raw manifest."""
@@ -1949,7 +1949,7 @@ def build_iterable_manifest_from_raw(
 
 def build_manifest_from_raw_typed(
     raw_field_manifest: Union[str, YAMLDict],
-    delegate: IngestViewFileParserDelegate,
+    delegate: IngestViewResultsParserDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
     expected_result_type: Type[ManifestNodeT],
 ) -> ManifestNode[ManifestNodeT]:
@@ -1973,7 +1973,7 @@ VARIABLE_EXPRESSION_REGEX = re.compile(r"\$variable\(([a-z][a-z_]+)\)")
 def build_manifest_from_raw(
     *,
     raw_field_manifest: Union[str, YAMLDict],
-    delegate: IngestViewFileParserDelegate,
+    delegate: IngestViewResultsParserDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
     expected_result_type: Type[ManifestNodeT],
 ) -> ManifestNode:

@@ -2476,7 +2476,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         # FULL RERUN FOR IDEMPOTENCE
         ######################################
 
-        self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
+        self._do_ingest_job_rerun_for_tags(self.controller.get_ingest_view_rank_list())
 
         # TODO(#2492): Until we implement proper cleanup of dangling placeholders, reruns of certain files will create
         #  new dangling placeholders with each rerun.

@@ -80,7 +80,7 @@ from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base im
 
 
 class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
-    """Parser unit tests for each US_TN ingest view file to be ingested."""
+    """Parser unit tests for each US_TN ingest view query results to be ingested."""
 
     @classmethod
     def schema_type(cls) -> SchemaType:

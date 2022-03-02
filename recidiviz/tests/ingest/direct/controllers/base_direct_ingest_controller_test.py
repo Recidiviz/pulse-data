@@ -108,7 +108,7 @@ class BaseDirectIngestControllerForTests(BaseDirectIngestController):
         self.local_paths: Set[str] = set()
 
     @abc.abstractmethod
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
         pass
 
     def _get_contents_handle(
@@ -142,7 +142,7 @@ class StateTestDirectIngestController(BaseDirectIngestControllerForTests):
             region_module=fake_regions_module,
         )
 
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
         return ["tagA", "tagB", "tagC"]
 
 
@@ -157,15 +157,15 @@ class StagingOnlyStateTestDirectIngestController(StateTestDirectIngestController
 
 
 class CrashingStateTestDirectIngestController(StateTestDirectIngestController):
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
         return ["tagC"]
 
-    def _run_ingest_job(self, args: ExtractAndMergeArgs) -> bool:
+    def _run_extract_and_merge_job(self, args: ExtractAndMergeArgs) -> bool:
         raise Exception("insta-crash")
 
 
 class SingleTagStateTestDirectIngestController(StateTestDirectIngestController):
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
         return ["tagC"]
 
 
@@ -183,7 +183,7 @@ class CountyTestDirectIngestController(BaseDirectIngestControllerForTests):
             region_module=fake_regions_module,
         )
 
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
         return ["tagA", "tagB"]
 
 
@@ -345,14 +345,14 @@ class TestDirectIngestController(unittest.TestCase):
             expected_raw_metadata_tags_with_is_processed = []
         elif expected_raw_metadata_tags_with_is_processed is None:
             expected_raw_metadata_tags_with_is_processed = [
-                (tag, True) for tag in controller.get_file_tag_rank_list()
+                (tag, True) for tag in controller.get_ingest_view_rank_list()
             ]
 
         if not controller.region.is_ingest_launched_in_env():
             expected_ingest_metadata_tags_with_is_processed = []
         elif expected_ingest_metadata_tags_with_is_processed is None:
             expected_ingest_metadata_tags_with_is_processed = [
-                (tag, True) for tag in controller.get_file_tag_rank_list()
+                (tag, True) for tag in controller.get_ingest_view_rank_list()
             ]
 
         file_metadata_manager = controller.file_metadata_manager
@@ -412,8 +412,6 @@ class TestDirectIngestController(unittest.TestCase):
             sorted(actual_ingest_metadata_tags_with_is_processed),
         )
 
-        # TODO(#3020): Update this to better test that metadata for split files gets properly registered
-
     def run_async_file_order_test_for_controller_cls(
         self, controller_cls: Type[DirectIngestControllerT]
     ) -> BaseDirectIngestControllerForTests:
@@ -424,7 +422,7 @@ class TestDirectIngestController(unittest.TestCase):
             controller_cls, ingest_instance=DirectIngestInstance.PRIMARY, run_async=True
         )
 
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
 
         add_paths_with_tags_and_process(self, controller, file_tags)
 
@@ -517,7 +515,7 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.check_imported_path_count(controller, 3)
 
-        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.check_tags(controller, controller.get_ingest_view_rank_list())
 
     def test_state_doesnt_run_when_paused(self) -> None:
         controller = build_fake_direct_ingest_controller(
@@ -527,7 +525,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         controller.ingest_instance_status_manager.pause_instance()
 
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
         add_paths_with_tags(controller, file_tags, None)
         run_task_queues_to_empty(controller)
 
@@ -541,7 +539,7 @@ class TestDirectIngestController(unittest.TestCase):
             run_async=True,
         )
 
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
         add_paths_with_tags(
             controller,
             file_tags,
@@ -582,7 +580,7 @@ class TestDirectIngestController(unittest.TestCase):
         controller.region_lock_manager.lock_manager.lock(
             postgres_to_bq_lock_name_for_schema(SchemaType.STATE)
         )
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
         add_paths_with_tags(controller, file_tags)
         run_task_queues_to_empty(controller)
 
@@ -608,7 +606,7 @@ class TestDirectIngestController(unittest.TestCase):
             self, controller, ["tagA", "tagB", "tagC"], unexpected_tags=[]
         )
         self.check_imported_path_count(controller, 3)
-        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.check_tags(controller, controller.get_ingest_view_rank_list())
         self.validate_file_metadata(
             controller,
             expected_ingest_metadata_tags_with_is_processed=[
@@ -629,7 +627,7 @@ class TestDirectIngestController(unittest.TestCase):
             run_async=True,
         )
         with controller.region_lock_manager.using_region_lock(expiration_in_seconds=10):
-            file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+            file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
             add_paths_with_tags(controller, file_tags)
             run_task_queues_to_empty(controller)
 
@@ -654,7 +652,7 @@ class TestDirectIngestController(unittest.TestCase):
             self, controller, ["tagA", "tagB", "tagC"], unexpected_tags=[]
         )
         self.check_imported_path_count(controller, 3)
-        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.check_tags(controller, controller.get_ingest_view_rank_list())
         self.validate_file_metadata(
             controller,
             expected_ingest_metadata_tags_with_is_processed=[
@@ -674,7 +672,7 @@ class TestDirectIngestController(unittest.TestCase):
             ingest_instance=DirectIngestInstance.PRIMARY,
             run_async=True,
         )
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
         add_paths_with_tags(controller, file_tags)
         with self.assertRaises(Exception):
             run_task_queues_to_empty(controller)
@@ -749,7 +747,7 @@ class TestDirectIngestController(unittest.TestCase):
             expected_ingest_metadata_tags_with_is_processed=expected_ingest_metadata_tags_with_is_processed,
         )
 
-        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.check_tags(controller, controller.get_ingest_view_rank_list())
 
     def test_state_unexpected_tag(self) -> None:
         controller = build_fake_direct_ingest_controller(
@@ -800,7 +798,7 @@ class TestDirectIngestController(unittest.TestCase):
             expected_ingest_metadata_tags_with_is_processed=expected_ingest_metadata_tags_with_is_processed,
         )
 
-        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.check_tags(controller, controller.get_ingest_view_rank_list())
 
     def test_state_tag_we_import_but_do_not_ingest(
         self,
@@ -1109,7 +1107,7 @@ class TestDirectIngestController(unittest.TestCase):
             run_async=True,
         )
 
-        file_tags = list(sorted(controller.get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_ingest_view_rank_list()))
 
         add_paths_with_tags_and_process(
             self,
@@ -1146,7 +1144,7 @@ class TestDirectIngestController(unittest.TestCase):
         # Set line limit to 1
         controller.ingest_file_split_line_limit = 1
 
-        file_tags = list(sorted(controller.get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_ingest_view_rank_list()))
 
         add_paths_with_tags_and_process(
             self,
@@ -1183,7 +1181,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(
             controller,
             expected_raw_metadata_tags_with_is_processed=[
-                (tag, True) for tag in controller.get_file_tag_rank_list()
+                (tag, True) for tag in controller.get_ingest_view_rank_list()
             ],
             expected_ingest_metadata_tags_with_is_processed=[
                 ("tagA", True),
@@ -1196,7 +1194,7 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.check_imported_path_count(controller, 3)
 
-        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.check_tags(controller, controller.get_ingest_view_rank_list())
 
     @patch.object(
         BaseDirectIngestController,
@@ -1302,7 +1300,7 @@ class TestDirectIngestController(unittest.TestCase):
             region_code=controller.region_code(),
         )
 
-        file_tags = list(sorted(controller.get_file_tag_rank_list()))
+        file_tags = list(sorted(controller.get_ingest_view_rank_list()))
 
         unexpected_tags = ["Unexpected_Tag"]
 
@@ -1349,7 +1347,7 @@ class TestDirectIngestController(unittest.TestCase):
             ],
         )
 
-        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.check_tags(controller, controller.get_ingest_view_rank_list())
 
     def test_move_files_from_previous_days_to_storage_incomplete_current_day(
         self,
@@ -1666,7 +1664,7 @@ class TestDirectIngestController(unittest.TestCase):
             "recidiviz.utils.environment.get_gcp_environment",
             Mock(return_value="production"),
         ):
-            file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+            file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
 
             add_paths_with_tags(controller, file_tags)
             with self.assertRaisesRegex(
@@ -1689,7 +1687,7 @@ class TestDirectIngestController(unittest.TestCase):
             can_start_ingest=False,
         )
 
-        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        file_tags = list(reversed(sorted(controller.get_ingest_view_rank_list())))
 
         with patch(
             "recidiviz.utils.environment.get_gcp_environment",

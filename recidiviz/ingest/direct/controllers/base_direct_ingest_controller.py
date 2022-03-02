@@ -79,12 +79,12 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
     MANIFEST_LANGUAGE_VERSION_KEY,
-    IngestViewFileParser,
+    IngestViewResultsParser,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_file_parser_delegate import (
-    IngestViewFileParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegateImpl,
     yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
@@ -127,6 +127,7 @@ from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
+# TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
 class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
     def __init__(
         self,
@@ -190,10 +191,12 @@ class BaseDirectIngestController:
             GcsfsDirectIngestJobPrioritizer(
                 self.fs,
                 self.ingest_bucket_path,
-                self.get_file_tag_rank_list(),
+                self.get_ingest_view_rank_list(),
             )
         )
 
+        # TODO(#9717): Delete once BQ ingest view materialization is enabled for all
+        #  states.
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
 
         self.file_metadata_manager = PostgresDirectIngestFileMetadataManager(
@@ -217,9 +220,9 @@ class BaseDirectIngestController:
             file_metadata_manager=self.file_metadata_manager,
             big_query_client=BigQueryClientImpl(),
             view_collector=DirectIngestPreProcessedIngestViewCollector(
-                self.region, self.get_file_tag_rank_list()
+                self.region, self.get_ingest_view_rank_list()
             ),
-            launched_file_tags=self.get_file_tag_rank_list(),
+            launched_ingest_views=self.get_ingest_view_rank_list(),
         )
 
         self.ingest_instance_status_manager = DirectIngestInstanceStatusManager(
@@ -243,7 +246,7 @@ class BaseDirectIngestController:
     # TODO(#9717): Rename this to something like `get_ingest_view_processing_order`
     #  since ingest view results will soon no longer be file-based.
     @abc.abstractmethod
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
         """Returns the list of ingest view names for ingest views that are shipped in
         the current environment and whose results can be processed and commiteed to
         our central data model.
@@ -471,7 +474,7 @@ class BaseDirectIngestController:
             self.ingest_view_export_manager.get_ingest_view_export_task_args()
         )
 
-        rank_list = self.get_file_tag_rank_list()
+        rank_list = self.get_ingest_view_rank_list()
         ingest_view_name_rank = {
             ingest_view_name: i for i, ingest_view_name in enumerate(rank_list)
         }
@@ -572,13 +575,13 @@ class BaseDirectIngestController:
         with self.region_lock_manager.using_region_lock(
             expiration_in_seconds=self.default_job_lock_timeout_in_seconds(),
         ):
-            should_schedule = self._run_ingest_job(args)
+            should_schedule = self._run_extract_and_merge_job(args)
 
         if should_schedule:
             self.kick_scheduler(just_finished_job=True)
             logging.info("Done running task. Returning.")
 
-    def _run_ingest_job(self, args: ExtractAndMergeArgs) -> bool:
+    def _run_extract_and_merge_job(self, args: ExtractAndMergeArgs) -> bool:
         """
         Runs the full extract and merge process for this controller - reading and
         parsing ingest view query results, transforming it to Python objects that model
@@ -664,7 +667,7 @@ class BaseDirectIngestController:
         job.
         """
         yaml_mappings_dict = YAMLDict.from_path(
-            yaml_mappings_filepath(self.region, args.file_tag)
+            yaml_mappings_filepath(self.region, args.ingest_view_name)
         )
         version_str = yaml_mappings_dict.peek_optional(
             MANIFEST_LANGUAGE_VERSION_KEY, str
@@ -692,8 +695,8 @@ class BaseDirectIngestController:
 
         # If a version string is present, it's v2
         return IngestViewProcessorImpl(
-            ingest_view_file_parser=IngestViewFileParser(
-                delegate=IngestViewFileParserDelegateImpl(
+            ingest_view_file_parser=IngestViewResultsParser(
+                delegate=IngestViewResultsParserDelegateImpl(
                     self.region, self.system_level.schema_type(), self.ingest_instance
                 )
             )
@@ -1032,6 +1035,8 @@ class BaseDirectIngestController:
 
         self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
 
+        # TODO(#9717): Delete all file-splitting code once BQ materialization is
+        #  enabled for all states.
         did_split = False
         for path in unprocessed_ingest_view_paths:
             if self._split_file_if_necessary(path):
@@ -1117,7 +1122,7 @@ class BaseDirectIngestController:
 
     # TODO(#9717): This function can be deleted once ingest views are materialized in
     #   BQ and we no longer need to export the results to files.
-    def do_ingest_view_export(
+    def do_ingest_view_materialization(
         self, ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
@@ -1142,6 +1147,7 @@ class BaseDirectIngestController:
                 can_start_ingest=True,
             )
 
+    # TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
     def _should_split_file(self, path: GcsfsFilePath) -> bool:
         """Returns a handle to the contents of this path if this file should be split, None otherwise."""
         parts = filename_parts_from_path(path)
@@ -1152,7 +1158,7 @@ class BaseDirectIngestController:
                 f"file type: {parts.file_type}"
             )
 
-        if parts.file_tag not in self.get_file_tag_rank_list():
+        if parts.file_tag not in self.get_ingest_view_rank_list():
             logging.info(
                 "File tag [%s] for path [%s] not in rank list - not splitting.",
                 parts.file_tag,
@@ -1174,6 +1180,7 @@ class BaseDirectIngestController:
 
         return self._must_split_contents(parts.file_type, path)
 
+    # TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
     @trace.span
     def _split_file_if_necessary(self, path: GcsfsFilePath) -> bool:
         """Checks if the given file needs to be split according to this controller's |file_split_line_limit|.
@@ -1272,6 +1279,7 @@ class BaseDirectIngestController:
             ),
         )
 
+    # TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
     def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
         """Splits a file accessible via the provided path into multiple
         files and uploads those files to GCS. Returns the list of upload paths.

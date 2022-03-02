@@ -168,7 +168,7 @@ tagPrimaryKeyColsMissing file description
         documentation_generator = DirectIngestDocumentationGenerator()
         tags = ["tagA", "tagB", "tagC"]
         my_collector = FakeDirectIngestPreProcessedIngestViewCollector(
-            region=fake_region(), controller_tag_rank_list=tags
+            region=fake_region(), controller_ingest_view_rank_list=tags
         )
         expected_referencing_views = {
             "tagA": ["tagA", "gatedTagNotInTagsList"],

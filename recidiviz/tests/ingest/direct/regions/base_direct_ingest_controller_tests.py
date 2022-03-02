@@ -211,7 +211,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             # If test fails or this is not the integration test, do not validate
             return
 
-        expected_tags = self.controller.get_file_tag_rank_list()
+        expected_tags = self.controller.get_ingest_view_rank_list()
 
         expected_tags_set = set(expected_tags)
         processed_tags_set = set(self.file_tags_processed)

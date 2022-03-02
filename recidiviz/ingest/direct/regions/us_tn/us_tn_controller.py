@@ -35,7 +35,10 @@ class UsTnController(BaseDirectIngestController):
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
 
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
+        """Returns a list of string ingest view names in the order they should be
+        processed for data we received on a particular date.
+        """
         tags = []
         # TODO(#10740): Remove gating once ingest views are ready to be launched in prod.
         if not environment.in_gcp_production():

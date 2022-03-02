@@ -342,7 +342,7 @@ class BaseViewTest(unittest.TestCase):
     ) -> DirectIngestPreProcessedIngestViewBuilder:
         return DirectIngestPreProcessedIngestViewCollector(
             get_region(region_code, is_direct_ingest=True), []
-        ).get_view_builder_by_file_tag(ingest_view_file_tag)
+        ).get_view_builder_by_view_name(ingest_view_file_tag)
 
     def run_ingest_view_test(self, fixtures_files_name: str) -> None:
         self.create_mock_raw_bq_tables_from_fixtures(
@@ -370,11 +370,12 @@ class BaseViewTest(unittest.TestCase):
         expected_output_fixture_path = direct_ingest_fixture_path(
             region_code=region_code,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-            file_tag=view_builder.file_tag,
+            file_tag=view_builder.ingest_view_name,
             file_name=expected_output_fixture_file_name,
         )
         print(
-            f"Loading expected results for ingest view [{view_builder.file_tag}] from path "
+            f"Loading expected results for ingest view "
+            f"[{view_builder.ingest_view_name}] from path "
             f"[{expected_output_fixture_path}]"
         )
         expected_output = list(

@@ -524,7 +524,11 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "tak291_tak292_tak024_citations": self._supervision_violation_citation_ancestor_chain_override,
         }
 
-    def get_file_tag_rank_list(self) -> List[str]:
+    def get_ingest_view_rank_list(self) -> List[str]:
+        """Returns a list of string ingest view names in the order they should be
+        processed for data we received on a particular date.
+        """
+
         file_tags = [
             # SQL Preprocessing View
             "tak001_offender_identification",
@@ -1161,7 +1165,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         col_prefix: str = None,
     ) -> IngestFieldCoordinates:
         if not col_prefix:
-            col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
+            col_prefix = cls.primary_col_prefix_for_file_tag(
+                gating_context.ingest_view_name
+            )
         return IngestFieldCoordinates(
             "state_supervision_sentence",
             "state_supervision_sentence_id",
@@ -1176,7 +1182,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         col_prefix: str = None,
     ) -> IngestFieldCoordinates:
         if not col_prefix:
-            col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
+            col_prefix = cls.primary_col_prefix_for_file_tag(
+                gating_context.ingest_view_name
+            )
         return IngestFieldCoordinates(
             "state_incarceration_sentence",
             "state_incarceration_sentence_id",
@@ -1187,7 +1195,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _generate_supervision_period_id_coords(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(
+            gating_context.ingest_view_name
+        )
 
         doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
 
@@ -1207,7 +1217,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _generate_incarceration_period_id_coords(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(
+            gating_context.ingest_view_name
+        )
 
         doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
 
@@ -1230,7 +1242,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _generate_supervision_violation_id_coords_for_reports(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(
+            gating_context.ingest_view_name
+        )
         return IngestFieldCoordinates(
             "state_supervision_violation",
             "state_supervision_violation_id",
@@ -1241,7 +1255,9 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _generate_supervision_violation_id_coords_for_citations(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(
+            gating_context.ingest_view_name
+        )
         return IngestFieldCoordinates(
             "state_supervision_violation",
             "state_supervision_violation_id",

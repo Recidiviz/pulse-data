@@ -662,6 +662,6 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         # FULL RERUN FOR IDEMPOTENCE
         ######################################
 
-        self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
+        self._do_ingest_job_rerun_for_tags(self.controller.get_ingest_view_rank_list())
 
         self.assert_expected_db_people(expected_people)
