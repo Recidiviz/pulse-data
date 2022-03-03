@@ -34,7 +34,7 @@ REVOCATION_MATRIX_COMPARISON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     WITH event_based_counts AS (
       SELECT state_code as region_code, year, month, COUNT(*) as total_revocations
-      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
         WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 35 MONTH)
       GROUP BY state_code, year, month
     ),
@@ -59,7 +59,7 @@ REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=REVOCATION_MATRIX_COMPARISON_BY_MONTH_QUERY_TEMPLATE,
     description=REVOCATION_MATRIX_COMPARISON_BY_MONTH_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
-    reference_views_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=state_dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

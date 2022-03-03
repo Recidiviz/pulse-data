@@ -59,7 +59,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             SELECT
                 *,
                 DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
-            FROM `{project_id}.{reference_views_dataset}.supervision_to_liberty_transitions`
+            FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_liberty_transitions`
         )
         WHERE transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),
@@ -109,7 +109,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysM
         "length_of_stay",
     ),
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     binned_time_periods=get_binned_time_period_months("transition_date"),
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     length_of_stay_binned=length_of_stay_month_groups(),

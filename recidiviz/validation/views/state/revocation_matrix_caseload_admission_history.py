@@ -35,7 +35,7 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_QUERY_TEMPLATE = """
     /*{description}*/
     WITH admission_counts AS (
         SELECT state_code, person_id, COUNT(*) AS total_admissions
-        FROM `{project_id}.{reference_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
+        FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
         WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 35 MONTH)
         GROUP BY state_code, person_id
     ),
@@ -66,7 +66,7 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER = SimpleBigQueryViewBu
     view_query_template=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_QUERY_TEMPLATE,
     description=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_DESCRIPTION,
     dashboard_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
-    reference_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=state_dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

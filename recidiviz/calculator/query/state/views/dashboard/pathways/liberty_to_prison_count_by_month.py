@@ -46,7 +46,7 @@ aggregate_query = """
         judicial_district,
         COUNT(1) as event_count
     FROM
-        `{project_id}.{reference_dataset}.liberty_to_prison_transitions` transitions,
+        `{project_id}.{shared_metric_views_dataset}.liberty_to_prison_transitions` transitions,
         UNNEST ([gender, 'ALL']) AS gender,
         UNNEST ([age_group, 'ALL']) AS age_group,
         UNNEST ([prioritized_race_or_ethnicity, "ALL"]) AS race,
@@ -74,7 +74,7 @@ LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilde
     dimensions=("state_code", "year", "month", *dimensions),
     description=LIBERTY_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

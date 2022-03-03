@@ -14,18 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the pipeline names."""
-import unittest
-
-from recidiviz.tools.pipeline_launch_util import collect_all_pipeline_names
-
-
-class TestPipelineNames(unittest.TestCase):
-    """Tests the names of all pipelines that can be run."""
-
-    def test_collect_all_pipeline_names(self) -> None:
-        """Tests that each pipeline run delegate has a config with a unique
-        pipeline_name."""
-        pipeline_names = collect_all_pipeline_names()
-
-        self.assertCountEqual(set(pipeline_names), pipeline_names)

@@ -33,7 +33,7 @@ REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = """
         state_code, year, month,
         district,
         COUNT(person_id) as total_admissions
-      FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_admissions`
       GROUP BY state_code, year, month, district
     ), reincarcerations AS (
       SELECT
@@ -73,7 +73,7 @@ REINCARCERATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=("state_code", "year", "month", "district"),
     description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
 )
 

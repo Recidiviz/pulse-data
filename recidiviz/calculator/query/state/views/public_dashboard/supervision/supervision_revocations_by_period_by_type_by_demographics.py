@@ -50,7 +50,7 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         {age_bucket},
         ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, supervision_type, person_id ORDER BY admission_date DESC) as revocation_ranking
-      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`,
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_materialized`,
         UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
       AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
@@ -95,7 +95,7 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER = Me
         "age_bucket",
     ),
     description=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
     age_bucket=spotlight_age_buckets(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(

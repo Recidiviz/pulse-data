@@ -47,7 +47,7 @@ REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     JOIN (
       SELECT 
         DISTINCT state_code, level_1_supervision_location, level_2_supervision_location
-      FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
+      FROM `{project_id}.{shared_metric_views_dataset}.supervision_matrix_by_person_materialized`
     ) seen_locations
     ON names.state_code = seen_locations.state_code
         AND names.level_1_supervision_location_external_id = seen_locations.level_1_supervision_location
@@ -68,6 +68,7 @@ REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQue
     view_id=REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 

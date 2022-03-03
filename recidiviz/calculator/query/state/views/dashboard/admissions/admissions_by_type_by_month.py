@@ -36,7 +36,7 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = """
         most_severe_violation_type,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_materialized`
 
       UNION ALL
 
@@ -46,7 +46,7 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = """
         admission_date,
         'NEW_ADMISSION' AS most_severe_violation_type,
         'ALL' as supervision_type, 'ALL' as district
-      FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_admissions`
       WHERE admission_reason = 'NEW_ADMISSION'
     ),
     -- Use the most recent admission per person/supervision/district/period
@@ -88,7 +88,7 @@ ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
     dimensions=("state_code", "year", "month", "supervision_type", "district"),
     description=ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

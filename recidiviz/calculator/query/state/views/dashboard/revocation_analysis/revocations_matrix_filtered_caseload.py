@@ -62,7 +62,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
                                      admission_type != 'ALL' DESC,
                                      level_1_supervision_location != 'ALL' DESC,
                                      level_2_supervision_location != 'ALL' DESC) AS inclusion_order
-      FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+      FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`
       WHERE violation_type != 'ALL'
       AND reported_violations != 'ALL'
     ), caseload_by_person AS (
@@ -143,7 +143,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "officer",
     ),
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

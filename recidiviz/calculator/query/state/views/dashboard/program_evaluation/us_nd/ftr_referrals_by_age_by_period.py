@@ -45,7 +45,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY_TEMPLATE = """
         -- Use the age bucket from the most recent date_of_supervision
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
                            ORDER BY date_of_supervision DESC) AS supervision_rank
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
     ),
@@ -60,7 +60,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY_TEMPLATE = """
         -- Use the age bucket from the most recent referral
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
                            ORDER BY date_of_referral DESC) AS referral_rank
-      FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`,
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_program_referrals`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
     )
@@ -115,7 +115,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "age_bucket",
     ),
     description=FTR_REFERRALS_BY_AGE_BY_PERIOD_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )

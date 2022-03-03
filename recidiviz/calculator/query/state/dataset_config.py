@@ -30,7 +30,13 @@ DATAFLOW_METRICS_MATERIALIZED_DATASET: str = "dataflow_metrics_materialized"
 # Where static reference tables live
 STATIC_REFERENCE_TABLES_DATASET: str = "static_reference_tables"
 
-# Where reference views (views used by other views) live
+# Views that rely on Dataflow metric output that are shared by views in multiple
+# different packages
+SHARED_METRIC_VIEWS_DATASET: str = "shared_metric_views"
+
+# Views that do not rely on Dataflow metric output (e.g. they only read from static
+# reference tables or the state dataset) that may be used as input to our Dataflow
+# pipelines, or which may be referenced by other views.
 REFERENCE_VIEWS_DATASET: str = "reference_views"
 
 # Transitional dataset in the same region (e.g. us-east1) as the State CloudSQL

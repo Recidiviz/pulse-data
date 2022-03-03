@@ -48,7 +48,7 @@ aggregate_query = """
             age_group,
             IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
         FROM
-            `{project_id}.{reference_dataset}.prison_to_supervision_transitions` transitions
+            `{project_id}.{shared_metric_views_dataset}.prison_to_supervision_transitions` transitions
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
             ON transitions.state_code = location.state_code 
             AND level_1_location_external_id = location_id
@@ -94,7 +94,7 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBu
     description=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_DESCRIPTION,
     dimensions=("state_code", "year", "month", *dimensions),
     dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 

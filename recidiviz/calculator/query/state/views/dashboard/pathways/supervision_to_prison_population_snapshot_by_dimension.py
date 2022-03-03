@@ -55,7 +55,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
                 person_id,
                 transition_date,
                 DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
-            FROM `{project_id}.{reference_dataset}.supervision_to_prison_transitions`
+            FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions`
         )
     )
     , event_counts AS (
@@ -72,7 +72,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             "ALL" AS most_severe_violation,
             "ALL" AS number_of_violations,
             COUNT(1) as event_count,
-        FROM `{project_id}.{reference_dataset}.supervision_to_prison_transitions` transitions,
+        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions,
             UNNEST ([gender, 'ALL']) AS gender,
             UNNEST ([supervision_type, 'ALL']) AS supervision_type,
             UNNEST ([supervision_level, 'ALL']) AS supervision_level,
@@ -118,7 +118,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     length_of_stay_months_grouped=length_of_stay_month_groups(),
-    reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     transition_time_period=get_binned_time_period_months("transition_date"),
 )
 

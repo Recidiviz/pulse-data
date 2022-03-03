@@ -21,11 +21,22 @@ import unittest
 import mock
 
 from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,
 )
-from recidiviz.calculator.query.state import view_config
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
+from recidiviz.calculator.query.state import dataset_config, view_config
+from recidiviz.calculator.query.state.view_config import (
+    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+)
+from recidiviz.calculator.query.state.views.reference.reference_views import (
+    REFERENCE_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.shared_metric.shared_metric_views import (
+    SHARED_METRIC_VIEW_BUILDERS,
+)
 from recidiviz.metrics.export import export_config
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -72,3 +83,62 @@ class ViewExportConfigTest(unittest.TestCase):
         """Tests that all view_builders in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE successfully pass validations and build."""
         for view_builder in view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE:
             _ = view_builder.build()
+
+    def test_no_dataflow_descendants_in_reference_views(self) -> None:
+        """Enforces that none of the REFERENCE_VIEWS pull from Dataflow metrics."""
+
+        all_views_dag_walker = BigQueryViewDagWalker(
+            [view_builder.build() for view_builder in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]
+        )
+
+        for view_builder in REFERENCE_VIEW_BUILDERS:
+            node = all_views_dag_walker.nodes_by_key[
+                DagKey(
+                    view_address=BigQueryAddress(
+                        dataset_id=view_builder.dataset_id,
+                        table_id=view_builder.view_id,
+                    )
+                )
+            ]
+            all_views_dag_walker.populate_node_family_for_node(node=node)
+            for parent_node in node.node_family.full_parentage:
+                self.assertNotEqual(
+                    dataset_config.DATAFLOW_METRICS_DATASET,
+                    parent_node.dataset_id,
+                    f"View {view_builder.dataset_id}.{view_builder.view_id} relies on "
+                    f"Dataflow metrics. Shared views that pull from Dataflow metrics "
+                    f"should be in the shared_metric_views dataset, not the "
+                    f"reference_views dataset.",
+                )
+
+    def test_all_dataflow_descendants_in_shared_metric_views(self) -> None:
+        """Enforces that all the SHARED_METRIC_VIEWS pull from Dataflow metrics."""
+
+        all_views_dag_walker = BigQueryViewDagWalker(
+            [view_builder.build() for view_builder in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]
+        )
+
+        for view_builder in SHARED_METRIC_VIEW_BUILDERS:
+            node = all_views_dag_walker.nodes_by_key[
+                DagKey(
+                    view_address=BigQueryAddress(
+                        dataset_id=view_builder.dataset_id,
+                        table_id=view_builder.view_id,
+                    )
+                )
+            ]
+            all_views_dag_walker.populate_node_family_for_node(node=node)
+
+            dataflow_parent = False
+            for parent_node in node.node_family.full_parentage:
+                if parent_node.dataset_id == dataset_config.DATAFLOW_METRICS_DATASET:
+                    dataflow_parent = True
+                    break
+
+            self.assertTrue(
+                dataflow_parent,
+                f"Found view {view_builder.dataset_id}.{view_builder.view_id} "
+                f"that does not pull from Dataflow metrics. If this is a reference "
+                f"view used by other views, then it should be in the reference_views "
+                f"dataset instead.",
+            )
