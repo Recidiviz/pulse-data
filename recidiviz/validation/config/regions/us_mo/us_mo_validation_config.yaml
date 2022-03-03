@@ -22,18 +22,15 @@ num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 400
     override_reason: In MO we rely on a table where they build incarceration period
-      spans for us; some older rows have issues with overlap. TODO(#10683) - A rerun
-      may make this better.
+      spans for us; some older rows have issues with overlap. Rerun did not improve this number. Current error at 387 
+      rows as of 03/01/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods 
+      query to derive periods directly from the status codes table.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 3600
+    hard_num_allowed_rows_override: 1500
     override_reason: Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
       we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
-      that do follow standard formats. TODO(#10683) - Will a rerun make this better?
-  - validation_name: supervision_termination_prior_to_start
-    hard_num_allowed_rows_override: 5
-    override_reason: TODO(#5073), TODO(#10683) - Edge case related to ids shifting
-      because we're filtering out investigative periods and not clearing out None
-      end_date values in entity matching.
+      that do follow standard formats. Rerun decreased error significantly, bumping threshold down to 1500 to note if it greatly
+      increases again. Current error at 1121 rows as of 03/01/2022.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 200
     override_reason: TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
