@@ -63,7 +63,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{reference_dataset}.agent_external_id_to_full_name` agent ON
             transitions.state_code = agent.state_code
             AND transitions.supervising_officer = agent.external_id,
-            UNNEST([INITCAP(surname || ', ' || given_names), "ALL"]) AS officer_name
+            UNNEST([INITCAP(given_names || ' ' || surname), "ALL"]) AS officer_name
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     )
 
