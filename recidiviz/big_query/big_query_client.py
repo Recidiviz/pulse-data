@@ -1590,9 +1590,16 @@ class BigQueryClientImpl(BigQueryClient):
     def backup_dataset_tables_if_dataset_exists(
         self, dataset_id: str
     ) -> Optional[bigquery.DatasetReference]:
-        backup_dataset_id = (
-            f"{dataset_id}_backup_{datetime.date.today().isoformat().replace('-', '_')}"
+        timestamp = (
+            datetime.datetime.now()
+            .isoformat()
+            .replace("T", "_")
+            .replace("-", "_")
+            .replace(":", "_")
+            .replace(".", "_")
         )
+
+        backup_dataset_id = f"{dataset_id}_backup_{timestamp}"
 
         if not self.dataset_exists(self.dataset_ref_for_id(dataset_id)):
             return None
