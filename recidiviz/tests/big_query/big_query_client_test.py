@@ -1260,7 +1260,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             elif dataset_id == source_dataset_id:
                 tables = [mock_table, mock_view, mock_table_2]
             else:
-                raise ValueError(f"Unexpected datset [{dataset_id}]")
+                raise ValueError(f"Unexpected dataset [{dataset_id}]")
 
             return iter(tables)
 
@@ -1306,10 +1306,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             ]
         )
 
-    @freeze_time("2021-04-14")
+    @freeze_time("2021-04-14 03:14:23.5678")
     def test_backup_dataset_if_exists(self) -> None:
         dataset_to_backup_id = "my_dataset"
-        expected_backup_dataset_id = "my_dataset_backup_2021_04_14"
+        expected_backup_dataset_id = "my_dataset_backup_2021_04_14_03_14_23_567800"
 
         mock_table = create_autospec(bigquery.Table)
         mock_table.table_type = "TABLE"
@@ -1330,7 +1330,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                     backup_dataset_calls.append(True)
                     raise exceptions.NotFound("This exception should be caught")
                 return mock.MagicMock()
-            raise ValueError(f"Unexpected datset [{dataset_ref.dataset_id}]")
+            raise ValueError(f"Unexpected dataset [{dataset_ref.dataset_id}]")
 
         self.mock_client.get_dataset.side_effect = mock_get_dataset
 
@@ -1340,7 +1340,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             elif dataset_id == dataset_to_backup_id:
                 tables = [mock_table, mock_view]
             else:
-                raise ValueError(f"Unexpected datset [{dataset_id}]")
+                raise ValueError(f"Unexpected dataset [{dataset_id}]")
 
             return iter(tables)
 
