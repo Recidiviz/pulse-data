@@ -38,7 +38,7 @@ FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE = """
       COUNT(DISTINCT IF(participation_status = 'DISCHARGED', person_id, NULL)) AS discharged,
       COUNT(DISTINCT IF(participation_status = 'DENIED', person_id, NULL)) AS denied,
       COUNT(DISTINCT IF(participation_status = 'PENDING', person_id, NULL)) AS pending
-    FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`
+    FROM `{project_id}.{shared_metric_views_dataset}.event_based_program_referrals`
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND state_code = 'US_ND'
     GROUP BY state_code, year, month, district, supervision_type
@@ -51,7 +51,7 @@ FTR_REFERRALS_BY_PARTICIPATION_STATUS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE,
     dimensions=("state_code", "year", "month", "district", "supervision_type"),
     description=FTR_REFERRALS_BY_PARTICIPATION_STATUS_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

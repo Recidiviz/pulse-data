@@ -41,7 +41,7 @@ REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`,
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, supervision_type, district
@@ -52,7 +52,7 @@ REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS revocation_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`,
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_materialized`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, supervision_type, district
@@ -68,7 +68,7 @@ REVOCATIONS_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE,
     dimensions=("state_code", "metric_period_months", "supervision_type", "district"),
     description=REVOCATIONS_BY_PERIOD_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )

@@ -50,7 +50,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
         -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months"""
 
 PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
+    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     view_id=PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_NAME,
     view_query_template=PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE,
     description=PRISON_TO_SUPERVISION_TRANSITIONS_DESCRIPTION,

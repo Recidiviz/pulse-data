@@ -53,7 +53,7 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = """
         district,
         officer_external_id,
         metric_period_months
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`,
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, supervision_type, district, officer_external_id
@@ -78,7 +78,7 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = """
           -- Only use most recent revocation per person/supervision_type/metric_period_months
           ROW_NUMBER() OVER (PARTITION BY state_code, person_id, supervision_type, metric_period_months, district,
                              officer_external_id ORDER BY admission_date DESC) AS revocation_rank
-        FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`,
+        FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_materialized`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
       )
@@ -102,7 +102,7 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "officer_external_id",
     ),
     description=REVOCATIONS_BY_OFFICER_BY_PERIOD_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )

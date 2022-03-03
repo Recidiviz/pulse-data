@@ -41,7 +41,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
           gender,
           age_bucket,
           district,
-        FROM `{project_id}.{reference_views_dataset}.single_day_supervision_population_for_spotlight_materialized`,
+        FROM `{project_id}.{shared_metric_views_dataset}.single_day_supervision_population_for_spotlight_materialized`,
           {district_dimension}
     )
 
@@ -84,7 +84,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
         "age_bucket",
     ),
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"
     ),

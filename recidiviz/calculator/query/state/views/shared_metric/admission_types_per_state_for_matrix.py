@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,34 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Case compliance metrics with supervising_officer_external_id pulled directly from raw data table for US_ID."""
-
+"""Types of admissions for each state in the matrix views."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import hack_us_id_absconsions
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME = "supervision_case_compliance_metrics"
+ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_NAME = "admission_types_per_state_for_matrix"
 
-SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION = """
-Case compliance metrics with supervising_officer_external_id pulled directly from raw data table for US_ID.
+ADMISSION_TYPES_PER_STATE_FOR_MATRIX_DESCRIPTION = """
+Types of admissions for each state in the matrix views
 """
 
-SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE = f"""
-/*{{description}}*/
-    {hack_us_id_absconsions('most_recent_supervision_case_compliance_metrics_materialized')}
-"""
+ADMISSION_TYPES_PER_STATE_FOR_MATRIX_QUERY_TEMPLATE = """
+    /*{description}*/
+    SELECT
+        DISTINCT state_code, admission_type
+    FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`
+    """
 
-SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
-    view_id=SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME,
-    view_query_template=SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE,
-    description=SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION,
+ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
+    view_id=ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_NAME,
     should_materialize=True,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    view_query_template=ADMISSION_TYPES_PER_STATE_FOR_MATRIX_QUERY_TEMPLATE,
+    description=ADMISSION_TYPES_PER_STATE_FOR_MATRIX_DESCRIPTION,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER.build_and_print()
+        ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER.build_and_print()

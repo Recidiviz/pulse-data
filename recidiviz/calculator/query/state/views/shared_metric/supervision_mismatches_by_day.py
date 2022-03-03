@@ -39,7 +39,7 @@ SELECT
     IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
     IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
     recommended_supervision_downgrade_level
-FROM `{project_id}.{reference_views_dataset}.supervision_case_compliance_metrics_materialized` compliance,
+FROM `{project_id}.{shared_metric_views_dataset}.supervision_case_compliance_metrics_materialized` compliance,
 UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
 UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
 UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
@@ -48,12 +48,12 @@ WHERE level_2_supervision_location_external_id IS NOT NULL
 """
 
 SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
+    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     view_id=SUPERVISION_MISMATCHES_BY_DAY_VIEW_NAME,
     view_query_template=SUPERVISION_MISMATCHES_BY_DAY_QUERY_TEMPLATE,
     description=SUPERVISION_MISMATCHES_BY_DAY_DESCRIPTION,
     should_materialize=True,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

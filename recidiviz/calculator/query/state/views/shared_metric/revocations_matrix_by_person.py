@@ -67,7 +67,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
                                (admission_type = 'LEGAL_REVOCATION') DESC,
                                supervision_type, supervision_level, case_type, level_1_supervision_location,
                                level_2_supervision_location, officer) as ranking
-        FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`,
+        FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
         AND {state_specific_supervision_type_inclusion_filter}
@@ -150,12 +150,12 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
     """
 
 REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
+    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME,
     should_materialize=True,
     view_query_template=REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     level_1_supervision_location_dimension=bq_utils.unnest_column(
         "level_1_supervision_location", "level_1_supervision_location"

@@ -48,9 +48,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
+    FROM `{project_id}.{shared_metric_views_dataset}.supervision_matrix_by_person_materialized`
     FULL OUTER JOIN
-         `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+         `{project_id}.{shared_metric_views_dataset}.admission_types_per_state_for_matrix_materialized`
     USING (state_code)
     GROUP BY state_code, violation_type, reported_violations, officer, 
       officer_full_name, supervision_type, supervision_level, charge_category,
@@ -70,9 +70,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized`
+    FROM `{project_id}.{shared_metric_views_dataset}.supervision_termination_matrix_by_person_materialized`
     FULL OUTER JOIN
-         `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+         `{project_id}.{shared_metric_views_dataset}.admission_types_per_state_for_matrix_materialized`
     USING (state_code) 
     GROUP BY state_code, violation_type, reported_violations, officer, 
       officer_full_name, supervision_type, supervision_level, charge_category,
@@ -92,7 +92,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+    FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`
     GROUP BY state_code, violation_type, reported_violations, officer, 
         officer_full_name, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
@@ -107,7 +107,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
                   WHEN state_code = 'US_PA' THEN level_2_supervision_location
                   END,
              'UNKNOWN') AS district
-    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
+    FROM `{project_id}.{shared_metric_views_dataset}.supervision_matrix_by_person_materialized`
     WHERE officer IS NOT NULL
       AND ((state_code = 'US_PA' AND level_2_supervision_location != 'ALL')
       OR (state_code = 'US_MO' AND level_1_supervision_location != 'ALL'))
@@ -177,7 +177,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER = MetricBigQueryViewBuil
         "officer",
     ),
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

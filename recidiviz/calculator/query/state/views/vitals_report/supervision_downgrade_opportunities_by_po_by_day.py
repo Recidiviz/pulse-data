@@ -50,7 +50,7 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE = """
             level_1_supervision_location_external_id,
             level_2_supervision_location_external_id,
             COUNT (DISTINCT(IF(recommended_supervision_downgrade_level IS NOT NULL, person_id, NULL))) as total_downgrade_opportunities,
-        FROM `{project_id}.{reference_views_dataset}.supervision_mismatches_by_day_materialized`
+        FROM `{project_id}.{shared_metric_views_dataset}.supervision_mismatches_by_day_materialized`
         -- 210 is 6 months (180 days) for the 6 month time series chart + 30 days for monthly average on the first day
         WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 210 DAY)
         GROUP BY 1, 2, 3, 4, 5
@@ -80,7 +80,7 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryVi
     view_id=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_NAME,
     view_query_template=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "downgrade_opportunities"
