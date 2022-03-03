@@ -212,3 +212,53 @@ module "us_tn_supervision_facility_names_table" {
 ]
 EOF
 }
+
+module "us_id_supervision_unit_to_district_map_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "us_id_supervision_unit_to_district_map"
+  schema     = <<EOF
+[
+  {
+    "name": "level_1_supervision_location_external_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "level_2_supervision_location_external_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
+
+module "us_id_supervision_district_names_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "us_id_supervision_district_names"
+  schema     = <<EOF
+[
+  {
+    "name": "level_2_supervision_location_external_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "level_2_supervision_location_name",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
