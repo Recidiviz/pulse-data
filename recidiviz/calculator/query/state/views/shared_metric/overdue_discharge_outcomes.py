@@ -69,7 +69,7 @@ WHERE opportunity_type = '{OpportunityType.OVERDUE_DISCHARGE.value}'
 """
 
 OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
+    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     view_id=OVERDUE_DISCHARGE_OUTCOMES_VIEW_NAME,
     view_query_template=OVERDUE_DISCHARGE_OUTCOMES_QUERY_TEMPLATE,
     description=OVERDUE_DISCHARGE_OUTCOMES_DESCRIPTION,

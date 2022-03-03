@@ -47,7 +47,7 @@ REVOCATIONS_MATRIX_EVENTS_BY_MONTH_QUERY_TEMPLATE = """
             case_type,
             level_1_supervision_location,
             level_2_supervision_location,
-        FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
+        FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
         -- We want MoM commitments from supervision for the last 36 months
         WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 35 MONTH)
             -- Filter out any rows that don't have a specified violation_type
@@ -123,7 +123,7 @@ REVOCATIONS_MATRIX_EVENTS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "charge_category",
     ),
     description=REVOCATIONS_MATRIX_EVENTS_BY_MONTH_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

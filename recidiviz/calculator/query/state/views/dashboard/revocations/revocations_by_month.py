@@ -39,7 +39,7 @@ REVOCATIONS_BY_MONTH_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`
       GROUP BY state_code, year, month, supervision_type, district
     ) pop
     LEFT JOIN (
@@ -48,7 +48,7 @@ REVOCATIONS_BY_MONTH_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS revocation_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_materialized`
       GROUP BY state_code, year, month, supervision_type, district
     ) rev
     USING (state_code, year, month, supervision_type, district)
@@ -62,7 +62,7 @@ REVOCATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=REVOCATIONS_BY_MONTH_QUERY_TEMPLATE,
     dimensions=("state_code", "year", "month", "supervision_type", "district"),
     description=REVOCATIONS_BY_MONTH_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

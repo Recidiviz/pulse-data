@@ -43,7 +43,7 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TE
       {state_specific_race_or_ethnicity_groupings},
       COUNT(DISTINCT(person_id)) AS total_supervision_population
     FROM
-      `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
+      `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations`,
       {unnested_race_or_ethnicity_dimension},
     UNNEST ([36]) AS metric_period_months
     WHERE {metric_period_condition}
@@ -64,7 +64,7 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER 
         "race_or_ethnicity",
     ),
     description=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"

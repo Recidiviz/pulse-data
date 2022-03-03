@@ -59,7 +59,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
           response_count AS violation_count,
           -- Rows that count towards the number of violations don't count towards any violation type entry counts --
           '' as violation_type_entry
-        FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+        FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`
     ) , unnested_violation_type_entries AS (
       SELECT
         state_code,
@@ -75,7 +75,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
         -- Rows with violation type entries don't count towards the number of violations --
         0 as violation_count,
         TRIM(violation_type_entry) as violation_type_entry
-      FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`,
+      FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`,
         -- Unnest each violation type listed on each violation --
         UNNEST(
             -- Translates a string like "[TECHNICAL, FELONY],[ABSCONSION, MISDEMEANOR],[MISDEMEANOR]" to
@@ -142,7 +142,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
         "charge_category",
     ),
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     state_specific_violation_type_entry=state_specific_query_strings.state_specific_violation_type_entry(),
     state_specific_supervision_location_optimization_filter=state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
     state_specific_violation_type_entry_categories=state_specific_query_strings.state_specific_violation_type_entry_categories(),

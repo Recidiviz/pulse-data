@@ -47,9 +47,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = """
           level_1_supervision_location,
           level_2_supervision_location,
           metric_period_months  
-        FROM `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+        FROM `{project_id}.{shared_metric_views_dataset}.admission_types_per_state_for_matrix_materialized`
         LEFT JOIN
-            `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
+            `{project_id}.{shared_metric_views_dataset}.supervision_matrix_by_person_materialized`
          USING (state_code)
         GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level,
           charge_category, level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
@@ -67,9 +67,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = """
           level_1_supervision_location,
           level_2_supervision_location,
           metric_period_months
-        FROM `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
+        FROM `{project_id}.{shared_metric_views_dataset}.admission_types_per_state_for_matrix_materialized`
         LEFT JOIN
-            `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized`
+            `{project_id}.{shared_metric_views_dataset}.supervision_termination_matrix_by_person_materialized`
          USING (state_code) 
         GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level,
         charge_category, level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
@@ -87,7 +87,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = """
           level_1_supervision_location,
           level_2_supervision_location,
           metric_period_months
-        FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+        FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`
         GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level,
             charge_category, level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
     )
@@ -140,7 +140,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_BUILDER = MetricBigQueryViewB
         "admission_type",
     ),
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

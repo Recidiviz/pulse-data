@@ -41,7 +41,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = """
         state_code, year, month, 
         district,
         COUNT(DISTINCT person_id) AS admission_count
-      FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_admissions`
       GROUP BY state_code, year, month, district
     ) admissions
     FULL OUTER JOIN (
@@ -83,7 +83,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE,
     dimensions=("state_code", "year", "month", "district"),
     description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),

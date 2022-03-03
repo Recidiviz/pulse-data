@@ -55,6 +55,9 @@ from recidiviz.calculator.query.state.views.reference.reference_views import (
 from recidiviz.calculator.query.state.views.sessions.sessions_views import (
     SESSIONS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.shared_metric.shared_metric_views import (
+    SHARED_METRIC_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views import (
     VITALS_REPORT_VIEW_BUILDERS,
 )
@@ -74,6 +77,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             PUBLIC_DASHBOARD_VIEW_BUILDERS,
             REFERENCE_VIEW_BUILDERS,
             SESSIONS_VIEW_BUILDERS,
+            SHARED_METRIC_VIEW_BUILDERS,
             VITALS_REPORT_VIEW_BUILDERS,
         )
     )

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2019 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Matrix of supervision terminations with violation response count and most severe violation per person."""
+"""Supervision Matrix by Person."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import (
@@ -24,23 +24,17 @@ from recidiviz.calculator.query.state import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_NAME = (
-    "supervision_termination_matrix_by_person"
-)
+SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME = "supervision_matrix_by_person"
 
-SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION = """
- Matrix of supervision terminations with violation response count and most severe violation per person.
- This lists all individuals who had a supervision period end for one of the following reasons:
- 'DISCHARGE', 'EXPIRATION', 'SUSPENSION', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'DEATH', or 'REVOCATION'. Revocation
- terminations are counted on the date of the revocation admission to prison, not on the date of the supervision
- termination. These terminations are broken down by number of violations and the most severe violation in a 12 month
- window leading up to the termination."""
+SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION = """
+ Supervision matrix of violation response count and most severe violation per person.
+ This lists all individuals on probation/parole/dual supervision, broken down by number of
+ violations and the most severe violation while on supervision.
+ """
 
-SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
+SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
     /*{description}*/
-    
-    /* Supervision case terminations. */
-    WITH terminations_with_agent_info AS (
+    WITH supervision_with_agent_info AS (
         SELECT
             * EXCEPT(state_code),
             metric.state_code,
@@ -50,19 +44,17 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             -- once the FE is using the officer_full_name field for names
             REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
             REPLACE(COALESCE(agent.full_name, 'UNKNOWN'), ',', '') AS officer_full_name,
-            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` metric
+            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` metric
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
         ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.external_id 
-    ), terminations_matrix AS (
+    ), supervision_matrix AS (
         SELECT
             state_code,
-            year,
-            month,
+            year, month,
             most_severe_violation_type,
             most_severe_violation_type_subtype,
             response_count,
-            person_id,
-            person_external_id,
+            person_id, person_external_id,
             gender,
             assessment_score_bucket,
             age_bucket,
@@ -75,12 +67,12 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
             officer,
             officer_full_name,
-            termination_date,
+            {state_specific_recommended_for_revocation},
+            date_of_supervision,
             FALSE AS is_revocation
-        FROM terminations_with_agent_info
-        WHERE termination_reason IN ('DISCHARGE', 'EXPIRATION', 'SUSPENSION', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'DEATH')
-            AND {thirty_six_month_filter}
-            AND {state_specific_supervision_type_inclusion_filter}
+        FROM supervision_with_agent_info
+        WHERE {thirty_six_month_filter}
+        AND {state_specific_supervision_type_inclusion_filter}
     ), revocations_matrix AS (
         SELECT
             state_code, year, month,
@@ -100,24 +92,25 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             level_2_supervision_location,
             officer,
             officer_full_name,
+            recommended_for_revocation,
             admission_date AS date_of_supervision,
             TRUE as is_revocation
-        FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
-    ), revocations_and_terminations AS (
-      SELECT * FROM terminations_matrix 
+        FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
+    ), revocations_and_supervisions AS (
+      SELECT * FROM supervision_matrix
         UNION ALL
       SELECT * FROM revocations_matrix
-    ), terminations_with_ranking AS (
+    ), supervision_with_ranking AS (
       SELECT
         *,
         ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
-                           ORDER BY is_revocation DESC, termination_date DESC,
-                           supervision_type, supervision_level, case_type, level_1_supervision_location,
-                           level_2_supervision_location, officer) as ranking
-      FROM revocations_and_terminations,
+                           ORDER BY is_revocation DESC, date_of_supervision DESC,
+                                    supervision_type, supervision_level, case_type, level_1_supervision_location,
+                                    level_2_supervision_location, officer) as ranking
+      FROM revocations_and_supervisions,
       {metric_period_dimension}
       WHERE {metric_period_condition}
-    ), person_based_terminations AS (
+    ), person_based_supervision AS (
       SELECT
         state_code,
         metric_period_months, 
@@ -130,46 +123,18 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
         level_2_supervision_location,
         officer,
         officer_full_name,
-        person_id,
-        person_external_id,
-        gender,
+        recommended_for_revocation,
+        person_id, person_external_id,
+        IFNULL(gender, 'EXTERNAL_UNKNOWN') AS gender,
         age_bucket,
         {state_specific_assessment_bucket},
         IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
-      FROM terminations_with_ranking
+      FROM supervision_with_ranking
       WHERE ranking = 1
-    ), unnested_terminations AS (
-       SELECT
-            state_code,
-            metric_period_months, 
-            violation_type,
-            reported_violations,
-            supervision_type,
-            supervision_level,
-            charge_category,
-            level_1_supervision_location,
-            level_2_supervision_location,
-            officer,
-            officer_full_name,
-            person_id,
-            person_external_id,
-            gender,
-            age_bucket,
-            risk_level,
-            prioritized_race_or_ethnicity,
-        FROM person_based_terminations,
-        {level_1_supervision_location_dimension},
-        {level_2_supervision_location_dimension},
-        {supervision_type_dimension},
-        {supervision_level_dimension},
-        {charge_category_dimension},
-        {reported_violations_dimension},
-        {violation_type_dimension}
-    )
-    
-    SELECT
+    ), unnested_supervision AS (
+      SELECT
         state_code,
-        metric_period_months, 
+        metric_period_months,
         violation_type,
         reported_violations,
         supervision_type,
@@ -179,26 +144,57 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
         level_2_supervision_location,
         officer,
         officer_full_name,
+        recommended_for_revocation,
         person_id,
         person_external_id,
         gender,
         age_bucket,
         risk_level,
-        prioritized_race_or_ethnicity,
-    FROM unnested_terminations
+        prioritized_race_or_ethnicity
+      FROM person_based_supervision,
+      {level_1_supervision_location_dimension},
+      {level_2_supervision_location_dimension},
+      {supervision_type_dimension},
+      {supervision_level_dimension},
+      {charge_category_dimension},
+      {reported_violations_dimension},
+      {violation_type_dimension}
+    )
+    
+    SELECT
+        state_code,
+        metric_period_months,
+        violation_type,
+        reported_violations,
+        supervision_type,
+        supervision_level,
+        charge_category,
+        level_1_supervision_location,
+        level_2_supervision_location,
+        officer,
+        officer_full_name,
+        recommended_for_revocation,
+        person_id,
+        person_external_id,
+        gender,
+        age_bucket,
+        risk_level,
+        prioritized_race_or_ethnicity
+    FROM unnested_supervision
     WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
       AND {state_specific_supervision_location_optimization_filter}
       AND {state_specific_dimension_filter}
       AND (reported_violations = 'ALL' OR violation_type != 'ALL')
     """
 
-SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
-    view_id=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_NAME,
+SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
+    view_id=SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME,
     should_materialize=True,
-    view_query_template=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE,
-    description=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION,
+    view_query_template=SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE,
+    description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(
@@ -224,9 +220,10 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
+    state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(),
     age_bucket=bq_utils.age_bucket_grouping(age_column="metric.age"),
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER.build_and_print()
+        SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER.build_and_print()

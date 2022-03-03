@@ -53,7 +53,7 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             prioritized_race_or_ethnicity AS race,
             {binned_time_periods} AS time_period,
             {length_of_stay} AS prior_length_of_incarceration,
-        FROM `{project_id}.{reference_views_dataset}.liberty_to_prison_transitions`
+        FROM `{project_id}.{shared_metric_views_dataset}.liberty_to_prison_transitions`
         WHERE transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),
     get_last_updated AS ({get_pathways_incarceration_last_updated_date})
@@ -93,7 +93,7 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetric
         "judicial_district",
         "prior_length_of_incarceration",
     ),
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     binned_time_periods=get_binned_time_period_months("transition_date"),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
     length_of_stay=create_buckets_with_cap(

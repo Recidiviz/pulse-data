@@ -50,7 +50,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
             officer_name,
             COUNT(1) as event_count,
-        FROM `{project_id}.{reference_dataset}.supervision_to_prison_transitions` transitions,
+        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions,
             UNNEST ([gender, 'ALL']) AS gender,
             UNNEST ([supervision_type, 'ALL']) AS supervision_type,
             UNNEST ([supervision_level, 'ALL']) AS supervision_level,
@@ -93,6 +93,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetr
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     transition_time_period=get_binned_time_period_months("transition_date"),
 )
 

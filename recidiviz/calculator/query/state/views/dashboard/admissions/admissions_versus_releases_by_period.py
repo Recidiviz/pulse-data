@@ -48,7 +48,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = """
         state_code, metric_period_months,
         district,
         COUNT(DISTINCT person_id) as admission_count
-      FROM `{project_id}.{reference_views_dataset}.event_based_admissions`,
+      FROM `{project_id}.{shared_metric_views_dataset}.event_based_admissions`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, district
@@ -92,7 +92,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=("state_code", "metric_period_months", "district"),
     description=ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(district_column="county_of_residence"),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),

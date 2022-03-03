@@ -52,7 +52,7 @@ SELECT
     district,
     COUNT(1) as event_count,
 FROM
-    `{project_id}.{reference_dataset}.supervision_to_liberty_transitions` transitions,
+    `{project_id}.{shared_metric_views_dataset}.supervision_to_liberty_transitions` transitions,
     UNNEST ([gender, 'ALL']) AS gender,
     UNNEST ([supervision_type, 'ALL']) AS supervision_type,
     UNNEST ([age_group, 'ALL']) AS age_group,
@@ -88,7 +88,7 @@ SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewB
     dimensions=("state_code", "year", "month", *dimensions),
     description=SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

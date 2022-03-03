@@ -50,7 +50,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             gender,
             age_group,
             IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
-        FROM `{project_id}.{reference_dataset}.prison_to_supervision_transitions` transitions
+        FROM `{project_id}.{shared_metric_views_dataset}.prison_to_supervision_transitions` transitions
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
             ON transitions.state_code = location.state_code 
             AND level_1_location_external_id = location_id
@@ -98,7 +98,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
     description=PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     last_updated_query=get_pathways_incarceration_last_updated_date(),
-    reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     transition_time_period=get_binned_time_period_months("transition_date"),
     facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )

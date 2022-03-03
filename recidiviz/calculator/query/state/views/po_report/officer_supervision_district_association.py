@@ -38,7 +38,7 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = """
                 state_code, year, month, SPLIT(district, '|')[OFFSET(0)] as district_name,
                 COUNT(DISTINCT person_id) AS person_count,
                 officer_external_id
-              FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
+              FROM `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations`
               WHERE district != 'ALL'
                 -- Only the following supervision types should be included in the PO report --
                 AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
@@ -63,7 +63,7 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     should_materialize=True,
     view_query_template=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE,
     description=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )
 

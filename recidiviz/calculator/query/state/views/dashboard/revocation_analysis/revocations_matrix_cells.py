@@ -42,7 +42,7 @@ REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE = """
         level_1_supervision_location,
         level_2_supervision_location,
         metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+    FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`
     -- Filter to rows that have a specified violation type and number of violations --
     WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
     GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
@@ -66,7 +66,7 @@ REVOCATIONS_MATRIX_CELLS_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "charge_category",
     ),
     description=REVOCATIONS_MATRIX_CELLS_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
