@@ -175,3 +175,28 @@ function verify_hash {
         exit 1
     fi
 }
+
+
+function get_secret () {
+  PROJECT_ID=$1
+  SECRET_NAME=$2
+  gcloud secrets versions access latest --project=$1 --secret=$2 || exit_on_fail
+}
+
+
+
+
+function select_one () {
+  echo "${1}: " >&2
+
+  select SELECTED in "${@:2}"
+  do
+    if [ -z "$SELECTED" ]; then
+        echo "Invalid input. Enter a number." >&2
+    else
+      break
+    fi
+  done
+
+  echo $SELECTED
+}

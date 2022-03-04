@@ -167,3 +167,6 @@ recidiviz/case_triage/local/**/*
 recidiviz/tools/deploy/dist/
 recidiviz/tools/deploy/log/
 
+# Binaries
+recidiviz/tools/postgres/log/
+recidiviz/tools/postgres/vendor/
