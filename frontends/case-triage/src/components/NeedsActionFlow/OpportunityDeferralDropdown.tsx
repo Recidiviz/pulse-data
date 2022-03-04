@@ -3,8 +3,8 @@ import {
   Dropdown,
   DropdownMenu,
   DropdownToggle,
+  TooltipTrigger,
 } from "@recidiviz/design-system";
-import Tooltip from "../Tooltip";
 import { OpportunityDeferralDropdownProps } from "./types";
 import { ReminderMenuItems } from "./ReminderMenuItems";
 
@@ -13,13 +13,13 @@ const OpportunityDeferralDropdown = ({
 }: OpportunityDeferralDropdownProps): JSX.Element => {
   return (
     <Dropdown>
-      <Tooltip title="Remind Me Later">
+      <TooltipTrigger contents={<span>Remind Me Later</span>}>
         <DropdownToggle
           aria-label="Create a reminder"
           icon="Clock"
           iconSize={16}
         />
-      </Tooltip>
+      </TooltipTrigger>
       <DropdownMenu alignment="right">
         <ReminderMenuItems onDeferred={onDeferred} />
       </DropdownMenu>

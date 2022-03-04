@@ -17,8 +17,13 @@
 import * as React from "react";
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import { Button, Icon, IconSVG, spacing } from "@recidiviz/design-system";
-import Tooltip from "../Tooltip";
+import {
+  Button,
+  Icon,
+  IconSVG,
+  spacing,
+  TooltipTrigger,
+} from "@recidiviz/design-system";
 import { Pill } from "../Pill";
 
 export const UncheckedButton = styled(Button).attrs({
@@ -52,7 +57,9 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
   if (checked) {
     return (
       <Pill filled kind="neutral">
-        {tooltip ? <Tooltip title={tooltip}>{title}</Tooltip> : title}
+        <TooltipTrigger contents={tooltip}>
+          <span>{title}</span>
+        </TooltipTrigger>
         <CloseButton
           onClick={() => {
             if (onToggleCheck) {
@@ -61,9 +68,9 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
           }}
           aria-label="Remove"
         >
-          <Tooltip title="Remove">
+          <TooltipTrigger contents="Remove">
             <Icon kind={IconSVG.CloseOutlined} size={16} />
-          </Tooltip>
+          </TooltipTrigger>
         </CloseButton>
       </Pill>
     );

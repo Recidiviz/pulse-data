@@ -15,9 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { TooltipTrigger } from "@recidiviz/design-system";
 import React from "react";
 import { Pill, PillKind } from "../Pill";
-import Tooltip from "../Tooltip";
 
 type AlertPreviewProps = {
   kind: PillKind;
@@ -35,11 +35,7 @@ const AlertPreview: React.FC<AlertPreviewProps> = ({
     </Pill>
   );
 
-  if (tooltip) {
-    return <Tooltip title={tooltip}>{AlertPill}</Tooltip>;
-  }
-
-  return AlertPill;
+  return <TooltipTrigger contents={tooltip}>{AlertPill}</TooltipTrigger>;
 };
 
 export default AlertPreview;
