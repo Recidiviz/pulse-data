@@ -34,6 +34,7 @@ from opencensus.trace.propagation import google_cloud_format
 from recidiviz.admin_panel.all_routes import admin_panel
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
+from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
@@ -95,6 +96,7 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (export_blueprint, "/export"),
     (justice_counts_control, "/justice_counts"),
     (validation_manager_blueprint, "/validation_manager"),
+    (view_update_manager_blueprint, "/view_update"),
     (supplemental_dataset_manager_blueprint, "/supplemental_dataset"),
 ]
 

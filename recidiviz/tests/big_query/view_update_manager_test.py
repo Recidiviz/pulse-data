@@ -18,10 +18,13 @@
 """Tests for view_update_manager.py."""
 
 import unittest
-from typing import Set, Tuple
+from http import HTTPStatus
+from typing import Any, Dict, Set, Tuple
 from unittest import mock
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
+import flask
+from flask import Flask
 from google.cloud import bigquery
 
 from recidiviz.big_query import view_update_manager
@@ -31,6 +34,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
@@ -867,3 +871,54 @@ class ViewManagerTest(unittest.TestCase):
                     view.materialized_address.dataset_id,
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
+
+
+@mock.patch(
+    "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+)
+@mock.patch(
+    "recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789")
+)
+@mock.patch(
+    "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
+    MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
+)
+class TestUpdateAllManagedViews(unittest.TestCase):
+    """Tests the /view_update/update_all_managed_views endpoint."""
+
+    def setUp(self) -> None:
+        self.app = Flask(__name__)
+        self.app.register_blueprint(view_update_manager_blueprint)
+        self.app.config["TESTING"] = True
+        self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
+        self.client = self.app.test_client()
+
+        with self.app.test_request_context():
+            self.update_all_managed_views_url = flask.url_for(
+                "view_update.update_all_managed_views"
+            )
+
+        self.mock_project_id = "recidiviz-staging"
+        self.metadata_patcher = mock.patch(
+            "recidiviz.big_query.view_update_manager.metadata.project_id"
+        )
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = self.mock_project_id
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    def test_update_all_managed_views(self, mock_create: MagicMock) -> None:
+        """Tests the /view_update/update_all_managed_views endpoint."""
+
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.update_all_managed_views_url,
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_create.assert_called()

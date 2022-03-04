@@ -17,8 +17,10 @@
 """Provides utilities for updating views within a live BigQuery instance."""
 import logging
 from concurrent import futures
-from typing import Dict, List, Optional, Sequence, Set
+from http import HTTPStatus
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
+from flask import Blueprint
 from google.cloud import exceptions
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
@@ -34,8 +36,14 @@ from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
-from recidiviz.utils import monitoring, structured_logging
+from recidiviz.utils import metadata, monitoring, structured_logging
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.view_registry.dataset_overrides import format_override
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+    deployed_view_builders,
+)
 
 m_failed_view_update = measure.MeasureInt(
     "bigquery/view_update_manager/view_update_all_failure",
@@ -56,13 +64,32 @@ monitoring.register_views([failed_view_updates_view])
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 
-
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and
 # we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
 # increased.
 # In the future, we could increase the worker number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
 MAX_WORKERS = 10
+
+view_update_manager_blueprint = Blueprint("view_update", __name__)
+
+
+# TODO(#11437): We are aware that this endpoint will regularly time out, since updating
+#  all views takes a long time. This endpoint is a **temporary** solution,
+#  and will be deleted once we put the BigQuery view update into the DAG.
+@view_update_manager_blueprint.route("/update_all_managed_views")
+@requires_gae_auth
+def update_all_managed_views() -> Tuple[str, HTTPStatus]:
+    """API endpoint to update all managed views."""
+    create_managed_dataset_and_deploy_views_for_view_builders(
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        view_builders_to_update=deployed_view_builders(metadata.project_id()),
+        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+    )
+
+    logging.info("All managed views successfully updated and materialized.")
+
+    return "", HTTPStatus.OK
 
 
 def rematerialize_views_for_view_builders(
