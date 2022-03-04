@@ -46,6 +46,7 @@ SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_DIS
     + " Only includes external data with supervision district information.",
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    state_base_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
 SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -60,6 +61,7 @@ SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_LEV
     + " Only includes external sources with supervision level information.",
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    state_base_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
 
@@ -75,6 +77,7 @@ SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_OFF
     + " Only includes external sources with supervising officer information.",
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    state_base_dataset=state_dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == "__main__":
