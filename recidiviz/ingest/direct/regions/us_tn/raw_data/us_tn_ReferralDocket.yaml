@@ -1,6 +1,6 @@
 file_tag: ReferralDocket
 file_description: |- 
-  This table contains 1 row for each docket number for a referral for an offender.
+  This table contains 1 row for each docket number for a referral for a person.
 primary_key_cols:
   - OffenderID
   - OrderDate
@@ -31,10 +31,10 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: PostedByStaffID
     description: |-
-      The staff id of the individual who initially posted information for an offender.
+      The staff id of the individual who initially posted information for a person.
   - name: PostedDate
     is_datetime: True
     description: |-

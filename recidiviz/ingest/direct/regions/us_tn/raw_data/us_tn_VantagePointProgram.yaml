@@ -1,0 +1,89 @@
+file_tag: VantagePointProgram
+file_description: |-
+  This table is used to store STRONG-R Programs from Vant4gePoint.
+primary_key_cols:
+  - Job
+columns:
+  - name: Job
+    description: |-
+      This code represents the DOT Code for a particular job. The code will be used as the first recommendation for a job during the classification process.
+  - name: VantageProgramID
+    description: |-
+      This is a unique ID from STRONG-R for a program in Vant4gePoint.
+  - name: VantagePointTitle
+    description: |-
+      This is the Vant4gePoint program title for a person from STRONG-R.
+  - name: Dosage
+    description: |-
+      The total number of hours a person has been in a STRONG-R program.
+  - name: ProgramDuration
+    description: |-
+      This is the duration of a STRONG-R pathway.
+  - name: DosageSpan
+    description: |-
+      A code that indicates what type of calendar span: hours (weeks or months) from STRONG-R.
+  - name: Description1
+    description: |-
+      This is STRONG-R's program description.
+  - name: Description2
+    description: |-
+      This is STRONG-R's program description.
+  - name: Platform
+    description: |-
+      The STRONG-R platform code for a program.
+  - name: SupervisionLocationType
+    description: |-
+      The location type of supervision from STRONG-R. It will have either 'F' for field or 'P' for prison/jail.
+  - name: MaximumSize
+    description: |-
+      The maximum class number of a STRONG-R program
+  - name: MinimumSize
+    description: |-
+      The minimum class number of a STRONG-R program
+  - name: NumberofSessions
+    description: |-
+      Number of sessions for a STRONG-R program
+  - name: Sex
+    description: |-
+      An abbreviation that identifies the sex of a person.
+  - name: ProgramRequired
+    description: |-
+      Indicates if a STRONG-R program is required for a person.
+  - name: RequireApproval
+    description: |-
+      Indicates if a STRONG-R program has been approved for a person
+  - name: CertificationCompleted
+    description: |-
+      Indicates if STRONG-R program provides a certificate on completion or not.
+  - name: TestRequiredForCompletion
+    description: |-
+      This flag indicates if a STRONG-R test is required for completion of a program.
+  - name: CostPerPerson
+    description: |-
+      The amount it costs for a person in a STRONG-R program.
+  - name: CostPerSubject
+    description: |-
+      The amount it costs for a subject in a STRONG-R program.
+  - name: NewStrongRRequired
+    description: |-
+      Indicates whether a new STRONG-R program is required for a person.
+  - name: ProgramCreateDate
+    is_datetime: True
+    description: |-
+      Date on which a STRONG-R program is created for a person
+  - name: PrimaryTreatment
+    description: |-
+      The Primary Treatment Method from STRONG-R
+  - name: SecondaryTreatment
+    description: |-
+      The Secondary Treatment Method from STRONG-R
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

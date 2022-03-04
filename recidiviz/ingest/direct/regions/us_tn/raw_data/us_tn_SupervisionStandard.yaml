@@ -12,7 +12,7 @@ columns:
       The type of plan of supvn. that a person  has agreed to follow.
   - name: SupervisionLevel
     description: |-
-      An abbreviation for the level of supervision required to secure an offender.
+      An abbreviation for the level of supervision required to secure a person.
     known_values:
       - value: 1D1
         description: SPEC RESTRCT - DRC PHASE 1

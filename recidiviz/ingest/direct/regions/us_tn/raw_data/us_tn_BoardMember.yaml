@@ -30,7 +30,7 @@ columns:
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: PersonType
     description: |-
-      This indicates if the person is a staff or an offender, judge, jailer, DA, etc.
+      This indicates if the person is a staff or a person, judge, jailer, DA, etc.
     known_values:
       - value: O
         description: TODO(#5582) - TODO(#5582) - Populate with definition.

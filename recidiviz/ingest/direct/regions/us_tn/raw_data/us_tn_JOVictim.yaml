@@ -47,7 +47,7 @@ columns:
       The zip code for an address.
   - name: TotalRestitution
     description: |-
-      The total amount of restitution paid by offenders during the report period.
+      The total amount of restitution paid by people during the report period.
   - name: MonthlyRestitution
     description: |-
       The amount of restitution owed by a person  to a victim each month.

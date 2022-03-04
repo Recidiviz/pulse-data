@@ -1,6 +1,6 @@
 file_tag: OffenderAttributes
 file_description: |-
-  This table contains miscellaneous information about an offender, such as height, weight, hair color, etc.
+  This table contains miscellaneous information about a person, such as height, weight, hair color, etc.
 primary_key_cols:
   - OffenderID
 columns:
@@ -15,21 +15,21 @@ columns:
       A unit of measure describing an inmate's height.
   - name: HeightInches
     description: |-
-      The inches portion of an offender's height.
+      The inches portion of a person's height.
   - name: EyeColor
     description: |-
-      The predominant eye color of an offender.
+      The predominant eye color of a person.
   - name: HairColor
     description: |-
-      The predominant hair color classification of an offender.
+      The predominant hair color classification of a person.
   - name: Complexion
     description: |-
-      The predominant skin color of an offender.
+      The predominant skin color of a person.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: MaritalStatus
     description: |-
-      The abbreviation of the marital status of an offender.
+      The abbreviation of the marital status of a person.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: DriverLicenseState
@@ -43,7 +43,7 @@ columns:
       The data reported on a criminal history report of distinguishing scars, marks, or tattoos that a person  might be identified by.
   - name: Religion
     description: |-
-      An abbreviation of the type of Religion practiced by an offender.
+      An abbreviation of the type of Religion practiced by a person.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: BirthCounty
@@ -54,17 +54,17 @@ columns:
       The state in which a person  was born.
   - name: NCICFingerprintID
     description: |-
-      An alphanumeric identified assigned by NCIC which uniquely identifies an offender.
+      An alphanumeric identified assigned by NCIC which uniquely identifies a person.
   - name: TennesseeFingerprintID
     description: |-
-      An alphanumeric identified assigned by the state of Tennesse which uniquely identifies an offender.
+      An alphanumeric identified assigned by the state of Tennesse which uniquely identifies a person.
   - name: DeathType
     description: |-
-      The abbreviation for the cause of death of an offender.
+      The abbreviation for the cause of death of a person.
   - name: DeathDate
     is_datetime: True
     description: |-
-      The date of the death of an offender.
+      The date of the death of a person.
   - name: DeathLocation
     description: |-
       The exact location (address, building number, cell number) at which an inmate died.
@@ -81,7 +81,7 @@ columns:
       The exact location (address, burial plot, or medical facility) at which disposal of an inmate's remains were made.
   - name: DeathPostedByStaffID
     description: |-
-      The staff id of the individual who initially posted the death of an offender.
+      The staff id of the individual who initially posted the death of a person.
   - name: OBSCISID
     description: |-
       This is the person ID used on the OBSCIS system.
@@ -97,7 +97,7 @@ columns:
       This flag signifies that a death certificate was obtained as proof of death.
   - name: OldFBINumber
     description: |-
-      The old FBI number associated with the offender.
+      The old FBI number associated with the person.
   - name: OldSTGAffiliation
     description: |-
       This code is no longer used.  It was replaced by the STG (Security Threat Group) conversation.
@@ -112,16 +112,16 @@ columns:
       The country in which a person  is a citizen.
   - name: BirthPlace
     description: |-
-      This element will contain an offender's place of birth (city) for a person  whose citizenship is other than the USA.
+      This element will contain a person's place of birth (city) for a person  whose citizenship is other than the USA.
   - name: AlienID
     description: |-
       An identifier which uniquely identifies a person  with respect to immigration authorities.
   - name: FBINumber
     description: |-
-      The FBI number for an offender's attributes. This field differs from TENBF013 by having a different length. This field replaces the old NBR-FBI field.
+      The FBI number for a person's attributes. This field differs from TENBF013 by having a different length. This field replaces the old NBR-FBI field.
   - name: SIDNumber
     description: |-
-      An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies an offender.
+      An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies a person.
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

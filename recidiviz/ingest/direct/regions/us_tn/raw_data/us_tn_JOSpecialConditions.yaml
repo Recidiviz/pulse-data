@@ -32,7 +32,7 @@ columns:
       A sequential number that indexes the position of multiple occurrence lines on a select screen.
   - name: SpecialConditions
     description: |-
-      The text for a special condition listed on an offenders Judgment order.
+      The text for a special condition listed on a person's Judgment order.
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

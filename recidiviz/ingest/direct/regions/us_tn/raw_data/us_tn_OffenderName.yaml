@@ -1,6 +1,6 @@
 file_tag: OffenderName
 file_description: |-
-  This entity stores a record for each alias (name) or nickname for offenders.
+  This entity stores a record for each alias (name) or nickname for people.
 primary_key_cols:
   - OffenderID
   - SequenceNumber
@@ -35,7 +35,7 @@ columns:
         description: Alias, used for any subsequent rows with alternate legal names or spellings, never the first row for a person.
   - name: OffenderStatus
     description: |-
-      The code indicating the current status of an offender.
+      The code indicating the current status of a person.
     known_values: []
   - name: ActualSiteID
     description: |-
@@ -47,7 +47,7 @@ columns:
     known_values: []
   - name: Sex
     description: |-
-      An abbreviation that identifies the sex of an offender.
+      An abbreviation that identifies the sex of a person.
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: BirthDate
