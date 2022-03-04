@@ -72,7 +72,7 @@ DATASET_BACKUP_TABLE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000  # 7 days
 CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC = 10
 # Timeout for just checking the status of the cross-region copy.
 DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC = 30
-DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC = 10 * 60
+DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC = 15 * 60
 # Required value for the data_source_id field when copying datasets between regions
 CROSS_REGION_COPY_DATA_SOURCE_ID = "cross_region_copy"
 CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE = (
@@ -1645,6 +1645,12 @@ class BigQueryClientImpl(BigQueryClient):
         destination_dataset_id: str,
         timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
     ) -> None:
+        expected_destination_tables = {
+            table.table_id
+            for table in self.list_tables(source_dataset_id)
+            if table.table_type == "TABLE"
+        }
+
         transfer_client = DataTransferServiceClient()
         if not self.dataset_exists(self.dataset_ref_for_id(destination_dataset_id)):
             raise ValueError(
@@ -1693,17 +1699,26 @@ class BigQueryClientImpl(BigQueryClient):
             )
             while True:
                 logging.info("Checking status of transfer run [%s]", run.name)
-                run = transfer_client.get_transfer_run(
-                    name=run.name, timeout=DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC
-                )
-                if run.state == TransferState.SUCCEEDED:
-                    logging.info("Transfer run succeeded")
-                    break
 
-                if run.state == TransferState.FAILED:
-                    raise ValueError(
-                        f"Transfer run [{run.name}] FAILED with status: {run.error_status}"
+                destination_tables = {
+                    table.table_id for table in self.list_tables(destination_dataset_id)
+                }
+
+                if destination_tables == expected_destination_tables:
+                    logging.info("Transfer run succeeded")
+
+                    run = transfer_client.get_transfer_run(
+                        name=run.name, timeout=DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC
                     )
+
+                    if run.state != TransferState.SUCCEEDED:
+                        logging.error(
+                            "All expected tables found in destination "
+                            "dataset [%s], but transfer run has state [%s].",
+                            destination_dataset_id,
+                            run.state,
+                        )
+                    break
 
                 if timeout_time < datetime.datetime.now():
                     raise TimeoutError(
@@ -1712,8 +1727,9 @@ class BigQueryClientImpl(BigQueryClient):
                     )
 
                 logging.info(
-                    "Transfer run has status [%s] - sleeping for %s seconds",
-                    run.state.name,
+                    "Transfer run in progress, missing [%s] tables - sleeping for %s "
+                    "seconds",
+                    expected_destination_tables.difference(destination_tables),
                     CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC,
                 )
                 time.sleep(CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC)
