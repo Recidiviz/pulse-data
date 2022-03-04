@@ -687,6 +687,7 @@ class BaseViewTest(unittest.TestCase):
             r"INTERVAL (?P<num>\d+?) (?P<unit>\w+?)(?P<end>\W)",
             "INTERVAL '{num} {unit}'{end}",
         )
+        # replace `DATE(` with `make_date(`, but not `(DATE(`
         query = _replace_iter(
             query, r"(^| )DATE\s*\(", " make_date(", flags=re.IGNORECASE
         )
@@ -832,8 +833,16 @@ class BaseViewTest(unittest.TestCase):
         # Allow trailing commas in SELECT.
         query = _replace_iter(query, r",(?P<whitespace>\s+)FROM", "{whitespace}FROM")
 
+        # Postgres doesn't support COUNTIF()
+        query = _replace_iter(
+            query, r"COUNTIF\((?P<value>.+?)\)", "COUNT({value} OR null)"
+        )
+
         # Postgres does not have LOGICAL_OR operator, use BOOL_OR instead
         query = _replace_iter(query, r"LOGICAL_OR", "BOOL_OR")
+
+        # Postgres does not have LOGICAL_AND operator, use BOOL_AND instead
+        query = _replace_iter(query, r"LOGICAL_AND", "BOOL_AND")
 
         # Postgres doesn't support TO_JSON_STRING so we replace with ARRAY_TO_JSON
         query = _replace_iter(
