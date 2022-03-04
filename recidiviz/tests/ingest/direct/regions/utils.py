@@ -39,6 +39,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
@@ -221,6 +222,8 @@ def add_supervision_period_to_person(
     admission_reason_raw_text: str,
     termination_reason: Optional[StateSupervisionPeriodTerminationReason],
     termination_reason_raw_text: Optional[str],
+    supervision_level: Optional[StateSupervisionLevel] = None,
+    supervision_level_raw_text: Optional[str] = None,
 ) -> None:
     """Append a supervision period to the person (updates the person entity in place)."""
 
@@ -239,6 +242,8 @@ def add_supervision_period_to_person(
         termination_reason=termination_reason,
         termination_reason_raw_text=termination_reason_raw_text,
         person=person,
+        supervision_level=supervision_level,
+        supervision_level_raw_text=supervision_level_raw_text,
     )
 
     person.supervision_periods.append(supervision_period)

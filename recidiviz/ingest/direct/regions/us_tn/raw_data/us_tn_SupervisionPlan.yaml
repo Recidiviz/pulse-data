@@ -20,7 +20,7 @@ columns:
       - value: COMM
         description: COMMUNITY CORRECTIONS
       - value: IPP
-        description: IPP
+        description: INDIVIDUAL PROGRAM PLAN
       - value: PARO
         description: PAROLE
       - value: PROB

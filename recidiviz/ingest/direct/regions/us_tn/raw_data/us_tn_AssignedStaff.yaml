@@ -60,9 +60,11 @@ columns:
       - value: WPC
         description: WORK PROJECT COORDINATOR
   - name: StartDate
+    is_datetime: True
     description: |-
       The date on which an inmate begins a job, class or program.
   - name: EndDate
+    is_datetime: True
     description: |-
       The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
   - name: CaseType
@@ -178,6 +180,7 @@ columns:
       - value: TER
         description: TRANSFER EDUCATIONAL RELS TODO(#7424) - clarify this definition.
   - name: AssignmentDueDate
+    is_datetime: True
     description: |-
       The date that an assignment such as transfer in investigation is due to be completed.
   - name: SiteID
@@ -187,5 +190,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
+    is_datetime: True
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
