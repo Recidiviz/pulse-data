@@ -655,10 +655,14 @@ class BigQueryClient:
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
+        schema_only: bool = False,
     ) -> None:
         """Copies all tables (but NOT views) in the source dataset to the destination
         dataset, which must be empty if it exists. If the destination dataset does not
         exist, we will create one.
+
+        If `schema_only` is provided, creates a matching set of tables with the same
+        schema in the destination dataset but does not copy contents of each table.
         """
 
     @abc.abstractmethod
@@ -1553,6 +1557,7 @@ class BigQueryClientImpl(BigQueryClient):
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
+        schema_only: bool = False,
     ) -> None:
         if self.dataset_exists(self.dataset_ref_for_id(destination_dataset_id)):
             if any(self.list_tables(destination_dataset_id)):
@@ -1567,7 +1572,8 @@ class BigQueryClientImpl(BigQueryClient):
         )
         copy_jobs = []
         for table in self.list_tables(source_dataset_id):
-            if table.table_type != "TABLE":
+            # If we are copying the contents then we can only copy actual tables.
+            if not schema_only and table.table_type != "TABLE":
                 logging.warning(
                     "Skipping copy of item with type [%s]: [%s]",
                     table.table_type,
@@ -1582,10 +1588,17 @@ class BigQueryClientImpl(BigQueryClient):
                 self.dataset_ref_for_id(destination_dataset_id), table.table_id
             )
 
-            copy_jobs.append(
-                self.client.copy_table(source_table_ref, destination_table_ref)
-            )
-        self.wait_for_big_query_jobs(jobs=copy_jobs)
+            if schema_only:
+                source_table = self.client.get_table(source_table_ref)
+                self.create_table(
+                    bigquery.Table(destination_table_ref, source_table.schema)
+                )
+            else:
+                copy_jobs.append(
+                    self.client.copy_table(source_table_ref, destination_table_ref)
+                )
+        if copy_jobs:
+            self.wait_for_big_query_jobs(jobs=copy_jobs)
 
     def backup_dataset_tables_if_dataset_exists(
         self, dataset_id: str

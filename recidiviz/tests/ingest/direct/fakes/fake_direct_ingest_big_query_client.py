@@ -307,6 +307,9 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         raise ValueError("Must be implemented for use in tests.")
 
     def copy_dataset_tables(
-        self, source_dataset_id: str, destination_dataset_id: str
+        self,
+        source_dataset_id: str,
+        destination_dataset_id: str,
+        schema_only: bool = False,
     ) -> None:
         raise ValueError("Must be implemented for use in tests.")

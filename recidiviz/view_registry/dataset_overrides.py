@@ -25,6 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
@@ -73,6 +74,7 @@ def dataset_overrides_for_deployed_view_datasets(
 def dataset_overrides_for_view_builders(
     view_dataset_override_prefix: str,
     view_builders: Sequence[BigQueryViewBuilder],
+    override_source_datasets: bool = False,
     dataflow_dataset_override: Optional[str] = None,
 ) -> Dict[str, str]:
     """Returns a dictionary mapping dataset_ids to the dataset name they should be
@@ -82,8 +84,13 @@ def dataset_overrides_for_view_builders(
 
     Overridden datasets all take the form of "<override prefix>_<original dataset_id>".
 
+    If |override_source_datasets| is set, overrides of the same form will be added for
+    all source datasets (e.g. `state`, `us_xx_raw_data`).
+
     If a |dataflow_dataset_override| is provided, will also override the
-    DATAFLOW_METRICS_DATASET with the provided value.
+    DATAFLOW_METRICS_DATASET with the provided value. If this is provided with
+    |override_source_datasets|, the |dataflow_dataset_override| takes precedence for
+    the DATAFLOW_METRICS_DATASET.
     """
     dataset_overrides: Dict[str, str] = {}
     for builder in view_builders:
@@ -95,6 +102,10 @@ def dataset_overrides_for_view_builders(
             _add_override(
                 dataset_overrides, view_dataset_override_prefix, materialized_dataset_id
             )
+
+    if override_source_datasets:
+        for dataset in VIEW_SOURCE_TABLE_DATASETS:
+            _add_override(dataset_overrides, view_dataset_override_prefix, dataset)
 
     if dataflow_dataset_override:
         logging.info(
@@ -109,4 +120,8 @@ def dataset_overrides_for_view_builders(
 
 
 def _add_override(overrides: Dict[str, str], prefix: str, dataset_id: str) -> None:
-    overrides[dataset_id] = prefix + "_" + dataset_id
+    overrides[dataset_id] = format_override(prefix, dataset_id)
+
+
+def format_override(prefix: str, dataset_id: str) -> str:
+    return prefix + "_" + dataset_id

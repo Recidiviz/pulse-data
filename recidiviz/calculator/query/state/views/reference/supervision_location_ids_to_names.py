@@ -47,7 +47,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             Ccs_Location_Id AS level_1_supervision_location_external_id,
             TRIM(REGEXP_REPLACE(Location_Name, r',|Adult1|Adult', '')) AS level_1_supervision_location_name
         -- TODO(#10636): Replace this with CIS_908_CCS_LOCATION_latest once US_ME raw data is available in production.
-        FROM `{project_id}.static_reference_tables.us_me_cis_908_ccs_location`
+        FROM `{project_id}.{static_reference_tables_dataset}.us_me_cis_908_ccs_location`
         -- Adult Supervision Office Location Type
         WHERE Cis_9080_Ccs_Location_Type_Cd = '4'
     ),
@@ -130,6 +130,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
     view_query_template=SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
+    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == "__main__":
