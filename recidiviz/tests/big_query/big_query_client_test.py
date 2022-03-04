@@ -1306,6 +1306,96 @@ class BigQueryClientImplTest(unittest.TestCase):
             ]
         )
 
+    def test_copy_dataset_schema_only(self) -> None:
+        source_dataset_id = "my_source"
+        destination_dataset_id = "my_destination"
+
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.table_type = "TABLE"
+        mock_table.table_id = "my_table"
+        mock_table_2 = create_autospec(bigquery.Table)
+        mock_table_2.table_type = "TABLE"
+        mock_table_2.table_id = "my_table_2"
+        mock_view = create_autospec(bigquery.Table)
+        mock_view.table_type = "VIEW"
+        mock_view.table_id = "my_view"
+
+        # Destintation already exists
+        self.mock_client.get_dataset.return_value = mock.MagicMock()
+
+        def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
+            if dataset_id == destination_dataset_id:
+                tables = []
+            elif dataset_id == source_dataset_id:
+                tables = [mock_table, mock_view, mock_table_2]
+            else:
+                raise ValueError(f"Unexpected datset [{dataset_id}]")
+
+            return iter(tables)
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+
+        schema1 = [bigquery.schema.SchemaField("foo", "STRING")]
+        schema2 = [bigquery.schema.SchemaField("bar", "STRING")]
+        schema3 = [bigquery.schema.SchemaField("baz", "STRING")]
+
+        def mock_get_table(table_ref: bigquery.TableReference) -> bigquery.Table:
+            if table_ref.table_id == mock_table.table_id:
+                return bigquery.Table(table_ref, schema1)
+            if table_ref.table_id == mock_table_2.table_id:
+                return bigquery.Table(table_ref, schema2)
+            if table_ref.table_id == mock_view.table_id:
+                return bigquery.Table(table_ref, schema3)
+            raise ValueError(f"Unexpected table [{table_ref}]")
+
+        self.mock_client.get_table.side_effect = mock_get_table
+
+        self.bq_client.copy_dataset_tables(
+            source_dataset_id, destination_dataset_id, schema_only=True
+        )
+
+        self.mock_client.list_tables.assert_has_calls(
+            [call("my_destination"), call("my_source")]
+        )
+        destination_dataset_ref = bigquery.DatasetReference(
+            "fake-recidiviz-project", destination_dataset_id
+        )
+        self.mock_client.copy_table.assert_not_called()
+        self.mock_client.create_table.assert_has_calls(
+            [
+                call(
+                    bigquery.Table(
+                        bigquery.TableReference(
+                            destination_dataset_ref,
+                            "my_table",
+                        ),
+                        schema1,
+                    ),
+                    exists_ok=False,
+                ),
+                call(
+                    bigquery.Table(
+                        bigquery.TableReference(
+                            destination_dataset_ref,
+                            "my_view",
+                        ),
+                        schema3,
+                    ),
+                    exists_ok=False,
+                ),
+                call(
+                    bigquery.Table(
+                        bigquery.TableReference(
+                            destination_dataset_ref,
+                            "my_table_2",
+                        ),
+                        schema2,
+                    ),
+                    exists_ok=False,
+                ),
+            ]
+        )
+
     @freeze_time("2021-04-14 03:14:23.5678")
     def test_backup_dataset_if_exists(self) -> None:
         dataset_to_backup_id = "my_dataset"

@@ -26,7 +26,7 @@ import attr
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.utils import structured_logging
 
-# We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
+# We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and
 # we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
 # increased.
 # In the future, we could increase the worker number by playing around with increasing the pool size per this post:

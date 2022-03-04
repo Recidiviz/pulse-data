@@ -38,7 +38,7 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
             'US_ID' AS state_code,
             external_id AS supervising_officer_external_id, 
             district AS supervising_district_external_id
-        FROM `{{project_id}}.{{static_reference_tables}}.us_id_roster`
+        FROM `{{project_id}}.{{static_reference_tables_dataset}}.us_id_roster`
    )
    SELECT 
         sup_pop.state_code,
@@ -71,7 +71,7 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICERS_AND_DISTRICTS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    static_reference_tables=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_state_specific_district_id=state_specific_query_strings.vitals_state_specific_district_id(
         "sup_pop"

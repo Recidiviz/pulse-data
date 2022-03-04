@@ -16,6 +16,7 @@
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance."""
 import logging
+from concurrent import futures
 from typing import Dict, List, Optional, Sequence, Set
 
 from google.cloud import exceptions
@@ -33,7 +34,8 @@ from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
-from recidiviz.utils import monitoring
+from recidiviz.utils import monitoring, structured_logging
+from recidiviz.view_registry.dataset_overrides import format_override
 
 m_failed_view_update = measure.MeasureInt(
     "bigquery/view_update_manager/view_update_all_failure",
@@ -53,6 +55,14 @@ monitoring.register_views([failed_view_updates_view])
 
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
+
+
+# We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and
+# we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
+# increased.
+# In the future, we could increase the worker number by playing around with increasing the pool size per this post:
+# https://github.com/googleapis/python-storage/issues/253
+MAX_WORKERS = 10
 
 
 def rematerialize_views_for_view_builders(
@@ -118,8 +128,11 @@ def rematerialize_views(
         bq_region_override: If set, overrides the region (e.g. us-east1) associated with
             all BigQuery operations.
     """
-    set_default_table_expiration_for_new_datasets = bool(dataset_overrides)
-    if set_default_table_expiration_for_new_datasets:
+    default_table_expiration_for_new_datasets = None
+    if dataset_overrides:
+        default_table_expiration_for_new_datasets = (
+            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        )
         logging.info(
             "Found non-empty dataset overrides. New datasets created in this process will have a "
             "default table expiration of 24 hours."
@@ -141,7 +154,7 @@ def rematerialize_views(
         _create_all_datasets_if_necessary(
             bq_client,
             list(dataset_map.keys()),
-            set_default_table_expiration_for_new_datasets,
+            default_table_expiration_for_new_datasets,
         )
 
         # Limit DAG to only ancestor views and the set of views to update
@@ -184,6 +197,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     dataset_overrides: Optional[Dict[str, str]] = None,
     bq_region_override: Optional[str] = None,
     force_materialize: bool = False,
+    default_table_expiration_for_new_datasets: Optional[int] = None,
 ) -> None:
     """Creates or updates all the views in the provided list with the view query in the
     provided view builder list. If any materialized view has been updated (or if an
@@ -196,8 +210,10 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     Should only be called if we expect the views to have changed (either the view query
     or schema from querying underlying tables), e.g. at deploy time.
     """
-    set_default_table_expiration_for_new_datasets = bool(dataset_overrides)
-    if set_default_table_expiration_for_new_datasets:
+    if default_table_expiration_for_new_datasets is None and dataset_overrides:
+        default_table_expiration_for_new_datasets = (
+            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        )
         logging.info(
             "Found non-empty dataset overrides. New datasets created in this process will have a "
             "default table expiration of 24 hours."
@@ -214,12 +230,46 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             bq_region_override,
             force_materialize,
             historically_managed_datasets_to_clean=historically_managed_datasets_to_clean,
-            set_temp_dataset_table_expiration=set_default_table_expiration_for_new_datasets,
+            default_table_expiration_for_new_datasets=default_table_expiration_for_new_datasets,
         )
     except Exception as e:
         with monitoring.measurements() as measurements:
             measurements.measure_int_put(m_failed_view_update, 1)
         raise e
+
+
+def copy_dataset_schemas_to_sandbox(
+    datasets: Set[str], sandbox_prefix: str, default_table_expiration: int
+) -> None:
+    """Copies the schemas of all tables in `datasets` to sandbox datasets prefixed
+    with `sandbox_prefix`. This does not copy any of the contents of the tables, only
+    the schemas.
+    """
+
+    def copy_dataset_schema(dataset: str) -> Optional[str]:
+        test_dataset = format_override(sandbox_prefix, dataset)
+        if not bq_client.dataset_exists(
+            dataset_ref=bq_client.dataset_ref_for_id(dataset)
+        ):
+            return None
+        bq_client.create_dataset_if_necessary(
+            dataset_ref=bq_client.dataset_ref_for_id(test_dataset),
+            default_table_expiration_ms=default_table_expiration,
+        )
+        bq_client.copy_dataset_tables(dataset, test_dataset, schema_only=True)
+        return test_dataset
+
+    bq_client = BigQueryClientImpl()
+    with futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        copy_futures = {
+            executor.submit(
+                structured_logging.with_context(copy_dataset_schema), dataset
+            )
+            for dataset in datasets
+        }
+        for future in futures.as_completed(copy_futures):
+            if output_dataset := future.result():
+                logging.info("Completed copy of schemas to '%s'", output_dataset)
 
 
 def build_views_to_update(
@@ -256,22 +306,14 @@ def build_views_to_update(
 def _create_all_datasets_if_necessary(
     bq_client: BigQueryClient,
     dataset_ids: List[str],
-    set_temp_dataset_table_expiration: bool,
+    dataset_table_expiration: Optional[int],
 ) -> None:
     """Creates all required datasets for the list of dataset ids,
     with a table timeout if necessary. Done up front to avoid conflicts during a run of the DagWalker.
     """
-    new_dataset_table_expiration_ms = (
-        TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-        if set_temp_dataset_table_expiration
-        else None
-    )
-
     for dataset_id in dataset_ids:
         dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
-        bq_client.create_dataset_if_necessary(
-            dataset_ref, new_dataset_table_expiration_ms
-        )
+        bq_client.create_dataset_if_necessary(dataset_ref, dataset_table_expiration)
 
 
 def _create_managed_dataset_and_deploy_views(
@@ -279,7 +321,7 @@ def _create_managed_dataset_and_deploy_views(
     bq_region_override: Optional[str],
     force_materialize: bool,
     historically_managed_datasets_to_clean: Optional[Set[str]] = None,
-    set_temp_dataset_table_expiration: bool = False,
+    default_table_expiration_for_new_datasets: Optional[int] = None,
 ) -> None:
     """Create and update the given views and their parent datasets. Cleans up unmanaged views and datasets
 
@@ -310,13 +352,13 @@ def _create_managed_dataset_and_deploy_views(
     )
     managed_dataset_ids = list(managed_views_map.keys())
     _create_all_datasets_if_necessary(
-        bq_client, managed_dataset_ids, set_temp_dataset_table_expiration
+        bq_client, managed_dataset_ids, default_table_expiration_for_new_datasets
     )
 
     if (
         historically_managed_datasets_to_clean
         # We don't want to delete unmanaged views/tables if we're creating sandbox datasets
-        and not set_temp_dataset_table_expiration
+        and default_table_expiration_for_new_datasets is None
     ):
         cleanup_datasets_and_delete_unmanaged_views(
             bq_client,

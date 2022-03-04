@@ -97,6 +97,7 @@ class StateTableEnumCounterBigQueryViewCollector(
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,
+                        # TODO(#11251): Setup predicates to respect dataset overrides.
                         should_build_predicate=table_column_checker.get_has_column_predicate(
                             col
                         ),
