@@ -155,7 +155,7 @@ function pre_deploy_configure_infrastructure {
 
     echo "Updating all BigQuery views"
     verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project_id ${PROJECT}
+    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id ${PROJECT}
 
     echo "Deploying calculation pipelines to templates in ${PROJECT}."
     deploy_pipeline_templates ${PROJECT} || exit_on_fail
