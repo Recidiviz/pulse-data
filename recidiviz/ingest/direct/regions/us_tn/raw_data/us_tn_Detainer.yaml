@@ -1,6 +1,6 @@
 file_tag: Detainer
 file_description: |-
-  This table contains one occurrence for each detainer held against an offender.
+  This table contains one occurrence for each detainer held against a person.
 primary_key_cols:
   - OffenderID
   - DetainerType
@@ -11,7 +11,7 @@ columns:
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: DetainerType
     description: |-
-      The type of detainer for an offender.  This will either be a regular detainer or a commitment detainer.
+      The type of detainer for a person.  This will either be a regular detainer or a commitment detainer.
     known_values:
       - value: 0
         description: TODO(#7424) - Populate with definition.
@@ -24,7 +24,7 @@ columns:
       Uniquely identifies various DB2 tables.
   - name: DetainerStatus
     description: |-
-      The status of an offender's detainer.  This will indicate if a detainer is placed, pending, lifted or a commitment detainer.
+      The status of a person's detainer.  This will indicate if a detainer is placed, pending, lifted or a commitment detainer.
     known_values:
       - value: CO
         description: COMMITMENT
@@ -42,7 +42,7 @@ columns:
       The code name of a territorial division for local government within a state.
   - name: DetainerCity
     description: |-
-      The city for a detainer of an offender.
+      The city for a detainer of a person.
   - name: AddressLine1
     description: |-
       The first street address line.

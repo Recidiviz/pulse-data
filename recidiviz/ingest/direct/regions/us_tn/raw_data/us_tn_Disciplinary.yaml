@@ -1,0 +1,102 @@
+file_tag: Disciplinary
+file_description: |-
+  This table contains all information relating to disciplinaries. Disciplinaries may result from an incident, or a job/class related action.
+primary_key_cols:
+  - OffenderID
+  - IncidentID
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: IncidentDate
+    is_datetime: True
+    description: |-
+      The date on which an incident involving an offender occurs.
+  - name: DisciplinaryClass
+    description: |-
+      The class category of an inmate disciplinary.
+  - name: ClassID
+    description: |-
+      An identifying number assigned to the first class recommended to an offender.
+  - name: ClassSectionID
+    description: |-
+      This is the section number of a certain class. The Class ID Number is composed of one to many sections.
+  - name: JobID
+    description: |-
+      This code represents the DOT Code for a particular job. This code will be used as the first recommendation for a job during the classification process.
+  - name: PositionID
+    description: |-
+      A unique identifier assigned to a job position in an institution.
+  - name: OffenderAccount
+    description: |-
+      The offender's account of the disciplinary for which he is charged. [Comibination of DB2 columns TXT_OFFNR_ACCT through TXT_OFFNR_ACCT _4]
+  - name: WeaponsUsed
+    description: |-
+      Text about weapons involved in an incident requiring an inmate disciplinary or in an offense committed by offender.
+  - name: ViolenceLevel
+    description: |-
+      Indicator for an offense statute that tells whether the particular offense was violent.
+  - name: RefuseToSignDate
+    is_datetime: True
+    description: |-
+      The date an inmate refused to sign a document which requires his signature.
+  - name: DispositionDate
+    is_datetime: True
+    description: |-
+      The date on which the original disciplinary was completed.
+  - name: Disposition
+    description: |-
+      The abbreviation for the disposition of an inmate disciplanary.
+  - name: AdvisorOffenderID
+    description: |-
+      This is the unique TOMIS identifier of the inmate advisor of another inmate at a disciplinary hearing.
+  - name: AdvisorStaffID
+    description: |-
+      This is the unique staff identifier of the staff person serving as an inmate advisor at a disciplinary hearing.
+  - name: DecisionPersonID1
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: Decision1
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID2
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: Decision2
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID3
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: Decision3
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID4
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: Decision4
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID5
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: Decision5
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: PostedDateTime
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system. The time that information is entered to the TOMIS system. [Combination of of TOMIS columns DTE_POST and TME_POST]
+  - name: PostedByStaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

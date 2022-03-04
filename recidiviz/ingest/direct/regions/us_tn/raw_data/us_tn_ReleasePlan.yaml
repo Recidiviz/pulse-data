@@ -10,7 +10,7 @@ columns:
       The city for an address.
   - name: AddressDeny
     description: |-
-      Free form text regarding the denial of an offender's new location.
+      Free form text regarding the denial of a person's new location.
   - name: AddressLine1
     description: |-
       The first street address line.
@@ -57,7 +57,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: JobTitle
     description: |-
-      The first name of the offender's job.
+      The first name of the person's job.
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
@@ -73,7 +73,7 @@ columns:
       The date a person  submits a parole plan for investigation.
   - name: ParolePlanFlag
     description: |-
-      A field that decribes whether an offender's release plan is for release on parole.
+      A field that decribes whether an a person's release plan is for release on parole.
     known_values:
       - value: N
         description: "NO - Is not for release on parole"
@@ -81,7 +81,7 @@ columns:
         description: "YES - Is for release on parole"
   - name: ParolePlanStatus
     description: |-
-      The indication of whether an offender's parole plan has been approved or denied based on the status of the address and employment.
+      The indication of whether an person's parole plan has been approved or denied based on the status of the address and employment.
     known_values:
       - value: APPROVED
         description: "TODO(#7424): Update with definition."
@@ -112,7 +112,7 @@ columns:
       The number at which someone can be reached.
   - name: ProbationPlanFlag
     description: |-
-      A field that decribes whether an offender's release plan is for probation release.
+      A field that decribes whether an person's release plan is for probation release.
     known_values:
       - value: N
         description: "NO - Is not for probation release"
@@ -123,7 +123,7 @@ columns:
       Rate of Pay
   - name: Relation1
     description: |-
-      The code of an offender's relationship to a visitor.
+      The code of a person's relationship to a visitor.
     known_values:
       - value: AP
         description: "TODO(#7424): Update with definition."
@@ -215,7 +215,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: Relation2
     description: |-
-      An abbreviation representing an offender's relationship to a visitor or another party.
+      An abbreviation representing a person's relationship to a visitor or another party.
     known_values:
       - value: AP
         description: "TODO(#7424): Update with definition."

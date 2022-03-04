@@ -29,7 +29,7 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: RelatedCountyJurisdiction
     description: |-
-      The related county or jurisdiction of a sentence for an offender.
+      The related county or jurisdiction of a sentence for a person.
   - name: RelatedCaseYear
     description: |-
       The year assigned to a concurrent or consecutive sentence.

@@ -1,6 +1,6 @@
 file_tag: JOCharge
 file_description: |-
-  This table contains one occurrence for each judgment order received by an offender. This table contains information about the charge contained on the judgment order.
+  This table contains one occurrence for each judgment order received by a person. This table contains information about the charge contained on the judgment order.
 primary_key_cols:
   - OffenderID
   - ConvictionCounty
@@ -22,10 +22,10 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: OffenderPlea
     description: |-
-      The offender's plea regarding an infraction related to a disciplinary or a sentence.
+      The person's plea regarding an infraction related to a disciplinary or a sentence.
   - name: Verdict
     description: |-
       The abbreviation of the verdict of a person for a judgment order.
@@ -42,13 +42,13 @@ columns:
       The county in which a person commits the offense for a judgment order.
   - name: AmendedChargeOffense
     description: |-
-      The code for the amended charge of an offender.
+      The code for the amended charge of a person.
   - name: ConvictionOffense
     description: |-
       The conviction offense under which a defendant is sentenced.
   - name: ConvictionClass
     description: |-
-      Class code assigned to a particular offense statute that is the conviction offense of an offender.
+      Class code assigned to a particular offense statute that is the conviction offense of a person.
     known_values:
       - value: 1
         description: First degree murder.
@@ -93,11 +93,11 @@ columns:
   - name: PleaDate
     is_datetime: True
     description: |-
-      The date the offender's plea is entered.
+      The date the person's plea is entered.
   - name: SentenceImposedDate
     is_datetime: True
     description: |-
-      The date that an offender's sentence is to begin as specified by the judge on the judgment order. This date less any pretrial credits provides the sentence effective date.
+      The date that a person's sentence is to begin as specified by the judge on the judgment order. This date less any pretrial credits provides the sentence effective date.
   - name: SentenceLaw
     description: |-
       This code will be used to post the correct sentence law when inputting the judgment order in TOMIS.
@@ -114,7 +114,7 @@ columns:
         description: CLASS X
   - name: SentenceOffenderType
     description: |-
-      An abbreviation used for one of the types of offenders as designated on the offender's judgement order. Also the range percent used to calculate an offender's RED date will be tied to the person type for a particular sentence law.
+      An abbreviation used for one of the types of people as designated on the person's judgement order. Also the range percent used to calculate an offender's RED date will be tied to the person type for a particular sentence law.
     known_values:
       - value: 60
         description: SIXTY PERCENT

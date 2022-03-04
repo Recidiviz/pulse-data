@@ -1,6 +1,6 @@
 file_tag: PardonCommutation
 file_description: |-
-  This table contains one occurrance for each board member's recommendation for clemency for the offender.
+  This table contains one occurrance for each board member's recommendation for clemency for the person.
 primary_key_cols:
   - Offender
   - CountyofConviction
@@ -22,7 +22,7 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: PardonCommutationDate
     is_datetime: True
     description: |-
@@ -48,22 +48,22 @@ columns:
         description: COMMUTED TIME SERVED
   - name: MaxSentenceDay
     description: |-
-      The maximum number of days for an offender's sentence.
+      The maximum number of days for a person's sentence.
   - name: MaxSentenceMonth
     description: |-
-      The maximum number of months for an offender's sentence.
+      The maximum number of months for a person's sentence.
   - name: MaxSentenceYear
     description: |-
-      The maximum number of years for an offender's sentence.
+      The maximum number of years for a person's sentence.
   - name: MinSentenceDay
     description: |-
-      The minimum number of days for an offender's sentence.
+      The minimum number of days for a person's sentence.
   - name: MinSentenceMonth
     description: |-
-      The minimum number of months for an offender's sentence.
+      The minimum number of months for a person's sentence.
   - name: MinSentenceYear
     description: |-
-      The minimum number of years for an offender's sentence.
+      The minimum number of years for a person's sentence.
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

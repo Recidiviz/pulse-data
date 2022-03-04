@@ -1,6 +1,6 @@
 file_tag: ISCSentence
 file_description: |-
-  This table contains one occurrence for each out of Tennessee jurisdiction sentence tracked for the offender.
+  This table contains one occurrence for each out of Tennessee jurisdiction sentence tracked for the person.
 primary_key_cols:
   - OffenderID
   - Jurisdiction
@@ -22,7 +22,7 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: ForeignJurisdication
     description: |-
       The identifier given to a person  by another jurisdiction.
@@ -38,7 +38,7 @@ columns:
       This is the date the offense was committed as indicated on the judgment order or from another source.
   - name: ISCSentencyType
     description: |-
-      Indicates if an offender's ISC sentence is an incarceration, pro_ bation or parole sentence.
+      Indicates if a person's ISC sentence is an incarceration, pro_ bation or parole sentence.
     known_values:
       - value: B
         description: "TODO(#7424): Update with definition."
@@ -55,7 +55,7 @@ columns:
   - name: SentenceImposedDate
     is_datetime: True
     description: |-
-      The date that an offender's sentence is to begin as specified by the judge on the judgment order.  This date less any pretrial credits provides the sentence effective date.
+      The date that a person's sentence is to begin as specified by the judge on the judgment order.  This date less any pretrial credits provides the sentence effective date.
   - name: DispositionCase
     description: |-
       Code that tells how a case was decided, such as by guilty plea or jury verdict.
@@ -78,7 +78,7 @@ columns:
   - name: ExpirationDate
     is_datetime: True
     description: |-
-      The date that a sentence expires.  This date includes all credits earned by an offender.
+      The date that a sentence expires.  This date includes all credits earned by a person.
   - name: ActualReleaseDAte
     is_datetime: True
     description: |-

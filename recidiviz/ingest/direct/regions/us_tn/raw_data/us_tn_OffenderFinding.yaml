@@ -1,6 +1,6 @@
 file_tag: OffenderFinding
 file_description: |-
-  This table contains one occurrence for each finding that is discovered about the offender. These findings include counselling, drug treatment, AA, etc.
+  This table contains one occurrence for each finding that is discovered about the person. These findings include counselling, drug treatment, AA, etc.
 primary_key_cols:
   - FindingDate
   - FindingType
@@ -85,7 +85,7 @@ columns:
       This element describes a page number.
   - name: Findings
     description: |-
-      The text associated with a finding about an offender made by an individual in the TOMIS system.
+      The text associated with a finding about a person made by an individual in the TOMIS system.
   - name: PostedDate
     is_datetime: True
     description: |-

@@ -19,18 +19,18 @@ columns:
       The year assigned to a sentence for a particular county. It will generally be the current year at assignment.
   - name: CaseNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: ExecutionDate
     is_datetime: True
     description: |-
-      The date of an offender's stay of execution.
+      The date of a person's stay of execution.
   - name: FirstConfinementCompletedDate
     is_datetime: True
     description: |-
-      The date that the first portion of an offender's split confinement is completed as posted on the judgment order.
+      The date that the first portion of a person's split confinement is completed as posted on the judgment order.
   - name: CalculatedPretrialCredits
     description: |-
       The number of pretrial jail credits calculated from the entries of pretrial jail credits.
@@ -68,7 +68,7 @@ columns:
         description: "YES - Has been rendered infamous"
   - name: EnhancementYears
     description: |-
-      The length of an enhancement in years for an offender's sentence.
+      The length of an enhancement in years for a person's sentence.
   - name: MaximumSentenceYears
     description: |-
       The maximum number of years for an offender's sentence.

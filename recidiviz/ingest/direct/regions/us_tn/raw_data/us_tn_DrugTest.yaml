@@ -1,0 +1,57 @@
+file_tag: DrugTest
+file_description: |-
+  TODO(#11323): fill out description once received.
+# TODO(#11323): Fill out primary keys once we receive them.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+  - name: TestDate
+    is_datetime: True
+    description: |-
+      Date a test is given or refused.
+  - name: TestType
+    description: |-
+      This element describes a test type code.
+  - name: TestReason
+    description: |-
+      This element describes a drug test reason code.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: UnitID
+    description: |-
+      A unique identifier assigned to a particular unit within an institution.
+  - name: CellID
+    description: |-
+      A unique identifier assigned to a particular cell at an insitutuion.
+  - name: TestByStaffID
+    description: |-
+      This is a unique identifier assigned to the staff ID who does a test.
+  - name: OffenderAgreement
+    description: |-
+      This element describes if a person agrees to or refuses to be drug tested.
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: FinalResult
+    description: |-
+      Code indicating the final, overall result of a drug test.
+  - name: PostedByStaffID
+    description: |-
+      The staff id of the individual who initially posted information for a person.
+  - name: PostedDate
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

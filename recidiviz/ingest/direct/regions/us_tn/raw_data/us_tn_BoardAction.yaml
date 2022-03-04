@@ -12,7 +12,7 @@ columns:
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: HearingDate
     description: |-
-      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular offender.
+      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.
@@ -78,7 +78,7 @@ columns:
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: AlternateReleaseDate
     description: |-
-      A date which the board of paroles agrees to release an offender.
+      A date which the board of paroles agrees to release a person.
   - name: ParoleSequenceNumber
     description: |-
       The order in which parole board members will be asked to vote on an inmate's parole.

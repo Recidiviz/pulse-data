@@ -1,0 +1,138 @@
+file_tag: Classification
+file_description: |-
+  This entity stores information about the initial and all subsequent classifications of a person. This includes appeals and overrides and results of decisions related to the classification.
+primary_key_cols:
+  - OffenderID
+  - CAFDate
+  - ClassificationSequenceNumber
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+  - name: CAFDate
+    is_datetime: True
+    description: |-
+      The date that the corresponding custody assessment form score was calculated.
+  - name: ClassificationSequenceNumber
+    description: |-
+      The number used to identify an inmate's classification within his 7MIS ID number.
+  - name: ClassificationDueDate
+    is_datetime: True
+    description: |-
+      The date on which the next classification should be completed for an person.
+  - name: HearingDateTime
+    is_datetime: True
+    description: |-
+      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person. The time that a hearing is scheduled to take place. (Combines DB2 columns DTE_HEAR and TME_HEAR)
+  - name: WaiverSignedDate
+    is_datetime: True
+    description: |-
+      The date an inmate signs his classification hearing notice waiver.
+  - name: NoticeWaiverReason
+    description: |-
+      The reason an person waives receiving his hearing notice for a classification hearing.
+  - name: PostedDate
+    is_datetime: True
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: ClassificationDate
+    is_datetime: True
+    description: |-
+      The date on which a classification or reclassification is done for a person.
+  - name: ClassificationType
+    description: |-
+      An abbreviation for the type of classification of a particular person.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: RecommendedCustody
+    description: |-
+      The code value of a the custody level of an person as assigned by the classification committee. If the first two characters of this element are different from the CAF custody level, the classification override process is triggered.
+  - name: TransferSiteID
+    description: |-
+      The ID of the institution to which the assigned institution is trying to transfer an person.
+  - name: OverrideReason
+    description: |-
+      The reason given by the classification panel for an override of an person's custody assessment form custody level.
+  - name: ClassificationDecisionDate
+    is_datetime: True
+    description: |-
+      The date of the classification decision made by the approving staff-id on a classification recommendation for a person.
+  - name: ClassificationDecision
+    description: |-
+      THE DECISION MADE BY THE APPROVING AUTHORITY AS TO WHETHER A CLASSIFICATION IS APPROVED OR DENIED.
+  - name: ApprovingAuthorityStaffID
+    description: |-
+      The staff person authorized to approve the classification panel's recommendation.
+  - name: AppealRespondentStaffID
+    description: |-
+      The staff ID of the RECEPIENT of the classification appeal.
+  - name: ClassificationCommitteeStaffID1
+    description: |-
+      The first classification committee staff ID for one classification of a person.
+  - name: ClassificationCommitteeStaffID2
+    description: |-
+      The second classification committee staff ID for one classification of a person.
+  - name: ClassificationCommitteeStaffID3
+    description: |-
+      The third classification committee staff ID for one classification of a person.
+  - name: DenialReason
+    description: |-
+      An abbreviation for the reason a request is denied.
+  - name: AppealDecision
+    description: |-
+      The decision made by the authority empowered to make a classification appeal decision.
+  - name: AppealReceivedDate
+    is_datetime: True
+    description: |-
+      The date on which an appeal is filed.
+  - name: AppealDecisionDate
+    is_datetime: True
+    description: |-
+      The date that the warden or director of classification decides on an appeal of the classification of an inmate.
+  - name: AppealReasonComments
+    description: |-
+      A comment line to explain why an appeal of a classification has been filed either to the warden. [Combination of DB2 columns TXT_APPL_RSN through TXT_APPL_RSN_3]
+  - name: AppealDecisionComments
+    description: |-
+      A comment line to explain why the decision on an appeal was made. [Combination of DB2 columns TXT_APPL_DCSN through TXT_APPL_DCSN_3]
+  - name: ProgramID1
+    description: |-
+      This code represents either a class or a treatment program.
+  - name: ProgramID2
+    description: |-
+      This is the second suggested program possible for a person.
+  - name: ProgramID3
+    description: |-
+      This is the third suggested program possible for a person.
+  - name: JobID1
+    description: |-
+      This code represents the DOT Code for a particular job. This will be used to store job codes that are not a treatment program.
+  - name: JobID2
+    description: |-
+      This code represents the DOT Code for a particular job. This nd recommendation for a job during the classification process.
+  - name: JobID3
+    description: |-
+      This code represents the DOT Code for a particular job. This code will be used as the third recommendation for a job during the classification process.
+  - name: ClassID1
+    description: |-
+      An identifying number assigned to the first class recommended to a person.
+  - name: ClassID2
+    description: |-
+      An identifying number assigned to the second class recommended to a person.
+  - name: ClassID3
+    description: |-
+      An identifying number assigned to the third class recommended to a person.
+  - name: ClassificationComments
+    description: |-
+      Free form text regarding observations made during an inventory audit, item assignment, etc. [Combination of DB2 columns TXT_CFYNL_CMNT through TXT_CFYNL_CMNT_3]
+  - name: SegregationFlag
+    description: |-
+      This indicator is for indicator segregations.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

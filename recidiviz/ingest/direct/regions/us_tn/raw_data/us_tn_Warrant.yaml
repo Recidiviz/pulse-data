@@ -1,6 +1,6 @@
 file_tag: Warrant
 file_description: |-
-  This table contains one occurrance of each warrant served on the offender.
+  This table contains one occurrance of each warrant served on the person.
 primary_key_cols:
   - OffenderID
   - IssueDate
@@ -21,7 +21,7 @@ columns:
       A unique identifier number assigned to a warrant for a particular judgment order.
   - name: WarrantType
     description: |-
-      The type of warrant that is requested and/or issued for an offender.
+      The type of warrant that is requested and/or issued for a person.
     known_values:
       - value: CCOV
         description: COM. CORRECTION VIOLATION
@@ -35,7 +35,7 @@ columns:
         description: PROBATION VIOLATION REPORT
   - name: WarrantReason
     description: |-
-      The reason specified for issuing a warrant for an offender.
+      The reason specified for issuing a warrant for a person.
     known_values:
       - value: COMV
         description: "TODO(#7424): Update with definition."
@@ -79,7 +79,7 @@ columns:
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: WarrantStatus
     description: |-
-      The status of a warrant that has been issued for an offender.
+      The status of a warrant that has been issued for a person.
     known_values:
       - value: D
         description: DISPOSED OF

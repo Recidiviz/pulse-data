@@ -1,6 +1,6 @@
 file_tag: Diversion
 file_description: |-
-  This table contains one occurrence for each diversion that applies to the specified case. These diversions apply to offenders who have not yet been sentenced.
+  This table contains one occurrence for each diversion that applies to the specified case. These diversions apply to people who have not yet been sentenced.
 primary_key_cols:
   - OffenderID
   - ConvictionCounty
@@ -33,7 +33,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: DiversionStatus
     description: |-
-      The status of an offender's diversion.  A valid status is either open or closed.
+      The status of a person's diversion.  A valid status is either open or closed.
     known_values:
       - value: C
         description: CLOSED
@@ -57,7 +57,7 @@ columns:
   - name: JudicialCloseDate
     is_datetime: True
     description: |-
-      The date that the judge closed an offender's diversion.
+      The date that the judge closed a person's diversion.
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
