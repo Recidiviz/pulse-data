@@ -1,6 +1,6 @@
 file_tag: Contact
 file_description: |-
-  This table contains one occurrence for each offender/contact combination.
+  This table contains one occurrence for each person/contact combination.
 primary_key_cols:
   - ContactID
 columns:
@@ -48,16 +48,16 @@ columns:
       A unit of measure describing an inmate's height.
   - name: HeightInches
     description: |-
-      The inches portion of an offender's height.
+      The inches portion of a person's height.
   - name: HairColor
     description: |-
-      The predominant hair color classification of an offender.
+      The predominant hair color classification of a person.
   - name: EyeColor
     description: |-
-      The predominant eye color of an offender.
+      The predominant eye color of a person.
   - name: Complexion
     description: |-
-      The predominant skin color of an offender.
+      The predominant skin color of a person.
   - name: DriversLicense
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.

@@ -1,6 +1,6 @@
 file_tag: AssignedStaff
 file_description: |-
-  This table contains at least one occurrence of each staff member assigned to an offender, whether in custody, on parole or on probation.
+  This table contains at least one occurrence of each staff member assigned to a person, whether in custody, on parole or on probation.
 primary_key_cols:
   - StaffID
   - OffenderID
@@ -15,7 +15,7 @@ columns:
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: AssignmentType
     description: |-
-      An abbreviation for the type of assignment given to an offender.
+      An abbreviation for the type of assignment given to a person.
     known_values:
       - value: CAM
         description: CASE MANAGER
@@ -69,7 +69,7 @@ columns:
       The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
   - name: CaseType
     description: |-
-      An abbreviation for the type of case for an offender.
+      An abbreviation for the type of case for a person.
     known_values:
       - value: PPO
         description: TN PROBATIONER
@@ -123,7 +123,7 @@ columns:
         description: INVESTIGATION
   - name: AssignmentEndReason
     description: |-
-      An abbreviation for why a staff person is no longer assigned to an offender.
+      An abbreviation for why a staff person is no longer assigned to a person.
     known_values:
       - value: RNO
         description: REASSIGNED TO NEW OFFICER

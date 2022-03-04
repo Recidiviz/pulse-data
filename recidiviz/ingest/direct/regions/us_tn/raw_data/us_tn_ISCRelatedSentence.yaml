@@ -26,10 +26,10 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an person.
   - name: RelatedJurisidicationCounty
     description: |-
-      The related county or jurisdiction of a sentence for an offender.
+      The related county or jurisdiction of a sentence for a person.
   - name: RelatedCaseYear
     description: |-
       A unique sequential number assigned to a particular count of a concurrent or consecutive sentence.

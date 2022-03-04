@@ -1,0 +1,29 @@
+file_tag: IncidentPersonInvolved
+file_description: |-
+  This table contains all information about those people associated with an incident. These may be offenders, staff,outside contacts, relatives, visitors, etc.
+primary_key_cols:
+  - IncidentID
+  - PersonID
+columns:
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: PersonID
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
+  - name: PersonType
+    description: |-
+      This indicates if the person involved in an incident is an offender, staff, contact or visitor.
+  - name: InvolvementType
+    description: |-
+      An abbreviation for the reason the person is involved in an incident.
+  - name: PersonalInjuryFlag
+    description: |-
+      Indicates whether a person involved in a disciplinary incident was injured. Valid values are Yes or No.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

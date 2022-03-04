@@ -1,6 +1,6 @@
 file_tag: Referral
 file_description: |-
-  This table contains one occurrence for each Referral for each offender.
+  This table contains one occurrence for each Referral for each person.
 primary_key_cols:
   - OffenderID
   - OrderDate
@@ -18,7 +18,7 @@ columns:
       This is the referral sequence number.
   - name: ReferralType
     description: |-
-      An abbreviation for the type of referral given to an offender.
+      An abbreviation for the type of referral given to a person.
     known_values:
       - value: CLR
         description: CLASSIFICATION REPORT
@@ -37,13 +37,13 @@ columns:
   - name: CourtDate
     is_datetime: True
     description: |-
-      The date and time of a scheduled court appearance for an offender. This date is posted during the PSI assignment process.
+      The date and time of a scheduled court appearance for a person. This date is posted during the PSI assignment process.
   - name: ReferralName
     description: |-
       The name associated with a referral.
   - name: BondAmount
     description: |-
-      The dollar amount of bond set for an offender.
+      The dollar amount of bond set for a person.
   - name: BondCondition
     description: |-
       A code value defining a reason for the conditions of Bond for a person awaiting sentencing.

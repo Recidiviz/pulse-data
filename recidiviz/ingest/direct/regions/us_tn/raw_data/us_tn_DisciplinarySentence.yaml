@@ -1,0 +1,46 @@
+file_tag: DisciplinarySentence
+file_description: |-
+  This table contains information about the sentences which result from a disciplinary.
+primary_key_cols:
+  - OffenderID
+  - IncidentID
+  - SentenceType
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: SentenceType
+    description: |-
+      The sentence type resulting from an inmate disciplinary.
+  - name: RevisedPayRateAmount
+    description: |-
+      Rate of Pay
+  - name: SentenceDate
+    is_datetime: True
+    description: |-
+      The date an offender's sentence begins.
+  - name: TrustFundDeductionAmount
+    description: |-
+      The amount to be paid from an offender's Trust Fund in retribution for a disciplinary sentence.
+  - name: SentenceHours
+    description: |-
+      The number of hours specified in an inmate disciplinary sentence.
+  - name: SentenceDays
+    description: |-
+      The number of dead or delinquent time days posted for an offender. The number of days specified in an inmate disciplinary sentence. The number of days an inmate is assigned to a temporary location. The number of days late for a level 1 grievance.
+  - name: SentenceWeeks
+    description: |-
+      The number of weeks specified in an inmate disciplinary sentence.
+  - name: SentenceMonths
+    description: |-
+      The number of months specified in an inmate disciplinary sentence.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

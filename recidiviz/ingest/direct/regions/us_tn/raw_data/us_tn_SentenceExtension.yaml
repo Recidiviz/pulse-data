@@ -1,6 +1,6 @@
 file_tag: SentenceExtension
 file_description: |- 
-  This table contains one occurrence for each extension posted for the offender's sentence.
+  This table contains one occurrence for each extension posted for the person's sentence.
 primary_key_cols:
   - OffenderID
   - ConvictionCounty
@@ -23,14 +23,14 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: SequenceNumber
     description: |-
       Uniquely identifies various DB2 tables.
   - name: ExtensionDate
     is_datetime: True
     description: |-
-      The date of the extension made to the parole eligibility dates of one of an offender's sentences for certain disciplinary infrac- tions.
+      The date of the extension made to the parole eligibility dates of one of a person's sentences for certain disciplinary infrac- tions.
   - name: SentenceRangePercentExtension
     description: |-
       The percentage that the RED date percent for a particular sentence is extended.

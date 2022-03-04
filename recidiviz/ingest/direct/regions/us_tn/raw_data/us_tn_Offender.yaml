@@ -35,7 +35,7 @@ columns:
     known_values: []
   - name: NumberOffenderVisitor
     description: |-
-      The number of visitors entertained by an offender.
+      The number of visitors entertained by a person.
   - name: EscapeFlag
     description: |-
       Indicator for a person  that tells whether the person is escaped.

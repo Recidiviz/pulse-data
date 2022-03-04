@@ -1,0 +1,68 @@
+file_tag: DisciplinaryAppeal
+file_description: |-
+  This table contains one occurrence for each appeal made by a person for a disciplinary. Unlimited appeals may be filed.
+primary_key_cols:
+  - OffenderID
+  - IncidentID
+  - AppealDate
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: AppealDate
+    is_datetime: True
+    description: |-
+      The date on which an appeal is filed.
+  - name: Reason
+    description: |-
+      A textual explanation as to why an appeal is filed.
+  - name: Level
+    description: |-
+      This indicates the level that an inmate grievance decision or disciplinary decision is appealed to.
+  - name: Disposition
+    description: |-
+      The abbreviation for the disposition of an inmate disciplinary appeal.
+  - name: DispositionDate
+    is_datetime: True
+    description: |-
+      The date on which the appeal of a grievance or disciplinary was completed.
+  - name: DecisionPersonID1
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: DecisionPersonType1
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID2
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: DecisionPersonType2
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID3
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: DecisionPersonType3
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID4
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: DecisionPersonType4
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: DecisionPersonID5
+    description: |-
+      This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
+  - name: DecisionPersonType5
+    description: |-
+      This indicates if the deciding person is a staff or an inmate.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

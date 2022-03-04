@@ -133,7 +133,7 @@ columns:
         description: WHITE
   - name: Sex
     description: |-
-      An abbreviation that identifies the sex of an offender.
+      An abbreviation that identifies the sex of a person.
     known_values:
       - value: F
         description: "TODO(#7424): Update with definition."

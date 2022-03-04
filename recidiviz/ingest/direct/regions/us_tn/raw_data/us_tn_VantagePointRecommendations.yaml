@@ -1,0 +1,60 @@
+file_tag: VantagePointRecommendations
+file_description: |-
+  This table is used to store STRONG-R Case Plan recommendations from Vant4gePoint.
+# TODO(#11323): Fill out primary keys once we receive them.
+primary_key_cols: []
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: AssessmentID
+    description: |-
+      A unique identifier assigned to a STRONG-R assessment for an offender.
+  - name: Pathway
+    description: |-
+      The STRONG-R pathway code for an offender.
+  - name: Recommendation
+    description: |-
+      The TAP recommendation code (program), either a class or a treatment program.
+  - name: PathwayOrder
+    description: |-
+      This is the order of a STRONG-R pathway.
+  - name: TreatmentGoal
+    description: |-
+      The treatment Goal from STRONG-R.
+  - name: TreatmentGoalID
+    description: |-
+      This is a unique ID from STRONG-R for a Treatment Pathway Goal in Vant4gePoint.
+  - name: TreatmentGoalDomain
+    description: |-
+      Indicates the STRONG-R Treatment Pathway Goal domain for an offender.
+  - name: VantagePointProgamID
+    description: |-
+      This is a unique ID from STRONG-R for a program in Vant4gePoint.
+  - name: VantagePointPathwayID
+    description: |-
+      This is a unique ID from STRONG-R for a Pathway in Vant4gePoint.
+  - name: RecommendationDate
+    is_datetime: True
+    description: |-
+      The date on which a recommendation is made.
+  - name: ProgramType
+    description: |-
+      The code for whether a recommended program in a structured interview is a job, class, or treatment.
+  - name: RecommendedEndDate
+    is_datetime: True
+    description: |-
+      The date on which a recommendation is ended.
+  - name: RecommendedEndReason
+    description: |-
+      The code that indicates the end reason for a TDOC TAP recommendation.
+  - name: LastUpdateStaffID
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

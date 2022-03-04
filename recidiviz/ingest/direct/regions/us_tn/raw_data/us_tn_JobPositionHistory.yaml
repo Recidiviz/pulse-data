@@ -1,0 +1,117 @@
+file_tag: JobPositionHistory
+file_description: |-
+  This table contains one occurrence for each job position termination. This allows all offender positions to be located and all offenders having held a particular position to be located.
+primary_key_cols:
+  - SiteID
+  -  JobID
+  - PositionID
+  - TerminationDate
+columns:
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: JobID
+    description: |-
+      This code represents the DOT Code for a particular job. This code will be used as the first recommendation for a job during the classification process.
+  - name: PositionID
+    description: |-
+      A unique identifier assigned to a job position in an institution.
+  - name: TerminationDate
+    is_datetime: True
+    description: |-
+      The date when a vocational or educational assignment is terminated.
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: PositionDescription
+    description: |-
+      A particular task required in the performance of a job.
+  - name: StartTime
+    description: |-
+      The beginning time for a time slot of a schedule.
+  - name: EndTime
+    description: |-
+      The first ending time slot of a schedule.
+  - name: StartTime2
+    description: |-
+      The beginning time for the a time slot of a schedule.
+  - name: EndTime2
+    description: |-
+      The ending time of for a time slot of a schedule.
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      The date on which an inmate begins a job, class or program.
+  - name: EndDate
+    is_datetime: True
+    description: |-
+      The date a vocational or class assignment ends. The date a draw limit ends. Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
+  - name: MondayFlag
+    description: |-
+      The first day of the week with Sunday being the last.
+  - name: TuesdayFlag
+    description: |-
+      The second day of the week with Monday as the first day.
+  - name: WednesdayFlag
+    description: |-
+      The third day of the week with Monday as the first day.
+  - name: ThursdayFlag
+    description: |-
+      The fourth day of the week with Monday as the first day.
+  - name: FridayFlag
+    description: |-
+      The fifth day of the week with Monday being the first day.
+  - name: SaturdayFlag
+    description: |-
+      The sixth day of the week with Monday as the first day.
+  - name: SundayFlag
+    description: |-
+      The seventh day of the week with Monday as the first day.
+  - name: UnitID
+    description: |-
+      A unique identifier assigned to a particular unit within an institution.
+  - name: RoomID
+    description: |-
+      The room number or identifier for the scheduled room assignment.
+  - name: WorkArea
+    description: |-
+      This is the code for the work area that an inmate reports to fora class or a job.
+  - name: SupervisorStaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: LastAuditDate
+    is_datetime: True
+    description: |-
+      The last previous date on which an audit is performed on a job.
+  - name: PayRateAmount
+    description: |-
+      Rate of Pay
+  - name: PayPeriod
+    description: |-
+      The code of the pay period of an offender for a job in the free world.
+  - name: EffectiveFromDate
+    is_datetime: True
+    description: |-
+      The date on which a credit law or sentence law becomes effective. The date a draw limit becomes effective. The date on which a program becomes effective. The date on which the pay rate becomes effective.
+  - name: EffectiveToDate
+    is_datetime: True
+    description: |-
+      The date on which a credit law or sentence law is no longer Effective. The date a draw limit is no longer effective.
+  - name: HighestCustodyDate
+    is_datetime: True
+    description: |-
+      The highest custody level allowed in a program for offenders.
+  - name: ConfirmationDate
+    is_datetime: True
+    description: |-
+      The date on which an Offender confirms acceptance of a class/job position.
+  - name: IncentivePayFlag
+    description: |-
+      Job receives CEMS This can only be YES if the CEMS-Indicator is YES.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

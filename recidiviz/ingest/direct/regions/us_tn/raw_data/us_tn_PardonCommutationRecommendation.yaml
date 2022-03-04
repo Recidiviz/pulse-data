@@ -1,6 +1,6 @@
 file_tag: PardonCommutationRecommendation
 file_description: |-
-  This table contains one occurrence for each pardon or commutation received by the offender.
+  This table contains one occurrence for each pardon or commutation received by the person.
 primary_key_cols:
   - OffenderID
   - HearingDate
@@ -13,7 +13,7 @@ columns:
   - name: HearingDate
     is_datetime: True
     description: |-
-      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular offender.
+      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.

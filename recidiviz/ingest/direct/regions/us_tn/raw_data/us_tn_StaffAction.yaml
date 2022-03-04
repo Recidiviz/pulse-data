@@ -1,0 +1,35 @@
+file_tag: StaffAction
+file_description: |-
+  This table contains one occurrence for every staff action logged within the parole subsystem.
+primary_key_cols:
+  - OffenderID
+  - StaffID
+  - StaffActionDate
+  - StaffActionType
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: StaffActionDate
+    is_datetime: True
+    description: |-
+      The date a staff action was entered.
+  - name: StaffActionType
+    description: |-
+      An abbreviation describing the type of action a staff member may take in regards to a parole or other type hearing.
+  - name: StaffAction
+    description: |-
+      Free form text giving reasons for a particular action taken by a staff member.
+  - name: Comments
+    description: |-
+      The freeform text for comments.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

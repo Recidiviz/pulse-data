@@ -1,6 +1,6 @@
 file_tag: Hearing
 file_description: |-
-  This table contains one occurrence for each hearing that is conducted for the offender.
+  This table contains one occurrence for each hearing that is conducted for the person.
 primary_key_cols:
   - OffenderID
   - HearingDate
@@ -12,7 +12,7 @@ columns:
   - name: HearingDate
     is_datetime: True
     description: |-
-      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular offender.
+      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.
@@ -78,11 +78,11 @@ columns:
   - name: CertificateReleaseDate
     is_datetime: True
     description: |-
-      An offender's parole date which the Board of Parole agrees to release.
+      A person's parole date which the Board of Parole agrees to release.
   - name: AlternateReleaseDate
     is_datetime: True
     description: |-
-      A date which the board of paroles agrees to release an offender.
+      A date which the board of paroles agrees to release a person.
   - name: RecommendedDecision
     description: |-
       An abbreviated recommendation that describes a suggested parole hearing decision.
@@ -151,7 +151,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: RecommendedReason1
     description: |-
-      A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+      A code value defining a reason for a particular recommendation concerning a person's parole decision.
     known_values:
       - value: 01
         description: "TODO(#7424): Update with definition."
@@ -269,7 +269,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: RecommendedReason2
     description: |-
-      A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+      A code value defining a reason for a particular recommendation concerning a person's parole decision.
     known_values:
       - value: 01
         description: "TODO(#7424): Update with definition."
@@ -385,7 +385,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: RecommendedReason3
     description: |-
-      A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+      A code value defining a reason for a particular recommendation concerning a person's parole decision.
     known_values:
       - value: 04
         description: "TODO(#7424): Update with definition."
@@ -465,7 +465,7 @@ columns:
         description: "TODO(#7424): Update with definition."
   - name: RecommendedReason4
     description: |-
-      A code value defining a reason for a particular recommendation concerning an offender's parole decision.
+      A code value defining a reason for a particular recommendation concerning a person's parole decision.
     known_values:
       - value: AC
         description: "TODO(#7424): Update with definition."

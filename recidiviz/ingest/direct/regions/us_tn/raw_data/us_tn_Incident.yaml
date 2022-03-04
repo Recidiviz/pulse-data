@@ -1,0 +1,54 @@
+file_tag: Incident
+file_description: |-
+  This table contains all information about incidents which occur at institutions, or any other TOMIS defined site.
+primary_key_cols:
+  - IncidentID
+columns:
+  - name: IncidentID
+    description: |-
+      The unique identifier for an incident.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: IncidentDateTime
+    is_datetime: True
+    description: |-
+      The date on which an incident involving an offender occurs. The time at which an incident occurred. [Combination of DB2 column DTE_INCDT and TME_INCDT]
+  - name: Status
+    description: |-
+      Indicates the status of an investigation into an institution incident.
+  - name: StatusDate
+    is_datetime: True
+    description: |-
+      The date on which a status of a particular issue changes.
+  - name: IncidentType
+    description: |-
+      An abbreviation for the possible types of incidents that occur at institutions.
+  - name: Location
+    description: |-
+      The location at which an incident occured.
+  - name: WeaponsUsed
+    description: |-
+      Text about weapons involved in an incident requiring an inmate disciplinary or in an offense committed by offender.
+  - name: StaffID
+    description: |-
+      This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
+  - name: ViolationLevel
+    description: |-
+      Indicator for an offense statute that tells whether the particular offense was violent.
+  - name: DamageAmount
+    description: |-
+      The dollar amount of damage associated with a disciplinary incident.
+  - name: PreparedByStaffID
+    description: |-
+      This field represents the staff id who prepared the text.
+  - name: InjuryLevel
+    description: |-
+      Indicator on an Incident to show the level of injury sustained.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

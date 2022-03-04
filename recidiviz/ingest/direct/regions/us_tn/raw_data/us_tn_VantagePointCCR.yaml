@@ -1,0 +1,30 @@
+file_tag: VantagePointCCR
+file_description: |-
+  This table is used to store STRONG-R CCR Details from Vant4gePoint.
+primary_key_cols:
+  - ID_TOMIS
+  - DTE_CCR_RVW
+columns:
+  - name: ID_TOMIS
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: DTE_CCR_RVW
+    is_datetime: True
+    description: |-
+      The date that a STRONG-R CCR is reviewed.
+  - name: ID_STFF_CCR
+    description: |-
+      The staff that needs to assess the STRONG-R CCR for an offender.
+  - name: ID_STFF_CCR_RVW
+    description: |-
+      The staff that reviewed the STRONG-R CCR for an offender.
+  - name: ID_STFF_LAST
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: ID_USER_LAST
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: DTE_LAST_UPDT
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

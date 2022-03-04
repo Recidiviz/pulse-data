@@ -1,6 +1,6 @@
 file_tag: JOIdentification
 file_description: |-
-  This table contains one occurrence for each judgment order received by an offender. This table contains information that serves to identify the judgment order.
+  This table contains one occurrence for each judgment order received by a person. This table contains information that serves to identify the judgment order.
 primary_key_cols:
   - OffenderID
   - ConvictionCounty
