@@ -124,7 +124,6 @@ At a high-level, the following steps are taken to generate `compartment_sessions
 MO_DATA_GAP_DAYS = "10"
 
 COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH session_attributes_unnested AS 
     (
     SELECT DISTINCT

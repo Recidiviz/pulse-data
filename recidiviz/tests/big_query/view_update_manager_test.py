@@ -44,6 +44,7 @@ from recidiviz.view_registry.deployed_views import (
 _PROJECT_ID = "fake-recidiviz-project"
 _DATASET_NAME = "my_views_dataset"
 _DATASET_NAME_2 = "my_views_dataset_2"
+_DATASET_NAME_3 = "my_views_dataset_3"
 
 
 class ViewManagerTest(unittest.TestCase):
@@ -804,6 +805,44 @@ class ViewManagerTest(unittest.TestCase):
         self.assertEqual(self.mock_client.create_dataset_if_necessary.call_count, 2)
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(view_builder.build()) for view_builder in mock_view_builders],
+            any_order=True,
+        )
+
+    def test_copy_dataset_schemas_to_sandbox(self) -> None:
+        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(_PROJECT_ID, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
+
+        def dataset_exists(dataset_ref: bigquery.dataset.DatasetReference) -> bool:
+            return dataset_ref.dataset_id in (_DATASET_NAME, _DATASET_NAME_2)
+
+        self.mock_client.dataset_exists.side_effect = dataset_exists
+
+        view_update_manager.copy_dataset_schemas_to_sandbox(
+            {_DATASET_NAME, _DATASET_NAME_2, _DATASET_NAME_3},
+            sandbox_prefix="test",
+            default_table_expiration=3000,
+        )
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [
+                call(
+                    dataset_ref=get_dataset_ref(f"test_{_DATASET_NAME}"),
+                    default_table_expiration_ms=3000,
+                ),
+                call(
+                    dataset_ref=get_dataset_ref(f"test_{_DATASET_NAME_2}"),
+                    default_table_expiration_ms=3000,
+                ),
+            ],
+            any_order=True,
+        )
+        self.mock_client.copy_dataset_tables.assert_has_calls(
+            [
+                call(_DATASET_NAME, f"test_{_DATASET_NAME}", schema_only=True),
+                call(_DATASET_NAME_2, f"test_{_DATASET_NAME_2}", schema_only=True),
+            ],
             any_order=True,
         )
 
