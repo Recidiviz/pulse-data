@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
@@ -265,6 +266,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="NEWCS",
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             termination_reason_raw_text="RNO",
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text="MAX",
         )
 
         add_supervision_period_to_person(
@@ -281,6 +284,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="TRANS",
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_reason_raw_text="DIS",
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MED",
         )
 
         add_supervision_period_to_person(
@@ -297,6 +302,8 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="MULRE",
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
             termination_reason_raw_text="EXP",
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text="Z1A",
         )
 
         add_supervision_period_to_person(
@@ -313,13 +320,15 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             admission_reason_raw_text="TRPRB",
             termination_reason=None,
             termination_reason_raw_text=None,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MED",
         )
 
         # Only person 2 and 3 have supervision periods.
         expected_people = [person_1, person_2, person_3, person_4]
 
         # Act
-        self._run_ingest_job_for_filename("AssignedStaffSupervisionPeriod")
+        self._run_ingest_job_for_filename("AssignedStaffSupervisionPeriod_v2")
 
         # Assert
         self.assert_expected_db_people(expected_people)

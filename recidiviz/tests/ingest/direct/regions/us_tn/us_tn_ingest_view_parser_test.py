@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,6 +49,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
@@ -400,6 +401,7 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         # (valid or invalid) release reasons.
         self.assertTrue(set(admission_reasons) <= set(release_reasons))
 
+    # TODO(#11123): Remove this test when we delete the old version of AssignedStaffSupervisionPeriod
     def test_parse_AssignedStaffSupervisionPeriod(self) -> None:
         expected_output = [
             # Person 2 starts a new supervision period.
@@ -526,6 +528,142 @@ class UsTnIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
 
         self._run_parse_ingest_view_test(
             "AssignedStaffSupervisionPeriod", expected_output
+        )
+
+    def test_parse_AssignedStaffSupervisionPeriod_v2(self) -> None:
+        expected_output = [
+            # Person 2 starts a new supervision period.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                supervision_periods=[
+                    StateSupervisionPeriod(
+                        external_id="00000002-1",
+                        state_code="US_TN",
+                        start_date=datetime.date(2015, 7, 13),
+                        termination_date=datetime.date(2015, 11, 9),
+                        supervision_site="P39F",
+                        supervising_officer=StateAgent(
+                            external_id="ABCDEF01",
+                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
+                            state_code="US_TN",
+                        ),
+                        admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                        admission_reason_raw_text="NEWCS",
+                        termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+                        termination_reason_raw_text="RNO",
+                        supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                        supervision_type_raw_text="PRO",
+                        supervision_level=StateSupervisionLevel.HIGH,
+                        supervision_level_raw_text="MAX",
+                    )
+                ],
+            ),
+            # Person 2 moves from one facility to another, and then is discharged.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000002", id_type="US_TN_DOC"
+                    )
+                ],
+                supervision_periods=[
+                    StateSupervisionPeriod(
+                        external_id="00000002-2",
+                        state_code="US_TN",
+                        start_date=datetime.date(2015, 11, 9),
+                        termination_date=datetime.date(2016, 10, 10),
+                        supervision_site="SDR",
+                        supervising_officer=StateAgent(
+                            external_id="ABCDEF01",
+                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
+                            state_code="US_TN",
+                        ),
+                        admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                        admission_reason_raw_text="TRANS",
+                        termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                        termination_reason_raw_text="DIS",
+                        supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                        supervision_type_raw_text="PRO",
+                        supervision_level=StateSupervisionLevel.MEDIUM,
+                        supervision_level_raw_text="MED",
+                    )
+                ],
+            ),
+            # Person 3 has one supervision period in community corrections.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                supervision_periods=[
+                    StateSupervisionPeriod(
+                        external_id="00000003-1",
+                        state_code="US_TN",
+                        start_date=datetime.date(2011, 1, 26),
+                        termination_date=datetime.date(2011, 2, 8),
+                        supervision_site="PDR",
+                        supervising_officer=StateAgent(
+                            external_id="ABCDEF01",
+                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
+                            state_code="US_TN",
+                        ),
+                        admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                        admission_reason_raw_text="MULRE",
+                        termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+                        termination_reason_raw_text="EXP",
+                        supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+                        supervision_type_raw_text="CCC",
+                        supervision_level=StateSupervisionLevel.MINIMUM,
+                        supervision_level_raw_text="Z1A",
+                    )
+                ],
+            ),
+            # Person 3 has one open supervision period in parole.
+            StatePerson(
+                state_code="US_TN",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_TN", external_id="00000003", id_type="US_TN_DOC"
+                    )
+                ],
+                supervision_periods=[
+                    StateSupervisionPeriod(
+                        external_id="00000003-2",
+                        state_code="US_TN",
+                        start_date=datetime.date(2017, 7, 22),
+                        termination_date=None,
+                        supervision_site="SDR",
+                        supervising_officer=StateAgent(
+                            external_id="ABCDEF01",
+                            agent_type=StateAgentType.SUPERVISION_OFFICER,
+                            full_name='{"given_names": "DALE", "middle_names": "", "name_suffix": "JR.", "surname": "COOPER"}',
+                            state_code="US_TN",
+                        ),
+                        admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+                        admission_reason_raw_text="TRPRB",
+                        termination_reason=None,
+                        termination_reason_raw_text=None,
+                        supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                        supervision_type_raw_text="PAO",
+                        supervision_level=StateSupervisionLevel.MEDIUM,
+                        supervision_level_raw_text="MED",
+                    )
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test(
+            "AssignedStaffSupervisionPeriod_v2", expected_output
         )
 
     def test_parse_SentencesChargesAndCourtCases(self) -> None:

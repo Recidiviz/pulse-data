@@ -1,0 +1,3 @@
+offenderid,supervisiontype,startdate,enddate,admissionreason,terminationreason,supervisionlevel,supervisionofficerid,supervisionofficerfirstname,supervisionofficerlastname,supervisionofficersuffix,assignmenttype,site,supervisionperiodsequencenumber
+"12345678","CCO","2020-11-12","2021-02-04","NEWCS","TRR","ZS1","ZYXWVU01","JEFF","BOOMHAUER",,"CCC",,2
+"12345678","PPO","2020-10-12","2021-01-04","RENEO","RNO","MED","ABCDEF01","DALE","COOPER","JR.","PRO","P94F",1

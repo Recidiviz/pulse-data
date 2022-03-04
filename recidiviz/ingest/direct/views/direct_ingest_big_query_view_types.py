@@ -923,11 +923,15 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         query = view_query_template.upper()
         final_sub_query = query.split("FROM")[-1]
         order_by_count = final_sub_query.count("ORDER BY")
-        if order_by_count:
+        window_count = final_sub_query.count("WINDOW")
+        as_count = final_sub_query.count(" AS ")
+        if (window_count == 0 and order_by_count > 0) or (
+            window_count > 0 and order_by_count > as_count
+        ):
             raise ValueError(
-                f"Found ORDER BY after the final FROM statement in the SQL view_query_template for "
-                f"{ingest_view_name}. Please ensure that all ordering of the final query is done by specifying "
-                f"DirectIngestPreProcessedIngestView.order_by_cols instead of putting an ORDER BY "
+                f"Found ORDER BY not associated with a WINDOW clause after the final FROM statement in the SQL"
+                f"view_query_template for {ingest_view_name}. Please ensure that all ordering of the final query is"
+                f"done by specifying DirectIngestPreProcessedIngestView.order_by_cols instead of putting an ORDER BY "
                 f"clause in DirectIngestPreProcessingIngestView.view_query_template. If this ORDER BY is a result"
                 f"of an inline subquery in the final SELECT statement, please consider moving alias-ing the subquery "
                 f"or otherwise refactoring the query so no ORDER BY statements occur after the final `FROM`"
