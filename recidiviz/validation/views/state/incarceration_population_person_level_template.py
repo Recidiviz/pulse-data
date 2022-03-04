@@ -42,11 +42,17 @@ external_data AS (
   FROM `{{project_id}}.{{external_accuracy_dataset}}.incarceration_population_person_level`
 ), external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
-    SELECT region_code, date_of_stay, facility, external_data.person_external_id, person_id
+    SELECT
+      region_code,
+      date_of_stay,
+      facility,
+      external_data.person_external_id,
+      COALESCE(CAST(person_id AS STRING), 'UNKNOWN_PERSON') AS person_id
     FROM external_data
     LEFT JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
-    -- Limit to 'US_PA_CONT' id_type for US_PA
+    -- Limit to incarceration IDs in states that have multiple
+    AND (region_code != 'US_ND' OR id_type = 'US_ND_ELITE')
     AND (region_code != 'US_PA' OR id_type = 'US_PA_CONT')
 ),
 sanitized_internal_metrics AS (
@@ -54,7 +60,7 @@ sanitized_internal_metrics AS (
       state_code AS region_code, 
       date_of_stay, 
       person_external_id, 
-      person_id,
+      CAST(person_id AS STRING) AS person_id,
       {state_specific_dataflow_facility_name_tranformation},
    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
 ),
@@ -68,8 +74,8 @@ internal_metrics_for_valid_regions_and_dates AS (
 SELECT
   region_code,
   date_of_stay,
-  CAST(external_data.person_id AS STRING) AS external_data_person_id,
-  CAST(internal_data.person_id AS STRING) AS internal_data_person_id,
+  external_data.person_id AS external_data_person_id,
+  internal_data.person_id AS internal_data_person_id,
   external_data.person_external_id AS external_data_person_external_id,
   external_data.facility AS external_facility,
   internal_data.facility AS internal_facility,
