@@ -25,9 +25,6 @@ import attr
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.pvalue import PBegin
 
-from recidiviz.calculator.pipeline.utils.beam_utils.entity_hydration_utils import (
-    ConvertEntitiesToStateSpecificTypes,
-)
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     ExtractDataForPipeline,
 )
@@ -285,15 +282,6 @@ class BasePipeline:
                 required_reference_tables=required_reference_tables,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=person_id_filter_set,
-            )
-
-            # Update entities to have state-specific types, where applicable
-            pipeline_data = (
-                pipeline_data
-                | "Convert entities to state-specific type"
-                >> beam.ParDo(
-                    ConvertEntitiesToStateSpecificTypes(), state_code=state_code
-                )
             )
 
             pipeline_output = self.pipeline_run_delegate.run_data_transforms(

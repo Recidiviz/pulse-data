@@ -18,7 +18,7 @@
 # pylint: disable=protected-access
 import unittest
 from datetime import date
-from typing import List
+from typing import Any, Dict, List, Tuple
 
 import apache_beam as beam
 import attr
@@ -27,8 +27,22 @@ from apache_beam.testing.util import assert_that, equal_to
 from mock import patch
 
 from recidiviz.calculator.pipeline.utils.beam_utils import extractor_utils
+from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
+    ConvertDictToKVTuple,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    UsMoIncarcerationSentence,
+    UsMoSentenceStatus,
+    UsMoSupervisionSentence,
+)
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
+    US_ID_CASE_UPDATE_INFO_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
+    US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -951,6 +965,57 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
+    def testExtractDataForPipeline_allows_for_empty_entities(self):
+        person_id = 12345
+        project = "project"
+        dataset = "state"
+        fields_of_test_reference = [
+            {
+                "person_id": person_id,
+                "state_code": "US_ID",
+                "agnt_note_title": "some_title",
+            }
+        ]
+
+        data_dict = {
+            US_ID_CASE_UPDATE_INFO_VIEW_NAME: fields_of_test_reference,
+        }
+
+        with patch(
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict
+            ),
+        ):
+            test_pipeline = TestPipeline()
+
+            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+                state_code="US_ID",
+                project_id=project,
+                dataset=dataset,
+                required_entity_classes=None,
+                reference_dataset=dataset,
+                required_reference_tables=[US_ID_CASE_UPDATE_INFO_VIEW_NAME],
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=None,
+            )
+
+            assert_that(
+                output,
+                equal_to(
+                    [
+                        (
+                            12345,
+                            {
+                                US_ID_CASE_UPDATE_INFO_VIEW_NAME: fields_of_test_reference,
+                            },
+                        )
+                    ]
+                ),
+            )
+
+            test_pipeline.run()
+
 
 class TestConnectHydratedRelatedEntities(unittest.TestCase):
     """Tests the _ConnectHydratedRelatedEntities DoFn."""
@@ -1275,6 +1340,223 @@ class TestShallowHydrateEntity(unittest.TestCase):
                     )
                 ]
             ),
+        )
+
+        test_pipeline.run()
+
+
+class TestConvertSentenceToStateSpecificType(unittest.TestCase):
+    """Tests the ConvertSentencesToStateSpecificType DoFn."""
+
+    TEST_PERSON_ID = 456
+
+    TEST_MO_SENTENCE_STATUS_ROWS = [
+        {
+            "person_id": TEST_PERSON_ID,
+            "sentence_external_id": "123-external-id",
+            "sentence_status_external_id": "123-external-id-1",
+            "status_code": "10I1000",
+            "status_date": "20171012",
+            "status_description": "New Court Comm-Institution",
+        }
+    ]
+
+    TEST_CONVERTED_MO_STATUS = UsMoSentenceStatus(
+        sentence_status_external_id="123-external-id-1",
+        sentence_external_id="123-external-id",
+        status_code="10I1000",
+        status_date=date(2017, 10, 12),
+        status_description="New Court Comm-Institution",
+    )
+
+    @staticmethod
+    def convert_sentence_output_is_valid(expected_output: List[entities.SentenceType]):
+        """Beam assert matcher for checking output of ConvertSentencesToStateSpecificType."""
+
+        def _convert_sentence_output_is_valid(
+            output: List[Tuple[int, Dict[str, List[Any]]]]
+        ):
+            if not expected_output:
+                raise ValueError("Must supply expected_output to validate against.")
+
+            for _, all_entities in output:
+                if isinstance(expected_output[0], entities.StateSupervisionSentence):
+                    sentence_output = all_entities[
+                        entities.StateSupervisionSentence.__name__
+                    ]
+                else:
+                    sentence_output = all_entities[
+                        entities.StateIncarcerationSentence.__name__
+                    ]
+
+                if len(sentence_output) != len(expected_output):
+                    raise ValueError(
+                        f"Expected output length [{len(expected_output)}] != output length [{len(sentence_output)}]"
+                    )
+                for i, sentence in enumerate(sentence_output):
+                    expected_sentence = expected_output[i]
+
+                    if not isinstance(sentence, type(expected_sentence)):
+                        raise ValueError(
+                            f"sentence is not instance of [{type(expected_sentence)}]"
+                        )
+                    if sentence != expected_sentence:
+                        raise ValueError(
+                            f"sentence [{sentence}] != expected_sentence [{expected_sentence}]"
+                        )
+
+        return _convert_sentence_output_is_valid
+
+    def test_ConvertSentenceToStateSpecificType_incarceration_sentence_fake_state_not_mo(
+        self,
+    ):
+        """Tests that the sentence does not get converted to the state_specific_type for states where that is not
+        defined."""
+        incarceration_sentence_id = 123
+
+        incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=incarceration_sentence_id,
+            state_code="US_XX",
+            external_id="123-external-id",
+            start_date=date(2000, 1, 1),
+            status=entities.StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.run_test_pipeline(
+            self.TEST_PERSON_ID,
+            incarceration_sentence,
+            self.TEST_MO_SENTENCE_STATUS_ROWS,
+            incarceration_sentence,
+        )
+
+    def test_ConvertSentenceToStateSpecificType_incarceration_sentence_mo(self):
+        """Tests that for MO, incarceration sentences get converted to UsMoIncarcerationSentence."""
+        incarceration_sentence_id = 123
+
+        incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=incarceration_sentence_id,
+            state_code="US_MO",
+            external_id="123-external-id",
+            start_date=date(2000, 1, 1),
+            status=entities.StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        expected_sentence = UsMoIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=incarceration_sentence_id,
+            state_code="US_MO",
+            external_id="123-external-id",
+            start_date=date(2000, 1, 1),
+            base_sentence=incarceration_sentence,
+            sentence_statuses=[self.TEST_CONVERTED_MO_STATUS],
+            status=entities.StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.run_test_pipeline(
+            self.TEST_PERSON_ID,
+            incarceration_sentence,
+            self.TEST_MO_SENTENCE_STATUS_ROWS,
+            expected_sentence,
+        )
+
+    def test_ConvertSentenceToStateSpecificType_supervision_sentence_mo(self):
+        """Tests that for MO, supervision sentences get converted to UsMoSupervisionSentence."""
+        supervision_sentence_id = 123
+
+        supervision_sentence = entities.StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=supervision_sentence_id,
+            state_code="US_MO",
+            external_id="123-external-id",
+            start_date=date(2000, 1, 1),
+            status=entities.StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        expected_sentence = UsMoSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=supervision_sentence_id,
+            state_code="US_MO",
+            external_id="123-external-id",
+            start_date=date(2000, 1, 1),
+            base_sentence=supervision_sentence,
+            sentence_statuses=[self.TEST_CONVERTED_MO_STATUS],
+            status=entities.StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.run_test_pipeline(
+            self.TEST_PERSON_ID,
+            supervision_sentence,
+            self.TEST_MO_SENTENCE_STATUS_ROWS,
+            expected_sentence,
+        )
+
+    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
+    def run_test_pipeline(
+        self,
+        person_id: int,
+        sentence: entities.SentenceType,
+        us_mo_sentence_status_rows: List[Dict[str, str]],
+        expected_sentence: entities.SentenceType,
+    ):
+        """Runs a test pipeline to test ConvertSentencesToStateSpecificType and checks
+        the output against expected."""
+        person = entities.StatePerson.new_with_defaults(
+            state_code=sentence.state_code, person_id=person_id
+        )
+
+        test_pipeline = TestPipeline()
+
+        us_mo_sentence_statuses = (
+            test_pipeline
+            | "Create MO sentence statuses" >> beam.Create(us_mo_sentence_status_rows)
+        )
+
+        sentence_status_rankings_as_kv = (
+            us_mo_sentence_statuses
+            | "Convert MO sentence status ranking table to KV tuples"
+            >> beam.ParDo(ConvertDictToKVTuple(), "person_id")
+        )
+
+        people = test_pipeline | "Create person_id person tuple" >> beam.Create(
+            [(person_id, person)]
+        )
+
+        sentences = test_pipeline | "Create person_id sentence tuple" >> beam.Create(
+            [(person_id, sentence)]
+        )
+
+        empty_sentences = test_pipeline | "Create empty PCollection" >> beam.Create([])
+
+        if isinstance(sentence, entities.StateSupervisionSentence):
+            supervision_sentences = sentences
+            incarceration_sentences = empty_sentences
+        else:
+            incarceration_sentences = sentences
+            supervision_sentences = empty_sentences
+
+        entities_and_statuses = (
+            {
+                entities.StatePerson.__name__: people,
+                entities.StateIncarcerationSentence.__name__: incarceration_sentences,
+                entities.StateSupervisionSentence.__name__: supervision_sentences,
+                US_MO_SENTENCE_STATUSES_VIEW_NAME: sentence_status_rankings_as_kv,
+            }
+            | "Group sentences to the sentence statuses for that person"
+            >> beam.CoGroupByKey()
+        )
+
+        output = (
+            entities_and_statuses
+            | "Convert to state-specific sentences"
+            >> beam.ParDo(
+                extractor_utils.ConvertEntitiesToStateSpecificTypes(),
+                state_code=person.state_code,
+            )
+        )
+
+        # Expect no change
+        expected_output = [expected_sentence]
+
+        assert_that(
+            output,
+            self.convert_sentence_output_is_valid(expected_output),
         )
 
         test_pipeline.run()
