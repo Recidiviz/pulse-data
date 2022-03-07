@@ -21,15 +21,15 @@ from typing import Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
     produce_standard_metrics,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
     RecidivizMetric,
     RecidivizMetricType,
 )
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 IdentifierEventResultT = TypeVar("IdentifierEventResultT")

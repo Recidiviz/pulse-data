@@ -43,13 +43,13 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
-from recidiviz.calculator.pipeline.utils.calculator_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
     build_metric,
     get_calculation_month_lower_bound_date,
     get_calculation_month_upper_bound_date,
     include_in_output,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_supervision_delegate,
 )

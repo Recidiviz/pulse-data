@@ -16,16 +16,13 @@
 # =============================================================================
 """Utils for beam calculations."""
 # pylint: disable=abstract-method,redefined-builtin
-from typing import Any, Dict, Iterable, TypeVar
+import datetime
+from enum import Enum
+from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
-
-from recidiviz.calculator.pipeline.utils.metric_utils import (
-    RecidivizMetric,
-    json_serializable_metric_key,
-)
 
 
 @with_input_types(beam.typehints.Dict[str, Any], str)
@@ -45,39 +42,6 @@ class ConvertDictToKVTuple(beam.DoFn):
 
         if key_value:
             yield key_value, element
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(RecidivizMetric)
-@with_output_types(beam.typehints.Dict[str, Any])
-class RecidivizMetricWritableDict(beam.DoFn):
-    """Builds a dictionary in the format necessary to write the output to BigQuery."""
-
-    def process(self, element, *_args, **_kwargs):
-        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
-        formats as required by BigQuery I/O connector.
-
-        For a list of required formats, see the "Data types" section of:
-            https://beam.apache.org/documentation/io/built-in/google-bigquery/
-
-        Args:
-            element: A RecidivizMetric
-
-        Yields:
-            A dictionary representation of the RecidivizMetric in the format Dict[str, Any] so that it can be written to
-                BigQuery using beam.io.WriteToBigQuery.
-        """
-        element_dict = json_serializable_metric_key(element.__dict__)
-
-        if isinstance(element, RecidivizMetric):
-            yield beam.pvalue.TaggedOutput(element.metric_type.value, element_dict)
-        else:
-            raise ValueError(
-                "Attempting to convert an object that is not a RecidivizMetric into a writable dict"
-                "for BigQuery."
-            )
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -125,14 +89,52 @@ class ReadFromBigQuery(beam.PTransform):
         )
 
 
-class WriteAppendToBigQuery(beam.io.WriteToBigQuery):
+class WriteToBigQuery(beam.io.WriteToBigQuery):
     """Appends result rows to the given output BigQuery table."""
 
-    def __init__(self, output_dataset: str, output_table: str):
+    def __init__(
+        self,
+        output_dataset: str,
+        output_table: str,
+        write_disposition: beam.io.BigQueryDisposition,
+    ):
         super().__init__(
             table=output_table,
             dataset=output_dataset,
             create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-            write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+            write_disposition=write_disposition,
             method=beam.io.WriteToBigQuery.Method.FILE_LOADS,
         )
+
+
+def json_serializable_dict(
+    metric_key: Dict[str, Any],
+    list_serializer: Optional[Callable[[str, List[Any]], str]] = None,
+) -> Dict[str, Any]:
+    """Converts a dictionary into a format that is JSON serializable.
+
+    For values that are of type Enum, converts to their raw values. For values
+    that are dates, converts to a string representation.
+
+    If any of the fields are list types, must provide a |list_serializer| which will
+    handle serializing list values to a serializable string value.
+    """
+    serializable_dict: Dict[str, Any] = {}
+
+    for key, v in metric_key.items():
+        if isinstance(v, Enum) and v is not None:
+            serializable_dict[key] = v.value
+        elif isinstance(v, datetime.date) and v is not None:
+            serializable_dict[key] = v.strftime("%Y-%m-%d")
+        elif isinstance(v, list):
+            if not list_serializer:
+                raise ValueError(
+                    "Must provide list_serializer if there are list "
+                    f"values in dict. Found list in key: [{key}]."
+                )
+
+            serializable_dict[key] = list_serializer(key, v)
+        else:
+            serializable_dict[key] = v
+
+    return serializable_dict

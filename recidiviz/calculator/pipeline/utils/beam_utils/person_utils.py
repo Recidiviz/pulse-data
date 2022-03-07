@@ -22,8 +22,8 @@ import apache_beam as beam
 import attr
 from more_itertools import one
 
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,

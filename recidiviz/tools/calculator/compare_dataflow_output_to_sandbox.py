@@ -102,7 +102,7 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_TABLES_TO_METRIC_TYPES,
     PIPELINE_CONFIG_YAML_PATH,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

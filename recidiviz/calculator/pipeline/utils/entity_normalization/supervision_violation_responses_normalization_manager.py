@@ -20,17 +20,14 @@ pipelines."""
 import datetime
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Set, Type
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    convert_entity_trees_to_normalized_versions,
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -268,62 +265,10 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
         return updated_responses
 
     @classmethod
-    def convert_vrs_to_normalized_vrs(
+    def additional_attributes_map_for_normalized_vrs(
         cls,
         violation_responses: List[StateSupervisionViolationResponse],
-    ) -> List[NormalizedStateSupervisionViolationResponse]:
-        """Converts the StateSupervisionViolationResponse and related entities to
-        their normalized versions.
-
-        Sends the StateSupervisionViolation entities as the top-level entity being
-        converted, since they are the root of the entity tree that contains all
-        violation information. This allows us to not have to de-duplicate
-        NormalizedStateSupervisionViolation entities, which would happen if we sent
-        in the StateSupervisionViolationResponse entities as the top-level entity,
-        since multiple responses can hang off of the same StateSupervisionViolation.
-        """
-        additional_attributes_map: Dict[str, Dict[int, Dict[str, Any]]] = {
-            StateSupervisionViolationResponse.__name__: {
-                svr.supervision_violation_response_id: {
-                    "sequence_num": index,
-                }
-                for index, svr in enumerate(violation_responses)
-                # Note: this is just to satisfy mypy. The id will always be set at
-                # this point.
-                if svr.supervision_violation_response_id
-            }
-        }
-
-        distinct_violations: List[StateSupervisionViolation] = []
-
-        for response in violation_responses:
-            if (
-                response.supervision_violation
-                and response.supervision_violation not in distinct_violations
-            ):
-                distinct_violations.append(response.supervision_violation)
-
-        normalized_violations = convert_entity_trees_to_normalized_versions(
-            root_entities=distinct_violations,
-            normalized_entity_class=NormalizedStateSupervisionViolation,
-            additional_attributes_map=additional_attributes_map,
+    ) -> AdditionalAttributesMap:
+        return get_shared_additional_attributes_map_for_entities(
+            entities=violation_responses
         )
-
-        distinct_responses: List[NormalizedStateSupervisionViolationResponse] = []
-
-        for violation in normalized_violations:
-            for response in violation.supervision_violation_responses:
-                if not isinstance(
-                    response, NormalizedStateSupervisionViolationResponse
-                ):
-                    # This should be caught by the attr validators on the
-                    # NormalizedStateEntity classes, but is here to satisfy mypy
-                    raise ValueError(
-                        "Expected response of type "
-                        "NormalizedStateSupervisionViolationResponse."
-                    )
-
-                if response not in distinct_responses:
-                    distinct_responses.append(response)
-
-        return distinct_responses

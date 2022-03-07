@@ -47,6 +47,10 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
+    PersonMetadata,
+    RecidivizMetric,
+)
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -57,11 +61,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-    RecidivizMetricType,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
@@ -111,7 +110,7 @@ from recidiviz.tests.calculator.calculator_test_utils import (
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     DataTablesDict,
     FakeReadFromBigQueryFactory,
-    FakeWriteToBigQuery,
+    FakeWriteMetricsToBigQuery,
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.metrics.supervision import identifier_test
@@ -133,7 +132,7 @@ class TestSupervisionPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
-            SupervisionPipelineFakeWriteToBigQuery
+            SupervisionPipelineFakeWriteMetricsToBigQuery
         )
 
         self.metric_inclusions_dict: Dict[str, bool] = {
@@ -489,7 +488,9 @@ class TestSupervisionPipeline(unittest.TestCase):
         write_to_bq_constructor = (
             self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
                 dataset,
-                expected_output_metric_types=expected_metric_types,
+                expected_output_tags=[
+                    metric_type.value for metric_type in expected_metric_types
+                ],
                 expected_violation_types=expected_violation_types,
             )
         )
@@ -2101,14 +2102,14 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         test_pipeline.run()
 
 
-class SupervisionPipelineFakeWriteToBigQuery(FakeWriteToBigQuery):
+class SupervisionPipelineFakeWriteMetricsToBigQuery(FakeWriteMetricsToBigQuery):
     def __init__(
         self,
         output_table: str,
-        expected_output_metric_types: Collection[RecidivizMetricType],
+        expected_output_tags: Collection[str],
         expected_violation_types: Set[ViolationType] = None,
     ):
-        super().__init__(output_table, expected_output_metric_types)
+        super().__init__(output_table, expected_output_tags)
         self._expected_violation_types = expected_violation_types
         self._table = output_table
 

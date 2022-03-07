@@ -21,16 +21,16 @@ from typing import List, Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import (
-    SupervisionLocationMixin,
-    ViolationHistoryMixin,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     AssessmentMetricMixin,
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,
     SecondaryPersonExternalIdMetric,
+)
+from recidiviz.calculator.pipeline.utils.event_utils import (
+    SupervisionLocationMixin,
+    ViolationHistoryMixin,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType

@@ -18,7 +18,7 @@
 recidiviz/tools/run_sandbox_calculation_pipeline.py for details on how to launch a
 local run.
 """
-import apache_beam as beam
+from typing import List, Type
 
 from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
@@ -31,17 +31,24 @@ from recidiviz.calculator.pipeline.normalization.comprehensive import entity_nor
 from recidiviz.calculator.pipeline.pipeline_type import (
     COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+    IncarcerationPeriodNormalizationManager,
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+    ProgramAssignmentNormalizationManager,
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
+    SupervisionPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
+    ViolationResponseNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -61,6 +68,13 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
             pipeline_name=COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
+            # Note: This is a list of all of the entities that are required to
+            # perform entity normalization on all entities with normalization
+            # processes. This is *not* the list of entities that are normalized by
+            # this pipeline. See the normalized_entity_classes attribute of each of
+            # the EntityNormalizationManagers in the
+            # required_entity_normalization_managers below to see all entities
+            # normalized by this pipeline.
             required_entities=[
                 entities.StateSupervisionSentence,
                 entities.StateIncarcerationSentence,
@@ -94,5 +108,13 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
     def entity_normalizer(cls) -> BaseEntityNormalizer:
         return entity_normalizer.ComprehensiveEntityNormalizer()
 
-    def write_output(self, pipeline: beam.Pipeline) -> None:
-        pass
+    @classmethod
+    def required_entity_normalization_managers(
+        cls,
+    ) -> List[Type[EntityNormalizationManager]]:
+        return [
+            IncarcerationPeriodNormalizationManager,
+            ProgramAssignmentNormalizationManager,
+            SupervisionPeriodNormalizationManager,
+            ViolationResponseNormalizationManager,
+        ]

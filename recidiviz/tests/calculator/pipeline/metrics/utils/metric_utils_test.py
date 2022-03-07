@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests the functions in the metric_utils file."""
 import unittest
+from typing import Dict, Type
 
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
@@ -30,18 +31,21 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.metrics.program.metrics import (
+    ProgramMetric,
     ProgramMetricType,
     ProgramParticipationMetric,
     ProgramReferralMetric,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
+    ReincarcerationRecidivismMetric,
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionCaseComplianceMetric,
     SupervisionDowngradeMetric,
+    SupervisionMetric,
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
@@ -49,16 +53,20 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import (
-    json_serializable_metric_key,
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
+    json_serializable_list_value_handler,
+)
+from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
+    json_serializable_dict,
 )
 from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 
 
 class TestJsonSerializableMetricKey(unittest.TestCase):
-    """Tests the json_serializable_metric_key function."""
+    """Tests using the json_serializable_dict function with the
+    json_serializable_list_value_handler built for handling lists in metric values."""
 
-    def test_json_serializable_metric_key(self):
+    def test_json_serializable_metric_key(self) -> None:
         metric_key = {
             "gender": Gender.MALE,
             "year": 1999,
@@ -73,11 +81,13 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
             "state_code": "CA",
         }
 
-        updated_metric_key = json_serializable_metric_key(metric_key)
+        updated_metric_key = json_serializable_dict(
+            metric_key, list_serializer=json_serializable_list_value_handler
+        )
 
         self.assertEqual(expected_output, updated_metric_key)
 
-    def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self):
+    def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self) -> None:
         metric_key = {
             "gender": Gender.MALE,
             "year": 1999,
@@ -97,23 +107,27 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
             "violation_type_frequency_counter": "[ASC, EMP, TECHNICAL],[TECHNICAL]",
         }
 
-        updated_metric_key = json_serializable_metric_key(metric_key)
+        updated_metric_key = json_serializable_dict(
+            metric_key, list_serializer=json_serializable_list_value_handler
+        )
 
         self.assertEqual(expected_output, updated_metric_key)
 
-    def test_json_serializable_metric_key_InvalidList(self):
+    def test_json_serializable_metric_key_InvalidList(self) -> None:
         metric_key = {"invalid_list_key": ["list", "values"]}
 
         with self.assertRaisesRegex(
             ValueError, "^Unexpected list in metric_key for key: invalid_list_key$"
         ):
-            json_serializable_metric_key(metric_key)
+            json_serializable_dict(
+                metric_key, list_serializer=json_serializable_list_value_handler
+            )
 
 
 class TestBQSchemaForMetricTable(unittest.TestCase):
     """Tests the bq_schema_for_metric_table function."""
 
-    def test_bq_schema_for_metric_table(self):
+    def test_bq_schema_for_metric_table(self) -> None:
         schema_fields = IncarcerationMetric.bq_schema_for_metric_table()
 
         expected_output = [
@@ -147,8 +161,10 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
         self.assertCountEqual(expected_output, schema_fields)
 
-    def test_bq_schema_for_metric_table_incarceration(self):
-        incarceration_metrics_for_type = {
+    def test_bq_schema_for_metric_table_incarceration(self) -> None:
+        incarceration_metrics_for_type: Dict[
+            IncarcerationMetricType, Type[IncarcerationMetric]
+        ] = {
             IncarcerationMetricType.INCARCERATION_ADMISSION: IncarcerationAdmissionMetric,
             IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION: IncarcerationCommitmentFromSupervisionMetric,
             IncarcerationMetricType.INCARCERATION_POPULATION: IncarcerationPopulationMetric,
@@ -160,12 +176,10 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             assert metric_type in incarceration_metrics_for_type
 
             # If there's no error, then all attribute types are handled
-            _ = incarceration_metrics_for_type.get(
-                metric_type
-            ).bq_schema_for_metric_table()
+            _ = incarceration_metrics_for_type[metric_type].bq_schema_for_metric_table()
 
-    def test_bq_schema_for_metric_table_program(self):
-        program_metrics_for_type = {
+    def test_bq_schema_for_metric_table_program(self) -> None:
+        program_metrics_for_type: Dict[ProgramMetricType, Type[ProgramMetric]] = {
             ProgramMetricType.PROGRAM_REFERRAL: ProgramReferralMetric,
             ProgramMetricType.PROGRAM_PARTICIPATION: ProgramParticipationMetric,
         }
@@ -175,10 +189,12 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             assert metric_type in program_metrics_for_type
 
             # If there's no error, then all attribute types are handled
-            _ = program_metrics_for_type.get(metric_type).bq_schema_for_metric_table()
+            _ = program_metrics_for_type[metric_type].bq_schema_for_metric_table()
 
-    def test_bq_schema_for_metric_table_recidivism(self):
-        recidivism_metrics_for_type = {
+    def test_bq_schema_for_metric_table_recidivism(self) -> None:
+        recidivism_metrics_for_type: Dict[
+            ReincarcerationRecidivismMetricType, Type[ReincarcerationRecidivismMetric]
+        ] = {
             ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT: ReincarcerationRecidivismCountMetric,
             ReincarcerationRecidivismMetricType.REINCARCERATION_RATE: ReincarcerationRecidivismRateMetric,
         }
@@ -188,12 +204,12 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             assert metric_type in recidivism_metrics_for_type
 
             # If there's no error, then all attribute types are handled
-            _ = recidivism_metrics_for_type.get(
-                metric_type
-            ).bq_schema_for_metric_table()
+            _ = recidivism_metrics_for_type[metric_type].bq_schema_for_metric_table()
 
-    def test_bq_schema_for_metric_table_supervision(self):
-        supervision_metrics_for_type = {
+    def test_bq_schema_for_metric_table_supervision(self) -> None:
+        supervision_metrics_for_type: Dict[
+            SupervisionMetricType, Type[SupervisionMetric]
+        ] = {
             SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
             SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
@@ -208,9 +224,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             assert metric_type in supervision_metrics_for_type
 
             # If there's no error, then all attribute types are handled
-            _ = supervision_metrics_for_type.get(
-                metric_type
-            ).bq_schema_for_metric_table()
+            _ = supervision_metrics_for_type[metric_type].bq_schema_for_metric_table()
 
 
 class TestRecidivizMetricType(unittest.TestCase):

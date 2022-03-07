@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, List, Optional, Type
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
+from recidiviz.calculator.pipeline.utils.execution_utils import (
     get_entity_class_names_excluded_from_pipelines,
 )
 from recidiviz.common.attr_mixins import BuildableAttr

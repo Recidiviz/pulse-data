@@ -16,10 +16,9 @@
 # =============================================================================
 """Base class for metrics we calculate."""
 import abc
-import datetime
 from datetime import date
 from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Generic, List, Optional, Type, TypeVar
 
 import attr
 from google.cloud import bigquery
@@ -135,35 +134,19 @@ class PersonMetadata(BuildableAttr):
     prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
 
 
-def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
-    """Converts a metric key into a format that is JSON serializable.
+def json_serializable_list_value_handler(key: str, values: List[Any]) -> str:
+    # These are the only metric fields that support lists
+    if key == "violation_type_frequency_counter":
+        violation_type_values = []
+        for violation_type_list in values:
+            violation_type_values.append(f"[{', '.join(sorted(violation_type_list))}]")
+    else:
+        raise ValueError(f"Unexpected list in metric_key for key: {key}")
 
-    For values that are of type Enum, converts to their raw values. For values
-    that are dates, converts to a string representation.
-    """
-    serializable_dict = {}
+    if violation_type_values:
+        return ",".join(sorted(filter(None, violation_type_values)))
 
-    for key, v in metric_key.items():
-        if isinstance(v, Enum) and v is not None:
-            serializable_dict[key] = v.value
-        elif isinstance(v, datetime.date) and v is not None:
-            serializable_dict[key] = v.strftime("%Y-%m-%d")
-        elif isinstance(v, list):
-            # These are the only metric fields that support lists
-            if key == "violation_type_frequency_counter":
-                values = []
-                for violation_type_list in v:
-                    values.append(f"[{', '.join(sorted(violation_type_list))}]")
-            else:
-                raise ValueError(f"Unexpected list in metric_key for key: {key}")
-
-            if values:
-                serializable_dict[key] = ",".join(sorted(filter(None, values)))
-
-        else:
-            serializable_dict[key] = v
-
-    return serializable_dict
+    return ""
 
 
 RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)

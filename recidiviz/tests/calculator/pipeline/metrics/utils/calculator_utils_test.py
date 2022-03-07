@@ -20,13 +20,15 @@ from datetime import date, datetime
 
 import mock
 
+from recidiviz.calculator.pipeline.metrics.utils import calculator_utils
+from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
+    person_characteristics,
+)
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.pipeline_type import (
     INCARCERATION_METRICS_PIPELINE_NAME,
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
-from recidiviz.calculator.pipeline.utils import calculator_utils
-from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
-from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
@@ -265,7 +267,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         self.assertEqual(updated_characteristics, expected_output)
 
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
         ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
             "test_pipeline": {
@@ -322,7 +324,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         self.assertEqual(updated_characteristics, expected_output)
 
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
         ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
             "test_pipeline": {
@@ -336,7 +338,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         },
     )
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
         ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
             "test_pipeline": {
