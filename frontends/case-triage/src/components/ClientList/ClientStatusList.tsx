@@ -22,8 +22,9 @@ import { Pill } from "../Pill";
 import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
-import { LONG_DATE_FORMAT } from "../../utils";
+import { LONG_DATE_FORMAT, sentenceCase } from "../../utils";
 import { OpportunityType } from "../../stores/OpportunityStore/Opportunity";
+import { ACTION_TITLES } from "../../stores/CaseUpdatesStore/CaseUpdates";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
@@ -36,7 +37,7 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
       statusPills.push(
         <AlertPreview key={actionType} kind="info">
           {actionType === CaseUpdateActionType.CURRENTLY_IN_CUSTODY
-            ? "In custody"
+            ? sentenceCase(ACTION_TITLES[actionType])
             : `Incorrect data reported ${moment(actionTs).format(
                 LONG_DATE_FORMAT
               )}`}
