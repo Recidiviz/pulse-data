@@ -27,6 +27,7 @@ from opencensus.stats import view as opencensus_view
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,
@@ -35,6 +36,9 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.utils import metadata, monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -461,3 +465,63 @@ def _create_or_update_view_and_materialize_if_necessary(
                 view.view_id,
             )
     return view_changed or parent_changed or force_materialize
+
+
+def view_builder_sub_graph_for_view_builders_to_load(
+    view_builders_to_load: Sequence[BigQueryViewBuilder],
+    all_view_builders_in_dag: Sequence[BigQueryViewBuilder],
+    get_ancestors: bool,
+    get_descendants: bool,
+    include_dataflow_views: Optional[bool] = True,
+) -> Sequence[BigQueryViewBuilder]:
+    """Returns the view builders that are in the sub-graph of the provided
+    |view_builders_to_load|. Used when we are loading just a subset of views,
+    and we need to determine the ancestors and/or descendants of the views we're
+    loading.
+
+    If |get_ancestors| is True, includes all ancestor views of |view_builders_to_load|.
+    If |get_descendants| is True, includes all views that are descendant from the
+    |view_builders_to_load|.
+    """
+    # Get views from view_builders_to_load
+    views_to_load = build_views_to_update(
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        candidate_view_builders=view_builders_to_load,
+        dataset_overrides=None,
+    )
+
+    # Get dag walker for *all* views
+    all_views_dag_walker = BigQueryViewDagWalker(
+        build_views_to_update(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=all_view_builders_in_dag,
+            dataset_overrides=None,
+        )
+    )
+
+    # If necessary, get descendants of views_to_load
+    if get_descendants:
+        descendants_dag_walker = all_views_dag_walker.get_descendants_sub_dag(
+            views_to_load
+        )
+        views_to_load.extend(descendants_dag_walker.views)
+
+    # If necessary, get ancestor views of views_to_load
+    if get_ancestors:
+        ancestors_dag_walker = all_views_dag_walker.get_ancestors_sub_dag(views_to_load)
+        views_to_load.extend(ancestors_dag_walker.views)
+
+    # Get set of view addresses that are in the view sub-graph
+    distinct_view_addresses_to_update = {view.address for view in set(views_to_load)}
+
+    # Return the view builders in the sub-graph
+    return [
+        builder
+        for builder in all_view_builders_in_dag
+        if BigQueryAddress(dataset_id=builder.dataset_id, table_id=builder.view_id)
+        in distinct_view_addresses_to_update
+        # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the
+        # dataflow_dataset_override is set
+        if include_dataflow_views
+        or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
+    ]
