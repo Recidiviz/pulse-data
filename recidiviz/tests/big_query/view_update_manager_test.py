@@ -34,7 +34,10 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     SimpleBigQueryViewBuilder,
 )
-from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
+from recidiviz.big_query.view_update_manager import (
+    view_builder_sub_graph_for_view_builders_to_load,
+    view_update_manager_blueprint,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
@@ -871,6 +874,122 @@ class ViewManagerTest(unittest.TestCase):
                     view.materialized_address.dataset_id,
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
+
+    def test_view_builder_sub_graph_for_view_builders_to_load(self) -> None:
+        table_1 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+
+        table_2 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+
+        table_3 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+                    SELECT * FROM `{project_id}.dataset_1.table_1`
+                    JOIN `{project_id}.dataset_2.table_2`
+                    USING (col)""",
+        )
+
+        table_4 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_4",
+            view_id="table_4",
+            description="table_4 description",
+            view_query_template="""
+                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+
+        table_5 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_5",
+            view_id="table_5",
+            description="table_5 description",
+            view_query_template="""
+                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+
+        # Views forming a DAG shaped like an X:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        x_shaped_dag_view_builders_list = [table_1, table_2, table_3, table_4, table_5]
+
+        sub_graph = view_builder_sub_graph_for_view_builders_to_load(
+            view_builders_to_load=[table_4],
+            all_view_builders_in_dag=x_shaped_dag_view_builders_list,
+            get_ancestors=True,
+            get_descendants=False,
+        )
+
+        self.assertCountEqual([table_4, table_3, table_2, table_1], sub_graph)
+
+    def test_view_builder_sub_graph_for_view_builders_to_load_descendants(self) -> None:
+        table_1 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+
+        table_2 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        )
+
+        table_3 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+                    SELECT * FROM `{project_id}.dataset_1.table_1`
+                    JOIN `{project_id}.dataset_2.table_2`
+                    USING (col)""",
+        )
+
+        table_4 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_4",
+            view_id="table_4",
+            description="table_4 description",
+            view_query_template="""
+                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+
+        table_5 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_5",
+            view_id="table_5",
+            description="table_5 description",
+            view_query_template="""
+                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        )
+
+        # Views forming a DAG shaped like an X:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        x_shaped_dag_view_builders_list = [table_1, table_2, table_3, table_4, table_5]
+
+        sub_graph = view_builder_sub_graph_for_view_builders_to_load(
+            view_builders_to_load=[table_3],
+            all_view_builders_in_dag=x_shaped_dag_view_builders_list,
+            get_ancestors=False,
+            get_descendants=True,
+        )
+
+        self.assertCountEqual([table_4, table_5, table_3], sub_graph)
 
 
 @mock.patch(
