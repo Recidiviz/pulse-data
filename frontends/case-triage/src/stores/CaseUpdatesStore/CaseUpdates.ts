@@ -86,5 +86,5 @@ export const ACTION_TITLES: Record<CaseUpdateActionType, string> = {
   [CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA]:
     "Incorrect time on caseload",
   [CaseUpdateActionType.NOT_ON_CASELOAD]: "Not on Caseload",
-  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "In Custody",
+  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "In Custody or Violation Status",
 };

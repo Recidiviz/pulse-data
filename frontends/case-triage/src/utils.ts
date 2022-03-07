@@ -34,6 +34,11 @@ export const titleCase = (str: string): string => {
   return split.join(" "); // ["I'm", "A", "Little", "Tea", "Pot"].join(' ') => "I'm A Little Tea Pot"
 };
 
+export const sentenceCase = (str: string): string => {
+  const lowered = str.toLowerCase();
+  return `${lowered.charAt(0).toUpperCase()}${lowered.slice(1)}`;
+};
+
 export const caseInsensitiveIncludes = (
   containingString: string,
   substring: string
