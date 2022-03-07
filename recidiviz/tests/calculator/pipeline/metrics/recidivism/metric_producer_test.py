@@ -43,7 +43,7 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.persistence.entity.state.entities import (
     Ethnicity,

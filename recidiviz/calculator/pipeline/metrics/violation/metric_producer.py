@@ -20,6 +20,7 @@ from typing import Dict, List, Type
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.metrics.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
@@ -29,7 +30,6 @@ from recidiviz.calculator.pipeline.metrics.violation.metrics import (
     ViolationMetricType,
     ViolationWithResponseMetric,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
 EVENT_TO_METRIC_CLASSES: Dict[
     Type[ViolationEvent], List[Type[RecidivizMetric[ViolationMetricType]]]

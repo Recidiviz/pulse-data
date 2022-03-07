@@ -36,14 +36,22 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
+    AdditionalAttributesMap,
     bq_schema_for_normalized_state_entity,
+    convert_entities_to_normalized_dicts,
     convert_entity_trees_to_normalized_versions,
     fields_unique_to_normalized_class,
+    get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager_test import (
@@ -173,8 +181,8 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
         additional_attributes_map = {
             StateIncarcerationPeriod.__name__: {
-                111: {"purpose_for_incarceration_subtype": "XYZ"},
-                222: {"purpose_for_incarceration_subtype": "AAA"},
+                111: {"sequence_num": 0, "purpose_for_incarceration_subtype": "XYZ"},
+                222: {"sequence_num": 1, "purpose_for_incarceration_subtype": "AAA"},
             }
         }
 
@@ -215,6 +223,12 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             _ = convert_entity_trees_to_normalized_versions(
                 root_entities=violation_with_tree.supervision_violation_responses,
                 normalized_entity_class=NormalizedStateSupervisionViolationResponse,
+                additional_attributes_map={
+                    StateSupervisionViolationResponse.__name__: {
+                        111: {"sequence_num": 0},
+                        222: {"sequence_num": 1},
+                    }
+                },
             )
 
         self.assertEqual(
@@ -235,6 +249,254 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         )
 
         self.assertEqual([], normalized_trees)
+
+
+class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
+    """Tests the convert_entities_to_normalized_dicts function."""
+
+    def test_convert_entities_to_normalized_dicts(self):
+        person_id = 123
+
+        entities_to_convert = [
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                incarceration_period_id=111,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                admission_date=datetime.date(2000, 1, 1),
+            )
+        ]
+
+        additional_attributes_map: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                111: {"sequence_num": 0, "purpose_for_incarceration_subtype": "XYZ"},
+            }
+        }
+
+        expected_output = [
+            (
+                StateIncarcerationPeriod.__name__,
+                {
+                    "admission_date": datetime.date(2000, 1, 1),
+                    "admission_reason": None,
+                    "admission_reason_raw_text": None,
+                    "county_code": None,
+                    "custodial_authority": None,
+                    "custodial_authority_raw_text": None,
+                    "external_id": None,
+                    "facility": None,
+                    "facility_security_level": None,
+                    "facility_security_level_raw_text": None,
+                    "housing_unit": None,
+                    "incarceration_period_id": 111,
+                    "incarceration_type": None,
+                    "incarceration_type_raw_text": None,
+                    "projected_release_reason": None,
+                    "projected_release_reason_raw_text": None,
+                    "release_date": None,
+                    "release_reason": None,
+                    "release_reason_raw_text": None,
+                    "specialized_purpose_for_incarceration": "PAROLE_BOARD_HOLD",
+                    "specialized_purpose_for_incarceration_raw_text": None,
+                    "state_code": "US_XX",
+                    "sequence_num": 0,
+                    "purpose_for_incarceration_subtype": "XYZ",
+                    "person_id": 123,
+                },
+            )
+        ]
+
+        converted_output = convert_entities_to_normalized_dicts(
+            person_id=person_id,
+            entities=entities_to_convert,
+            additional_attributes_map=additional_attributes_map,
+        )
+
+        self.assertEqual(expected_output, converted_output)
+
+    def test_convert_entities_to_normalized_dicts_violations(self):
+        person_id = 123
+
+        entities_to_convert = [get_violation_tree()]
+
+        additional_attributes_map: AdditionalAttributesMap = (
+            get_shared_additional_attributes_map_for_entities(entities_to_convert)
+        )
+
+        # TODO(#10724): Update this test once convert_entities_to_normalized_dicts is
+        #  recursive
+        expected_output = [
+            (
+                StateSupervisionViolation.__name__,
+                {
+                    "external_id": None,
+                    "is_sex_offense": None,
+                    "is_violent": False,
+                    "person_id": 123,
+                    "state_code": "US_XX",
+                    "supervision_violation_id": 123,
+                    "violation_date": datetime.date(2004, 9, 1),
+                },
+            )
+        ]
+
+        converted_output = convert_entities_to_normalized_dicts(
+            person_id=person_id,
+            entities=entities_to_convert,
+            additional_attributes_map=additional_attributes_map,
+        )
+
+        self.assertEqual(expected_output, converted_output)
+
+
+class TestMergeAdditionalAttributesMaps(unittest.TestCase):
+    """Tests the merge_additional_attributes_maps function."""
+
+    def test_merge_additional_attributes_maps(self):
+        map_1: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
+        }
+
+        map_2: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                123: {"purpose_for_incarceration_subtype": "XYZ"}
+            }
+        }
+
+        merged_map = merge_additional_attributes_maps([map_1, map_2])
+
+        expected_merged_maps: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                123: {"sequence_num": 0, "purpose_for_incarceration_subtype": "XYZ"}
+            }
+        }
+
+        self.assertEqual(expected_merged_maps, merged_map)
+
+    def test_merge_additional_attributes_maps_diff_entity_types(self):
+        map_1: AdditionalAttributesMap = {
+            StateSupervisionViolationResponse.__name__: {123: {"sequence_num": 0}}
+        }
+
+        map_2: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                123: {"purpose_for_incarceration_subtype": "XYZ"}
+            }
+        }
+
+        merged_map = merge_additional_attributes_maps([map_1, map_2])
+
+        expected_merged_maps: AdditionalAttributesMap = {
+            StateSupervisionViolationResponse.__name__: {123: {"sequence_num": 0}},
+            StateIncarcerationPeriod.__name__: {
+                123: {"purpose_for_incarceration_subtype": "XYZ"}
+            },
+        }
+
+        self.assertEqual(expected_merged_maps, merged_map)
+
+    def test_merge_additional_attributes_maps_diff_entity_ids(self):
+        map_1: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
+        }
+
+        map_2: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                456: {"purpose_for_incarceration_subtype": "XYZ"}
+            }
+        }
+
+        merged_map = merge_additional_attributes_maps([map_1, map_2])
+
+        expected_merged_maps: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                123: {"sequence_num": 0},
+                456: {"purpose_for_incarceration_subtype": "XYZ"},
+            }
+        }
+
+        self.assertEqual(expected_merged_maps, merged_map)
+
+    def test_merge_additional_attributes_maps_empty_map(self):
+        map_1: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
+        }
+
+        map_2: AdditionalAttributesMap = {}
+
+        merged_map = merge_additional_attributes_maps([map_1, map_2])
+
+        expected_merged_maps: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                123: {"sequence_num": 0},
+            }
+        }
+
+        self.assertEqual(expected_merged_maps, merged_map)
+
+    def test_merge_additional_attributes_maps_empty_map_with_name(self):
+        map_1: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
+        }
+
+        map_2: AdditionalAttributesMap = {StateSupervisionViolation.__name__: {}}
+
+        merged_map = merge_additional_attributes_maps([map_1, map_2])
+
+        expected_merged_maps: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                123: {"sequence_num": 0},
+            },
+            StateSupervisionViolation.__name__: {},
+        }
+
+        self.assertEqual(expected_merged_maps, merged_map)
+
+
+class TestGetSharedAdditionalAttributesMapForEntities(unittest.TestCase):
+    """Tests the get_shared_additional_attributes_map_for_entities function."""
+
+    def test_get_shared_additional_attributes_map_for_entities(self):
+        entities_for_map = [
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                incarceration_period_id=111,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                admission_date=datetime.date(2000, 1, 1),
+                release_date=datetime.date(2002, 1, 1),
+            ),
+            StateIncarcerationPeriod.new_with_defaults(
+                state_code="US_XX",
+                incarceration_period_id=222,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                admission_date=datetime.date(2002, 1, 1),
+            ),
+        ]
+
+        attributes_map = get_shared_additional_attributes_map_for_entities(
+            entities=entities_for_map
+        )
+
+        expected_attributes_map: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                111: {"sequence_num": 0},
+                222: {"sequence_num": 1},
+            }
+        }
+
+        self.assertEqual(expected_attributes_map, attributes_map)
+
+    def test_get_shared_additional_attributes_map_for_entities_not_sequenced(self):
+        entities_for_map = [get_violation_tree()]
+
+        attributes_map = get_shared_additional_attributes_map_for_entities(
+            entities=entities_for_map
+        )
+
+        expected_attributes_map: AdditionalAttributesMap = {
+            StateSupervisionViolation.__name__: {}
+        }
+
+        self.assertEqual(expected_attributes_map, attributes_map)
 
 
 def get_violation_tree() -> entities.StateSupervisionViolation:

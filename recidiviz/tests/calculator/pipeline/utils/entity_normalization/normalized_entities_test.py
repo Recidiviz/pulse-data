@@ -20,9 +20,6 @@ from typing import List, Set, Type
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
-    entity_class_can_be_hydrated_in_pipelines,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
@@ -36,6 +33,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     fields_unique_to_normalized_class,
+)
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    entity_class_can_be_hydrated_in_pipelines,
 )
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.attr_utils import is_flat_field

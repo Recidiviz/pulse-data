@@ -23,6 +23,7 @@ from typing import List
 
 from freezegun.api import freeze_time
 
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.metrics.violation import metric_producer, pipeline
 from recidiviz.calculator.pipeline.metrics.violation.events import (
     ViolationEvent,
@@ -32,7 +33,6 @@ from recidiviz.calculator.pipeline.metrics.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,

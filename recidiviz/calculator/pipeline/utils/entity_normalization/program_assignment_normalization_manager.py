@@ -24,11 +24,9 @@ from typing import List, Type
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateProgramAssignment,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    convert_entity_trees_to_normalized_versions,
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -111,11 +109,10 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
         return program_assignments
 
     @classmethod
-    def convert_pas_to_normalized_pas(
+    def additional_attributes_map_for_normalized_pas(
         cls,
         program_assignments: List[StateProgramAssignment],
-    ) -> List[NormalizedStateProgramAssignment]:
-        return convert_entity_trees_to_normalized_versions(
-            root_entities=program_assignments,
-            normalized_entity_class=NormalizedStateProgramAssignment,
+    ) -> AdditionalAttributesMap:
+        return get_shared_additional_attributes_map_for_entities(
+            entities=program_assignments
         )

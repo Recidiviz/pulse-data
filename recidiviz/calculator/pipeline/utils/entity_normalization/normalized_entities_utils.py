@@ -14,12 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for working with NormalizedStateEntity objects."""
+"""Utils for working with NormalizedStateEntity objects.
+
+TODO(#10729): Move this file to recidiviz/calculator/pipeline/normalization once all
+  functions are only used by the normalization pipeline.
+"""
+from collections import defaultdict
 from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, TypeVar
 
 import attr
 from google.cloud import bigquery
+from more_itertools import one
 
 from recidiviz.big_query.big_query_utils import (
     schema_field_for_attribute,
@@ -49,6 +55,10 @@ from recidiviz.common.attr_mixins import (
 )
 from recidiviz.common.attr_utils import is_flat_field
 from recidiviz.persistence.database import schema_utils
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
+    convert_entities_to_schema,
+)
 from recidiviz.persistence.database.schema_utils import (
     get_state_table_classes,
     get_table_class_by_name,
@@ -74,6 +84,17 @@ NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
 ]
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)
+AdditionalAttributesMap = Dict[
+    str,  # Entity class name, e.g. "StateSupervisionPeriod"
+    Dict[
+        int,  # Value of entity primary key (e.g. state_supervision_id)
+        Dict[
+            str,  # Field name for additional attribute
+            Any,  # Field value for additional attribute
+        ],
+    ],
+]
+
 
 # Cached _unique_fields_reference value
 _unique_fields_reference: Optional[Dict[Type[NormalizedStateEntity], Set[str]]] = None
@@ -126,7 +147,7 @@ def _get_fields_unique_to_normalized_class(
     )
 
 
-def _normalized_entity_class_with_base_class_name(
+def normalized_entity_class_with_base_class_name(
     base_class_name: str,
 ) -> Type[NormalizedStateEntity]:
     """Returns the NormalizedStateEntity class that has a base class with the name
@@ -180,10 +201,12 @@ def bq_schema_for_normalized_state_entity(
     )
 
 
+# TODO(#10730): Move this to normalized_entities_utils_test.py once it is only being
+#  used in tests
 def _convert_entity_tree_to_normalized_version(
     base_entity: EntityT,
     normalized_base_entity_class: Type[NormalizedStateEntityT],
-    additional_attributes_map: Dict[str, Dict[int, Dict[str, Any]]],
+    additional_attributes_map: AdditionalAttributesMap,
     traversed_class_names: Optional[List[str]] = None,
 ) -> NormalizedStateEntityT:
     """Recursively converts the |base_entity| and its entity tree to their Normalized
@@ -253,7 +276,7 @@ def _convert_entity_tree_to_normalized_version(
                 # and collect the reverse relationship fields that need to be set to
                 # point back to the normalized base entity
                 referenced_normalized_class = (
-                    _normalized_entity_class_with_base_class_name(
+                    normalized_entity_class_with_base_class_name(
                         related_entity_cls_name
                     )
                 )
@@ -335,10 +358,12 @@ def _convert_entity_tree_to_normalized_version(
     return normalized_entity
 
 
+# TODO(#10730): Move this to normalized_entities_utils_test.py once it is only being
+#  used in tests
 def convert_entity_trees_to_normalized_versions(
     root_entities: Sequence[Entity],
     normalized_entity_class: Type[NormalizedStateEntityT],
-    additional_attributes_map: Optional[Dict[str, Dict[int, Dict[str, Any]]]] = None,
+    additional_attributes_map: Optional[AdditionalAttributesMap] = None,
 ) -> List[NormalizedStateEntityT]:
     """Converts each of the |root_entities| and all related entities in
     the tree hanging off of each entity to the Normalized versions of the entity.
@@ -352,47 +377,24 @@ def convert_entity_trees_to_normalized_versions(
             }
         }
 
-    Is stores attributes that are unique to the Normalized version of an entity and the
+    It stores attributes that are unique to the Normalized version of an entity and the
     values that should be set on these fields for certain entities. In the above
     example, the StateIncarcerationPeriod with the incarceration_period_id of 111
     will have a `purpose_for_incarceration_subtype` value of 'XYZ' on its Normalized
     version.
 
-    If the |normalized_entity_class| has a `sequence_num` attribute,
-    this function determines the sequence numbers to be set on each of the root
-    entities, and updates the |additional_attributes_map| accordingly.
-
     Returns a list of normalized root entities, with hydrated relationships to the
     normalized versions of their whole entity trees.
     """
-    normalized_entities: List[NormalizedStateEntityT] = []
+    converted_entities: List[NormalizedStateEntityT] = []
 
     if not root_entities:
-        return normalized_entities
+        return converted_entities
 
     additional_attributes_map = additional_attributes_map or {}
-    entity_base_class = type(root_entities[0])
-
-    if issubclass(normalized_entity_class, SequencedEntityMixin):
-        if entity_base_class.__name__ not in additional_attributes_map:
-            additional_attributes_map[entity_base_class.__name__] = {
-                entity.get_id(): {
-                    "sequence_num": index,
-                }
-                for index, entity in enumerate(root_entities)
-            }
-        else:
-            attributes_for_class = additional_attributes_map[entity_base_class.__name__]
-            for index, entity in enumerate(root_entities):
-                if entity_info := attributes_for_class.get(entity.get_id()):
-                    entity_info["sequence_num"] = index
-                else:
-                    attributes_for_class[entity.get_id()] = {
-                        "sequence_num": index,
-                    }
 
     for entity in root_entities:
-        normalized_entities.append(
+        converted_entities.append(
             _convert_entity_tree_to_normalized_version(
                 base_entity=entity,
                 normalized_base_entity_class=normalized_entity_class,
@@ -400,4 +402,169 @@ def convert_entity_trees_to_normalized_versions(
             )
         )
 
-    return normalized_entities
+    return converted_entities
+
+
+def column_names_on_bq_schema_for_normalized_state_entity(
+    entity_cls: Type[NormalizedStateEntity],
+) -> List[str]:
+    """Returns the names of the columns in the table representation of the
+    |entity_cls|."""
+    return [
+        schema_field.name
+        for schema_field in bq_schema_for_normalized_state_entity(entity_cls)
+    ]
+
+
+def convert_entities_to_normalized_dicts(
+    person_id: int,
+    entities: Sequence[Entity],
+    additional_attributes_map: AdditionalAttributesMap,
+) -> List[Tuple[str, Dict[str, Any]]]:
+    """First, converts the each entity tree in
+    |entities| to a tree of connected schema objects. Then, converts the schema
+    versions of the entities into dictionary representations containing all values
+    required in the table that stores the normalized version of the entity.
+
+    Returns a list of tuples, where each tuple stores the name of the entity (e.g.
+    'StateIncarcerationPeriod') and the dictionary representation of the entity.
+    """
+    tagged_entity_dicts: List[Tuple[str, Dict[str, Any]]] = []
+
+    if not entities:
+        return tagged_entity_dicts
+
+    # Convert the entity tree to the schema version
+    schema_entities = convert_entities_to_schema(entities, populate_back_edges=True)
+
+    return _tagged_entity_dicts_for_schema_entities(
+        person_id=person_id,
+        schema_entities=schema_entities,
+        additional_attributes_map=additional_attributes_map,
+    )
+
+
+# TODO(#10724): Recursively extend tagged_entity_dicts for all related classes
+def _tagged_entity_dicts_for_schema_entities(
+    person_id: int,
+    schema_entities: List[DatabaseEntity],
+    additional_attributes_map: AdditionalAttributesMap,
+) -> List[Tuple[str, Dict[str, Any]]]:
+    """Converts each of the entities in |schema_entities| into a dictionary
+    representation containing all values required in the table that stores the
+    normalized version of the entity.
+
+    Returns a list of tuples, where each tuple stores the name of the entity (e.g.
+    'StateIncarcerationPeriod') and the dictionary representation of the entity.
+    """
+    tagged_entity_dicts: List[Tuple[str, Dict[str, Any]]] = []
+
+    for schema_entity in schema_entities:
+        entity_name = schema_entity.__class__.__name__
+        normalized_entity_class = normalized_entity_class_with_base_class_name(
+            entity_name
+        )
+
+        entity_dict: Dict[str, Any] = {
+            **{
+                col: getattr(schema_entity, col)
+                for col in column_names_on_bq_schema_for_normalized_state_entity(
+                    normalized_entity_class
+                )
+                if col not in fields_unique_to_normalized_class(normalized_entity_class)
+            },
+            # The person_id field is not hydrated on any entities we read from BQ for
+            # performance reasons. We need to make sure when we write back to BQ, we
+            # re-hydrate this field which would otherwise be null.
+            **{"person_id": person_id},
+        }
+
+        additional_args_for_base_entity = additional_attributes_map[entity_name].get(
+            schema_entity.get_id(), {}
+        )
+
+        entity_dict.update(additional_args_for_base_entity)
+
+        tagged_entity_dicts.append((entity_name, entity_dict))
+
+    return tagged_entity_dicts
+
+
+def merge_additional_attributes_maps(
+    additional_attributes_maps: List[AdditionalAttributesMap],
+) -> AdditionalAttributesMap:
+    """Merges the contents of multiple AdditionalAttributesMaps into a single
+    AdditionalAttributesMap.
+
+    Example:
+    attributes_map_1 = {
+        StateIncarcerationPeriod.__name__: {
+            111: {"sequence_num": 1},
+            222: {"sequence_num": 2},
+        }
+    }
+
+    attributes_map_2 = {
+        StateIncarcerationPeriod.__name__: {
+            111: {"purpose_for_incarceration_subtype": "XYZ"},
+            222: {"purpose_for_incarceration_subtype": "AAA"},
+        }
+    }
+
+    merge_additional_attributes_maps(attributes_map_1, attributes_map2) =>
+
+        {
+            StateIncarcerationPeriod.__name__: {
+                111: {"purpose_for_incarceration_subtype": "XYZ", "sequence_num": 1},
+                222: {"purpose_for_incarceration_subtype": "AAA", "sequence_num": 2},
+            }
+        }
+    """
+
+    base_attributes_map: AdditionalAttributesMap = defaultdict(
+        lambda: defaultdict(dict)
+    )
+
+    for additional_attributes_map in additional_attributes_maps:
+        for entity_name, entity_attributes in additional_attributes_map.items():
+            entity_fields_dict = base_attributes_map[entity_name]
+
+            for entity_id, attributes in entity_attributes.items():
+                entity_fields_dict[entity_id] = {
+                    **entity_fields_dict[entity_id],
+                    **attributes,
+                }
+
+    return base_attributes_map
+
+
+def get_shared_additional_attributes_map_for_entities(
+    entities: Sequence[Entity],
+) -> AdditionalAttributesMap:
+    """Returns an AdditionalAttributesMap storing attributes that are relevant to the
+    provided entities and are shared amongst more than one Normalized entity class
+    (e.g. sequence number for all NormalizedStateEntity entities that store the
+    SequencedEntityMixin)."""
+    additional_attributes_map: AdditionalAttributesMap = defaultdict(
+        lambda: defaultdict(dict)
+    )
+
+    if not entities:
+        return additional_attributes_map
+
+    entity_base_class = one(set(type(e) for e in entities))
+    entity_name = entity_base_class.__name__
+    normalized_entity_class = normalized_entity_class_with_base_class_name(entity_name)
+
+    # Add empty map by default for entity types with no additional attributes
+    additional_attributes_map[entity_name] = {}
+
+    # Add relevant sequence_num values if relevant
+    if issubclass(normalized_entity_class, SequencedEntityMixin):
+        attributes_for_class = additional_attributes_map[entity_name]
+        for index, entity in enumerate(entities):
+            attributes_for_class[entity.get_id()] = {
+                "sequence_num": index,
+            }
+
+    return additional_attributes_map

@@ -24,7 +24,7 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,

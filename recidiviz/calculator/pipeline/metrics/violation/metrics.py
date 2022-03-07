@@ -20,12 +20,12 @@ import datetime
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import ViolationResponseMixin
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,
 )
+from recidiviz.calculator.pipeline.utils.event_utils import ViolationResponseMixin
 
 
 class ViolationMetricType(RecidivizMetricType):

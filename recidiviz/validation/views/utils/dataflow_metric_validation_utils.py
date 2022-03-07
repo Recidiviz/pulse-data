@@ -20,7 +20,7 @@ from typing import List, Type
 import attr
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     generate_metric_view_names,
 )

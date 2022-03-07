@@ -36,6 +36,7 @@ import apache_beam as beam
 import attr
 from apache_beam.pvalue import AsList, PBegin
 from apache_beam.runners.pipeline_context import PipelineContext
+from apache_beam.typehints import with_input_types, with_output_types
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
 from recidiviz.calculator.dataflow_config import (
@@ -51,9 +52,16 @@ from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
+    PersonMetadata,
+    RecidivizMetric,
+    RecidivizMetricType,
+    RecidivizMetricTypeT,
+    json_serializable_list_value_handler,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
-    RecidivizMetricWritableDict,
-    WriteAppendToBigQuery,
+    WriteToBigQuery,
+    json_serializable_dict,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import ImportTable
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
@@ -69,12 +77,6 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     calculation_month_count_arg,
     get_job_id,
     person_and_kwargs_for_identifier,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-    RecidivizMetricType,
-    RecidivizMetricTypeT,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
@@ -377,9 +379,10 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
             metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[table_id]
             _ = writable_metrics.__getattr__(
                 metric_type.value
-            ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteAppendToBigQuery(
+            ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteToBigQuery(
                 output_table=table_id,
                 output_dataset=self.pipeline_job_args.output_dataset,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
             )
 
     @classmethod
@@ -554,6 +557,47 @@ class ClassifyEvents(beam.DoFn):
             )
         else:
             yield person.person_id, (person, events)
+
+    def to_runner_api_parameter(
+        self, _unused_context: PipelineContext
+    ) -> Tuple[str, Any]:
+        pass
+
+
+@with_input_types(RecidivizMetric)
+@with_output_types(beam.typehints.Dict[str, Any])
+class RecidivizMetricWritableDict(beam.DoFn):
+    """Builds a dictionary in the format necessary to write the output to BigQuery."""
+
+    # pylint: disable=arguments-differ
+    def process(
+        self, element: RecidivizMetric
+    ) -> Generator[Dict[str, Any], None, None]:
+        """The beam.io.WriteToBigQuery transform requires elements to be in dictionary
+        form, where the values are in formats as required by BigQuery I/O connector.
+
+        For a list of required formats, see the "Data types" section of:
+            https://beam.apache.org/documentation/io/built-in/google-bigquery/
+
+        Args:
+            element: A RecidivizMetric
+
+        Yields:
+            A dictionary representation of the RecidivizMetric in the format
+                Dict[str, Any] so that it can be written to BigQuery using
+                beam.io.WriteToBigQuery.
+        """
+        element_dict = json_serializable_dict(
+            element.__dict__, json_serializable_list_value_handler
+        )
+
+        if isinstance(element, RecidivizMetric):
+            yield beam.pvalue.TaggedOutput(element.metric_type.value, element_dict)
+        else:
+            raise ValueError(
+                "Attempting to convert an object that is not a RecidivizMetric into a "
+                "writable dict for BigQuery."
+            )
 
     def to_runner_api_parameter(
         self, _unused_context: PipelineContext

@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.metrics.program.events import (
     ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.metrics.program.metrics import ProgramMetricType
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
     RecidivizMetric,
 )

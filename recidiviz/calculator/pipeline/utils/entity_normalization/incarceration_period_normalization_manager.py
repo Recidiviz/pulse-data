@@ -26,11 +26,10 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    convert_entity_trees_to_normalized_versions,
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -1227,12 +1226,22 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         return updated_periods
 
     @classmethod
-    def convert_ips_to_normalized_ips(
+    def additional_attributes_map_for_normalized_ips(
         cls,
         incarceration_periods: List[StateIncarcerationPeriod],
         ip_id_to_pfi_subtype: Dict[int, Optional[str]],
-    ) -> List[NormalizedStateIncarcerationPeriod]:
-        additional_attributes_map: Dict[str, Dict[int, Dict[str, Any]]] = {
+    ) -> AdditionalAttributesMap:
+        """Returns the attributes that should be set on the normalized version of
+        each of the incarceration periods for each of the attributes that are unique
+        to the NormalizedStateIncarcerationPeriod."""
+
+        shared_additional_attributes_map = (
+            get_shared_additional_attributes_map_for_entities(
+                entities=incarceration_periods
+            )
+        )
+
+        ip_additional_attributes_map: Dict[str, Dict[int, Dict[str, Any]]] = {
             StateIncarcerationPeriod.__name__: {}
         }
 
@@ -1243,7 +1252,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                     f"at this point. Found {ip}."
                 )
 
-            additional_attributes_map[StateIncarcerationPeriod.__name__][
+            ip_additional_attributes_map[StateIncarcerationPeriod.__name__][
                 ip.incarceration_period_id
             ] = {
                 "purpose_for_incarceration_subtype": ip_id_to_pfi_subtype[
@@ -1251,10 +1260,8 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 ],
             }
 
-        return convert_entity_trees_to_normalized_versions(
-            root_entities=incarceration_periods,
-            normalized_entity_class=NormalizedStateIncarcerationPeriod,
-            additional_attributes_map=additional_attributes_map,
+        return merge_additional_attributes_maps(
+            [shared_additional_attributes_map, ip_additional_attributes_map]
         )
 
     def _handle_fuzzy_matched_periods(

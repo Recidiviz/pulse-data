@@ -25,17 +25,17 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
+    PersonMetadata,
+    RecidivizMetric,
+    RecidivizMetricTypeT,
+)
 from recidiviz.calculator.pipeline.pipeline_type import (
     INCARCERATION_METRICS_PIPELINE_NAME,
     RECIDIVISM_METRICS_PIPELINE_NAME,
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.calculator.pipeline.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-    RecidivizMetricTypeT,
-)
 from recidiviz.common.constants.state.external_id_types import (
     US_ID_DOC,
     US_ME_DOC,
