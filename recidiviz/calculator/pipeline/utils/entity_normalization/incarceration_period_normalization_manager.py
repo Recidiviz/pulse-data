@@ -236,7 +236,6 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         """
         return False
 
-    # TODO(#11363): Delete this once fuzzy-matched IPs are being handled in US_ID
     def drop_fuzzy_matched_periods(self) -> bool:
         """Whether or not fuzzy-matched periods should be dropped for the state.
         Fuzzy-matched periods are identified by having the string 'FUZZY_MATCHED' in the
@@ -339,8 +338,8 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                     mid_processing_periods
                 )
 
-                # TODO(#11363): Delete this step once fuzzy-matched IPs are being
-                #  handled in US_ID
+                # Drop IPs that are fuzzy matched, as we are not yet confident in their
+                # placement of a person's entire journey within the system
                 mid_processing_periods = self._handle_fuzzy_matched_periods(
                     mid_processing_periods
                 )
@@ -1258,7 +1257,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             additional_attributes_map=additional_attributes_map,
         )
 
-    # TODO(#11363): Delete this once fuzzy-matched IPs are being handled in US_ID
     def _handle_fuzzy_matched_periods(
         self, mid_processing_periods: List[StateIncarcerationPeriod]
     ) -> List[StateIncarcerationPeriod]:

@@ -129,6 +129,8 @@ output:
                     - $literal("FUZZY_MATCHED")
               admission_date: create_dt
               admission_reason: $literal_enum(StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY)
+              release_date: create_dt
+              release_reason: $literal_enum(StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN)
     supervision_periods:
       - $conditional:
         - $if:
@@ -147,6 +149,8 @@ output:
               supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.INVESTIGATION)
               admission_reason: $literal_enum(StateSupervisionPeriodAdmissionReason.INVESTIGATION)
               start_date: create_dt
+              termination_date: create_dt
+              termination_reason: $literal_enum(StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN)
               supervising_officer:
                 StateAgent:
                   external_id: create_by_usr_id

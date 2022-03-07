@@ -2448,6 +2448,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
             start_date=datetime.date(2022, 1, 7),
+            termination_date=datetime.date(2022, 1, 7),
+            termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             supervising_officer=po_4,
             person=person_4,
         )
@@ -2457,6 +2459,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             admission_date=datetime.date(2022, 1, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=datetime.date(2022, 1, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             person=person_4,
         )

@@ -23,6 +23,7 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
@@ -38,6 +39,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -362,6 +364,8 @@ class UsIdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
                         admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
                         start_date=datetime.date(2022, 1, 7),
+                        termination_date=datetime.date(2022, 1, 7),
+                        termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
                         supervising_officer=StateAgent(
                             state_code="US_ID",
                             external_id="PO4",
@@ -383,6 +387,8 @@ class UsIdIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                         external_id="4444-195-FUZZY_MATCHED",
                         admission_date=datetime.date(2022, 1, 9),
                         admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                        release_date=datetime.date(2022, 1, 9),
+                        release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
                         incarceration_type=StateIncarcerationType.STATE_PRISON,
                     )
                 ],
