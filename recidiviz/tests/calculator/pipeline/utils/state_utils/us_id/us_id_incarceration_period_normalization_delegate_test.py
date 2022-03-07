@@ -744,7 +744,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([expected_period], validated_incarceration_periods)
 
-    # TODO(#11363): Delete this once fuzzy-matched IPs are being handled in US_ID
     def test_us_id_normalized_incarceration_periods_drop_fuzzy_matched(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
