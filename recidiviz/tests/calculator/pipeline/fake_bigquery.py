@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper classes for mocking reading / writing from BigQuery in tests."""
+import abc
 import re
 from typing import (
     Any,
@@ -35,11 +36,19 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetricType
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     UNIFYING_ID_KEY,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
-from recidiviz.persistence.database.schema_utils import get_state_table_classes
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    column_names_on_bq_schema_for_normalized_state_entity,
+    normalized_entity_class_with_base_class_name,
+)
+from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_utils import (
+    get_database_entity_by_table_name,
+    get_state_table_classes,
+)
 from recidiviz.tests.calculator.calculator_test_utils import NormalizedDatabaseDict
 
 DatasetStr = str
@@ -82,11 +91,12 @@ class FakeBigQueryAssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_metric_output(expected_metric_type: RecidivizMetricType) -> Callable:
-        """Asserts that the pipeline produced the expected types of metrics, and that it produced aggregate metrics
-        only for the expected aggregate metric types."""
+    def validate_metric_output(
+        expected_metric_type: RecidivizMetricType,
+    ) -> Callable[[List[Dict[str, Any]]], None]:
+        """Asserts that the pipeline produced the expected types of metrics."""
 
-        def _validate_metric_output(output: List) -> None:
+        def _validate_metric_output(output: List[Dict[str, Any]]) -> None:
             if not output:
                 raise BeamAssertException(
                     f"Failed assert. Output is empty for expected type [{expected_metric_type}]."
@@ -99,6 +109,38 @@ class FakeBigQueryAssertMatchers:
                     )
 
         return _validate_metric_output
+
+    @staticmethod
+    def validate_normalized_entity_output(
+        base_class_name: str,
+    ) -> Callable[[List[Dict[str, Any]]], None]:
+        """Asserts that the pipeline produces dictionaries with the expected keys
+        corresponding to the column names in the table into which the output will be
+        written."""
+
+        def _validate_normalized_entity_output(output: List[Dict[str, Any]]) -> None:
+            normalized_entity_class = normalized_entity_class_with_base_class_name(
+                base_class_name=base_class_name
+            )
+            expected_column_names = set(
+                column_names_on_bq_schema_for_normalized_state_entity(
+                    normalized_entity_class
+                )
+            )
+
+            if not output:
+                raise BeamAssertException(
+                    f"Failed assert. Output is empty for entity {base_class_name}."
+                )
+            for output_dict in output:
+                if set(output_dict.keys()) != expected_column_names:
+                    raise BeamAssertException(
+                        "Output dictionary does not have "
+                        f"the expected keys. Expected: [{expected_column_names}], "
+                        f"found: [{list(output_dict.keys())}]."
+                    )
+
+        return _validate_normalized_entity_output
 
 
 class FakeReadFromBigQuery(apache_beam.PTransform):
@@ -384,27 +426,44 @@ class FakeReadFromBigQueryFactory:
         )
 
 
-# TODO(#10724): Update this to support normalization pipelines as well
 class FakeWriteToBigQuery(apache_beam.PTransform):
     """Fake PTransform that no-ops instead of writing to BQ."""
 
     def __init__(
         self,
         output_table: str,
-        expected_output_metric_types: Collection[RecidivizMetricType],
+        expected_output_tags: Collection[str],
     ):
         super().__init__()
+        self._output_table = output_table
+        self._expected_output_tags = expected_output_tags
+
+    @abc.abstractmethod
+    def expand(self, input_or_inputs: PCollection) -> Any:
+        """Validates the output. Must be implemented by subclasses."""
+
+
+class FakeWriteMetricsToBigQuery(FakeWriteToBigQuery):
+    """Fake PTransform for metric pipelines that no-ops instead of writing metrics to
+    BQ."""
+
+    def __init__(
+        self,
+        output_table: str,
+        expected_output_tags: Collection[str],
+    ):
+        super().__init__(output_table, expected_output_tags)
         metric_types_for_table = {
             metric_class(job_id="xxx", state_code="xxx").metric_type  # type: ignore[call-arg]
             for metric_class, table_id in DATAFLOW_METRICS_TO_TABLES.items()
             if table_id == output_table
         }
 
-        self._expected_output_metric_types = expected_output_metric_types
+        self._expected_output_metric_types = expected_output_tags
         self._expected_metric_type = one(metric_types_for_table)
 
     def expand(self, input_or_inputs: PCollection) -> Any:
-        if self._expected_metric_type in self._expected_output_metric_types:
+        if self._expected_metric_type.value in self._expected_output_metric_types:
             assert_that(
                 input_or_inputs,
                 FakeBigQueryAssertMatchers.validate_metric_output(
@@ -417,11 +476,39 @@ class FakeWriteToBigQuery(apache_beam.PTransform):
         return []
 
 
+class FakeWriteNormalizedEntitiesToBigQuery(FakeWriteToBigQuery):
+    """Fake PTransform for normalization pipelines that no-ops instead of writing
+    normalized entities to BQ."""
+
+    def __init__(
+        self,
+        output_table: str,
+        expected_output_tags: Collection[str],
+    ):
+        super().__init__(output_table, expected_output_tags)
+
+    def expand(self, input_or_inputs: PCollection) -> Any:
+        db_entity = get_database_entity_by_table_name(schema, self._output_table)
+
+        if db_entity.__name__ in self._expected_output_tags:
+            assert_that(
+                input_or_inputs,
+                FakeBigQueryAssertMatchers.validate_normalized_entity_output(
+                    db_entity.__name__
+                ),
+            )
+        else:
+            assert_that(input_or_inputs, equal_to([]))
+
+        return []
+
+
 FakeWriteToBigQueryType = TypeVar("FakeWriteToBigQueryType", bound=FakeWriteToBigQuery)
 
 
 class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
-    """Factory class that vends fake constructors that can be used to mock the FakeWriteToBigQuery object."""
+    """Factory class that vends fake constructors that can be used to mock the
+    FakeWriteToBigQuery object."""
 
     def __init__(self, fake_write_to_big_query_cls: Type[FakeWriteToBigQueryType]):
         self._fake_write_to_big_query_cls = fake_write_to_big_query_cls
@@ -429,20 +516,30 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
     def create_fake_bq_sink_constructor(
         self,
         expected_dataset: str,
-        expected_output_metric_types: Collection[RecidivizMetricType],
+        expected_output_tags: Collection[str],
         **kwargs: Any,
-    ) -> Callable[[str, str], FakeWriteToBigQueryType]:
+    ) -> Callable[
+        [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQueryType
+    ]:
         def write_constructor(
             output_table: str,
             output_dataset: str,
-        ) -> FakeWriteToBigQuery:
+            write_disposition: apache_beam.io.BigQueryDisposition,
+        ) -> FakeWriteToBigQueryType:
             if output_dataset != expected_dataset:
                 raise ValueError(
                     f"Output dataset [{output_dataset}] does not match expected_dataset [{expected_dataset}] "
                     f"writing to table [{output_table}]"
                 )
+
+            if write_disposition not in (
+                apache_beam.io.BigQueryDisposition.WRITE_APPEND,
+                apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+            ):
+                raise ValueError(f"Unexpected write_disposition: {write_disposition}.")
+
             return self._fake_write_to_big_query_cls(  # type: ignore[call-arg]
-                output_table, expected_output_metric_types, **kwargs
+                output_table, expected_output_tags, **kwargs
             )
 
         return write_constructor

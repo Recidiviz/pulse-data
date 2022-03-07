@@ -21,11 +21,11 @@ python -m recidiviz.calculator.query.state.views.reference.overdue_discharge_out
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
+    PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
+)
 from recidiviz.calculator.pipeline.pipeline_type import (
     SUPERVISION_METRICS_PIPELINE_NAME,
-)
-from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.case_triage.opportunities.types import OpportunityType

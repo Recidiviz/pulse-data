@@ -21,13 +21,13 @@ from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import SupervisionLocationMixin
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     AssessmentMetricMixin,
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,
 )
+from recidiviz.calculator.pipeline.utils.event_utils import SupervisionLocationMixin
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )

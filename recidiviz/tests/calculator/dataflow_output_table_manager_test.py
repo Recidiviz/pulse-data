@@ -33,7 +33,7 @@ from recidiviz.calculator.dataflow_config import (
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.common.constants.states import StateCode
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(

@@ -51,12 +51,12 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismMetric,
 )
 from recidiviz.calculator.pipeline.metrics.supervision.metrics import SupervisionMetric
-from recidiviz.calculator.pipeline.metrics.violation.metrics import ViolationMetric
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,
 )
+from recidiviz.calculator.pipeline.metrics.violation.metrics import ViolationMetric
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,

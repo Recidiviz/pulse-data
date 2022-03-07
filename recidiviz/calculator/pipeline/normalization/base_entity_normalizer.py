@@ -16,15 +16,18 @@
 # =============================================================================
 """Base class for normalizing entities in a normalization calculation pipeline."""
 import abc
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Sequence, Tuple
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateEntity,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    AdditionalAttributesMap,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 
 EntityNormalizerContext = Dict[str, Any]
+
+EntityNormalizerResult = Tuple[Dict[str, Sequence[Entity]], AdditionalAttributesMap]
 
 
 @attr.s
@@ -35,5 +38,10 @@ class BaseEntityNormalizer(abc.ABC):
     def normalize_entities(
         self,
         normalizer_args: EntityNormalizerContext,
-    ) -> Dict[str, Sequence[NormalizedStateEntity]]:
-        """Define the function to normalize entities."""
+    ) -> EntityNormalizerResult:
+        """Normalizes all entities with corresponding normalization managers.
+
+        Returns a dictionary mapping the entity class name to the list of normalized
+        entities, as well as a map of additional attributes that should be persisted
+        to the normalized entity tables.
+        """

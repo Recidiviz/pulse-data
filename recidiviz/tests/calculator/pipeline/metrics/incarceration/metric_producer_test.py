@@ -39,12 +39,12 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetricType,
 )
-from recidiviz.calculator.pipeline.pipeline_type import (
-    INCARCERATION_METRICS_PIPELINE_NAME,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
     RecidivizMetric,
+)
+from recidiviz.calculator.pipeline.pipeline_type import (
+    INCARCERATION_METRICS_PIPELINE_NAME,
 )
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
@@ -847,7 +847,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             assert metric.year == 2007
 
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
         ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
             INCARCERATION_METRICS_PIPELINE_NAME: {
@@ -861,7 +861,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         },
     )
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
         ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
         {
             INCARCERATION_METRICS_PIPELINE_NAME: {

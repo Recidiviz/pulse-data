@@ -18,12 +18,12 @@
 import unittest
 from datetime import date
 
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     StateRaceEthnicityPopulationCounts,
     _build_person_metadata,
     _determine_prioritized_race_or_ethnicity,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import PersonMetadata
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,

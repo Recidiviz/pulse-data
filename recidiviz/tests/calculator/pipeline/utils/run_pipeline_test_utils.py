@@ -17,6 +17,7 @@
 """Helper that runs a test version of the pipeline in the provided module."""
 from typing import Any, Callable, Dict, List, Optional, Set, Type
 
+import apache_beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
@@ -48,7 +49,9 @@ def run_test_pipeline(
     project_id: str,
     dataset_id: str,
     read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
-    write_to_bq_constructor: Callable[[str, str], FakeWriteToBigQuery],
+    write_to_bq_constructor: Callable[
+        [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
+    ],
     unifying_id_field_filter_set: Optional[Set[int]] = None,
     **additional_pipeline_args: Any,
 ) -> None:
@@ -92,23 +95,29 @@ def run_test_pipeline(
         ):
             with patch(
                 "recidiviz.calculator.pipeline.metrics.base_metric_pipeline"
-                ".WriteAppendToBigQuery",
+                ".WriteToBigQuery",
                 write_to_bq_constructor,
             ):
                 with patch(
-                    "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
-                    pipeline_constructor,
+                    "recidiviz.calculator.pipeline.normalization"
+                    ".base_normalization_pipeline"
+                    ".WriteToBigQuery",
+                    write_to_bq_constructor,
                 ):
                     with patch(
-                        "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
-                        get_job_id,
+                        "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
+                        pipeline_constructor,
                     ):
-                        pipeline = BasePipeline(
-                            pipeline_run_delegate=run_delegate.build_from_args(
-                                pipeline_args
+                        with patch(
+                            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
+                            get_job_id,
+                        ):
+                            pipeline = BasePipeline(
+                                pipeline_run_delegate=run_delegate.build_from_args(
+                                    pipeline_args
+                                )
                             )
-                        )
-                        pipeline.run()
+                            pipeline.run()
 
 
 def default_data_dict_for_root_schema_classes(

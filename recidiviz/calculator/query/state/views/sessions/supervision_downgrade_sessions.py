@@ -23,11 +23,11 @@ python -m recidiviz.calculator.query.state.views.sessions.supervision_downgrade_
 from operator import itemgetter
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
+    PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
+)
 from recidiviz.calculator.pipeline.pipeline_type import (
     SUPERVISION_METRICS_PIPELINE_NAME,
-)
-from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,

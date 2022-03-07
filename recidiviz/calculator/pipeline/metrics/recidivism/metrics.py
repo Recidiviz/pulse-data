@@ -22,7 +22,7 @@ from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.metric_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,

@@ -25,11 +25,9 @@ from typing import List, Optional, Type
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateSupervisionPeriod,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    convert_entity_trees_to_normalized_versions,
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
@@ -373,11 +371,10 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         return updated_periods
 
     @classmethod
-    def convert_sps_to_normalized_sps(
+    def additional_attributes_map_for_normalized_sps(
         cls,
         supervision_periods: List[StateSupervisionPeriod],
-    ) -> List[NormalizedStateSupervisionPeriod]:
-        return convert_entity_trees_to_normalized_versions(
-            root_entities=supervision_periods,
-            normalized_entity_class=NormalizedStateSupervisionPeriod,
+    ) -> AdditionalAttributesMap:
+        return get_shared_additional_attributes_map_for_entities(
+            entities=supervision_periods
         )

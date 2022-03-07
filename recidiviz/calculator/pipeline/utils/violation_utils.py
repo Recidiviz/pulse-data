@@ -22,7 +22,7 @@ from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
+from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )

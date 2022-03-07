@@ -45,13 +45,13 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
+    RecidivizMetric,
+    RecidivizMetricType,
+)
 from recidiviz.calculator.pipeline.metrics.violation.metrics import (
     ViolationMetricType,
     ViolationWithResponseMetric,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import (
-    RecidivizMetric,
-    RecidivizMetricType,
 )
 
 PIPELINE_CONFIG_YAML_PATH = os.path.join(

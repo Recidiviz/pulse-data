@@ -108,7 +108,13 @@ def generate_test_supervision_violation_response(
         state_code="US_XX",
         person_id=person_id,
         supervision_violation_response_decisions=decisions,
+        response_date=datetime.date(2000, 1, 1),
     )
+
+    for decision in decisions:
+        decision.supervision_violation_response_id = (
+            instance.supervision_violation_response_id
+        )
 
     return instance
 
@@ -313,6 +319,7 @@ def generate_test_program_assignment(person_id) -> state_schema.StateProgramAssi
         state_code="US_XX",
         person_id=person_id,
         participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+        referral_date=datetime.date(2000, 1, 1),
     )
     return instance
 

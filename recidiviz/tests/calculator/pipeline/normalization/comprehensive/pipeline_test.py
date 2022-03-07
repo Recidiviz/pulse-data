@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the comprehensive normalization pipeline."""
+import datetime
 import unittest
 from typing import Any, Dict, List, Optional, Set, Type
 
@@ -24,17 +25,35 @@ from recidiviz.calculator.pipeline.normalization.comprehensive import pipeline
 from recidiviz.calculator.pipeline.utils.entity_normalization import (
     entity_normalization_manager_utils,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateProgramAssignment,
+    StateSupervisionPeriod,
+    StateSupervisionViolation,
+)
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
+    normalized_database_base_dict_list,
 )
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQueryFactory,
-    FakeWriteToBigQuery,
+    FakeWriteNormalizedEntitiesToBigQuery,
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
@@ -55,9 +74,9 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
-        # TODO(#10724): Update this to use the write to BQ factory that supports
-        #  normalization pipelines as well
-        self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
+        self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
+            FakeWriteNormalizedEntitiesToBigQuery
+        )
 
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.state_utils"
@@ -92,9 +111,20 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         )
         write_to_bq_constructor = self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
             dataset,
-            # TODO(#10724): Update this to use the write to BQ factory that supports
-            #  normalization pipelines as well
-            expected_output_metric_types=[],
+            expected_output_tags=[
+                entity.__name__
+                for manager in pipeline.ComprehensiveNormalizationPipelineRunDelegate.required_entity_normalization_managers()
+                for entity in manager.normalized_entity_classes()
+                # TODO(#10724): Stop filtering the expected output tags once the output
+                #  process is recursive
+                if entity
+                in [
+                    StateIncarcerationPeriod,
+                    StateSupervisionPeriod,
+                    StateSupervisionViolation,
+                    StateProgramAssignment,
+                ]
+            ],
         )
 
         run_test_pipeline(
@@ -112,12 +142,30 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
     ) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
 
-        incarceration_period = database_test_utils.generate_test_incarceration_period(
-            fake_person_id
+        incarceration_period = schema.StateIncarcerationPeriod(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code=state_code,
+            county_code="124",
+            facility="San Quentin",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_date=datetime.date(2008, 11, 20),
+            release_date=datetime.date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            person_id=fake_person_id,
         )
 
-        supervision_period = database_test_utils.generate_test_supervision_period(
-            fake_person_id, []
+        supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=1111,
+            state_code=state_code,
+            county_code="124",
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            start_date=datetime.date(2010, 12, 4),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            termination_date=datetime.date(2011, 4, 5),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            person_id=fake_person_id,
         )
 
         incarceration_sentence = (
@@ -158,6 +206,10 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation)
         ]
 
+        supervision_violation_type_date = normalized_database_base_dict_list(
+            supervision_violation.supervision_violation_types
+        )
+
         supervision_violation_response.supervision_violation_id = (
             supervision_violation.supervision_violation_id
         )
@@ -165,6 +217,12 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         supervision_violation_response_data = [
             normalized_database_base_dict(supervision_violation_response)
         ]
+
+        supervision_violation_response_decision_data = (
+            normalized_database_base_dict_list(
+                supervision_violation_response.supervision_violation_response_decisions
+            )
+        )
 
         program_assignment = database_test_utils.generate_test_program_assignment(
             fake_person_id
@@ -200,7 +258,9 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: supervision_violation_response_decision_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
+            schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_date,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
         }

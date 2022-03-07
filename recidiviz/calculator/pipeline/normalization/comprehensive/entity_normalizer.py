@@ -16,11 +16,12 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-from typing import Dict, List, Sequence
+from typing import List
 
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
     EntityNormalizerContext,
+    EntityNormalizerResult,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_periods,
@@ -31,8 +32,8 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     IncarcerationPeriodNormalizationManager,
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateEntity,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    merge_additional_attributes_maps,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
@@ -56,6 +57,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateProgramAssignment,
     StateSupervisionPeriod,
     StateSupervisionSentence,
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
 
@@ -70,11 +72,16 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
     def normalize_entities(
         self,
         normalizer_args: EntityNormalizerContext,
-    ) -> Dict[str, Sequence[NormalizedStateEntity]]:
+    ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers.
 
+        Note: does not normalize all of the entities that are required by
+        normalization. E.g. StateSupervisionSentences are required to normalize
+        StateSupervisionPeriod entities, but are not themselves normalized.
+
         Returns a dictionary mapping the entity class name to the list of normalized
-        entities.
+        entities, as well as a map of additional attributes that should be persisted
+        to the normalized entity tables.
         """
         return self._normalize_entities(
             ip_normalization_delegate=normalizer_args[
@@ -117,7 +124,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         supervision_periods: List[StateSupervisionPeriod],
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],
-    ) -> Dict[str, Sequence[NormalizedStateEntity]]:
+    ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
         processed_entities = all_normalized_entities(
             ip_normalization_delegate=ip_normalization_delegate,
@@ -150,7 +157,7 @@ def all_normalized_entities(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     field_index: CoreEntityFieldIndex,
-) -> Dict[str, Sequence[NormalizedStateEntity]]:
+) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
 
     Returns a dictionary mapping the entity class name to the list of normalized
@@ -175,7 +182,6 @@ def all_normalized_entities(
         incarceration_delegate=incarceration_delegate,
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
-        # TODO(#10729): Send in the NormalizedStateSupervisionViolationResponse entities
         normalized_violation_responses=processed_violation_responses,
         field_index=field_index,
         incarceration_sentences=incarceration_sentences,
@@ -195,41 +201,63 @@ def all_normalized_entities(
         )
 
     # TODO(#10727): Move collapsing of transfers to later
+    # TODO(#10729): Make it so the normalization managers don't return an index
+    #  but instead return IPs + ip_id_to_pfi_subtype or whatever is needed to hydrated
+    #  additional fields. The index is does some semi-expensive indexing that isn't
+    #  actually used in the context of the normalization pipeline and should really
+    #  only exist in metric pipelines.
     ip_index = (
         ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
             collapse_transfers=False, overwrite_facility_information_in_transfers=False
         )
     )
-
-    processed_ips = ip_index.incarceration_periods
-
-    # TODO(#10729): Move these conversions to the end of the normalization processes
-    normalized_ips = (
-        IncarcerationPeriodNormalizationManager.convert_ips_to_normalized_ips(
-            processed_ips,
-            ip_index.ip_id_to_pfi_subtype,
-        )
+    sp_index = (
+        sp_normalization_manager.normalized_supervision_period_index_for_calculations()
     )
 
-    normalized_sps = SupervisionPeriodNormalizationManager.convert_sps_to_normalized_sps(
-        sp_normalization_manager.normalized_supervision_period_index_for_calculations().supervision_periods
+    distinct_processed_violations: List[StateSupervisionViolation] = []
+
+    # TODO(#10729): Move these to get returned with the normalized entities once the
+    #  metric pipelines start using the Normalized versions of entities
+    additional_attributes_map = merge_additional_attributes_maps(
+        # We don't expect any overlapping entity types in this list, but we just merge
+        # so we can return one unified map.
+        additional_attributes_maps=[
+            IncarcerationPeriodNormalizationManager.additional_attributes_map_for_normalized_ips(
+                incarceration_periods=ip_index.incarceration_periods,
+                ip_id_to_pfi_subtype=ip_index.ip_id_to_pfi_subtype,
+            ),
+            SupervisionPeriodNormalizationManager.additional_attributes_map_for_normalized_sps(
+                supervision_periods=sp_index.supervision_periods
+            ),
+            ProgramAssignmentNormalizationManager.additional_attributes_map_for_normalized_pas(
+                program_assignments=processed_program_assignments
+            ),
+            ViolationResponseNormalizationManager.additional_attributes_map_for_normalized_vrs(
+                violation_responses=processed_violation_responses
+            ),
+        ]
     )
 
-    normalized_vrs = (
-        ViolationResponseNormalizationManager.convert_vrs_to_normalized_vrs(
-            processed_violation_responses
-        )
-    )
+    # We return the StateSupervisionViolation entities as the top-level entity being
+    # normalized, since they are the root of the entity tree that contains all
+    # violation information. This allows us to not have to de-duplicate
+    # NormalizedStateSupervisionViolation entities, which would happen if we sent in
+    # the StateSupervisionViolationResponse entities as the top-level entity,
+    # since multiple responses can hang off of the same StateSupervisionViolation.
+    for response in processed_violation_responses:
+        if (
+            response.supervision_violation
+            and response.supervision_violation not in distinct_processed_violations
+        ):
+            distinct_processed_violations.append(response.supervision_violation)
 
-    normalized_program_assignments = (
-        ProgramAssignmentNormalizationManager.convert_pas_to_normalized_pas(
-            processed_program_assignments
-        )
+    return (
+        {
+            StateIncarcerationPeriod.__name__: ip_index.incarceration_periods,
+            StateSupervisionPeriod.__name__: sp_index.supervision_periods,
+            StateSupervisionViolation.__name__: distinct_processed_violations,
+            StateProgramAssignment.__name__: processed_program_assignments,
+        },
+        additional_attributes_map,
     )
-
-    return {
-        StateIncarcerationPeriod.__name__: normalized_ips,
-        StateSupervisionPeriod.__name__: normalized_sps,
-        StateSupervisionViolationResponse.__name__: normalized_vrs,
-        StateProgramAssignment.__name__: normalized_program_assignments,
-    }

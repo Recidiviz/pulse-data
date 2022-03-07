@@ -354,6 +354,17 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                         next_dst_object = next_dst_objects[0]
                         setattr(dst_object, field, next_dst_object)
 
+                        # If the dst_object stores a foreign key reference of the
+                        # primary key of the next_dst_object, then set that value.
+                        # Note: this will be a no-op in ingest when DB ids are not
+                        # yet set.
+                        if hasattr(dst_object, next_dst_object.get_class_id_name()):
+                            setattr(
+                                dst_object,
+                                next_dst_object.get_class_id_name(),
+                                next_dst_object.get_id(),
+                            )
+
                 for next_src_id in not_found_next_src_ids:
                     not_found_back_edges[src_id][field].append(next_src_id)
 
