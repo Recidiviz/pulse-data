@@ -33,12 +33,11 @@ import logging
 import sys
 from typing import List, Optional, Tuple
 
-from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
-    build_views_to_update,
     create_managed_dataset_and_deploy_views_for_view_builders,
     rematerialize_views_for_view_builders,
+    view_builder_sub_graph_for_view_builders_to_load,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -144,52 +143,13 @@ def load_views_to_sandbox(
         else:
             raise ValueError("view_ids_to_load and dataset_ids_to_load not defined.")
 
-        # get views from view_builders_to_load
-        views_to_load = build_views_to_update(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            candidate_view_builders=view_builders_to_load,
-            dataset_overrides=None,
+        builders_to_update = view_builder_sub_graph_for_view_builders_to_load(
+            view_builders_to_load=view_builders_to_load,
+            all_view_builders_in_dag=view_builders,
+            get_ancestors=update_ancestors,
+            get_descendants=update_descendants,
+            include_dataflow_views=(dataflow_dataset_override is not None),
         )
-
-        # get dag walker for *all* views
-        all_views_dag_walker = BigQueryViewDagWalker(
-            build_views_to_update(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=view_builders,
-                dataset_overrides=None,
-            )
-        )
-
-        # if necessary, get descendants of views_to_load
-        if update_descendants:
-            descendants_dag_walker = all_views_dag_walker.get_descendants_sub_dag(
-                views_to_load
-            )
-            views_to_load.extend(descendants_dag_walker.views)
-
-        # if necessary, get ancestor views of views_to_load
-        if update_ancestors:
-            ancestors_dag_walker = all_views_dag_walker.get_ancestors_sub_dag(
-                views_to_load
-            )
-            views_to_load.extend(ancestors_dag_walker.views)
-
-        # get set of view addresses to update
-        distinct_view_addresses_to_update = {
-            view.address for view in set(views_to_load)
-        }
-
-        # restrict builders_to_update to necessary views
-        builders_to_update = [
-            builder
-            for builder in view_builders
-            if BigQueryAddress(dataset_id=builder.dataset_id, table_id=builder.view_id)
-            in distinct_view_addresses_to_update
-            # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the
-            # dataflow_dataset_override is set
-            if dataflow_dataset_override is not None
-            or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
-        ]
 
     # update all view builders if view_ids_to_load not specified
     else:

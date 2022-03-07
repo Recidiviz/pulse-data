@@ -29,12 +29,15 @@ import argparse
 import logging
 import sys
 import uuid
-from typing import List, Tuple
+from typing import List, Optional, Sequence, Tuple
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     copy_dataset_schemas_to_sandbox,
     create_managed_dataset_and_deploy_views_for_view_builders,
+    view_builder_sub_graph_for_view_builders_to_load,
 )
+from recidiviz.tools.load_views_to_sandbox import str_to_list
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.dataset_overrides import (
@@ -74,12 +77,54 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         "materializing all of the views.",
     )
 
+    parser.add_argument(
+        "--dataset-ids-to-load",
+        dest="dataset_ids_to_load",
+        help="A list of dataset_ids to load separated by commas. If provided, only "
+        "loads datasets in this list plus ancestors.",
+        type=str_to_list,
+        required=False,
+    )
+
     return parser.parse_known_args(argv)
 
 
-def deploy_views(project_id: str, test_schema: bool) -> None:
-    """Deploys the views"""
-    view_builders = deployed_view_builders(project_id)
+def deploy_views(
+    project_id: str,
+    test_schema: bool,
+    dataset_ids_to_load: Optional[List[str]] = None,
+) -> None:
+    """Deploys the views.
+
+    If |test_schema| is True, deploys a temporary "test" version of all views on top
+    of empty source tables to test for query compilation errors.
+
+    If |dataset_ids_to_load| is set, only loads views whose dataset_id matches one of
+    the listed dataset_ids, or views that are ancestors of the views in the datasets
+    listed.
+    """
+    view_builders_to_update: Sequence[BigQueryViewBuilder] = deployed_view_builders(
+        project_id
+    )
+
+    if dataset_ids_to_load:
+        logging.info(
+            "Limiting view deploy to views in datasets %s and any view ancestors.",
+            dataset_ids_to_load,
+        )
+        all_view_builders_in_dag = view_builders_to_update
+        view_builders_in_datasets = [
+            view
+            for view in all_view_builders_in_dag
+            if view.dataset_id in dataset_ids_to_load
+        ]
+        view_builders_to_update = view_builder_sub_graph_for_view_builders_to_load(
+            view_builders_to_load=view_builders_in_datasets,
+            all_view_builders_in_dag=view_builders_in_datasets,
+            get_ancestors=True,
+            get_descendants=False,
+        )
+
     test_dataset_overrides = None
 
     if test_schema:
@@ -94,13 +139,13 @@ def deploy_views(project_id: str, test_schema: bool) -> None:
 
         test_dataset_overrides = dataset_overrides_for_view_builders(
             view_dataset_override_prefix=test_dataset_prefix,
-            view_builders=view_builders,
+            view_builders=view_builders_to_update,
             override_source_datasets=True,
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        view_builders_to_update=view_builders,
+        view_builders_to_update=view_builders_to_update,
         dataset_overrides=test_dataset_overrides,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         default_table_expiration_for_new_datasets=DEFAULT_TEMPORARY_TABLE_EXPIRATION,
@@ -112,4 +157,8 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        deploy_views(known_args.project_id, known_args.test_schema_only)
+        deploy_views(
+            known_args.project_id,
+            known_args.test_schema_only,
+            known_args.dataset_ids_to_load,
+        )
