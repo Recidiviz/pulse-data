@@ -342,6 +342,57 @@ FROM
 WHERE
     discharge_date IS NOT NULL
     AND discharge_outflow = "RELEASE"
+
+UNION ALL
+
+-- Positive drug tests in Idaho
+-- Attribute 1 flags when a PDT is the first PDT of a supervision super session
+SELECT
+    ua.state_code,
+    ua.person_id,
+    'POSITIVE_DRUG_TEST' AS event,
+    ua.positive_urine_analysis_date AS event_date,
+    CASE
+        WHEN ROW_NUMBER() OVER (
+            PARTITION BY ss.person_id, ss.supervision_super_session_id
+            ORDER BY ua.positive_urine_analysis_date
+        ) = 1 THEN 'INITIAL_PDT'
+        ELSE CAST(NULL AS STRING)
+    END AS attribute_1,
+    CAST(NULL AS STRING) AS attribute_2,
+FROM `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
+INNER JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` ss
+    ON ua.person_id = ss.person_id
+    AND ua.positive_urine_analysis_date BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
+
+UNION ALL
+
+-- Supervision super session starts
+-- attribute_1: start_reason
+-- attribute_2: inflow_from_level_1
+SELECT
+    state_code,
+    person_id,
+    'SUPERVISION_SUPER_SESSION_START' AS event,
+    start_date AS event_date,
+    start_reason AS attribute_1,
+    inflow_from_level_1 AS attribute_2,
+FROM `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized`
+
+UNION ALL
+
+-- Supervision super session ends
+-- attribute_1: end_reason
+-- attribute_2: outlow_to_level_1
+SELECT
+    state_code,
+    person_id,
+    'SUPERVISION_SUPER_SESSION_END' AS event,
+    end_date AS event_date,
+    end_reason AS attribute_1,
+    outflow_to_level_1 AS attribute_2,
+FROM `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized`
+WHERE end_date IS NOT NULL
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
