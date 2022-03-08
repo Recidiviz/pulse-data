@@ -345,25 +345,38 @@ WHERE
 
 UNION ALL
 
--- Positive drug tests in Idaho
--- Attribute 1 flags when a PDT is the first PDT of a supervision super session
+-- Positive drug tests within a supervision super session in Idaho
 SELECT
     ua.state_code,
     ua.person_id,
     'POSITIVE_DRUG_TEST' AS event,
     ua.positive_urine_analysis_date AS event_date,
-    CASE
-        WHEN ROW_NUMBER() OVER (
-            PARTITION BY ss.person_id, ss.supervision_super_session_id
-            ORDER BY ua.positive_urine_analysis_date
-        ) = 1 THEN 'INITIAL_PDT'
-        ELSE CAST(NULL AS STRING)
-    END AS attribute_1,
+    CAST(NULL AS STRING) AS attribute_1,
     CAST(NULL AS STRING) AS attribute_2,
 FROM `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
 INNER JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` ss
     ON ua.person_id = ss.person_id
     AND ua.positive_urine_analysis_date BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
+
+UNION ALL
+
+-- Initial positive drug test within a supervision super session in Idaho
+SELECT
+    ua.state_code,
+    ua.person_id,
+    'INITIAL_POSITIVE_DRUG_TEST' AS event,
+    ua.positive_urine_analysis_date AS event_date,
+    CAST(NULL AS STRING) AS attribute_1,
+    CAST(NULL AS STRING) AS attribute_2,
+FROM `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
+INNER JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` ss
+    ON ua.person_id = ss.person_id
+    AND ua.positive_urine_analysis_date BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
+WHERE TRUE
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY ss.person_id, ss.supervision_super_session_id
+    ORDER BY ua.positive_urine_analysis_date
+) = 1
 
 UNION ALL
 
