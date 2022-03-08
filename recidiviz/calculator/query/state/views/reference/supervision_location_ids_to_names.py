@@ -113,6 +113,21 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             facility_name AS level_1_supervision_location_name,
             facility_code AS level_1_supervision_location_external_id
         FROM `{project_id}.external_reference.us_tn_supervision_facility_names`
+    ),
+    id_location_names AS (
+        SELECT
+            DISTINCT
+                'US_ID' AS state_code,
+                'NOT_APPLICABLE' AS level_3_supervision_location_external_id,
+                'NOT_APPLICABLE' AS level_3_supervision_location_name,
+                level_2_supervision_location_external_id,
+                level_2_supervision_location_name,
+                level_1_supervision_location_external_id,
+                INITCAP(level_1_supervision_location_external_id) AS level_1_supervision_location_name,
+        FROM `{project_id}.external_reference.us_id_supervision_unit_to_district_map`
+        LEFT OUTER JOIN
+            `{project_id}.external_reference.us_id_supervision_district_names`
+        USING (level_2_supervision_location_external_id)
     )
     SELECT * FROM me_location_names
     UNION ALL
@@ -122,7 +137,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     UNION ALL
     SELECT * FROM pa_location_names
     UNION ALL
-    SELECT * FROM tn_location_names;
+    SELECT * FROM tn_location_names
+    UNION ALL
+    SELECT * FROM id_location_names;
     """
 
 SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
