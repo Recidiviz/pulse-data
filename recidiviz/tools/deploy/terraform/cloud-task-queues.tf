@@ -44,28 +44,6 @@ resource "google_cloud_tasks_queue" "scraper_phase_queue" {
   }
 }
 
-# TODO(#11394): Delete this queue once the cloud-sql-to-bq-refresh-scheduler-queue is
-#  deployed.
-resource "google_cloud_tasks_queue" "job_monitor_queue" {
-  name     = "job-monitor-v2"
-  location = var.app_engine_region
-
-  rate_limits {
-    max_dispatches_per_second = 25
-    max_concurrent_dispatches = 25
-  }
-
-  retry_config {
-    max_attempts = 5
-    max_backoff  = "120s"
-    min_backoff  = "5s"
-  }
-
-  stackdriver_logging_config {
-    sampling_ratio = 1.0
-  }
-}
-
 # Queue used to run tasks that monitor whether we can start a cloud SQL refresh job and
 # schedule the tasks when appropriate.
 resource "google_cloud_tasks_queue" "cloud-sql-to-bq-refresh-scheduler-queue" {
