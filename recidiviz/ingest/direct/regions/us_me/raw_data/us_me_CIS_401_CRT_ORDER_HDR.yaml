@@ -319,18 +319,29 @@ columns:
   - name: Revocation_Yrs_Num
     description: The number of years in the revocation sentence.
   - name: Serve_Days_Num
+    description: The number of days in the DOC facility sentence (with all suspended time taken into account).
   - name: Serve_Mths_Num
+    description: The number of months in the DOC facility sentence (with all suspended time taken into account).
   - name: Serve_Yrs_Num
+    description: The number of years in the DOC facility sentence (with all suspended time taken into account).
   - name: Shock_Prob_Days_Num
+    description: The number of days in the shock probation sentence, which only applies to juveniles.
   - name: Shock_Prob_Mths_Num
+    description: The number of months in the shock probation sentence, which only applies to juveniles.
   - name: Shock_Prob_Yrs_Num
+    description: The number of years in the shock probation sentence, which only applies to juveniles.
   - name: Shock_Serve_Days_Num
+    description: The number of days in the shock DOC facility sentence.
   - name: Shock_Stc_Days_Num
+    description: The number of days in the shock sentence originally given by the court.
   - name: Statute_Num
   - name: Stayed_Ind
   - name: Stc_Days_Num
+    description: The number of days in the sentence originally given by the court.
   - name: Stc_Mths_Num
+    description: The number of months in the sentence originally given by the court.
   - name: Stc_To_Age_Num
   - name: Stc_Yrs_Num
+    description: The number of years in the sentence originally given by the court.
   - name: Victim_Comp_Fee_Num
   - name: Weekend_Holiday_Ind

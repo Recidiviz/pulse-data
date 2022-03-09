@@ -15,3 +15,22 @@ columns:
   - name : System_Ref_Tx
   - name : Crt_Order_Status_Cd
     description: The primary key of the table and the value used in the Cis_4010_Crt_Order_Status_Cd column on the CIS_401_CRT_ORDER_HDR table.
+    known_values:
+      - value: "1"
+        description: Pending - The court order is still in progress
+      - value: "2"
+        description: Committed - The incarceration sentence has started
+      - value: "3"
+        description: Complete - The sentence has ended
+      - value: "4"
+        description: Probation - The probation sentence has started
+      - value: "7"
+        description: Tolled - The client is in a violation period and awaiting an outcome decision
+      - value: "8"
+        description: Migration - Some internal status code related to data migrations
+      - value: "9"
+        description: PreDisposition - The disposition has not yet been ruled upon
+      - value: "10"
+        description: Drug Court - The case has been referred to a special drug court
+      - value: "11"
+        description: Court Sanction - The client does not have a term to serve but has restitution fines due
