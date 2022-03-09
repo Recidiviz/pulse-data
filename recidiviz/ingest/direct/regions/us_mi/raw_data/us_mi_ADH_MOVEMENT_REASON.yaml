@@ -1,0 +1,34 @@
+file_tag: ADH_MOVEMENT_REASON
+file_description: |-
+  This table contains the reference for all of the movement reasons that are used in the
+  OFFENDER_EXTERNAL_MOVEMENT table that indicate a person's movement through MIDOC.
+primary_key_cols:
+  - movement_reason_id
+columns:
+  - name: movement_reason_id
+    description: The OMNI-database generated ID for the movement reason row.
+  - name: program_ref_code
+    description: High-level categorization of certain movement reasons
+    known_values:
+      - value: 'OTHER'
+        description: Indicates another movement type not indicative of the other choices.
+      - value: 'TRANSFER'
+        description: Indicates a high-level transfer within or from/to MDOC jurisdictions.
+      - value: 'REPORTING'
+        description: Indicating that a person reporting to office
+      - value: 'PRISON_COMMITMENT'
+        description: Indicates a high-level prison commitment within MDOC jurisdiction
+      - value: 'INTAKE'
+        description: Indicates a person entering MDOC
+  - name: effective_date
+  - name: expire_date
+  - name: description
+    description: Human readable description of the movement reason.
+  - name: open_contact_flag
+  - name: close_contact_flag
+  - name: cmis_movement_code
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
+  - name: viewable_group
+  - name: mvmt_filter_group

@@ -1,0 +1,30 @@
+file_tag: ADH_REFERENCE_CODE
+file_description: |-
+  The reference code table used for everything except locations and offense types.
+primary_key_cols: 
+  - reference_code_id
+columns:
+  - name: reference_code_id
+    description: The OMNI-database generated ID for the reference code row.
+  - name: reference_code_domain_id
+    description: |-
+      The OMNI-database generated ID for the reference domain (as referenced
+      by the REFERENCE_CODE_DOMAIN table).
+  - name: sequence_number
+  - name: parent_reference_code_id
+  - name: description
+    description: The human readable description of the reference code
+  - name: update_allowed_flag
+  - name: active_flag
+  - name: program_ref_code
+    description: |-
+      In line with the description and unique_code, this is the English code, usually
+      the commitment code that accompanies the reference_code.
+  - name: cmis_code
+  - name: unique_code
+    description: |-
+      In line with the description, this is the English code that accompanies
+      the reference code.
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
