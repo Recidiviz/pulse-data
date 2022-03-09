@@ -1,0 +1,44 @@
+file_tag: ADH_LOCATION
+file_description: |-
+  This table contains all of the locations that accompany a person's movement while they
+  are under jurisdiction in MIDOC.
+primary_key_cols:
+  - location_id
+columns: 
+  - name: location_id
+    description: The OMNI-database generated ID for the location row.
+  - name: location_code
+    description: The code for the location as used internally by MDOC staff.
+  - name: location_type_id
+    description: |-
+      The type of location, as determined and matched by reference_code_id in the
+      REFERENCE_CODE table.
+  - name: location_subtype_id
+    description: |-
+      The subtype of location, as determined and matched by reference_code_id in the
+      REFERENCE_CODE table. This mainly applies to courts (indicating circuit or district).
+  - name: name
+    description: The human readable name for the location.
+  - name: abbreviation
+    description: An abbreviated form of the name.
+  - name: bail_office_flag
+  - name: address1
+  - name: address2
+  - name: address3
+  - name: city
+  - name: state_id
+  - name: postal_code
+  - name: country_id
+  - name: business_phone_area_code
+  - name: business_phone_number
+  - name: business_phone_extension
+  - name: business_fax_number
+  - name: termination_date
+  - name: active_flag
+  - name: county_id
+  - name: notification_phone_number
+  - name: notification_s_phone_number
+  - name: mailing_name
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

@@ -1,0 +1,27 @@
+file_tag: ADH_OFFENDER_NAME
+file_description: |-
+  This table contains the entries of basic information of each person involved under 
+  MDOC's jurisdiction, with the sequence number being associated with the latest jurisdiction.
+primary_key_cols:
+  - offender_id
+  - sequence_number
+columns:
+  # TODO(#11282) - add descriptions to needed fields.
+  - name: offender_id
+  - name: sequence_number
+  - name: offender_name_type_id
+  - name: last_name
+  - name: first_name
+  - name: middle_name
+  - name: name_suffix
+  - name: birth_date
+  - name: birth_city
+  - name: birth_state_id
+  - name: birth_country_id
+  - name: sex_id
+  - name: create_date
+  - name: last_name_soundex
+  - name: last_name_lookup
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

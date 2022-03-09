@@ -1,0 +1,34 @@
+file_tag: ADH_OFFENDER_EXTERNAL_MOVEMENT
+file_description: |-
+  This table records every single movement that a justice-involved individual makes within
+  MDOC, such as transfers between facilities, transfers to parole, readmissions, etc.
+primary_key_cols:
+  - offender_external_movement_id
+columns:
+  - name: offender_external_movement_id
+    description: The OMNI-database generated ID for the external movement row.
+  - name: offender_booking_id
+    description: |-
+      The associated booking id (indicating the jurisdiction) this movement 
+      occurred under (as referenced by OFFENDER_BOOKING).
+  - name: source_location_id
+    description: |- 
+      The location id that indicates where the person moved from (referenced from LOCATION)
+  - name: movement_date
+    description: When the movement occurred
+    is_datetime: True
+  - name: destination_location_id
+    description: |-
+      The location id that indicates where the person moved to (referenced from LOCATION)
+  - name: reporting_date
+    description: When this movement was reported
+    is_datetime: True
+  - name: movement_reason_id
+    description: The id indicating the movement reason (referenced from MOVEMENT_REASON)
+  - name: escort_id
+  - name: escort_notes
+  - name: notes
+  - name: active_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

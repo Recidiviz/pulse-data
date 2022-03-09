@@ -1,0 +1,52 @@
+file_tag: ADH_OFFENDER_PROFILE_SUMMARY_WRK
+file_description: |-
+  This table holds profile information about a person involved in MDOC that is linked
+  to a given booking.
+primary_key_cols:
+  - offender_id
+  - offender_number
+  - offender_booking_id
+columns:
+  # TODO(#11282) - add descriptions to needed fields.
+  - name: offender_id
+  - name: offender_number
+  - name: offender_booking_id
+  - name: last_name
+  - name: first_name
+  - name: middle_name
+  - name: name_suffix
+  - name: birth_date
+  - name: eye_color_id
+  - name: eye_color
+  - name: hair_color_id
+  - name: hair_color
+  - name: race_id
+  - name: race
+  - name: gender_id
+  - name: gender
+  - name: height
+  - name: weight
+  - name: city
+  - name: county_id
+  - name: county
+  - name: profile_date
+  - name: ofr_sequence_number
+  - name: active_flag
+  - name: disclosure_flag
+  - name: hyta_flag
+  - name: location_id
+  - name: location_name
+  - name: profile_booking_id
+  - name: build_id
+  - name: build
+  - name: skin_complexion_id
+  - name: skin_complexion
+  - name: marital_status_id
+  - name: marital_status
+  - name: first_arrest_age
+  - name: csc_convictions_count
+  - name: prior_felony_conviction_count
+  - name: age
+  - name: prior_misdem_convict_count
+  - name: offender_name_seq_no
+  - name: last_update_date

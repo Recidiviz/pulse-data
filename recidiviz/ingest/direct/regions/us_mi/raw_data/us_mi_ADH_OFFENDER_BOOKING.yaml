@@ -1,0 +1,45 @@
+file_tag: ADH_OFFENDER_BOOKING
+file_description: |-
+  This table stores information about jurisdictions - periods of time when a justice-involved
+  individual spends time within the MDOC.
+primary_key_cols:
+  - offender_booking_id
+columns:
+  - name: offender_booking_id
+    description: The OMNI-database generated ID for the booking row.
+  - name: offender_id
+    description: The ID of the justice-involved individual to which this booking applies.
+  - name: offender_name_seq_no
+    description: |-
+      The sequence number associated with the latest booking for a person (since
+      there may be multiple jurisdictions for someone).
+  - name: location_id
+    description: The location ID of the booking (referenced by LOCATION table).
+  - name: begin_date
+    description: When this booking / jurisdiction period began within MDOC.
+    is_datetime: True
+  - name: end_date
+    description: When this booking / jurisdiction period ends within MDOC.
+    is_datetime: True
+  - name: previous_offender_id
+    description: |-
+      There might be situations where one individual may have two offender_numbers
+      because of historical MDOC offender_number merging scenarios, so this field will
+      have the previous_offender_id for a person.
+  - name: next_offender_id
+    description: |-
+      There might be situations where one individual may have two offender_numbers
+      because of historical MDOC offender_number merging scenarios, so this field will
+      have the next_offender_id for a person.
+  - name: active_flag
+    description: Indicates whether or not this jurisdiction for the person is active.
+    known_values:
+      - value: '0'
+        description: 'False'
+      - value: '1'
+        description: 'True'
+  - name: disclosure_flag
+  - name: in_out_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
