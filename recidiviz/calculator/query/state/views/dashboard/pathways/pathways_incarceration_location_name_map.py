@@ -16,6 +16,9 @@
 #  =============================================================================
 """Pathways helper view to map from location ID to aggregating location id and name"""
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
 )
@@ -39,6 +42,8 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
         state_code,
         level_1_incarceration_location_external_id AS location_id,
         CASE
+            WHEN state_code IN {pathways_level_2_incarceration_state_codes}
+                THEN level_2_incarceration_location_external_id
             WHEN state_code = 'US_ND'
                 THEN IF(level_1_incarceration_location_external_id = 'TRCC', 'TRC', level_1_incarceration_location_external_id)
             WHEN state_code = 'US_ME'
@@ -50,16 +55,15 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
     WHERE state_code IN ({enabled_states})
 """
 
-PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER = (
-    PathwaysMetricBigQueryViewBuilder(
-        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-        view_id=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_NAME,
-        view_query_template=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE,
-        description=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION,
-        dimensions=("state_code", "location_id", "location_name"),
-        reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-        enabled_states=ENABLED_STATE_CODES,
-    )
+PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+    view_id=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_NAME,
+    view_query_template=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE,
+    description=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION,
+    dimensions=("state_code", "location_id", "location_name"),
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    enabled_states=ENABLED_STATE_CODES,
+    pathways_level_2_incarceration_state_codes=PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS,
 )
 
 
