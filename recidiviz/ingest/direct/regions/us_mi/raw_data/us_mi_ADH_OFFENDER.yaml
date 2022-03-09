@@ -1,0 +1,16 @@
+file_tag: ADH_OFFENDER
+file_description: |-
+  This is the main table that contains all of the identifiers used for all other tables
+  for all persons currently involved in MIDOC (parole, probation, incarceration).
+primary_key_cols:
+  - offender_id
+  - offender_number
+columns:
+  - name: offender_id
+    description: The OMNI-database generated ID for the justice-involved individual.
+  - name: offender_number_source_id
+  - name: offender_number
+    description: The MDOC ID that all staff uses for the justice-involved individual.
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

@@ -1,0 +1,71 @@
+file_tag: ADH_OFFENDER_BOOKING_PROFILE
+file_description: |-
+  This table indicates the profile associated with a person and their booking within MDOC,
+  which represents a jurisdiction or stint of being involved within MDOC.
+primary_key_cols:
+  - offender_booking_id
+columns:
+  # TODO(#11282) - add descriptions to needed fields.
+  - name: offender_booking_id
+  - name: profile_date
+  - name: living_unit_id
+  - name: eye_color_id
+  - name: hair_color_id
+  - name: racial_appearance_id
+  - name: cultural_affiliation_id
+  - name: multiracial_flag
+  - name: caucasian_racial_flag
+  - name: native_american_racial_flag
+  - name: black_racial_flag
+  - name: asian_racial_flag
+  - name: skin_complexion_id
+  - name: gender_id
+  - name: marital_status_id
+  - name: facial_hair_id
+  - name: baldness_id
+  - name: citizenship_id
+  - name: dexterity_id
+  - name: build_id
+  - name: weight
+  - name: height_feet
+  - name: height_inches
+  - name: eye_glasses_flag
+  - name: eye_contacts_flag
+  - name: known_homosexual_flag
+  - name: dependents_count
+  - name: juvenile_commitments_count
+  - name: juvenile_probation_count
+  - name: juvenile_escape_count
+  - name: adult_jail_count
+  - name: adult_prison_count
+  - name: adult_probation_count
+  - name: adult_escape_count
+  - name: csc_convictions_count
+  - name: first_arrest_age
+  - name: prior_felony_conviction_count
+  - name: year_entered_country
+  - name: pending_charge_flag
+  - name: cmis_perm_lock
+  - name: cmis_temp_lock
+  - name: have_health_insurance_flag
+  - name: prior_misdem_convict_count
+  - name: hispanic_flag
+  - name: racial_identification_code_id
+  - name: start_date
+  - name: end_date
+  - name: profile_closing_reason_id
+  - name: medical_id
+  - name: medical_release_date
+  - name: psychological_id
+  - name: psychological_release_date
+  - name: dental_id
+  - name: dental_release_date
+  - name: mental_health_id
+  - name: mental_health_release_date
+  - name: sa_file_review_employee_id
+  - name: sa_file_review_date
+  - name: sa_file_review_result_id
+  - name: notes
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
