@@ -67,6 +67,7 @@ class TestSchema(TestCase):
                 instance="September 2020",
                 publish_date=datetime.date(2020, 10, 1),
                 acquisition_method=schema.AcquisitionMethod.SCRAPED,
+                project=schema.Project.JUSTICE_COUNTS_DATA_SCAN,
             )
             act_session.add(report)
 
@@ -113,3 +114,8 @@ class TestSchema(TestCase):
             self.assertEqual("Monthly Prison Report", report.type)
             source = report.source
             self.assertEqual("Test Source", source.name)
+            project = report.project
+            self.assertEqual(
+                schema.Project.JUSTICE_COUNTS_DATA_SCAN,
+                project,
+            )
