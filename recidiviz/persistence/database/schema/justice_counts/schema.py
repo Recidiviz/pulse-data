@@ -88,6 +88,13 @@ class System(enum.Enum):
     CORRECTIONS = "CORRECTIONS"
 
 
+class Project(enum.Enum):
+    # Internal projects that ingest Justice Counts data.
+
+    JUSTICE_COUNTS_DATA_SCAN = "JUSTICE_COUNTS_DATA_SCAN"
+    JUSTICE_COUNTS_CONTROL_PANEL = "JUSTICE_COUNTS_CONTROL_PANEL"
+
+
 class Source(JusticeCountsBase):
     """A website or organization that publishes reports.
 
@@ -131,7 +138,8 @@ class Report(JusticeCountsBase):
     acquisition_method = Column(Enum(AcquisitionMethod), nullable=False)
     # If manually entered or collected, the person who collected the data.
     acquired_by = Column(String(255))
-    # TODO(#4485): Add a list of projects (e.g. Justice Counts, Spark) for which this data was ingested.
+    # Project that was responsible for ingesting this data (e.g. data scan, control panel).
+    project = Column(Enum(Project))
 
     __table_args__ = tuple(
         [

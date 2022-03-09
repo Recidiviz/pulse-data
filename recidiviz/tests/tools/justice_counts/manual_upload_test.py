@@ -224,6 +224,7 @@ class ManualUploadTest(unittest.TestCase):
                 schema.AcquisitionMethod.MANUALLY_ENTERED, report.acquisition_method
             )
             self.assertEqual("Solange Knowles", report.acquired_by)
+            self.assertEqual(schema.Project.JUSTICE_COUNTS_DATA_SCAN, report.project)
 
             [table_definition] = session.query(schema.ReportTableDefinition).all()
             self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
@@ -984,7 +985,7 @@ class ManualUploadTest(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            cells = session.query(schema.Cell).all()
+            cells = session.query(schema.Cell).order_by(schema.Cell.value).all()
             self.assertEqual(
                 [
                     (["PRISON", "Inmates", None, "Inmates"], decimal.Decimal(1489)),
