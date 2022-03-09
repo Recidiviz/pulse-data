@@ -1,8 +1,10 @@
 file_tag: ClassSection
 file_description: |-
   This table conatins one occurrence for every section present in a class.
-# TODO(#11323): Fill out primary keys once we receive them.
-primary_key_cols: []
+primary_key_cols:
+  - ClassID
+  - ClassSectionID
+  - SiteID
 columns:
   - name: SiteID
     description: |-

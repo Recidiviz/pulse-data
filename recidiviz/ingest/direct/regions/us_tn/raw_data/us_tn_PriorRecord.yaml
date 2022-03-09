@@ -1,8 +1,10 @@
 file_tag: PriorRecord
 file_description: |-
   This table contains one occurance for each criminal record the person had prior to current crimes the person has been convicted of. The source is NCIC and TBI data.
-# TODO(#11323): Fill out primary keys once we receive them.
-primary_key_cols: []
+primary_key_cols:
+  - EventDate
+  - OffenderID
+  - SequenceNumber
 columns:
   - name: OffenderID
     description: |-
