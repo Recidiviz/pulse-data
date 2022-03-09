@@ -126,8 +126,11 @@ def deploy_views(
         )
 
     test_dataset_overrides = None
+    table_expiration = None
 
     if test_schema:
+        table_expiration = DEFAULT_TEMPORARY_TABLE_EXPIRATION
+
         test_dataset_prefix = f"deploy_{str(uuid.uuid4())[:6]}"
         logging.info("Creating view tree with prefix: '%s'", test_dataset_prefix)
 
@@ -148,7 +151,7 @@ def deploy_views(
         view_builders_to_update=view_builders_to_update,
         dataset_overrides=test_dataset_overrides,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-        default_table_expiration_for_new_datasets=DEFAULT_TEMPORARY_TABLE_EXPIRATION,
+        default_table_expiration_for_new_datasets=table_expiration,
     )
 
 
