@@ -34,6 +34,12 @@ VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
     f"({', '.join(VITALS_LEVEL_2_SUPERVISION_LOCATION_STATES)})"
 )
 
+# The states in the Pathways views that will be grouping by level 2 incarceration locations.
+PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES: List[str] = ['"US_ID"']
+PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS: str = (
+    f"({', '.join(PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES)})"
+)
+
 STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_counts"
 
 # Select the raw table that ultimately powers a state's incarceration pathways calculations.
