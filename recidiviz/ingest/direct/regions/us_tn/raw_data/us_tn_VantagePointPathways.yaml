@@ -1,8 +1,9 @@
 file_tag: VantagePointPathways
 file_description: |-
   This table is used to store STRONG-R Treatment Pathways from Vant4gePoint.
-# TODO(#11323): Fill out primary keys once we receive them.
-primary_key_cols: []
+primary_key_cols:
+  - Recommendation
+  - Pathway
 columns:
   - name: Recommendation
     description: |-

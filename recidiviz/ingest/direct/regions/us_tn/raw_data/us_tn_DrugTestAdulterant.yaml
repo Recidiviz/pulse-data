@@ -1,8 +1,11 @@
 file_tag: DrugTestAdulterant
 file_description: |-
   TODO(#11323): fill out description once received.
-# TODO(#11323): Fill out primary keys once we receive them.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - TestDate
+  - TestType
+  - AdulterantTest
 columns:
   - name: OffenderID
     description: |-

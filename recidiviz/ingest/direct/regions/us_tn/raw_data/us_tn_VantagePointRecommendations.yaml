@@ -1,8 +1,11 @@
 file_tag: VantagePointRecommendations
 file_description: |-
   This table is used to store STRONG-R Case Plan recommendations from Vant4gePoint.
-# TODO(#11323): Fill out primary keys once we receive them.
-primary_key_cols: []
+primary_key_cols:
+  - OffenderID
+  - AssessmentID
+  - Pathway
+  - Recommendation
 columns:
   - name: OffenderID
     description: |-
