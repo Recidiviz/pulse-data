@@ -1,0 +1,16 @@
+file_tag: CodesDescription
+file_description: |-
+  This table contains definitions for codes present in the tables sent by STS.
+primary_key_cols:
+  - CodesTableID
+  - Code
+columns:
+  - name: CodesTableID
+    description: |-
+      This is a unique identifier assigned to a particular table.
+  - name: Code
+    description: |-
+      The code present in a particular table.
+  - name: Decode
+    description: |-
+      The value associated with a particular code.
