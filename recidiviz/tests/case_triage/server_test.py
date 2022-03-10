@@ -39,7 +39,6 @@ from recidiviz.case_triage.opportunities.types import (
 )
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.querier.querier import OfficerDoesNotExistError
-from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.user_context import REGISTRATION_DATE_CLAIM, UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClientEvent,
@@ -48,6 +47,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_case_update,
@@ -89,7 +89,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
-        engine = setup_scoped_sessions(self.test_app, db_url)
+        engine = setup_scoped_sessions(self.test_app, self.database_key, db_url)
         # Auto-generate all tables that exist in our schema in this database
         self.database_key.declarative_meta.metadata.create_all(engine)
         # `flask_sqlalchemy_session` sets the `scoped_session` attribute on the app,

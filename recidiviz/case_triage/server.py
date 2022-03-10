@@ -39,7 +39,6 @@ from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.redis_sessions import RedisSessionInterface
-from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.util import (
     get_local_secret,
@@ -52,6 +51,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     AuthorizationError,
@@ -114,7 +114,9 @@ else:
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MiB max body size
-setup_scoped_sessions(app, db_url)
+setup_scoped_sessions(
+    app, SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE), db_url
+)
 
 
 # Auth setup
