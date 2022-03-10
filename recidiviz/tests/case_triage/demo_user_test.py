@@ -32,13 +32,13 @@ from recidiviz.case_triage.demo_helpers import (
     unconvert_fake_person_id_for_demo_user,
 )
 from recidiviz.case_triage.opportunities.types import OpportunityType
-from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactMethod,
     StateSupervisionContactType,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -63,9 +63,9 @@ class TestDemoUser(TestCase):
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
-        engine = setup_scoped_sessions(self.test_app, db_url)
         # Auto-generate all tables that exist in our schema in this database
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        engine = setup_scoped_sessions(self.test_app, self.database_key, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
         self.demo_clients = get_fixture_clients()
