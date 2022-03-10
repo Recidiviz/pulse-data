@@ -51,6 +51,7 @@ REQUIRED_PACKAGES = [
     # Must stay up-to-date with latest protobuf version in the Pipfile
     "protobuf==3.19.4",
     "SQLAlchemy",
+    "thefuzz",
     "us",
 ]
 

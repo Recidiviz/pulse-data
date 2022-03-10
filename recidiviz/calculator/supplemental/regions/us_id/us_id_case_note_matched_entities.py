@@ -31,6 +31,7 @@ from recidiviz.calculator.supplemental.supplemental_dataset import (
 )
 from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
 
+# TODO(#11312): Remove once dataflow pipeline is deployed.
 US_ID_CASE_NOTE_MATCHED_ENTITIES_TABLE = "us_id_case_note_matched_entities"
 TEXT_ANALYZER = TextAnalyzer(
     TextMatchingConfiguration(
