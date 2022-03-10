@@ -97,101 +97,139 @@ const ValidationStatusView = (): JSX.Element => {
 
   const categoryIds = Object.keys(dictOfCategoryIdsToRecords).sort();
 
-  const failureLabelColumns: ColumnsType<ValidationStatusRecord> = [
-    {
-      title: "Category",
-      key: "category",
-      fixed: "left",
-      render: (_: string, record: ValidationStatusRecord) => (
-        <div>
-          {readableNameForCategoryId(
-            chooseIdNameForCategory(record.getCategory())
-          )}
-        </div>
-      ),
-      filters: categoryIds.map((categoryId: string) => ({
-        text: readableNameForCategoryId(categoryId),
-        value: categoryId,
-      })),
-      onFilter: (value, record: ValidationStatusRecord) =>
-        chooseIdNameForCategory(record.getCategory()) === value,
-    },
-    {
-      title: "Validation Name",
-      key: "validation",
-      fixed: "left",
-      width: "35%",
-      render: (_: string, record: ValidationStatusRecord) => (
-        <div>{record.getName()}</div>
-      ),
-    },
-    {
-      title: "State",
-      key: "state",
-      fixed: "left",
-      render: (_: string, record: ValidationStatusRecord) => (
-        <div>{record.getStateCode()}</div>
-      ),
-      filters: allStates.map((state: string) => ({
-        text: state,
-        value: state,
-      })),
-      onFilter: (value, record: ValidationStatusRecord) =>
-        record.getStateCode() === value,
-    },
-    {
-      title: "Status",
-      key: "status",
-      fixed: "left",
-      render: (_: string, record: ValidationStatusRecord) => {
-        return renderRecordStatus(record);
+  function getFailureTable(statuses: RecordStatus[]) {
+    return (
+      <Table
+        className="validation-table"
+        columns={getFailureLabelColumns(statuses)}
+        onRow={(record) => {
+          return {
+            onClick: handleClickToDetails(
+              history,
+              record.getName(),
+              record.getStateCode()
+            ),
+          };
+        }}
+        loading={loading}
+        dataSource={getListOfFilteredRecords(statuses, records)}
+        pagination={{
+          hideOnSinglePage: true,
+          showSizeChanger: true,
+          pageSize: 50,
+          size: "small",
+        }}
+        rowClassName="validation-table-row"
+        rowKey="validation"
+      />
+    );
+  }
+
+  function getFailureLabelColumns(
+    statuses: RecordStatus[]
+  ): ColumnsType<ValidationStatusRecord> {
+    return [
+      {
+        title: "Category",
+        key: "category",
+        fixed: "left",
+        render: (_: string, record: ValidationStatusRecord) => (
+          <div>
+            {readableNameForCategoryId(
+              chooseIdNameForCategory(record.getCategory())
+            )}
+          </div>
+        ),
+        filters: categoryIds.map((categoryId: string) => ({
+          text: readableNameForCategoryId(categoryId),
+          value: categoryId,
+        })),
+        onFilter: (value, record: ValidationStatusRecord) =>
+          chooseIdNameForCategory(record.getCategory()) === value,
       },
-    },
-    {
-      title: "Soft Threshold",
-      key: "soft-failure-thresholds",
-      fixed: "left",
-      render: (_: string, record: ValidationStatusRecord) => (
-        <div>
-          {formatStatusAmount(
-            record.getSoftFailureAmount(),
-            record.getIsPercentage()
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Hard Threshold",
-      key: "hard-failure-thresholds",
-      fixed: "left",
-      render: (_: string, record: ValidationStatusRecord) => (
-        <div>
-          {formatStatusAmount(
-            record.getHardFailureAmount(),
-            record.getIsPercentage()
-          )}
-        </div>
-      ),
-    },
-    {
-      title: (
-        <span>
-          Days Active&nbsp;
-          <Tooltip title="Number of days the validation has been failing with this status or worse.">
-            <InfoCircleOutlined />
-          </Tooltip>
-        </span>
-      ),
-      key: "days-active",
-      fixed: "left",
-      render: (_: string, record: ValidationStatusRecord) => (
-        <div>{replaceInfinity(getDaysActive(record), "Always")}</div>
-      ),
-      sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
-        getDaysActive(a) - getDaysActive(b),
-      showSorterTooltip: false,
-    },
-  ];
+      {
+        title: "Validation Name",
+        key: "validation",
+        fixed: "left",
+        width: "35%",
+        render: (_: string, record: ValidationStatusRecord) => (
+          <div>{record.getName()}</div>
+        ),
+      },
+      {
+        title: "State",
+        key: "state",
+        fixed: "left",
+        render: (_: string, record: ValidationStatusRecord) => (
+          <div>{record.getStateCode()}</div>
+        ),
+        filters: allStates.map((state: string) => ({
+          text: state,
+          value: state,
+        })),
+        onFilter: (value, record: ValidationStatusRecord) =>
+          record.getStateCode() === value,
+      },
+      {
+        title: "Status",
+        key: "status",
+        fixed: "left",
+        render: (_: string, record: ValidationStatusRecord) => {
+          return renderRecordStatus(record);
+        },
+        filters: statuses.map((status: RecordStatus) => ({
+          text: RecordStatus[status],
+          value: status,
+        })),
+        onFilter: (value, record: ValidationStatusRecord) =>
+          getRecordStatus(record) === value,
+      },
+      {
+        title: "Soft Threshold",
+        key: "soft-failure-thresholds",
+        fixed: "left",
+        render: (_: string, record: ValidationStatusRecord) => (
+          <div>
+            {formatStatusAmount(
+              record.getSoftFailureAmount(),
+              record.getIsPercentage()
+            )}
+          </div>
+        ),
+      },
+      {
+        title: "Hard Threshold",
+        key: "hard-failure-thresholds",
+        fixed: "left",
+        render: (_: string, record: ValidationStatusRecord) => (
+          <div>
+            {formatStatusAmount(
+              record.getHardFailureAmount(),
+              record.getIsPercentage()
+            )}
+          </div>
+        ),
+      },
+      {
+        title: (
+          <span>
+            Days Active&nbsp;
+            <Tooltip title="Number of days the validation has been failing with this status or worse.">
+              <InfoCircleOutlined />
+            </Tooltip>
+          </span>
+        ),
+        key: "days-active",
+        fixed: "left",
+        render: (_: string, record: ValidationStatusRecord) => (
+          <div>{replaceInfinity(getDaysActive(record), "Always")}</div>
+        ),
+        sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+          getDaysActive(a) - getDaysActive(b),
+        showSorterTooltip: false,
+      },
+    ];
+  }
 
   const labelColumns: ColumnsType<MetadataRecord<ValidationStatusRecord>> = [
     {
@@ -280,61 +318,11 @@ const ValidationStatusView = (): JSX.Element => {
       <Title id="hard-failures" level={2}>
         Hard Failures
       </Title>
-      <Table
-        className="validation-table"
-        columns={failureLabelColumns}
-        onRow={(record) => {
-          return {
-            onClick: handleClickToDetails(
-              history,
-              record.getName(),
-              record.getStateCode()
-            ),
-          };
-        }}
-        loading={loading}
-        dataSource={getListOfFailureRecords(
-          ValidationStatusRecord.ValidationResultStatus.FAIL_HARD,
-          records
-        )}
-        pagination={{
-          hideOnSinglePage: true,
-          showSizeChanger: true,
-          pageSize: 50,
-          size: "small",
-        }}
-        rowClassName="validation-table-row"
-        rowKey="validation"
-      />
+      {getFailureTable([RecordStatus.FAIL_HARD, RecordStatus.BROKEN])}
       <Title id="soft-failures" level={2}>
         Soft Failures
       </Title>
-      <Table
-        className="validation-table"
-        columns={failureLabelColumns}
-        onRow={(record) => {
-          return {
-            onClick: handleClickToDetails(
-              history,
-              record.getName(),
-              record.getStateCode()
-            ),
-          };
-        }}
-        loading={loading}
-        dataSource={getListOfFailureRecords(
-          ValidationStatusRecord.ValidationResultStatus.FAIL_SOFT,
-          records
-        )}
-        pagination={{
-          hideOnSinglePage: true,
-          showSizeChanger: true,
-          pageSize: 50,
-          size: "small",
-        }}
-        rowClassName="validation-table-row"
-        rowKey="validation"
-      />
+      {getFailureTable([RecordStatus.FAIL_SOFT])}
       <Title id="full-results" level={1}>
         Full Results
       </Title>
@@ -424,14 +412,14 @@ const handleClickToDetails = (
     });
 };
 
-const getListOfFailureRecords = (
-  failureType: ValidationStatusRecord.ValidationResultStatusMap[keyof ValidationStatusRecord.ValidationResultStatusMap],
+const getListOfFilteredRecords = (
+  filterTypes: RecordStatus[],
   records: ValidationStatusRecord[]
 ): ValidationStatusRecord[] => {
   return records
     .filter(
       (record: ValidationStatusRecord) =>
-        !record?.getDevMode() && record.getResultStatus() === failureType
+        !record?.getDevMode() && filterTypes.includes(getRecordStatus(record))
     )
     .sort((a, b) => {
       if (a.getName() === b.getName()) {
