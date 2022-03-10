@@ -29,7 +29,6 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
-    DirectIngestFileMetadataManager,
     DirectIngestIngestFileMetadataManager,
     DirectIngestRawFileMetadataManager,
     DirectIngestSftpFileMetadataManager,
@@ -251,6 +250,8 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             return len(unprocessed_raw_files)
 
 
+# TODO(#9717): Delete this class once all states have been migrated to use BQ-based
+#  ingest view materialization.
 class PostgresDirectIngestIngestFileMetadataManager(
     DirectIngestIngestFileMetadataManager
 ):
@@ -540,7 +541,9 @@ class PostgresDirectIngestIngestFileMetadataManager(
             session.execute(delete_query)
 
 
-class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
+class PostgresDirectIngestFileMetadataManager(
+    DirectIngestRawFileMetadataManager, DirectIngestIngestFileMetadataManager
+):
     """An implementation for a class that handles writing metadata about each direct
     ingest file to the operations Postgres table.
     """
