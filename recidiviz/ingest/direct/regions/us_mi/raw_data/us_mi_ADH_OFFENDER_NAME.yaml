@@ -6,19 +6,37 @@ primary_key_cols:
   - offender_id
   - sequence_number
 columns:
-  # TODO(#11282) - add descriptions to needed fields.
   - name: offender_id
+    description: The OMNI-database generated ID for the justice-involved individual.
   - name: sequence_number
+    description: |-
+      The sequence number associated with the person - the sequence number indicates the 
+      latest jurisdiction for a person within MDOC.
   - name: offender_name_type_id
   - name: last_name
+    description: The last name of the justice-involved individual
   - name: first_name
+    description: The first name of the justice-involved individual
   - name: middle_name
+    description: The middle name of the justice-involved individual
   - name: name_suffix
+    description: The name suffix (Jr., Sr. III) of the justice-involved individual
   - name: birth_date
+    description: The birthdate of the justice-involved individual
+    is_datetime: True
   - name: birth_city
   - name: birth_state_id
   - name: birth_country_id
   - name: sex_id
+    description: |-
+      The flag that indicates a person's sex (as indicated by the REFERENCE_CODE table).
+    known_values:
+      - value: '435'
+        description: Male
+      - value: '434'
+        description: Female
+      - value: '7403'
+        description: Unknown
   - name: create_date
   - name: last_name_soundex
   - name: last_name_lookup
