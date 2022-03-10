@@ -23,7 +23,7 @@ def upgrade() -> None:
         sa.Column(
             "should_see_beta_charts",
             sa.Boolean(),
-            nullable=False,
+            nullable=True,
             comment="User has permission to view Leadership Dashboard beta charts",
         ),
     )
