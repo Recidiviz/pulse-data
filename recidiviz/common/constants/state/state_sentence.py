@@ -35,9 +35,13 @@ class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     # Pardoned means that the executive branch has removed the conviction after the fact,
     # but the judgment may remain until expunged from the record in some cases
     PARDONED = state_enum_strings.state_sentence_status_pardoned
+    # The trial or court order is still in progress
+    PENDING = state_enum_strings.state_sentence_status_pending
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     # Revoked means someone was on probation and that probation sentence was revoked / turned into incarceration
     REVOKED = state_enum_strings.state_sentence_status_revoked
+    # A court sanction was handed down that doesn't include any term to serve but may include, e.g. fines and fees
+    SANCTIONED = state_enum_strings.state_sentence_status_sanctioned
     SERVING = state_enum_strings.state_sentence_status_serving
     SUSPENDED = state_enum_strings.state_sentence_status_suspended
     # Vacated means that a previous judgment was voided by the judiciary - the judgment is completely undone
@@ -56,8 +60,10 @@ _STATE_SENTENCE_STATUS_MAP = {
     "COMPLETED": StateSentenceStatus.COMPLETED,
     "EXTERNAL UNKNOWN": StateSentenceStatus.EXTERNAL_UNKNOWN,
     "PARDONED": StateSentenceStatus.PARDONED,
+    "PENDING": StateSentenceStatus.PENDING,
     "PRESENT WITHOUT INFO": StateSentenceStatus.PRESENT_WITHOUT_INFO,
     "REVOKED": StateSentenceStatus.REVOKED,
+    "SANCTIONED": StateSentenceStatus.SANCTIONED,
     "SERVING": StateSentenceStatus.SERVING,
     "SUSPENDED": StateSentenceStatus.SUSPENDED,
     "VACATED": StateSentenceStatus.VACATED,

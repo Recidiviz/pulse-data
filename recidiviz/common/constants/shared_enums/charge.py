@@ -26,6 +26,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 class ChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
     ACQUITTED = enum_strings.charge_status_acquitted
+    ADJUDICATED = enum_strings.charge_status_adjudicated
     COMPLETED_SENTENCE = enum_strings.charge_status_completed
     CONVICTED = enum_strings.charge_status_convicted
     DROPPED = enum_strings.charge_status_dropped
@@ -36,6 +37,7 @@ class ChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
     SENTENCED = enum_strings.charge_status_sentenced
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
+    TRANSFERRED_AWAY = enum_strings.charge_status_transferred_away
 
     @staticmethod
     def _get_default_map() -> Dict[str, Optional["ChargeStatus"]]:
@@ -53,6 +55,7 @@ _CHARGE_STATUS_MAP = {
     "24HR HOLD": ChargeStatus.PENDING,
     "ACCEPTED": ChargeStatus.PRETRIAL,
     "ACQUITTED": ChargeStatus.ACQUITTED,
+    "ADJUDICATED": ChargeStatus.ADJUDICATED,
     "ADMINISTRATIVE RELEASE": ChargeStatus.PRETRIAL,
     "ALT SENT": ChargeStatus.SENTENCED,
     "AMENDED": None,
@@ -236,6 +239,7 @@ _CHARGE_STATUS_MAP = {
     "TIME EXPIRED": ChargeStatus.COMPLETED_SENTENCE,
     "TIME SERVED": ChargeStatus.COMPLETED_SENTENCE,
     "TIME SUSPENDED": ChargeStatus.SENTENCED,
+    "TRANSFERRED_AWAY": ChargeStatus.TRANSFERRED_AWAY,
     "TRUE BILL OF INDICTMENT": ChargeStatus.PRETRIAL,
     "UNDER SENTENCE": ChargeStatus.SENTENCED,
     "UNKNOWN": ChargeStatus.EXTERNAL_UNKNOWN,

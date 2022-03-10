@@ -92,6 +92,7 @@ bond_status_set = "SET"
 # charge.py
 
 charge_status_acquitted = "ACQUITTED"
+charge_status_adjudicated = "ADJUDICATED"
 charge_status_completed = "COMPLETED_SENTENCE"
 charge_status_convicted = "CONVICTED"
 charge_status_dropped = "DROPPED"
@@ -99,3 +100,4 @@ charge_status_inferred_dropped = "INFERRED_DROPPED"
 charge_status_pending = "PENDING"
 charge_status_pretrial = "PRETRIAL"
 charge_status_sentenced = "SENTENCED"
+charge_status_transferred_away = "TRANSFERRED_AWAY"

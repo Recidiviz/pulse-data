@@ -1,0 +1,190 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Client_Id
+  - Term_Id
+  - Court_Order_Id
+  - Charge_Id
+  - Court_Finding_Date
+  - Court_Order_Sent_Date
+  - Sentence_Start_Date
+  - Comm_Rel_Date
+  - completion_date
+  - Prob_Yrs_Num
+  - Prob_Mths_Num
+  - Prob_Days_Num
+  - E_Crt_Order_Status_Desc
+  - Sex_Offense_Cd
+  - Comm_Override_Reason
+  - Consecutive_Court_Order_Id
+  - Judge_Professional_Id
+  - conditions
+  - E_Charge_Outcome_Desc
+  - Offense_Date
+  - Referral_Date
+  - Offense_Class_Cd
+  - Jurisdiction_County_Cd
+  - Comments_Tx
+  - E_Offence_Type_Desc
+  - Mejis_Offns_Class_Tx
+  - Mejis_Offns_Title_Tx
+  - Mejis_Offns_Section_Tx
+  - First_Name
+  - Last_Name
+  - E_Professional_Type_Desc
+  - E_Term_Status_Desc
+  - Term_Intake_Date
+  - Term_Early_Cust_Rel_Date
+  - Term_Max_Cust_Rel_Date
+  - Term_Comm_Rel_Date
+unused_columns: []
+variables:
+  - is_sex_offense:
+      $in:
+        $value: Sex_Offense_Cd
+        $options:
+          - $literal("23")
+          - $literal("24")
+          - $literal("137")
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Client_Id
+          id_type: $literal("US_ME_DOC")
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id:
+            $concat:
+              $values:
+                - Client_Id
+                - Term_Id
+                - Court_Order_Id
+          status:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - Comm_Override_Reason
+                    - E_Crt_Order_Status_Desc
+                  $include_nulls: True
+              $custom_parser: us_me_custom_enum_parsers.parse_supervision_sentence_status
+          supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
+          date_imposed: Court_Order_Sent_Date
+          start_date: Sentence_Start_Date
+          projected_completion_date: Comm_Rel_Date
+          completion_date: completion_date
+          county_code: Jurisdiction_County_Cd
+          max_length_days:
+            $custom:
+              $function: us_me_custom_parsers.total_days_from_ymd
+              $args:
+                years: Prob_Yrs_Num
+                months: Prob_Mths_Num
+                days: Prob_Days_Num
+                start_date: Sentence_Start_Date
+          sentence_metadata:
+            $json_dict:
+              consecutive_sentence_id: Consecutive_Court_Order_Id
+              term_status: E_Term_Status_Desc
+              term_intake_date: Term_Intake_Date
+              term_early_custody_release_date: Term_Early_Cust_Rel_Date
+              term_max_custody_release_date: Term_Max_Cust_Rel_Date
+              term_community_release_date: Term_Comm_Rel_Date
+          conditions: conditions
+          charges:
+            - StateCharge:
+                external_id:
+                  $concat:
+                    $values:
+                      - Client_Id
+                      - Term_Id
+                      - Court_Order_Id
+                      - Charge_Id
+                status:
+                  $enum_mapping:
+                    $raw_text: E_Charge_Outcome_Desc
+                    $mappings:
+                      ChargeStatus.ACQUITTED:
+                        - Acquitted
+                        - NCR  # Not Criminally Responsible
+                      ChargeStatus.ADJUDICATED:
+                        - Adjudicated
+                        - Deferred Disposition
+                      ChargeStatus.CONVICTED:
+                        - Convicted
+                      ChargeStatus.DROPPED:
+                        - Dismissed
+                        - Charge Dropped
+                        - Incompetent
+                      ChargeStatus.PENDING:
+                        - Charge Pending
+                        - Filed
+                      ChargeStatus.TRANSFERRED_AWAY:
+                        - Bound Over-Case Transferred
+                offense_date: Offense_Date
+                date_charged: Referral_Date
+                county_code: Jurisdiction_County_Cd
+                statute:
+                  $concat:
+                    $values:
+                      - Mejis_Offns_Class_Tx
+                      - Mejis_Offns_Title_Tx
+                      - Mejis_Offns_Section_Tx
+                    $separator: '_'
+                description: E_Offence_Type_Desc
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: Offense_Class_Cd
+                    $mappings:
+                      StateChargeClassificationType.CIVIL:
+                        - V  # Civil Violation
+                      StateChargeClassificationType.FELONY:
+                        - A  # Class A (Felony)
+                        - B  # Class B (Felony)
+                        - C  # Class C (Felony)
+                        - F  # Unclassified Felonies
+                        - M  # Murder
+                      StateChargeClassificationType.MISDEMEANOR:
+                        - D  # Class D (Misdemeanor)
+                        - E  # Class E (Misdemeanor)
+                        - U  # Unclassified Misdemeanors
+                      StateChargeClassificationType.OTHER:
+                        - T  # Class T
+                      StateChargeClassificationType.EXTERNAL_UNKNOWN:
+                        - X  # Migration - class unknown in source
+                        - Z  # Migration - class invalid in source
+                is_sex_offense: $variable(is_sex_offense)
+                charge_notes: Comments_Tx
+                court_case:
+                  StateCourtCase:
+                    external_id:
+                      $concat:
+                        $values:
+                          - Client_Id
+                          - Term_Id
+                          - Court_Order_Id
+                    date_convicted: Court_Finding_Date
+                    county_code: Jurisdiction_County_Cd
+                    judge:
+                      $conditional:
+                        - $if:
+                            $not_null: Judge_Professional_Id
+                          $then:
+                            StateAgent:
+                              external_id: Judge_Professional_Id
+                              agent_type:
+                                $enum_mapping:
+                                  $raw_text: E_Professional_Type_Desc
+                                  $mappings:
+                                    StateAgentType.JUDGE:
+                                      - Judge
+                                    StateAgentType.JUSTICE:
+                                      - Justice
+                              full_name:
+                                $person_name:
+                                  $given_names: First_Name
+                                  $surname: Last_Name

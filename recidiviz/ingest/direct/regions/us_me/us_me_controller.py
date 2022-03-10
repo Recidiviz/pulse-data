@@ -43,4 +43,6 @@ class UsMeController(BaseDirectIngestController):
             "CURRENT_STATUS_incarceration_periods",
             "assessments",
             "supervision_violations",
+            "incarceration_sentences",
+            "supervision_sentences",
         ]
