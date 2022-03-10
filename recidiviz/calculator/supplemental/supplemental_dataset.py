@@ -32,6 +32,7 @@ from recidiviz.calculator.supplemental.dataset_config import SUPPLEMENTAL_DATA_D
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
+# TODO(#11312): Remove once dataflow pipeline is deployed.
 TEMP_DATASET_ID = f"temp_{SUPPLEMENTAL_DATA_DATASET}"
 QUERY_PAGE_SIZE = 50000
 DEFAULT_TEMPORARY_TABLE_EXPIRATION = 4 * 60 * 60 * 1000  # 4 hours

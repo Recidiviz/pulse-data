@@ -26,6 +26,7 @@ from recidiviz.calculator.supplemental.supplemental_dataset import (
 from recidiviz.common.constants.states import StateCode
 
 
+# TODO(#11312): Remove once dataflow pipeline is deployed.
 class SupplementalDatasetGeneratorFactory:
     """Returns the appropriate state-specific supplemental dataset generator, if it
     exists."""

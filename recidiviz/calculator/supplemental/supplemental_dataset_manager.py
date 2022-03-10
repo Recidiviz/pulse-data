@@ -43,6 +43,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
+# TODO(#11312): Remove once dataflow pipeline is deployed.
 supplemental_dataset_manager_blueprint = Blueprint("supplemental_dataset", __name__)
 
 

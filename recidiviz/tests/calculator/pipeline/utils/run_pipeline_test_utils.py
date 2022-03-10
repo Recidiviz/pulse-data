@@ -32,6 +32,9 @@ from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
 from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline import (
     NormalizationPipelineRunDelegate,
 )
+from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
+    SupplementalDatasetPipelineRunDelegate,
+)
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
@@ -105,19 +108,25 @@ def run_test_pipeline(
                     write_to_bq_constructor,
                 ):
                     with patch(
-                        "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
-                        pipeline_constructor,
+                        "recidiviz.calculator.pipeline.supplemental"
+                        ".us_id_case_note_extracted_entities.pipeline"
+                        ".WriteToBigQuery",
+                        write_to_bq_constructor,
                     ):
                         with patch(
-                            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
-                            get_job_id,
+                            "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
+                            pipeline_constructor,
                         ):
-                            pipeline = BasePipeline(
-                                pipeline_run_delegate=run_delegate.build_from_args(
-                                    pipeline_args
+                            with patch(
+                                "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
+                                get_job_id,
+                            ):
+                                pipeline = BasePipeline(
+                                    pipeline_run_delegate=run_delegate.build_from_args(
+                                        pipeline_args
+                                    )
                                 )
-                            )
-                            pipeline.run()
+                                pipeline.run()
 
 
 def default_data_dict_for_root_schema_classes(
@@ -225,6 +234,8 @@ def default_arg_list_for_pipeline(
             )
         )
     elif issubclass(run_delegate, NormalizationPipelineRunDelegate):
+        pass
+    elif issubclass(run_delegate, SupplementalDatasetPipelineRunDelegate):
         pass
     else:
         raise ValueError(f"Unexpected PipelineRunDelegate type: {type(run_delegate)}.")

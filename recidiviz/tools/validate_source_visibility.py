@@ -198,26 +198,30 @@ def main() -> int:
     for pipeline in collect_all_pipeline_run_delegate_modules():
         if pipeline.__file__ is None:
             raise ValueError(f"No file associated with {pipeline}.")
-        success &= check_dependencies_for_entrypoint(
-            pipeline.__file__,
-            valid_module_prefixes=make_module_matcher(
+        valid_prefixes = {
+            "recidiviz.big_query.big_query_view",
+            "recidiviz.calculator",
+            "recidiviz.common",
+            # TODO(#6795): Get rid of this dependency
+            "recidiviz.ingest.aggregate",
+            "recidiviz.persistence",
+            "recidiviz.utils",
+        }
+        if "metrics" in pipeline.__name__ or "normalization" in pipeline.__name__:
+            valid_prefixes = valid_prefixes.union(
                 {
-                    "recidiviz.big_query.big_query_view",
                     "recidiviz.big_query.big_query_utils",
-                    "recidiviz.calculator",
-                    "recidiviz.common",
-                    # TODO(#6795): Get rid of this dependency
-                    "recidiviz.ingest.aggregate",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.direct",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.models",
-                    "recidiviz.persistence",
-                    "recidiviz.utils",
                 }
-            ),
+            )
+        success &= check_dependencies_for_entrypoint(
+            pipeline.__file__,
+            valid_module_prefixes=make_module_matcher(valid_prefixes),
         )
 
     success &= check_dependencies_for_entrypoint(

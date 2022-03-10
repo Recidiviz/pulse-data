@@ -24,6 +24,7 @@ from recidiviz.calculator.supplemental.supplemental_dataset import (
 )
 
 
+# TODO(#11312): Remove once dataflow pipeline is deployed.
 class UsIdSupplementalDatasetGenerator(StateSpecificSupplementalDatasetGenerator):
     """Contains the supplemental datasets for US_ID"""
 
