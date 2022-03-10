@@ -16,6 +16,5 @@
 # =============================================================================
 """Various BigQuery datasets for supplemental data."""
 
-# TODO(#11312): Remove once dataflow pipeline is deployed.
 # Where Supplemental state datasets live
 SUPPLEMENTAL_DATA_DATASET: str = "supplemental_data"

@@ -30,7 +30,8 @@ US_ID_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
     WITH person_id_with_external_ids AS (
         SELECT
             person_id,
-            external_id AS person_external_id
+            external_id AS person_external_id,
+            state_code
         FROM
             `{project_id}.{base_dataset}.state_person_external_id`
         WHERE

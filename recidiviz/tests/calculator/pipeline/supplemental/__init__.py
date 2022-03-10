@@ -14,8 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Various BigQuery datasets for supplemental data."""
-
-# TODO(#11312): Remove once dataflow pipeline is deployed.
-# Where Supplemental state datasets live
-SUPPLEMENTAL_DATA_DATASET: str = "supplemental_data"

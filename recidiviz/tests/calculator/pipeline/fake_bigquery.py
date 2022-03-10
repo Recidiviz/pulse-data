@@ -503,6 +503,22 @@ class FakeWriteNormalizedEntitiesToBigQuery(FakeWriteToBigQuery):
         return []
 
 
+class FakeWriteExactOutputToBigQuery(FakeWriteToBigQuery):
+    """Fake PTransform for pipelines that no-ops instead of writing given rows to BQ."""
+
+    def __init__(
+        self,
+        output_table: str,
+        expected_output_tags: Collection[str],
+        expected_output: List[Dict[str, Any]],
+    ) -> None:
+        super().__init__(output_table, expected_output_tags)
+        self._expected_output = expected_output
+
+    def expand(self, input_or_inputs: PCollection) -> Any:
+        assert_that(input_or_inputs, equal_to(self._expected_output))
+
+
 FakeWriteToBigQueryType = TypeVar("FakeWriteToBigQueryType", bound=FakeWriteToBigQuery)
 
 

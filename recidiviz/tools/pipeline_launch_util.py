@@ -27,6 +27,9 @@ from recidiviz.calculator.pipeline import metrics as metrics_pipeline_top_level
 from recidiviz.calculator.pipeline import (
     normalization as normalization_pipeline_top_level,
 )
+from recidiviz.calculator.pipeline import (
+    supplemental as supplemental_pipeline_top_level,
+)
 from recidiviz.calculator.pipeline.base_pipeline import (
     BasePipeline,
     PipelineRunDelegate,
@@ -36,6 +39,7 @@ from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
     metrics_pipeline_top_level,
     normalization_pipeline_top_level,
+    supplemental_pipeline_top_level,
 ]
 
 

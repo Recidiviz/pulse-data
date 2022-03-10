@@ -24,7 +24,6 @@ from recidiviz.common.text_analysis import (
 )
 
 
-# TODO(#11312): Remove once dataflow pipeline is deployed.
 class UsIdTextEntity(TextEntity):
     """Flags for indicators based on free text matching for US_ID."""
 
