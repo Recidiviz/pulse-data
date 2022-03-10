@@ -18,6 +18,9 @@
 import datetime
 from typing import Optional, Type
 
+from freezegun import freeze_time
+
+from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
@@ -31,10 +34,20 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
+from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_court_case import (
+    StateCourtCaseStatus,
+    StateCourtType,
+)
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -51,6 +64,8 @@ from recidiviz.ingest.direct.regions.us_me.us_me_controller import UsMeControlle
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
+    StateCharge,
+    StateCourtCase,
     StatePerson,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
@@ -63,6 +78,8 @@ from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests i
 from recidiviz.tests.ingest.direct.regions.utils import (
     add_assessment_to_person,
     add_incarceration_period_to_person,
+    add_incarceration_sentence_to_person,
+    add_supervision_sentence_to_person,
     build_state_person_entity,
 )
 
@@ -84,6 +101,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
     def schema_type(cls) -> SchemaType:
         return SchemaType.STATE
 
+    @freeze_time("2022-04-08")
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         ######################################
         # CLIENT
@@ -654,6 +672,610 @@ class TestUsMeController(BaseDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename("supervision_violations")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # Incarceration Sentences
+        ######################################
+
+        person_1_incarceration_sentence_1 = add_incarceration_sentence_to_person(
+            person=person_1,
+            external_id="00000001-111123-371000",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text=None,
+            date_imposed=datetime.date(2019, 6, 8),
+            start_date=datetime.date(2019, 6, 8),
+            projected_min_release_date=datetime.date(2020, 9, 16),
+            projected_max_release_date=datetime.date(2020, 12, 5),
+            completion_date=datetime.date(2020, 9, 16),
+            county_code="25",
+            max_length_days=580,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=80,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2020-06-04 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2020-09-11 00:00:00", "TERM_INTAKE_DATE": "2019-04-18 08:42:00", "TERM_MAX_CUSTODY_RELEASE_DATE": "2021-12-14 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        person_1_charge_1 = StateCharge(
+            external_id="00000001-111123-371000-377710",
+            state_code="US_ME",
+            status=ChargeStatus.CONVICTED,
+            status_raw_text="CONVICTED",
+            offense_date=datetime.date(2016, 5, 30),
+            date_charged=None,
+            county_code="25",
+            statute="X_29-A_1234",
+            description="OPERATING UNDER THE INFLUENCE (X) {1234}",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="C",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_1,
+            incarceration_sentences=[person_1_incarceration_sentence_1],
+        )
+
+        person_1_charge_1_court_case = StateCourtCase(
+            external_id="00000001-111123-371000",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
+            date_convicted=datetime.date(2019, 6, 5),
+            county_code="25",
+            judge=StateAgent(
+                external_id="123",
+                state_code="US_ME",
+                agent_type=StateAgentType.JUDGE,
+                agent_type_raw_text="JUDGE",
+                full_name='{"given_names": "MICHAEL", "middle_names": "", "name_suffix": "", "surname": "SANDISON"}',
+            ),
+            person=person_1,
+            charges=[person_1_charge_1],
+        )
+
+        person_1_charge_1.court_case = person_1_charge_1_court_case
+        person_1_incarceration_sentence_1.charges = [person_1_charge_1]
+
+        person_1_incarceration_sentence_2 = add_incarceration_sentence_to_person(
+            person=person_1,
+            external_id="00000001-111123-371002",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text=None,
+            date_imposed=datetime.date(2019, 6, 8),
+            start_date=datetime.date(2019, 6, 8),
+            projected_min_release_date=datetime.date(2019, 6, 8),
+            projected_max_release_date=datetime.date(2019, 6, 8),
+            completion_date=datetime.date(2019, 6, 8),
+            county_code="1",
+            max_length_days=0,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=0,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2020-06-04 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2020-09-11 00:00:00", "TERM_INTAKE_DATE": "2019-04-18 08:42:00", "TERM_MAX_CUSTODY_RELEASE_DATE": "2021-12-14 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        person_1_charge_2 = StateCharge(
+            external_id="00000001-111123-371002-377723",
+            state_code="US_ME",
+            status=ChargeStatus.CONVICTED,
+            status_raw_text="CONVICTED",
+            offense_date=datetime.date(2019, 4, 30),
+            date_charged=None,
+            county_code="1",
+            statute="E_29-D_9878",
+            description="CRIMINAL TRESPASSING (E) {11000}",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="E",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_1,
+            incarceration_sentences=[person_1_incarceration_sentence_2],
+        )
+
+        person_1_charge_2_court_case = StateCourtCase(
+            external_id="00000001-111123-371002",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
+            date_convicted=datetime.date(2019, 6, 5),
+            county_code="1",
+            person=person_1,
+            charges=[person_1_charge_2],
+        )
+
+        person_1_charge_2.court_case = person_1_charge_2_court_case
+        person_1_incarceration_sentence_2.charges = [person_1_charge_2]
+
+        person_1_incarceration_sentence_3 = add_incarceration_sentence_to_person(
+            person=person_1,
+            external_id="00000001-111123-371006",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="COUNTY JAIL",
+            date_imposed=datetime.date(2016, 7, 6),
+            start_date=datetime.date(2016, 7, 6),
+            projected_min_release_date=datetime.date(2016, 10, 19),
+            projected_max_release_date=datetime.date(2017, 1, 1),
+            completion_date=datetime.date(2016, 10, 19),
+            county_code=None,
+            max_length_days=0,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=0,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2020-06-04 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2020-09-11 00:00:00", "TERM_INTAKE_DATE": "2019-04-18 08:42:00", "TERM_MAX_CUSTODY_RELEASE_DATE": "2021-12-14 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions="CANNOT OPERATE A MOTOR VEHICLE\\NNEED STABLE EMPLOYMENT FOR Z MONTHS\\NSOMETHING ABOUT SUBSTANCE USE",
+        )
+
+        person_1_charge_3 = StateCharge(
+            external_id="00000001-111123-371006-170352",
+            state_code="US_ME",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            offense_date=datetime.date(2016, 5, 30),
+            date_charged=None,
+            county_code=None,
+            statute="X_29-A_1234",
+            description="OPERATING UNDER THE INFLUENCE (X) {1234}",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="C",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_1,
+            incarceration_sentences=[person_1_incarceration_sentence_3],
+        )
+
+        person_1_charge_3_court_case = StateCourtCase(
+            external_id="00000001-111123-371006",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
+            date_convicted=datetime.date(2016, 6, 24),
+            county_code=None,
+            judge=StateAgent(
+                external_id="123",
+                state_code="US_ME",
+                agent_type=StateAgentType.JUDGE,
+                agent_type_raw_text="JUDGE",
+                full_name='{"given_names": "MICHAEL", "middle_names": "", "name_suffix": "", "surname": "SANDISON"}',
+            ),
+            person=person_1,
+            charges=[person_1_charge_3],
+        )
+
+        person_1_charge_3.court_case = person_1_charge_3_court_case
+        person_1_incarceration_sentence_3.charges = [person_1_charge_3]
+
+        person_2_incarceration_sentence_1 = add_incarceration_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222123-542890",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="COUNTY JAIL",
+            date_imposed=datetime.date(2020, 9, 25),
+            start_date=datetime.date(2020, 9, 25),
+            projected_min_release_date=datetime.date(2020, 11, 18),
+            projected_max_release_date=datetime.date(2020, 12, 23),
+            completion_date=datetime.date(2020, 11, 18),
+            county_code=None,
+            max_length_days=90,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=0,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2018-08-24 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2018-11-01 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2020-02-23 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        person_2_charge_1 = StateCharge(
+            external_id="00000002-222123-542890-858088",
+            state_code="US_ME",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            offense_date=datetime.date(2017, 6, 26),
+            date_charged=None,
+            county_code=None,
+            statute="E_29-B_2411",
+            description="CARRYING AN UNREGISTERED FIREARM (E) {5555}",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="E",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_2,
+            incarceration_sentences=[person_2_incarceration_sentence_1],
+        )
+
+        person_2_charge_1_court_case = StateCourtCase(
+            external_id="00000002-222123-542890",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
+            date_convicted=datetime.date(2020, 9, 25),
+            county_code=None,
+            person=person_2,
+            charges=[person_2_charge_1],
+        )
+
+        person_2_charge_1.court_case = person_2_charge_1_court_case
+        person_2_incarceration_sentence_1.charges = [person_2_charge_1]
+
+        person_2_incarceration_sentence_2 = add_incarceration_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222123-542894",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text="COUNTY JAIL",
+            date_imposed=datetime.date(2020, 9, 25),
+            start_date=datetime.date(2020, 9, 25),
+            projected_min_release_date=datetime.date(2020, 11, 18),
+            projected_max_release_date=datetime.date(2020, 12, 23),
+            completion_date=datetime.date(2020, 11, 18),
+            county_code=None,
+            max_length_days=0,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=0,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2018-08-24 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2018-11-01 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2020-02-23 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        person_2_charge_2 = StateCharge(
+            external_id="00000002-222123-542894-333662",
+            state_code="US_ME",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            offense_date=datetime.date(2019, 12, 10),
+            date_charged=None,
+            county_code=None,
+            statute="X_29-A_1234",
+            description="OPERATING UNDER THE INFLUENCE (X) {1234}",
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="C",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_2,
+            incarceration_sentences=[person_2_incarceration_sentence_2],
+        )
+
+        person_2_charge_2_court_case = StateCourtCase(
+            external_id="00000002-222123-542894",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
+            date_convicted=datetime.date(2020, 9, 25),
+            county_code=None,
+            person=person_2,
+            charges=[person_2_charge_2],
+        )
+
+        person_2_charge_2.court_case = person_2_charge_2_court_case
+        person_2_incarceration_sentence_2.charges = [person_2_charge_2]
+
+        person_2_incarceration_sentence_3 = add_incarceration_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222123-542898",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text=None,
+            date_imposed=datetime.date(2020, 1, 4),
+            start_date=datetime.date(2020, 1, 4),
+            projected_min_release_date=datetime.date(2020, 3, 10),
+            projected_max_release_date=datetime.date(2020, 4, 3),
+            completion_date=datetime.date(2020, 4, 3),
+            county_code=None,
+            max_length_days=0,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=0,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2018-08-24 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2018-11-01 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2020-02-23 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        person_2_charge_3 = StateCharge(
+            external_id="00000002-222123-542898-858088",
+            state_code="US_ME",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            offense_date=datetime.date(2017, 6, 26),
+            date_charged=None,
+            county_code=None,
+            statute="E_29-B_2411",
+            description="CARRYING AN UNREGISTERED FIREARM (E) {5555}",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="E",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_2,
+            incarceration_sentences=[person_2_incarceration_sentence_3],
+        )
+
+        person_2_charge_3_court_case = StateCourtCase(
+            external_id="00000002-222123-542898",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
+            date_convicted=datetime.date(2019, 11, 2),
+            county_code=None,
+            judge=StateAgent(
+                external_id="456",
+                state_code="US_ME",
+                agent_type=StateAgentType.JUSTICE,
+                agent_type_raw_text="JUSTICE",
+                full_name='{"given_names": "MARCUS", "middle_names": "", "name_suffix": "", "surname": "EOIN"}',
+            ),
+            person=person_2,
+            charges=[person_2_charge_3],
+        )
+
+        person_2_charge_3.court_case = person_2_charge_3_court_case
+        person_2_incarceration_sentence_3.charges = [person_2_charge_3]
+
+        person_2_incarceration_sentence_4 = add_incarceration_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222456-542892",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="EARLY TERMINATION",
+            date_imposed=datetime.date(2012, 4, 8),
+            start_date=datetime.date(2012, 4, 8),
+            projected_min_release_date=datetime.date(2012, 5, 26),
+            projected_max_release_date=datetime.date(2012, 6, 21),
+            completion_date=datetime.date(2012, 5, 26),
+            county_code=None,
+            max_length_days=0,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=0,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2012-10-15 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2012-05-26 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2012-06-24 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        person_2_charge_4 = StateCharge(
+            external_id="00000002-222456-542892-123456",
+            state_code="US_ME",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            offense_date=datetime.date(2011, 8, 2),
+            date_charged=None,
+            county_code=None,
+            statute="D_29-C_3421",
+            description="BREAKING AND ENTERING (D) {4858}",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="D",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_2,
+            incarceration_sentences=[person_2_incarceration_sentence_4],
+        )
+
+        person_2_charge_4_court_case = StateCourtCase(
+            external_id="00000002-222456-542892",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            date_convicted=datetime.date(2012, 4, 8),
+            county_code=None,
+            person=person_2,
+            charges=[person_2_charge_4],
+        )
+
+        person_2_charge_4.court_case = person_2_charge_4_court_case
+        person_2_incarceration_sentence_4.charges = [person_2_charge_4]
+
+        # Act
+        self._run_ingest_job_for_filename("incarceration_sentences")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # Supervision Sentences
+        ######################################
+
+        person_1_supervision_sentence_1 = add_supervision_sentence_to_person(
+            person=person_1,
+            external_id="00000001-111123-371006",
+            state_code="US_ME",
+            status=StateSentenceStatus.REVOKED,
+            status_raw_text="PARTIAL REVOCATION - TERMINATE@@COMPLETE",
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            supervision_type_raw_text=None,
+            date_imposed=datetime.date(2016, 7, 6),
+            start_date=datetime.date(2016, 7, 6),
+            projected_completion_date=datetime.date(2019, 6, 5),
+            completion_date=datetime.date(2019, 6, 5),
+            county_code=None,
+            max_length_days=730,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2020-06-04 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2020-09-11 00:00:00", "TERM_INTAKE_DATE": "2019-04-18 08:42:00", "TERM_MAX_CUSTODY_RELEASE_DATE": "2021-12-14 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions="CANNOT OPERATE A MOTOR VEHICLE\\NNEED STABLE EMPLOYMENT FOR Z MONTHS\\NSOMETHING ABOUT SUBSTANCE USE",
+        )
+
+        # This is the same charge, entity matched
+        person_1_s_charge_1 = person_1_charge_3
+        person_1_s_charge_1.supervision_sentences = [person_1_supervision_sentence_1]
+
+        # This is the same court case, entity matched
+        person_1_s_charge_1_court_case = person_1_charge_3_court_case
+
+        person_1_s_charge_1.court_case = person_1_s_charge_1_court_case
+        person_1_supervision_sentence_1.charges = [person_1_s_charge_1]
+
+        person_2_supervision_sentence_1 = add_supervision_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222123-542894",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="NONE@@COMPLETE",
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            supervision_type_raw_text=None,
+            date_imposed=datetime.date(2020, 9, 25),
+            start_date=datetime.date(2020, 9, 25),
+            projected_completion_date=datetime.date(2021, 11, 16),
+            completion_date=datetime.date(2021, 11, 16),
+            county_code=None,
+            max_length_days=365,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2018-08-24 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2018-11-01 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2020-02-23 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        # This is the same charge, entity matched
+        person_2_s_charge_1 = person_2_charge_2
+        person_2_s_charge_1.supervision_sentences = [person_2_supervision_sentence_1]
+
+        # This is the same court case, entity matched
+        person_2_s_charge_1_court_case = person_2_charge_2_court_case
+
+        person_2_s_charge_1.court_case = person_2_s_charge_1_court_case
+        person_2_supervision_sentence_1.charges = [person_2_s_charge_1]
+
+        person_2_supervision_sentence_2 = add_supervision_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222123-542898",
+            state_code="US_ME",
+            status=StateSentenceStatus.REVOKED,
+            status_raw_text="PARTIAL REVOCATION - TERMINATE@@COMPLETE",
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            supervision_type_raw_text=None,
+            date_imposed=datetime.date(2020, 1, 4),
+            start_date=datetime.date(2020, 1, 4),
+            projected_completion_date=datetime.date(2020, 9, 25),
+            completion_date=datetime.date(2020, 9, 25),
+            county_code=None,
+            max_length_days=547,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2018-08-24 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2018-11-01 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2020-02-23 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        # This is the same charge, entity matched
+        person_2_s_charge_2 = person_2_charge_3
+        person_2_s_charge_2.supervision_sentences = [person_2_supervision_sentence_2]
+
+        # This is the same court case, entity matched
+        person_2_s_charge_2_court_case = person_2_charge_3_court_case
+
+        person_2_s_charge_2.court_case = person_2_s_charge_2_court_case
+        person_2_supervision_sentence_2.charges = [person_2_s_charge_2]
+
+        person_2_supervision_sentence_3 = add_supervision_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222456-542892",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="NONE@@COMPLETE",
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            supervision_type_raw_text=None,
+            date_imposed=datetime.date(2012, 4, 8),
+            start_date=datetime.date(2012, 4, 8),
+            projected_completion_date=datetime.date(2013, 5, 25),
+            completion_date=datetime.date(2013, 5, 25),
+            county_code=None,
+            max_length_days=365,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2012-10-15 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2012-05-26 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2012-06-24 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        # This is the same charge, entity matched
+        person_2_s_charge_3 = person_2_charge_4
+        person_2_s_charge_3.supervision_sentences = [person_2_supervision_sentence_3]
+
+        # This is the same court case, entity matched
+        person_2_s_charge_3_court_case = person_2_charge_4_court_case
+
+        person_2_s_charge_3.court_case = person_2_s_charge_3_court_case
+        person_2_supervision_sentence_3.charges = [person_2_s_charge_3]
+
+        person_2_supervision_sentence_4 = add_supervision_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222456-542896",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="EARLY TERMINATION@@COMPLETE",
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            supervision_type_raw_text=None,
+            date_imposed=datetime.date(2011, 4, 8),
+            start_date=datetime.date(2012, 5, 25),
+            projected_completion_date=datetime.date(2012, 12, 5),
+            completion_date=datetime.date(2012, 12, 5),
+            county_code=None,
+            max_length_days=365,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "542892", "TERM_COMMUNITY_RELEASE_DATE": "2012-10-15 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2012-05-26 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2012-06-24 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions="BI-WEEKLY THERAPY\\NBI-WEEKLY THERAPY\\NMUST LIVE WITHIN X MILES OF Y",
+        )
+
+        person_2_s_charge_4 = StateCharge(
+            external_id="00000002-222456-542896-907131",
+            state_code="US_ME",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            offense_date=datetime.date(2011, 8, 2),
+            date_charged=None,
+            county_code=None,
+            statute="D_29-C_3421",
+            description="BREAKING AND ENTERING (D) {4858}",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="D",
+            offense_type=None,
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_2,
+            supervision_sentences=[person_2_supervision_sentence_4],
+        )
+
+        person_2_s_charge_4_court_case = StateCourtCase(
+            external_id="00000002-222456-542896",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            court_type_raw_text=None,
+            date_convicted=datetime.date(2011, 4, 8),
+            county_code=None,
+            judge=StateAgent(
+                external_id="456",
+                state_code="US_ME",
+                agent_type=StateAgentType.JUSTICE,
+                agent_type_raw_text="JUSTICE",
+                full_name='{"given_names": "MARCUS", "middle_names": "", "name_suffix": "", "surname": "EOIN"}',
+            ),
+            person=person_2,
+            charges=[person_2_s_charge_4],
+        )
+
+        person_2_s_charge_4.court_case = person_2_s_charge_4_court_case
+        person_2_supervision_sentence_4.charges = [person_2_s_charge_4]
+
+        # Act
+        self._run_ingest_job_for_filename("supervision_sentences")
 
         # Assert
         self.assert_expected_db_people(expected_people)

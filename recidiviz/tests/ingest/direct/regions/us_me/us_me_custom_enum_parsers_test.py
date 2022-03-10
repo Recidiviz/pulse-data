@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
@@ -38,6 +39,7 @@ from recidiviz.ingest.direct.regions.us_me.us_me_custom_enum_parsers import (
     parse_admission_reason,
     parse_deciding_body_type,
     parse_release_reason,
+    parse_supervision_sentence_status,
     parse_supervision_violation_response_decision,
     parse_supervision_violation_response_type,
 )
@@ -492,3 +494,39 @@ class UsMeCustomEnumParsersTest(unittest.TestCase):
             StateSupervisionViolationResponseDecidingBodyType.COURT,
             parse_deciding_body_type(f"NONE@@{disposition_description}"),
         )
+
+    def test_parse_supervision_sentence_status_relevant_community_override_reason(
+        self,
+    ) -> None:
+        raw_text = "Full Revocation@@Complete"
+        parsed_status = parse_supervision_sentence_status(raw_text)
+
+        self.assertEqual(StateSentenceStatus.REVOKED, parsed_status)
+
+    def test_parse_supervision_sentence_status_relevant_relevant_court_order_status(
+        self,
+    ) -> None:
+        raw_text = "Deceased@@Probation"
+        parsed_status = parse_supervision_sentence_status(raw_text)
+
+        self.assertEqual(StateSentenceStatus.SERVING, parsed_status)
+
+    def test_parse_supervision_sentence_status_no_community_override_reason(
+        self,
+    ) -> None:
+        raw_text = "NONE@@Court Sanction"
+        parsed_status = parse_supervision_sentence_status(raw_text)
+
+        self.assertEqual(StateSentenceStatus.SANCTIONED, parsed_status)
+
+    def test_parse_supervision_sentence_status_no_court_order_status(self) -> None:
+        raw_text = "NONE@@NONE"
+        parsed_status = parse_supervision_sentence_status(raw_text)
+
+        self.assertEqual(StateSentenceStatus.PRESENT_WITHOUT_INFO, parsed_status)
+
+    def test_parse_supervision_sentence_status_neither_relevant(self) -> None:
+        raw_text = "Deceased@@Drug Court"
+        parsed_status = parse_supervision_sentence_status(raw_text)
+
+        self.assertEqual(StateSentenceStatus.PRESENT_WITHOUT_INFO, parsed_status)
