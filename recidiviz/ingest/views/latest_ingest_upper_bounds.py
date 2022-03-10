@@ -31,15 +31,6 @@ ingest_file_dates AS (
             processed_time IS NOT NULL AS is_processed
     FROM `{project_id}.operations.direct_ingest_ingest_file_metadata`
     WHERE NOT is_invalidated
-    -- TODO(#4268): These two lines can be cleaned up when we stop creating metadata rows for these.
-    AND (file_tag != 'early_discharge_supervision_sentence_deleted_rows' OR
-         datetimes_contained_lower_bound_exclusive IS NOT NULL OR
-         region_code != 'US_ID')
-    AND (file_tag != 'early_discharge_incarceration_sentence_deleted_rows' OR
-         datetimes_contained_lower_bound_exclusive IS NOT NULL OR
-         region_code != 'US_ID')
-    -- TODO(#5240): This line should be removed when the cleanup for this row is confirmed.
-    AND (file_tag != 'docstars_offendercasestable' OR region_code != 'US_ND')
 ),
 min_unprocessed_dates AS (
     SELECT state_code, COALESCE(ingest_file_date, DATE(3000, 01, 01)) AS ingest_file_date
