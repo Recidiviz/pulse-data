@@ -29,6 +29,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
@@ -381,3 +382,40 @@ def parse_deciding_body_type(
     # This is unreachable since we are filtering out NONE@@NONE in the enum_mapping conditional, and we should
     # never be returning None from this function.
     return None
+
+
+def parse_supervision_sentence_status(
+    raw_text: str,
+) -> Optional[StateSentenceStatus]:
+    """Parses the supervision sentence status from a combination of the community override reason code
+    and the court order status code. If there is a community override reason code that represents a sentence
+    status, we use that value. Otherwise, we use the court order status code.
+    """
+    (
+        community_override_reason,
+        court_order_status_description,
+    ) = raw_text.split("@@")
+
+    normalized_community_override_reason = community_override_reason.upper()
+    normalized_court_order_status = court_order_status_description.upper()
+
+    if "REVOCATION" in normalized_community_override_reason:
+        return StateSentenceStatus.REVOKED
+
+    if normalized_community_override_reason in ["EARLY TERMINATION"]:
+        return StateSentenceStatus.COMPLETED
+    if normalized_community_override_reason in ["VACATED SENTENCE"]:
+        return StateSentenceStatus.VACATED
+    if normalized_community_override_reason in ["COMMUTATION/PARDON"]:
+        return StateSentenceStatus.COMMUTED
+
+    if normalized_court_order_status in ["COMPLETE"]:
+        return StateSentenceStatus.COMPLETED
+    if normalized_court_order_status in ["PENDING", "PREDISPOSITION"]:
+        return StateSentenceStatus.PENDING
+    if normalized_court_order_status in ["COURT SANCTION"]:
+        return StateSentenceStatus.SANCTIONED
+    if normalized_court_order_status in ["COMMITTED", "PROBATION", "TOLLED"]:
+        return StateSentenceStatus.SERVING
+
+    return StateSentenceStatus.PRESENT_WITHOUT_INFO

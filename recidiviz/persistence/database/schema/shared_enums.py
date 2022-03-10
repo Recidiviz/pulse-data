@@ -71,6 +71,7 @@ residency_status = Enum(
 
 charge_status = Enum(
     enum_strings.charge_status_acquitted,
+    enum_strings.charge_status_adjudicated,
     enum_strings.charge_status_completed,
     enum_strings.charge_status_convicted,
     enum_strings.charge_status_dropped,
@@ -79,6 +80,7 @@ charge_status = Enum(
     enum_strings.charge_status_pending,
     enum_strings.charge_status_pretrial,
     enum_strings.charge_status_sentenced,
+    enum_strings.charge_status_transferred_away,
     enum_strings.present_without_info,
     enum_strings.removed_without_info,
     name="charge_status",

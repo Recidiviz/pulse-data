@@ -31,6 +31,7 @@ class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
     CORRECTIONAL_OFFICER = state_enum_strings.state_agent_correctional_officer
     JUDGE = state_enum_strings.state_agent_judge
+    JUSTICE = state_enum_strings.state_agent_justice
     PAROLE_BOARD_MEMBER = state_enum_strings.state_agent_parole_board_member
     # A parole/probation officer (PO)
     SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
@@ -46,6 +47,7 @@ _STATE_AGENT_TYPE_MAP = {
     "PRESENT WITHOUT INFO": StateAgentType.PRESENT_WITHOUT_INFO,
     "CORRECTIONAL OFFICER": StateAgentType.CORRECTIONAL_OFFICER,
     "JUDGE": StateAgentType.JUDGE,
+    "JUSTICE": StateAgentType.JUSTICE,
     "PAROLE BOARD MEMBER": StateAgentType.PAROLE_BOARD_MEMBER,
     "SUPERVISION OFFICER": StateAgentType.SUPERVISION_OFFICER,
     "UNIT SUPERVISOR": StateAgentType.UNIT_SUPERVISOR,
