@@ -506,7 +506,7 @@ class DashboardUserRestrictions(CaseTriageBase):
     )
     should_see_beta_charts = Column(
         Boolean,
-        nullable=False,
+        nullable=True,
         default=False,
         comment="User has permission to view Leadership Dashboard beta charts",
     )
