@@ -118,6 +118,7 @@ def cast_columns_to_int(
             # Since NaN is a float, we must cast the whole column to floats
             df[column_name] = df[column_name].astype(float)
         else:
+            df[column_name] = df[column_name].astype(float)
             df[column_name] = df[column_name].astype(int)
 
     return df
