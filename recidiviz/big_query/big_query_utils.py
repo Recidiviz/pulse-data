@@ -18,7 +18,8 @@
 import datetime
 import logging
 import string
-from typing import Any, Dict, List
+from enum import Enum
+from typing import Any, Dict, List, Type
 
 import attr
 import sqlalchemy
@@ -61,6 +62,34 @@ def schema_field_for_attribute(field_name: str, attribute: attr.Attribute) -> bi
     )
 
 
+def _schema_column_type_for_type(field_type: Type) -> str:
+    """Returns the schema column type that should be used to store the value of the
+    provided |field_type| in a BigQuery table."""
+    if field_type is Enum or field_type is str or field_type is List:
+        return bigquery.enums.SqlTypeNames.STRING.value
+    if field_type is int:
+        return bigquery.enums.SqlTypeNames.INTEGER.value
+    if field_type is float:
+        return bigquery.enums.SqlTypeNames.FLOAT.value
+    if field_type is datetime.date:
+        return bigquery.enums.SqlTypeNames.DATE.value
+    if field_type is datetime.datetime:
+        return bigquery.enums.SqlTypeNames.DATETIME.value
+    if field_type is bool:
+        return bigquery.enums.SqlTypeNames.BOOLEAN.value
+    # TODO(#7285): Add support for ARRAY types when we turn on the regular
+    #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
+    raise ValueError(f"Unhandled field type for field_type: {field_type}")
+
+
+def schema_field_for_type(field_name: str, field_type: Type) -> bigquery.SchemaField:
+    """Returns a BigQuery SchemaField object with the information needed for a column
+    with the name of |field_name| storing the values in the |field_type|."""
+    return bigquery.SchemaField(
+        field_name, _schema_column_type_for_type(field_type), mode="NULLABLE"
+    )
+
+
 def _schema_column_type_for_sqlalchemy_column(column: Column) -> str:
     """Returns the schema column type that should be used to store the value of the
     provided |column| in a BigQuery table."""
@@ -73,33 +102,17 @@ def _schema_column_type_for_sqlalchemy_column(column: Column) -> str:
 
     col_python_type = col_postgres_type.python_type
 
-    if col_python_type == str:
-        return bigquery.enums.SqlTypeNames.STRING.value
-    if col_python_type == int:
-        return bigquery.enums.SqlTypeNames.INTEGER.value
-    if col_python_type == float:
-        return bigquery.enums.SqlTypeNames.FLOAT.value
-    if col_python_type == datetime.date:
-        return bigquery.enums.SqlTypeNames.DATE.value
-    if col_python_type == datetime.datetime:
-        if (
-            isinstance(col_postgres_type, postgresql.TIMESTAMP)
-            or col_postgres_type.timezone
-        ):
-            return bigquery.enums.SqlTypeNames.TIMESTAMP.value
-        return bigquery.enums.SqlTypeNames.DATETIME.value
-    if col_python_type == bool:
-        return bigquery.enums.SqlTypeNames.BOOLEAN.value
+    if col_python_type == datetime.datetime and (
+        isinstance(col_postgres_type, postgresql.TIMESTAMP)
+        or col_postgres_type.timezone
+    ):
+        return bigquery.enums.SqlTypeNames.TIMESTAMP.value
     if col_python_type == dict and isinstance(
         col_postgres_type, (postgresql.JSON, postgresql.JSONB)
     ):
         return bigquery.enums.SqlTypeNames.STRING.value
-    # TODO(#7285): Add support for ARRAY types when we turn on the regular
-    #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
-    raise ValueError(
-        f"Unhandled column type for column: {column} "
-        f"with python type: {col_python_type}"
-    )
+
+    return _schema_column_type_for_type(col_python_type)
 
 
 def schema_for_sqlalchemy_table(

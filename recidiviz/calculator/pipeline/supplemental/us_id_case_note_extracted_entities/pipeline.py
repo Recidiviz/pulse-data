@@ -17,8 +17,9 @@
 """The us_id case note extracted entities supplemental dataset calculation pipeline. See
 recidiviz/tools/run_sandbox_calculation_pipeline.py for details on how to launch a
 local run."""
+import datetime
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple, Type
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
@@ -54,6 +55,22 @@ class UsIdCaseNoteExtractedEntitiesPipelineRunDelegate(
     def table_id(cls) -> str:
         return "us_id_case_note_matched_entities"
 
+    @classmethod
+    def table_fields(cls) -> Dict[str, Type]:
+        fields_from_case_updates: Dict[str, Type] = {
+            "person_id": int,
+            "person_external_id": str,
+            "state_code": str,
+            "agnt_case_updt_id": str,
+            "create_dt": datetime.date,
+            "create_by_usr_id": str,
+            "agnt_note_title": str,
+        }
+        default_entity_mapping_types: Dict[str, Type] = {
+            entity: bool for entity in cls.default_entity_mapping().keys()
+        }
+        return {**fields_from_case_updates, **default_entity_mapping_types}
+
     @property
     def text_analyzer(self) -> TextAnalyzer:
         return TextAnalyzer(
@@ -77,7 +94,7 @@ class UsIdCaseNoteExtractedEntitiesPipelineRunDelegate(
         final_rows: List[TableRow] = []
 
         for row in rows:
-            entity_mapping = deepcopy(self.default_entity_mapping)
+            entity_mapping = deepcopy(self.default_entity_mapping())
             agent_note_title = row["agnt_note_title"]
             if agent_note_title:
                 matched_entities = self.text_analyzer.extract_entities(agent_note_title)
@@ -97,15 +114,13 @@ class UsIdCaseNoteExtractedEntitiesPipelineRunDelegate(
                         continue
                     entity_mapping[entity_mapping_key] = True
             final_row: Dict[str, Any] = {**row, **entity_mapping}
-            final_row["create_dt"] = final_row["create_dt"].strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            final_row["create_dt"] = final_row["create_dt"].strftime("%Y-%m-%d")
             final_rows.append(json_serializable_dict(final_row))
 
         return final_rows
 
-    @property
-    def default_entity_mapping(self) -> Dict[str, bool]:
+    @classmethod
+    def default_entity_mapping(cls) -> Dict[str, bool]:
         return {
             entity.name.lower(): False
             for entity in UsIdTextEntity

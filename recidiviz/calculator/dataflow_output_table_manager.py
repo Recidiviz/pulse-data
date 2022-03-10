@@ -32,6 +32,12 @@ import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator import dataflow_config
+from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
+    SupplementalDatasetPipelineRunDelegate,
+)
+from recidiviz.calculator.pipeline.supplemental.dataset_config import (
+    SUPPLEMENTAL_DATA_DATASET,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
     bq_schema_for_normalized_state_entity,
@@ -42,6 +48,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
+from recidiviz.tools.pipeline_launch_util import (
+    collect_all_pipeline_run_delegate_classes,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -182,6 +191,41 @@ def update_normalized_state_schema(
             )
 
 
+def update_supplemental_dataset_schemas(
+    supplemental_metrics_dataset_id: str = SUPPLEMENTAL_DATA_DATASET,
+) -> None:
+    """For each table in the supplemental data dataset, ensures that all attributes on
+    the corresponding supplemental dataset are present in the table in BigQuery."""
+    bq_client = BigQueryClientImpl()
+
+    supplemental_metrics_dataset_ref = bq_client.dataset_ref_for_id(
+        supplemental_metrics_dataset_id
+    )
+
+    bq_client.create_dataset_if_necessary(supplemental_metrics_dataset_ref)
+    supplemental_data_pipeline_delegates = [
+        pipeline_delegate
+        for pipeline_delegate in collect_all_pipeline_run_delegate_classes()
+        if issubclass(pipeline_delegate, SupplementalDatasetPipelineRunDelegate)
+    ]
+
+    for delegate in supplemental_data_pipeline_delegates:
+        schema_for_supplemental_dataset = delegate.bq_schema_for_table()
+        table_id = delegate.table_id()
+        if bq_client.table_exists(supplemental_metrics_dataset_ref, table_id):
+            bq_client.update_schema(
+                supplemental_metrics_dataset_id,
+                table_id,
+                schema_for_supplemental_dataset,
+            )
+        else:
+            bq_client.create_table_with_schema(
+                supplemental_metrics_dataset_id,
+                table_id,
+                schema_for_supplemental_dataset,
+            )
+
+
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to call the desired function."""
     parser = argparse.ArgumentParser()
@@ -203,5 +247,6 @@ if __name__ == "__main__":
 
     with local_project_id_override(known_args.project_id):
         update_dataflow_metric_tables_schemas()
+        update_supplemental_dataset_schemas()
         for state in _get_pipeline_enabled_states():
             update_normalized_state_schema(state)
