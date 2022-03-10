@@ -87,6 +87,15 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     IngestViewResultsParserDelegateImpl,
     yaml_mappings_filepath,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.file_based_materialization_args_generator_delegate import (
+    FileBasedMaterializationArgsGeneratorDelegate,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer_delegate import (
+    FileBasedMaterializerDelegate,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
+    IngestViewMaterializationArgsGenerator,
+)
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
     LegacyIngestViewProcessorDelegate,
@@ -212,16 +221,35 @@ class BaseDirectIngestController:
             big_query_client=BigQueryClientImpl(),
         )
 
+        view_collector = DirectIngestPreProcessedIngestViewCollector(
+            self.region, self.get_ingest_view_rank_list()
+        )
+
+        self.ingest_view_materialization_args_generator = IngestViewMaterializationArgsGenerator(
+            region=self.region,
+            # TODO(#9717): Create new BQ-based args generator delegate and pass here
+            #  for launched BQ materialization states.
+            delegate=FileBasedMaterializationArgsGeneratorDelegate(
+                output_bucket_name=self.ingest_bucket_path.bucket_name,
+                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
+            ),
+            raw_file_metadata_manager=self.file_metadata_manager.raw_file_manager,
+            view_collector=view_collector,
+            launched_ingest_views=self.get_ingest_view_rank_list(),
+        )
+
+        big_query_client = BigQueryClientImpl()
         self.ingest_view_export_manager = DirectIngestIngestViewExportManager(
             region=self.region,
-            fs=self.fs,
             ingest_instance=self.ingest_instance,
-            output_bucket_name=self.ingest_bucket_path.bucket_name,
-            file_metadata_manager=self.file_metadata_manager,
-            big_query_client=BigQueryClientImpl(),
-            view_collector=DirectIngestPreProcessedIngestViewCollector(
-                self.region, self.get_ingest_view_rank_list()
+            # TODO(#9717): Create new BQ-based materializer delegate and pass here
+            #  for launched BQ materialization states.
+            delegate=FileBasedMaterializerDelegate(
+                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
+                big_query_client=big_query_client,
             ),
+            big_query_client=big_query_client,
+            view_collector=view_collector,
             launched_ingest_views=self.get_ingest_view_rank_list(),
         )
 
@@ -243,8 +271,6 @@ class BaseDirectIngestController:
     def region_code(cls) -> str:
         pass
 
-    # TODO(#9717): Rename this to something like `get_ingest_view_processing_order`
-    #  since ingest view results will soon no longer be file-based.
     @abc.abstractmethod
     def get_ingest_view_rank_list(self) -> List[str]:
         """Returns the list of ingest view names for ingest views that are shipped in
@@ -471,7 +497,7 @@ class BaseDirectIngestController:
 
         did_schedule = False
         tasks_to_schedule = (
-            self.ingest_view_export_manager.get_ingest_view_export_task_args()
+            self.ingest_view_materialization_args_generator.get_ingest_view_export_task_args()
         )
 
         rank_list = self.get_ingest_view_rank_list()
