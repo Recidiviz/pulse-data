@@ -65,6 +65,8 @@ def _parse_table(filename: str) -> pd.DataFrame:
     )
 
     string_columns = {"jurisdiction_name", "facility_name", "report_date"}
+    df = df.replace("u", 0)
+    df = df.replace("d", 0)
     df = aggregate_ingest_utils.cast_columns_to_int(df, ignore_columns=string_columns)
 
     return df
