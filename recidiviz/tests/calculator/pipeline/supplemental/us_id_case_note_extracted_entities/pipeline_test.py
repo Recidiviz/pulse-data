@@ -108,7 +108,7 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         ]
 
         for final_data_point in self.final_data:
-            final_data_point["create_dt"] = "2022-01-01 00:00:00"
+            final_data_point["create_dt"] = "2022-01-01"
 
     def run_test_pipeline(
         self,

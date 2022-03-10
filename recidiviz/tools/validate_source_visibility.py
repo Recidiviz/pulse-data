@@ -199,6 +199,7 @@ def main() -> int:
         if pipeline.__file__ is None:
             raise ValueError(f"No file associated with {pipeline}.")
         valid_prefixes = {
+            "recidiviz.big_query.big_query_utils",
             "recidiviz.big_query.big_query_view",
             "recidiviz.calculator",
             "recidiviz.common",
@@ -210,7 +211,6 @@ def main() -> int:
         if "metrics" in pipeline.__name__ or "normalization" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
-                    "recidiviz.big_query.big_query_utils",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.direct",

@@ -17,8 +17,11 @@
 """Classes for running all supplemental dataset calculation pipelines."""
 import abc
 import argparse
-from typing import List
+from typing import Dict, List, Type
 
+from google.cloud import bigquery
+
+from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.calculator.pipeline.base_pipeline import (
     PipelineConfig,
     PipelineJobArgs,
@@ -37,6 +40,22 @@ class SupplementalDatasetPipelineRunDelegate(PipelineRunDelegate):
     def table_id(cls) -> str:
         """Table_id of the output table for the supplemental dataset. Must be overwritten
         by subclasses."""
+
+    @classmethod
+    @abc.abstractmethod
+    def table_fields(cls) -> Dict[str, Type]:
+        """Contains the field names and their corresponding field types for the
+        supplemental dataset. Must be overwritten by subclasses."""
+
+    @classmethod
+    def bq_schema_for_table(cls) -> List[bigquery.SchemaField]:
+        """Returns the necessary BigQuery schema for the table, which is a
+        list of SchemaField objects containing the column name and value type for
+        each field in |table_fields|."""
+        return [
+            schema_field_for_type(field_name=field_name, field_type=field_type)
+            for field_name, field_type in cls.table_fields().items()
+        ]
 
     @classmethod
     @abc.abstractmethod

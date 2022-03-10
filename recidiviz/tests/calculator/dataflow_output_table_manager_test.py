@@ -254,3 +254,63 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         ]
 
         self.assertCountEqual(expected_dataset_ids, dataset_ids)
+
+
+class SupplementalDatasetTableManagerTest(unittest.TestCase):
+    """Tests for dataflow_output_table_manager.py."""
+
+    def setUp(self) -> None:
+
+        self.project_id = "fake-recidiviz-project"
+        self.mock_view_dataset_name = "my_views_dataset"
+        self.mock_dataset = bigquery.dataset.DatasetReference(
+            self.project_id, self.mock_view_dataset_name
+        )
+
+        self.dataflow_config_patcher = mock.patch(
+            "recidiviz.calculator.dataflow_output_table_manager.dataflow_config"
+        )
+        self.mock_dataflow_config = self.dataflow_config_patcher.start()
+
+        self.mock_pipeline_template_path = FAKE_PIPELINE_CONFIG_YAML_PATH
+        self.mock_dataflow_config.PIPELINE_CONFIG_YAML_PATH = (
+            self.mock_pipeline_template_path
+        )
+
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+        self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
+        self.project_number_patcher.start().return_value = "123456789"
+
+        self.bq_client_patcher = mock.patch(
+            "recidiviz.calculator.dataflow_output_table_manager.BigQueryClientImpl"
+        )
+        self.mock_client = self.bq_client_patcher.start().return_value
+
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
+        self.mock_client.project_id.return_value = self.project_id
+
+    def tearDown(self) -> None:
+        self.bq_client_patcher.stop()
+        self.project_id_patcher.stop()
+        self.project_number_patcher.stop()
+
+    def test_update_supplemental_data_schemas_create_table(self) -> None:
+        """Test that update_normalized_state_schema calls the client to create a
+        new table when the table does not yet exist."""
+        self.mock_client.table_exists.return_value = False
+
+        dataflow_output_table_manager.update_supplemental_dataset_schemas()
+
+        self.mock_client.create_table_with_schema.assert_called()
+        self.mock_client.update_schema.assert_not_called()
+
+    def test_update_supplemental_data_schemas_update_table(self) -> None:
+        """Test that update_normalized_state_schema calls the client to update a
+        table when the table already exists."""
+        self.mock_client.table_exists.return_value = True
+
+        dataflow_output_table_manager.update_supplemental_dataset_schemas()
+
+        self.mock_client.update_schema.assert_called()
+        self.mock_client.create_table_with_schema.assert_not_called()
