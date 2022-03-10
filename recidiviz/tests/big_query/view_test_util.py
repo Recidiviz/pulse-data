@@ -627,6 +627,9 @@ class BaseViewTest(unittest.TestCase):
         # Replace date format strings like '%Y%m%d' to match PG 'YYYYMMDD'
         query = self._rewrite_date_formats(query)
 
+        # Changes references to SAFE.PARSE_DATETIME to drop the SAFE, which is invalid in Postgres
+        query = self._remove_safe_schema_from_parse_datetime(query)
+
         # Update % signs in format args to be double escaped
         query = _replace_iter(
             query, r"(?P<first_char>[^\%])\%(?P<fmt>[A-Za-z])", "{first_char}%%{fmt}"
@@ -782,6 +785,13 @@ class BaseViewTest(unittest.TestCase):
 
         query = _replace_iter(
             query,
+            r"(SAFE\.)?PARSE_DATETIME\((?P<fmt>.+?), (?P<col>.+?\)?)\)",
+            "TO_TIMESTAMP({col}, {fmt})",
+            flags=re.IGNORECASE,
+        )
+
+        query = _replace_iter(
+            query,
             r"(SAFE\.)?PARSE_DATE\((?P<fmt>.+?), (?P<col>.+?)\)",
             "TO_DATE({col}, {fmt})",
             flags=re.IGNORECASE,
@@ -891,6 +901,11 @@ class BaseViewTest(unittest.TestCase):
                     new_format = new_format.replace(bq_format, pg_format)
 
                 query = query.replace(item, new_format)
+        return query
+
+    @staticmethod
+    def _remove_safe_schema_from_parse_datetime(query: str) -> str:
+        query = query.replace("SAFE.PARSE_DATETIME", "PARSE_DATETIME")
         return query
 
     def _rewrite_table_references(self, query: str) -> str:

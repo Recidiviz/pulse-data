@@ -26,7 +26,7 @@ Example Usage:
     --ingest_view_tag CLIENT \
     --output_filename basic \
     --columns_to_randomize CIS_100_CLIENT_ID \
-    --person_external_ids 111,222,333
+    --person_external_ids 111 222 333
     --person_external_id_columns Cis_100_Client_Id Cis_Client_Id \
     [--file_tags_to_load_in_full CIS_3150_TRANSFER_TYPE OTHER_TABLE] \
     [--project_id GCP_PROJECT_STAGING] \
