@@ -34,6 +34,7 @@ Auth0AppMetadata = TypedDict(
         "allowed_supervision_location_level": Optional[str],
         "can_access_leadership_dashboard": bool,
         "can_access_case_triage": bool,
+        "should_see_beta_charts": bool,
         "routes": Optional[dict],
     },
 )

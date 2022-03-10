@@ -84,6 +84,7 @@ class Auth0ClientTest(TestCase):
             "allowed_supervision_location_level": "level_1_supervision_location",
             "can_access_leadership_dashboard": False,
             "can_access_case_triage": False,
+            "should_see_beta_charts": False,
             "routes": None,
         }
         self.auth0_client.update_user_app_metadata(
