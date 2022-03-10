@@ -15,7 +15,7 @@ exclusions:
     
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
-    hard_max_allowed_error_override: 0.05
+    hard_max_allowed_error_override: 0.04
     override_reason: PA external validation data was generated from snapshots at the time the population for a given
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
       numbers will get "worse" as time goes on and we get more accurate data about movements.
