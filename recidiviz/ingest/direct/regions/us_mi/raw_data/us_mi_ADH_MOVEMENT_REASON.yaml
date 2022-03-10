@@ -15,11 +15,11 @@ columns:
       - value: 'TRANSFER'
         description: Indicates a high-level transfer within or from/to MDOC jurisdictions.
       - value: 'REPORTING'
-        description: Indicating that a person reporting to office
+        description: Indicating that a person reporting to a parole office.
       - value: 'PRISON_COMMITMENT'
-        description: Indicates a high-level prison commitment within MDOC jurisdiction
+        description: Indicates a high-level prison commitment within MDOC jurisdiction.
       - value: 'INTAKE'
-        description: Indicates a person entering MDOC
+        description: Indicates a person entering MDOC.
   - name: effective_date
   - name: expire_date
   - name: description
