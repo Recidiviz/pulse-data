@@ -44,7 +44,7 @@ external_data_with_ids AS (
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to supervision IDs in states that have multiple
     AND (region_code != 'US_ND' OR id_type = 'US_ND_SID')
-    AND (region_code != 'US_PA' OR id_type = 'US_PA_CONT')
+    AND (region_code != 'US_PA' OR id_type = 'US_PA_PBPP')
 ),
 sanitized_internal_metrics AS (
   SELECT
