@@ -504,6 +504,12 @@ class DashboardUserRestrictions(CaseTriageBase):
         default=False,
         comment="User has permission to access Case Triage",
     )
+    should_see_beta_charts = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="User has permission to view Leadership Dashboard beta charts",
+    )
     routes = Column(
         JSONB,
         nullable=True,

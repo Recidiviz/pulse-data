@@ -48,6 +48,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             TRUE AS can_access_leadership_dashboard,
             -- US_MO is not currently using Case Triage
             FALSE AS can_access_case_triage,
+            FALSE AS should_see_beta_charts,
             -- US_MO has not yet launched any user restricted pages
             TO_JSON_STRING(NULL) as routes
         FROM `{project_id}.us_mo_raw_data_up_to_date_views.LANTERN_DA_RA_LIST_latest`
@@ -70,6 +71,10 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                 ELSE FALSE
             END AS can_access_leadership_dashboard,
             (id_roster.email_address IS NOT NULL) AS can_access_case_triage,
+            CASE
+                WHEN internal_role LIKE '%leadership_role%' THEN should_see_beta_charts
+                ELSE FALSE
+            END AS should_see_beta_charts,
             CASE
                 WHEN internal_role LIKE '%leadership_role%'
                     THEN TO_JSON_STRING(STRUCT(
@@ -99,6 +104,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             internal_role,
             TRUE AS can_access_leadership_dashboard,
             FALSE AS can_access_case_triage,
+            FALSE AS should_see_beta_charts,
             TO_JSON_STRING(STRUCT(
                 community_projections,
                 facilities_projections,
@@ -123,6 +129,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             internal_role,
             TRUE AS can_access_leadership_dashboard,
             FALSE AS can_access_case_triage,
+            FALSE AS should_see_beta_charts,
             TO_JSON_STRING(STRUCT(
                 system_libertyToPrison,
                 system_prison,
@@ -144,6 +151,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             internal_role,
             can_access_leadership_dashboard,
             can_access_case_triage,
+            should_see_beta_charts,
             TO_JSON_STRING(NULL) as routes
         FROM `{project_id}.{static_reference_dataset_id}.recidiviz_unified_product_test_users`
     )
@@ -173,6 +181,7 @@ DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "internal_role",
         "can_access_leadership_dashboard",
         "can_access_case_triage",
+        "should_see_beta_charts",
         "routes",
     ],
 )

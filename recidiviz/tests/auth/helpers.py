@@ -32,6 +32,7 @@ def generate_fake_user_restrictions(
     allowed_supervision_location_level: str = "level_1_supervision_location",
     can_access_leadership_dashboard: bool = True,
     can_access_case_triage: bool = False,
+    should_see_beta_charts: bool = False,
     routes: dict = None,
 ) -> DashboardUserRestrictions:
     return DashboardUserRestrictions(
@@ -42,6 +43,7 @@ def generate_fake_user_restrictions(
         internal_role="level_1_access_role",
         can_access_leadership_dashboard=can_access_leadership_dashboard,
         can_access_case_triage=can_access_case_triage,
+        should_see_beta_charts=should_see_beta_charts,
         routes=routes,
     )
 
