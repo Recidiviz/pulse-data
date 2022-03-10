@@ -6,28 +6,28 @@ labels: 'Type: Bug'
 assignees: ''
 
 ---
+> BEFORE YOU BEGIN!! PLEASE CHECK OFF AND COMPLETE THE FOLLOWING.
+- [ ] I have added the corresponding `Team: *` or `State Pod: *` label for the group tracking progress of this bug.
+- [ ] I have added the corresponding `REGION: US_XX` label if applicable.
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+A clear and concise description of the bug.
 
 **To Reproduce**
-Steps to reproduce the behavior:
-1. Ingest '...'
-2. Persist '...'
-3. Export '...'
-4. See error
+Steps, links, logs and/ or queries that can be used to observe the issue.
 
 **Expected behavior**
-A clear and concise description of what you expected to happen.
+A clear and concise description of what you expected to happen. Please describe and link to any tasks this bug is currently blocking, if applicable.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem. Screenshots _must not_ contain sensitive data, particularly Personally Identifiable Information.
+**Environment**
+Check all that apply:
+- [ ] Prod
+- [ ] Staging
 
-**Desktop (please complete the following information):**
+**Impact**
+Is there external user facing impact?
+- [ ] Yes
+- [ ] No
+- [ ] I don’t know
 
-- Environment [e.g. local, staging, production]:
-- Additional environmental context:
-- Any relevant data conditions:
-
-**Additional context**
-Add any other context about the problem here.
+If YES, please elaborate:
