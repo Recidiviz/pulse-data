@@ -1,0 +1,10 @@
+E_Crt_Order_Status_Desc,Crt_Order_Status_Cd
+Pending,1
+Committed,2
+Complete,3
+Probation,4
+Tolled,7
+Migration,8
+PreDisposition,9
+Drug Court,10
+Court Sanction,11

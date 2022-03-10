@@ -1,0 +1,7 @@
+Adult_Ind,E_Offence_Type_Desc,Juvenile_Ind,Mejis_Offns_Class_Tx,Mejis_Offns_Section_Tx,Mejis_Offns_Title_Tx,Offence_Type_Cd
+Y,Operating under the influence (X) {1234},N,X,1234,29-A,1234
+Y,Carrying an unregistered firearm (E) {5555},N,E,2411,29-B,5555
+Y,Breaking and entering (D) {4858},N,D,3421,29-C,4858
+Y,Criminal trespassing (E) {11000},N,E,9878,29-D,11000
+Y,Criminal trespassing (E) {11000},N,E,9878,29-D,11000
+Y,Revolution (A) {1776},N,A,1812,1-A,1776

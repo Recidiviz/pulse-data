@@ -1,0 +1,12 @@
+Charge_Outcome_Cd,E_Charge_Outcome_Desc
+1,Convicted
+2,Charge Pending
+3,Dismissed
+4,Filed
+5,Acquitted
+6,Adjudicated
+7,Bound Over-Case Transferred
+8,Charge Dropped
+9,NCR
+A,Deferred Disposition
+0,Incompetent
