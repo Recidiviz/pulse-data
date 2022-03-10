@@ -172,10 +172,9 @@ def _parse_date(filename: str) -> datetime.date:
     # assumes there are no underscores in the URL basename.
     # However, if there are slashes because user is running locally
     # it can also handle it.
-    if "/" in filename:
-        base_filename = filename.split("/")[-1].replace("female", "")
-    else:
-        base_filename = filename.split("_")[-1].replace("female", "")
+    base_filename = filename.split("/")[-1]
+    base_filename = filename.split("_")[-1]
+    base_filename = base_filename.replace("female", "")
     end = base_filename.index(".pdf")
     start = 4
     d = str_field_utils.parse_date(base_filename[start:end])
