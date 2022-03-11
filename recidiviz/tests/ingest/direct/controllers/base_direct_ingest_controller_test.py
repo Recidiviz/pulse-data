@@ -53,6 +53,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -207,6 +210,11 @@ def check_all_paths_processed(
     file_tags_processed = set()
     for path in controller.fs.gcs_file_system.all_paths:
         if isinstance(path, GcsfsDirectoryPath):
+            continue
+
+        # TODO(#11424): Delete this check once all states have been migrated to BQ-based
+        #  ingest view materialization.
+        if path == IngestViewMaterializationGatingContext.gating_config_path():
             continue
 
         file_tag = filename_parts_from_path(path).file_tag
@@ -775,7 +783,9 @@ class TestDirectIngestController(unittest.TestCase):
         split_paths = {
             path
             for path in controller.fs.gcs_file_system.all_paths
-            if isinstance(path, GcsfsFilePath) and controller.fs.is_split_file(path)
+            if isinstance(path, GcsfsFilePath)
+            and path != IngestViewMaterializationGatingContext.gating_config_path()
+            and controller.fs.is_split_file(path)
         }
         self.assertFalse(split_paths)
 
@@ -822,7 +832,9 @@ class TestDirectIngestController(unittest.TestCase):
         split_paths = {
             path
             for path in controller.fs.gcs_file_system.all_paths
-            if isinstance(path, GcsfsFilePath) and controller.fs.is_split_file(path)
+            if isinstance(path, GcsfsFilePath)
+            and path != IngestViewMaterializationGatingContext.gating_config_path()
+            and controller.fs.is_split_file(path)
         }
         self.assertFalse(split_paths)
 
@@ -1320,6 +1332,10 @@ class TestDirectIngestController(unittest.TestCase):
         for path in controller.fs.gcs_file_system.all_paths:
             if not isinstance(path, GcsfsFilePath):
                 self.fail(f"Unexpected path type: {path.abs_path()}")
+            # TODO(#11424): Delete this check once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            if path == IngestViewMaterializationGatingContext.gating_config_path():
+                continue
             parts = filename_parts_from_path(path)
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(),
@@ -1648,6 +1664,10 @@ class TestDirectIngestController(unittest.TestCase):
         for path in controller.fs.gcs_file_system.all_paths:
             if not isinstance(path, GcsfsFilePath):
                 self.fail(f"Unexpected path type: {path.abs_path()}")
+            # TODO(#11424): Delete this check once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            if path == IngestViewMaterializationGatingContext.gating_config_path():
+                continue
             self.assertTrue(controller.fs.is_normalized_file_path(path))
 
         self.validate_file_metadata(controller)
@@ -1705,6 +1725,10 @@ class TestDirectIngestController(unittest.TestCase):
         for path in controller.fs.gcs_file_system.all_paths:
             if not isinstance(path, GcsfsFilePath):
                 self.fail(f"Unexpected path type: {path.abs_path()}")
+            # TODO(#11424): Delete this check once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            if path == IngestViewMaterializationGatingContext.gating_config_path():
+                continue
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1746,6 +1770,10 @@ class TestDirectIngestController(unittest.TestCase):
         for path in controller.fs.gcs_file_system.all_paths:
             if not isinstance(path, GcsfsFilePath):
                 self.fail(f"Unexpected path type: {path.abs_path()}")
+            # TODO(#11424): Delete this check once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            if path == IngestViewMaterializationGatingContext.gating_config_path():
+                continue
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1845,6 +1873,10 @@ class TestDirectIngestController(unittest.TestCase):
         ingest_file_paths = []
 
         for path in controller.fs.gcs_file_system.all_paths:
+            # TODO(#11424): Delete this check once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            if path == IngestViewMaterializationGatingContext.gating_config_path():
+                continue
             if isinstance(path, GcsfsDirectoryPath):
                 dir_paths_found.append(path)
                 continue

@@ -27,6 +27,7 @@ from mock import patch
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -46,6 +47,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -64,6 +68,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    MATERIALIZATION_CONFIG_YAML,
+)
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.regions import Region, get_region
 
@@ -77,14 +85,30 @@ class DirectIngestRegionDirStructureBase:
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
         self.storage_client_patcher = patch("google.cloud.storage.Client")
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
+
+        def mock_build_fs() -> FakeGCSFileSystem:
+            fake_fs = FakeGCSFileSystem()
+            # TODO(#11424): Delete this line once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            fake_fs.upload_from_string(
+                path=IngestViewMaterializationGatingContext.gating_config_path(),
+                contents=MATERIALIZATION_CONFIG_YAML,
+                content_type="text/yaml",
+            )
+            return fake_fs
+
+        self.fs_patcher = patch.object(GcsfsFactory, "build", new=mock_build_fs)
+
         self.bq_client_patcher.start()
         self.storage_client_patcher.start()
         self.task_client_patcher.start()
+        self.fs_patcher.start()
 
     def tearDown(self) -> None:
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
+        self.fs_patcher.stop()
 
     @property
     @abc.abstractmethod
