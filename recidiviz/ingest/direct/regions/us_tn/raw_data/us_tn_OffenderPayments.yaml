@@ -1,0 +1,57 @@
+file_tag: OffenderPayments
+file_description: |-
+   TODO(#11524) - Add in descriptions.
+primary_key_cols:
+  - OffenderPaymentsSAK
+columns:
+  - name: OffenderPaymentsSAK
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: PaymentNumber
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: PaymentDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: PaidAmount
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: UnAppliedAmount
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: AccountSAK
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: PaymentTypeID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: BatchID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: BatchTypeID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateUpserID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: VoidedDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: GPVoidedStatus
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: VoidedByUserID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: Comments
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: CheckNumber
+    description: |-
+      TODO(#11524) - Add in descriptions.
