@@ -16,7 +16,7 @@
 # =============================================================================
 """Compares output between a regularly executed Dataflow calculation job and a test job with output directed to a
 sandbox Dataflow dataset. (For creating a sandbox Dataflow output dataset, see the
-create_or_update_dataflow_metrics_sandbox script.) This script should be used when you have run a test pipeline in your
+create_or_update_dataflow_sandbox script.) This script should be used when you have run a test pipeline in your
 sandbox dataset that has the same month and metric_type parameters as a job listed in the
 calculation_pipeline_templates.yaml file.
 
