@@ -47,9 +47,6 @@ from recidiviz.common.ingest_metadata import (
     SystemLevel,
 )
 from recidiviz.common.io.contents_handle import ContentsHandle
-from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
-    DirectIngestIngestViewExportManager,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
@@ -96,6 +93,9 @@ from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
+    IngestViewMaterializer,
+)
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
     LegacyIngestViewProcessorDelegate,
@@ -136,7 +136,7 @@ from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
-# TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
+# TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
 class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
     def __init__(
         self,
@@ -204,7 +204,7 @@ class BaseDirectIngestController:
             )
         )
 
-        # TODO(#9717): Delete once BQ ingest view materialization is enabled for all
+        # TODO(#11424): Delete once BQ ingest view materialization is enabled for all
         #  states.
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
 
@@ -239,7 +239,7 @@ class BaseDirectIngestController:
         )
 
         big_query_client = BigQueryClientImpl()
-        self.ingest_view_export_manager = DirectIngestIngestViewExportManager(
+        self.ingest_view_export_manager = IngestViewMaterializer(
             region=self.region,
             ingest_instance=self.ingest_instance,
             # TODO(#9717): Create new BQ-based materializer delegate and pass here
@@ -629,7 +629,7 @@ class BaseDirectIngestController:
             return False
 
         if isinstance(args, LegacyExtractAndMergeArgs):
-            # TODO(#9717): We should be able to delete this check once we're reading
+            # TODO(#11424): We should be able to delete this check once we're reading
             #   chunks of data directly from BigQuery.
             if not self._ingest_view_file_contents_meet_scale_requirements(args):
                 logging.warning(
@@ -792,7 +792,7 @@ class BaseDirectIngestController:
         # TODO(#9717): Implement for BQ-based ingest view results.
         raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
 
-    # TODO(#9717): We should be able to delete this function once we're reading
+    # TODO(#11424): We should be able to delete this function once we're reading
     #   chunks of data directly from BigQuery.
     def _are_contents_empty(
         self,
@@ -840,7 +840,7 @@ class BaseDirectIngestController:
         # TODO(#9717): Implement clean up for BQ-based ingest view results.
         raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
 
-    # TODO(#9717): We should be able to delete this check once we're reading
+    # TODO(#11424): We should be able to delete this check once we're reading
     #   chunks of data directly from BigQuery.
     def _ingest_view_file_contents_meet_scale_requirements(
         self, args: LegacyExtractAndMergeArgs
@@ -853,7 +853,7 @@ class BaseDirectIngestController:
             parts.file_type, args.file_path
         )
 
-    # TODO(#9717): We should be able to delete this check once we're reading
+    # TODO(#11424): We should be able to delete this check once we're reading
     #   chunks of data directly from BigQuery.
     def _must_split_contents(
         self, file_type: GcsfsDirectIngestFileType, path: GcsfsFilePath
@@ -865,7 +865,7 @@ class BaseDirectIngestController:
             self.ingest_file_split_line_limit, path
         )
 
-    # TODO(#9717): We should be able to delete this check once we're reading
+    # TODO(#11424): We should be able to delete this check once we're reading
     #   chunks of data directly from BigQuery.
     def _file_meets_file_line_limit(self, line_limit: int, path: GcsfsFilePath) -> bool:
         """Returns True if the file meets the expected line limit, false otherwise."""
@@ -887,7 +887,7 @@ class BaseDirectIngestController:
         # size, file meets line limit.
         return len(delegate.df) <= line_limit
 
-    # TODO(#9717): This whole function will be deleted once we have migrated to BQ-based
+    # TODO(#11424): This whole function will be deleted once we have migrated to BQ-based
     #   ingest view results processing.
     def _move_processed_files_to_storage_as_necessary(
         self, last_processed_date_str: str
@@ -1061,7 +1061,7 @@ class BaseDirectIngestController:
 
         self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
 
-        # TODO(#9717): Delete all file-splitting code once BQ materialization is
+        # TODO(#11424): Delete all file-splitting code once BQ materialization is
         #  enabled for all states.
         did_split = False
         for path in unprocessed_ingest_view_paths:
@@ -1146,8 +1146,6 @@ class BaseDirectIngestController:
         self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
         self.kick_scheduler(just_finished_job=True)
 
-    # TODO(#9717): This function can be deleted once ingest views are materialized in
-    #   BQ and we no longer need to export the results to files.
     def do_ingest_view_materialization(
         self, ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> None:
@@ -1173,7 +1171,7 @@ class BaseDirectIngestController:
                 can_start_ingest=True,
             )
 
-    # TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
+    # TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
     def _should_split_file(self, path: GcsfsFilePath) -> bool:
         """Returns a handle to the contents of this path if this file should be split, None otherwise."""
         parts = filename_parts_from_path(path)
@@ -1206,7 +1204,7 @@ class BaseDirectIngestController:
 
         return self._must_split_contents(parts.file_type, path)
 
-    # TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
+    # TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
     @trace.span
     def _split_file_if_necessary(self, path: GcsfsFilePath) -> bool:
         """Checks if the given file needs to be split according to this controller's |file_split_line_limit|.
@@ -1305,7 +1303,7 @@ class BaseDirectIngestController:
             ),
         )
 
-    # TODO(#9717): Delete once BQ ingest view materialization is enabled for all states.
+    # TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
     def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
         """Splits a file accessible via the provided path into multiple
         files and uploads those files to GCS. Returns the list of upload paths.

@@ -80,8 +80,9 @@ class ExtractAndMergeArgs(CloudTaskArgs):
         pass
 
 
-# TODO(#9717): Eliminate all usages of this class in favor of a non-file-based
-#  implementation of ExtractAndMergeArgs.
+# TODO(#11424): Eliminate all usages of this class in favor of a non-file-based
+#  implementation of ExtractAndMergeArgs once BQ-based materialization has shipped
+#  for all states.
 @attr.s(frozen=True)
 class LegacyExtractAndMergeArgs(ExtractAndMergeArgs):
     """The legacy argument type for the persist step of ingest."""

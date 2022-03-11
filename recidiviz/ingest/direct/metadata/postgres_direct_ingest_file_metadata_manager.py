@@ -250,7 +250,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             return len(unprocessed_raw_files)
 
 
-# TODO(#9717): Delete this class once all states have been migrated to use BQ-based
+# TODO(#11424): Delete this class once all states have been migrated to use BQ-based
 #  ingest view materialization.
 class PostgresDirectIngestIngestFileMetadataManager(
     DirectIngestIngestFileMetadataManager

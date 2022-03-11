@@ -17,7 +17,7 @@
 """Implementation of the IngestViewMaterializationArgsGeneratorDelegate for use on
 states using file-based ingest view materialization.
 
-TODO(#9717): Delete this whole class/file once all states have shipped to BQ-based
+TODO(#11424): Delete this whole class/file once all states have shipped to BQ-based
  ingest view materialization.
 """
 import datetime
