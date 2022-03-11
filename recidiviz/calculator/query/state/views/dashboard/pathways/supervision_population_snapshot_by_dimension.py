@@ -54,7 +54,11 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             state_code, 
             last_updated,
             IFNULL(location_name, location_id) AS district,
-            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
+            CASE 
+                WHEN state_code='US_ID' and COALESCE(supervision_level, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
+                    THEN "OTHER"
+                ELSE IFNULL(supervision_level, "EXTERNAL_UNKNOWN")
+            END as supervision_level,
             COUNT(DISTINCT person_id) as person_count,
         FROM `{project_id}.{metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`,
         UNNEST([level_1_supervision_location_external_id, 'ALL']) AS location_id,
@@ -73,6 +77,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     FROM all_dimensions
     WHERE supervision_level IS NOT NULL
         AND supervision_level != "EXTERNAL_UNKNOWN"
+
     
 """
 
