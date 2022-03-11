@@ -19,6 +19,7 @@ import unittest
 
 from mock import Mock, patch
 
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
@@ -31,11 +32,18 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    MATERIALIZATION_CONFIG_YAML,
+)
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.regions import get_region
 
@@ -52,16 +60,32 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
         self.storage_client_patcher = patch("google.cloud.storage.Client")
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
+
+        def mock_build_fs() -> FakeGCSFileSystem:
+            fake_fs = FakeGCSFileSystem()
+            # TODO(#11424): Delete this line once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            fake_fs.upload_from_string(
+                path=IngestViewMaterializationGatingContext.gating_config_path(),
+                contents=MATERIALIZATION_CONFIG_YAML,
+                content_type="text/yaml",
+            )
+            return fake_fs
+
+        self.fs_patcher = patch.object(GcsfsFactory, "build", new=mock_build_fs)
+
         self.project_id_patcher.start()
         self.bq_client_patcher.start()
         self.storage_client_patcher.start()
         self.task_client_patcher.start()
+        self.fs_patcher.start()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
+        self.fs_patcher.stop()
 
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
         for region_code in get_existing_region_dir_names():
