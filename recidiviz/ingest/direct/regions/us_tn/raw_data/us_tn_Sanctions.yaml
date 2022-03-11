@@ -1,0 +1,97 @@
+file_tag: Sanctions
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - Id
+  - TriggerNumber
+columns:
+  - name: Id
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: TriggerNumber
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ProposedSanction
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionLevel
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionStatus
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ProposedDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: RequestedReview
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ImposedDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionEndReason
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionEndDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: PPMAprove
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: PPMReview
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: PPMReviewedBy
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: PPMReviewDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: CAAprove
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: CAReview
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: CAReviewedBy
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: CAReviewDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: Comments
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.
+  - name: RequestedReviewPPM
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: CurrentSupervisionLevel
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: CSL
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: FlagImposedSanction
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: FlagAdminReview
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: FlagCSL
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: UnsuccessfulReason
+    description: |-
+      TODO(#11323): fill out description once received.

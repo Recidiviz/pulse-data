@@ -1,0 +1,25 @@
+file_tag: Violations
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - TriggerNumber
+columns:
+  - name: TriggerNumber
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: OffenderID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ContactNoteDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ContactNoteTime
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ContactNoteType
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: LastUpdateUserId
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

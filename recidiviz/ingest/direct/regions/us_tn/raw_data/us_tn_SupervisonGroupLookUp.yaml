@@ -1,0 +1,18 @@
+file_tag: SupervisonGroupLookUp
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SupervisionGroup
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: StartDate
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: EndDate
+    description: |-
+      TODO(#11323): fill out description once received.
