@@ -18,7 +18,7 @@
 from enum import Enum
 
 
-# TODO(#9717): We should be able to eliminate this enum entirely once we have eliminated
+# TODO(#11424): We should be able to eliminate this enum entirely once we have eliminated
 #  file-based materialization for ingest view results. The only type of file in the
 #  GCS ingest buckets will be raw data files.
 class GcsfsDirectIngestFileType(Enum):
@@ -31,7 +31,8 @@ class GcsfsDirectIngestFileType(Enum):
     RAW_DATA = "raw"
 
     # TODO(#9717): Usages of this enum value should be deleted as part of the work to
-    #  migrate ingest view query materialization to BQ.
+    #  migrate ingest view query materialization to BQ. Delete entirely once we've
+    #  shipped BQ-based materialization for all states.
     # Ingest-ready file
     INGEST_VIEW = "ingest_view"
 

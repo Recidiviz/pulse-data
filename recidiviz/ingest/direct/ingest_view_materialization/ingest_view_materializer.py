@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Logic related to exporting ingest views to a region's direct ingest bucket."""
+"""Class that manages logic related to materializing ingest views for a region so
+the results can be processed and merged into our Postgres database.
+"""
 import datetime
 import logging
 from typing import Dict, Generic, List, Optional, Tuple
@@ -60,11 +62,10 @@ SELECT_SUBQUERY = "SELECT * FROM `{project_id}.{dataset_id}.{table_name}`;"
 TABLE_NAME_DATE_FORMAT = "%Y_%m_%d_%H_%M_%S"
 
 
-# TODO(#9717): Rename this class / file to `IngestViewMaterializer` /
-#  `ingest_view_materializer.py` and move the the new `ingest_view_materialization`
-#  package. Also rename and move related test file.
-class DirectIngestIngestViewExportManager(Generic[IngestViewMaterializationArgsT]):
-    """Class that manages logic related to exporting ingest views to a region's direct ingest bucket."""
+class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
+    """Class that manages logic related to materializing ingest views for a region so
+    the results can be processed and merged into our Postgres database.
+    """
 
     def __init__(
         self,
@@ -208,7 +209,7 @@ class DirectIngestIngestViewExportManager(Generic[IngestViewMaterializationArgsT
                     ingest_view_export_args
                 ),
             )
-            export_query = DirectIngestIngestViewExportManager._create_date_diff_query(
+            export_query = IngestViewMaterializer._create_date_diff_query(
                 upper_bound_query=export_query,
                 upper_bound_prev_query=upper_bound_prev_query,
                 do_reverse_date_diff=ingest_view.do_reverse_date_diff,
@@ -424,7 +425,7 @@ class DirectIngestIngestViewExportManager(Generic[IngestViewMaterializationArgsT
 
             query_params.extend(lower_bound_query_params)
 
-            diff_query = DirectIngestIngestViewExportManager._create_date_diff_query(
+            diff_query = IngestViewMaterializer._create_date_diff_query(
                 upper_bound_query=f"SELECT * FROM {upper_bound_table_id}",
                 upper_bound_prev_query=f"SELECT * FROM {lower_bound_table_id}",
                 do_reverse_date_diff=ingest_view.do_reverse_date_diff,
@@ -494,7 +495,7 @@ if __name__ == "__main__":
             for builder in view_collector_.collect_view_builders()
         }
 
-        debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
+        debug_query = IngestViewMaterializer.debug_query_for_args(
             views_by_name_,
             # TODO(#9717): Migrate to new BQ-based implementation of
             #  IngestViewMaterializationArgs.

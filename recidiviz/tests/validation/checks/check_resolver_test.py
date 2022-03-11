@@ -34,7 +34,7 @@ from recidiviz.validation.validation_models import (
 
 
 class ValidationCheckResolverTest(unittest.TestCase):
-    """Tests for the DirectIngestIngestViewExportManager class"""
+    """Tests for the IngestViewMaterializer class"""
 
     def setUp(self) -> None:
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")

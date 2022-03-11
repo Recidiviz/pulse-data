@@ -46,7 +46,7 @@ class IngestViewMaterializationArgsGeneratorDelegate(
     """Delegate object that isolates ingest view materialization args generation logic
     that is specific to the file-based implementation of materialization.
 
-    TODO(#9717): Merge the BQ-based implementation of this interface back into the
+    TODO(#11424): Merge the BQ-based implementation of this interface back into the
       IngestViewMaterializationArgsGenerator once all states have been migrated to use
       BQ-based materialization.
     """

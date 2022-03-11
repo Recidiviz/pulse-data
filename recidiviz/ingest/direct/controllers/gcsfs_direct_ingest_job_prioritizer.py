@@ -35,9 +35,10 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.cloud_task_args import LegacyExtractAndMergeArgs
 
 
-# TODO(#9717): This class will be replaced by an implementation of
+# TODO(#11424): This class will be replaced by an implementation of
 #  ExtractAndMergeJobPrioritizer that looks at materialized ingest view results in BQ
-#  to select the next job.
+#  to select the next job. Delete once BQ materialization has been shipped for all
+#  states.
 class GcsfsDirectIngestJobPrioritizer(
     ExtractAndMergeJobPrioritizer[LegacyExtractAndMergeArgs]
 ):
