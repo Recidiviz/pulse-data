@@ -34,6 +34,7 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
     is_primary_ingest_bucket,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResultWithSkipped
@@ -54,6 +55,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
 )
@@ -84,6 +88,9 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestErrorType,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    MATERIALIZATION_CONFIG_YAML,
+)
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import Region
@@ -111,8 +118,23 @@ class TestDirectIngestControl(unittest.TestCase):
         self.project_id_patcher.start().return_value = "recidiviz-project"
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
         self.storage_client_patcher = patch("google.cloud.storage.Client")
+
+        def mock_build_fs() -> FakeGCSFileSystem:
+            fake_fs = FakeGCSFileSystem()
+            # TODO(#11424): Delete this line once all states have been migrated to BQ-based
+            #  ingest view materialization.
+            fake_fs.upload_from_string(
+                path=IngestViewMaterializationGatingContext.gating_config_path(),
+                contents=MATERIALIZATION_CONFIG_YAML,
+                content_type="text/yaml",
+            )
+            return fake_fs
+
+        self.fs_patcher = patch.object(GcsfsFactory, "build", new=mock_build_fs)
+
         self.bq_client_patcher.start()
         self.storage_client_patcher.start()
+        self.fs_patcher.start()
 
         self.controller_factory_patcher: Any = patch(
             f"{CONTROL_PACKAGE_NAME}.DirectIngestControllerFactory"
@@ -136,6 +158,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
+        self.fs_patcher.stop()
         if self.controller_factory_patcher:
             self.controller_factory_patcher.stop()
 

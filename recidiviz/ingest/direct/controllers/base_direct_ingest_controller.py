@@ -93,8 +93,17 @@ from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
+    IngestViewMaterializationArgsGeneratorDelegate,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializer,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
+    IngestViewMaterializerDelegate,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
@@ -193,17 +202,6 @@ class BaseDirectIngestController:
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
 
-        # TODO(#9717): We will need to select the prioritizer based on where we are
-        #  reading ingest view results from (BQ vs GCS). Eventually this will always be
-        #  set to the BQ-based implementation.
-        self.job_prioritizer: ExtractAndMergeJobPrioritizer = (
-            GcsfsDirectIngestJobPrioritizer(
-                self.fs,
-                self.ingest_bucket_path,
-                self.get_ingest_view_rank_list(),
-            )
-        )
-
         # TODO(#11424): Delete once BQ ingest view materialization is enabled for all
         #  states.
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
@@ -225,29 +223,66 @@ class BaseDirectIngestController:
             self.region, self.get_ingest_view_rank_list()
         )
 
-        self.ingest_view_materialization_args_generator = IngestViewMaterializationArgsGenerator(
-            region=self.region,
-            # TODO(#9717): Create new BQ-based args generator delegate and pass here
-            #  for launched BQ materialization states.
-            delegate=FileBasedMaterializationArgsGeneratorDelegate(
-                output_bucket_name=self.ingest_bucket_path.bucket_name,
-                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
-            ),
-            raw_file_metadata_manager=self.file_metadata_manager.raw_file_manager,
-            view_collector=view_collector,
-            launched_ingest_views=self.get_ingest_view_rank_list(),
+        big_query_client = BigQueryClientImpl()
+
+        materialization_gating_context = (
+            IngestViewMaterializationGatingContext.load_from_gcs()
+        )
+        self.is_bq_materialization_enabled = (
+            (
+                materialization_gating_context.is_bq_ingest_view_materialization_enabled(
+                    StateCode(self.region_code().upper()), self.ingest_instance
+                )
+            )
+            if StateCode.is_state_code(self.region_code())
+            else False
         )
 
-        big_query_client = BigQueryClientImpl()
+        self.job_prioritizer: ExtractAndMergeJobPrioritizer
+        materialization_args_generator_delegate: IngestViewMaterializationArgsGeneratorDelegate
+        materializer_delegate: IngestViewMaterializerDelegate
+
+        if not self.is_bq_materialization_enabled:
+            # TODO(#11424): Delete this branch once BQ ingest view materialization is
+            #  enabled for all states.
+            self.job_prioritizer = GcsfsDirectIngestJobPrioritizer(
+                self.fs,
+                self.ingest_bucket_path,
+                self.get_ingest_view_rank_list(),
+            )
+            materialization_args_generator_delegate = FileBasedMaterializationArgsGeneratorDelegate(
+                output_bucket_name=self.ingest_bucket_path.bucket_name,
+                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
+            )
+            materializer_delegate = FileBasedMaterializerDelegate(
+                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
+                big_query_client=big_query_client,
+            )
+        else:
+            # TODO(#9717): Create new BQ-based job prioritizer and set here
+            #  for launched BQ materialization states.
+            # TODO(#9717): Create new BQ-based args generator delegate and set here
+            #  for launched BQ materialization states.
+            # TODO(#9717): Create new BQ-based materializer delegate and set here
+            #  for launched BQ materialization states.
+            raise NotImplementedError(
+                f"BQ materialization unexpectedly enabled for state [{self.region_code}]"
+            )
+
+        self.ingest_view_materialization_args_generator = (
+            IngestViewMaterializationArgsGenerator(
+                region=self.region,
+                delegate=materialization_args_generator_delegate,
+                raw_file_metadata_manager=self.file_metadata_manager.raw_file_manager,
+                view_collector=view_collector,
+                launched_ingest_views=self.get_ingest_view_rank_list(),
+            )
+        )
+
         self.ingest_view_export_manager = IngestViewMaterializer(
             region=self.region,
             ingest_instance=self.ingest_instance,
-            # TODO(#9717): Create new BQ-based materializer delegate and pass here
-            #  for launched BQ materialization states.
-            delegate=FileBasedMaterializerDelegate(
-                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
-                big_query_client=big_query_client,
-            ),
+            delegate=materializer_delegate,
             big_query_client=big_query_client,
             view_collector=view_collector,
             launched_ingest_views=self.get_ingest_view_rank_list(),
@@ -412,14 +447,22 @@ class BaseDirectIngestController:
             next_job_args.job_tag(),
         )
 
-        # TODO(#9717): Implement queueing for BQ-based extract and merge job.
-        if isinstance(next_job_args, LegacyExtractAndMergeArgs):
+        if not self.is_bq_materialization_enabled:
+            # TODO(#11424): Delete this block once BQ materialization is enabled for
+            #  all states.
+            if not isinstance(next_job_args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{type(next_job_args)}]")
+
             self.cloud_task_manager.create_direct_ingest_process_job_task(
                 region=self.region,
                 ingest_args=next_job_args,
             )
         else:
-            raise ValueError(f"Unexpected args type: [{type(next_job_args)}]")
+            # TODO(#9717): Implement queueing for BQ-based extract and merge job.
+            raise NotImplementedError(
+                f"Functionality not yet supported for BQ-materialization enabled states: "
+                f"[{type(next_job_args)}]"
+            )
 
     def _schedule_any_pre_ingest_tasks(self) -> bool:
         """Schedules any tasks related to SQL preprocessing of new files in preparation
@@ -545,10 +588,11 @@ class BaseDirectIngestController:
         if not args:
             return None
 
-        # TODO(#9717): We will not need this logic anymore once we've migrated to a
-        #  BQ-based implementation, but we may need to add other checks to manage
-        #  race conditions between results generation and processing.
-        if isinstance(args, LegacyExtractAndMergeArgs):
+        # TODO(#11424): Delete this block once BQ materialization is enabled for
+        #  all states.
+        if not self.is_bq_materialization_enabled:
+            if not isinstance(args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{args}]")
             discovered = (
                 self.file_metadata_manager.has_ingest_view_file_been_discovered(
                     args.file_path
@@ -628,9 +672,11 @@ class BaseDirectIngestController:
             )
             return False
 
-        if isinstance(args, LegacyExtractAndMergeArgs):
+        if not self.is_bq_materialization_enabled:
             # TODO(#11424): We should be able to delete this check once we're reading
             #   chunks of data directly from BigQuery.
+            if not isinstance(args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{args}]")
             if not self._ingest_view_file_contents_meet_scale_requirements(args):
                 logging.warning(
                     "Cannot proceed with contents for ingest run [%s] - returning.",
@@ -657,13 +703,18 @@ class BaseDirectIngestController:
 
         logging.info("Successfully read contents for ingest run [%s]", args.job_tag())
 
-        # TODO(#9717): Implement ability to check for empty BQ-based ingest view
-        #  results.
-        if isinstance(args, LegacyExtractAndMergeArgs):
+        if not self.is_bq_materialization_enabled:
+            # TODO(#11424): Delete this block once BQ ingest view materialization is
+            #  enabled for all states.
+            if not isinstance(args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{args}]")
             contents_are_empty = self._are_contents_empty(args)
         else:
-            raise ValueError(
-                f"Unsupported extract and merge args type: [{type(args)}]."
+            # TODO(#9717): Implement ability to check for empty BQ-based ingest view
+            #  results.
+            raise NotImplementedError(
+                f"Functionality not yet supported for BQ-materialization enabled states: "
+                f"[{type(args)}]."
             )
 
         if not contents_are_empty:
@@ -786,11 +837,18 @@ class BaseDirectIngestController:
         Will return None if the contents could not be read (i.e. if they no
         longer exist).
         """
-        if isinstance(args, LegacyExtractAndMergeArgs):
+        if not self.is_bq_materialization_enabled:
+            # TODO(#11424): Delete this block once BQ ingest view materialization is
+            #  enabled for all states.
+            if not isinstance(args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{type(args)}]")
             return self.fs.download_to_temp_file(args.file_path)
 
-        # TODO(#9717): Implement for BQ-based ingest view results.
-        raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
+        # TODO(#9717): Implement get contents handle for BQ-based ingest view results.
+        raise NotImplementedError(
+            f"Functionality not yet supported for BQ-materialization enabled states: "
+            f"[{type(args)}]."
+        )
 
     # TODO(#11424): We should be able to delete this function once we're reading
     #   chunks of data directly from BigQuery.
@@ -811,7 +869,12 @@ class BaseDirectIngestController:
         """Does necessary cleanup once ingest view contents have been successfully
         persisted to Postgres.
         """
-        if isinstance(args, LegacyExtractAndMergeArgs):
+        if not self.is_bq_materialization_enabled:
+            # TODO(#11424): Delete this block once BQ ingest view materialization is
+            #  enabled for all states.
+            if not isinstance(args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{type(args)}]")
+
             self.fs.mv_path_to_processed_path(args.file_path)
 
             self.file_metadata_manager.mark_ingest_view_file_as_processed(
@@ -824,11 +887,19 @@ class BaseDirectIngestController:
             )
             return
 
-        # TODO(#9717): Implement clean up for BQ-based ingest view results.
-        raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
+        # TODO(#9717): Implement clean up for BQ-based ingest view results. Mark rows
+        #  as processed.
+        raise NotImplementedError(
+            f"Functionality not yet supported for BQ-materialization enabled states: "
+            f"[{type(args)}]."
+        )
 
     def _contents_exist_for_args(self, args: ExtractAndMergeArgs) -> bool:
-        if isinstance(args, LegacyExtractAndMergeArgs):
+        if not self.is_bq_materialization_enabled:
+            # TODO(#11424): Delete this block once BQ ingest view materialization is
+            #  enabled for all states.
+            if not isinstance(args, LegacyExtractAndMergeArgs):
+                raise ValueError(f"Unexpected args type: [{args}]")
             if not self.fs.exists(args.file_path):
                 logging.warning(
                     "Path [%s] does not exist - returning.",
@@ -837,8 +908,12 @@ class BaseDirectIngestController:
                 return False
             return True
 
-        # TODO(#9717): Implement clean up for BQ-based ingest view results.
-        raise ValueError(f"Unsupported extract and merge args type: [{type(args)}].")
+        # TODO(#9717): Implement checking if contents exist up for BQ-based ingest view
+        #  results.
+        raise NotImplementedError(
+            f"Functionality not yet supported for BQ-materialization enabled states: "
+            f"[{type(args)}]."
+        )
 
     # TODO(#11424): We should be able to delete this check once we're reading
     #   chunks of data directly from BigQuery.

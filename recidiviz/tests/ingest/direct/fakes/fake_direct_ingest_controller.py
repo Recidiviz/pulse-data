@@ -40,6 +40,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
@@ -219,6 +222,51 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
         return builders
 
 
+# TODO(#11424): Delete this once all states have been migrated to BQ-based ingest view
+#  materialization.
+MATERIALIZATION_CONFIG_YAML = """
+states:
+- US_ND:
+   PRIMARY: FILE
+   SECONDARY: FILE
+- US_MO:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
+- US_ID:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
+- US_PA:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
+- US_TN:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
+- US_ME:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
+- US_MI:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
+- US_XX:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
+"""
+
+
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_fake_direct_ingest_controller(
     controller_cls: Type[BaseDirectIngestController],
@@ -234,6 +282,14 @@ def build_fake_direct_ingest_controller(
 
     def mock_build_fs() -> FakeGCSFileSystem:
         return fake_fs
+
+    # TODO(#11424): Delete this line once all states have been migrated to BQ-based
+    #  ingest view materialization.
+    fake_fs.upload_from_string(
+        path=IngestViewMaterializationGatingContext.gating_config_path(),
+        contents=MATERIALIZATION_CONFIG_YAML,
+        content_type="text/yaml",
+    )
 
     if "TestDirectIngestController" in controller_cls.__name__:
         view_collector_cls: Type[
