@@ -22,6 +22,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -33,14 +34,20 @@ MICROSIM_PROJECTION_VIEW_DESCRIPTION = (
     """"The projected population for the simulated policy and the baseline"""
 )
 
-# TODO(#9488): include absconsion, bench warrant, and informal probation in the output
 MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES = [
     StateSupervisionPeriodSupervisionType.DUAL,
     StateSupervisionPeriodSupervisionType.PAROLE,
     StateSupervisionPeriodSupervisionType.PROBATION,
+    StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
     StateSpecializedPurposeForIncarceration.GENERAL,
     StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
     StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+    StateSupervisionPeriodAdmissionReason.ABSCONSION,
+]
+
+# TODO(#8860): Add supervision type enum for `BENCH_WARRANT`
+MICROSIM_PROJECTION_VIEW_INCLUDED_STRING_TYPES = [
+    "BENCH_WARRANT",
 ]
 
 MICROSIM_PROJECTION_QUERY_TEMPLATE = """
@@ -164,6 +171,7 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
     included_types="', '".join(
         [status.name for status in MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES]
+        + MICROSIM_PROJECTION_VIEW_INCLUDED_STRING_TYPES
     ),
     should_materialize=False,
 )
