@@ -26,7 +26,7 @@ class PipelineConfig(TypedDict):
     pipeline: str
     job_name: str
     state_code: str
-    metric_types: str
+    metric_types: Optional[str]
     region: str
     staging_only: Optional[bool]
 
@@ -35,10 +35,15 @@ class PipelineConfig(TypedDict):
 class PipelineYaml:
     incremental_pipelines: List[PipelineConfig]
     historical_pipelines: List[PipelineConfig]
+    supplemental_dataset_pipelines: List[PipelineConfig]
 
     @property
     def all_pipelines(self) -> List[PipelineConfig]:
-        return self.incremental_pipelines + self.historical_pipelines
+        return (
+            self.incremental_pipelines
+            + self.historical_pipelines
+            + self.supplemental_dataset_pipelines
+        )
 
 
 def load_pipeline_config_yaml(template_yaml_path: str) -> PipelineYaml:
