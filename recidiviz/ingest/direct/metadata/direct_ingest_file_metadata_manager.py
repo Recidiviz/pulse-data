@@ -101,7 +101,7 @@ class DirectIngestRawFileMetadataManager:
         """Returns the number of unprocessed raw files in the operations table for this region"""
 
 
-# TODO(#9717): Delete this interface once all states have been migrated to use BQ-based
+# TODO(#11424): Delete this interface once all states have been migrated to use BQ-based
 #  ingest view materialization.
 class DirectIngestIngestFileMetadataManager:
     """An abstract interface for a class that handles writing metadata about

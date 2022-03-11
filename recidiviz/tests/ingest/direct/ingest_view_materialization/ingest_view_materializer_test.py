@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for direct_ingest_ingest_view_export_manager.py."""
+"""Tests for ingest_view_materializer.py."""
 import datetime
 import unittest
 
@@ -26,14 +26,14 @@ from mock import Mock, patch
 from more_itertools import one
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
-    DirectIngestIngestViewExportManager,
-)
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer_delegate import (
     FileBasedMaterializerDelegate,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
+    IngestViewMaterializer,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestIngestFileMetadataManager,
@@ -213,8 +213,8 @@ ORDER BY colA, colC
 );"""
 
 
-class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
-    """Tests for the DirectIngestIngestViewExportManager class"""
+class IngestViewMaterializerTest(unittest.TestCase):
+    """Tests for the IngestViewMaterializer class"""
 
     def setUp(self) -> None:
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -261,12 +261,12 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         region: Region,
         is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
-    ) -> DirectIngestIngestViewExportManager:
+    ) -> IngestViewMaterializer:
         metadata_manager = PostgresDirectIngestIngestFileMetadataManager(
             region.region_code, self.ingest_database_name
         )
         ingest_view_name = "ingest_view"
-        return DirectIngestIngestViewExportManager(
+        return IngestViewMaterializer(
             region=region,
             ingest_instance=DirectIngestInstance.SECONDARY,
             delegate=FileBasedMaterializerDelegate(
@@ -805,7 +805,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         with freeze_time(_DATE_4.isoformat()):
             export_manager = self.create_export_manager(region)
         with freeze_time(_DATE_5.isoformat()):
-            debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
+            debug_query = IngestViewMaterializer.debug_query_for_args(
                 export_manager.ingest_views_by_name, export_args
             )
 
@@ -973,7 +973,7 @@ ORDER BY colA, colC;"""
                 region, materialize_raw_data_table_views=True
             )
         with freeze_time(_DATE_5.isoformat()):
-            debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
+            debug_query = IngestViewMaterializer.debug_query_for_args(
                 export_manager.ingest_views_by_name, export_args
             )
 

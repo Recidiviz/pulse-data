@@ -116,7 +116,7 @@ class BaseDirectIngestControllerForTests(BaseDirectIngestController):
     ) -> Optional[ContentsHandle]:
         handle = super()._get_contents_handle(args)
         if handle:
-            # TODO(#9717): Once ingest view file elimination complete, we should never
+            # TODO(#11424): Once ingest view file elimination complete, we should never
             #  have persisted local ingest files. Remove this check.
             if isinstance(handle, LocalFileContentsHandle):
                 self.local_paths.add(handle.local_file_path)
