@@ -42,3 +42,9 @@ historical_pipelines:
     calculation_month_count: 240
     metric_types: METRIC_2
     region: us-west1
+
+supplemental_dataset_pipelines:
+  - pipeline: pipeline_to_run
+    job_name: us-yy-pipeline-to-run-daily
+    state_code: US_YY
+    region: us-east1

@@ -97,6 +97,9 @@ def _pipeline_regions_by_job_name() -> Dict[str, str]:
     historical_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
         "historical_pipelines"
     )
+    supplemental_dataset_pipelines = YAMLDict.from_path(
+        PIPELINE_CONFIG_YAML_PATH
+    ).pop_dicts("supplemental_dataset_pipelines")
 
     pipeline_regions = {
         pipeline.pop("job_name", str): pipeline.pop("region", str)
@@ -107,6 +110,13 @@ def _pipeline_regions_by_job_name() -> Dict[str, str]:
         {
             pipeline.pop("job_name", str): pipeline.pop("region", str)
             for pipeline in historical_pipelines
+        }
+    )
+
+    pipeline_regions.update(
+        {
+            pipeline.pop("job_name", str): pipeline.pop("region", str)
+            for pipeline in supplemental_dataset_pipelines
         }
     )
 

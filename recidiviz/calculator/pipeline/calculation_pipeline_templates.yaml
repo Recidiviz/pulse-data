@@ -221,3 +221,9 @@ historical_pipelines:
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west3
+
+supplemental_dataset_pipelines:
+  - pipeline: us_id_case_note_extracted_entities_supplemental
+    job_name: us-id-case-note-extracted-entities
+    state_code: US_ID
+    region: us-central1
