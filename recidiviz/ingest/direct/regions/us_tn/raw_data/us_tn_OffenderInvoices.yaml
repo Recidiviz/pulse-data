@@ -1,0 +1,51 @@
+file_tag: OffenderInvoices
+file_description: |-
+   TODO(#11524) - Add in descriptions.
+primary_key_cols:
+  - OffenderInvoiceSAK
+columns:
+  - name: OffenderInvoiceSAK
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: InvoiceNumber
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: InvoiceAmount
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: InvoiceDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: FeeItemID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: UnPaidAmount
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: VoidedDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: GPVoidedInvStatus
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: VoidedByUserID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: AccountSAK
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateUserID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: GPBatchID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: Comments
+    description: |-
+      TODO(#11524) - Add in descriptions.
