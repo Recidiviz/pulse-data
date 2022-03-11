@@ -1,0 +1,12 @@
+file_tag: SanctionLevelLookUp
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionLevel
+    description: |-
+      TODO(#11323): fill out description once received.
