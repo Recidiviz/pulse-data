@@ -1,0 +1,33 @@
+file_tag: OffenderAccounts
+file_description: |-
+   TODO(#11524) - Add in descriptions.
+primary_key_cols:
+  - AccountSAK
+columns:
+  - name: AccountSAK
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: AccountStartDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: AccountStatus
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: AccountStatusDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: AcctEndReason
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: OffenderID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateUserID
+    description: |-
+      TODO(#11524) - Add in descriptions.

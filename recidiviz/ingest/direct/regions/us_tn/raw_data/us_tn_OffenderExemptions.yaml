@@ -1,0 +1,55 @@
+file_tag: OffenderExemptions
+file_description: |-
+   TODO(#11524) - Add in descriptions.
+primary_key_cols:
+  - OffExemptSAK
+columns:
+  - name: OffExemptSAK
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: FeeItemID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: ReasonCode
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: EndDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: ExemptAmount
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: Comments
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: AccountSAK
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: LastUpdateUserID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: Verification
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: ExemptionAddedBy
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: ExemptionAuthorizedBy
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: VoidedByUserID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: VoidedDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
