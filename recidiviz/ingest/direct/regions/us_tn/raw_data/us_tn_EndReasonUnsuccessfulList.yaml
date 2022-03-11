@@ -1,0 +1,12 @@
+file_tag: EndReasonUnsuccessfulList
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - Id
+columns:
+  - name: Id
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: UnsuccessfulDesc
+    description: |-
+      TODO(#11323): fill out description once received.

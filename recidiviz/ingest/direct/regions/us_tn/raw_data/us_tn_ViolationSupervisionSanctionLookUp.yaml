@@ -1,0 +1,53 @@
+file_tag: ViolationSupervisionSanctionLookUp
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ViolationCodeID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SupervisionGroupID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionLeveLID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode1
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode2
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode3
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode4
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode5
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode6
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode7
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode8
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: SanctionCode9
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: EndDate
+    is_datetime: True
+    description: |-
+      TODO(#11323): fill out description once received.
