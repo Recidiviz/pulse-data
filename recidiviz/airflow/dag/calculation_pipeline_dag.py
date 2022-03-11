@@ -21,7 +21,7 @@ This file is uploaded to GCS on deploy.
 import datetime
 import os
 from base64 import b64encode
-from typing import Any, Dict
+from typing import Any, Dict, NamedTuple, Optional
 
 from airflow import models
 from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
@@ -51,6 +51,11 @@ default_args = {
     "email": ["alerts@recidiviz.org"],
     "email_on_failure": True,
 }
+
+PipelineConfigArgs = NamedTuple(
+    "PipelineConfigArgs",
+    [("state_code", str), ("pipeline_name", str), ("staging_only", Optional[bool])],
+)
 
 CASE_TRIAGE_STATES = [
     "US_ID",
@@ -96,6 +101,16 @@ def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
     return dataflow_args
 
 
+def get_pipeline_config_args(pipeline_config: YAMLDict) -> PipelineConfigArgs:
+    state_code = pipeline_config.pop("state_code", str)
+    pipeline_name = pipeline_config.pop("job_name", str)
+    staging_only = pipeline_config.pop_optional("staging_only", bool)
+
+    return PipelineConfigArgs(
+        state_code=state_code, pipeline_name=pipeline_name, staging_only=staging_only
+    )
+
+
 # By setting catchup to False and max_active_runs to 1, we ensure that at
 # most one instance of this DAG is running at a time. Because we set catchup
 # to false, it ensures that new DAG runs aren't enqueued while the old one is
@@ -110,36 +125,54 @@ with models.DAG(
     if config_file is None:
         raise Exception("Configuration file not specified")
 
-    pipelines = YAMLDict.from_path(config_file).pop_dicts("incremental_pipelines")
+    incremental_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "incremental_pipelines"
+    )
+    supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "supplemental_dataset_pipelines"
+    )
 
     case_triage_export = trigger_export_operator("CASE_TRIAGE")
 
-    states_to_trigger = {pipeline.peek("state_code", str) for pipeline in pipelines}
+    states_to_trigger = {
+        pipeline.peek("state_code", str) for pipeline in incremental_pipelines
+    }
 
     state_trigger_export_operators = {
         state_code: trigger_export_operator(state_code)
         for state_code in states_to_trigger
     }
 
-    for pipeline in pipelines:
+    for pipeline in incremental_pipelines:
         dataflow_default_args = get_dataflow_default_args(pipeline)
+        pipeline_config_args = get_pipeline_config_args(pipeline)
 
-        state_code = pipeline.pop("state_code", str)
-        pipeline_name = pipeline.pop("job_name", str)
-        staging_only = pipeline.pop_optional("staging_only", bool)
-
-        if project_id == GCP_PROJECT_STAGING or not staging_only:
+        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
             calculation_pipeline = RecidivizDataflowTemplateOperator(
-                task_id=pipeline_name,
-                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
-                job_name=pipeline_name,
+                task_id=pipeline_config_args.pipeline_name,
+                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
+                job_name=pipeline_config_args.pipeline_name,
                 dataflow_default_options=dataflow_default_args,
             )
             # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
             # is published saying the pipelines are done.
-            calculation_pipeline >> state_trigger_export_operators[state_code]
-            if state_code in CASE_TRIAGE_STATES:
+            (
+                calculation_pipeline
+                >> state_trigger_export_operators[pipeline_config_args.state_code]
+            )
+            if pipeline_config_args.state_code in CASE_TRIAGE_STATES:
                 calculation_pipeline >> case_triage_export
+
+    for pipeline in supplemental_dataset_pipelines:
+        dataflow_default_args = get_dataflow_default_args(pipeline)
+        pipeline_config_args = get_pipeline_config_args(pipeline)
+        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
+            supplemental_dataset_pipeline = RecidivizDataflowTemplateOperator(
+                task_id=pipeline_config_args.pipeline_name,
+                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
+                job_name=pipeline_config_args.pipeline_name,
+                dataflow_default_options=dataflow_default_args,
+            )
 
     # These exports don't depend on pipeline output.
     _ = trigger_export_operator("COVID_DASHBOARD")
@@ -164,19 +197,33 @@ with models.DAG(
     if config_file is None:
         raise Exception("Configuration file not specified")
 
-    pipelines = YAMLDict.from_path(config_file).pop_dicts("historical_pipelines")
+    historical_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "historical_pipelines"
+    )
+    supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "supplemental_dataset_pipelines"
+    )
 
-    for pipeline in pipelines:
+    for pipeline in historical_pipelines:
         dataflow_default_args = get_dataflow_default_args(pipeline)
+        pipeline_config_args = get_pipeline_config_args(pipeline)
 
-        state_code = pipeline.pop("state_code", str)
-        pipeline_name = pipeline.pop("job_name", str)
-        staging_only = pipeline.pop_optional("staging_only", bool)
-
-        if project_id == GCP_PROJECT_STAGING or not staging_only:
+        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
             calculation_pipeline = RecidivizDataflowTemplateOperator(
-                task_id=pipeline_name,
-                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
-                job_name=pipeline_name,
+                task_id=pipeline_config_args.pipeline_name,
+                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
+                job_name=pipeline_config_args.pipeline_name,
+                dataflow_default_options=dataflow_default_args,
+            )
+
+    for pipeline in supplemental_dataset_pipelines:
+        dataflow_default_args = get_dataflow_default_args(pipeline)
+        pipeline_config_args = get_pipeline_config_args(pipeline)
+
+        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
+            supplemental_dataset_pipeline = RecidivizDataflowTemplateOperator(
+                task_id=pipeline_config_args.pipeline_name,
+                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
+                job_name=pipeline_config_args.pipeline_name,
                 dataflow_default_options=dataflow_default_args,
             )
