@@ -48,6 +48,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -249,6 +250,8 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         for v in self.full_graph_person.supervision_violations:
             self.violation_responses.extend(v.supervision_violation_responses)
 
+        self.field_index = CoreEntityFieldIndex()
+
     def _normalize_entities_and_convert(
         self,
         incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
@@ -303,6 +306,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                     entity_name
                 ),
                 additional_attributes_map=additional_attributes_map,
+                field_index=self.field_index,
             )
 
         return normalized_entities
