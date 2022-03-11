@@ -55,6 +55,8 @@ products:
         environment: production
       - state_code: US_ND
         environment: production
+      - state_code: US_ME
+        environment: production
   - name: Overdue Discharge Alert
     description: Email reports sent to parole and probation officers to motivate progress toward discharging clients from supervision
     exports:
