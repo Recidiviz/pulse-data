@@ -18,7 +18,7 @@
 """Models representing data validation."""
 import abc
 from enum import Enum
-from typing import Dict, Generic, Optional, TypeVar
+from typing import Dict, Generic, List, Optional, TypeVar
 
 import attr
 
@@ -73,6 +73,11 @@ class DataValidationCheck(BuildableAttr):
         return self.view_builder.view_id + (
             f"_{self.validation_name_suffix}" if self.validation_name_suffix else ""
         )
+
+    @property
+    @abc.abstractmethod
+    def managed_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
+        """Returns the list of builders for views that should be managed via the deployment."""
 
     @abc.abstractmethod
     def updated_for_region(

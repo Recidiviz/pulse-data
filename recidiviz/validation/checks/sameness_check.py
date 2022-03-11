@@ -26,6 +26,7 @@ from google.cloud.bigquery import QueryJob
 from google.cloud.bigquery.table import Row
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
@@ -130,6 +131,11 @@ class SamenessDataValidationCheck(DataValidationCheck):
             )
 
     validation_type: ValidationCheckType = attr.ib(default=ValidationCheckType.SAMENESS)
+
+    @property
+    def managed_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
+        # TODO(#11273): Update this to include error_view_builder when error validation check logic is moved to views
+        return [self.view_builder]
 
     def updated_for_region(
         self, region_config: ValidationRegionConfig

@@ -18,12 +18,13 @@
 """Models an existence check, which identifies a validation issue by observing that there is any row returned
 in a given validation result set."""
 
-from typing import Optional
+from typing import List, Optional
 
 import attr
 import more_itertools
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
@@ -48,6 +49,10 @@ class ExistenceDataValidationCheck(DataValidationCheck):
 
     hard_num_allowed_rows: int = attr.ib(default=0)
     soft_num_allowed_rows: int = attr.ib(default=0)
+
+    @property
+    def managed_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
+        return [self.view_builder]
 
     def __attrs_post_init__(self) -> None:
         if self.hard_num_allowed_rows < self.soft_num_allowed_rows:
