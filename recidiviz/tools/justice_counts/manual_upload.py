@@ -97,6 +97,9 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.utils import metadata
 from recidiviz.utils.yaml_dict import YAMLDict
 
+METRIC_VALUE_UPPER_BOUND = (
+    400_000  # If metric value is greater than this value, an exception is raised
+)
 DimensionT = TypeVar("DimensionT", bound="Dimension")
 
 # Dimensions
@@ -1606,6 +1609,14 @@ class Table:
             if not value.is_finite():
                 raise ValueError(
                     f"Invalid value '{value}' for row with dimensions: {dimension_values}"
+                )
+            if value < 0:
+                raise ValueError(
+                    f"Negative value '{value}' for row with dimensions: {dimension_values}"
+                )
+            if value > METRIC_VALUE_UPPER_BOUND:
+                raise ValueError(
+                    f"Invalid value '{value}' for row with dimensions: {dimension_values} is too large."
                 )
 
     @data_points.validator
