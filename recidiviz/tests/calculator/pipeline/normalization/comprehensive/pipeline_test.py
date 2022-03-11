@@ -25,6 +25,7 @@ from recidiviz.calculator.pipeline.normalization.comprehensive import pipeline
 from recidiviz.calculator.pipeline.utils.entity_normalization import (
     entity_normalization_manager_utils,
 )
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -41,12 +42,6 @@ from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateProgramAssignment,
-    StateSupervisionPeriod,
-    StateSupervisionViolation,
-)
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -115,15 +110,6 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
                 entity.__name__
                 for manager in pipeline.ComprehensiveNormalizationPipelineRunDelegate.required_entity_normalization_managers()
                 for entity in manager.normalized_entity_classes()
-                # TODO(#10724): Stop filtering the expected output tags once the output
-                #  process is recursive
-                if entity
-                in [
-                    StateIncarcerationPeriod,
-                    StateSupervisionPeriod,
-                    StateSupervisionViolation,
-                    StateProgramAssignment,
-                ]
             ],
         )
 
@@ -166,6 +152,15 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id,
+            case_type_entries=[
+                schema.StateSupervisionCaseTypeEntry(
+                    supervision_case_type_entry_id=888,
+                    state_code=state_code,
+                    person_id=fake_person_id,
+                    case_type=StateSupervisionCaseType.DRUG_COURT,
+                    supervision_period_id=1111,
+                )
+            ],
         )
 
         incarceration_sentence = (
@@ -192,6 +187,10 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
         supervision_periods_data = [normalized_database_base_dict(supervision_period)]
 
+        supervision_period_case_type_data = normalized_database_base_dict_list(
+            supervision_period.case_type_entries
+        )
+
         supervision_violation_response = (
             database_test_utils.generate_test_supervision_violation_response(
                 fake_person_id
@@ -206,8 +205,12 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation)
         ]
 
-        supervision_violation_type_date = normalized_database_base_dict_list(
+        supervision_violation_type_data = normalized_database_base_dict_list(
             supervision_violation.supervision_violation_types
+        )
+
+        supervision_violated_condition_data = normalized_database_base_dict_list(
+            supervision_violation.supervision_violated_conditions
         )
 
         supervision_violation_response.supervision_violation_id = (
@@ -257,10 +260,12 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
+            schema.StateSupervisionCaseTypeEntry.__tablename__: supervision_period_case_type_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: supervision_violation_response_decision_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
-            schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_date,
+            schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_data,
+            schema.StateSupervisionViolatedConditionEntry.__tablename__: supervision_violated_condition_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
         }

@@ -20,7 +20,6 @@ TODO(#10729): Move this file to recidiviz/calculator/pipeline/normalization once
   functions are only used by the normalization pipeline.
 """
 from collections import defaultdict
-from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, TypeVar
 
 import attr
@@ -68,6 +67,8 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import EntityT
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    EntityFieldType,
     update_reverse_references_on_related_entities,
 )
 
@@ -207,7 +208,7 @@ def _convert_entity_tree_to_normalized_version(
     base_entity: EntityT,
     normalized_base_entity_class: Type[NormalizedStateEntityT],
     additional_attributes_map: AdditionalAttributesMap,
-    traversed_class_names: Optional[List[str]] = None,
+    field_index: CoreEntityFieldIndex,
 ) -> NormalizedStateEntityT:
     """Recursively converts the |base_entity| and its entity tree to their Normalized
     counterparts.
@@ -215,9 +216,8 @@ def _convert_entity_tree_to_normalized_version(
     Recursively converts the subtree of each entity that is related to the base
     entity class into their Normalized versions.
 
-    If an entity class that is related to the provided |base_entity| has already been
-    traversed in the normalization process of normalizing this entity tree (and is in
-    the |traversed_class_names| list), then that edge is not explored.
+    If an entity class that is related to the provided |base_entity| is not a forward
+    edge relationship, then that edge is not explored.
 
     For all related classes that are normalized, hydrates the reverse relationship
     edge (if a reverse relationship edge exists) to point to the normalized version
@@ -225,10 +225,8 @@ def _convert_entity_tree_to_normalized_version(
 
     Returns the normalized version of the |base_entity|.
     """
-    traversed_class_names = copy(traversed_class_names) if traversed_class_names else []
     base_entity_cls = type(base_entity)
     base_entity_cls_name = base_entity_cls.__name__
-    traversed_class_names.append(base_entity_cls_name)
 
     if normalized_base_entity_class.__base__ != base_entity_cls:
         raise ValueError(
@@ -239,9 +237,9 @@ def _convert_entity_tree_to_normalized_version(
 
     normalized_base_entity_builder = normalized_base_entity_class.builder()
     normalized_base_entity_attributes = base_entity.__dict__
-    additional_args_for_base_entity = additional_attributes_map.get(
-        base_entity_cls_name, {}
-    ).get(base_entity.get_id())
+    additional_args_for_base_entity = additional_attributes_map[
+        base_entity_cls_name
+    ].get(base_entity.get_id())
 
     if additional_args_for_base_entity:
         normalized_base_entity_attributes.update(additional_args_for_base_entity)
@@ -250,81 +248,89 @@ def _convert_entity_tree_to_normalized_version(
         Tuple[NormalizedStateEntity, str, BuildableAttrFieldType]
     ] = []
 
-    for field, value in normalized_base_entity_attributes.items():
-        if field not in fields_unique_to_normalized_class(normalized_base_entity_class):
-            if related_entity_cls_name := attr_field_referenced_cls_name_for_field_name(
-                base_entity_cls, field
-            ):
-                if (
-                    related_entity_cls_name in traversed_class_names
-                    or related_entity_cls_name
-                    in get_entity_class_names_excluded_from_normalization()
-                ):
-                    # If we've already normalized this class, or if this class is one
-                    # that's excluded from normalization entirely, then continue
-                    continue
+    forward_relationship_fields = field_index.get_all_core_entity_fields(
+        base_entity, EntityFieldType.FORWARD_EDGE
+    )
+    flat_fields = field_index.get_all_core_entity_fields(
+        base_entity, EntityFieldType.FLAT_FIELD
+    )
+    unique_fields = fields_unique_to_normalized_class(normalized_base_entity_class)
 
-                related_entities: Sequence[EntityT]
-                if isinstance(value, list):
-                    related_entities = value
-                    field_is_list = True
-                else:
-                    related_entities = [value]
-                    field_is_list = False
+    fields_to_set_or_traverse = (
+        forward_relationship_fields | flat_fields | unique_fields
+    )
 
-                # Convert the related entities to their Normalized versions,
-                # and collect the reverse relationship fields that need to be set to
-                # point back to the normalized base entity
-                referenced_normalized_class = (
-                    normalized_entity_class_with_base_class_name(
-                        related_entity_cls_name
-                    )
+    for field, field_value in normalized_base_entity_attributes.items():
+        if field not in fields_to_set_or_traverse:
+            # Don't set this value on the builder
+            continue
+
+        related_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
+            normalized_base_entity_class, field
+        )
+
+        if (
+            related_entity_cls_name
+            in get_entity_class_names_excluded_from_normalization()
+        ):
+            continue
+
+        if field_value and related_entity_cls_name:
+            related_entities: Sequence[EntityT]
+            if isinstance(field_value, list):
+                related_entities = field_value
+                field_is_list = True
+            else:
+                related_entities = [field_value]
+                field_is_list = False
+
+            # Convert the related entities to their Normalized versions,
+            # and collect the reverse relationship fields that need to be set to
+            # point back to the normalized base entity
+            referenced_normalized_class = normalized_entity_class_with_base_class_name(
+                related_entity_cls_name
+            )
+
+            reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
+                base_cls=referenced_normalized_class,
+                referenced_cls_name=base_entity_cls_name,
+            )
+
+            reverse_relationship_field_type: Optional[BuildableAttrFieldType] = None
+            if reverse_relationship_field:
+                reverse_relationship_field_type = attr_field_type_for_field_name(
+                    referenced_normalized_class, reverse_relationship_field
                 )
 
-                reverse_relationship_field = (
-                    attr_field_name_storing_referenced_cls_name(
-                        base_cls=referenced_normalized_class,
-                        referenced_cls_name=base_entity_cls_name,
-                    )
+            normalized_related_entities: List[NormalizedStateEntity] = []
+            for related_entity in related_entities:
+                normalized_related_entity = _convert_entity_tree_to_normalized_version(
+                    base_entity=related_entity,
+                    normalized_base_entity_class=referenced_normalized_class,
+                    additional_attributes_map=additional_attributes_map,
+                    field_index=field_index,
                 )
 
-                reverse_relationship_field_type: Optional[BuildableAttrFieldType] = None
-                if reverse_relationship_field:
-                    reverse_relationship_field_type = attr_field_type_for_field_name(
-                        referenced_normalized_class, reverse_relationship_field
-                    )
+                normalized_related_entities.append(normalized_related_entity)
 
-                normalized_related_entities: List[NormalizedStateEntity] = []
-                for related_entity in related_entities:
-                    normalized_related_entity = (
-                        _convert_entity_tree_to_normalized_version(
-                            base_entity=related_entity,
-                            normalized_base_entity_class=referenced_normalized_class,
-                            additional_attributes_map=additional_attributes_map,
-                            traversed_class_names=traversed_class_names,
+                if reverse_relationship_field and reverse_relationship_field_type:
+                    # The relationship is bidirectional. Store the attributes of
+                    # the reverse edge to be set later.
+                    reverse_fields_to_set.append(
+                        (
+                            normalized_related_entity,
+                            reverse_relationship_field,
+                            reverse_relationship_field_type,
                         )
                     )
 
-                    normalized_related_entities.append(normalized_related_entity)
+            field_value = (
+                normalized_related_entities
+                if field_is_list
+                else normalized_related_entities[0]
+            )
 
-                    if reverse_relationship_field and reverse_relationship_field_type:
-                        # The relationship is bidirectional. Store the attributes of
-                        # the reverse edge to be set later.
-                        reverse_fields_to_set.append(
-                            (
-                                normalized_related_entity,
-                                reverse_relationship_field,
-                                reverse_relationship_field_type,
-                            )
-                        )
-
-                value = (
-                    normalized_related_entities
-                    if field_is_list
-                    else normalized_related_entities[0]
-                )
-
-        setattr(normalized_base_entity_builder, field, value)
+        setattr(normalized_base_entity_builder, field, field_value)
 
     normalized_entity = normalized_base_entity_builder.build()
 
@@ -363,7 +369,8 @@ def _convert_entity_tree_to_normalized_version(
 def convert_entity_trees_to_normalized_versions(
     root_entities: Sequence[Entity],
     normalized_entity_class: Type[NormalizedStateEntityT],
-    additional_attributes_map: Optional[AdditionalAttributesMap] = None,
+    additional_attributes_map: AdditionalAttributesMap,
+    field_index: CoreEntityFieldIndex,
 ) -> List[NormalizedStateEntityT]:
     """Converts each of the |root_entities| and all related entities in
     the tree hanging off of each entity to the Normalized versions of the entity.
@@ -391,7 +398,8 @@ def convert_entity_trees_to_normalized_versions(
     if not root_entities:
         return converted_entities
 
-    additional_attributes_map = additional_attributes_map or {}
+    if not additional_attributes_map:
+        raise ValueError("Found empty additional_attributes_map.")
 
     for entity in root_entities:
         converted_entities.append(
@@ -399,6 +407,7 @@ def convert_entity_trees_to_normalized_versions(
                 base_entity=entity,
                 normalized_base_entity_class=normalized_entity_class,
                 additional_attributes_map=additional_attributes_map,
+                field_index=field_index,
             )
         )
 
@@ -420,11 +429,12 @@ def convert_entities_to_normalized_dicts(
     person_id: int,
     entities: Sequence[Entity],
     additional_attributes_map: AdditionalAttributesMap,
+    field_index: CoreEntityFieldIndex,
 ) -> List[Tuple[str, Dict[str, Any]]]:
-    """First, converts the each entity tree in
-    |entities| to a tree of connected schema objects. Then, converts the schema
-    versions of the entities into dictionary representations containing all values
-    required in the table that stores the normalized version of the entity.
+    """First, converts each entity tree in |entities| to a tree of connected schema
+    objects. Then, converts the schema versions of the entities into dictionary
+    representations containing all values required in the table that stores the
+    normalized version of the entity.
 
     Returns a list of tuples, where each tuple stores the name of the entity (e.g.
     'StateIncarcerationPeriod') and the dictionary representation of the entity.
@@ -434,58 +444,93 @@ def convert_entities_to_normalized_dicts(
     if not entities:
         return tagged_entity_dicts
 
-    # Convert the entity tree to the schema version
-    schema_entities = convert_entities_to_schema(entities, populate_back_edges=True)
+    for entity in entities:
+        # Convert the entity tree to the schema version
+        schema_entity_tree = convert_entities_to_schema(
+            [entity], populate_back_edges=True
+        )
 
-    return _tagged_entity_dicts_for_schema_entities(
-        person_id=person_id,
-        schema_entities=schema_entities,
-        additional_attributes_map=additional_attributes_map,
-    )
+        tagged_entity_dicts.extend(
+            _tagged_entity_dicts_for_schema_entities(
+                person_id=person_id,
+                schema_entity=schema_entity_tree[0],
+                additional_attributes_map=additional_attributes_map,
+                field_index=field_index,
+            )
+        )
+
+    return tagged_entity_dicts
 
 
-# TODO(#10724): Recursively extend tagged_entity_dicts for all related classes
 def _tagged_entity_dicts_for_schema_entities(
     person_id: int,
-    schema_entities: List[DatabaseEntity],
+    schema_entity: DatabaseEntity,
     additional_attributes_map: AdditionalAttributesMap,
+    field_index: CoreEntityFieldIndex,
 ) -> List[Tuple[str, Dict[str, Any]]]:
-    """Converts each of the entities in |schema_entities| into a dictionary
-    representation containing all values required in the table that stores the
-    normalized version of the entity.
+    """Converts the |schema_entity| and it's entire entity tree into a list of
+    dictionary representations of each entity in the tree.
 
     Returns a list of tuples, where each tuple stores the name of the entity (e.g.
-    'StateIncarcerationPeriod') and the dictionary representation of the entity.
+    'StateIncarcerationPeriod') and the dictionary representation of the entity
+    containing all values required in the table that stores the normalized version of
+    the entity.
+
+    Recursively collects the list of tagged entity dictionaries for the entity
+    sub-trees of all related entities that have not yet been converted to tagged
+    entity dictionaries.
     """
     tagged_entity_dicts: List[Tuple[str, Dict[str, Any]]] = []
+    base_entity_cls_name = schema_entity.__class__.__name__
 
-    for schema_entity in schema_entities:
-        entity_name = schema_entity.__class__.__name__
-        normalized_entity_class = normalized_entity_class_with_base_class_name(
-            entity_name
-        )
+    normalized_base_entity_class = normalized_entity_class_with_base_class_name(
+        base_entity_cls_name
+    )
 
-        entity_dict: Dict[str, Any] = {
-            **{
-                col: getattr(schema_entity, col)
-                for col in column_names_on_bq_schema_for_normalized_state_entity(
-                    normalized_entity_class
+    forward_relationship_fields = field_index.get_all_core_entity_fields(
+        schema_entity, EntityFieldType.FORWARD_EDGE
+    )
+
+    # Recursively collect the tagged entity dicts for all related classes that
+    # haven't been converted yet
+    for field in forward_relationship_fields:
+        related_schema_entities: Sequence[
+            DatabaseEntity
+        ] = schema_entity.get_field_as_list(field)
+
+        for related_schema_entity in related_schema_entities:
+            tagged_entity_dicts.extend(
+                _tagged_entity_dicts_for_schema_entities(
+                    person_id=person_id,
+                    schema_entity=related_schema_entity,
+                    additional_attributes_map=additional_attributes_map,
+                    field_index=field_index,
                 )
-                if col not in fields_unique_to_normalized_class(normalized_entity_class)
-            },
-            # The person_id field is not hydrated on any entities we read from BQ for
-            # performance reasons. We need to make sure when we write back to BQ, we
-            # re-hydrate this field which would otherwise be null.
-            **{"person_id": person_id},
-        }
+            )
 
-        additional_args_for_base_entity = additional_attributes_map[entity_name].get(
-            schema_entity.get_id(), {}
-        )
+    additional_args_for_base_entity = (
+        additional_attributes_map[base_entity_cls_name].get(schema_entity.get_id())
+        or {}
+    )
 
-        entity_dict.update(additional_args_for_base_entity)
+    # Build the entity table dict for the base schema entity
+    entity_table_dict: Dict[str, Any] = {
+        **{
+            col: getattr(schema_entity, col)
+            for col in column_names_on_bq_schema_for_normalized_state_entity(
+                normalized_base_entity_class
+            )
+            if col
+            not in fields_unique_to_normalized_class(normalized_base_entity_class)
+        },
+        # The person_id field is not hydrated on any entities we read from BQ for
+        # performance reasons. We need to make sure when we write back to BQ, we
+        # re-hydrate this field which would otherwise be null.
+        **{"person_id": person_id},
+        **additional_args_for_base_entity,
+    }
 
-        tagged_entity_dicts.append((entity_name, entity_dict))
+    tagged_entity_dicts.append((base_entity_cls_name, entity_table_dict))
 
     return tagged_entity_dicts
 

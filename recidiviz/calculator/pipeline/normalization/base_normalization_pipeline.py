@@ -70,6 +70,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 
 
 class NormalizationPipelineRunDelegate(PipelineRunDelegate):
@@ -244,11 +245,13 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
         """
         person_id, normalized_entities, additional_attributes_map = element
 
+        field_index = CoreEntityFieldIndex()
         for normalized_entity_list in normalized_entities.values():
             tagged_entity_dict_outputs = convert_entities_to_normalized_dicts(
                 person_id=person_id,
                 entities=normalized_entity_list,
                 additional_attributes_map=additional_attributes_map,
+                field_index=field_index,
             )
 
             for entity_name, entity_dict in tagged_entity_dict_outputs:
