@@ -17,10 +17,10 @@
 """Export configuration. By default, exports all non-history tables from a given schema.
 
 To update the configuration, take the following steps:
-- Announce in #eng that you intend to change the config file for staging or prod [acquires pseudo-lock]
+- Announce in #ingest-questions that you intend to change the config file for staging or prod [acquires pseudo-lock]
 - Download file from gs://{project-name}-configs/cloud_sql_to_bq_config.yaml
 - Update and re-upload file
-- Announce in #eng that the change is complete [releases pseudo-lock]
+- Announce in #ingest-questions that the change is complete [releases pseudo-lock]
 
 The yaml file format for cloud_sql_to_bq_config.yaml is:
 
