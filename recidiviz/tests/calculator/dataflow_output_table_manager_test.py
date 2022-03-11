@@ -228,7 +228,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
     # pylint: disable=protected-access
     def test_get_all_state_specific_normalized_state_datasets(self) -> None:
         dataset_ids: List[str] = []
-        for state_code in dataflow_output_table_manager._get_pipeline_enabled_states():
+        for state_code in dataflow_output_table_manager.get_pipeline_enabled_states():
             dataset_ids.append(
                 dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
                     state_code
@@ -241,7 +241,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
 
     def test_get_all_state_specific_normalized_state_datasets_with_prefix(self) -> None:
         dataset_ids: List[str] = []
-        for state_code in dataflow_output_table_manager._get_pipeline_enabled_states():
+        for state_code in dataflow_output_table_manager.get_pipeline_enabled_states():
             dataset_ids.append(
                 dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
                     state_code, normalized_dataset_prefix="test_prefix"

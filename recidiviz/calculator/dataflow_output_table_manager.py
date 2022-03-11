@@ -17,11 +17,8 @@
 """Manages the structure of tables that store Dataflow output (metrics and normalized
 state entities).
 
-See recidiviz.tools.calculator.create_or_update_dataflow_metrics_sandbox.py for running
-this locally to create a sandbox Dataflow metrics dataset.
-
-See recidiviz.tools.calculator.create_or_update_normalized_state_sandbox for running
-this locally to create sandbox normalized state datasets.
+See recidiviz.tools.calculator.create_or_update_dataflow_sandbox.py for running this
+locally to create sandbox Dataflow datasets.
 """
 import argparse
 import logging
@@ -106,7 +103,7 @@ def update_dataflow_metric_tables_schemas(
             )
 
 
-def _get_pipeline_enabled_states() -> Set[StateCode]:
+def get_pipeline_enabled_states() -> Set[StateCode]:
     """Returns all states that have scheduled pipelines that run."""
     pipeline_states: Set[StateCode] = set()
 
@@ -248,5 +245,5 @@ if __name__ == "__main__":
     with local_project_id_override(known_args.project_id):
         update_dataflow_metric_tables_schemas()
         update_supplemental_dataset_schemas()
-        for state in _get_pipeline_enabled_states():
+        for state in get_pipeline_enabled_states():
             update_normalized_state_schema(state)

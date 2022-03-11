@@ -126,7 +126,7 @@ def validated_run_arguments(
     # Have the user confirm that the sandbox dataflow dataset exists.
     prompt_for_confirmation(
         "Have you already created a sandbox dataflow dataset called "
-        f"`{sandbox_output_dataset}` using `create_or_update_dataflow_metrics_sandbox`?"
+        f"`{sandbox_output_dataset}` using `create_or_update_dataflow_sandbox`?"
     )
 
     if "--output" in arguments:
