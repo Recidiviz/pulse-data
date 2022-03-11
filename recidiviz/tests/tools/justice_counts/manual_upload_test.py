@@ -19,8 +19,9 @@
 import datetime
 import decimal
 import os
-import unittest
 from typing import Dict, List, Optional, Tuple, Type
+from unittest import TestCase
+from unittest.mock import patch
 
 import pytest
 from dateutil.relativedelta import relativedelta
@@ -174,7 +175,7 @@ class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta)
 
 
 @pytest.mark.uses_db
-class ManualUploadTest(unittest.TestCase):
+class ManualUploadTest(TestCase):
     """Tests that the manual upload tool works as expected"""
 
     # Stores the location of the postgres DB for this test run
@@ -493,6 +494,50 @@ class ManualUploadTest(unittest.TestCase):
             # attempt to resolve inconsistencies.
             EXPECTED_TOTALS["County Jails (unapproved)"] = 728
             self.assertEqual(EXPECTED_TOTALS, facility_totals_from_demographics)
+
+    def test_ingestMalformedReport_negativeValue_isNotPersisted(self) -> None:
+        # Act
+        with pytest.raises(
+            ValueError,
+            match="Negative value '-2842'",
+        ):
+            manual_upload.ingest(
+                self.fs,
+                test_utils.prepare_files(
+                    self.fs, manifest_filepath("report10_malformed")
+                ),
+            )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query_result = session.query(schema.Source).all()
+            self.assertEqual(
+                [], query_result
+            )  # table with malformed inputs was not persisted in the database
+
+    def test_ingestMalformedReport_valueIsTooLarge_isNotPersisted(self) -> None:
+        # Act
+        with pytest.raises(
+            ValueError,
+            match="Invalid value '50000555'",
+        ):
+            manual_upload.ingest(
+                self.fs,
+                test_utils.prepare_files(
+                    self.fs, manifest_filepath("report11_malformed")
+                ),
+            )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query_result = session.query(schema.Source).all()
+            self.assertEqual(
+                [], query_result
+            )  # table with malformed inputs was not persisted in the database
 
     def test_ingestReport_dynamicDateSnapshot(self) -> None:
         self._test_ingestReport_dynamicSnapshot("report3_date_snapshot")
@@ -916,6 +961,10 @@ class ManualUploadTest(unittest.TestCase):
                 [(cell.aggregated_dimension_values, cell.value) for cell in cells],
             )
 
+    @patch(
+        "recidiviz.tools.justice_counts.manual_upload.METRIC_VALUE_UPPER_BOUND",
+        10000000,
+    )
     def test_supportCommaNumbers_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(
@@ -1708,7 +1757,7 @@ class ManualUploadTest(unittest.TestCase):
             self.assertEqual("Admissions YTD", ytd_definition.label)
 
 
-class TestTableConverter(unittest.TestCase):
+class TestTableConverter(TestCase):
     """Tests for TableConverter."""
 
     def test_duplicate_columns_fail(self) -> None:
