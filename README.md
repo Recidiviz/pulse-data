@@ -327,7 +327,7 @@ Individual tests can be run via `pytest filename.py`. To run all tests, go to th
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
 
-A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested by Travis. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install pubsub-emulator`, which depends on the Java JRE (>=8). You will also need to install the beta command to execute these emulators, with `gcloud components install beta`. Then run the tests, telling it to bring up the emulators and include these tests:
+A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested in CI. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install pubsub-emulator`, which depends on the Java JRE (>=8). You will also need to install the beta command to execute these emulators, with `gcloud components install beta`. Then run the tests, telling it to bring up the emulators and include these tests:
 
 ```bash
 $ pytest recidiviz --with-emulator
@@ -399,33 +399,6 @@ Make sure you have docker installed (see instructions above), then configure doc
 $ gcloud auth login
 $ gcloud auth configure-docker
 ```
-
-### Deploying a scraper
-
-The release engineer oncall should go through the following steps:
-
-#### Push to staging
-
-Typically on Monday morning the release engineer should:
-
-1. Verify that the tests in `main` are all passing in [Travis](https://travis-ci.org/Recidiviz/pulse-data/branches).
-1. Tag a commit with "va.b.c" following [semver](https://semver.org) for numbering. This will trigger a release to staging.
-1. Once the release is complete, run [`https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin`](https://recidiviz-staging.appspot.com/scraper/start?region=us_fl_martin) [TODO(#623)](https://github.com/Recidiviz/pulse-data/issues/623)
-   and verify that it is happy by looking at the monitoring page [TODO(#59)](https://github.com/Recidiviz/pulse-data/issues/59) and also checking the logs for errors.
-1. If it runs successfully, trigger a release to production by running `./deploy_production <release_tag>`
-
-#### Push to prod
-
-Typically on Wednesday morning the release engineer should:
-
-1.  For every region that has `environment: staging` set, check the logs and monitoring in staging periodically to verify that they run successfully.
-1.  For all regions that look good, set their environment to `production` and they will be ready to be deployed for the next week
-1.  Be sure to file bugs/fixes for any errors that exist for other scrapers, and hold off on promoting them to production.
-
-### Deploying a pipeline template
-
-To deploy a pipeline job to a template in Cloud Storage without deploying the entire application, run the `deploy_pipeline_to_template.sh` script locally.
-These jobs can then be run manually from the Dataflow interface using the "Create job from template" functionality.
 
 ### Troubleshooting
 

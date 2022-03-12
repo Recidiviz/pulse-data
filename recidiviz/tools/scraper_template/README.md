@@ -311,7 +311,7 @@ Submitting Your Scraper
 
 Before submitting your scraper, it can be useful to run `run_scraper` with the
 `--run_forever` flag set, allowing your scraper to run until you are fairly 
-confident there are no errors. When submitting a PR, Travis will run the 
+confident there are no errors. When submitting a PR, CI will run the 
 following validations, which you can run locally to be sure your code is free
  of errors:
  * `pytest recidiviz` to be sure your unit tests are passing

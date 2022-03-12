@@ -59,7 +59,7 @@ jobs:
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Pylint
-        run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
+        run: pipenv run ./recidiviz/tools/lint/run_pylint.sh
 
   terraform-validation:
     name: Terraform Validation
