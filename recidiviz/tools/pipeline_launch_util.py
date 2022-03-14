@@ -18,29 +18,17 @@
 from __future__ import absolute_import
 
 import importlib
-import inspect
 import pkgutil
-from types import ModuleType
 from typing import List, Type
 
-from recidiviz.calculator.pipeline import metrics as metrics_pipeline_top_level
-from recidiviz.calculator.pipeline import (
-    normalization as normalization_pipeline_top_level,
-)
-from recidiviz.calculator.pipeline import (
-    supplemental as supplemental_pipeline_top_level,
-)
 from recidiviz.calculator.pipeline.base_pipeline import (
     BasePipeline,
     PipelineRunDelegate,
 )
-from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
-
-TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
-    metrics_pipeline_top_level,
-    normalization_pipeline_top_level,
-    supplemental_pipeline_top_level,
-]
+from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
+    TOP_LEVEL_PIPELINE_MODULES,
+    collect_all_pipeline_run_delegate_classes,
+)
 
 
 def load_all_pipelines() -> None:
@@ -64,53 +52,6 @@ def collect_all_pipeline_names() -> List[str]:
         run_delegate.pipeline_config().pipeline_name.lower()
         for run_delegate in run_delegates
     ]
-
-
-def collect_all_pipeline_run_delegate_modules() -> List[ModuleType]:
-    """Collects all of the modules storing PipelineRunDelegate implementations."""
-    pipeline_submodules: List[ModuleType] = []
-
-    for top_level_pipeline_module in TOP_LEVEL_PIPELINE_MODULES:
-        pipeline_submodules.extend(
-            ModuleCollectorMixin.get_submodules(
-                base_module=top_level_pipeline_module, submodule_name_prefix_filter=None
-            )
-        )
-
-    pipeline_file_modules: List[ModuleType] = []
-
-    for module in pipeline_submodules:
-        pipeline_modules = ModuleCollectorMixin.get_submodules(
-            module, submodule_name_prefix_filter="pipeline"
-        )
-
-        if len(pipeline_modules) > 1:
-            raise ValueError(
-                "More than one submodule found named 'pipeline' in "
-                f"module: {module}. Found: [{pipeline_modules}]."
-            )
-        if pipeline_modules:
-            pipeline_file_modules.append(pipeline_modules[0])
-
-    return pipeline_file_modules
-
-
-def collect_all_pipeline_run_delegate_classes() -> List[Type[PipelineRunDelegate]]:
-    """Collects all of the versions of the PipelineRunDelegate."""
-
-    pipeline_modules = collect_all_pipeline_run_delegate_modules()
-    run_delegates: List[Type[PipelineRunDelegate]] = []
-
-    for pipeline_module in pipeline_modules:
-        for attribute_name in dir(pipeline_module):
-            attribute = getattr(pipeline_module, attribute_name)
-            if inspect.isclass(attribute):
-                if issubclass(
-                    attribute, PipelineRunDelegate
-                ) and not inspect.isabstract(attribute):
-                    run_delegates.append(attribute)
-
-    return run_delegates
 
 
 def _delegate_cls_for_pipeline_name(pipeline_name: str) -> Type[PipelineRunDelegate]:
