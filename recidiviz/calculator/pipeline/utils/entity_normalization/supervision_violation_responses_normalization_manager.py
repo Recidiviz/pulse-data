@@ -27,7 +27,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     AdditionalAttributesMap,
+    copy_entities_and_add_unique_ids,
     get_shared_additional_attributes_map_for_entities,
+    update_normalized_entity_with_globally_unique_id,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -59,9 +61,11 @@ class StateSpecificViolationResponseNormalizationDelegate(StateSpecificDelegate)
         StateSupervisionViolationResponse entities by response date."""
         return False
 
+    # pylint: disable=unused-argument
     def get_additional_violation_types_for_response(
         self,
-        response: StateSupervisionViolationResponse,  # pylint: disable=unused-argument
+        person_id: int,
+        response: StateSupervisionViolationResponse,
     ) -> List[StateSupervisionViolationTypeEntry]:
         """Returns the list of additional violation types that need to be added to a
         StateSupervisionViolationResponse's list of supervision_violation_types. By
@@ -86,9 +90,11 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
 
     def __init__(
         self,
+        person_id: int,
         violation_responses: List[StateSupervisionViolationResponse],
         delegate: StateSpecificViolationResponseNormalizationDelegate,
     ):
+        self.person_id = person_id
         self._violation_responses = deepcopy(violation_responses)
         self.delegate = delegate
 
@@ -168,24 +174,16 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
         ] = {}
         for response_date, responses in bucketed_responses_by_date.items():
             base_response_to_update = responses[0]
-            base_violation = StateSupervisionViolation(
-                state_code=base_response_to_update.state_code,
-            )
             seen_violation_types: Set[StateSupervisionViolationType] = set()
             deduped_violation_type_entries: List[
                 StateSupervisionViolationTypeEntry
             ] = []
-            id_for_violation: Optional[int] = None
             for response in responses:
                 if response.supervision_violation is None:
                     # If this response has no violation then there is no information
                     # we need from it
                     continue
 
-                id_for_violation = (
-                    id_for_violation
-                    or response.supervision_violation.supervision_violation_id
-                )
                 for (
                     violation_type_entry
                 ) in response.supervision_violation.supervision_violation_types:
@@ -195,18 +193,23 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
                         deduped_violation_type_entries.append(violation_type_entry)
                         seen_violation_types.add(violation_type_entry.violation_type)
 
-            if not id_for_violation:
-                raise ValueError(
-                    "Found responses with no related StateSupervisionViolation with a "
-                    f"valid supervision_violation_id: {responses}."
-                )
+            base_violation = StateSupervisionViolation(
+                state_code=base_response_to_update.state_code,
+            )
+
+            new_violation_type_entries = copy_entities_and_add_unique_ids(
+                person_id=self.person_id, entities=deduped_violation_type_entries
+            )
+
+            update_normalized_entity_with_globally_unique_id(
+                person_id=self.person_id, entity=base_violation
+            )
 
             updated_response = deep_entity_update(
                 base_response_to_update,
                 supervision_violation=deep_entity_update(
                     base_violation,
-                    supervision_violation_id=id_for_violation,
-                    supervision_violation_types=list(deduped_violation_type_entries),
+                    supervision_violation_types=new_violation_type_entries,
                 ),
             )
 
@@ -234,7 +237,9 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
 
             if response.supervision_violation:
                 additional_types = (
-                    self.delegate.get_additional_violation_types_for_response(response)
+                    self.delegate.get_additional_violation_types_for_response(
+                        self.person_id, response
+                    )
                 )
 
                 supervision_violation = response.supervision_violation

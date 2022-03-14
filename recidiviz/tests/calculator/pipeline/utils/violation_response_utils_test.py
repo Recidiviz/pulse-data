@@ -380,6 +380,7 @@ class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
         sorted_filtered_violations = filter_violation_responses_for_violation_history(
             violation_delegate=self.delegate,
             violation_responses=normalized_violation_responses_for_calculations(
+                person_id=9900000123,
                 violation_response_normalization_delegate=UsXxViolationResponseNormalizationDelegate(),
                 violation_responses=violation_responses,
             ),

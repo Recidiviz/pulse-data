@@ -66,6 +66,7 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
 
 
 def entity_normalization_managers_for_periods(
+    person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
     incarceration_delegate: StateSpecificIncarcerationDelegate,
@@ -136,6 +137,7 @@ def entity_normalization_managers_for_periods(
 
     if supervision_periods is not None:
         sp_normalization_manager = SupervisionPeriodNormalizationManager(
+            person_id=person_id,
             supervision_periods=supervision_periods,
             delegate=sp_normalization_delegate,
             earliest_death_date=earliest_death_date,
@@ -166,12 +168,14 @@ def entity_normalization_managers_for_periods(
 
 
 def normalized_violation_responses_for_calculations(
+    person_id: int,
     violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
     violation_responses: List[StateSupervisionViolationResponse],
 ) -> List[StateSupervisionViolationResponse]:
     """Instantiates the violation response manager and its appropriate delegate. Then
     returns normalized violation responses."""
     violation_response_manager = ViolationResponseNormalizationManager(
+        person_id,
         violation_responses,
         violation_response_normalization_delegate,
     )

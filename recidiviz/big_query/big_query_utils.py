@@ -37,6 +37,9 @@ from recidiviz.common.attr_utils import (
     is_str,
 )
 
+# Maximum value of an integer stored in BigQuery
+MAX_BQ_INT = (2**63) - 1
+
 
 def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:
     """Returns the schema column type that should be used to store the value of the

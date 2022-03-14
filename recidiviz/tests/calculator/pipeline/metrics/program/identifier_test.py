@@ -91,7 +91,9 @@ class TestFindProgramEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.ProgramIdentifier()
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(
+            state_code="US_XX", person_id=99000123
+        )
 
     def _test_find_program_events(
         self,

@@ -206,6 +206,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         Returns:
             A list of SupervisionEvents for the person.
         """
+        if not person.person_id:
+            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
+
         if not supervision_periods and not incarceration_periods:
             return []
 
@@ -222,6 +225,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
 
         normalized_violation_responses = normalized_violation_responses_for_calculations(
+            person_id=person.person_id,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
             violation_responses=violation_responses,
         )
@@ -230,6 +234,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             ip_normalization_manager,
             sp_normalization_manager,
         ) = entity_normalization_managers_for_periods(
+            person_id=person.person_id,
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
             incarceration_delegate=incarceration_delegate,

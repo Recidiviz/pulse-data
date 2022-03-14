@@ -48,12 +48,14 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_XX"
         self.delegate = UsXxViolationResponseNormalizationDelegate()
+        self.person_id = 9900000123
 
     def _normalized_violation_responses_for_calculations(
         self,
         violation_responses: List[StateSupervisionViolationResponse],
     ) -> List[StateSupervisionViolationResponse]:
         entity_normalization_manager = ViolationResponseNormalizationManager(
+            person_id=self.person_id,
             violation_responses=violation_responses,
             delegate=self.delegate,
         )

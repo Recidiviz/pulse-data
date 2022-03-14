@@ -20,6 +20,7 @@ TODO(#10729): Move this file to recidiviz/calculator/pipeline/normalization once
   functions are only used by the normalization pipeline.
 """
 from collections import defaultdict
+from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, TypeVar
 
 import attr
@@ -27,6 +28,7 @@ from google.cloud import bigquery
 from more_itertools import one
 
 from recidiviz.big_query.big_query_utils import (
+    MAX_BQ_INT,
     schema_field_for_attribute,
     schema_for_sqlalchemy_table,
 )
@@ -53,6 +55,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.attr_utils import is_flat_field
+from recidiviz.common.constants.states import MAX_FIPS_CODE
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -71,6 +74,7 @@ from recidiviz.persistence.entity.entity_utils import (
     EntityFieldType,
     update_reverse_references_on_related_entities,
 )
+from recidiviz.utils import environment
 
 NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
     NormalizedStateIncarcerationPeriod,
@@ -96,9 +100,15 @@ AdditionalAttributesMap = Dict[
     ],
 ]
 
+# Maximum length that the shortened id() value of an entity can be that is added to
+# the end of the person_id to create a unique id for the entity
+MAX_LEN_SHORTENED_ENTITY_OBJECT_ID = 5
 
 # Cached _unique_fields_reference value
 _unique_fields_reference: Optional[Dict[Type[NormalizedStateEntity], Set[str]]] = None
+
+# Cached _entity_id_index value
+_entity_id_index: Optional[Dict[int, Dict[str, Set[int]]]] = None
 
 
 def _get_unique_fields_reference() -> Dict[Type[NormalizedStateEntity], Set[str]]:
@@ -613,3 +623,149 @@ def get_shared_additional_attributes_map_for_entities(
             }
 
     return additional_attributes_map
+
+
+@environment.test_only
+def clear_entity_id_index_cache() -> None:
+    global _entity_id_index
+    _entity_id_index = None
+
+
+def _get_entity_id_index() -> Dict[int, Dict[str, Set[int]]]:
+    """Returns the cached _entity_id_index object, if it exists. If the
+    _entity_id_index is None, instantiates it as an empty dict."""
+    global _entity_id_index
+    if not _entity_id_index:
+        _entity_id_index = defaultdict(lambda: defaultdict(set))
+    return _entity_id_index
+
+
+def _get_entity_id_index_for_person_id_entity(
+    person_id: int, entity_name: str
+) -> Set[int]:
+    """Returns the set of id values associated with entities with the given
+    |entity_name| for the given |person_id|."""
+    entity_id_index = _get_entity_id_index()
+    entity_ids_for_person = entity_id_index.get(person_id)
+
+    if not entity_ids_for_person:
+        return set()
+
+    return entity_ids_for_person.get(entity_name) or set()
+
+
+def _add_entity_id_to_cache(person_id: int, entity_name: str, entity_id: int) -> None:
+    """Adds the |entity_id| value to the set storing the ids of the entities with the
+    |entity_name| for the given |person_id| in the _entity_id_index."""
+    entity_id_index = _get_entity_id_index()
+    entity_id_index[person_id][entity_name].add(entity_id)
+
+
+def _fixed_length_object_id_for_entity(entity: Entity) -> int:
+    """Returns a shortened version of the id of the |entity| with a maximum of
+    MAX_LEN_SHORTENED_ENTITY_OBJECT_ID digits."""
+    # Get last 5 digits (or full string if less than 5 digits)
+    string_entity_object_id = str(id(entity))[-MAX_LEN_SHORTENED_ENTITY_OBJECT_ID:]
+    # Convert back to int
+    entity_object_id = int(string_entity_object_id)
+
+    return entity_object_id
+
+
+def _unique_object_id_for_entity(person_id: int, entity: Entity) -> int:
+    """Returns an object id value that is globally unique for all entities of this
+    type for this person_id."""
+    if person_id - (10**12 * MAX_FIPS_CODE) >= 10**12:
+        raise ValueError(
+            "Our database person_id values have gotten too large and are clobbering "
+            "the FIPS code values in the id mask used to write to BigQuery. Must fix "
+            "person_id values before running more normalization pipelines."
+        )
+
+    # Get a shortened version of the id() of the entity
+    entity_object_id = _fixed_length_object_id_for_entity(entity=entity)
+
+    existing_entity_object_ids = _get_entity_id_index_for_person_id_entity(
+        person_id=person_id, entity_name=entity.__class__.__name__
+    )
+
+    while entity_object_id in existing_entity_object_ids:
+        # Increment until we've found a unique entity ID for this entity/person
+        entity_object_id += 1
+        # Make sure id stays under the max digit length
+        entity_object_id = entity_object_id % (10**MAX_LEN_SHORTENED_ENTITY_OBJECT_ID)
+
+    # Add the ID to the cache of entity IDs for this person
+    _add_entity_id_to_cache(
+        person_id=person_id,
+        entity_name=entity.__class__.__name__,
+        entity_id=entity_object_id,
+    )
+
+    return entity_object_id
+
+
+# TODO(#11470): Write validations that will break if the assumption this relies on ever
+#  breaks (if COUNT(*) != COUNT(DISTINCT(id)) for a normalized state table)
+def update_normalized_entity_with_globally_unique_id(
+    person_id: int, entity: Entity
+) -> None:
+    """Returns an ID value that will be unique across all entities of the
+    entity type normalized for a state in a given pipeline.
+
+    Takes the last 5 digits of the python id() value of the |entity| and prepends
+    it with the |person_id| value.
+
+    For example, say the person_id value is 290000700089 and the python id() of the
+    |entity| is 123456789. This function will return 29000070008956789. The components
+    of this value ({290000700089}{56789}) correspond to:
+        {person_id}{last 5 digits of entity id()}.
+
+    If the last 5 digits of the entity object id been used in the id value of another
+    normalized entity of this type for this |person_id|, then the value is
+    incremented by +1 until a unique value is found.
+
+    This ensures that the normalized version of the |entity| has a unique primary key ID
+    in the table that will store the normalized versions of all of the entities of the
+    given entity type for all states.
+    """
+    # Get a shortened version of the python id that is globally unique for all
+    # entities of this type for this person_id
+    entity_object_id = _unique_object_id_for_entity(
+        person_id=person_id,
+        entity=entity,
+    )
+
+    # Add person_id to the front of the id
+    new_entity_id = int(f"{person_id}{entity_object_id}")
+
+    if new_entity_id > MAX_BQ_INT:
+        raise ValueError(
+            f"Entity id value [{new_entity_id}] is larger than the "
+            f"maximum allowed integer value [{MAX_BQ_INT}] in BigQuery. "
+            "Must update unique entity id generation logic accordingly."
+        )
+
+    # Set new id on the entity
+    setattr(
+        entity,
+        entity.get_class_id_name(),
+        new_entity_id,
+    )
+
+
+def copy_entities_and_add_unique_ids(
+    person_id: int, entities: List[EntityT]
+) -> List[EntityT]:
+    """Creates new copies of each of the provided |entities| and adds unique id
+    values to the new copies."""
+    new_entities: List[EntityT] = []
+    for entity in entities:
+        entity_copy = copy(entity)
+        update_normalized_entity_with_globally_unique_id(
+            person_id=person_id, entity=entity_copy
+        )
+
+        new_entities.append(entity_copy)
+
+    return new_entities
