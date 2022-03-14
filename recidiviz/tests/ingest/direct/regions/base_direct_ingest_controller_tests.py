@@ -266,7 +266,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
             )
 
-            self.controller.file_metadata_manager.register_ingest_file_export_job(
+            self.controller.ingest_file_metadata_manager.register_ingest_file_export_job(
                 ingest_file_export_job_args
             )
             self.controller.ingest_view_export_manager.export_view_for_args(
@@ -343,7 +343,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
         )
 
-        self.controller.file_metadata_manager.register_ingest_file_export_job(
+        self.controller.ingest_file_metadata_manager.register_ingest_file_export_job(
             ingest_file_export_job_args
         )
         self.controller.ingest_view_export_manager.export_view_for_args(

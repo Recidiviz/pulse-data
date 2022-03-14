@@ -60,7 +60,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
+    PostgresDirectIngestIngestFileMetadataManager,
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
@@ -363,11 +364,13 @@ class TestDirectIngestController(unittest.TestCase):
                 (tag, True) for tag in controller.get_ingest_view_rank_list()
             ]
 
-        file_metadata_manager = controller.file_metadata_manager
+        raw_file_metadata_manager = controller.raw_file_metadata_manager
         if not isinstance(
-            file_metadata_manager, PostgresDirectIngestFileMetadataManager
+            raw_file_metadata_manager, PostgresDirectIngestRawFileMetadataManager
         ):
-            self.fail(f"Unexpected file_metadata_manager type {file_metadata_manager}")
+            self.fail(
+                f"Unexpected raw_file_metadata_manager type {raw_file_metadata_manager}"
+            )
 
         with SessionFactory.using_database(
             self.operations_database_key, autocommit=False
@@ -376,9 +379,7 @@ class TestDirectIngestController(unittest.TestCase):
 
             raw_file_metadata_list = [
                 # pylint:disable=protected-access
-                file_metadata_manager.raw_file_manager._raw_file_schema_metadata_as_entity(
-                    metadata
-                )
+                raw_file_metadata_manager._raw_file_schema_metadata_as_entity(metadata)
                 for metadata in raw_file_results
             ]
 
@@ -388,7 +389,7 @@ class TestDirectIngestController(unittest.TestCase):
 
             ingest_file_metadata_list = [
                 # pylint:disable=protected-access
-                file_metadata_manager.ingest_file_manager._ingest_file_schema_metadata_as_entity(
+                PostgresDirectIngestIngestFileMetadataManager._ingest_file_schema_metadata_as_entity(
                     metadata
                 )
                 for metadata in ingest_file_results
@@ -557,7 +558,7 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.validate_file_metadata(controller)
 
-        controller.file_metadata_manager.ingest_file_manager.clear_ingest_file_metadata()
+        controller.ingest_file_metadata_manager.clear_ingest_file_metadata()
 
         # We should now have no ingest metadata rows
         self.validate_file_metadata(
@@ -1060,15 +1061,17 @@ class TestDirectIngestController(unittest.TestCase):
             region_code=controller.region_code(),
         )
         parts = filename_parts_from_path(file_path)
-        metadata = controller.file_metadata_manager.register_ingest_file_export_job(
-            GcsfsIngestViewExportArgs(
-                ingest_view_name=parts.file_tag,
-                upper_bound_datetime_prev=None,
-                upper_bound_datetime_to_export=dt,
-                output_bucket_name=controller.ingest_bucket_path.bucket_name,
+        metadata = (
+            controller.ingest_file_metadata_manager.register_ingest_file_export_job(
+                GcsfsIngestViewExportArgs(
+                    ingest_view_name=parts.file_tag,
+                    upper_bound_datetime_prev=None,
+                    upper_bound_datetime_to_export=dt,
+                    output_bucket_name=controller.ingest_bucket_path.bucket_name,
+                )
             )
         )
-        controller.file_metadata_manager.register_ingest_view_export_file_name(
+        controller.ingest_file_metadata_manager.register_ingest_view_export_file_name(
             metadata, file_path
         )
 
@@ -1936,8 +1939,10 @@ class TestDirectIngestController(unittest.TestCase):
             region_code=controller.region_code(),
             has_fixture=True,
         )
-        controller.file_metadata_manager.mark_raw_file_as_discovered(path_to_fixture)
-        controller.file_metadata_manager.mark_raw_file_as_processed(path_to_fixture)
+        controller.raw_file_metadata_manager.mark_raw_file_as_discovered(
+            path_to_fixture
+        )
+        controller.raw_file_metadata_manager.mark_raw_file_as_processed(path_to_fixture)
 
         controller.schedule_next_ingest_task(
             current_task_id=build_scheduler_task_id(

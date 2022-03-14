@@ -45,7 +45,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
+    PostgresDirectIngestIngestFileMetadataManager,
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -323,7 +324,16 @@ class IngestOperationsStore(AdminPanelStore):
                 "dateOfEarliestUnprocessedIngestView": datetime(2021, 4, 28),
             }
 
-        file_metadata_manager = PostgresDirectIngestFileMetadataManager(
+        raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code=state_code.value,
+            ingest_database_name=ingest_instance.database_key_for_state(
+                state_code
+            ).db_name,
+        )
+
+        # TODO(#9717): Update to send info for BQ-materialization launched states
+        #  from new materialization metadata table.
+        ingest_file_metadata_manager = PostgresDirectIngestIngestFileMetadataManager(
             region_code=state_code.value,
             ingest_database_name=ingest_instance.database_key_for_state(
                 state_code
@@ -333,7 +343,7 @@ class IngestOperationsStore(AdminPanelStore):
         try:
             # Raw files are processed in the primary instance, not secondary
             num_unprocessed_raw_files = (
-                file_metadata_manager.get_num_unprocessed_raw_files()
+                raw_file_metadata_manager.get_num_unprocessed_raw_files()
             )
         except DirectIngestInstanceError as _:
             num_unprocessed_raw_files = 0
@@ -346,6 +356,6 @@ class IngestOperationsStore(AdminPanelStore):
         return {
             "isPaused": is_paused,
             "unprocessedFilesRaw": num_unprocessed_raw_files,
-            "unprocessedFilesIngestView": file_metadata_manager.get_num_unprocessed_ingest_files(),
-            "dateOfEarliestUnprocessedIngestView": file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
+            "unprocessedFilesIngestView": ingest_file_metadata_manager.get_num_unprocessed_ingest_files(),
+            "dateOfEarliestUnprocessedIngestView": ingest_file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
         }
