@@ -306,7 +306,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         ] = []
 
         incarceration_period_index_for_admissions = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=True,
+            collapse_transfers=False,
             overwrite_facility_information_in_transfers=False,
         )
 
@@ -348,8 +348,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                     ] = admission_event
 
         incarceration_period_index_for_releases = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=True,
-            overwrite_facility_information_in_transfers=True,
+            collapse_transfers=False,
+            overwrite_facility_information_in_transfers=False,
         )
 
         for (
@@ -538,9 +538,12 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             StateIncarcerationPeriodAdmissionReason
         ] = incarceration_period.admission_reason
 
-        if admission_date and admission_reason:
+        if (
+            admission_date
+            and admission_reason
+            and admission_reason != StateIncarcerationPeriodAdmissionReason.TRANSFER
+        ):
             if is_commitment_from_supervision(admission_reason):
-
                 return self._commitment_from_supervision_event_for_period(
                     incarceration_sentences=incarceration_sentences,
                     supervision_sentences=supervision_sentences,
@@ -760,42 +763,41 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             original_admission_date,
         ) = original_admission_reasons_by_period_id[incarceration_period_id]
 
-        if release_date and release_reason:
+        if (
+            release_date
+            and release_reason
+            and release_reason != StateIncarcerationPeriodReleaseReason.TRANSFER
+        ):
             supervision_type_at_release: Optional[
                 StateSupervisionPeriodSupervisionType
             ] = get_post_incarceration_supervision_type(
                 incarceration_period, supervision_period_index, supervision_delegate
             )
 
-            total_days_incarcerated: Optional[int] = None
-
             commitment_from_supervision_supervision_type: Optional[
                 StateSupervisionPeriodSupervisionType
             ] = None
-            if incarceration_period.admission_date:
-                if is_commitment_from_supervision(original_admission_reason):
-                    associated_commitment = commitments_from_supervision[
-                        original_admission_date
-                    ]
-                    if not associated_commitment:
-                        raise ValueError(
-                            f"There must be a commitment from supervision event associated with "
-                            f"incarceration period: {incarceration_period}"
-                        )
-                    commitment_from_supervision_supervision_type = (
-                        associated_commitment.supervision_type
+            if is_commitment_from_supervision(original_admission_reason):
+                associated_commitment = commitments_from_supervision[
+                    original_admission_date
+                ]
+                if not associated_commitment:
+                    raise ValueError(
+                        f"There must be a commitment from supervision event associated with "
+                        f"incarceration period: {incarceration_period}"
                     )
+                commitment_from_supervision_supervision_type = (
+                    associated_commitment.supervision_type
+                )
 
-                total_days_incarcerated = (
-                    release_date - incarceration_period.admission_date
-                ).days
+            total_days_incarcerated = (release_date - original_admission_date).days
 
-                if total_days_incarcerated < 0:
-                    logging.warning(
-                        "release_date before admission_date on incarceration period: %s",
-                        incarceration_period,
-                    )
-                    total_days_incarcerated = 0
+            if total_days_incarcerated < 0:
+                logging.warning(
+                    "release_date before admission_date on incarceration period: %s",
+                    incarceration_period,
+                )
+                total_days_incarcerated = 0
 
             return IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,

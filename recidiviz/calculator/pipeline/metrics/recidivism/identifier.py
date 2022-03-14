@@ -25,7 +25,7 @@ into instances of recidivism or non-recidivism as appropriate.
 """
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
@@ -53,6 +53,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
 )
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
@@ -167,13 +170,30 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         if not ip_normalization_manager:
             raise ValueError("Expected normalized SPs for this pipeline.")
 
-        incarceration_periods = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=True,
-            overwrite_facility_information_in_transfers=True,
-        ).incarceration_periods
+        ip_index = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
+            collapse_transfers=False,
+            overwrite_facility_information_in_transfers=False,
+        )
+
+        incarceration_periods = ip_index.incarceration_periods
 
         for index, incarceration_period in enumerate(incarceration_periods):
-            admission_date = incarceration_period.admission_date
+            incarceration_period_id = incarceration_period.incarceration_period_id
+
+            if not incarceration_period_id:
+                raise ValueError(
+                    "Unexpected incarceration period without an incarceration_period_id."
+                )
+
+            original_admission_reasons_by_period_id: Dict[
+                int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]
+            ] = ip_index.original_admission_reasons_by_period_id
+
+            (
+                _,
+                _,
+                original_admission_date,
+            ) = original_admission_reasons_by_period_id[incarceration_period_id]
             release_date = incarceration_period.release_date
             release_reason = incarceration_period.release_reason
             purpose_for_incarceration = (
@@ -203,53 +223,48 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                     " the release_cohort. Error in should_include_in_release_cohort."
                 )
 
-            # Admission data has been validated already
-            if admission_date:
-                if index == len(incarceration_periods) - 1:
+            if index == len(incarceration_periods) - 1:
+                event = self._for_incarceration_period_no_return(
+                    incarceration_period,
+                    original_admission_date,
+                    release_date,
+                    county_of_residence,
+                )
+            else:
+                reincarceration_period = self._find_valid_reincarceration_period(
+                    incarceration_periods, index, release_date
+                )
+
+                if not reincarceration_period:
+                    # We were unable to identify a reincarceration for this period
                     event = self._for_incarceration_period_no_return(
                         incarceration_period,
-                        admission_date,
+                        original_admission_date,
                         release_date,
                         county_of_residence,
                     )
                 else:
-                    reincarceration_period = self._find_valid_reincarceration_period(
-                        incarceration_periods, index, release_date
+                    reincarceration_date = reincarceration_period.admission_date
+                    reincarceration_facility = reincarceration_period.facility
+                    reincarceration_admission_reason = (
+                        reincarceration_period.admission_reason
                     )
 
-                    if not reincarceration_period:
-                        # We were unable to identify a reincarceration for this period
-                        event = self._for_incarceration_period_no_return(
-                            incarceration_period,
-                            admission_date,
-                            release_date,
-                            county_of_residence,
-                        )
-                    else:
-                        reincarceration_date = reincarceration_period.admission_date
-                        reincarceration_facility = reincarceration_period.facility
-                        reincarceration_admission_reason = (
-                            reincarceration_period.admission_reason
+                    # These fields have been validated already
+                    if not reincarceration_date or not reincarceration_admission_reason:
+                        raise ValueError(
+                            "Incarceration period normalization should have set admission_dates and"
+                            "admission_reasons on all periods."
                         )
 
-                        # These fields have been validated already
-                        if (
-                            not reincarceration_date
-                            or not reincarceration_admission_reason
-                        ):
-                            raise ValueError(
-                                "Incarceration period normalization should have set admission_dates and"
-                                "admission_reasons on all periods."
-                            )
-
-                        event = self._for_intermediate_incarceration_period(
-                            release_ip=incarceration_period,
-                            admission_date=admission_date,
-                            release_date=release_date,
-                            county_of_residence=county_of_residence,
-                            reincarceration_date=reincarceration_date,
-                            reincarceration_facility=reincarceration_facility,
-                        )
+                    event = self._for_intermediate_incarceration_period(
+                        release_ip=incarceration_period,
+                        admission_date=original_admission_date,
+                        release_date=release_date,
+                        county_of_residence=county_of_residence,
+                        reincarceration_date=reincarceration_date,
+                        reincarceration_facility=reincarceration_facility,
+                    )
 
             if event:
                 if release_date:

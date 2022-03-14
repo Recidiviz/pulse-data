@@ -523,20 +523,42 @@ class TestGetCommitmentDetails(unittest.TestCase):
             commitment_details,
         )
 
-    def test_get_commitment_from_supervision_details_periods_not_collapsed(
+    def test_get_commitment_from_supervision_details_periods_adjacent_board_holds(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        pre_commitment_sp = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             state_code="US_XX",
-            start_date=date(2018, 3, 5),
-            termination_date=date(2018, 5, 19),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            start_date=date(2016, 3, 5),
+            termination_date=date(2016, 5, 19),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="DISTRICT 999",
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
+        bh_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            state_code="US_XX",
+            admission_date=date(2016, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2018, 5, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        bh_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=2222,
+            state_code="US_XX",
+            admission_date=date(2018, 5, 21),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2018, 5, 25),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        rev_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
             external_id="ip1",
             state_code="US_XX",
             admission_date=date(2018, 5, 25),
@@ -545,17 +567,34 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         ip_index = default_normalized_ip_index_for_tests(
-            incarceration_periods=[incarceration_period], transfers_are_collapsed=False
+            incarceration_periods=[bh_1, bh_2, rev_period]
         )
 
-        # Assert that calculations will fail if we try to get commitment from
-        # supervision details from periods that have not been collapsed
-        with self.assertRaises(ValueError):
-            _ = self._test_get_commitment_from_supervision_details(
-                incarceration_period,
-                [supervision_period],
-                incarceration_period_index=ip_index,
-            )
+        commitment_details = self._test_get_commitment_from_supervision_details(
+            rev_period,
+            [pre_commitment_sp],
+            incarceration_period_index=ip_index,
+        )
+
+        assert pre_commitment_sp.supervision_period_id is not None
+        self.assertEqual(
+            CommitmentDetails(
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                purpose_for_incarceration_subtype=None,
+                level_1_supervision_location_external_id=pre_commitment_sp.supervision_site,
+                level_2_supervision_location_external_id=None,
+                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                    pre_commitment_sp.supervision_period_id, {}
+                ).get(
+                    "agent_external_id"
+                ),
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=pre_commitment_sp.supervision_level,
+                supervision_level_raw_text=pre_commitment_sp.supervision_level_raw_text,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            ),
+            commitment_details,
+        )
 
 
 class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.TestCase):
@@ -707,36 +746,9 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
 
         self.assertTrue(
             period_is_commitment_from_supervision_admission_from_parole_board_hold(
-                incarceration_period=ip_2, most_recent_board_hold=ip_1
+                incarceration_period=ip_2, most_recent_board_hold_span=ip_1.duration
             )
         )
-
-    def test_period_is_commitment_from_parole_board_hold_not_hold(self) -> None:
-        ip_1 = StateIncarcerationPeriod.new_with_defaults(
-            external_id="1",
-            incarceration_period_id=1111,
-            state_code="US_XX",
-            admission_date=date(2002, 2, 5),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-            release_date=date(2002, 9, 11),
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-
-        ip_2 = StateIncarcerationPeriod.new_with_defaults(
-            external_id="1",
-            incarceration_period_id=1111,
-            state_code="US_XX",
-            admission_date=date(2002, 9, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-            release_date=date(2002, 9, 19),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        with self.assertRaises(ValueError):
-            period_is_commitment_from_supervision_admission_from_parole_board_hold(
-                incarceration_period=ip_2, most_recent_board_hold=ip_1
-            )
 
     def test_period_is_commitment_from_parole_board_hold_not_adjacent(self) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -762,6 +774,6 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
 
         self.assertFalse(
             period_is_commitment_from_supervision_admission_from_parole_board_hold(
-                incarceration_period=ip_2, most_recent_board_hold=ip_1
+                incarceration_period=ip_2, most_recent_board_hold_span=ip_1.duration
             )
         )

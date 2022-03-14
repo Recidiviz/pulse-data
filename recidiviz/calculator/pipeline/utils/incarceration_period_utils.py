@@ -52,6 +52,26 @@ def standard_date_sort_for_incarceration_periods(
     return incarceration_periods
 
 
+def dates_are_temporally_adjacent(
+    date_1: Optional[datetime.date],
+    date_2: Optional[datetime.date],
+    valid_adjacency_threshold_override: Optional[int] = None,
+) -> bool:
+    """Returns whether two dates are temporally adjacent. Two dates periods are
+    temporally adjacent if date_1 is within VALID_TRANSFER_THRESHOLD days of date_2."""
+    adjacency_threshold_days = (
+        valid_adjacency_threshold_override or DEFAULT_VALID_TRANSFER_THRESHOLD_DAYS
+    )
+
+    if not date_1 or not date_2:
+        # If there are missing dates, then this is not a valid date edge
+        return False
+
+    days_between_periods = (date_2 - date_1).days
+
+    return days_between_periods <= adjacency_threshold_days
+
+
 def periods_are_temporally_adjacent(
     first_incarceration_period: StateIncarcerationPeriod,
     second_incarceration_period: StateIncarcerationPeriod,
@@ -65,17 +85,12 @@ def periods_are_temporally_adjacent(
     |second_incarceration_period|."""
     release_date = first_incarceration_period.release_date
     admission_date = second_incarceration_period.admission_date
-    adjacency_threshold_days = (
-        valid_adjacency_threshold_override or DEFAULT_VALID_TRANSFER_THRESHOLD_DAYS
+
+    return dates_are_temporally_adjacent(
+        date_1=release_date,
+        date_2=admission_date,
+        valid_adjacency_threshold_override=valid_adjacency_threshold_override,
     )
-
-    if not release_date or not admission_date:
-        # If there are missing dates, then this is not a valid period edge
-        return False
-
-    days_between_periods = (admission_date - release_date).days
-
-    return days_between_periods <= adjacency_threshold_days
 
 
 def period_edges_are_valid_transfer(

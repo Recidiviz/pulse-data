@@ -60,8 +60,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def _normalized_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
-        collapse_transfers: bool = True,
-        overwrite_facility_information_in_transfers: bool = True,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
         # IP pre-processing for US_ID does not rely on violation responses
@@ -82,8 +80,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         return ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=collapse_transfers,
-            overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,
+            collapse_transfers=False,
+            overwrite_facility_information_in_transfers=False,
         ).incarceration_periods
 
     def test_normalized_incarceration_periods_different_pfi_do_not_collapse(
@@ -134,8 +132,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=incarceration_periods,
-                collapse_transfers=True,
+                incarceration_periods=incarceration_periods
             )
         )
 
@@ -144,8 +141,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_normalized_incarceration_periods_same_pfi_transfer(
         self,
     ) -> None:
-        """Tests the pre-processing function does collapse two adjacent TRANSFER
-        edges in US_ID when they have the same specialized_purpose_for_incarceration
+        """Tests the pre-processing function doesn't apply STATUS_CHANGE edges to
+        TRANSFERS in US_ID when they have the same specialized_purpose_for_incarceration
         values.
         """
         state_code = "US_ID"
@@ -176,28 +173,21 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             second_incarceration_period,
         ]
 
-        collapsed_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=initial_incarceration_period.incarceration_period_id,
-            external_id=initial_incarceration_period.external_id,
-            state_code=state_code,
-            admission_date=initial_incarceration_period.admission_date,
-            admission_reason=initial_incarceration_period.admission_reason,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            release_date=second_incarceration_period.release_date,
-            release_reason=second_incarceration_period.release_reason,
-        )
+        updated_periods = [
+            attr.evolve(initial_incarceration_period),
+            attr.evolve(second_incarceration_period),
+        ]
 
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
-                    collapse_transfers=True,
+                    incarceration_periods=ips_for_test
                 )
             )
 
-            self.assertEqual(validated_incarceration_periods, [collapsed_period])
+            self.assertEqual(validated_incarceration_periods, updated_periods)
 
     def test_normalized_incarceration_periods_commitment_with_general_purpose(
         self,
@@ -231,7 +221,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -259,8 +248,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[incarceration_period],
-                collapse_transfers=True,
+                incarceration_periods=[incarceration_period]
             )
         )
 
@@ -317,7 +305,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[general_period, treatment_period],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -358,7 +345,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -396,7 +382,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[incarceration_revocation_period],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -434,7 +419,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[incarceration_revocation_period],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -466,7 +450,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             _ = self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[shock_incarceration_admission],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
 
     def test_us_id_normalize_period_if_commitment_from_supervision_parole_board_revocation(
@@ -522,7 +505,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
                     incarceration_revocation_period,
                 ],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -584,7 +566,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
                     incarceration_revocation_period,
                 ],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -643,7 +624,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[treatment_period, transfer_incarceration_period],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -671,8 +651,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[incarceration_period],
-                collapse_transfers=True,
+                incarceration_periods=[incarceration_period]
             )
         )
 
@@ -699,8 +678,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[incarceration_period],
-                collapse_transfers=True,
+                incarceration_periods=[incarceration_period]
             )
         )
 
@@ -738,7 +716,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self._normalized_incarceration_periods_for_calculations(
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[supervision_period],
-                collapse_transfers=True,
             )
         )
 
@@ -773,7 +750,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 incarceration_periods=[
                     incarceration_period,
                     fuzzy_matched_incarceration_period,
-                ],
+                ]
             )
         )
 

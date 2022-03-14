@@ -66,8 +66,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def _normalized_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
-        collapse_transfers: bool = True,
-        overwrite_facility_information_in_transfers: bool = True,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
         # IP pre-processing for US_ND does not rely on violation responses
@@ -88,8 +86,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         return ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=collapse_transfers,
-            overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,
+            collapse_transfers=False,
+            overwrite_facility_information_in_transfers=False,
         ).incarceration_periods
 
     def test_multiple_temporary_and_valid(
@@ -162,7 +160,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -212,6 +210,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code=state_code,
             admission_date=date(2020, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2020, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
@@ -222,6 +221,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code=state_code,
             admission_date=date(2020, 12, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2020, 12, 24),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
@@ -232,6 +232,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code=state_code,
             admission_date=date(2020, 12, 24),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2020, 12, 30),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
@@ -244,40 +245,33 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             valid_incarceration_period_3,
         ]
 
-        updated_temp_1 = attr.evolve(
-            temporary_custody_1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-
-        updated_temp_2 = attr.evolve(
-            temporary_custody_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-
-        collapsed_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=valid_incarceration_period_1.incarceration_period_id,
-            external_id=valid_incarceration_period_1.external_id,
-            state_code=valid_incarceration_period_1.state_code,
-            admission_date=valid_incarceration_period_1.admission_date,
-            admission_reason=valid_incarceration_period_1.admission_reason,
-            release_date=valid_incarceration_period_3.release_date,
-            release_reason=valid_incarceration_period_3.release_reason,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-        )
+        updated_periods = [
+            attr.evolve(
+                temporary_custody_1,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            ),
+            attr.evolve(
+                temporary_custody_2,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            ),
+            attr.evolve(valid_incarceration_period_1),
+            attr.evolve(valid_incarceration_period_2),
+            attr.evolve(valid_incarceration_period_3),
+        ]
 
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
             self.assertEqual(
-                [updated_temp_1, updated_temp_2, collapsed_incarceration_period],
+                updated_periods,
                 validated_incarceration_periods,
             )
 
@@ -356,7 +350,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -388,7 +382,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=incarceration_periods,
+                incarceration_periods=incarceration_periods
             )
 
     def test_NewAdmissionAfterProbationRevocation(
@@ -795,7 +789,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[ip, ip_2, ip_3],
+                incarceration_periods=[ip, ip_2, ip_3]
             )
         )
 
@@ -877,7 +871,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[ip, ip_2, ip_3], collapse_transfers=False
+                incarceration_periods=[ip, ip_2, ip_3]
             )
         )
 
@@ -934,7 +928,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[ip, ip_2], collapse_transfers=False
+                incarceration_periods=[ip, ip_2]
             )
         )
 
@@ -993,7 +987,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         validated_incarceration_periods = (
             self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[ip_1, ip_2], collapse_transfers=False
+                incarceration_periods=[ip_1, ip_2]
             )
         )
 

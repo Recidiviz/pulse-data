@@ -56,8 +56,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     @staticmethod
     def _normalized_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
-        collapse_transfers: bool = True,
-        overwrite_facility_information_in_transfers: bool = True,
+        collapse_transfers: bool = False,
+        overwrite_facility_information_in_transfers: bool = False,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
         # IP pre-processing for US_MO does not rely on violation responses or

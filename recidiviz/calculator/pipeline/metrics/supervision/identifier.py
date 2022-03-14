@@ -250,8 +250,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             raise ValueError("Expected both normalized IPs and SPs for this pipeline.")
 
         incarceration_period_index = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=True,
-            overwrite_facility_information_in_transfers=True,
+            collapse_transfers=False,
+            overwrite_facility_information_in_transfers=False,
         )
 
         supervision_period_index = (
