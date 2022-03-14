@@ -21,7 +21,7 @@ This file is uploaded to GCS on deploy.
 import datetime
 import os
 from base64 import b64encode
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from airflow import models
 from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
@@ -83,7 +83,7 @@ def get_zone_for_region(pipeline_region: str) -> str:
 
 
 def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
-    region = pipeline_config.pop("region", str)
+    region = pipeline_config.peek("region", str)
     zone = get_zone_for_region(region)
 
     dataflow_args = default_args.copy()
@@ -102,12 +102,25 @@ def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
 
 
 def get_pipeline_config_args(pipeline_config: YAMLDict) -> PipelineConfigArgs:
-    state_code = pipeline_config.pop("state_code", str)
-    pipeline_name = pipeline_config.pop("job_name", str)
-    staging_only = pipeline_config.pop_optional("staging_only", bool)
+    state_code = pipeline_config.peek("state_code", str)
+    pipeline_name = pipeline_config.peek("job_name", str)
+    staging_only = pipeline_config.peek_optional("staging_only", bool)
 
     return PipelineConfigArgs(
         state_code=state_code, pipeline_name=pipeline_name, staging_only=staging_only
+    )
+
+
+def dataflow_operator_for_pipeline(
+    pipeline_args: PipelineConfigArgs, pipeline_config: YAMLDict
+) -> RecidivizDataflowTemplateOperator:
+    dataflow_default_args = get_dataflow_default_args(pipeline_config)
+
+    return RecidivizDataflowTemplateOperator(
+        task_id=pipeline_args.pipeline_name,
+        template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_args.pipeline_name}",
+        job_name=pipeline_args.pipeline_name,
+        dataflow_default_options=dataflow_default_args,
     )
 
 
@@ -125,9 +138,14 @@ with models.DAG(
     if config_file is None:
         raise Exception("Configuration file not specified")
 
-    incremental_pipelines = YAMLDict.from_path(config_file).pop_dicts(
-        "incremental_pipelines"
+    normalization_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "normalization_pipelines"
     )
+
+    incremental_metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "incremental_metric_pipelines"
+    )
+
     supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "supplemental_dataset_pipelines"
     )
@@ -135,7 +153,7 @@ with models.DAG(
     case_triage_export = trigger_export_operator("CASE_TRIAGE")
 
     states_to_trigger = {
-        pipeline.peek("state_code", str) for pipeline in incremental_pipelines
+        pipeline.peek("state_code", str) for pipeline in incremental_metric_pipelines
     }
 
     state_trigger_export_operators = {
@@ -143,35 +161,52 @@ with models.DAG(
         for state_code in states_to_trigger
     }
 
-    for pipeline in incremental_pipelines:
-        dataflow_default_args = get_dataflow_default_args(pipeline)
-        pipeline_config_args = get_pipeline_config_args(pipeline)
+    incremental_metric_pipelines_by_state: Dict[str, List] = {
+        state_code: [] for state_code in states_to_trigger
+    }
+
+    for metric_pipeline in incremental_metric_pipelines:
+        pipeline_config_args = get_pipeline_config_args(metric_pipeline)
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            calculation_pipeline = RecidivizDataflowTemplateOperator(
-                task_id=pipeline_config_args.pipeline_name,
-                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
-                job_name=pipeline_config_args.pipeline_name,
-                dataflow_default_options=dataflow_default_args,
+            incremental_metric_pipeline = dataflow_operator_for_pipeline(
+                pipeline_config_args, metric_pipeline
             )
-            # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
-            # is published saying the pipelines are done.
+            # Add the pipeline to the list of metric pipelines for this state
+            incremental_metric_pipelines_by_state[pipeline_config_args.state_code] += [
+                incremental_metric_pipeline
+            ]
+
+            # This >> ensures that all the calculation pipelines will run before the
+            # Pub / Sub message is published saying the pipelines are done.
             (
-                calculation_pipeline
+                incremental_metric_pipeline
                 >> state_trigger_export_operators[pipeline_config_args.state_code]
             )
             if pipeline_config_args.state_code in CASE_TRIAGE_STATES:
-                calculation_pipeline >> case_triage_export
+                incremental_metric_pipeline >> case_triage_export
 
-    for pipeline in supplemental_dataset_pipelines:
-        dataflow_default_args = get_dataflow_default_args(pipeline)
-        pipeline_config_args = get_pipeline_config_args(pipeline)
+    for normalization_pipeline in normalization_pipelines:
+        pipeline_config_args = get_pipeline_config_args(normalization_pipeline)
+
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            supplemental_dataset_pipeline = RecidivizDataflowTemplateOperator(
-                task_id=pipeline_config_args.pipeline_name,
-                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
-                job_name=pipeline_config_args.pipeline_name,
-                dataflow_default_options=dataflow_default_args,
+            normalization_calculation_pipeline = dataflow_operator_for_pipeline(
+                pipeline_config_args, normalization_pipeline
+            )
+
+            for incremental_metric_pipeline in incremental_metric_pipelines_by_state[
+                pipeline_config_args.state_code
+            ]:
+                # This ensures that all of the normalization pipelines for a state will
+                # run before the metric pipelines for the state are triggered.
+                normalization_calculation_pipeline >> incremental_metric_pipeline
+
+    for supplemental_pipeline in supplemental_dataset_pipelines:
+        pipeline_config_args = get_pipeline_config_args(supplemental_pipeline)
+
+        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
+            supplemental_dataset_pipeline = dataflow_operator_for_pipeline(
+                pipeline_config_args, supplemental_pipeline
             )
 
     # These exports don't depend on pipeline output.
@@ -197,33 +232,45 @@ with models.DAG(
     if config_file is None:
         raise Exception("Configuration file not specified")
 
-    historical_pipelines = YAMLDict.from_path(config_file).pop_dicts(
-        "historical_pipelines"
-    )
-    supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
-        "supplemental_dataset_pipelines"
+    historical_metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "historical_metric_pipelines"
     )
 
-    for pipeline in historical_pipelines:
-        dataflow_default_args = get_dataflow_default_args(pipeline)
-        pipeline_config_args = get_pipeline_config_args(pipeline)
+    historical_metric_pipelines_by_state: Dict[str, List] = {
+        state_code: [] for state_code in states_to_trigger
+    }
+
+    for metric_pipeline in historical_metric_pipelines:
+        pipeline_config_args = get_pipeline_config_args(metric_pipeline)
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            calculation_pipeline = RecidivizDataflowTemplateOperator(
-                task_id=pipeline_config_args.pipeline_name,
-                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
-                job_name=pipeline_config_args.pipeline_name,
-                dataflow_default_options=dataflow_default_args,
+            historical_metric_pipeline = dataflow_operator_for_pipeline(
+                pipeline_config_args, metric_pipeline
+            )
+            # Add the pipeline to the list of metric pipelines for this state
+            historical_metric_pipelines_by_state[pipeline_config_args.state_code] += [
+                historical_metric_pipeline
+            ]
+
+    for normalization_pipeline in normalization_pipelines:
+        pipeline_config_args = get_pipeline_config_args(normalization_pipeline)
+
+        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
+            normalization_calculation_pipeline = dataflow_operator_for_pipeline(
+                pipeline_config_args, normalization_pipeline
             )
 
-    for pipeline in supplemental_dataset_pipelines:
-        dataflow_default_args = get_dataflow_default_args(pipeline)
-        pipeline_config_args = get_pipeline_config_args(pipeline)
+            for historical_metric_pipeline in historical_metric_pipelines_by_state[
+                pipeline_config_args.state_code
+            ]:
+                # This ensures that all of the normalization pipelines for a state will
+                # run before the metric pipelines for the state are triggered.
+                normalization_calculation_pipeline >> historical_metric_pipeline
+
+    for supplemental_pipeline in supplemental_dataset_pipelines:
+        pipeline_config_args = get_pipeline_config_args(supplemental_pipeline)
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            supplemental_dataset_pipeline = RecidivizDataflowTemplateOperator(
-                task_id=pipeline_config_args.pipeline_name,
-                template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_config_args.pipeline_name}",
-                job_name=pipeline_config_args.pipeline_name,
-                dataflow_default_options=dataflow_default_args,
+            supplemental_dataset_pipeline = dataflow_operator_for_pipeline(
+                pipeline_config_args, supplemental_pipeline
             )

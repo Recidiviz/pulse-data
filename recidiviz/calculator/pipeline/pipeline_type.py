@@ -33,8 +33,8 @@ US_ID_CASE_NOTE_EXTRACTED_ENTITIES_PIPELINE_NAME = (
 )
 
 
-class PipelineRunType(enum.Enum):
-    """Describes the types of pipeline runs that occur."""
+class MetricPipelineRunType(enum.Enum):
+    """Describes the types of metric pipeline runs that occur."""
 
     # Pipelines scheduled to run daily
     INCREMENTAL = "INCREMENTAL"

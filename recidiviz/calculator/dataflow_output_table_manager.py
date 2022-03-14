@@ -103,21 +103,25 @@ def update_dataflow_metric_tables_schemas(
             )
 
 
-def get_pipeline_enabled_states() -> Set[StateCode]:
-    """Returns all states that have scheduled pipelines that run."""
+def get_metric_pipeline_enabled_states() -> Set[StateCode]:
+    """Returns all states that have scheduled metric pipelines that run."""
     pipeline_states: Set[StateCode] = set()
 
     pipeline_templates_yaml = YAMLDict.from_path(
         dataflow_config.PIPELINE_CONFIG_YAML_PATH
     )
 
-    incremental_pipelines = pipeline_templates_yaml.pop_dicts("incremental_pipelines")
-    historical_pipelines = pipeline_templates_yaml.pop_dicts("historical_pipelines")
+    incremental_metric_pipelines = pipeline_templates_yaml.pop_dicts(
+        "incremental_metric_pipelines"
+    )
+    historical_metric_pipelines = pipeline_templates_yaml.pop_dicts(
+        "historical_metric_pipelines"
+    )
 
-    for pipeline in incremental_pipelines:
+    for pipeline in incremental_metric_pipelines:
         pipeline_states.add(StateCode(pipeline.peek("state_code", str)))
 
-    for pipeline in historical_pipelines:
+    for pipeline in historical_metric_pipelines:
         pipeline_states.add(StateCode(pipeline.peek("state_code", str)))
 
     return pipeline_states
@@ -245,5 +249,5 @@ if __name__ == "__main__":
     with local_project_id_override(known_args.project_id):
         update_dataflow_metric_tables_schemas()
         update_supplemental_dataset_schemas()
-        for state in get_pipeline_enabled_states():
+        for state in get_metric_pipeline_enabled_states():
             update_normalized_state_schema(state)

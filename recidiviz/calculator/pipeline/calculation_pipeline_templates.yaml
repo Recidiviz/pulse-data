@@ -8,7 +8,35 @@
 
 # List of pipelines with their necessary details
 
-incremental_pipelines:
+normalization_pipelines:
+  # Comprehensive normalization pipelines
+  - pipeline: comprehensive_normalization
+    job_name: us-id-normalization
+    state_code: US_ID
+    region: us-west1
+  - pipeline: comprehensive_normalization
+    job_name: us-me-normalization
+    state_code: US_ME
+    region: us-west1
+  - pipeline: comprehensive_normalization
+    job_name: us-mo-normalization
+    state_code: US_MO
+    region: us-central1
+  - pipeline: comprehensive_normalization
+    job_name: us-nd-normalization
+    state_code: US_ND
+    region: us-west1
+  - pipeline: comprehensive_normalization
+    job_name: us-pa-normalization
+    state_code: US_PA
+    region: us-west3
+  - pipeline: comprehensive_normalization
+    job_name: us-tn-normalization
+    state_code: US_TN
+    region: us-east1
+
+
+incremental_metric_pipelines:
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
     job_name: full-us-nd-recidivism-metrics
@@ -118,13 +146,13 @@ incremental_pipelines:
 
 # Daily US_ME calculations
   - pipeline: incarceration_metrics
-    job_name: us-me-incarceration-calculations-36
+    job_name: us-me-incarceration-metrics-36
     state_code: US_ME
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 36
     region: us-west3
 
-historical_pipelines:
+historical_metric_pipelines:
   - pipeline: incarceration_metrics
     job_name: us-id-historical-incarceration-metrics-240
     state_code: US_ID
@@ -216,7 +244,7 @@ historical_pipelines:
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-east1
   - pipeline: incarceration_metrics
-    job_name: us-me-historical-incarceration-calculations-240
+    job_name: us-me-historical-incarceration-metrics-240
     state_code: US_ME
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
