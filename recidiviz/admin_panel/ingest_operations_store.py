@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from google.cloud import tasks_v2
 
+from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
@@ -37,6 +38,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -48,7 +52,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
-from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.regions import get_region
 
@@ -59,20 +62,21 @@ QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
 BucketSummaryType = Dict[str, Union[str, int]]
 
 
-class IngestOperationsStore:
+class IngestOperationsStore(AdminPanelStore):
     """
     A store for tracking the current state of direct ingest.
     """
 
     def __init__(self, override_project_id: Optional[str] = None) -> None:
-        self.project_id = (
-            metadata.project_id()
-            if override_project_id is None
-            else override_project_id
-        )
+        super().__init__(override_project_id=override_project_id)
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
+
+    def recalculate_store(self) -> None:
+        # This store currently does not store any internal state that can be refreshed.
+        # Data must be fetched manually from other public methods.
+        pass
 
     @property
     def state_codes_launched_in_env(self) -> List[StateCode]:
@@ -240,6 +244,8 @@ class IngestOperationsStore:
                 unprocessedFilesIngestView: number of unprocessed ingest view files in the operations database
                 dateOfEarliestUnprocessedIngestView: date of earliest unprocessed ingest file, if it exists
             }
+            isBQMaterializationEnabled: If true, BQ ingest view materialization is
+                enabled for this state for this ingest instance.
         }
         """
         formatted_state_code = state_code.value.lower()
@@ -272,12 +278,23 @@ class IngestOperationsStore:
                 state_code, instance
             )
 
+            materialization_gating_context = (
+                IngestViewMaterializationGatingContext.load_from_gcs()
+            )
+
+            is_bq_materialization_enabled = materialization_gating_context.is_bq_ingest_view_materialization_enabled(
+                state_code=state_code, ingest_instance=instance
+            )
             ingest_instance_summary: Dict[str, Any] = {
                 "instance": instance.value,
                 "storage": storage_bucket_path.abs_path(),
                 "ingest": ingest_bucket_metadata,
                 "dbName": ingest_db_name,
                 "operations": operations_db_metadata,
+                # TODO(#11424): Delete this flag once BQ materialization has been fully
+                #  shipped to all states and admin panel frontend no longer references
+                #  this value.
+                "isBQMaterializationEnabled": is_bq_materialization_enabled,
             }
 
             ingest_instance_summaries.append(ingest_instance_summary)
