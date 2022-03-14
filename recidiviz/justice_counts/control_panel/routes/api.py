@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,19 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Flask configs for different environments."""
-
-import attr
-
-from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+"""Implements API routes for the Justice Counts Control Panel backend API."""
+from flask import Blueprint
 
 
-@attr.define
-class Config:
-    DB_URL: str
-    DATABASE_KEY: SQLAlchemyDatabaseKey = SQLAlchemyDatabaseKey.for_schema(
-        SchemaType.JUSTICE_COUNTS
-    )
-    # Indicates whether CSRF protection is enabled for the whole app. Should be set to False for tests.
-    WTF_CSRF_ENABLED: bool = True
+def create_api_blueprint() -> Blueprint:
+    api = Blueprint("api", __name__)
+
+    # TODO(#11504): Replace dummy endpoint
+    @api.route("/hello")
+    def hello() -> str:
+        return "Hello, World!"
+
+    return api
