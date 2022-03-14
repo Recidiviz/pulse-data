@@ -289,6 +289,18 @@ def main() -> int:
         ),
     )
 
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz/justice_counts/control_panel/server.py",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.justice_counts",
+                "recidiviz.common",
+                "recidiviz.persistence",
+                "recidiviz.utils",
+            }
+        ),
+    )
+
     return 0 if success else 1
 
 
