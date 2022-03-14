@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for PostgresDirectIngestFileMetadataManagerTest."""
+"""Tests for classes in postgres_direct_ingest_file_metadata_manager.py."""
 import datetime
 import unittest
 from sqlite3 import IntegrityError
@@ -32,7 +32,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
+    PostgresDirectIngestIngestFileMetadataManager,
     PostgresDirectIngestRawFileMetadataManager,
     PostgresDirectIngestSftpFileMetadataManager,
 )
@@ -51,44 +51,58 @@ from recidiviz.persistence.entity.operations.entities import (
 from recidiviz.tests.utils import fakes
 
 
-class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
-    """Tests for PostgresDirectIngestFileMetadataManagerTest."""
+def _fake_eq(e1: Entity, e2: Entity) -> bool:
+    def _should_ignore_field_cb(_: Type, field_name: str) -> bool:
+        return field_name == "file_id"
+
+    return entity_graph_eq(e1, e2, _should_ignore_field_cb)
+
+
+def _make_unprocessed_path(
+    path_str: str,
+    file_type: GcsfsDirectIngestFileType,
+    dt: datetime.datetime = datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+) -> GcsfsFilePath:
+    normalized_path_str = to_normalized_unprocessed_file_path(
+        original_file_path=path_str, file_type=file_type, dt=dt
+    )
+    return GcsfsFilePath.from_absolute_path(normalized_path_str)
+
+
+def _make_processed_path(
+    path_str: str, file_type: GcsfsDirectIngestFileType
+) -> GcsfsFilePath:
+    path = _make_unprocessed_path(path_str, file_type)
+    # pylint:disable=protected-access
+    return DirectIngestGCSFileSystem._to_processed_file_path(path)
+
+
+class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
+    """Tests for PostgresDirectIngestRawFileMetadataManager."""
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         fakes.use_in_memory_sqlite_database(self.database_key)
-        self.output_bucket_name = "output_bucket_name"
-        self.metadata_manager = PostgresDirectIngestFileMetadataManager(
-            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
-        )
-
-        self.metadata_manager_secondary = PostgresDirectIngestFileMetadataManager(
-            region_code="us_xx",
-            ingest_database_name="us_xx_ingest_database_name_secondary",
-        )
-
-        self.other_output_bucket_name = "other_output_bucket_name"
-        self.metadata_manager_other_region = PostgresDirectIngestFileMetadataManager(
-            region_code="us_yy", ingest_database_name="us_xx_ingest_database_name"
-        )
 
         self.raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
         )
-
-        self.sftp_metadata_manager = PostgresDirectIngestSftpFileMetadataManager(
-            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
+        self.raw_metadata_manager_secondary = (
+            PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                ingest_database_name="us_xx_ingest_database_name_secondary",
+            )
         )
 
-        def fake_eq(e1: Entity, e2: Entity) -> bool:
-            def _should_ignore_field_cb(_: Type, field_name: str) -> bool:
-                return field_name == "file_id"
-
-            return entity_graph_eq(e1, e2, _should_ignore_field_cb)
+        self.raw_metadata_manager_other_region = (
+            PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_yy", ingest_database_name="us_yy_ingest_database_name"
+            )
+        )
 
         self.entity_eq_patcher = patch(
             "recidiviz.persistence.entity.operations.entities.OperationsEntity.__eq__",
-            fake_eq,
+            _fake_eq,
         )
         self.entity_eq_patcher.start()
 
@@ -96,62 +110,35 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.entity_eq_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    @staticmethod
-    def _make_unprocessed_path(
-        path_str: str,
-        file_type: GcsfsDirectIngestFileType,
-        dt: datetime.datetime = datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
-    ) -> GcsfsFilePath:
-        normalized_path_str = to_normalized_unprocessed_file_path(
-            original_file_path=path_str, file_type=file_type, dt=dt
-        )
-        return GcsfsFilePath.from_absolute_path(normalized_path_str)
-
-    def _make_processed_path(
-        self, path_str: str, file_type: GcsfsDirectIngestFileType
-    ) -> GcsfsFilePath:
-        path = self._make_unprocessed_path(path_str, file_type)
-        # pylint:disable=protected-access
-        return DirectIngestGCSFileSystem._to_processed_file_path(path)
-
     def test_register_processed_path_crashes(self) -> None:
-        raw_processed_path = self._make_processed_path(
+        raw_processed_path = _make_processed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
         with self.assertRaises(ValueError):
-            self.metadata_manager.mark_raw_file_as_discovered(raw_processed_path)
-
-        ingest_view_processed_path = self._make_processed_path(
-            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
-        )
-
-        with self.assertRaises(ValueError):
-            self.metadata_manager.mark_ingest_view_file_as_discovered(
-                ingest_view_processed_path
-            )
+            self.raw_metadata_manager.mark_raw_file_as_discovered(raw_processed_path)
 
     def test_get_raw_file_metadata_when_not_yet_registered(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
         # Act
         with self.assertRaises(ValueError):
-            self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
+            self.raw_metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_file_metadata(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
         # Act
-        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
-        metadata = self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
-        metadata_secondary = self.metadata_manager_secondary.get_raw_file_metadata(
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+        metadata = self.raw_metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
+        metadata_secondary = self.raw_metadata_manager_secondary.get_raw_file_metadata(
             raw_unprocessed_path
         )
 
@@ -180,21 +167,21 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_file_metadata_unique_to_state(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
-        self.metadata_manager_other_region.mark_raw_file_as_discovered(
+        self.raw_metadata_manager_other_region.mark_raw_file_as_discovered(
             raw_unprocessed_path
         )
 
         # Act
-        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
-        metadata = self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+        metadata = self.raw_metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
 
         # Assert
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
-            region_code=self.metadata_manager.region_code,
+            region_code=self.raw_metadata_manager.region_code,
             file_tag="file_tag",
             discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
             normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
@@ -211,7 +198,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
     def test_has_raw_file_been_discovered(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
@@ -220,39 +207,36 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         # Assert
         self.assertTrue(
-            self.metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
+            self.raw_metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
         )
         self.assertTrue(
             self.raw_metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
         )
         self.assertTrue(
-            self.metadata_manager_secondary.has_raw_file_been_discovered(
+            self.raw_metadata_manager_secondary.has_raw_file_been_discovered(
                 raw_unprocessed_path
             )
         )
 
     def test_has_raw_file_been_discovered_returns_false_for_no_rows(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
         # Assert
         self.assertFalse(
-            self.metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
-        )
-        self.assertFalse(
             self.raw_metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
         )
         self.assertFalse(
-            self.metadata_manager_secondary.has_raw_file_been_discovered(
+            self.raw_metadata_manager_secondary.has_raw_file_been_discovered(
                 raw_unprocessed_path
             )
         )
 
     def test_has_raw_file_been_processed(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
@@ -262,32 +246,29 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         # Assert
         self.assertTrue(
-            self.metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+            self.raw_metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
         )
         self.assertTrue(
             self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
         )
         self.assertTrue(
-            self.metadata_manager_secondary.has_raw_file_been_processed(
+            self.raw_metadata_manager_secondary.has_raw_file_been_processed(
                 raw_unprocessed_path
             )
         )
 
     def test_has_raw_file_been_processed_returns_false_for_no_rows(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
         # Assert
         self.assertFalse(
-            self.metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
-        )
-        self.assertFalse(
             self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
         )
         self.assertFalse(
-            self.metadata_manager_secondary.has_raw_file_been_processed(
+            self.raw_metadata_manager_secondary.has_raw_file_been_processed(
                 raw_unprocessed_path
             )
         )
@@ -296,7 +277,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
@@ -305,13 +286,13 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         # Assert
         self.assertFalse(
-            self.metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+            self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
         )
         self.assertFalse(
             self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
         )
         self.assertFalse(
-            self.metadata_manager_secondary.has_raw_file_been_processed(
+            self.raw_metadata_manager_secondary.has_raw_file_been_processed(
                 raw_unprocessed_path
             )
         )
@@ -319,16 +300,16 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
     @freeze_time("2015-01-02T03:05:06.000007")
     def test_mark_raw_file_as_processed(self) -> None:
         # Arrange
-        raw_unprocessed_path = self._make_unprocessed_path(
+        raw_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
         )
 
         # Act
-        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
-        self.metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path)
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+        self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path)
 
         # Assert
-        metadata = self.metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
+        metadata = self.raw_metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
 
         self.assertEqual(
             datetime.datetime(2015, 1, 2, 3, 5, 6, 7), metadata.processed_time
@@ -337,42 +318,48 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
     def test_get_metadata_for_raw_files_discovered_after_datetime_empty(self) -> None:
         self.assertEqual(
             [],
-            self.metadata_manager.get_metadata_for_raw_files_discovered_after_datetime(
+            self.raw_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime(
                 "any_tag", discovery_time_lower_bound_exclusive=None
             ),
         )
 
     def test_get_metadata_for_raw_files_discovered_after_datetime(self) -> None:
         with freeze_time("2015-01-02T03:05:05"):
-            raw_unprocessed_path_1 = self._make_unprocessed_path(
+            raw_unprocessed_path_1 = _make_unprocessed_path(
                 "bucket/file_tag.csv",
                 GcsfsDirectIngestFileType.RAW_DATA,
                 dt=datetime.datetime.now(tz=pytz.UTC),
             )
-            self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
-            self.metadata_manager_other_region.mark_raw_file_as_discovered(
+            self.raw_metadata_manager.mark_raw_file_as_discovered(
+                raw_unprocessed_path_1
+            )
+            self.raw_metadata_manager_other_region.mark_raw_file_as_discovered(
                 raw_unprocessed_path_1
             )
 
         with freeze_time("2015-01-02T03:06:06"):
-            raw_unprocessed_path_2 = self._make_unprocessed_path(
+            raw_unprocessed_path_2 = _make_unprocessed_path(
                 "bucket/other_tag.csv",
                 GcsfsDirectIngestFileType.RAW_DATA,
                 dt=datetime.datetime.now(tz=pytz.UTC),
             )
-            self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_2)
+            self.raw_metadata_manager.mark_raw_file_as_discovered(
+                raw_unprocessed_path_2
+            )
 
         with freeze_time("2015-01-02T03:07:07"):
-            raw_unprocessed_path_3 = self._make_unprocessed_path(
+            raw_unprocessed_path_3 = _make_unprocessed_path(
                 "bucket/file_tag.csv",
                 GcsfsDirectIngestFileType.RAW_DATA,
                 dt=datetime.datetime.now(tz=pytz.UTC),
             )
-            self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_3)
+            self.raw_metadata_manager.mark_raw_file_as_discovered(
+                raw_unprocessed_path_3
+            )
 
         expected_list = [
             DirectIngestRawFileMetadata.new_with_defaults(
-                region_code=self.metadata_manager.region_code,
+                region_code=self.raw_metadata_manager.region_code,
                 file_tag="file_tag",
                 discovery_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
                 normalized_file_name="unprocessed_2015-01-02T03:05:05:000000_raw_file_tag.csv",
@@ -381,7 +368,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 ),
             ),
             DirectIngestRawFileMetadata.new_with_defaults(
-                region_code=self.metadata_manager.region_code,
+                region_code=self.raw_metadata_manager.region_code,
                 file_tag="file_tag",
                 discovery_time=datetime.datetime(2015, 1, 2, 3, 7, 7),
                 normalized_file_name="unprocessed_2015-01-02T03:07:07:000000_raw_file_tag.csv",
@@ -393,7 +380,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         self.assertEqual(
             expected_list,
-            self.metadata_manager.get_metadata_for_raw_files_discovered_after_datetime(
+            self.raw_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime(
                 "file_tag", discovery_time_lower_bound_exclusive=None
             ),
         )
@@ -402,13 +389,105 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
         self.assertEqual(
             expected_list,
-            self.metadata_manager.get_metadata_for_raw_files_discovered_after_datetime(
+            self.raw_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime(
                 "file_tag",
                 discovery_time_lower_bound_exclusive=datetime.datetime(
                     2015, 1, 2, 3, 7, 0
                 ),
             ),
         )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_get_num_unprocessed_raw_files(self) -> None:
+        # Arrange
+        raw_unprocessed_path_1 = _make_unprocessed_path(
+            "bucket/file_tag.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        raw_unprocessed_path_2 = _make_unprocessed_path(
+            "bucket/file_tag2.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        # Act
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_2)
+
+        unprocessed_paths = [raw_unprocessed_path_1, raw_unprocessed_path_2]
+
+        # Assert
+        self.assertEqual(
+            len(unprocessed_paths),
+            self.raw_metadata_manager.get_num_unprocessed_raw_files(),
+        )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_get_num_unprocessed_raw_files_when_no_files(self) -> None:
+        # Assert
+        self.assertEqual(0, self.raw_metadata_manager.get_num_unprocessed_raw_files())
+
+    def test_get_num_unprocessed_raw_files_when_secondary_db(self) -> None:
+        # Arrange
+        raw_unprocessed_path_1 = _make_unprocessed_path(
+            "bucket/file_tag.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        # Act
+        self.raw_metadata_manager_secondary.mark_raw_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+
+        # Assert
+        with self.assertRaises(DirectIngestInstanceError):
+            self.raw_metadata_manager_secondary.get_num_unprocessed_raw_files()
+
+
+# TODO(#9717): Write tests for the new BQ-materialization version of this metadata
+#  table.
+class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
+    """Tests for PostgresDirectIngestIngestFileMetadataManagerTest."""
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
+        self.output_bucket_name = "output_bucket_name"
+        self.metadata_manager = PostgresDirectIngestIngestFileMetadataManager(
+            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
+        )
+
+        self.metadata_manager_secondary = PostgresDirectIngestIngestFileMetadataManager(
+            region_code="us_xx",
+            ingest_database_name="us_xx_ingest_database_name_secondary",
+        )
+
+        self.other_output_bucket_name = "other_output_bucket_name"
+        self.metadata_manager_other_region = (
+            PostgresDirectIngestIngestFileMetadataManager(
+                region_code="us_yy", ingest_database_name="us_xx_ingest_database_name"
+            )
+        )
+
+        self.entity_eq_patcher = patch(
+            "recidiviz.persistence.entity.operations.entities.OperationsEntity.__eq__",
+            _fake_eq,
+        )
+        self.entity_eq_patcher.start()
+
+    def tearDown(self) -> None:
+        self.entity_eq_patcher.stop()
+        fakes.teardown_in_memory_sqlite_databases()
+
+    def test_register_processed_path_crashes(self) -> None:
+        ingest_view_processed_path = _make_processed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+
+        with self.assertRaises(ValueError):
+            self.metadata_manager.mark_ingest_view_file_as_discovered(
+                ingest_view_processed_path
+            )
 
     def test_ingest_view_file_progression(self) -> None:
         args = GcsfsIngestViewExportArgs(
@@ -418,7 +497,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(
@@ -438,7 +517,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        path = self._make_unprocessed_path(
+        path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(args, self.metadata_manager, path)
@@ -451,7 +530,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.assertTrue(self.metadata_manager.has_ingest_view_file_been_processed(path))
 
         # Act
-        self.metadata_manager.ingest_file_manager.clear_ingest_file_metadata()
+        self.metadata_manager.clear_ingest_file_metadata()
 
         # Assert
         no_row_found_regex = (
@@ -474,7 +553,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(
@@ -492,7 +571,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(
@@ -510,7 +589,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(
@@ -518,7 +597,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         with self.assertRaises(IntegrityError):
-            ingest_view_unprocessed_path = self._make_unprocessed_path(
+            ingest_view_unprocessed_path = _make_unprocessed_path(
                 "bucket/file_tag.csv",
                 GcsfsDirectIngestFileType.INGEST_VIEW,
                 dt=datetime.datetime.now(),
@@ -541,7 +620,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(
@@ -555,7 +634,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             result.is_invalidated = True
 
         # Now we can rerun with the same args
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv",
             GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=datetime.datetime.now(),
@@ -573,7 +652,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
         )
 
-        ingest_view_unprocessed_path_1 = self._make_unprocessed_path(
+        ingest_view_unprocessed_path_1 = _make_unprocessed_path(
             "bucket/file_tag.csv",
             GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
@@ -589,7 +668,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path_2 = self._make_unprocessed_path(
+        ingest_view_unprocessed_path_2 = _make_unprocessed_path(
             "bucket/file_tag.csv",
             GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
@@ -617,7 +696,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
     def run_ingest_view_file_progression(
         self,
         export_args: GcsfsIngestViewExportArgs,
-        metadata_manager: PostgresDirectIngestFileMetadataManager,
+        metadata_manager: PostgresDirectIngestIngestFileMetadataManager,
         ingest_view_unprocessed_path: GcsfsFilePath,
         discovery_before_export_recorded: bool = False,
         split_file: bool = False,
@@ -642,7 +721,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             export_time=None,
             discovery_time=None,
             processed_time=None,
-            ingest_database_name=metadata_manager.ingest_file_manager.ingest_database_name,
+            ingest_database_name=metadata_manager.ingest_database_name,
         )
 
         self.assertEqual(expected_metadata, ingest_file_metadata)
@@ -706,7 +785,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 self.fail(f"Unexpected metadata type {type(metadata)}")
 
             for i in range(2):
-                split_file_path = self._make_unprocessed_path(
+                split_file_path = _make_unprocessed_path(
                     f"bucket/split{i}.csv", GcsfsDirectIngestFileType.INGEST_VIEW
                 )
                 self.run_split_ingest_file_progression_pre_processing(
@@ -755,7 +834,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
 
     def run_split_ingest_file_progression_pre_processing(
         self,
-        metadata_manager: PostgresDirectIngestFileMetadataManager,
+        metadata_manager: PostgresDirectIngestIngestFileMetadataManager,
         original_file_metadata: DirectIngestIngestFileMetadata,
         split_file_path: GcsfsFilePath,
         discovery_before_export_recorded: bool = False,
@@ -821,7 +900,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(
@@ -845,7 +924,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
         self.run_ingest_view_file_progression(
@@ -974,7 +1053,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 3, 3, 3
                 ),
-                ingest_database_name=self.metadata_manager.ingest_file_manager.ingest_database_name,
+                ingest_database_name=self.metadata_manager.ingest_database_name,
             )
         ]
 
@@ -994,7 +1073,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             self.metadata_manager.register_ingest_file_export_job(args)
 
         with freeze_time("2015-01-02T03:07:07"):
-            path = self._make_unprocessed_path(
+            path = _make_unprocessed_path(
                 "bucket/file_tag.csv",
                 file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
                 dt=datetime.datetime.now(tz=pytz.UTC),
@@ -1032,7 +1111,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             )
 
         with freeze_time("2015-01-02T03:07:07"):
-            path = self._make_unprocessed_path(
+            path = _make_unprocessed_path(
                 "bucket/file_tag.csv",
                 file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
                 dt=datetime.datetime.now(tz=pytz.UTC),
@@ -1058,7 +1137,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         metadata_entity = self.metadata_manager.register_ingest_file_export_job(args)
         self.metadata_manager.register_ingest_view_export_file_name(
             metadata_entity,
-            self._make_unprocessed_path(
+            _make_unprocessed_path(
                 "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
             ),
         )
@@ -1066,56 +1145,10 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.metadata_manager.register_ingest_view_export_file_name(
                 metadata_entity,
-                self._make_unprocessed_path(
+                _make_unprocessed_path(
                     "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
                 ),
             )
-
-    @freeze_time("2015-01-02T03:04:06")
-    def test_get_num_unprocessed_raw_files(self) -> None:
-        # Arrange
-        raw_unprocessed_path_1 = self._make_unprocessed_path(
-            "bucket/file_tag.csv",
-            GcsfsDirectIngestFileType.RAW_DATA,
-        )
-
-        raw_unprocessed_path_2 = self._make_unprocessed_path(
-            "bucket/file_tag2.csv",
-            GcsfsDirectIngestFileType.RAW_DATA,
-        )
-
-        # Act
-        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
-        self.metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_2)
-
-        unprocessed_paths = [raw_unprocessed_path_1, raw_unprocessed_path_2]
-
-        # Assert
-        self.assertEqual(
-            len(unprocessed_paths),
-            self.metadata_manager.get_num_unprocessed_raw_files(),
-        )
-
-    @freeze_time("2015-01-02T03:04:06")
-    def test_get_num_unprocessed_raw_files_when_no_files(self) -> None:
-        # Assert
-        self.assertEqual(0, self.metadata_manager.get_num_unprocessed_raw_files())
-
-    def test_get_num_unprocessed_raw_files_when_secondary_db(self) -> None:
-        # Arrange
-        raw_unprocessed_path_1 = self._make_unprocessed_path(
-            "bucket/file_tag.csv",
-            GcsfsDirectIngestFileType.RAW_DATA,
-        )
-
-        # Act
-        self.metadata_manager_secondary.mark_raw_file_as_discovered(
-            raw_unprocessed_path_1
-        )
-
-        # Assert
-        with self.assertRaises(DirectIngestInstanceError):
-            self.metadata_manager_secondary.get_num_unprocessed_raw_files()
 
     def test_get_num_unprocessed_ingest_files(self) -> None:
         # Arrange
@@ -1126,7 +1159,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
 
@@ -1170,7 +1203,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 ),
             )
 
-            ingest_view_unprocessed_path = self._make_unprocessed_path(
+            ingest_view_unprocessed_path = _make_unprocessed_path(
                 "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
             )
 
@@ -1192,7 +1225,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 ),
             )
 
-            ingest_view_unprocessed_path_2 = self._make_unprocessed_path(
+            ingest_view_unprocessed_path_2 = _make_unprocessed_path(
                 "bucket/file_tag_2.csv", GcsfsDirectIngestFileType.INGEST_VIEW
             )
 
@@ -1223,7 +1256,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
-        ingest_view_unprocessed_path = self._make_unprocessed_path(
+        ingest_view_unprocessed_path = _make_unprocessed_path(
             "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
         )
 
@@ -1236,9 +1269,43 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             self.metadata_manager.get_date_of_earliest_unprocessed_ingest_file()
         )
 
+
+class PostgresDirectIngestSftpFileMetadataManagerTest(unittest.TestCase):
+    """Tests for PostgresDirectIngestSftpFileMetadataManager."""
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        fakes.use_in_memory_sqlite_database(self.database_key)
+        self.sftp_metadata_manager = PostgresDirectIngestSftpFileMetadataManager(
+            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
+        )
+
+        self.sftp_metadata_manager_secondary = (
+            PostgresDirectIngestSftpFileMetadataManager(
+                region_code="us_xx",
+                ingest_database_name="us_xx_ingest_database_name_secondary",
+            )
+        )
+
+        self.sftp_metadata_manager_other_region = (
+            PostgresDirectIngestSftpFileMetadataManager(
+                region_code="us_yy", ingest_database_name="us_yy_ingest_database_name"
+            )
+        )
+
+        self.entity_eq_patcher = patch(
+            "recidiviz.persistence.entity.operations.entities.OperationsEntity.__eq__",
+            _fake_eq,
+        )
+        self.entity_eq_patcher.start()
+
+    def tearDown(self) -> None:
+        self.entity_eq_patcher.stop()
+        fakes.teardown_in_memory_sqlite_databases()
+
     def test_get_sftp_file_metadata_when_not_yet_registered(self) -> None:
         with self.assertRaises(ValueError):
-            self.metadata_manager.get_sftp_file_metadata("nonexistent.csv")
+            self.sftp_metadata_manager.get_sftp_file_metadata("nonexistent.csv")
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_sftp_file_metadata(self) -> None:
@@ -1246,10 +1313,10 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         sftp_path = "Recidiviz20150102/somefile.csv"
 
         # Act
-        self.metadata_manager.mark_sftp_file_as_discovered(sftp_path)
-        metadata = self.metadata_manager.get_sftp_file_metadata(sftp_path)
-        metadata_secondary = self.metadata_manager_secondary.get_sftp_file_metadata(
-            sftp_path
+        self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+        metadata = self.sftp_metadata_manager.get_sftp_file_metadata(sftp_path)
+        metadata_secondary = (
+            self.sftp_metadata_manager_secondary.get_sftp_file_metadata(sftp_path)
         )
 
         # Assert
@@ -1275,15 +1342,15 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         # Arrange
         sftp_path = "Recidiviz20150102/somefile.csv"
 
-        self.metadata_manager_other_region.mark_sftp_file_as_discovered(sftp_path)
+        self.sftp_metadata_manager_other_region.mark_sftp_file_as_discovered(sftp_path)
 
         # Act
-        self.metadata_manager.mark_sftp_file_as_discovered(sftp_path)
-        metadata = self.metadata_manager.get_sftp_file_metadata(sftp_path)
+        self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+        metadata = self.sftp_metadata_manager.get_sftp_file_metadata(sftp_path)
 
         # Assert
         expected_metadata = DirectIngestSftpFileMetadata.new_with_defaults(
-            region_code=self.metadata_manager.region_code,
+            region_code=self.sftp_metadata_manager.region_code,
             discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
             remote_file_path=sftp_path,
             processed_time=None,
@@ -1302,12 +1369,13 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
 
         # Assert
-        self.assertTrue(self.metadata_manager.has_sftp_file_been_discovered(sftp_path))
         self.assertTrue(
             self.sftp_metadata_manager.has_sftp_file_been_discovered(sftp_path)
         )
         self.assertTrue(
-            self.metadata_manager_secondary.has_sftp_file_been_discovered(sftp_path)
+            self.sftp_metadata_manager_secondary.has_sftp_file_been_discovered(
+                sftp_path
+            )
         )
 
     def test_has_sftp_file_been_discovered_returns_false_for_no_rows(self) -> None:
@@ -1315,12 +1383,13 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         sftp_path = "Recidiviz20150102/somefile.csv"
 
         # Assert
-        self.assertFalse(self.metadata_manager.has_sftp_file_been_discovered(sftp_path))
         self.assertFalse(
             self.sftp_metadata_manager.has_sftp_file_been_discovered(sftp_path)
         )
         self.assertFalse(
-            self.metadata_manager_secondary.has_sftp_file_been_discovered(sftp_path)
+            self.sftp_metadata_manager_secondary.has_sftp_file_been_discovered(
+                sftp_path
+            )
         )
 
     def test_has_sftp_file_been_processed(self) -> None:
@@ -1332,12 +1401,11 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.sftp_metadata_manager.mark_sftp_file_as_processed(sftp_path)
 
         # Assert
-        self.assertTrue(self.metadata_manager.has_sftp_file_been_processed(sftp_path))
         self.assertTrue(
             self.sftp_metadata_manager.has_sftp_file_been_processed(sftp_path)
         )
         self.assertTrue(
-            self.metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
+            self.sftp_metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
         )
 
     def test_has_sftp_file_been_processed_returns_false_for_no_rows(self) -> None:
@@ -1345,12 +1413,11 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         sftp_path = "Recidiviz20150102/somefile.csv"
 
         # Assert
-        self.assertFalse(self.metadata_manager.has_sftp_file_been_processed(sftp_path))
         self.assertFalse(
             self.sftp_metadata_manager.has_sftp_file_been_processed(sftp_path)
         )
         self.assertFalse(
-            self.metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
+            self.sftp_metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
         )
 
     def test_has_sftp_file_been_processed_returns_false_for_no_processed_time(
@@ -1363,12 +1430,11 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
 
         # Assert
-        self.assertFalse(self.metadata_manager.has_sftp_file_been_processed(sftp_path))
         self.assertFalse(
             self.sftp_metadata_manager.has_sftp_file_been_processed(sftp_path)
         )
         self.assertFalse(
-            self.metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
+            self.sftp_metadata_manager_secondary.has_sftp_file_been_processed(sftp_path)
         )
 
     @freeze_time("2015-01-02T03:05:06.000007")
@@ -1377,11 +1443,11 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         sftp_path = "Recidiviz20150102/somefile.csv"
 
         # Act
-        self.metadata_manager.mark_sftp_file_as_discovered(sftp_path)
-        self.metadata_manager.mark_sftp_file_as_processed(sftp_path)
+        self.sftp_metadata_manager.mark_sftp_file_as_discovered(sftp_path)
+        self.sftp_metadata_manager.mark_sftp_file_as_processed(sftp_path)
 
         # Assert
-        metadata = self.metadata_manager.get_sftp_file_metadata(sftp_path)
+        metadata = self.sftp_metadata_manager.get_sftp_file_metadata(sftp_path)
 
         self.assertEqual(
             datetime.datetime(2015, 1, 2, 3, 5, 6, 7), metadata.processed_time

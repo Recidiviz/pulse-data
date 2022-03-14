@@ -113,7 +113,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestFileMetadataManager,
+    PostgresDirectIngestIngestFileMetadataManager,
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -206,7 +207,7 @@ class BaseDirectIngestController:
         #  states.
         self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
 
-        self.file_metadata_manager = PostgresDirectIngestFileMetadataManager(
+        self.raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
             ingest_database_name=self.ingest_database_key.db_name,
         )
@@ -245,17 +246,25 @@ class BaseDirectIngestController:
         if not self.is_bq_materialization_enabled:
             # TODO(#11424): Delete this branch once BQ ingest view materialization is
             #  enabled for all states.
+            self.ingest_file_metadata_manager = (
+                PostgresDirectIngestIngestFileMetadataManager(
+                    region_code=self.region.region_code,
+                    ingest_database_name=self.ingest_database_key.db_name,
+                )
+            )
             self.job_prioritizer = GcsfsDirectIngestJobPrioritizer(
                 self.fs,
                 self.ingest_bucket_path,
                 self.get_ingest_view_rank_list(),
             )
-            materialization_args_generator_delegate = FileBasedMaterializationArgsGeneratorDelegate(
-                output_bucket_name=self.ingest_bucket_path.bucket_name,
-                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
+            materialization_args_generator_delegate = (
+                FileBasedMaterializationArgsGeneratorDelegate(
+                    output_bucket_name=self.ingest_bucket_path.bucket_name,
+                    ingest_file_metadata_manager=self.ingest_file_metadata_manager,
+                )
             )
             materializer_delegate = FileBasedMaterializerDelegate(
-                ingest_file_metadata_manager=self.file_metadata_manager.ingest_file_manager,
+                ingest_file_metadata_manager=self.ingest_file_metadata_manager,
                 big_query_client=big_query_client,
             )
         else:
@@ -273,7 +282,7 @@ class BaseDirectIngestController:
             IngestViewMaterializationArgsGenerator(
                 region=self.region,
                 delegate=materialization_args_generator_delegate,
-                raw_file_metadata_manager=self.file_metadata_manager.raw_file_manager,
+                raw_file_metadata_manager=self.raw_file_metadata_manager,
                 view_collector=view_collector,
                 launched_ingest_views=self.get_ingest_view_rank_list(),
             )
@@ -496,13 +505,13 @@ class BaseDirectIngestController:
             # If the file path has not actually been discovered by the metadata manager yet, it likely was just added
             # and a subsequent call to handle_files will register it and trigger another call to this function so we can
             # schedule the appropriate job.
-            discovered = self.file_metadata_manager.has_raw_file_been_discovered(
+            discovered = self.raw_file_metadata_manager.has_raw_file_been_discovered(
                 task_args.raw_data_file_path
             )
             # If the file path has been processed, but still in the GCS bucket, it's likely due
             # to either a manual move or an accidental duplicate uploading. In either case, we
             # trust the database to have the source of truth.
-            processed = self.file_metadata_manager.has_raw_file_been_processed(
+            processed = self.raw_file_metadata_manager.has_raw_file_been_processed(
                 task_args.raw_data_file_path
             )
             if processed:
@@ -594,7 +603,7 @@ class BaseDirectIngestController:
             if not isinstance(args, LegacyExtractAndMergeArgs):
                 raise ValueError(f"Unexpected args type: [{args}]")
             discovered = (
-                self.file_metadata_manager.has_ingest_view_file_been_discovered(
+                self.ingest_file_metadata_manager.has_ingest_view_file_been_discovered(
                     args.file_path
                 )
             )
@@ -877,7 +886,7 @@ class BaseDirectIngestController:
 
             self.fs.mv_path_to_processed_path(args.file_path)
 
-            self.file_metadata_manager.mark_ingest_view_file_as_processed(
+            self.ingest_file_metadata_manager.mark_ingest_view_file_as_processed(
                 args.file_path
             )
 
@@ -1051,13 +1060,17 @@ class BaseDirectIngestController:
         for path in paths:
             parts = filename_parts_from_path(path)
             if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-                if not self.file_metadata_manager.has_raw_file_been_discovered(path):
-                    self.file_metadata_manager.mark_raw_file_as_discovered(path)
-            elif parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-                if not self.file_metadata_manager.has_ingest_view_file_been_discovered(
+                if not self.raw_file_metadata_manager.has_raw_file_been_discovered(
                     path
                 ):
-                    self.file_metadata_manager.mark_ingest_view_file_as_discovered(path)
+                    self.raw_file_metadata_manager.mark_raw_file_as_discovered(path)
+            elif parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+                if not self.ingest_file_metadata_manager.has_ingest_view_file_been_discovered(
+                    path
+                ):
+                    self.ingest_file_metadata_manager.mark_ingest_view_file_as_discovered(
+                        path
+                    )
             else:
                 raise ValueError(f"Unexpected file type [{parts.file_type}]")
 
@@ -1195,7 +1208,7 @@ class BaseDirectIngestController:
             self.kick_scheduler(just_finished_job=True)
             return
 
-        file_metadata = self.file_metadata_manager.get_raw_file_metadata(
+        file_metadata = self.raw_file_metadata_manager.get_raw_file_metadata(
             data_import_args.raw_data_file_path
         )
 
@@ -1214,7 +1227,7 @@ class BaseDirectIngestController:
         processed_path = self.fs.mv_path_to_processed_path(
             data_import_args.raw_data_file_path
         )
-        self.file_metadata_manager.mark_raw_file_as_processed(
+        self.raw_file_metadata_manager.mark_raw_file_as_processed(
             path=data_import_args.raw_data_file_path
         )
 
@@ -1237,7 +1250,7 @@ class BaseDirectIngestController:
         )
         if (
             not did_export
-            or not self.file_metadata_manager.get_ingest_view_metadata_pending_export()
+            or not self.ingest_file_metadata_manager.get_ingest_view_metadata_pending_export()
         ):
             logging.info("Creating cloud task to schedule next job.")
             self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
@@ -1294,8 +1307,8 @@ class BaseDirectIngestController:
 
         logging.info("Proceeding to file splitting for path [%s].", path.abs_path())
 
-        original_metadata = self.file_metadata_manager.get_ingest_view_file_metadata(
-            path
+        original_metadata = (
+            self.ingest_file_metadata_manager.get_ingest_view_file_metadata(path)
         )
 
         output_dir = GcsfsDirectoryPath.from_file_path(path)
@@ -1336,13 +1349,15 @@ class BaseDirectIngestController:
 
         for upload_path in upload_paths:
             ingest_file_metadata = (
-                self.file_metadata_manager.register_ingest_file_split(
+                self.ingest_file_metadata_manager.register_ingest_file_split(
                     original_metadata, upload_path
                 )
             )
-            self.file_metadata_manager.mark_ingest_view_exported(ingest_file_metadata)
+            self.ingest_file_metadata_manager.mark_ingest_view_exported(
+                ingest_file_metadata
+            )
 
-        self.file_metadata_manager.mark_ingest_view_file_as_processed(path)
+        self.ingest_file_metadata_manager.mark_ingest_view_file_as_processed(path)
 
         logging.info(
             "Done splitting file [%s] into [%s] paths, moving it to storage.",
