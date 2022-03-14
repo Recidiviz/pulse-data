@@ -17,6 +17,7 @@
 """Store used to maintain all admin panel related stores"""
 from typing import Dict, Iterable, List
 
+from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
 from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
@@ -40,38 +41,39 @@ class AdminStores:
     def __init__(self) -> None:
         if in_development():
             with local_project_id_override(GCP_PROJECT_STAGING):
-                self._initialize_stores()
+                self.all_stores = self._initialize_stores()
         elif in_gcp():
-            self._initialize_stores()
+            self.all_stores = self._initialize_stores()
 
-    def _initialize_stores(self) -> None:
+    def _initialize_stores(self) -> List[AdminPanelStore]:
+        admin_panel_stores: List[AdminPanelStore] = []
         self.ingest_metadata_store = DatasetMetadataCountsStore(
             _INGEST_METADATA_NICKNAME,
             _INGEST_METADATA_PREFIX,
         )
+        admin_panel_stores.append(self.ingest_metadata_store)
 
         self.validation_metadata_store = DatasetMetadataCountsStore(
             _VALIDATION_METADATA_NICKNAME,
             _VALIDATION_METADATA_PREFIX,
         )
+        admin_panel_stores.append(self.validation_metadata_store)
 
         self.ingest_data_freshness_store = IngestDataFreshnessStore()
+        admin_panel_stores.append(self.ingest_data_freshness_store)
 
         self.ingest_operations_store = IngestOperationsStore()
+        admin_panel_stores.append(self.ingest_operations_store)
 
         self.validation_status_store = ValidationStatusStore()
+        admin_panel_stores.append(self.validation_status_store)
+
+        return admin_panel_stores
 
     def start_timers(self) -> None:
-        """Starts store refresh timers for all stores that are a subclass of the AdminPanelStore class."""
+        """Starts store refresh timers for all stores."""
         if in_gcp() or in_development():
-            stores_with_timers = [
-                self.ingest_metadata_store,
-                self.validation_metadata_store,
-                self.ingest_data_freshness_store,
-                self.validation_status_store,
-            ]
-
-            for store in stores_with_timers:
+            for store in self.all_stores:
                 RepeatedTimer(
                     15 * 60, store.recalculate_store, run_immediately=True
                 ).start()

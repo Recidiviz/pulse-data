@@ -31,4 +31,6 @@ class AdminPanelStore:
 
     @abstractmethod
     def recalculate_store(self) -> None:
-        """Recalculates the state of the internal store."""
+        """Recalculates the state of the internal store. This is called every 15 min
+        to check for updated data.
+        """
