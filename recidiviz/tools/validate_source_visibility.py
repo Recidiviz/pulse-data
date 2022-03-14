@@ -37,6 +37,8 @@ from recidiviz.tools.pipeline_launch_util import (
 )
 from recidiviz.vendor.modulefinder import modulefinder
 
+RECIDIVIZ_MODULE = "recidiviz"
+
 
 def make_module_matcher(modules: Iterable[str]) -> pygtrie.PrefixSet:
     return pygtrie.PrefixSet(
@@ -51,15 +53,22 @@ def module_is_package(module_name: str) -> bool:
     return spec.submodule_search_locations is not None
 
 
-def is_invalid_dependency(
+def is_invalid_recidiviz_dependency(
     name: str,
     valid_module_prefixes: pygtrie.PrefixSet,
 ) -> bool:
     return (
-        name.startswith("recidiviz")
+        name.startswith(RECIDIVIZ_MODULE)
         and not module_is_package(name)
         and name not in valid_module_prefixes
     )
+
+
+def is_invalid_package_dependency(
+    name: str,
+    explicitly_invalid_package_dependencies: List[str],
+) -> bool:
+    return name in explicitly_invalid_package_dependencies and module_is_package(name)
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -74,6 +83,7 @@ class DependencyAnalysisResult:
 def get_invalid_dependencies_for_entrypoint(
     entrypoint_file: str,
     valid_module_prefixes: pygtrie.PrefixSet,
+    explicitly_invalid_package_dependencies: Optional[List[str]] = None,
     allowed_missing_module_prefixes: Optional[pygtrie.PrefixSet] = None,
 ) -> DependencyAnalysisResult:
     """Gets the transitive dependencies for the entrypoints and checks their validity.
@@ -94,9 +104,21 @@ def get_invalid_dependencies_for_entrypoint(
 
     name: str
     for name in m.modules:
-        if is_invalid_dependency(name, valid_module_prefixes):
+        if is_invalid_recidiviz_dependency(name, valid_module_prefixes):
             call_chain = m.call_chain_for_name(name)
-            if not is_invalid_dependency(call_chain[0], valid_module_prefixes):
+            if not is_invalid_recidiviz_dependency(
+                call_chain[0],
+                valid_module_prefixes,
+            ):
+                invalid_dependencies[name] = call_chain
+        elif explicitly_invalid_package_dependencies and is_invalid_package_dependency(
+            name, explicitly_invalid_package_dependencies
+        ):
+            call_chain = m.call_chain_for_package(name, RECIDIVIZ_MODULE)
+            if not is_invalid_recidiviz_dependency(
+                call_chain[0],
+                valid_module_prefixes,
+            ):
                 invalid_dependencies[name] = call_chain
         else:
             valid_dependencies.add(name)
@@ -105,7 +127,10 @@ def get_invalid_dependencies_for_entrypoint(
         # All non-recidiviz dependencies will be missing, we ignore these for now. In
         # the future we could attempt to check if they are actually in the dependency
         # file for the given endpoint (Pipfile, setup.py, Airflow dependencies, etc.).
-        if name.startswith("recidiviz") and name not in allowed_missing_module_prefixes:
+        if (
+            name.startswith(RECIDIVIZ_MODULE)
+            and name not in allowed_missing_module_prefixes
+        ):
             missing_dependencies[name] = m.call_chain_for_name(name)
         else:
             valid_dependencies.add(name)
@@ -126,6 +151,7 @@ def get_invalid_dependencies_for_entrypoint(
 def check_dependencies_for_entrypoint(
     entrypoint_file: str,
     valid_module_prefixes: pygtrie.PrefixSet,
+    explicitly_invalid_package_dependencies: Optional[List[str]] = None,
     allowed_missing_module_prefixes: Optional[pygtrie.PrefixSet] = None,
 ) -> bool:
     """Analyzes dependencies for a given entrypoint prints information about failures.
@@ -135,6 +161,7 @@ def check_dependencies_for_entrypoint(
     dependency_result = get_invalid_dependencies_for_entrypoint(
         entrypoint_file,
         valid_module_prefixes=valid_module_prefixes,
+        explicitly_invalid_package_dependencies=explicitly_invalid_package_dependencies,
         allowed_missing_module_prefixes=allowed_missing_module_prefixes,
     )
 
@@ -272,6 +299,9 @@ def main() -> int:
                 "recidiviz.view_registry",
             }
         ),
+        # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
+        #  isolated the Dataflow pipeline code completely
+        explicitly_invalid_package_dependencies=["apache_beam"],
     )
 
     success &= check_dependencies_for_entrypoint(
