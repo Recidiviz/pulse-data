@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
+from http import HTTPStatus
 from typing import Optional
 from unittest import TestCase
 
@@ -38,7 +39,10 @@ class TestJusticeCountsControlPanelAPI(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        test_config = Config(DB_URL=local_postgres_helpers.on_disk_postgres_db_url())
+        test_config = Config(
+            DB_URL=local_postgres_helpers.on_disk_postgres_db_url(),
+            WTF_CSRF_ENABLED=False,
+        )
         self.app = create_app(config=test_config)
         self.client = self.app.test_client()
 
@@ -61,8 +65,13 @@ class TestJusticeCountsControlPanelAPI(TestCase):
         )
 
     def test_hello(self) -> None:
-        response = self.client.get("/hello")
+        response = self.client.get("/api/hello")
         self.assertEqual(response.data, b"Hello, World!")
+
+    def test_logout(self) -> None:
+        # TODO(#11550): Test logout endpoint
+        response = self.client.post("/auth/logout")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_session(self) -> None:
         # Add data
