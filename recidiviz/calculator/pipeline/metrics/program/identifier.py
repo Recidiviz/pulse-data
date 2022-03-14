@@ -88,9 +88,13 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def find_events(
-        self, _person: StatePerson, identifier_context: IdentifierContextT
+        self, person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[ProgramEvent]:
+        if not person.person_id:
+            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
+
         return self._find_program_events(
+            person_id=person.person_id,
             ip_normalization_delegate=identifier_context[
                 StateSpecificIncarcerationNormalizationDelegate.__name__
             ],
@@ -116,6 +120,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
     def _find_program_events(
         self,
+        person_id: int,
         ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
         sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
         program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
@@ -158,6 +163,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         )
 
         (_, sp_normalization_manager,) = entity_normalization_managers_for_periods(
+            person_id=person_id,
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
             incarceration_delegate=incarceration_delegate,

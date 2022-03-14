@@ -21,7 +21,11 @@ import unittest
 from typing import List
 
 import attr
+import mock
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    clear_entity_id_index_cache,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
@@ -57,12 +61,22 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_MO"
         self.delegate = UsMoViolationResponseNormalizationDelegate()
+        self.person_id = 2900000123
+
+        clear_entity_id_index_cache()
+        self.unique_id_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization."
+            "normalized_entities_utils._fixed_length_object_id_for_entity"
+        )
+        self.mock_unique_id = self.unique_id_patcher.start()
+        self.mock_unique_id.return_value = 12345
 
     def _normalized_violation_responses_for_calculations(
         self,
         violation_responses: List[StateSupervisionViolationResponse],
     ) -> List[StateSupervisionViolationResponse]:
         entity_normalization_manager = ViolationResponseNormalizationManager(
+            person_id=self.person_id,
             violation_responses=violation_responses,
             delegate=self.delegate,
         )
@@ -100,6 +114,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
                         state_code=self.state_code,
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text=None,
+                        supervision_violation_type_entry_id=290000012312345,
                     )
                 ],
                 supervision_violated_conditions=[
@@ -145,6 +160,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
                         state_code=self.state_code,
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text=None,
+                        supervision_violation_type_entry_id=290000012312345,
                     )
                 ],
             ),

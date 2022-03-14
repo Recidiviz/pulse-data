@@ -74,6 +74,7 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
 
     def split_periods_based_on_sentences(
         self,
+        person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_sentences: Optional[List[StateIncarcerationSentence]],
         supervision_sentences: Optional[List[StateSupervisionSentence]],
@@ -87,6 +88,7 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
 
     def infer_additional_periods(
         self,
+        person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     ) -> List[StateSupervisionPeriod]:
@@ -112,6 +114,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
 
     def __init__(
         self,
+        person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
         delegate: StateSpecificSupervisionNormalizationDelegate,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]],
@@ -119,6 +122,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         incarceration_periods: Optional[List[StateIncarcerationPeriod]],
         earliest_death_date: Optional[datetime.date] = None,
     ):
+        self._person_id = person_id
         self._supervision_periods = deepcopy(supervision_periods)
         self._normalized_supervision_period_index: Optional[
             NormalizedSupervisionPeriodIndex
@@ -183,6 +187,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             )
 
             mid_processing_periods = self.delegate.split_periods_based_on_sentences(
+                self._person_id,
                 mid_processing_periods,
                 self._incarceration_sentences,
                 self._supervision_sentences,
@@ -196,7 +201,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 )
 
             mid_processing_periods = self.delegate.infer_additional_periods(
-                mid_processing_periods, self._incarceration_periods
+                self._person_id, mid_processing_periods, self._incarceration_periods
             )
 
             # Process fields on final supervision period set

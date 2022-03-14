@@ -18,6 +18,9 @@
 from datetime import date
 from typing import List, Optional
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -43,6 +46,7 @@ class UsPaSupervisionNormalizationDelegate(
 
     def infer_additional_periods(
         self,
+        person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     ) -> List[StateSupervisionPeriod]:
@@ -104,7 +108,7 @@ class UsPaSupervisionNormalizationDelegate(
                     termination_date = next_supervision_start_date
                 else:
                     termination_date = next_incarceration_admission_date
-                new_supervision_period = StateSupervisionPeriod.new_with_defaults(
+                new_supervision_period = StateSupervisionPeriod(
                     state_code=StateCode.US_PA.value,
                     start_date=supervision_period.termination_date,
                     termination_date=termination_date,
@@ -116,10 +120,10 @@ class UsPaSupervisionNormalizationDelegate(
                     supervision_site=None,
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                    case_type_entries=supervision_period.case_type_entries,
                 )
-                new_supervision_period.supervision_period_id = id(
-                    new_supervision_period
+                # Add a unique id to the new SP
+                update_normalized_entity_with_globally_unique_id(
+                    person_id=person_id, entity=new_supervision_period
                 )
                 new_supervision_periods.append(new_supervision_period)
         return new_supervision_periods

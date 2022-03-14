@@ -21,7 +21,11 @@ import unittest
 from typing import List
 
 import attr
+import mock
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    clear_entity_id_index_cache,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
@@ -53,12 +57,22 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_ND"
         self.delegate = UsNdViolationResponseNormalizationDelegate()
+        self.person_id = 380000123
+
+        clear_entity_id_index_cache()
+        self.unique_id_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization."
+            "normalized_entities_utils._fixed_length_object_id_for_entity"
+        )
+        self.mock_unique_id = self.unique_id_patcher.start()
+        self.mock_unique_id.return_value = 12345
 
     def _normalized_violation_responses_for_calculations(
         self,
         violation_responses: List[StateSupervisionViolationResponse],
     ) -> List[StateSupervisionViolationResponse]:
         entity_normalization_manager = ViolationResponseNormalizationManager(
+            person_id=self.person_id,
             violation_responses=violation_responses,
             delegate=self.delegate,
         )
@@ -108,6 +122,17 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         expected_response = attr.evolve(
             ssvr,
+            supervision_violation=StateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=38000012312345,
+                state_code=self.state_code,
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        supervision_violation_type_entry_id=38000012312345,
+                        state_code=self.state_code,
+                        violation_type=StateSupervisionViolationType.FELONY,
+                    ),
+                ],
+            ),
         )
 
         # Hydrate bidirectional relationships
@@ -166,13 +191,16 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             ssvr,
             supervision_violation=attr.evolve(
                 supervision_violation,
+                supervision_violation_id=38000012312345,
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code=self.state_code,
+                        supervision_violation_type_entry_id=38000012312345,
                         violation_type=StateSupervisionViolationType.ABSCONDED,
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code=self.state_code,
+                        supervision_violation_type_entry_id=38000012312346,
                         violation_type=StateSupervisionViolationType.FELONY,
                     ),
                 ],
@@ -231,7 +259,36 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
 
-        ssvr_copies = [attr.evolve(ssvr), attr.evolve(other_ssvr)]
+        ssvr_copies = [
+            attr.evolve(
+                ssvr,
+                supervision_violation=attr.evolve(
+                    supervision_violation,
+                    supervision_violation_id=38000012312345,
+                    supervision_violation_types=[
+                        StateSupervisionViolationTypeEntry.new_with_defaults(
+                            state_code=self.state_code,
+                            supervision_violation_type_entry_id=38000012312345,
+                            violation_type=StateSupervisionViolationType.ABSCONDED,
+                        ),
+                    ],
+                ),
+            ),
+            attr.evolve(
+                other_ssvr,
+                supervision_violation=attr.evolve(
+                    supervision_violation,
+                    supervision_violation_id=38000012312346,
+                    supervision_violation_types=[
+                        StateSupervisionViolationTypeEntry.new_with_defaults(
+                            state_code=self.state_code,
+                            supervision_violation_type_entry_id=38000012312346,
+                            violation_type=StateSupervisionViolationType.FELONY,
+                        ),
+                    ],
+                ),
+            ),
+        ]
 
         # Hydrate bidirectional relationships
         for expected_response in ssvr_copies:

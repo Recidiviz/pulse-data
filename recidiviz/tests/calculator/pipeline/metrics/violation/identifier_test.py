@@ -50,6 +50,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionViolatedConditionEntry,
@@ -70,13 +71,16 @@ class TestFindViolationEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.ViolationIdentifier()
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(
+            state_code="US_XX", person_id=99000123
+        )
 
     def _run_find_violation_events(
         self,
         violations: List[StateSupervisionViolation],
         state_code_override: Optional[str] = None,
     ) -> List[ViolationEvent]:
+        """Helper function for testing the find_events function."""
 
         state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.state_utils"
@@ -85,6 +89,10 @@ class TestFindViolationEvents(unittest.TestCase):
         )
         if not state_code_override:
             state_specific_delegate_patcher.start()
+        else:
+            self.person.person_id = (
+                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+            )
 
         required_delegates = get_required_state_specific_delegates(
             state_code=(state_code_override or _STATE_CODE),
@@ -207,6 +215,11 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         )
         if not state_code_override:
             state_specific_delegate_patcher.start()
+            person_id = 99000123
+        else:
+            person_id = (
+                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+            )
 
         required_delegates = get_required_state_specific_delegates(
             state_code=(state_code_override or _STATE_CODE),
@@ -241,6 +254,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
 
         return self.identifier._find_violation_with_response_events(
+            person_id=person_id,
             violation_response_normalization_delegate=response_normalization_delegate,
             violation_delegate=violation_delegate,
             violation=violation,

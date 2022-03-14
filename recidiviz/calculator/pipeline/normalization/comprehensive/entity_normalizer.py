@@ -71,6 +71,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
 
     def normalize_entities(
         self,
+        person_id: int,
         normalizer_args: EntityNormalizerContext,
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers.
@@ -84,6 +85,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         to the normalized entity tables.
         """
         return self._normalize_entities(
+            person_id=person_id,
             ip_normalization_delegate=normalizer_args[
                 StateSpecificIncarcerationNormalizationDelegate.__name__
             ],
@@ -113,6 +115,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
 
     def _normalize_entities(
         self,
+        person_id: int,
         ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
         sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
         violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
@@ -127,6 +130,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
         processed_entities = all_normalized_entities(
+            person_id=person_id,
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
@@ -145,6 +149,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
 
 
 def all_normalized_entities(
+    person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
     violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
@@ -164,6 +169,7 @@ def all_normalized_entities(
     entities.
     """
     processed_violation_responses = normalized_violation_responses_for_calculations(
+        person_id=person_id,
         violation_response_normalization_delegate=violation_response_normalization_delegate,
         violation_responses=violation_responses,
     )
@@ -177,6 +183,7 @@ def all_normalized_entities(
         ip_normalization_manager,
         sp_normalization_manager,
     ) = entity_normalization_managers_for_periods(
+        person_id=person_id,
         ip_normalization_delegate=ip_normalization_delegate,
         sp_normalization_delegate=sp_normalization_delegate,
         incarceration_delegate=incarceration_delegate,

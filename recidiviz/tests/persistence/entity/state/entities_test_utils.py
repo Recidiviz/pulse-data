@@ -642,6 +642,7 @@ def generate_full_graph_state_person(
             violated_condition.supervision_violation = supervision_violation
 
     all_entities: Sequence[Entity] = (
+        *[person],
         *person.external_ids,
         *person.races,
         *person.aliases,
@@ -669,6 +670,9 @@ def generate_full_graph_state_person(
     if include_person_back_edges and set_back_edges:
         if include_person_back_edges:
             for entity in all_entities:
+                if isinstance(entity, entities.StatePerson):
+                    continue
+
                 entity.set_field("person", person)
 
     if set_ids:

@@ -71,9 +71,13 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def find_events(
-        self, _person: StatePerson, identifier_context: IdentifierContextT
+        self, person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[ViolationEvent]:
+        if not person.person_id:
+            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
+
         return self._find_violation_events(
+            person_id=person.person_id,
             violation_response_normalization_delegate=identifier_context[
                 StateSpecificViolationResponseNormalizationDelegate.__name__
             ],
@@ -85,6 +89,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
     def _find_violation_events(
         self,
+        person_id: int,
         violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
         violation_delegate: StateSpecificViolationDelegate,
         violations: List[StateSupervisionViolation],
@@ -110,6 +115,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                 continue
             violation_with_response_events.extend(
                 self._find_violation_with_response_events(
+                    person_id=person_id,
                     violation_response_normalization_delegate=violation_response_normalization_delegate,
                     violation_delegate=violation_delegate,
                     violation=violation,
@@ -127,6 +133,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
     def _find_violation_with_response_events(
         self,
+        person_id: int,
         violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
         violation_delegate: StateSpecificViolationDelegate,
         violation: StateSupervisionViolation,
@@ -148,6 +155,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         is_sex_offense = violation.is_sex_offense
 
         sorted_violation_responses = normalized_violation_responses_for_calculations(
+            person_id=person_id,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
             violation_responses=violation.supervision_violation_responses,
         )

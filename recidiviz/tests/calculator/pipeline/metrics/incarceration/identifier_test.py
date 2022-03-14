@@ -133,6 +133,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
@@ -194,7 +195,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.IncarcerationIdentifier()
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(
+            state_code="US_XX", person_id=99000123
+        )
 
     def _run_find_incarceration_events(
         self,
@@ -216,6 +219,10 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         )
         if not state_code_override:
             state_specific_delegate_patcher.start()
+        else:
+            self.person.person_id = (
+                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+            )
 
         required_delegates = get_required_state_specific_delegates(
             state_code=(state_code_override or _STATE_CODE),

@@ -20,6 +20,10 @@ from collections import defaultdict
 from datetime import date
 from typing import Dict, List, Optional, Set, Tuple
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    copy_entities_and_add_unique_ids,
+    update_normalized_entity_with_globally_unique_id,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -42,8 +46,10 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     supervision_period_admission_reason_mapper,
     supervision_period_termination_reason_mapper,
 )
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
+    StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
 )
@@ -60,6 +66,7 @@ class UsMoSupervisionNormalizationDelegate(
 
     def split_periods_based_on_sentences(
         self,
+        person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_sentences: Optional[List[StateIncarcerationSentence]],
         supervision_sentences: Optional[List[StateSupervisionSentence]],
@@ -150,11 +157,14 @@ class UsMoSupervisionNormalizationDelegate(
             supervision_level_raw_text = (
                 relevant_period.supervision_level_raw_text if relevant_period else None
             )
-            case_type_entries = (
-                relevant_period.case_type_entries if relevant_period else []
-            )
+            case_type_entries: List[StateSupervisionCaseTypeEntry] = []
 
-            new_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            if relevant_period:
+                case_type_entries = copy_entities_and_add_unique_ids(
+                    person_id=person_id, entities=relevant_period.case_type_entries
+                )
+
+            new_supervision_period = StateSupervisionPeriod(
                 state_code=StateCode.US_MO.value,
                 start_date=start_date,
                 termination_date=end_date,
@@ -166,11 +176,18 @@ class UsMoSupervisionNormalizationDelegate(
                 supervision_site=supervision_site,
                 supervision_level=supervision_level,
                 supervision_level_raw_text=supervision_level_raw_text,
+            )
+
+            # Add a unique id to the new SP
+            update_normalized_entity_with_globally_unique_id(
+                person_id, new_supervision_period
+            )
+
+            new_supervision_period = deep_entity_update(
+                original_entity=new_supervision_period,
                 case_type_entries=case_type_entries,
             )
-            # A supervision period id is needed in order to generate the supervision
-            # period index, which is indexed by ids.
-            new_supervision_period.supervision_period_id = id(new_supervision_period)
+
             new_supervision_periods.append(new_supervision_period)
 
         return new_supervision_periods

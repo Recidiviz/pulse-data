@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the us_pa_supervision_period_normalization_delegate.py file"""
-import builtins
 import unittest
 from datetime import date
 
-from mock import patch
-from mock.mock import Mock
+import mock
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    clear_entity_id_index_cache,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_period_normalization_delegate import (
     UsPaSupervisionNormalizationDelegate,
 )
@@ -42,18 +43,22 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-def mock_id(_: object) -> int:
-    return 123
-
-
-@patch.object(builtins, "id", side_effect=mock_id)
 class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
     """Unit tests for UsPaSupervisionPreProcdessingDelegate"""
 
     def setUp(self) -> None:
         self.delegate = UsPaSupervisionNormalizationDelegate()
+        self.person_id = 4200000123
 
-    def test_infer_additional_periods(self, _mock_id: Mock) -> None:
+        clear_entity_id_index_cache()
+        self.unique_id_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_normalization."
+            "normalized_entities_utils._fixed_length_object_id_for_entity"
+        )
+        self.mock_unique_id = self.unique_id_patcher.start()
+        self.mock_unique_id.return_value = 12345
+
+    def test_infer_additional_periods(self) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
             state_code=StateCode.US_PA.value,
@@ -77,13 +82,14 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
         inferred_periods = self.delegate.infer_additional_periods(
+            self.person_id,
             [supervision_period_absconsion, supervision_period_non_absconsion],
             [],
         )
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=123,
+                supervision_period_id=420000012312345,
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=date(2010, 3, 15),
@@ -99,7 +105,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(expected_periods, inferred_periods)
 
     def test_infer_additional_periods_open_absconsion_period_if_last_one_no_subsequent_period(
-        self, _mock_id: Mock
+        self,
     ) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
@@ -113,12 +119,12 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
         inferred_periods = self.delegate.infer_additional_periods(
-            [supervision_period_absconsion], []
+            self.person_id, [supervision_period_absconsion], []
         )
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=123,
+                supervision_period_id=420000012312345,
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=None,
@@ -132,7 +138,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(expected_periods, inferred_periods)
 
     def test_infer_additional_periods_absconsion_period_ends_at_start_of_next_incarceration_period(
-        self, _mock_id: Mock
+        self,
     ) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
@@ -156,12 +162,14 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             )
         )
         inferred_periods = self.delegate.infer_additional_periods(
-            [supervision_period_absconsion], [incarceration_period_post_absconsion]
+            self.person_id,
+            [supervision_period_absconsion],
+            [incarceration_period_post_absconsion],
         )
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=123,
+                supervision_period_id=420000012312345,
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=date(2010, 3, 15),
@@ -175,7 +183,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(expected_periods, inferred_periods)
 
     def test_infer_additional_periods_absconsion_period_ends_at_start_of_next_supervision_period(
-        self, _mock_id: Mock
+        self,
     ) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
@@ -210,13 +218,14 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             )
         )
         inferred_periods = self.delegate.infer_additional_periods(
+            self.person_id,
             [supervision_period_absconsion, supervision_period_post_absconsion],
             [incarceration_period_post_absconsion],
         )
         expected_periods = [
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=123,
+                supervision_period_id=420000012312345,
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=date(2010, 3, 15),

@@ -133,4 +133,28 @@ else
     echo "No invalid uses of attr.evolve()."
 fi
 
+# Checking no use of id() in entity normalization
+echo "Checking no id() in entity normalization"
+# This set of commands does the following:
+# - List all files with updates that are not deletions
+# - Filters to just files that perform entity normalization
+# - Runs grep for each relevant updated file, getting all lines that contain calls to id()
+invalid_lines=$(${changed_files_cmd} \
+    | grep -e 'recidiviz/calculator/pipeline/' \
+    | grep -e 'normalization' \
+    | grep --invert-match -e 'normalized_entities_utils.py' \
+    | xargs grep -n -e ' id(' -e '=id(')
+
+if [[ -n ${invalid_lines} ]]
+then
+    echo "Must use update_normalized_entity_with_globally_unique_id function instead
+    of id() in entity_normalization files. Usage of id() to set the entity id on an
+    object is disallowed in entity normalization because it does not produce unique
+    id values that can be persisted to BigQuery."
+    echo "${invalid_lines}" | indent_output
+    exit_code=$((exit_code + 1))
+else
+    echo "No invalid uses of id()."
+fi
+
 exit $exit_code

@@ -204,7 +204,7 @@ class NormalizeEntities(beam.DoFn):
         (
             normalized_entities,
             additional_attributes_map,
-        ) = entity_normalizer.normalize_entities(all_kwargs)
+        ) = entity_normalizer.normalize_entities(person_id, all_kwargs)
 
         yield person_id, normalized_entities, additional_attributes_map
 
@@ -255,9 +255,9 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
             )
 
             for entity_name, entity_dict in tagged_entity_dict_outputs:
-                yield beam.pvalue.TaggedOutput(
-                    entity_name, json_serializable_dict(entity_dict)
-                )
+                output_dict = json_serializable_dict(entity_dict)
+
+                yield beam.pvalue.TaggedOutput(entity_name, output_dict)
 
     def to_runner_api_parameter(
         self, _unused_context: PipelineContext
