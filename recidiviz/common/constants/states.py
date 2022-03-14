@@ -28,6 +28,8 @@ from recidiviz.utils import environment
 
 STATE_CODE_PATTERN = re.compile(r"US_[A-Z]{2}")
 
+# Maximum fips value of all states
+MAX_FIPS_CODE = 56
 
 StateCodeT = typing.TypeVar("StateCodeT", bound="_SharedStateCode")
 

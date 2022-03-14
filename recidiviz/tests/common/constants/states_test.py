@@ -22,7 +22,7 @@ from unittest import mock
 import us
 
 from recidiviz.common.constants import states
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import MAX_FIPS_CODE, StateCode
 
 
 class TestStates(unittest.TestCase):
@@ -85,3 +85,20 @@ class TestStates(unittest.TestCase):
             _ = StateCode(invalid_state_code)
 
         self.assertEqual(None, StateCode.get(invalid_state_code))
+
+    def test_max_fips_code(self) -> None:
+        self.mock_in_test.return_value = False
+
+        max_fips_value = -1
+
+        for state_code in StateCode:
+            if states.StateCode.is_state_code(state_code.value):
+                fips_value = int(state_code.get_state().fips)
+                max_fips_value = max(max_fips_value, fips_value)
+
+        self.assertEqual(
+            MAX_FIPS_CODE,
+            max_fips_value,
+            f"Found maximum fips value of {max_fips_value}. "
+            f"Must update MAX_FIPS_CODE to match.",
+        )

@@ -23,7 +23,19 @@ from collections import defaultdict
 from enum import Enum, auto
 from functools import lru_cache
 from types import ModuleType
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Type, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import attr
 
@@ -1028,8 +1040,9 @@ def deep_entity_update(
     Returns the new version of the entity.
     """
     entity_type = type(original_entity)
-    # Make a deep copy of the entity and its related entities
     updated_entity = original_entity
+
+    reverse_fields_to_update: List[Tuple[str, str, Type[Entity]]] = []
 
     for field, updated_value in updated_attribute_kwargs.items():
         # Update the value stored in the field on the entity
@@ -1063,6 +1076,13 @@ def deep_entity_update(
         if not reverse_relationship_field:
             # Not a bi-directional relationship
             continue
+
+        reverse_fields_to_update.append(
+            (field, reverse_relationship_field, related_class)
+        )
+
+    for field, reverse_relationship_field, related_class in reverse_fields_to_update:
+        updated_value = updated_attribute_kwargs[field]
 
         reverse_relationship_field_type = attr_field_type_for_field_name(
             related_class, reverse_relationship_field

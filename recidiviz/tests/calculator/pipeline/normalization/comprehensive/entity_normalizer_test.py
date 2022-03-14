@@ -127,7 +127,12 @@ class TestNormalizeEntities(unittest.TestCase):
             StateIncarcerationSentence.__name__: incarceration_sentences or [],
             StateSupervisionSentence.__name__: supervision_sentences or [],
         }
-        return self.entity_normalizer.normalize_entities(all_kwargs)
+
+        assert self.full_graph_person.person_id is not None
+
+        return self.entity_normalizer.normalize_entities(
+            self.full_graph_person.person_id, all_kwargs
+        )
 
     def test_normalize_entities(self) -> None:
         expected_additional_attributes_map: AdditionalAttributesMap = {
@@ -290,10 +295,14 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateSupervisionSentence.__name__: supervision_sentences or [],
         }
 
+        assert self.full_graph_person.person_id is not None
+
         (
             all_processed_entities,
             additional_attributes_map,
-        ) = self.entity_normalizer.normalize_entities(all_kwargs)
+        ) = self.entity_normalizer.normalize_entities(
+            self.full_graph_person.person_id, all_kwargs
+        )
 
         normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {}
 

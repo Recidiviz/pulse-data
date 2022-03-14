@@ -79,6 +79,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
+        self.person_id = 123
 
     def test_normalization_managers_for_calculations(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -107,6 +108,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             ip_normalization_manager,
             sp_normalization_manager,
         ) = entity_normalization_managers_for_periods(
+            person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
             incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
@@ -149,6 +151,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             ip_normalization_manager,
             sp_normalization_manager,
         ) = entity_normalization_managers_for_periods(
+            person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
             incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
@@ -188,6 +191,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             # Assert an error is raised if the supervision_periods arg is None for a
             # state that relies on supervision periods for IP pre-processing
             (_, _,) = entity_normalization_managers_for_periods(
+                person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
                 sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
                 incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
@@ -217,6 +221,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             # Assert an error is raised if the violation_responses arg is None for a
             # state that relies on violation responses for IP pre-processing
             (_, _,) = entity_normalization_managers_for_periods(
+                person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
                 sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
                 incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
@@ -246,6 +251,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             # Assert an error is raised if either sentences arg is None for a state
             # that relies on sentences for SP pre-processing
             (_, _) = entity_normalization_managers_for_periods(
+                person_id=self.person_id,
                 ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
                 sp_normalization_delegate=TestSupervisionNormalizationDelegate(),
                 incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
@@ -272,6 +278,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             ip_normalization_manager,
             sp_normalization_manager,
         ) = entity_normalization_managers_for_periods(
+            person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
             incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
@@ -296,6 +303,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             ip_normalization_manager,
             sp_normalization_manager,
         ) = entity_normalization_managers_for_periods(
+            person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
             incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,

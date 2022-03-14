@@ -37,6 +37,7 @@ class BaseEntityNormalizer(abc.ABC):
     @abc.abstractmethod
     def normalize_entities(
         self,
+        person_id: int,
         normalizer_args: EntityNormalizerContext,
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers.

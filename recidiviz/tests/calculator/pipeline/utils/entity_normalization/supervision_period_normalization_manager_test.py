@@ -46,6 +46,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
         earliest_death_date: Optional[datetime.date] = None,
     ) -> List[StateSupervisionPeriod]:
         sp_normalization_manager = SupervisionPeriodNormalizationManager(
+            person_id=123,
             supervision_periods=supervision_periods,
             delegate=UsXxSupervisionNormalizationDelegate(),
             earliest_death_date=earliest_death_date,

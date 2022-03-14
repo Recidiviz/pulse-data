@@ -18,6 +18,9 @@
 
 from typing import List
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
@@ -47,6 +50,7 @@ class UsMoViolationResponseNormalizationDelegate(
 
     def get_additional_violation_types_for_response(
         self,
+        person_id: int,
         response: StateSupervisionViolationResponse,
     ) -> List[StateSupervisionViolationTypeEntry]:
         """Responses of type CITATION in US_MO do not have violation types on their
@@ -66,6 +70,12 @@ class UsMoViolationResponseNormalizationDelegate(
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text=None,
                 )
+
+                # Add a unique id value to the new violation type entry
+                update_normalized_entity_with_globally_unique_id(
+                    person_id, technical_entry
+                )
+
                 return [technical_entry]
         return []
 
