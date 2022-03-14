@@ -215,6 +215,20 @@ class ModuleFinder:
 
         return call_chain
 
+    def call_chain_for_package(self, name: str, root_module: str) -> List[str]:
+        """Finds the most common call path that contains root_module."""
+        call_chain = []
+
+        for caller_name, _count in self.call_chains[name].most_common():
+            if root_module in caller_name:
+                # Once we find the entrypoint of this package into the root module,
+                # find the full call chain for the entrypoint
+                call_chain.append(caller_name)
+                call_chain.extend(self.call_chain_for_name(caller_name))
+                return call_chain
+
+        raise ValueError(f"Expected call chain to include root module: {root_module}.")
+
     def msg(self, level: int, out_str: str, *args: Any) -> None:
         if level <= self.debug:
             for _ in range(self.indent):
