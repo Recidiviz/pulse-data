@@ -76,6 +76,7 @@ ATTRIBUTES_TRIGGERING_STATUS_CHANGE = [
 ]
 
 
+# TODO(#10727): Remove the ability to collapse transfers in IP normalization
 @attr.s(kw_only=True, frozen=True)
 class NormalizationConfiguration:
     # Whether or not to collapse chronologically adjacent periods that are
@@ -293,6 +294,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateIncarcerationPeriod]
 
+    # TODO(#10727): Remove the ability to collapse transfers in IP normalization
     def normalized_incarceration_period_index_for_calculations(
         self,
         *,
@@ -305,6 +307,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         If collapse_transfers is True, collapses adjacent periods connected by
         TRANSFER.
         """
+        if collapse_transfers or overwrite_facility_information_in_transfers:
+            raise ValueError("Collapsing transfers in IP normalization is deprecated.")
+
         config = NormalizationConfiguration(
             collapse_transfers=collapse_transfers,
             overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,

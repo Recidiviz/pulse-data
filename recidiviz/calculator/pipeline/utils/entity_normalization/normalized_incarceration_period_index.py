@@ -23,6 +23,9 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
+    periods_are_temporally_adjacent,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -378,37 +381,70 @@ class NormalizedIncarcerationPeriodIndex:
 
         return ip_id_to_index
 
-    # A dictionary mapping incarceration_period_id values to the location of the most
+    # A dictionary mapping incarceration_period_id values to the date range of the most
     # recent parole board hold in the index, if one exists
-    ip_index_to_most_recent_board_hold_index: Dict[int, Optional[int]] = attr.ib()
+    ip_index_to_most_recent_board_hold_span: Dict[int, Optional[DateRange]] = attr.ib()
 
-    @ip_index_to_most_recent_board_hold_index.default
-    def _ip_index_to_most_recent_board_hold_index(self) -> Dict[int, Optional[int]]:
+    @ip_index_to_most_recent_board_hold_span.default
+    def _ip_index_to_most_recent_board_hold_span(
+        self,
+    ) -> Dict[int, Optional[DateRange]]:
         """Maps the incarceration_period_id of each incarceration period in the index to
-        the location of the most recent parole board period in the index, if one exists.
+        the date range of the most recent continuous period of time spent in a parole
+        board period in the index, if one exists.
         """
-        ip_index_to_most_recent_board_hold_index: Dict[int, Optional[int]] = {}
+        ip_index_to_most_recent_board_hold_index: Dict[int, Optional[DateRange]] = {}
 
-        most_recent_board_hold_index = None
+        most_recent_board_hold_start_date: Optional[date] = None
+        most_recent_board_hold: Optional[StateIncarcerationPeriod] = None
 
         for index, ip in enumerate(self.incarceration_periods):
-            ip_index_to_most_recent_board_hold_index[
-                index
-            ] = most_recent_board_hold_index
+            if most_recent_board_hold:
+                if not most_recent_board_hold_start_date:
+                    raise ValueError(
+                        "most_recent_board_hold_start_date must be set "
+                        "if most_recent_board_hold is set."
+                    )
+
+                if not most_recent_board_hold.release_date:
+                    raise ValueError(
+                        "Found open incarceration period with id "
+                        f"[{most_recent_board_hold.incarceration_period_id}] preceding "
+                        "another incarceration period with id "
+                        f"[{ip.incarceration_period_id}]. IPs: "
+                        f"[{self.incarceration_periods}]."
+                    )
+
+                ip_index_to_most_recent_board_hold_index[index] = DateRange(
+                    lower_bound_inclusive_date=most_recent_board_hold_start_date,
+                    upper_bound_exclusive_date=most_recent_board_hold.release_date,
+                )
+            else:
+                ip_index_to_most_recent_board_hold_index[index] = None
 
             if (
                 ip.specialized_purpose_for_incarceration
                 == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
             ):
-                most_recent_board_hold_index = index
+                # If this is the first board hold in the list or the
+                # most_recent_board_hold is not temporally adjacent to this board hold,
+                # then set the most_recent_board_hold_start_date as the date the board
+                # hold started.
+                if not most_recent_board_hold or not periods_are_temporally_adjacent(
+                    first_incarceration_period=most_recent_board_hold,
+                    second_incarceration_period=ip,
+                ):
+                    most_recent_board_hold_start_date = ip.admission_date
+
+                most_recent_board_hold = ip
 
         return ip_index_to_most_recent_board_hold_index
 
-    def most_recent_board_hold_in_index(
+    def most_recent_board_hold_span_in_index(
         self, incarceration_period: StateIncarcerationPeriod
-    ) -> Optional[StateIncarcerationPeriod]:
-        """Returns the most recent parole board hold that preceded the given
-        |incarceration_period|, if one exists."""
+    ) -> Optional[DateRange]:
+        """Returns the date range of the most recent parole board hold that preceded
+        the given |incarceration_period|, if one exists."""
         if not incarceration_period.incarceration_period_id:
             raise ValueError(
                 "Unexpected incarceration period missing an incarceration_period_id."
@@ -417,11 +453,4 @@ class NormalizedIncarcerationPeriodIndex:
             incarceration_period.incarceration_period_id
         ]
 
-        most_recent_board_hold_index = self.ip_index_to_most_recent_board_hold_index[
-            ip_list_index
-        ]
-
-        if most_recent_board_hold_index is not None:
-            return self.incarceration_periods[most_recent_board_hold_index]
-
-        return None
+        return self.ip_index_to_most_recent_board_hold_span[ip_list_index]

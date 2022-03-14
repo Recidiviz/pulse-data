@@ -75,8 +75,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
-        collapse_transfers: bool = True,
-        overwrite_facility_information_in_transfers: bool = True,
+        collapse_transfers: bool = False,
+        overwrite_facility_information_in_transfers: bool = False,
         earliest_death_date: Optional[date] = None,
     ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
         """Helper function for testing the
@@ -768,7 +768,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             _,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=incarceration_periods,
-            collapse_transfers=True,
+            collapse_transfers=False,
         )
 
         self.assertEqual([period_copy], validated_incarceration_periods)
