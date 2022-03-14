@@ -479,7 +479,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 admission_reason=incarceration_period_1.admission_reason,
                 total_days_incarcerated=(
                     incarceration_period_2.release_date
-                    - incarceration_period_2.admission_date
+                    - incarceration_period_1.admission_date
                 ).days,
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -581,7 +581,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 admission_reason=incarceration_period_1.admission_reason,
                 total_days_incarcerated=(
                     incarceration_period_2.release_date
-                    - incarceration_period_2.admission_date
+                    - incarceration_period_1.admission_date
                 ).days,
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
@@ -831,7 +831,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 purpose_for_incarceration=general_incarceration_period.specialized_purpose_for_incarceration,
                 total_days_incarcerated=(
                     general_incarceration_period.release_date
-                    - general_incarceration_period.admission_date
+                    - treatment_incarceration_period.admission_date
                 ).days,
             ),
         ]
@@ -1921,7 +1921,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 release_reason_raw_text=general_period.release_reason_raw_text,
                 admission_reason=treatment_period.admission_reason,
                 total_days_incarcerated=(
-                    general_period.release_date - general_period.admission_date
+                    general_period.release_date - treatment_period.admission_date
                 ).days,
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
@@ -2766,10 +2766,11 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             incarceration_period.admission_reason = admission_reason
 
-            # ADMITTED_FROM_SUPERVISION is an ingest-only enum
-            if (
-                admission_reason
-                != StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+            if admission_reason not in (
+                # ADMITTED_FROM_SUPERVISION is an ingest-only enum
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+                # We don't produce admission events for transfers
+                StateIncarcerationPeriodAdmissionReason.TRANSFER,
             ):
                 admission_event = self._run_admission_event_for_period(
                     incarceration_period=incarceration_period,
@@ -3602,6 +3603,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         )
 
         for release_reason in StateIncarcerationPeriodReleaseReason:
+            if release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER:
+                continue
+
             incarceration_period.release_reason = release_reason
 
             release_event = self._run_release_for_period_with_no_sentences(

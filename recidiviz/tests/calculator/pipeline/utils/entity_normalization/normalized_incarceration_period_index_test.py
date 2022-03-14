@@ -1436,10 +1436,10 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         self.assertEqual(expected_output, original_admission_reasons_by_period_id)
 
 
-class TestPrecedingIncarcerationPeriod(unittest.TestCase):
-    """Tests the most_recent_board_hold_in_index function."""
+class TestMostRecentBoardHoldSpan(unittest.TestCase):
+    """Tests the most_recent_board_hold_span_in_index function."""
 
-    def test_most_recent_board_hold_in_index_first_period(self) -> None:
+    def test_most_recent_board_hold_span_in_index_first_period(self) -> None:
         """Tests that this returns None when the given period is the first in the
         index."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1464,12 +1464,12 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
         index = default_normalized_ip_index_for_tests(incarceration_periods)
 
-        most_recent_board_hold = index.most_recent_board_hold_in_index(
+        most_recent_board_hold_span = index.most_recent_board_hold_span_in_index(
             incarceration_period_1
         )
-        self.assertIsNone(most_recent_board_hold)
+        self.assertIsNone(most_recent_board_hold_span)
 
-    def test_most_recent_board_hold_in_index_second_period(self) -> None:
+    def test_most_recent_board_hold_span_in_index_second_period(self) -> None:
         """Tests that this returns the first period when the given period is the
         second in the index."""
         board_hold = StateIncarcerationPeriod.new_with_defaults(
@@ -1494,12 +1494,12 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         incarceration_periods = [board_hold, incarceration_period]
         index = default_normalized_ip_index_for_tests(incarceration_periods)
 
-        most_recent_board_hold = index.most_recent_board_hold_in_index(
+        most_recent_board_hold_span = index.most_recent_board_hold_span_in_index(
             incarceration_period
         )
-        self.assertEqual(board_hold, most_recent_board_hold)
+        self.assertEqual(board_hold.duration, most_recent_board_hold_span)
 
-    def test_most_recent_board_hold_in_index_later_period(self) -> None:
+    def test_most_recent_board_hold_span_in_index_later_period(self) -> None:
         """Tests that this returns the period directly preceding the given period
         when it is not the first period."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1539,12 +1539,12 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         ]
         index = default_normalized_ip_index_for_tests(incarceration_periods)
 
-        most_recent_board_hold = index.most_recent_board_hold_in_index(
+        most_recent_board_hold_span = index.most_recent_board_hold_span_in_index(
             incarceration_period_2
         )
-        self.assertEqual(board_hold, most_recent_board_hold)
+        self.assertEqual(board_hold.duration, most_recent_board_hold_span)
 
-    def test_most_recent_board_hold_in_index_not_in_index(self) -> None:
+    def test_most_recent_board_hold_span_in_index_not_in_index(self) -> None:
         """Tests that this raises a KeyError when the given period is not in the
         index."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1583,4 +1583,118 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         index = default_normalized_ip_index_for_tests(incarceration_periods)
 
         with self.assertRaises(KeyError):
-            index.most_recent_board_hold_in_index(incarceration_period_3)
+            index.most_recent_board_hold_span_in_index(incarceration_period_3)
+
+    def test_most_recent_board_hold_span_in_index_multiple_board_holds(self) -> None:
+        """Tests that this returns the duration of all adjacent board holds when
+        there are multiple board holds in a row."""
+        bh_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 1, 1),
+            release_date=date(2000, 10, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        bh_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 10, 3),
+            release_date=date(2000, 10, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        bh_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 10, 17),
+            release_date=date(2000, 10, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_periods = [bh_1, bh_2, bh_3, incarceration_period]
+        index = default_normalized_ip_index_for_tests(incarceration_periods)
+
+        most_recent_board_hold_span = index.most_recent_board_hold_span_in_index(
+            incarceration_period
+        )
+        assert bh_1.admission_date is not None
+        assert bh_3.release_date is not None
+        self.assertEqual(
+            DateRange(bh_1.admission_date, bh_3.release_date),
+            most_recent_board_hold_span,
+        )
+
+    def test_most_recent_board_hold_span_in_index_multiple_board_holds_not_adjacent(
+        self,
+    ) -> None:
+        """Tests that this returns the duration of only adjacent board holds when
+        there are multiple board holds in a row, but they aren't all temporally
+        adjacent."""
+        bh_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(1992, 1, 1),
+            release_date=date(1992, 4, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        bh_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 10, 3),
+            release_date=date(2000, 10, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        bh_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=111,
+            admission_date=date(2000, 10, 17),
+            release_date=date(2000, 10, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_XX",
+            incarceration_period_id=222,
+            admission_date=date(2015, 10, 3),
+            release_date=date(2015, 10, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_periods = [bh_1, bh_2, bh_3, incarceration_period]
+        index = default_normalized_ip_index_for_tests(incarceration_periods)
+
+        most_recent_board_hold_span = index.most_recent_board_hold_span_in_index(
+            incarceration_period
+        )
+
+        assert bh_2.admission_date is not None
+        assert bh_3.release_date is not None
+        self.assertEqual(
+            DateRange(bh_2.admission_date, bh_3.release_date),
+            most_recent_board_hold_span,
+        )
