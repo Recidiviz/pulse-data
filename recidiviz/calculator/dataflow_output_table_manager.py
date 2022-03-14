@@ -39,15 +39,15 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NORMALIZED_ENTITY_CLASSES,
     bq_schema_for_normalized_state_entity,
 )
-from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
-    collect_all_pipeline_run_delegate_classes,
-)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
+from recidiviz.tools.pipeline_launch_util import (
+    collect_all_pipeline_run_delegate_classes,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict

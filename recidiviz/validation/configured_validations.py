@@ -161,9 +161,6 @@ from recidiviz.validation.views.state.liberty_to_prison_population_snapshot_by_d
 from recidiviz.validation.views.state.multiple_supervision_info_for_commitment_admission import (
     MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.normalized_entities_unique_ids import (
-    NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.overlapping_incarceration_periods import (
     OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
 )
@@ -907,15 +904,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             hard_max_allowed_error=0.06,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-            comparison_columns=[
-                "total_count",
-                "distinct_id_count",
-            ],
-            validation_category=ValidationCategory.INVARIANT,
         ),
     ]
 

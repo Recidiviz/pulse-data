@@ -18,13 +18,13 @@
 import unittest
 from typing import Set
 
-from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
-    collect_all_pipeline_run_delegate_classes,
-)
 from recidiviz.calculator.query.state.views.reference.reference_views import (
     REFERENCE_VIEW_BUILDERS,
 )
-from recidiviz.tools.pipeline_launch_util import collect_all_pipeline_names
+from recidiviz.tools.pipeline_launch_util import (
+    collect_all_pipeline_names,
+    collect_all_pipeline_run_delegate_classes,
+)
 
 
 class TestPipelineNames(unittest.TestCase):
