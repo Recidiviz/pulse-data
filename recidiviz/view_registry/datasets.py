@@ -31,7 +31,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     SENDGRID_EMAIL_DATA_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
-    normalized_state_dataset_for_state_code,
 )
 from recidiviz.calculator.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
@@ -59,10 +58,6 @@ SUPPLEMENTAL_DATASETS = {
     f"{state_code.value.lower()}_supplemental" for state_code in StateCode
 }
 
-NORMALIZED_DATASETS = {
-    normalized_state_dataset_for_state_code(state_code) for state_code in StateCode
-}
-
 OTHER_SOURCE_TABLE_DATASETS = {
     CASE_TRIAGE_FEDERATED_DATASET,
     CASE_TRIAGE_SEGMENT_DATASET,
@@ -83,10 +78,7 @@ OTHER_SOURCE_TABLE_DATASETS = {
 
 # These datasets should only contain tables that provide the source data for our view graph.
 VIEW_SOURCE_TABLE_DATASETS = (
-    OTHER_SOURCE_TABLE_DATASETS
-    | RAW_TABLE_DATASETS
-    | SUPPLEMENTAL_DATASETS
-    | NORMALIZED_DATASETS
+    OTHER_SOURCE_TABLE_DATASETS | RAW_TABLE_DATASETS | SUPPLEMENTAL_DATASETS
 )
 
 RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
@@ -97,11 +89,6 @@ RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
 SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
     f"{state_code.value.lower()}_supplemental": f"Contains data provided directly by {StateCode.get_state(state_code)} that is not run through direct ingest, e.g. validation data."
     for state_code in StateCode
-}
-
-NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
-    dataset: "Contains normalized versions of the entities in the state dataset produced by the normalization pipeline for the state."
-    for dataset in NORMALIZED_DATASETS
 }
 
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
@@ -135,5 +122,4 @@ VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     **RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS,
     **SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS,
     **OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
-    **NORMALIZED_DATASETS_TO_DESCRIPTIONS,
 }

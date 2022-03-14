@@ -32,7 +32,7 @@ from typing import Dict, Iterable, List, Optional, Set
 import attr
 import pygtrie
 
-from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
+from recidiviz.tools.pipeline_launch_util import (
     collect_all_pipeline_run_delegate_modules,
 )
 from recidiviz.vendor.modulefinder import modulefinder
