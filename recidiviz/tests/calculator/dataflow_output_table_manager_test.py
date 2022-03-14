@@ -200,6 +200,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
+        self.dataflow_config_patcher.stop()
 
     def test_update_normalized_state_schemas_create_table(self) -> None:
         """Test that update_normalized_state_schema calls the client to create a
@@ -228,7 +229,9 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
     # pylint: disable=protected-access
     def test_get_all_state_specific_normalized_state_datasets(self) -> None:
         dataset_ids: List[str] = []
-        for state_code in dataflow_output_table_manager.get_pipeline_enabled_states():
+        for (
+            state_code
+        ) in dataflow_output_table_manager.get_metric_pipeline_enabled_states():
             dataset_ids.append(
                 dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
                     state_code
@@ -241,7 +244,9 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
 
     def test_get_all_state_specific_normalized_state_datasets_with_prefix(self) -> None:
         dataset_ids: List[str] = []
-        for state_code in dataflow_output_table_manager.get_pipeline_enabled_states():
+        for (
+            state_code
+        ) in dataflow_output_table_manager.get_metric_pipeline_enabled_states():
             dataset_ids.append(
                 dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
                     state_code, normalized_dataset_prefix="test_prefix"
@@ -294,6 +299,7 @@ class SupplementalDatasetTableManagerTest(unittest.TestCase):
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
+        self.dataflow_config_patcher.stop()
 
     def test_update_supplemental_data_schemas_create_table(self) -> None:
         """Test that update_normalized_state_schema calls the client to create a

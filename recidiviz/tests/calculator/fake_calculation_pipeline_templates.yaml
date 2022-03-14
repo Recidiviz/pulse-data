@@ -1,7 +1,14 @@
 # Mock file to test utils that reference the calculation_pipeline_templates.yaml
 # file
 
-incremental_pipelines:
+normalization_pipelines:
+  # US_XX entity normalization pipeline
+  - pipeline: normalization_pipeline
+    job_name: us-xx-normalization
+    state_code: US_XX
+    region: us-west1
+
+incremental_metric_pipelines:
   # Full US_XX calculations with no time limit
   - pipeline: pipeline_no_limit
     job_name: full-us-xx-pipeline_no_limit-calculations
@@ -35,7 +42,7 @@ incremental_pipelines:
     staging_only: True
 
 
-historical_pipelines:
+historical_metric_pipelines:
   - pipeline: pipeline_with_limit
     job_name: us-yy-historical-pipeline_with_limit-calculations-240
     state_code: US_YY

@@ -123,15 +123,20 @@ def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
     }
 
     all_pipelines = YAMLDict.from_path(dataflow_config.PIPELINE_CONFIG_YAML_PATH)
-    incremental_pipelines = all_pipelines.pop_dicts("incremental_pipelines")
-    historical_pipelines = all_pipelines.pop_dicts("historical_pipelines")
+    incremental_metric_pipelines = all_pipelines.pop_dicts(
+        "incremental_metric_pipelines"
+    )
+    historical_metric_pipelines = all_pipelines.pop_dicts("historical_metric_pipelines")
 
     # Dict with the format: {metric_table: {state_code: int}}
     month_range_for_metric_and_state: Dict[str, Dict[str, int]] = defaultdict(
         lambda: defaultdict(int)
     )
 
-    for pipeline_config_group in [incremental_pipelines, historical_pipelines]:
+    for pipeline_config_group in [
+        incremental_metric_pipelines,
+        historical_metric_pipelines,
+    ]:
         for pipeline_config in pipeline_config_group:
             metric_values = pipeline_config.pop("metric_types", str).split(" ")
 

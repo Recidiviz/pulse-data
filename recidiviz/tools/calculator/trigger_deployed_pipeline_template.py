@@ -91,34 +91,29 @@ def _trigger_dataflow_job_from_template(
 def _pipeline_regions_by_job_name() -> Dict[str, str]:
     """Parses the calculation_pipeline_templates.yaml config file to determine which region a pipeline should be
     run in."""
-    incremental_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
-        "incremental_pipelines"
+    normalization_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
+        "normalization_pipelines"
     )
-    historical_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
-        "historical_pipelines"
-    )
+    incremental_metric_pipelines = YAMLDict.from_path(
+        PIPELINE_CONFIG_YAML_PATH
+    ).pop_dicts("incremental_metric_pipelines")
+    historical_metric_pipelines = YAMLDict.from_path(
+        PIPELINE_CONFIG_YAML_PATH
+    ).pop_dicts("historical_metric_pipelines")
     supplemental_dataset_pipelines = YAMLDict.from_path(
         PIPELINE_CONFIG_YAML_PATH
     ).pop_dicts("supplemental_dataset_pipelines")
 
     pipeline_regions = {
         pipeline.pop("job_name", str): pipeline.pop("region", str)
-        for pipeline in incremental_pipelines
+        for pipeline_group in [
+            normalization_pipelines,
+            incremental_metric_pipelines,
+            historical_metric_pipelines,
+            supplemental_dataset_pipelines,
+        ]
+        for pipeline in pipeline_group
     }
-
-    pipeline_regions.update(
-        {
-            pipeline.pop("job_name", str): pipeline.pop("region", str)
-            for pipeline in historical_pipelines
-        }
-    )
-
-    pipeline_regions.update(
-        {
-            pipeline.pop("job_name", str): pipeline.pop("region", str)
-            for pipeline in supplemental_dataset_pipelines
-        }
-    )
 
     return pipeline_regions
 

@@ -24,7 +24,7 @@ from typing import Optional, Tuple
 import flask
 from flask import request
 
-from recidiviz.calculator.pipeline.pipeline_type import PipelineRunType
+from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
@@ -77,11 +77,11 @@ def wait_for_ingest_to_create_tasks(
     if not pipeline_run_type_arg and schema_type == SchemaType.STATE:
         # If no pipeline_run_type_arg is specified for the STATE schema, then we default
         # to the incremental run type
-        pipeline_run_type_arg = PipelineRunType.INCREMENTAL.value
+        pipeline_run_type_arg = MetricPipelineRunType.INCREMENTAL.value
 
     if pipeline_run_type_arg:
         try:
-            _ = PipelineRunType(pipeline_run_type_arg.upper())
+            _ = MetricPipelineRunType(pipeline_run_type_arg.upper())
         except ValueError:
             return (
                 f"Unexpected value for pipeline_run_type: [{pipeline_run_type_arg}]",

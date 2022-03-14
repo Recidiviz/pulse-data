@@ -36,7 +36,7 @@ from typing import List, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.dataflow_output_table_manager import (
-    get_pipeline_enabled_states,
+    get_metric_pipeline_enabled_states,
     get_state_specific_normalized_state_dataset_for_state,
     update_dataflow_metric_tables_schemas,
     update_normalized_state_schema,
@@ -171,7 +171,7 @@ def create_or_update_dataflow_sandbox(
 
     # First create the sandbox normalized datasets
     if "normalization" in datasets_to_create:
-        for state_code in get_pipeline_enabled_states():
+        for state_code in get_metric_pipeline_enabled_states():
             create_or_update_normalized_state_sandbox(
                 bq_client,
                 StateCode(state_code),
