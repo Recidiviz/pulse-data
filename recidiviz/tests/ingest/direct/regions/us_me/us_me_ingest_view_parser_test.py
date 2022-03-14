@@ -1380,6 +1380,61 @@ class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
                     )
                 ],
             ),
+            StatePerson(
+                state_code="US_ME",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_ME", external_id="00000002", id_type="US_ME_DOC"
+                    )
+                ],
+                incarceration_sentences=[
+                    StateIncarcerationSentence(
+                        external_id="00000002-222457-542893",
+                        state_code="US_ME",
+                        status=StateSentenceStatus.COMPLETED,
+                        status_raw_text="COMPLETE",
+                        incarceration_type=StateIncarcerationType.STATE_PRISON,
+                        incarceration_type_raw_text="EARLY TERMINATION",
+                        date_imposed=date(2012, 4, 8),
+                        start_date=date(9999, 12, 31),
+                        projected_min_release_date=date(2012, 5, 26),
+                        projected_max_release_date=date(2012, 6, 21),
+                        completion_date=date(2012, 5, 26),
+                        county_code=None,
+                        max_length_days=0,
+                        is_life=False,
+                        earned_time_days=0,
+                        sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2012-10-15 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2012-05-26 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2012-06-24 00:00:00", "TERM_STATUS": "COMPLETE"}',
+                        conditions=None,
+                        charges=[
+                            StateCharge(
+                                external_id="00000002-222457-542893-123457",
+                                state_code="US_ME",
+                                status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                status_raw_text=None,
+                                offense_date=date(2011, 8, 2),
+                                date_charged=None,
+                                county_code=None,
+                                statute="D_29-C_3421",
+                                description="BREAKING AND ENTERING (D) {4858}",
+                                classification_type=StateChargeClassificationType.MISDEMEANOR,
+                                classification_type_raw_text="D",
+                                is_sex_offense=False,
+                                charge_notes=None,
+                                court_case=StateCourtCase(
+                                    external_id="00000002-222457-542893",
+                                    state_code="US_ME",
+                                    status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+                                    status_raw_text=None,
+                                    court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+                                    date_convicted=date(2012, 4, 8),
+                                    county_code=None,
+                                ),
+                            )
+                        ],
+                    )
+                ],
+            ),
         ]
 
         self._run_parse_ingest_view_test("incarceration_sentences", expected_output)

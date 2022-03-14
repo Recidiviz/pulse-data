@@ -1092,6 +1092,61 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         person_2_charge_4.court_case = person_2_charge_4_court_case
         person_2_incarceration_sentence_4.charges = [person_2_charge_4]
 
+        person_2_incarceration_sentence_5 = add_incarceration_sentence_to_person(
+            person=person_2,
+            external_id="00000002-222457-542893",
+            state_code="US_ME",
+            status=StateSentenceStatus.COMPLETED,
+            status_raw_text="COMPLETE",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="EARLY TERMINATION",
+            date_imposed=datetime.date(2012, 4, 8),
+            start_date=datetime.date(9999, 12, 31),
+            projected_min_release_date=datetime.date(2012, 5, 26),
+            projected_max_release_date=datetime.date(2012, 6, 21),
+            completion_date=datetime.date(2012, 5, 26),
+            county_code=None,
+            max_length_days=0,
+            is_life=False,
+            is_capital_punishment=None,
+            earned_time_days=0,
+            sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", "TERM_COMMUNITY_RELEASE_DATE": "2012-10-15 00:00:00", "TERM_EARLY_CUSTODY_RELEASE_DATE": "2012-05-26 00:00:00", "TERM_INTAKE_DATE": "", "TERM_MAX_CUSTODY_RELEASE_DATE": "2012-06-24 00:00:00", "TERM_STATUS": "COMPLETE"}',
+            conditions=None,
+        )
+
+        person_2_charge_5 = StateCharge(
+            external_id="00000002-222457-542893-123457",
+            state_code="US_ME",
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            offense_date=datetime.date(2011, 8, 2),
+            date_charged=None,
+            county_code=None,
+            statute="D_29-C_3421",
+            description="BREAKING AND ENTERING (D) {4858}",
+            classification_type=StateChargeClassificationType.MISDEMEANOR,
+            classification_type_raw_text="D",
+            is_sex_offense=False,
+            charge_notes=None,
+            person=person_2,
+            incarceration_sentences=[person_2_incarceration_sentence_5],
+        )
+
+        person_2_charge_5_court_case = StateCourtCase(
+            external_id="00000002-222457-542893",
+            state_code="US_ME",
+            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+            status_raw_text=None,
+            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
+            date_convicted=datetime.date(2012, 4, 8),
+            county_code=None,
+            person=person_2,
+            charges=[person_2_charge_5],
+        )
+
+        person_2_charge_5.court_case = person_2_charge_5_court_case
+        person_2_incarceration_sentence_5.charges = [person_2_charge_5]
+
         # Act
         self._run_ingest_job_for_filename("incarceration_sentences")
 
