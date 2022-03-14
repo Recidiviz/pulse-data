@@ -25,16 +25,14 @@ from unittest import mock
 import flask
 from mock import Mock, create_autospec
 
-from recidiviz.calculator.pipeline.pipeline_type import PipelineRunType
+from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_control
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
     BQRefreshCloudTaskManager,
@@ -130,7 +128,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         module = SchemaType.STATE.value
         route = f"/refresh_bq_schema/{module}"
-        data = json.dumps({"pipeline_run_type": PipelineRunType.INCREMENTAL.value})
+        data = json.dumps(
+            {"pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value}
+        )
 
         response = self.mock_flask_client.post(
             route,
@@ -170,7 +170,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         module = SchemaType.STATE.value
         route = f"/refresh_bq_schema/{module}"
-        data = json.dumps({"pipeline_run_type": PipelineRunType.HISTORICAL.value})
+        data = json.dumps({"pipeline_run_type": MetricPipelineRunType.HISTORICAL.value})
 
         response = self.mock_flask_client.post(
             route,
@@ -356,7 +356,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
             route = f"/refresh_bq_schema/{SchemaType.STATE.value}"
 
-            data = json.dumps({"pipeline_run_type": PipelineRunType.HISTORICAL.value})
+            data = json.dumps(
+                {"pipeline_run_type": MetricPipelineRunType.HISTORICAL.value}
+            )
 
             response = self.mock_flask_client.post(
                 route,
@@ -377,7 +379,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self,
     ) -> None:
         # Act
-        body = {"pipeline_run_type": PipelineRunType.INCREMENTAL.value}
+        body = {"pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value}
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(
@@ -408,7 +410,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
-        expected_task_body = {"pipeline_run_type": PipelineRunType.INCREMENTAL.value}
+        expected_task_body = {
+            "pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value
+        }
 
         # Assert
         self.assertIsOnlySchemaLocked(SchemaType.STATE)
@@ -427,7 +431,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self,
     ) -> None:
         # Act
-        body = {"pipeline_run_type": PipelineRunType.HISTORICAL.value}
+        body = {"pipeline_run_type": MetricPipelineRunType.HISTORICAL.value}
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(

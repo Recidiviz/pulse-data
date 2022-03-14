@@ -26,22 +26,24 @@ class PipelineConfig(TypedDict):
     pipeline: str
     job_name: str
     state_code: str
-    metric_types: Optional[str]
     region: str
+    metric_types: Optional[str]
     staging_only: Optional[bool]
 
 
 @attr.s(auto_attribs=True)
 class PipelineYaml:
-    incremental_pipelines: List[PipelineConfig]
-    historical_pipelines: List[PipelineConfig]
+    normalization_pipelines: List[PipelineConfig]
+    incremental_metric_pipelines: List[PipelineConfig]
+    historical_metric_pipelines: List[PipelineConfig]
     supplemental_dataset_pipelines: List[PipelineConfig]
 
     @property
     def all_pipelines(self) -> List[PipelineConfig]:
         return (
-            self.incremental_pipelines
-            + self.historical_pipelines
+            self.normalization_pipelines
+            + self.incremental_metric_pipelines
+            + self.historical_metric_pipelines
             + self.supplemental_dataset_pipelines
         )
 

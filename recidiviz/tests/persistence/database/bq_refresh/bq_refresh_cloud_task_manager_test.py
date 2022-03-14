@@ -26,7 +26,7 @@ from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 from mock import patch
 
-from recidiviz.calculator.pipeline.pipeline_type import PipelineRunType
+from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
@@ -73,7 +73,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
         task_id = "reenqueue_wait_task-2019-04-13-random-uuid"
         task_path = f"{queue_path}/{task_id}"
-        pipeline_run_type = PipelineRunType.INCREMENTAL.value
+        pipeline_run_type = MetricPipelineRunType.INCREMENTAL.value
 
         body = {
             "lock_id": lock_id,
@@ -131,7 +131,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
         task_id = f"{schema_type}-2019-04-12-random-uuid"
         task_path = f"{queue_path}/{task_id}"
-        body = {"pipeline_run_type": PipelineRunType.INCREMENTAL.value}
+        body = {"pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value}
 
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
