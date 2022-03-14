@@ -308,3 +308,14 @@ def is_between_date_strs_inclusive(
     ):
         return True
     return False
+
+
+def safe_strptime(
+    date_string: Optional[str], date_format: str
+) -> Optional[datetime.datetime]:
+    """Returns the parsed date string per the provided date format, or None if the date_string is not a valid
+    date string"""
+    try:
+        return datetime.datetime.strptime(str(date_string), date_format)
+    except (ValueError, TypeError):
+        return None
