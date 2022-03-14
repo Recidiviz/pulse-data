@@ -24,6 +24,7 @@ from recidiviz.common.date import (
     NonNegativeDateRange,
     is_date_str,
     munge_date_string,
+    safe_strptime,
     today_in_iso,
 )
 
@@ -263,3 +264,25 @@ class TestDateRangeDiff(unittest.TestCase):
             [DateRange(datetime.date(2019, 2, 5), datetime.date(2019, 3, 1))],
             time_range_diff.range_2_non_overlapping_parts,
         )
+
+    def test_safe_strptime_valid_date(self) -> None:
+        date_string = "2022-03-14"
+        date_format = "%Y-%m-%d"
+        self.assertEqual(
+            datetime.datetime(2022, 3, 14), safe_strptime(date_string, date_format)
+        )
+
+    def test_safe_strptime_invalid_date(self) -> None:
+        date_string = "None"
+        date_format = "%Y-%m-%d"
+        self.assertEqual(None, safe_strptime(date_string, date_format))
+
+    def test_safe_strptime_none_date(self) -> None:
+        date_string = None
+        date_format = "%Y-%m-%d"
+        self.assertEqual(None, safe_strptime(date_string, date_format))
+
+    def test_safe_strptime_invalid_format(self) -> None:
+        date_string = "2022-03-14"
+        date_format = "%Y-%m-%d %HH:%MM:%SS"
+        self.assertEqual(None, safe_strptime(date_string, date_format))

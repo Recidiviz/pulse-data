@@ -25,6 +25,7 @@ my_flat_field:
             arg_2: <expression>
 """
 
+from recidiviz.common.date import safe_strptime
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, parse_int
 
 
@@ -39,8 +40,14 @@ def total_days_from_ymd(
     If a start_date is provided, will add the components to that date to compute an end date and compute the difference.
     If not, will simply multiply and sum them together arithmetically.
 
+    If the start_date is 9999-12-31, then it will set it to None.
+
     If all of years, months, and days are none, this returns "0".
     """
+    # Date format is "YYYY-MM-DD HH:MM:SS UTC"
+    format_est_sent_date = safe_strptime(start_date, "%Y-%m-%d %H:%M:%S")
+    if format_est_sent_date and format_est_sent_date.year >= 9900:
+        start_date = None
     if not years and not months and not days:
         return "0"
     return str(parse_days_from_duration_pieces(years, months, days, start_date))
