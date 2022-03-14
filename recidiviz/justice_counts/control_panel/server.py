@@ -17,13 +17,21 @@
 """Backend entry point for Justice Counts Control Panel backend API."""
 from flask import Flask
 
+from recidiviz.justice_counts.control_panel.config import Config
+from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+
 
 # Note that we don't have to explicitly call `create_app` anywhere;
 # Flask will automatically detect the factory function during `flask run`
 # source: https://flask.palletsprojects.com/en/2.0.x/patterns/appfactories/#using-applications
 # TODO(#11503): Add automatic endpoint documentation generation
-def create_app() -> Flask:
+def create_app(config: Config) -> Flask:
     app = Flask(__name__)
+    app.config.from_object(config)
+
+    setup_scoped_sessions(
+        app=app, database_key=app.config["DATABASE_KEY"], db_url=app.config["DB_URL"]
+    )
 
     # TODO(#11504): Replace dummy endpoint
     @app.route("/hello")
