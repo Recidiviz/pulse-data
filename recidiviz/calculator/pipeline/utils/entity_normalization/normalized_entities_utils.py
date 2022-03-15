@@ -705,8 +705,6 @@ def _unique_object_id_for_entity(person_id: int, entity: Entity) -> int:
     return entity_object_id
 
 
-# TODO(#11470): Write validations that will break if the assumption this relies on ever
-#  breaks (if COUNT(*) != COUNT(DISTINCT(id)) for a normalized state table)
 def update_normalized_entity_with_globally_unique_id(
     person_id: int, entity: Entity
 ) -> None:

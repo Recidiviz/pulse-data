@@ -19,9 +19,7 @@ import unittest
 from typing import Set
 
 from recidiviz.calculator import dataflow_config
-from recidiviz.calculator.dataflow_output_table_manager import (
-    get_metric_pipeline_enabled_states,
-)
+from recidiviz.calculator.dataflow_config import get_metric_pipeline_enabled_states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.yaml_dict import YAMLDict
 

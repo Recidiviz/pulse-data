@@ -16,7 +16,7 @@
 # =============================================================================
 """Config for Dataflow pipelines and BigQuery storage of metric output."""
 import os
-from typing import Dict, List, Type
+from typing import Dict, List, Set, Type
 
 from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
@@ -53,6 +53,8 @@ from recidiviz.calculator.pipeline.metrics.violation.metrics import (
     ViolationMetricType,
     ViolationWithResponseMetric,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.yaml_dict import YAMLDict
 
 PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -126,3 +128,22 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
 
 # A list of fields on which to cluster the Dataflow metrics tables
 METRIC_CLUSTERING_FIELDS = ["state_code", "year"]
+
+
+def get_metric_pipeline_enabled_states() -> Set[StateCode]:
+    """Returns all states that have scheduled metric pipelines that run."""
+    pipeline_states: Set[StateCode] = set()
+
+    pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
+
+    incremental_metric_pipelines = pipeline_templates_yaml.pop_dicts(
+        "incremental_metric_pipelines"
+    )
+    historical_metric_pipelines = pipeline_templates_yaml.pop_dicts(
+        "historical_metric_pipelines"
+    )
+
+    for pipeline in incremental_metric_pipelines + historical_metric_pipelines:
+        pipeline_states.add(StateCode(pipeline.peek("state_code", str)))
+
+    return pipeline_states
