@@ -1,6 +1,6 @@
 file_tag: OffenderOrientation
 file_description: |- 
-  This table contains one occurrence for each orientation at the site received by the offender.
+  This table contains one occurrence for each orientation at the site received by the person.
 primary_key_cols:
   - SiteID
   - OrientationDueDate

@@ -71,61 +71,61 @@ columns:
       The length of an enhancement in years for a person's sentence.
   - name: MaximumSentenceYears
     description: |-
-      The maximum number of years for an offender's sentence.
+      The maximum number of years for a person's sentence.
   - name: MaximumSentenceMonths
     description: |-
-      The maximum number of months for an offender's sentence.
+      The maximum number of months for a person's sentence.
   - name: MaximumSentenceDays
     description: |-
-      The maximum number of days for an offender's sentence.
+      The maximum number of days for a person's sentence.
   - name: MaximumSentenceWeekends
     description: |-
-      The maximum number of weekends for an offender's sentence.
+      The maximum number of weekends for a person's sentence.
   - name: MinimumSentenceYears
     description: |-
-      The minimum number of years for an offender's sentence.
+      The minimum number of years for a person's sentence.
   - name: MinimumSentenceMonths
     description: |-
-      The minimum number of months for an offender's sentence.
+      The minimum number of months for a person's sentence.
   - name: MinimumSentenceDays
     description: |-
-      The minimum number of days for an offender's sentence.
+      The minimum number of days for a person's sentence.
   - name: WorkReleaseYears
     description: |-
-      The number of years for an offender's term of work release.
+      The number of years for a person's term of work release.
   - name: WorkReleaseMonths
     description: |-
-      The number of months for an offender's term of work release.
+      The number of months for a person's term of work release.
   - name: WorkReleaseDays
     description: |-
-      The number of days for an offender's term of work release.
+      The number of days for a person's term of work release.
   - name: ProbationSentenceYears
     description: |-
-      The number of years for an offender's time to serve a sentence suspended to probation.
+      The number of years for a person's time to serve a sentence suspended to probation.
   - name: ProbationSentenceMonths
     description: |-
-      The number of months for an offender's time to serve a sentence suspended to probation.
+      The number of months for a person's time to serve a sentence suspended to probation.
   - name: ProbationSentenceDays
     description: |-
-      The number of days for an offender's time to serve a sentence suspended to probation.
+      The number of days for a person's time to serve a sentence suspended to probation.
   - name: FirstSplitConfinementYears
     description: |-
-      The number of years for an offender's balance of a split confinement.
+      The number of years for a person's balance of a split confinement.
   - name: FirstSplitConfinementMonths
     description: |-
-      The number of months for an offender's balance of a split confinement.
+      The number of months for a person's balance of a split confinement.
   - name: FirstSplitConfinementDays
     description: |-
-      The number of days for an offender's balance of a split confinement.
+      The number of days for a person's balance of a split confinement.
   - name: SecondSplitConfinementYears
     description: |-
-      The number of years for an offender's second split confinement.
+      The number of years for a person's second split confinement.
   - name: SecondSplitConfinementMonths
     description: |-
-      The number of days for an offender's second split confinement.
+      The number of days for a person's second split confinement.
   - name: SecondSplitConfinementDays
     description: |-
-      The number of days for an offender's second split confinement.
+      The number of days for a person's second split confinement.
   - name: Period
     description: |-
       Text field for displaying the decode of the period of conflict codes.
@@ -200,16 +200,16 @@ columns:
   - name: StayExecutionDate
     is_datetime: True
     description: |-
-      The date of an offender's stay of execution.
+      The date of a person's stay of execution.
   - name: CommunityCorrectionYears
     description: |-
-      The number of years for an offender's time to serve a sentence on community corrections.
+      The number of years for a person's time to serve a sentence on community corrections.
   - name: CommunityCorrectionMonths
     description: |-
-      The number of months for an offender's time to serve a sentence on community corrections.
+      The number of months for a person's time to serve a sentence on community corrections.
   - name: CommunityCorrectionDays
     description: |-
-      The number of days for an offender's time to serve a sentence on community corrections.
+      The number of days for a person's time to serve a sentence on community corrections.
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
