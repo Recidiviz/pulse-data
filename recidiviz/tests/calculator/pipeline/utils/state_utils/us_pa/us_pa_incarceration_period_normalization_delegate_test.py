@@ -75,8 +75,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
-        collapse_transfers: bool = False,
-        overwrite_facility_information_in_transfers: bool = False,
         earliest_death_date: Optional[date] = None,
     ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
         """Helper function for testing the
@@ -97,9 +95,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             field_index=CoreEntityFieldIndex(),
         )
 
-        ip_index = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=collapse_transfers,
-            overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,
+        ip_index = (
+            ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
         )
 
         return ip_index.incarceration_periods, ip_index.ip_id_to_pfi_subtype
@@ -188,8 +185,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             _,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
+            incarceration_periods=[incarceration_period], violation_responses=[]
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -219,8 +215,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             _,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
+            incarceration_periods=[incarceration_period], violation_responses=[]
         )
 
         self.assertEqual([incarceration_period], validated_incarceration_periods)
@@ -250,8 +245,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             _,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
+            incarceration_periods=[incarceration_period], violation_responses=[]
         )
 
         self.assertEqual([incarceration_period], validated_incarceration_periods)
@@ -452,7 +446,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             ip_id_to_pfi_subtype,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
+            incarceration_periods=[incarceration_period]
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -487,7 +481,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             ip_id_to_pfi_subtype,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
+            incarceration_periods=[incarceration_period]
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -625,7 +619,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             ip_id_to_pfi_subtype,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
+            incarceration_periods=[incarceration_period]
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -661,8 +655,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             ip_id_to_pfi_subtype,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
+            incarceration_periods=[incarceration_period], violation_responses=[]
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -695,8 +688,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             ip_id_to_pfi_subtype,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
+            incarceration_periods=[incarceration_period], violation_responses=[]
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -730,8 +722,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             ip_id_to_pfi_subtype,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
+            incarceration_periods=[incarceration_period], violation_responses=[]
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -767,8 +758,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
             _,
         ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=incarceration_periods,
-            collapse_transfers=False,
+            incarceration_periods=incarceration_periods
         )
 
         self.assertEqual([period_copy], validated_incarceration_periods)

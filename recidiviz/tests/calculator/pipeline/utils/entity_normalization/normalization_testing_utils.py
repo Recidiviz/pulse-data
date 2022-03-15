@@ -43,7 +43,6 @@ from recidiviz.persistence.entity.state.entities import (
 
 def default_normalized_ip_index_for_tests(
     incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
-    transfers_are_collapsed: Optional[bool] = None,
     incarceration_delegate: Optional[StateSpecificIncarcerationDelegate] = None,
     ip_id_to_pfi_subtype: Optional[Dict[int, Optional[str]]] = None,
 ) -> NormalizedIncarcerationPeriodIndex:
@@ -55,7 +54,6 @@ def default_normalized_ip_index_for_tests(
 
     return NormalizedIncarcerationPeriodIndex(
         incarceration_periods=incarceration_periods or [],
-        transfers_are_collapsed=transfers_are_collapsed or False,
         incarceration_delegate=incarceration_delegate or UsXxIncarcerationDelegate(),
         ip_id_to_pfi_subtype=ip_id_to_pfi_subtype
         or (

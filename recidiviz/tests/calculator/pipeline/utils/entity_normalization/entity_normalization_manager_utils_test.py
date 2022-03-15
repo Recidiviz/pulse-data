@@ -123,10 +123,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         assert ip_normalization_manager is not None
         self.assertEqual(
             [incarceration_period],
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-                collapse_transfers=False,
-                overwrite_facility_information_in_transfers=False,
-            ).incarceration_periods,
+            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods,
         )
         assert sp_normalization_manager is not None
         self.assertEqual(
@@ -166,10 +163,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         assert ip_normalization_manager is not None
         self.assertEqual(
             [incarceration_period],
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-                collapse_transfers=False,
-                overwrite_facility_information_in_transfers=False,
-            ).incarceration_periods,
+            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods,
         )
         self.assertIsNone(sp_normalization_manager)
 

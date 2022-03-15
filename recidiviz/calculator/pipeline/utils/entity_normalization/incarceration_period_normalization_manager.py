@@ -56,7 +56,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
     is_commitment_from_supervision,
-    is_official_admission,
     release_reason_overrides_released_from_temporary_custody,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -74,17 +73,6 @@ ATTRIBUTES_TRIGGERING_STATUS_CHANGE = [
     "custodial_authority",
     "specialized_purpose_for_incarceration",
 ]
-
-
-# TODO(#10727): Remove the ability to collapse transfers in IP normalization
-@attr.s(kw_only=True, frozen=True)
-class NormalizationConfiguration:
-    # Whether or not to collapse chronologically adjacent periods that are
-    # connected by a transfer release and transfer admission
-    collapse_transfers: bool = attr.ib()
-    # Whether or not to overwrite facility information when collapsing
-    # transfer edges
-    overwrite_facility_information_in_transfers: bool = attr.ib()
 
 
 @attr.s
@@ -259,11 +247,11 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         earliest_death_date: Optional[date] = None,
     ):
         self._original_incarceration_periods = deepcopy(incarceration_periods)
+        self._normalized_incarceration_period_index_for_calculations: Optional[
+            NormalizedIncarcerationPeriodIndex
+        ] = None
         self.normalization_delegate = normalization_delegate
         self.incarceration_delegate = incarceration_delegate
-        self._normalized_incarceration_period_index_for_calculations: Dict[
-            NormalizationConfiguration, NormalizedIncarcerationPeriodIndex
-        ] = {}
         # Only store the NormalizedSupervisionPeriodIndex if StateSupervisionPeriod
         # entities are required for this state's StateIncarcerationPeriod
         # normalization
@@ -294,135 +282,107 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateIncarcerationPeriod]
 
-    # TODO(#10727): Remove the ability to collapse transfers in IP normalization
     def normalized_incarceration_period_index_for_calculations(
         self,
-        *,
-        collapse_transfers: bool,
-        overwrite_facility_information_in_transfers: bool,
     ) -> NormalizedIncarcerationPeriodIndex:
-        """Validates, sorts, and collapses the incarceration period inputs.
+        """Validates, sorts, and updates the incarceration period inputs.
         Ensures the necessary dates and fields are set on each incarceration period.
-
-        If collapse_transfers is True, collapses adjacent periods connected by
-        TRANSFER.
         """
-        if collapse_transfers or overwrite_facility_information_in_transfers:
-            raise ValueError("Collapsing transfers in IP normalization is deprecated.")
+        if self._normalized_incarceration_period_index_for_calculations:
+            return self._normalized_incarceration_period_index_for_calculations
 
-        config = NormalizationConfiguration(
-            collapse_transfers=collapse_transfers,
-            overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,
-        )
-        if config not in self._normalized_incarceration_period_index_for_calculations:
-            if not self._original_incarceration_periods:
-                # If there are no incarceration_periods, return an empty index
-                self._normalized_incarceration_period_index_for_calculations[
-                    config
-                ] = NormalizedIncarcerationPeriodIndex(
+        if not self._original_incarceration_periods:
+            self._normalized_incarceration_period_index_for_calculations = (
+                NormalizedIncarcerationPeriodIndex(
                     incarceration_periods=[],
-                    transfers_are_collapsed=collapse_transfers,
                     ip_id_to_pfi_subtype={},
                     incarceration_delegate=self.incarceration_delegate,
                 )
-            else:
-                # Make a deep copy of the original incarceration periods to preprocess
-                # with the given config
-                periods_for_normalization = deepcopy(
-                    self._original_incarceration_periods
-                )
+            )
+        else:
+            # Make a deep copy of the original incarceration periods
+            periods_for_normalization = deepcopy(self._original_incarceration_periods)
 
-                # Drop placeholder IPs with no information on them
-                mid_processing_periods = self._drop_placeholder_periods(
-                    periods_for_normalization
-                )
+            # Drop placeholder IPs with no information on them
+            mid_processing_periods = self._drop_placeholder_periods(
+                periods_for_normalization
+            )
 
-                # Drop placeholder IPs with no start and no end dates
-                mid_processing_periods = self._drop_missing_date_periods(
+            # Drop placeholder IPs with no start and no end dates
+            mid_processing_periods = self._drop_missing_date_periods(
+                mid_processing_periods
+            )
+
+            # Drop IPs that are fuzzy matched, as we are not yet confident in their
+            # placement of a person's entire journey within the system
+            mid_processing_periods = self._handle_fuzzy_matched_periods(
+                mid_processing_periods
+            )
+
+            # Sort periods, and infer as much missing information as possible
+            mid_processing_periods = self._sort_and_infer_missing_dates_and_statuses(
+                mid_processing_periods
+            )
+            original_sorted_periods = deepcopy(mid_processing_periods)
+
+            # Handle any periods that may have been erroneously set to have a
+            # TEMPORARY_CUSTODY pfi at ingest due to limitations in ingest
+            # mapping logic. (For example, logic that requires looking at more
+            # than one period to determine the correct pfi value.)
+            mid_processing_periods = (
+                self._handle_erroneously_set_temporary_custody_periods(
                     mid_processing_periods
                 )
+            )
 
-                # Drop IPs that are fuzzy matched, as we are not yet confident in their
-                # placement of a person's entire journey within the system
-                mid_processing_periods = self._handle_fuzzy_matched_periods(
+            # Update transfers that should be status change edges
+            mid_processing_periods = self._update_transfers_to_status_changes(
+                mid_processing_periods
+            )
+
+            # Update parole board hold and other temporary custody period attributes
+            # to match standardized values
+            mid_processing_periods = (
+                self._standardize_temporary_custody_and_board_hold_periods(
                     mid_processing_periods
                 )
+            )
 
-                # Sort periods, and infer as much missing information as possible
-                mid_processing_periods = (
-                    self._sort_and_infer_missing_dates_and_statuses(
-                        mid_processing_periods
-                    )
-                )
-                original_sorted_periods = deepcopy(mid_processing_periods)
+            # Override values on the incarceration periods that are
+            # commitment from supervision admissions
+            (
+                mid_processing_periods,
+                ip_id_to_pfi_subtype,
+            ) = self._normalize_commitment_from_supervision_admission_periods(
+                mid_processing_periods=mid_processing_periods,
+                original_sorted_periods=original_sorted_periods,
+                supervision_period_index=self._normalized_supervision_period_index,
+                violation_responses=self._violation_responses,
+            )
 
-                # Handle any periods that may have been erroneously set to have a
-                # TEMPORARY_CUSTODY pfi at ingest due to limitations in ingest
-                # mapping logic. (For example, logic that requires looking at more
-                # than one period to determine the correct pfi value.)
-                mid_processing_periods = (
-                    self._handle_erroneously_set_temporary_custody_periods(
-                        mid_processing_periods
-                    )
-                )
+            # Drop certain periods entirely from the calculations
+            mid_processing_periods = self._drop_periods_from_calculations(
+                mid_processing_periods
+            )
 
-                # Update transfers that should be status change edges
-                mid_processing_periods = self._update_transfers_to_status_changes(
-                    mid_processing_periods
-                )
+            # Ensure that the purpose_for_incarceration values on all periods is
+            # what we expect
+            mid_processing_periods = self._standardize_purpose_for_incarceration_values(
+                mid_processing_periods
+            )
 
-                # Update parole board hold and other temporary custody period attributes
-                # to match standardized values
-                mid_processing_periods = (
-                    self._standardize_temporary_custody_and_board_hold_periods(
-                        mid_processing_periods
-                    )
-                )
+            # Validate IPs
+            self.validate_ip_invariants(mid_processing_periods)
 
-                # Override values on the incarceration periods that are
-                # commitment from supervision admissions
-                (
-                    mid_processing_periods,
-                    ip_id_to_pfi_subtype,
-                ) = self._normalize_commitment_from_supervision_admission_periods(
-                    mid_processing_periods=mid_processing_periods,
-                    original_sorted_periods=original_sorted_periods,
-                    supervision_period_index=self._normalized_supervision_period_index,
-                    violation_responses=self._violation_responses,
-                )
-
-                # Drop certain periods entirely from the calculations
-                mid_processing_periods = self._drop_periods_from_calculations(
-                    mid_processing_periods
-                )
-
-                # Ensure that the purpose_for_incarceration values on all periods is
-                # what we expect
-                mid_processing_periods = (
-                    self._standardize_purpose_for_incarceration_values(
-                        mid_processing_periods
-                    )
-                )
-
-                if config.collapse_transfers:
-                    # Collapse adjacent periods connected by a TRANSFER
-                    mid_processing_periods = self._collapse_incarceration_period_transfers(
-                        incarceration_periods=mid_processing_periods,
-                        overwrite_facility_information_in_transfers=config.overwrite_facility_information_in_transfers,
-                    )
-
-                # Validate IPs
-                self.validate_ip_invariants(mid_processing_periods)
-
-                self._normalized_incarceration_period_index_for_calculations[
-                    config
-                ] = NormalizedIncarcerationPeriodIndex(
+            self._normalized_incarceration_period_index_for_calculations = (
+                NormalizedIncarcerationPeriodIndex(
                     incarceration_periods=mid_processing_periods,
-                    transfers_are_collapsed=collapse_transfers,
                     ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
                     incarceration_delegate=self.incarceration_delegate,
                 )
-        return self._normalized_incarceration_period_index_for_calculations[config]
+            )
+
+        return self._normalized_incarceration_period_index_for_calculations
 
     def _drop_placeholder_periods(
         self,
@@ -1089,123 +1049,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                     "specialized_purpose_for_incarceration by the end of IP "
                     "normalization."
                 )
-
-    def _collapse_incarceration_period_transfers(
-        self,
-        incarceration_periods: List[StateIncarcerationPeriod],
-        overwrite_facility_information_in_transfers: bool,
-    ) -> List[StateIncarcerationPeriod]:
-        """Collapses any incarceration periods that are connected by transfers.
-        Loops through all of the StateIncarcerationPeriods and combines adjacent
-        periods that are connected by a transfer. Only connects two periods if the
-        release reason of the first is `TRANSFER` and the admission reason for the
-        second is also `TRANSFER`.
-
-        Returns:
-            A list of collapsed StateIncarcerationPeriods.
-        """
-
-        new_incarceration_periods: List[StateIncarcerationPeriod] = []
-        open_transfer = False
-
-        for incarceration_period in incarceration_periods:
-            if open_transfer:
-                admission_reason = incarceration_period.admission_reason
-
-                # Do not collapse any period with an official admission reason
-                if (
-                    not is_official_admission(admission_reason)
-                    and admission_reason
-                    == StateIncarcerationPeriodAdmissionReason.TRANSFER
-                ):
-                    # If there is an open transfer period and they were
-                    # transferred into this incarceration period, then combine this
-                    # period with the open transfer period.
-                    start_period = new_incarceration_periods.pop(-1)
-
-                    combined_period = self._combine_incarceration_periods(
-                        start_period,
-                        incarceration_period,
-                        overwrite_facility_information=overwrite_facility_information_in_transfers,
-                    )
-                    new_incarceration_periods.append(combined_period)
-                else:
-                    # They weren't transferred here. Add this as a new
-                    # incarceration period.
-                    # TODO(#1790): Analyze how often a transfer out is followed by an
-                    #  admission type that isn't a transfer to ensure we aren't
-                    #  making bad assumptions with this transfer logic.
-                    new_incarceration_periods.append(incarceration_period)
-            else:
-                # TODO(#1790): Analyze how often an incarceration period that starts
-                #  with a transfer in is not preceded by a transfer out of a
-                #  different facility.
-                new_incarceration_periods.append(incarceration_period)
-
-            # If this incarceration period ended in a transfer, then flag
-            # that there's an open transfer period.
-            open_transfer = (
-                incarceration_period.release_reason
-                == StateIncarcerationPeriodReleaseReason.TRANSFER
-            )
-
-        return new_incarceration_periods
-
-    @staticmethod
-    def _combine_incarceration_periods(
-        start: StateIncarcerationPeriod,
-        end: StateIncarcerationPeriod,
-        overwrite_facility_information: bool = False,
-    ) -> StateIncarcerationPeriod:
-        """Combines two StateIncarcerationPeriods.
-        Brings together two StateIncarcerationPeriods by setting the following
-        fields on a deep copy of the |start| StateIncarcerationPeriod to the values
-        on the |end| StateIncarcerationPeriod:
-            [status, release_date, facility, housing_unit, facility_security_level,
-            facility_security_level_raw_text, projected_release_reason,
-            projected_release_reason_raw_text, release_reason,
-            release_reason_raw_text]
-            Args:
-                start: The starting StateIncarcerationPeriod.
-                end: The ending StateIncarcerationPeriod.
-                overwrite_admission_reason: Whether to use the end admission reason instead of the start admission reason.
-                overwrite_facility_information: Whether to use the facility, housing, and purpose for incarceration
-                    information on the end period instead of on the start period.
-        """
-
-        collapsed_incarceration_period = deepcopy(start)
-
-        if overwrite_facility_information:
-            collapsed_incarceration_period.facility = end.facility
-            collapsed_incarceration_period.facility_security_level = (
-                end.facility_security_level
-            )
-            collapsed_incarceration_period.facility_security_level_raw_text = (
-                end.facility_security_level_raw_text
-            )
-            collapsed_incarceration_period.housing_unit = end.housing_unit
-            # We want the latest non-null specialized_purpose_for_incarceration
-            if end.specialized_purpose_for_incarceration is not None:
-                collapsed_incarceration_period.specialized_purpose_for_incarceration = (
-                    end.specialized_purpose_for_incarceration
-                )
-                collapsed_incarceration_period.specialized_purpose_for_incarceration_raw_text = (
-                    end.specialized_purpose_for_incarceration_raw_text
-                )
-
-        collapsed_incarceration_period.release_date = end.release_date
-        collapsed_incarceration_period.projected_release_reason = (
-            end.projected_release_reason
-        )
-        collapsed_incarceration_period.projected_release_reason_raw_text = (
-            end.projected_release_reason_raw_text
-        )
-        collapsed_incarceration_period.release_reason = end.release_reason
-        collapsed_incarceration_period.release_reason_raw_text = (
-            end.release_reason_raw_text
-        )
-
-        return collapsed_incarceration_period
 
     def _handle_erroneously_set_temporary_custody_periods(
         self,

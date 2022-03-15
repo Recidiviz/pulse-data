@@ -267,11 +267,10 @@ class TestGetCommitmentDetails(unittest.TestCase):
         assert incarceration_period.incarceration_period_id is not None
         ip_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
-            transfers_are_collapsed=True,
+            incarceration_delegate=UsPaIncarcerationDelegate(),
             ip_id_to_pfi_subtype={
                 incarceration_period.incarceration_period_id: SHOCK_INCARCERATION_PVC
             },
-            incarceration_delegate=UsPaIncarcerationDelegate(),
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
@@ -350,7 +349,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         ip_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[board_hold, shock_period],
-            transfers_are_collapsed=True,
             incarceration_delegate=UsPaIncarcerationDelegate(),
         )
 
