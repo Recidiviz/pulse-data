@@ -29,6 +29,7 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
     METRIC_CLUSTERING_FIELDS,
+    get_metric_pipeline_enabled_states,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
@@ -226,12 +227,13 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
 
-    # pylint: disable=protected-access
+    @mock.patch(
+        "recidiviz.calculator.dataflow_config.PIPELINE_CONFIG_YAML_PATH",
+        FAKE_PIPELINE_CONFIG_YAML_PATH,
+    )
     def test_get_all_state_specific_normalized_state_datasets(self) -> None:
         dataset_ids: List[str] = []
-        for (
-            state_code
-        ) in dataflow_output_table_manager.get_metric_pipeline_enabled_states():
+        for state_code in get_metric_pipeline_enabled_states():
             dataset_ids.append(
                 dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
                     state_code
@@ -242,11 +244,13 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
 
         self.assertCountEqual(expected_dataset_ids, dataset_ids)
 
+    @mock.patch(
+        "recidiviz.calculator.dataflow_config.PIPELINE_CONFIG_YAML_PATH",
+        FAKE_PIPELINE_CONFIG_YAML_PATH,
+    )
     def test_get_all_state_specific_normalized_state_datasets_with_prefix(self) -> None:
         dataset_ids: List[str] = []
-        for (
-            state_code
-        ) in dataflow_output_table_manager.get_metric_pipeline_enabled_states():
+        for state_code in get_metric_pipeline_enabled_states():
             dataset_ids.append(
                 dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
                     state_code, normalized_dataset_prefix="test_prefix"
