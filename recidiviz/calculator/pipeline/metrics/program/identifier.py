@@ -47,9 +47,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -104,9 +101,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             program_assignment_normalization_delegate=identifier_context[
                 StateSpecificProgramAssignmentNormalizationDelegate.__name__
             ],
-            incarceration_delegate=identifier_context[
-                StateSpecificIncarcerationDelegate.__name__
-            ],
             supervision_delegate=identifier_context[
                 StateSpecificSupervisionDelegate.__name__
             ],
@@ -124,7 +118,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
         sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
         program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
@@ -166,18 +159,10 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             person_id=person_id,
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
-            incarceration_delegate=incarceration_delegate,
-            # SP normalization doesn't rely on StateIncarcerationPeriod entities,
-            # and this pipeline doesn't require StateIncarcerationPeriods
             incarceration_periods=None,
             supervision_periods=supervision_periods,
-            # Note: This pipeline cannot be run for any state that relies on
-            # StateSupervisionViolationResponse entities in IP normalization
             normalized_violation_responses=None,
             field_index=self.field_index,
-            # Note: This pipeline cannot be run for any state that relies on
-            # StateIncarcerationSentence and StateSupervisionSentence entities
-            # in SP normalization
             incarceration_sentences=None,
             supervision_sentences=None,
         )

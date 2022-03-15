@@ -28,6 +28,7 @@ import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+import recidiviz.common.common_utils
 from recidiviz.common import fips
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
@@ -88,7 +89,7 @@ def _split_page(df: pd.DataFrame) -> Generator[pd.DataFrame, None, None]:
     table_starts = np.where(aligned_df["FACILITY"].notnull())[0]
     table_starts_and_end = numpy.append(table_starts, len(aligned_df))
 
-    for start, end in aggregate_ingest_utils.pairwise(table_starts_and_end):
+    for start, end in recidiviz.common.common_utils.pairwise(table_starts_and_end):
         yield aligned_df[start:end]
 
 

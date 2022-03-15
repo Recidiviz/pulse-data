@@ -42,6 +42,15 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -153,16 +162,10 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             person_id=person_id,
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
-            incarceration_delegate=incarceration_delegate,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
-            # Note: This pipeline cannot be run for any state that relies on
-            # StateSupervisionViolationResponse entities in IP normalization
             normalized_violation_responses=None,
             field_index=self.field_index,
-            # Note: This pipeline cannot be run for any state that relies on
-            # StateIncarcerationSentence and StateSupervisionSentence entities
-            # in SP normalization
             incarceration_sentences=None,
             supervision_sentences=None,
         )
@@ -170,13 +173,31 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         if not ip_normalization_manager:
             raise ValueError("Expected normalized SPs for this pipeline.")
 
-        ip_index = (
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
+        # TODO(#10731): Remove calls to ip_normalization_manager and conversion to
+        #  NormalizedStateIncarcerationPeriods once this metric pipeline is hydrating
+        #  Normalized versions of all entities
+        (
+            processed_ips,
+            additional_ip_attributes,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
         )
 
-        incarceration_periods = ip_index.incarceration_periods
+        normalized_ips = convert_entity_trees_to_normalized_versions(
+            root_entities=processed_ips,
+            normalized_entity_class=NormalizedStateIncarcerationPeriod,
+            additional_attributes_map=additional_ip_attributes,
+            field_index=self.field_index,
+        )
 
-        for index, incarceration_period in enumerate(incarceration_periods):
+        ip_index = NormalizedIncarcerationPeriodIndex(
+            sorted_incarceration_periods=normalized_ips,
+            incarceration_delegate=incarceration_delegate,
+        )
+
+        for index, incarceration_period in enumerate(
+            ip_index.sorted_incarceration_periods
+        ):
             incarceration_period_id = incarceration_period.incarceration_period_id
 
             if not incarceration_period_id:
@@ -199,10 +220,9 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 incarceration_period.specialized_purpose_for_incarceration
             )
 
-            event = None
             next_incarceration_period = (
-                incarceration_periods[index + 1]
-                if index <= len(incarceration_periods) - 2
+                ip_index.sorted_incarceration_periods[index + 1]
+                if index <= len(ip_index.sorted_incarceration_periods) - 2
                 else None
             )
 
@@ -222,7 +242,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                     " the release_cohort. Error in should_include_in_release_cohort."
                 )
 
-            if index == len(incarceration_periods) - 1:
+            if index == len(ip_index.sorted_incarceration_periods) - 1:
                 event = self._for_incarceration_period_no_return(
                     incarceration_period,
                     original_admission_date,
@@ -231,7 +251,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 )
             else:
                 reincarceration_period = self._find_valid_reincarceration_period(
-                    incarceration_periods, index, release_date
+                    ip_index.sorted_incarceration_periods, index, release_date
                 )
 
                 if not reincarceration_period:
@@ -274,10 +294,10 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def _find_valid_reincarceration_period(
         self,
-        incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         index: int,
         release_date: date,
-    ) -> Optional[StateIncarcerationPeriod]:
+    ) -> Optional[NormalizedStateIncarcerationPeriod]:
         """Finds a StateIncarcerationPeriod representing an instance of reincarceration
         following a release from prison, where the admission_date on the
         incarceration period occurred on or after the release_date."""
@@ -344,7 +364,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def _for_incarceration_period_no_return(
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
         admission_date: date,
         release_date: date,
         county_of_residence: Optional[str],
@@ -372,7 +392,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def _for_intermediate_incarceration_period(
         self,
-        release_ip: StateIncarcerationPeriod,
+        release_ip: NormalizedStateIncarcerationPeriod,
         admission_date: date,
         release_date: date,
         county_of_residence: Optional[str],

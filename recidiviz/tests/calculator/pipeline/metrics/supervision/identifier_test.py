@@ -51,6 +51,9 @@ from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_complian
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
@@ -4263,7 +4266,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -4345,7 +4348,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -4432,7 +4435,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             ],
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -4526,7 +4529,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -4604,7 +4607,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -4909,7 +4912,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -5331,7 +5334,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -5925,7 +5928,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_periods: List[StateIncarcerationPeriod] = []
+        incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
         incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=incarceration_periods
         )
@@ -5964,7 +5967,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_periods: List[StateIncarcerationPeriod] = []
+        incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
         incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=incarceration_periods
         )
@@ -6004,7 +6007,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_periods: List[StateIncarcerationPeriod] = []
+        incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
         incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=incarceration_periods
         )
@@ -6048,7 +6051,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             projected_completion_date=projected_completion_date,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
             admission_date=date(2017, 6, 1),
@@ -6995,7 +6998,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -7300,7 +7303,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",

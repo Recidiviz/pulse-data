@@ -24,6 +24,9 @@ from recidiviz.calculator.pipeline.utils import commitment_from_supervision_util
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
@@ -110,7 +113,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         )
 
     def test_us_pa_get_pre_commitment_supervision_type_default(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -146,7 +149,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -171,7 +174,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         )
 
     def test_us_pa_get_pre_commitment_supervision_type_erroneous(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -194,7 +197,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
     @staticmethod
     def _test_get_commitment_from_supervision_details(
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
         supervision_period_to_agent_associations: Optional[
@@ -249,7 +252,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
             state_code=STATE_CODE,
@@ -262,15 +265,13 @@ class TestGetCommitmentDetails(unittest.TestCase):
             release_date=date(2019, 5, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            purpose_for_incarceration_subtype=SHOCK_INCARCERATION_PVC,
         )
 
         assert incarceration_period.incarceration_period_id is not None
         ip_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period],
             incarceration_delegate=UsPaIncarcerationDelegate(),
-            ip_id_to_pfi_subtype={
-                incarceration_period.incarceration_period_id: SHOCK_INCARCERATION_PVC
-            },
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
@@ -306,9 +307,10 @@ class TestGetCommitmentDetails(unittest.TestCase):
         overlaps with the board hold, is chosen when a person is transferred to a new
         supervision period on the date of an admission to incarceration, and has a
         supervision period that terminated a few months before the parole board hold."""
-        board_hold = StateIncarcerationPeriod.new_with_defaults(
+        board_hold = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             incarceration_period_id=111,
+            sequence_num=0,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             admission_date=date(2019, 11, 18),
             release_date=date(2020, 1, 1),
@@ -316,9 +318,10 @@ class TestGetCommitmentDetails(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
-        shock_period = StateIncarcerationPeriod.new_with_defaults(
+        shock_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             incarceration_period_id=222,
+            sequence_num=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             admission_date=date(2020, 1, 1),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,

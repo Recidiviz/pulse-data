@@ -17,9 +17,8 @@
 """Common utility functions used across aggregated_ingest."""
 import calendar
 import datetime
-import itertools
 import re
-from typing import Any, Dict, Iterable, Optional, Pattern, Set
+from typing import Dict, Iterable, Optional, Pattern, Set
 
 import pandas as pd
 from more_itertools import one
@@ -75,18 +74,6 @@ def _create_rename_dict_from_regex(
 
 def _get_match(iterable: Iterable[str], regex: Pattern) -> str:
     return one([item for item in iterable if regex.match(item)])
-
-
-def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
-    """
-    Iterate over the elements in |iterable| in pairs (aka a sliding window of
-    size 2).
-
-    Example: s -> (s0,s1), (s1,s2), (s2, s3), ...
-    """
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return zip(a, b)
 
 
 def cast_columns_to_int(

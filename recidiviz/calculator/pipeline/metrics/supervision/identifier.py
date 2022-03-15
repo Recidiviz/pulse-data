@@ -49,6 +49,12 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
@@ -237,7 +243,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             person_id=person.person_id,
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
-            incarceration_delegate=incarceration_delegate,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
             normalized_violation_responses=normalized_violation_responses,
@@ -249,8 +254,26 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         if not ip_normalization_manager or not sp_normalization_manager:
             raise ValueError("Expected both normalized IPs and SPs for this pipeline.")
 
-        incarceration_period_index = (
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
+        # TODO(#10731): Remove calls to ip_normalization_manager and conversion to
+        #  NormalizedStateIncarcerationPeriods once this metric pipeline is hydrating
+        #  Normalized versions of all entities
+        (
+            processed_ips,
+            additional_ip_attributes,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
+        )
+
+        normalized_ips = convert_entity_trees_to_normalized_versions(
+            root_entities=processed_ips,
+            normalized_entity_class=NormalizedStateIncarcerationPeriod,
+            additional_attributes_map=additional_ip_attributes,
+            field_index=self.field_index,
+        )
+
+        incarceration_period_index = NormalizedIncarcerationPeriodIndex(
+            sorted_incarceration_periods=normalized_ips,
+            incarceration_delegate=incarceration_delegate,
         )
 
         supervision_period_index = (
