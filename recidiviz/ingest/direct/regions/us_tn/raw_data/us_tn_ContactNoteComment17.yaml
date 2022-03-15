@@ -1,0 +1,32 @@
+file_tag: ContactNoteComment17
+file_description: |-
+  This table contains for all comments (collected together) associated with a contact. Because of the size of the origin table, it has been split into ~20 separate files when exported.
+primary_key_cols:
+  - OffenderID
+  - ContactNoteDateTime
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ContactNoteDateTime
+    is_datetime: True
+    description: |-
+      This is the time a contact note is recorded for a person
+  - name: SupervisionType
+    description: |-
+      The supervision type associated with the contact.
+  - name: PostedByStaffID
+    description: |-
+      The staff ID of the person who posted the comment associated with a contact.
+  - name: PostedDate
+    description: |-
+      The date on which a person posted the comment associated with a contact.
+  - name: Comment
+    description: |-
+      The freeform text for comments.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

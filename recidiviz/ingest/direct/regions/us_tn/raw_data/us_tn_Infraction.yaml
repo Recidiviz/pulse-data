@@ -1,6 +1,6 @@
 file_tag: Infraction
 file_description: |-
-  This table contains information about offender infractions. Infractions are the result of a disciplinary.
+  This table contains information about infractions. Infractions are the result of a disciplinary.
 primary_key_cols:
   - IncidentID
   - OffenderID
@@ -11,7 +11,7 @@ columns:
       The unique identifier for an incident.
   - name: OffenderID
     description: |-
-      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: InfractionType
     description: |-
       An abbreviation for types of infractions which an inmate can commit and for which he can be disciplined.

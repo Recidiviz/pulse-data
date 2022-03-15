@@ -12,10 +12,10 @@ columns:
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
   - name: AssessmentID
     description: |-
-      A unique identifier assigned to a STRONG-R assessment for an offender.
+      A unique identifier assigned to a STRONG-R assessment for a person.
   - name: Pathway
     description: |-
-      The STRONG-R pathway code for an offender.
+      The STRONG-R pathway code for a person.
   - name: Recommendation
     description: |-
       The TAP recommendation code (program), either a class or a treatment program.
@@ -30,7 +30,7 @@ columns:
       This is a unique ID from STRONG-R for a Treatment Pathway Goal in Vant4gePoint.
   - name: TreatmentGoalDomain
     description: |-
-      Indicates the STRONG-R Treatment Pathway Goal domain for an offender.
+      Indicates the STRONG-R Treatment Pathway Goal domain for a person.
   - name: VantagePointProgamID
     description: |-
       This is a unique ID from STRONG-R for a program in Vant4gePoint.

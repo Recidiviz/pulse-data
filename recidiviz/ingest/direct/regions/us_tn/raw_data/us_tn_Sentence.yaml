@@ -22,7 +22,7 @@ columns:
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
-      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
+      A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: SentenceChangedDate
     is_datetime: True
     description: |-
@@ -42,7 +42,7 @@ columns:
   - name: SentenceStatusDate
     is_datetime: True
     description: |-
-      The date on which a change of an offender's sentence status occurs.
+      The date on which a change of a person's sentence status occurs.
   - name: SentenceEffectiveDate
     is_datetime: True
     description: |-
@@ -50,11 +50,11 @@ columns:
   - name: FullExpirationDate
     is_datetime: True
     description: |-
-      The full-term expiration date of an offender's sentence. Street-Time can extend the FXP-Date.
+      The full-term expiration date of a person's sentence. Street-Time can extend the FXP-Date.
   - name: ExpirationDate
     is_datetime: True
     description: |-
-      The date that a sentence expires.  This date includes all credits earned by an offender.
+      The date that a sentence expires.  This date includes all credits earned by a person.
   - name: SafetyValveDate
     is_datetime: True
     description: |-
@@ -78,16 +78,16 @@ columns:
   - name: ProbationaryParoleDate
     is_datetime: True
     description: |-
-      The probationary parole date given for offenders on Indeterminate and Determinate sentences.
+      The probationary parole date given for people on Indeterminate and Determinate sentences.
   - name: TotalPPSCCredits
     description: |-
-      The total of PPSC credits for a particular sentence of an offender.
+      The total of PPSC credits for a particular sentence of a person.
   - name: TotalBehaviorCredits
     description: |-
-      The total of all PSRC behavior credits for a particular sentence of an offender.
+      The total of all PSRC behavior credits for a particular sentence of a person.
   - name: TotalProgramCredits
     description: |-
-      The total of all PSRC program credits for a particular sentence of an offender.
+      The total of all PSRC program credits for a particular sentence of a person.
   - name: TotalGEDCredits
     description: |-
       The credit a person  receives for a sentence for obtaining his GED.
@@ -105,19 +105,19 @@ columns:
       The total net loss of good conduct credits a person  has earned for a particular sentence.
   - name: TotalDeadTime
     description: |-
-      The total of dead time for a sentence of an offender.
+      The total of dead time for a sentence of a person.
   - name: TotalDelinquentTime
     description: |-
-      The total of delinquent time for a sentence of an offender.
+      The total of delinquent time for a sentence of a person.
   - name: TotalStreetTime
     description: |-
-      The total of street time for a sentence of an offender.
+      The total of street time for a sentence of a person.
   - name: RangePercent
     description: |-
-      The percentage, supplied by the court, which is used to determine the Release Eligibility Date (RED) of an offender. This percent is tied to the person type for the particular sentence law.
+      The percentage, supplied by the court, which is used to determine the Release Eligibility Date (RED) of a person. This percent is tied to the person type for the particular sentence law.
   - name: InactivePardonedFlag
     description: |-
-      This is a flag indicating if an offender's sentence is inactive on account of a pardon.
+      This is a flag indicating if a person's sentence is inactive on account of a pardon.
     known_values:
       - value: N
         description: "NO - Not inactive on account of a pardon"
@@ -125,7 +125,7 @@ columns:
         description: "YES - Inactive on account of a pardon"
   - name: InactiveDismissedFlag
     description: |-
-      This is a flag indicating if an offender's sentence is inactive because it has been dismissed.
+      This is a flag indicating if a person's sentence is inactive because it has been dismissed.
     known_values:
       - value: N
         description: "NO - Not inactive because it has been dismissed"
@@ -133,7 +133,7 @@ columns:
         description: "YES - Inactive because it has been dismissed"
   - name: InactiveCommutedFlag
     description: |-
-      This is a flag indicating if an offender's sentence is inactive on account of a commutation.
+      This is a flag indicating if a person's sentence is inactive on account of a commutation.
     known_values:
       - value: N
         description: "NO - Not inactive on account of a commutation"
@@ -141,7 +141,7 @@ columns:
         description: "YES - Inactive on account of a commutation"
   - name: InactiveExpiredFlag
     description: |-
-      This is a flag indicating if an offender's sentence is inactive because it has expired.
+      This is a flag indicating if a person's sentence is inactive because it has expired.
     known_values:
       - value: N
         description: "NO Not inactive because it has expired."
@@ -149,7 +149,7 @@ columns:
         description: "YES - Inactive because it has expired."
   - name: InactiveAwaitingRetrialFlag
     description: |-
-      This is a flag indicating if an offender's sentence is inactive because it is waiting a retrial.
+      This is a flag indicating if a person's sentence is inactive because it is waiting a retrial.
     known_values:
       - value: N
         description: "NO -Not inactive because it is waiting a retrial"
@@ -157,7 +157,7 @@ columns:
         description: "YES - Inactive because it is waiting a retrial"
   - name: InactiveCourtOrderFlag
     description: |-
-      This is a flag indicating if an offender's sentence is inactive on account of a court order.
+      This is a flag indicating if a person's sentence is inactive on account of a court order.
     known_values:
       - value: N
         description: "NO - Not inactive on account of a court order"
@@ -166,7 +166,7 @@ columns:
   - name: ConfinementExpirationDate
     is_datetime: True
     description: |-
-      The date the sentence calculations determine that the first portion of an offender's split confinement will expire.  When the split confinement is legal, this date will be the same as the first-cnfmnt-fxp-date.
+      The date the sentence calculations determine that the first portion of a person's split confinement will expire.  When the split confinement is legal, this date will be the same as the first-cnfmnt-fxp-date.
   - name: ConvertedPPSCCredits
     description: |-
       The total of PPSC credits for a particular sentence converted from 7SCIS.
@@ -185,7 +185,7 @@ columns:
   - name: ConfinementFullExpirationDate
     is_datetime: True
     description: |-
-      The date the sentence calculations determine that the first portion of an offender's split confinement will expire.  For an illegal split confinement, the first-cnfmnt-fxp-date will be greater than first-cnfmnt-exp-date.
+      The date the sentence calculations determine that the first portion of a person's split confinement will expire.  For an illegal split confinement, the first-cnfmnt-fxp-date will be greater than first-cnfmnt-exp-date.
   - name: SlagleFlag
     description: |-
       This flag indicates the sentence is calculated under Slagle rules. If null, sentence is not calculated under Slagle rules.

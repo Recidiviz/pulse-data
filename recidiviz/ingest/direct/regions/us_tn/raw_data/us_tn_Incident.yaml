@@ -13,7 +13,7 @@ columns:
   - name: IncidentDateTime
     is_datetime: True
     description: |-
-      The date on which an incident involving an offender occurs. The time at which an incident occurred. [Combination of DB2 column DTE_INCDT and TME_INCDT]
+      The date on which an incident involving a person occurs. The time at which an incident occurred. [Combination of DB2 column DTE_INCDT and TME_INCDT]
   - name: Status
     description: |-
       Indicates the status of an investigation into an institution incident.
@@ -29,7 +29,7 @@ columns:
       The location at which an incident occured.
   - name: WeaponsUsed
     description: |-
-      Text about weapons involved in an incident requiring an inmate disciplinary or in an offense committed by offender.
+      Text about weapons involved in an incident requiring an inmate disciplinary or in an offense committed by a person.
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
