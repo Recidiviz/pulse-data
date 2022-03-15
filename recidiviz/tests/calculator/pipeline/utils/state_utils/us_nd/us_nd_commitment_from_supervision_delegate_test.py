@@ -22,6 +22,9 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     _get_commitment_from_supervision_supervision_period,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
 )
@@ -87,7 +90,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text: str,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> Optional[StateSupervisionPeriod]:
-        ip = StateIncarcerationPeriod.new_with_defaults(
+        ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_ND",
             incarceration_period_id=111,
             admission_date=admission_date,

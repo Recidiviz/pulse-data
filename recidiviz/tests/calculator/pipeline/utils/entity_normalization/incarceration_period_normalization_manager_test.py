@@ -34,9 +34,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
-    UsXxIncarcerationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
     UsXxIncarcerationNormalizationDelegate,
 )
@@ -52,10 +49,13 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
-    """Tests the normalized_incarceration_periods_for_calculations function."""
+    """Tests the normalized_incarceration_periods_and_additional_attributes function."""
 
-    @staticmethod
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
+
     def _normalized_incarceration_periods_for_calculations(
+        self,
         incarceration_periods: List[StateIncarcerationPeriod],
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
@@ -67,16 +67,20 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
-            incarceration_delegate=UsXxIncarcerationDelegate(),
             normalized_supervision_period_index=sp_index,
             violation_responses=violation_responses,
+            field_index=self.field_index,
             earliest_death_date=earliest_death_date,
-            field_index=CoreEntityFieldIndex(),
         )
 
-        return (
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods
+        (
+            ips,
+            _,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
         )
+
+        return ips
 
     def test_normalized_incarceration_periods_for_calculations(self):
         state_code = "US_XX"
@@ -1149,6 +1153,47 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([period_copy], validated_incarceration_periods)
 
+    def test_additional_attributes_map(self):
+        incarceration_periods = [
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                external_id="1",
+                state_code="US_XX",
+                admission_date=date(2012, 12, 24),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                release_date=date(2012, 12, 24),
+                release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            )
+        ]
+
+        ip_normalization_manager = IncarcerationPeriodNormalizationManager(
+            incarceration_periods=incarceration_periods,
+            normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
+            normalized_supervision_period_index=None,
+            violation_responses=[],
+            field_index=CoreEntityFieldIndex(),
+            earliest_death_date=None,
+        )
+
+        (
+            _,
+            attributes_map,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
+        )
+
+        expected_attributes_map = {
+            StateIncarcerationPeriod.__name__: {
+                111: {
+                    "sequence_num": 0,
+                    "purpose_for_incarceration_subtype": None,
+                }
+            }
+        }
+
+        self.assertEqual(expected_attributes_map, attributes_map)
+
 
 class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
     """Tests the _infer_missing_dates_and_statuses."""
@@ -1165,11 +1210,10 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
-            incarceration_delegate=UsXxIncarcerationDelegate(),
             normalized_supervision_period_index=sp_index,
             violation_responses=violation_responses,
-            earliest_death_date=None,
             field_index=CoreEntityFieldIndex(),
+            earliest_death_date=None,
         )
 
         return ip_normalization_manager._sort_and_infer_missing_dates_and_statuses(

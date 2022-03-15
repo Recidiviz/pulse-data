@@ -392,7 +392,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         or in state prison."""
         incarceration_types = {
             incarceration_period.incarceration_type
-            for incarceration_period in self.incarceration_period_index.incarceration_periods
+            for incarceration_period in self.incarceration_period_index.sorted_incarceration_periods
             if incarceration_period.duration.contains_day(compliance_evaluation_date)
         }
         return (
@@ -404,7 +404,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         """Returns whether or not the client is in a parole board hold."""
         specialized_purposes_for_incarceration = {
             incarceration_period.specialized_purpose_for_incarceration
-            for incarceration_period in self.incarceration_period_index.incarceration_periods
+            for incarceration_period in self.incarceration_period_index.sorted_incarceration_periods
             if incarceration_period.duration.contains_day(compliance_evaluation_date)
         }
         return (

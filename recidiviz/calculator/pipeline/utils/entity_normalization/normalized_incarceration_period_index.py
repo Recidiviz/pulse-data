@@ -23,6 +23,9 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
 )
@@ -40,22 +43,26 @@ from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
+def _incarceration_periods_converter(
+    incarceration_periods: List[NormalizedStateIncarcerationPeriod],
+) -> List[NormalizedStateIncarcerationPeriod]:
+    """Sorts the NormalizedStateIncarcerationPeriod by the sequence_num."""
+    sorted_periods = sorted(incarceration_periods, key=lambda key: key.sequence_num)
+    return sorted_periods
+
+
 @attr.s
 class NormalizedIncarcerationPeriodIndex:
     """A class for caching information about a set of normalized incarceration
     periods for use in the metric calculation pipelines.
     """
 
-    incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
+    sorted_incarceration_periods: List[NormalizedStateIncarcerationPeriod] = attr.ib(
+        converter=_incarceration_periods_converter
+    )
 
     # The delegate for state-specific configurations related to incarceration
     incarceration_delegate: StateSpecificIncarcerationDelegate = attr.ib()
-
-    # A dictionary mapping incarceration_period_id values to the
-    # purpose_for_incarceration_subtype value associated with the incarceration
-    # period. These values are determined at IP normalization time, and are used by
-    # various calculations.
-    ip_id_to_pfi_subtype: Dict[int, Optional[str]] = attr.ib()
 
     # Incarceration periods during which a person cannot also be counted in the
     # supervision population
@@ -67,17 +74,17 @@ class NormalizedIncarcerationPeriodIndex:
     def _incarceration_periods_that_exclude_person_from_supervision_population(
         self,
     ) -> List[StateIncarcerationPeriod]:
-        """The incarceration periods in the incarceration_periods list during which a
+        """The incarceration periods in the sorted_incarceration_periods list during which a
         person cannot also be counted in the supervision population. If a person is
         in a facility, but is under the custodial authority of a supervision
         department or of the courts, then they can be counted in the supervision
         population."""
-        if not self.incarceration_periods:
+        if not self.sorted_incarceration_periods:
             return []
 
         return [
             ip
-            for ip in self.incarceration_periods
+            for ip in self.sorted_incarceration_periods
             if ip.custodial_authority
             not in (
                 StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -166,7 +173,7 @@ class NormalizedIncarcerationPeriodIndex:
             date, List[StateIncarcerationPeriod]
         ] = defaultdict(list)
 
-        for incarceration_period in self.incarceration_periods:
+        for incarceration_period in self.sorted_incarceration_periods:
             if incarceration_period.admission_date:
                 incarceration_periods_by_admission_date[
                     incarceration_period.admission_date
@@ -221,7 +228,7 @@ class NormalizedIncarcerationPeriodIndex:
     def was_in_incarceration_population_on_date(self, evaluation_date: date) -> bool:
         """Returns True if this person was counted in the incarcerated population
         on the given date."""
-        for period in self.incarceration_periods:
+        for period in self.sorted_incarceration_periods:
             if period.duration.contains_day(
                 evaluation_date
             ) and self.incarceration_delegate.is_period_included_in_state_population(
@@ -238,7 +245,7 @@ class NormalizedIncarcerationPeriodIndex:
         the end date."""
         return any(
             ip.admission_date and start_date <= ip.admission_date < end_date
-            for ip in self.incarceration_periods
+            for ip in self.sorted_incarceration_periods
         )
 
     @staticmethod
@@ -293,7 +300,7 @@ class NormalizedIncarcerationPeriodIndex:
         most_recent_official_admission_reason_raw_text: Optional[str] = None
         most_recent_official_incarceration_admission_date: Optional[date] = None
 
-        for index, incarceration_period in enumerate(self.incarceration_periods):
+        for index, incarceration_period in enumerate(self.sorted_incarceration_periods):
             incarceration_period_id = incarceration_period.incarceration_period_id
 
             if not incarceration_period_id:
@@ -366,7 +373,7 @@ class NormalizedIncarcerationPeriodIndex:
         the location of the period in the index."""
         ip_id_to_index: Dict[int, int] = {}
 
-        for index, ip in enumerate(self.incarceration_periods):
+        for index, ip in enumerate(self.sorted_incarceration_periods):
             if not ip.incarceration_period_id:
                 raise ValueError(
                     "Found incarceration period without a set "
@@ -394,7 +401,7 @@ class NormalizedIncarcerationPeriodIndex:
         most_recent_board_hold_start_date: Optional[date] = None
         most_recent_board_hold: Optional[StateIncarcerationPeriod] = None
 
-        for index, ip in enumerate(self.incarceration_periods):
+        for index, ip in enumerate(self.sorted_incarceration_periods):
             if most_recent_board_hold:
                 if not most_recent_board_hold_start_date:
                     raise ValueError(
@@ -408,7 +415,7 @@ class NormalizedIncarcerationPeriodIndex:
                         f"[{most_recent_board_hold.incarceration_period_id}] preceding "
                         "another incarceration period with id "
                         f"[{ip.incarceration_period_id}]. IPs: "
-                        f"[{self.incarceration_periods}]."
+                        f"[{self.sorted_incarceration_periods}]."
                     )
 
                 ip_index_to_most_recent_board_hold_index[index] = DateRange(

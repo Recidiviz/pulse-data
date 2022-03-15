@@ -17,6 +17,7 @@
 
 "Utils to be shared across recidiviz project"
 import datetime
+import itertools
 import logging
 import random
 import time
@@ -148,3 +149,15 @@ def date_spans_overlap_inclusive(
 def bidirectional_set_difference(set1: Set[T], set2: Set[T]) -> Tuple[Set[T], Set[T]]:
     """Returns a tuple containing (set1 - set2, set2 - set1)."""
     return set1.difference(set2), set2.difference(set1)
+
+
+def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
+    """
+    Iterate over the elements in |iterable| in pairs (aka a sliding window of
+    size 2).
+
+    Example: s -> (s0,s1), (s1,s2), (s2, s3), ...
+    """
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)

@@ -25,9 +25,6 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_delegate import (
-    UsIdIncarcerationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_normalization_delegate import (
     UsIdIncarcerationNormalizationDelegate,
 )
@@ -53,7 +50,7 @@ from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalizatio
 
 class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     """Tests the US_ID-specific aspects of the
-    normalized_incarceration_periods_for_calculations function on the
+    normalized_incarceration_periods_and_additional_attributes function on the
     UsIdIncarcerationNormalizationManager."""
 
     @staticmethod
@@ -72,16 +69,20 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsIdIncarcerationNormalizationDelegate(),
-            incarceration_delegate=UsIdIncarcerationDelegate(),
             normalized_supervision_period_index=sp_index,
             violation_responses=violation_responses,
-            earliest_death_date=earliest_death_date,
             field_index=CoreEntityFieldIndex(),
+            earliest_death_date=earliest_death_date,
         )
 
-        return (
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods
+        (
+            ips,
+            _,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
         )
+
+        return ips
 
     def test_normalized_incarceration_periods_different_pfi_do_not_collapse(
         self,

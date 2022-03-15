@@ -29,7 +29,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
     normalized_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    IncarcerationPeriodNormalizationManager,
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
@@ -46,9 +45,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -98,9 +94,6 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             program_assignment_normalization_delegate=normalizer_args[
                 StateSpecificProgramAssignmentNormalizationDelegate.__name__
             ],
-            incarceration_delegate=normalizer_args[
-                StateSpecificIncarcerationDelegate.__name__
-            ],
             incarceration_periods=normalizer_args[StateIncarcerationPeriod.__name__],
             incarceration_sentences=normalizer_args[
                 StateIncarcerationSentence.__name__
@@ -120,7 +113,6 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
         violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
         program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
         incarceration_periods: List[StateIncarcerationPeriod],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
@@ -135,14 +127,13 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             sp_normalization_delegate=sp_normalization_delegate,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
             program_assignment_normalization_delegate=program_assignment_normalization_delegate,
-            incarceration_delegate=incarceration_delegate,
-            field_index=self.field_index,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
             violation_responses=violation_responses,
             program_assignments=program_assignments,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
+            field_index=self.field_index,
         )
 
         return processed_entities
@@ -154,7 +145,6 @@ def all_normalized_entities(
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
     violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
     program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
-    incarceration_delegate: StateSpecificIncarcerationDelegate,
     incarceration_periods: List[StateIncarcerationPeriod],
     supervision_periods: List[StateSupervisionPeriod],
     violation_responses: List[StateSupervisionViolationResponse],
@@ -186,7 +176,6 @@ def all_normalized_entities(
         person_id=person_id,
         ip_normalization_delegate=ip_normalization_delegate,
         sp_normalization_delegate=sp_normalization_delegate,
-        incarceration_delegate=incarceration_delegate,
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
         normalized_violation_responses=processed_violation_responses,
@@ -207,14 +196,13 @@ def all_normalized_entities(
             "SupervisionPeriodNormalizationManager. Found None."
         )
 
-    # TODO(#10729): Make it so the normalization managers don't return an index
-    #  but instead return IPs + ip_id_to_pfi_subtype or whatever is needed to hydrated
-    #  additional fields. The index is does some semi-expensive indexing that isn't
-    #  actually used in the context of the normalization pipeline and should really
-    #  only exist in metric pipelines.
-    ip_index = (
-        ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
+    (
+        processed_incarceration_periods,
+        additional_ip_attributes,
+    ) = (
+        ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
     )
+
     sp_index = (
         sp_normalization_manager.normalized_supervision_period_index_for_calculations()
     )
@@ -227,10 +215,7 @@ def all_normalized_entities(
         # We don't expect any overlapping entity types in this list, but we just merge
         # so we can return one unified map.
         additional_attributes_maps=[
-            IncarcerationPeriodNormalizationManager.additional_attributes_map_for_normalized_ips(
-                incarceration_periods=ip_index.incarceration_periods,
-                ip_id_to_pfi_subtype=ip_index.ip_id_to_pfi_subtype,
-            ),
+            additional_ip_attributes,
             SupervisionPeriodNormalizationManager.additional_attributes_map_for_normalized_sps(
                 supervision_periods=sp_index.supervision_periods
             ),
@@ -258,7 +243,7 @@ def all_normalized_entities(
 
     return (
         {
-            StateIncarcerationPeriod.__name__: ip_index.incarceration_periods,
+            StateIncarcerationPeriod.__name__: processed_incarceration_periods,
             StateSupervisionPeriod.__name__: sp_index.supervision_periods,
             StateSupervisionViolation.__name__: distinct_processed_violations,
             StateProgramAssignment.__name__: processed_program_assignments,

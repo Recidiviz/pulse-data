@@ -230,8 +230,6 @@ def main() -> int:
             "recidiviz.big_query.big_query_view",
             "recidiviz.calculator",
             "recidiviz.common",
-            # TODO(#6795): Get rid of this dependency
-            "recidiviz.ingest.aggregate",
             "recidiviz.persistence",
             "recidiviz.utils",
         }

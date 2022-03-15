@@ -17,18 +17,18 @@
 """Tests the us_pa_incarceration_period_normalization_delegate.py."""
 import unittest
 from datetime import date
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_incarceration_period_normalization_delegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
-    UsPaIncarcerationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_normalization_delegate import (
     PURPOSE_FOR_INCARCERATION_PVC,
@@ -67,7 +67,7 @@ STATE_CODE = "US_PA"
 
 class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     """Tests the US_ID-specific aspects of the
-    normalized_incarceration_periods_for_calculations function on the
+    normalized_incarceration_periods_and_additional_attributes function on the
     UsIdIncarcerationNormalizationManager."""
 
     @staticmethod
@@ -76,9 +76,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
         earliest_death_date: Optional[date] = None,
-    ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
+    ) -> Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap]:
         """Helper function for testing the
-        normalized_incarceration_periods_for_calculations function for US_PA."""
+        normalized_incarceration_periods_and_additional_attributes function for US_PA."""
         sp_index = default_normalized_sp_index_for_tests(
             supervision_periods=supervision_periods
         )
@@ -88,18 +88,15 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsPaIncarcerationNormalizationDelegate(),
-            incarceration_delegate=UsPaIncarcerationDelegate(),
             normalized_supervision_period_index=sp_index,
             violation_responses=violation_responses,
-            earliest_death_date=earliest_death_date,
             field_index=CoreEntityFieldIndex(),
+            earliest_death_date=earliest_death_date,
         )
 
-        ip_index = (
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
+        return (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
         )
-
-        return ip_index.incarceration_periods, ip_index.ip_id_to_pfi_subtype
 
     def test_normalized_incarceration_periods_shock_incarceration_RESCR(
         self,
@@ -145,7 +142,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period],
             violation_responses=[parole_board_permanent_decision],
@@ -154,7 +151,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     # TODO(#8961): remove this test when the ingest mappings are updated and logic that is being tested is removed
@@ -294,7 +293,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period],
             violation_responses=[parole_board_permanent_decision],
@@ -303,7 +302,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_shock_incarceration_RESCR9(
@@ -350,7 +351,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period],
             violation_responses=[parole_board_permanent_decision],
@@ -359,7 +360,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_shock_incarceration_RESCR12(
@@ -406,7 +409,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period],
             violation_responses=[parole_board_permanent_decision],
@@ -415,7 +418,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_shock_incarceration_no_set_subtype(
@@ -444,7 +449,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period]
         )
@@ -452,7 +457,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_shock_incarceration_sci_no_set_subtype(
@@ -479,7 +486,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period]
         )
@@ -487,7 +494,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_shock_incarceration_sci_with_board_actions(
@@ -532,7 +541,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period],
             violation_responses=[parole_board_permanent_decision],
@@ -541,7 +550,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_reincarceration(self) -> None:
@@ -582,7 +593,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period],
             violation_responses=[parole_board_permanent_decision],
@@ -591,7 +602,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_reincarceration_no_board_actions(
@@ -617,7 +630,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period]
         )
@@ -625,7 +638,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_PVC(self) -> None:
@@ -653,7 +668,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period], violation_responses=[]
         )
@@ -661,7 +676,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_treatment(self) -> None:
@@ -686,7 +703,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period], violation_responses=[]
         )
@@ -694,7 +711,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_treatment_51(self) -> None:
@@ -720,7 +739,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         (
             validated_incarceration_periods,
-            ip_id_to_pfi_subtype,
+            additional_attributes,
         ) = self._normalized_incarceration_periods_for_calculations(
             incarceration_periods=[incarceration_period], violation_responses=[]
         )
@@ -728,7 +747,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([updated_period], validated_incarceration_periods)
         self.assertEqual(
             expected_pfi_subtype,
-            ip_id_to_pfi_subtype[222],
+            additional_attributes[StateIncarcerationPeriod.__name__][222][
+                "purpose_for_incarceration_subtype"
+            ],
         )
 
     def test_normalized_incarceration_periods_revocation_admission_v1(

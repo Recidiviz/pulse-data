@@ -22,6 +22,9 @@ from typing import List, Optional
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
 )
@@ -61,7 +64,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
@@ -715,7 +717,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             incarceration_sentences=[],
             incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=[
-                    StateIncarcerationPeriod.new_with_defaults(
+                    NormalizedStateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -765,7 +767,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             incarceration_sentences=[],
             incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=[
-                    StateIncarcerationPeriod.new_with_defaults(
+                    NormalizedStateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
@@ -1102,7 +1104,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             incarceration_sentences=[],
             incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=[
-                    StateIncarcerationPeriod.new_with_defaults(
+                    NormalizedStateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -1432,7 +1434,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             incarceration_sentences=[],
             incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=[
-                    StateIncarcerationPeriod.new_with_defaults(
+                    NormalizedStateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -1480,7 +1482,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             incarceration_sentences=[],
             incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=[
-                    StateIncarcerationPeriod.new_with_defaults(
+                    NormalizedStateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,
@@ -2095,7 +2097,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             incarceration_sentences=[],
             incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=[
-                    StateIncarcerationPeriod.new_with_defaults(
+                    NormalizedStateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -2152,7 +2154,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             incarceration_sentences=[],
             incarceration_period_index=default_normalized_ip_index_for_tests(
                 incarceration_periods=[
-                    StateIncarcerationPeriod.new_with_defaults(
+                    NormalizedStateIncarcerationPeriod.new_with_defaults(
                         incarceration_period_id=1,
                         state_code=StateCode.US_PA.value,
                         incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN,

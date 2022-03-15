@@ -43,9 +43,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violat
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -69,7 +66,6 @@ def entity_normalization_managers_for_periods(
     person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
-    incarceration_delegate: StateSpecificIncarcerationDelegate,
     incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     supervision_periods: Optional[List[StateSupervisionPeriod]],
     normalized_violation_responses: Optional[List[StateSupervisionViolationResponse]],
@@ -154,11 +150,10 @@ def entity_normalization_managers_for_periods(
         IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=ip_normalization_delegate,
-            incarceration_delegate=incarceration_delegate,
             normalized_supervision_period_index=supervision_period_index,
             violation_responses=normalized_violation_responses,
-            earliest_death_date=earliest_death_date,
             field_index=field_index,
+            earliest_death_date=earliest_death_date,
         )
         if incarceration_periods is not None
         else None

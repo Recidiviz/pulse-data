@@ -111,7 +111,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
-            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
             normalized_violation_responses=None,
@@ -121,10 +120,14 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         )
 
         assert ip_normalization_manager is not None
-        self.assertEqual(
-            [incarceration_period],
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods,
+        (
+            processed_ips,
+            _,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
         )
+
+        self.assertEqual([incarceration_period], processed_ips)
         assert sp_normalization_manager is not None
         self.assertEqual(
             [supervision_period],
@@ -151,7 +154,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
-            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=[incarceration_period],
             supervision_periods=None,
             normalized_violation_responses=None,
@@ -161,9 +163,16 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         )
 
         assert ip_normalization_manager is not None
+        (
+            processed_ips,
+            _,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
+        )
+
         self.assertEqual(
             [incarceration_period],
-            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods,
+            processed_ips,
         )
         self.assertIsNone(sp_normalization_manager)
 
@@ -188,7 +197,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
                 person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
                 sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
-                incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=None,
                 normalized_violation_responses=[],
@@ -218,7 +226,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
                 person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
                 sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
-                incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[],
                 normalized_violation_responses=None,
@@ -248,7 +255,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
                 person_id=self.person_id,
                 ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
                 sp_normalization_delegate=TestSupervisionNormalizationDelegate(),
-                incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
                 incarceration_periods=[],
                 supervision_periods=[supervision_period],
                 normalized_violation_responses=None,
@@ -275,7 +281,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
-            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=None,
             supervision_periods=[supervision_period],
             normalized_violation_responses=None,
@@ -300,7 +305,6 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
-            incarceration_delegate=STATE_DELEGATES_FOR_TESTS.incarceration_delegate,
             incarceration_periods=[],
             supervision_periods=[],
             normalized_violation_responses=[],
