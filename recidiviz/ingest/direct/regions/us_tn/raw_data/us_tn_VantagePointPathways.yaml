@@ -10,7 +10,7 @@ columns:
       The TAP recommendation code (program), either a class or a treatment program.
   - name: Pathway
     description: |-
-      The STRONG-R pathway code for an offender.
+      The STRONG-R pathway code for a person.
   - name: PathwayName
     description: |-
       The name of a STRONG-R treatment pathway.
