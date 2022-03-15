@@ -50,9 +50,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violat
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
@@ -94,7 +91,6 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 StateSpecificSupervisionNormalizationDelegate,
                 StateSpecificViolationResponseNormalizationDelegate,
                 StateSpecificProgramAssignmentNormalizationDelegate,
-                StateSpecificIncarcerationDelegate,
             ],
             state_specific_required_reference_tables={
                 # We need to bring in the US_MO sentence status table to do

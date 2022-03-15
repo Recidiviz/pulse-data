@@ -15,10 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for tests that use pre-processed entities."""
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -35,36 +38,22 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incar
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     standard_date_sort_for_supervision_periods,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 def default_normalized_ip_index_for_tests(
-    incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
+    incarceration_periods: Optional[List[NormalizedStateIncarcerationPeriod]] = None,
     incarceration_delegate: Optional[StateSpecificIncarcerationDelegate] = None,
-    ip_id_to_pfi_subtype: Optional[Dict[int, Optional[str]]] = None,
 ) -> NormalizedIncarcerationPeriodIndex:
-    # Validate  standards that we can expect to be met for all periods in all states
+    # Validate standards that we can expect to be met for all periods in all states
     # at the end of IP pre-processing
     IncarcerationPeriodNormalizationManager.validate_ip_invariants(
         incarceration_periods=incarceration_periods or []
     )
 
     return NormalizedIncarcerationPeriodIndex(
-        incarceration_periods=incarceration_periods or [],
+        sorted_incarceration_periods=incarceration_periods or [],
         incarceration_delegate=incarceration_delegate or UsXxIncarcerationDelegate(),
-        ip_id_to_pfi_subtype=ip_id_to_pfi_subtype
-        or (
-            {
-                ip.incarceration_period_id: None
-                for ip in incarceration_periods
-                if ip.incarceration_period_id
-            }
-            if incarceration_periods
-            else {}
-        ),
     )
 
 

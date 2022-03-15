@@ -51,9 +51,9 @@ from recidiviz.common.attr_utils import (
     is_forward_ref,
     is_list,
 )
+from recidiviz.common.common_utils import pairwise
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.ingest.aggregate.aggregate_ingest_utils import pairwise
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import (

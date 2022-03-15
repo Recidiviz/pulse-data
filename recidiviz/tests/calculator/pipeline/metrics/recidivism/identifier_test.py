@@ -32,6 +32,9 @@ from recidiviz.calculator.pipeline.metrics.recidivism.events import (
 from recidiviz.calculator.pipeline.metrics.recidivism.pipeline import (
     RecidivismMetricsPipelineRunDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
 )
@@ -1190,7 +1193,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         self.identifier = identifier.RecidivismIdentifier()
 
     def test_find_valid_reincarceration_period(self) -> None:
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
@@ -1200,7 +1203,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
@@ -1222,7 +1225,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         self.assertEqual(incarceration_period_2, reincarceration)
 
     def test_find_valid_reincarceration_period_overlapping_periods(self) -> None:
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
@@ -1232,7 +1235,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
@@ -1255,7 +1258,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
             )
 
     def test_find_valid_reincarceration_period_invalid_admission_reason(self) -> None:
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
@@ -1266,7 +1269,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         )
 
         for admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
-            incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
@@ -1291,7 +1294,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         self,
     ) -> None:
         release_date = date(2009, 4, 21)
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
@@ -1302,7 +1305,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         )
 
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",

@@ -19,7 +19,7 @@ that they are ready to be used in pipeline calculations."""
 import logging
 from copy import deepcopy
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
 
 import attr
 
@@ -30,9 +30,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
-    NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
@@ -45,9 +42,6 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -240,18 +234,16 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
         normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
         normalized_supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
         violation_responses: Optional[List[StateSupervisionViolationResponse]],
         field_index: CoreEntityFieldIndex,
         earliest_death_date: Optional[date] = None,
     ):
         self._original_incarceration_periods = deepcopy(incarceration_periods)
-        self._normalized_incarceration_period_index_for_calculations: Optional[
-            NormalizedIncarcerationPeriodIndex
+        self._normalized_incarceration_periods_and_additional_attributes: Optional[
+            Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap]
         ] = None
         self.normalization_delegate = normalization_delegate
-        self.incarceration_delegate = incarceration_delegate
         # Only store the NormalizedSupervisionPeriodIndex if StateSupervisionPeriod
         # entities are required for this state's StateIncarcerationPeriod
         # normalization
@@ -282,22 +274,25 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateIncarcerationPeriod]
 
-    def normalized_incarceration_period_index_for_calculations(
+    def normalized_incarceration_periods_and_additional_attributes(
         self,
-    ) -> NormalizedIncarcerationPeriodIndex:
+    ) -> Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap]:
         """Validates, sorts, and updates the incarceration period inputs.
         Ensures the necessary dates and fields are set on each incarceration period.
+
+        Returns the processed incarceration periods and the AdditionalAttributesMap
+        storing the additional values to be set on the Normalized version of the
+        periods.
         """
-        if self._normalized_incarceration_period_index_for_calculations:
-            return self._normalized_incarceration_period_index_for_calculations
+        if self._normalized_incarceration_periods_and_additional_attributes:
+            return self._normalized_incarceration_periods_and_additional_attributes
 
         if not self._original_incarceration_periods:
-            self._normalized_incarceration_period_index_for_calculations = (
-                NormalizedIncarcerationPeriodIndex(
-                    incarceration_periods=[],
-                    ip_id_to_pfi_subtype={},
-                    incarceration_delegate=self.incarceration_delegate,
-                )
+            self._normalized_incarceration_periods_and_additional_attributes = (
+                [],
+                self.additional_attributes_map_for_normalized_ips(
+                    incarceration_periods=[], ip_id_to_pfi_subtype={}
+                ),
             )
         else:
             # Make a deep copy of the original incarceration periods
@@ -374,15 +369,15 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             # Validate IPs
             self.validate_ip_invariants(mid_processing_periods)
 
-            self._normalized_incarceration_period_index_for_calculations = (
-                NormalizedIncarcerationPeriodIndex(
+            self._normalized_incarceration_periods_and_additional_attributes = (
+                mid_processing_periods,
+                self.additional_attributes_map_for_normalized_ips(
                     incarceration_periods=mid_processing_periods,
                     ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
-                    incarceration_delegate=self.incarceration_delegate,
-                )
+                ),
             )
 
-        return self._normalized_incarceration_period_index_for_calculations
+        return self._normalized_incarceration_periods_and_additional_attributes
 
     def _drop_placeholder_periods(
         self,
@@ -1018,7 +1013,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
     @staticmethod
     def validate_ip_invariants(
-        incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_periods: Sequence[StateIncarcerationPeriod],
     ) -> None:
         """Validates that no IPs violate standards that we can expect to be
         met for all periods in all states at the end of IP normalization."""

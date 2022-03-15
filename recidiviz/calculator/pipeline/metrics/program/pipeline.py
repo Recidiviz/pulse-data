@@ -36,9 +36,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -69,7 +66,6 @@ class ProgramMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
             state_specific_required_delegates=[
                 StateSpecificIncarcerationNormalizationDelegate,
                 StateSpecificSupervisionNormalizationDelegate,
-                StateSpecificIncarcerationDelegate,
                 StateSpecificSupervisionDelegate,
                 StateSpecificProgramAssignmentNormalizationDelegate,
             ],

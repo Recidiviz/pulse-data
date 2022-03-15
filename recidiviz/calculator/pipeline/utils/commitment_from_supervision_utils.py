@@ -19,6 +19,9 @@ supervision."""
 import datetime
 from typing import Any, Dict, List, NamedTuple, Optional
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
@@ -87,7 +90,7 @@ CommitmentDetails = NamedTuple(
 
 
 def get_commitment_from_supervision_details(
-    incarceration_period: StateIncarcerationPeriod,
+    incarceration_period: NormalizedStateIncarcerationPeriod,
     incarceration_period_index: NormalizedIncarcerationPeriodIndex,
     supervision_period_index: NormalizedSupervisionPeriodIndex,
     incarceration_sentences: List[StateIncarcerationSentence],
@@ -140,9 +143,9 @@ def get_commitment_from_supervision_details(
             f"incarceration_period_id: {incarceration_period}."
         )
 
-    purpose_for_incarceration_subtype = incarceration_period_index.ip_id_to_pfi_subtype[
-        incarceration_period.incarceration_period_id
-    ]
+    purpose_for_incarceration_subtype = (
+        incarceration_period.purpose_for_incarceration_subtype
+    )
 
     case_type = (
         identify_most_severe_case_type(pre_commitment_supervision_period)

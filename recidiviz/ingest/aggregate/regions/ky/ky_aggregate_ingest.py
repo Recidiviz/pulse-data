@@ -25,6 +25,7 @@ import us
 from more_itertools.more import one
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+import recidiviz.common.common_utils
 from recidiviz.common import fips, str_field_utils
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
@@ -215,7 +216,7 @@ def _split_df(df: pd.DataFrame, indices: List[int]) -> List[pd.DataFrame]:
     end = None
 
     dfs = []
-    for start, end in aggregate_ingest_utils.pairwise(indices):
+    for start, end in recidiviz.common.common_utils.pairwise(indices):
         dfs.append(df[start:end].reset_index(drop=True))
 
     if end:
