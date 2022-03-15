@@ -42,7 +42,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
     normalized_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    IncarcerationPeriodNormalizationManager,
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
@@ -249,6 +248,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         if not ip_normalization_manager or not sp_normalization_manager:
             raise ValueError("Expected both normalized IPs and SPs for this pipeline.")
 
+        ip_index = (
+            ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
+        )
+
         (
             release_events,
             commitments_from_supervision,
@@ -259,7 +262,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             supervision_delegate=supervision_delegate,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
-            ip_normalization_manager=ip_normalization_manager,
+            ip_index=ip_index,
             sp_normalization_manager=sp_normalization_manager,
             assessments=assessments,
             sorted_violation_responses=normalized_violation_responses,
@@ -270,7 +273,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_events.extend(release_events)
         incarceration_events.extend(
             self._find_all_stay_events(
-                ip_normalization_manager=ip_normalization_manager,
+                ip_index=ip_index,
                 incarceration_period_to_judicial_district=incarceration_period_to_judicial_district,
                 incarceration_delegate=incarceration_delegate,
                 county_of_residence=county_of_residence,
@@ -288,7 +291,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         supervision_delegate: StateSpecificSupervisionDelegate,
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
-        ip_normalization_manager: IncarcerationPeriodNormalizationManager,
+        ip_index: NormalizedIncarcerationPeriodIndex,
         sp_normalization_manager: SupervisionPeriodNormalizationManager,
         assessments: List[StateAssessment],
         sorted_violation_responses: List[StateSupervisionViolationResponse],
@@ -305,11 +308,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]
         ] = []
 
-        incarceration_period_index_for_admissions = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=False,
-            overwrite_facility_information_in_transfers=False,
-        )
-
         supervision_period_index = (
             sp_normalization_manager.normalized_supervision_period_index_for_calculations()
         )
@@ -318,9 +316,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             date, IncarcerationCommitmentFromSupervisionAdmissionEvent
         ] = {}
 
-        for (
-            incarceration_period
-        ) in incarceration_period_index_for_admissions.incarceration_periods:
+        for incarceration_period in ip_index.incarceration_periods:
             admission_event = self._admission_event_for_period(
                 incarceration_delegate=incarceration_delegate,
                 commitment_from_supervision_delegate=commitment_from_supervision_delegate,
@@ -329,7 +325,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 incarceration_sentences=incarceration_sentences,
                 supervision_sentences=supervision_sentences,
                 incarceration_period=incarceration_period,
-                incarceration_period_index=incarceration_period_index_for_admissions,
+                incarceration_period_index=ip_index,
                 supervision_period_index=supervision_period_index,
                 assessments=assessments,
                 sorted_violation_responses=sorted_violation_responses,
@@ -347,17 +343,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                         admission_event.admission_date
                     ] = admission_event
 
-        incarceration_period_index_for_releases = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=False,
-            overwrite_facility_information_in_transfers=False,
-        )
-
-        for (
-            incarceration_period
-        ) in incarceration_period_index_for_releases.incarceration_periods:
+        for incarceration_period in ip_index.incarceration_periods:
             release_event = self._release_event_for_period(
                 incarceration_period=incarceration_period,
-                incarceration_period_index=incarceration_period_index_for_releases,
+                incarceration_period_index=ip_index,
                 supervision_period_index=supervision_period_index,
                 incarceration_delegate=incarceration_delegate,
                 supervision_delegate=supervision_delegate,
@@ -372,7 +361,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_all_stay_events(
         self,
-        ip_normalization_manager: IncarcerationPeriodNormalizationManager,
+        ip_index: NormalizedIncarcerationPeriodIndex,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         commitments_from_supervision: Dict[
@@ -386,17 +375,12 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         """
         incarceration_stay_events: List[IncarcerationStayEvent] = []
 
-        incarceration_period_index = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=False,
-            overwrite_facility_information_in_transfers=False,
-        )
-
-        for incarceration_period in incarceration_period_index.incarceration_periods:
+        for incarceration_period in ip_index.incarceration_periods:
             period_stay_events: List[
                 IncarcerationStayEvent
             ] = self._find_incarceration_stays(
                 incarceration_period,
-                incarceration_period_index,
+                ip_index,
                 incarceration_period_to_judicial_district,
                 incarceration_delegate,
                 commitments_from_supervision,

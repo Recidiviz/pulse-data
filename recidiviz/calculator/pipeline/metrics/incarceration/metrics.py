@@ -96,8 +96,6 @@ class IncarcerationMetric(
         """Should be implemented by metric subclasses to return a description of the metric."""
 
 
-# TODO(#10727): Update this metric description when we move IP transfer collapsing
-#  out of entity normalization
 @attr.s
 class IncarcerationPopulationMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains incarceration population information on a given date."""
@@ -155,8 +153,6 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
 
-# TODO(#10727): Update this metric description when we move IP transfer collapsing
-#  out of entity normalization
 @attr.s
 class IncarcerationAdmissionMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains admission information."""
@@ -292,8 +288,6 @@ If a person was admitted to Facility X on 2021-01-01 for a `REVOCATION` from par
     ] = attr.ib(default=None)
 
 
-# TODO(#10727): Update this metric description when we move IP transfer collapsing
-#  out of entity normalization
 @attr.s
 class IncarcerationReleaseMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains release information."""
