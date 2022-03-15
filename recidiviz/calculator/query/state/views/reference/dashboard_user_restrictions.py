@@ -82,7 +82,9 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                         facilities_projections,
                         community_practices,
                         operations,
+                        system_libertyToPrison,
                         system_prison,
+                        system_prisonToSupervision,
                         system_supervision,
                         system_supervisionToLiberty,
                         system_supervisionToPrison
