@@ -181,8 +181,8 @@ DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "internal_role",
         "can_access_leadership_dashboard",
         "can_access_case_triage",
-        "should_see_beta_charts",
         "routes",
+        "should_see_beta_charts",
     ],
 )
 
