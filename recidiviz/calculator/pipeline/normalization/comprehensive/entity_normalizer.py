@@ -207,16 +207,13 @@ def all_normalized_entities(
             "SupervisionPeriodNormalizationManager. Found None."
         )
 
-    # TODO(#10727): Move collapsing of transfers to later
     # TODO(#10729): Make it so the normalization managers don't return an index
     #  but instead return IPs + ip_id_to_pfi_subtype or whatever is needed to hydrated
     #  additional fields. The index is does some semi-expensive indexing that isn't
     #  actually used in the context of the normalization pipeline and should really
     #  only exist in metric pipelines.
     ip_index = (
-        ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=False, overwrite_facility_information_in_transfers=False
-        )
+        ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
     )
     sp_index = (
         sp_normalization_manager.normalized_supervision_period_index_for_calculations()

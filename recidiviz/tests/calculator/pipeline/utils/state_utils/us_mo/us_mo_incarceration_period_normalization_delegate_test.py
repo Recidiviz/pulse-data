@@ -56,8 +56,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     @staticmethod
     def _normalized_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
-        collapse_transfers: bool = False,
-        overwrite_facility_information_in_transfers: bool = False,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
         # IP pre-processing for US_MO does not rely on violation responses or
@@ -75,10 +73,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             field_index=CoreEntityFieldIndex(),
         )
 
-        return ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=collapse_transfers,
-            overwrite_facility_information_in_transfers=overwrite_facility_information_in_transfers,
-        ).incarceration_periods
+        return (
+            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods
+        )
 
     def test_prepare_incarceration_periods_for_calculations_multiple_jail_and_valid(
         self,
@@ -131,7 +128,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -174,7 +171,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -223,7 +220,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -281,7 +278,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -322,7 +319,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -365,7 +362,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -415,7 +412,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -494,7 +491,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test, collapse_transfers=False
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -602,7 +599,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test, collapse_transfers=False
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -699,7 +696,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test, collapse_transfers=False
+                    incarceration_periods=ips_for_test
                 )
             )
 
@@ -769,7 +766,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test
                 )
             )
 

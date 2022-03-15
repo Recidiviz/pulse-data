@@ -79,10 +79,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             field_index=CoreEntityFieldIndex(),
         )
 
-        return ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=False,
-            overwrite_facility_information_in_transfers=False,
-        ).incarceration_periods
+        return (
+            ip_normalization_manager.normalized_incarceration_period_index_for_calculations().incarceration_periods
+        )
 
     def test_normalized_incarceration_periods_different_pfi_do_not_collapse(
         self,

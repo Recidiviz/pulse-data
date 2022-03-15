@@ -48,10 +48,6 @@ class NormalizedIncarcerationPeriodIndex:
 
     incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
 
-    # Whether or not transfers between periods were collapsed during the IP
-    # normalization that prepared these periods for calculations
-    transfers_are_collapsed: bool = attr.ib()
-
     # The delegate for state-specific configurations related to incarceration
     incarceration_delegate: StateSpecificIncarcerationDelegate = attr.ib()
 

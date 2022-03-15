@@ -69,8 +69,6 @@ class ReincarcerationRecidivismMetric(
         metric."""
 
 
-# TODO(#10727): Update this metric description when we move IP transfer collapsing
-#  out of entity normalization
 @attr.s
 class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     """The ReincarcerationRecidivismCountMetric stores information about when a
@@ -90,7 +88,7 @@ With this metric, we can answer questions like:
 - For all of the people with reincarceration admissions in 2020, how many days, on average, had they spent at liberty since the time they were last released from prison?
 - Does the number of reincarceration admissions in the state vary by the county in which the people lived while they were at liberty?
 
-This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When normalizing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed so that we can easily identify releases from and admissions to prison where the person is not being transferred into or out of another facility. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated.
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility.
 
 These calculations work by looking at all releases from prison, where the prison stay qualifies as a formal stay in incarceration, and the release is either to supervision or to liberty. We then look for admissions back into formal incarceration that followed these official releases from formal incarceration, which are reincarceration admissions. Parole board holds or other forms of temporary custody are not included as formal stays in incarceration, even if they occur in a state prison facility. Admissions to parole board holds or other forms of temporary custody are not considered reincarceration admissions. Admissions for parole revocations that may follow time spent in a parole board hold, however, do qualify has reincarceration recidivism. Admissions for probation revocations can also be classified as reincarceration recidivism if the person was previously incarcerated. Sanction admissions from supervision for treatment or shock incarceration can also be considered reincarceration recidivism if the person was previously incarceration.
 
@@ -118,8 +116,6 @@ Say a person was released to parole on 2015-02-18 from a state prison, where the
     reincarceration_date: date = attr.ib(default=None)
 
 
-# TODO(#10727): Update this metric description when we move IP transfer collapsing
-#  out of entity normalization
 @attr.s
 class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
     """The ReincarcerationRecidivismRateMetric stores information about whether or not
@@ -140,7 +136,7 @@ With this metric, we can answer questions like:
 - Over the last 10 years, what was the average rate of recidivism within 1 year of release?
 - How does the 5 year recidivism rate differ by gender in this state?
 
-This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When normalizing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed so that we can easily identify releases from and admissions to prison where the person is not being transferred into or out of another facility. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated.
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility.
 
 These calculations work by looking at all releases from prison, where the prison stay qualifies as a formal stay in incarceration, and the release is either to supervision or to liberty. For each qualified release, we look for admissions back into formal incarceration following the release that are reincarceration admissions.
 

@@ -170,9 +170,8 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         if not ip_normalization_manager:
             raise ValueError("Expected normalized SPs for this pipeline.")
 
-        ip_index = ip_normalization_manager.normalized_incarceration_period_index_for_calculations(
-            collapse_transfers=False,
-            overwrite_facility_information_in_transfers=False,
+        ip_index = (
+            ip_normalization_manager.normalized_incarceration_period_index_for_calculations()
         )
 
         incarceration_periods = ip_index.incarceration_periods
