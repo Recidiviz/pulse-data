@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility class for testing BQ views against Postgres"""
-import datetime
 import logging
 import re
 import unittest
+from datetime import datetime, timedelta
 from typing import (
     Dict,
     Iterable,
@@ -48,15 +48,16 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
+    IngestViewMaterializer,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     augment_raw_data_df_with_metadata_columns,
 )
+from recidiviz.ingest.direct.types.cloud_task_args import GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    UPDATE_DATETIME_PARAM_NAME,
-    DirectIngestPreProcessedIngestView,
     DirectIngestPreProcessedIngestViewBuilder,
-    RawTableViewType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
@@ -241,8 +242,8 @@ DROP AGGREGATE first_value_ignore_nulls(anyelement)
 
 MAX_POSTGRES_TABLE_NAME_LENGTH = 63
 
-DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0)
-DEFAULT_QUERY_RUN_DATETIME = datetime.datetime(2021, 4, 15, 0, 0, 0)
+DEFAULT_FILE_UPDATE_DATETIME = datetime(2021, 4, 14, 0, 0, 0)
+DEFAULT_QUERY_RUN_DATETIME = datetime(2021, 4, 15, 0, 0, 0)
 
 
 @pytest.mark.uses_db
@@ -277,6 +278,9 @@ class BaseViewTest(unittest.TestCase):
     def setUp(self) -> None:
         self.data_types: Optional[Union[Type, Dict[str, Type]]] = {}
         self.region_code: str
+        # View specific regex patterns to replace in the BigQuery SQL for the Postgres server. These are applied before
+        # the rest of the SQL rewrites.
+        self.sql_regex_replacements: Dict[str, str] = {}
         self.view_builder: DirectIngestPreProcessedIngestViewBuilder
         # Stores the list of mock tables that have been created as (dataset_id, table_id) tuples.
         self.mock_bq_to_postgres_tables: Dict[BigQueryAddress, str] = {}
@@ -383,7 +387,7 @@ class BaseViewTest(unittest.TestCase):
         )
         expected_columns = [column.lower() for column in expected_output.pop(0)]
 
-        results = self.query_raw_data_view_for_builder(
+        results = self.query_ingest_view_for_builder(
             view_builder,
             dimensions=expected_columns,
             data_types=data_types,
@@ -446,7 +450,7 @@ class BaseViewTest(unittest.TestCase):
         region_code: str,
         file_config: DirectIngestRawFileConfig,
         mock_data: Iterable[Tuple[Optional[str], ...]],
-        update_datetime: datetime.datetime = DEFAULT_FILE_UPDATE_DATETIME,
+        update_datetime: datetime = DEFAULT_FILE_UPDATE_DATETIME,
     ) -> None:
         mock_schema = MockTableSchema.from_raw_file_config(file_config)
         raw_data_df = augment_raw_data_df_with_metadata_columns(
@@ -470,22 +474,33 @@ class BaseViewTest(unittest.TestCase):
             mock_data=raw_data_df,
         )
 
-    def query_raw_data_view_for_builder(
+    def query_ingest_view_for_builder(
         self,
         view_builder: DirectIngestPreProcessedIngestViewBuilder,
         dimensions: List[str],
         data_types: Optional[Union[Type, Dict[str, Type]]] = None,
     ) -> pd.DataFrame:
+        """Uses the ingest view diff query from DirectIngestIngestViewExportManager.debug_query_for_args to query
+        raw data for ingest view tests."""
         view: BigQueryView = view_builder.build()
-        view_query = view.expanded_view_query(
-            DirectIngestPreProcessedIngestView.QueryStructureConfig(
-                raw_table_view_type=RawTableViewType.PARAMETERIZED
+        upper_bound_datetime_prev_: datetime = DEFAULT_FILE_UPDATE_DATETIME - timedelta(
+            days=1
+        )
+        upper_bound_datetime_to_export_: datetime = self.query_run_dt
+        view_query = str(
+            IngestViewMaterializer.debug_query_for_args(
+                ingest_views_by_name={view_builder.ingest_view_name: view},
+                ingest_view_export_args=GcsfsIngestViewExportArgs(
+                    ingest_view_name=view_builder.ingest_view_name,
+                    upper_bound_datetime_prev=upper_bound_datetime_prev_,
+                    upper_bound_datetime_to_export=upper_bound_datetime_to_export_,
+                    output_bucket_name="any_bucket",
+                ),
             )
         )
-        view_query = view_query.replace(
-            f"@{UPDATE_DATETIME_PARAM_NAME}",
-            f"TIMESTAMP '{self.query_run_dt.isoformat()}'",
-        )
+        if self.sql_regex_replacements:
+            for bq_sql, pg_sql in self.sql_regex_replacements.items():
+                view_query = re.sub(bq_sql, pg_sql, view_query)
 
         return self.query_view(
             view.table_for_query,
@@ -503,7 +518,7 @@ class BaseViewTest(unittest.TestCase):
         if isinstance(view_builder, DirectIngestPreProcessedIngestViewBuilder):
             raise ValueError(
                 f"Found view builder type [{type(view_builder)}] - use "
-                f"query_raw_data_view_for_builder() for this type instead."
+                f"query_ingest_view_for_builder() for this type instead."
             )
 
         view: BigQueryView = view_builder.build()
@@ -813,6 +828,14 @@ class BaseViewTest(unittest.TestCase):
             query,
             r"(?P<first_char>[^_A-Za-z])datetime",
             "{first_char}timestamp",
+            flags=re.IGNORECASE,
+        )
+
+        # Replace TIMESTAMP() calls from query diffs
+        query = _replace_iter(
+            query,
+            r"timestamp\((?P<year>\d{4}), (?P<month>\d{0,2}), (?P<day>\d{0,2}), .+\)",
+            "timestamp '{year}-{month}-{day}'",
             flags=re.IGNORECASE,
         )
         query = _replace_iter(query, r"int64", "integer", flags=re.IGNORECASE)
