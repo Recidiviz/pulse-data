@@ -23,12 +23,13 @@ locally to create sandbox Dataflow datasets.
 import argparse
 import logging
 import sys
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator import dataflow_config
+from recidiviz.calculator.dataflow_config import get_metric_pipeline_enabled_states
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
 )
@@ -39,18 +40,17 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NORMALIZED_ENTITY_CLASSES,
     bq_schema_for_normalized_state_entity,
 )
+from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
+    collect_all_pipeline_run_delegate_classes,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
-from recidiviz.tools.pipeline_launch_util import (
-    collect_all_pipeline_run_delegate_classes,
-)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.yaml_dict import YAMLDict
 
 
 def update_dataflow_metric_tables_schemas(
@@ -101,30 +101,6 @@ def update_dataflow_metric_tables_schemas(
                 schema_for_metric_class,
                 clustering_fields,
             )
-
-
-def get_metric_pipeline_enabled_states() -> Set[StateCode]:
-    """Returns all states that have scheduled metric pipelines that run."""
-    pipeline_states: Set[StateCode] = set()
-
-    pipeline_templates_yaml = YAMLDict.from_path(
-        dataflow_config.PIPELINE_CONFIG_YAML_PATH
-    )
-
-    incremental_metric_pipelines = pipeline_templates_yaml.pop_dicts(
-        "incremental_metric_pipelines"
-    )
-    historical_metric_pipelines = pipeline_templates_yaml.pop_dicts(
-        "historical_metric_pipelines"
-    )
-
-    for pipeline in incremental_metric_pipelines:
-        pipeline_states.add(StateCode(pipeline.peek("state_code", str)))
-
-    for pipeline in historical_metric_pipelines:
-        pipeline_states.add(StateCode(pipeline.peek("state_code", str)))
-
-    return pipeline_states
 
 
 def get_state_specific_normalized_state_dataset_for_state(
