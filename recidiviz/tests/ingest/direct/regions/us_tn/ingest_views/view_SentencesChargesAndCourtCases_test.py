@@ -33,6 +33,16 @@ class SentencesChargesAndCourtCasesTest(BaseViewTest):
             self.region_code, "SentencesChargesAndCourtCases"
         )
         self.data_types = str
+        self.sql_regex_replacements = {
+            # Postgres does not allow DISTINCT to be called on json columns because it cannot compare json objects.
+            # This formats the query to cast the json field to a jsonb field, which can be compared in a DISTINCT
+            # statement.
+            r"""TO_JSON_STRING\([\s]+ARRAY_AGG\(STRUCT[\D]+\) ORDER BY [\S]+\)[\s]+\) as Conditions""": """
+            TO_JSON_STRING(
+                ARRAY_AGG(STRUCT<note_update_date DATETIME, conditions_on_date string>(NoteUpdateDate,ConditionsOnDate) ORDER BY NoteUpdateDate)
+            )::jsonb as Conditions
+            """
+        }
 
     def test_sentences_charges_courtcases_simple(self) -> None:
         self.run_ingest_view_test(
