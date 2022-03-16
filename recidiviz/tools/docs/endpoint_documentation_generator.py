@@ -186,10 +186,16 @@ def app_rules() -> List[Rule]:
             "recidiviz.utils.metadata.project_id", return_value=GCP_PROJECT_STAGING
         ):
             # pylint: disable=import-outside-toplevel
+            from recidiviz.justice_counts.control_panel.server import (
+                get_blueprints_for_justice_counts_documentation,
+            )
             from recidiviz.server import get_blueprints_for_documentation
 
             temp_app = Flask(__name__)
-            all_blueprints_with_url_prefixes = get_blueprints_for_documentation()
+            all_blueprints_with_url_prefixes = (
+                get_blueprints_for_documentation()
+                + get_blueprints_for_justice_counts_documentation()
+            )
             for blueprint, url_prefix in all_blueprints_with_url_prefixes:
                 temp_app.register_blueprint(blueprint, url_prefix=url_prefix)
             return list(temp_app.url_map.iter_rules())
