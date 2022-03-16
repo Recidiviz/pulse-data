@@ -236,6 +236,7 @@ output:
                         - 9DP  # ADM - DEPORTED
                         - 9DT  # ADM - DETAINER
                         - 9IS  # ADM - ISC OUTGOING
+                        - 9JS  # ADM: JUDICIAL SUSP SUPVN
                         - 9RT  # ADM - RES. TREATMNT PLCMT
                         - 9SD  # ADM - SUSP OF DIRECT SUPVN
                         - 9WR  # ADM - WARRANT
