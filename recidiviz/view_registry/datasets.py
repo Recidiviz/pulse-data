@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Dataset references."""
+from recidiviz.calculator.pipeline.supplemental.dataset_config import (
+    SUPPLEMENTAL_DATA_DATASET,
+)
 from recidiviz.calculator.query.county.dataset_config import COUNTY_BASE_DATASET
 from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
     VERA_DATASET,
@@ -33,7 +36,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.calculator.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET

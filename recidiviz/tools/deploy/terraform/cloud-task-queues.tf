@@ -75,16 +75,6 @@ module "cloud-sql-to-bq-refresh-queue" {
   max_retry_attempts = 1
 }
 
-# TODO(#11312): Delete this queue once it is no longer used for supplemental dataset
-#  generation.
-module "bigquery-queue" {
-  source = "./modules/serial-task-queue"
-
-  queue_name         = "bigquery-v2"
-  region             = var.app_engine_region
-  max_retry_attempts = 1
-}
-
 # Queue used to process tasks that export the results of metric view queries to GCS.
 module "metric-view-export-queue" {
   source = "./modules/serial-task-queue"
