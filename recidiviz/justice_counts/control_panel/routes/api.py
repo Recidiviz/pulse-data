@@ -17,13 +17,9 @@
 """Implements API routes for the Justice Counts Control Panel backend API."""
 from flask import Blueprint
 
+api_blueprint = Blueprint("api", __name__)
 
-def create_api_blueprint() -> Blueprint:
-    api = Blueprint("api", __name__)
-
-    # TODO(#11504): Replace dummy endpoint
-    @api.route("/hello")
-    def hello() -> str:
-        return "Hello, World!"
-
-    return api
+# TODO(#11504): Replace dummy endpoint
+@api_blueprint.route("/hello")
+def hello() -> str:
+    return "Hello, World!"

@@ -15,19 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Backend entry point for Justice Counts Control Panel backend API."""
-from flask import Flask
+from typing import List, Tuple
+
+from flask import Blueprint, Flask
 from flask_wtf.csrf import CSRFProtect
 
 from recidiviz.justice_counts.control_panel.config import Config
-from recidiviz.justice_counts.control_panel.routes.api import create_api_blueprint
-from recidiviz.justice_counts.control_panel.routes.auth import create_auth_blueprint
+from recidiviz.justice_counts.control_panel.routes.api import api_blueprint
+from recidiviz.justice_counts.control_panel.routes.auth import auth_blueprint
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
-
 
 # Note that we don't have to explicitly call `create_app` anywhere;
 # Flask will automatically detect the factory function during `flask run`
 # source: https://flask.palletsprojects.com/en/2.0.x/patterns/appfactories/#using-applications
-# TODO(#11503): Add automatic endpoint documentation generation
+
+
+def get_blueprints_for_justice_counts_documentation() -> List[Tuple[Blueprint, str]]:
+    return [
+        (api_blueprint, "/justice_counts/api"),
+        (auth_blueprint, "/justice_counts/auth"),
+    ]
+
+
 def create_app(config: Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config)
@@ -35,9 +44,6 @@ def create_app(config: Config) -> Flask:
     setup_scoped_sessions(
         app=app, database_key=app.config["DATABASE_KEY"], db_url=app.config["DB_URL"]
     )
-
-    api_blueprint = create_api_blueprint()
-    auth_blueprint = create_auth_blueprint()
 
     app.register_blueprint(api_blueprint, url_prefix="/api")
     app.register_blueprint(auth_blueprint, url_prefix="/auth")

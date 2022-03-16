@@ -19,14 +19,11 @@ from http import HTTPStatus
 
 from flask import Blueprint, Response
 
+auth_blueprint = Blueprint("auth", __name__)
 
-def create_auth_blueprint() -> Blueprint:
-    auth = Blueprint("auth", __name__)
 
-    @auth.route("/logout", methods=["POST"])
-    def logout() -> Response:
-        # Deletes the session cookie and corresponding data
-        # TODO(#11550): Implement logout endpoint
-        return Response(status=HTTPStatus.OK)
-
-    return auth
+@auth_blueprint.route("/logout", methods=["POST"])
+def logout() -> Response:
+    # Deletes the session cookie and corresponding data
+    # TODO(#11550): Implement logout endpoint
+    return Response(status=HTTPStatus.OK)
