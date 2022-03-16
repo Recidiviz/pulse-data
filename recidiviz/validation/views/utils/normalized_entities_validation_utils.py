@@ -17,7 +17,9 @@
 """Utils for writing validations for the normalization pipelines."""
 from typing import List
 
-from recidiviz.calculator.dataflow_config import get_metric_pipeline_enabled_states
+from recidiviz.calculator.dataflow_orchestration_utils import (
+    get_metric_pipeline_enabled_states,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
 )

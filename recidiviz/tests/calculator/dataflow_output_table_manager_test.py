@@ -29,6 +29,8 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
     METRIC_CLUSTERING_FIELDS,
+)
+from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
@@ -228,7 +230,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.mock_client.create_table_with_schema.assert_not_called()
 
     @mock.patch(
-        "recidiviz.calculator.dataflow_config.PIPELINE_CONFIG_YAML_PATH",
+        "recidiviz.calculator.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
         FAKE_PIPELINE_CONFIG_YAML_PATH,
     )
     def test_get_all_state_specific_normalized_state_datasets(self) -> None:
@@ -245,7 +247,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.assertCountEqual(expected_dataset_ids, dataset_ids)
 
     @mock.patch(
-        "recidiviz.calculator.dataflow_config.PIPELINE_CONFIG_YAML_PATH",
+        "recidiviz.calculator.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
         FAKE_PIPELINE_CONFIG_YAML_PATH,
     )
     def test_get_all_state_specific_normalized_state_datasets_with_prefix(self) -> None:
