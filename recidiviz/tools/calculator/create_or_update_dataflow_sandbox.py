@@ -35,7 +35,9 @@ import sys
 from typing import List, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.dataflow_config import get_metric_pipeline_enabled_states
+from recidiviz.calculator.dataflow_orchestration_utils import (
+    get_metric_pipeline_enabled_states,
+)
 from recidiviz.calculator.dataflow_output_table_manager import (
     get_state_specific_normalized_state_dataset_for_state,
     update_dataflow_metric_tables_schemas,

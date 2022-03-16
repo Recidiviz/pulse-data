@@ -29,7 +29,9 @@ import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator import dataflow_config
-from recidiviz.calculator.dataflow_config import get_metric_pipeline_enabled_states
+from recidiviz.calculator.dataflow_orchestration_utils import (
+    get_metric_pipeline_enabled_states,
+)
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
 )
