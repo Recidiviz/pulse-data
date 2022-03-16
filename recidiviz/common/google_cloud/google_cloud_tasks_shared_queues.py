@@ -16,9 +16,6 @@
 # =============================================================================
 """Queue names for shared Google Cloud Task queues."""
 
-# TODO(#11312): Delete this var once this queue is no longer used for supplemental
-#  dataset generation.
-BIGQUERY_QUEUE_V2 = "bigquery-v2"
 ADMIN_PANEL_DATA_DISCOVERY_QUEUE = "admin-panel-data-discovery"
 
 # TODO(#6455) - This queue should ideally be renamed to "direct-ingest-jpp-scheduler-v2"
