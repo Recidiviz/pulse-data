@@ -14,13 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for dataflow_config.py."""
+"""Tests for dataflow_orchestration_utils.py."""
 import os
 import unittest
 
 import mock
 
-from recidiviz.calculator.dataflow_config import get_metric_pipeline_enabled_states
+from recidiviz.calculator.dataflow_orchestration_utils import (
+    get_metric_pipeline_enabled_states,
+)
 from recidiviz.common.constants.states import StateCode
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
@@ -29,11 +31,11 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 )
 
 
-class DataflowConfigTest(unittest.TestCase):
-    """Tests for dataflow_config.py."""
+class DataflowOrchestrationConfigTest(unittest.TestCase):
+    """Tests for dataflow_orchestration_utils.py."""
 
     @mock.patch(
-        "recidiviz.calculator.dataflow_config.PIPELINE_CONFIG_YAML_PATH",
+        "recidiviz.calculator.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
         FAKE_PIPELINE_CONFIG_YAML_PATH,
     )
     def test_get_metric_pipeline_enabled_states(self) -> None:
