@@ -274,8 +274,8 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 is_invalidated=False,
                 is_file_split=False,
                 job_creation_time=datetime.datetime.now(tz=pytz.UTC),
-                datetimes_contained_lower_bound_exclusive=ingest_view_job_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=ingest_view_job_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=ingest_view_job_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=ingest_view_job_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
             session.add(metadata)
@@ -388,8 +388,8 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 session=session,
                 region_code=self.region_code,
                 file_tag=ingest_view_job_args.ingest_view_name,
-                datetimes_contained_lower_bound_exclusive=ingest_view_job_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=ingest_view_job_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=ingest_view_job_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=ingest_view_job_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
 

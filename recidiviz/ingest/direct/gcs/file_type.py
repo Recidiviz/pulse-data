@@ -30,7 +30,7 @@ class GcsfsDirectIngestFileType(Enum):
     # Raw data received directly from state
     RAW_DATA = "raw"
 
-    # TODO(#9717): Usages of this enum value should be deleted as part of the work to
+    # TODO(#11424): Usages of this enum value should be deleted as part of the work to
     #  migrate ingest view query materialization to BQ. Delete entirely once we've
     #  shipped BQ-based materialization for all states.
     # Ingest-ready file

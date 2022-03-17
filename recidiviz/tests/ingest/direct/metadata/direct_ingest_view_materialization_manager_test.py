@@ -87,8 +87,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         self.run_materialization_job_progression(args, self.metadata_manager)
@@ -97,8 +97,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         self.run_materialization_job_progression(args, self.metadata_manager)
@@ -117,8 +117,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         self.run_materialization_job_progression(args, self.metadata_manager)
@@ -137,8 +137,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         self.run_materialization_job_progression(args, self.metadata_manager)
 
@@ -153,8 +153,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         self.run_materialization_job_progression(args, self.metadata_manager)
@@ -179,8 +179,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         self.run_materialization_job_progression(args, self.metadata_manager)
@@ -200,8 +200,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
         )
 
         self.run_materialization_job_progression(args, self.metadata_manager)
@@ -209,8 +209,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args_2 = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
         )
 
         self.run_materialization_job_progression(args_2, self.metadata_manager)
@@ -224,8 +224,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
 
         self.assertEqual(
             {
-                args.upper_bound_datetime_to_export,
-                args_2.upper_bound_datetime_to_export,
+                args.upper_bound_datetime_inclusive,
+                args_2.upper_bound_datetime_inclusive,
             },
             {r.upper_bound_datetime_inclusive for r in results},
         )
@@ -247,8 +247,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
             ingest_view_name=job_args.ingest_view_name,
             is_invalidated=False,
             job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
-            lower_bound_datetime_exclusive=job_args.upper_bound_datetime_prev,
-            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_to_export,
+            lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
             materialization_time=None,
         )
 
@@ -291,8 +291,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
                 BQIngestViewMaterializationArgs(
                     ingest_view_name="ingest_view_name",
                     ingest_instance=self.metadata_manager.ingest_instance,
-                    upper_bound_datetime_prev=None,
-                    upper_bound_datetime_to_export=datetime.datetime(
+                    lower_bound_datetime_exclusive=None,
+                    upper_bound_datetime_inclusive=datetime.datetime(
                         2015, 1, 2, 2, 2, 2, 2
                     ),
                 )
@@ -303,8 +303,10 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
                 BQIngestViewMaterializationArgs(
                     ingest_view_name="ingest_view_name",
                     ingest_instance=self.metadata_manager.ingest_instance,
-                    upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-                    upper_bound_datetime_to_export=datetime.datetime(
+                    lower_bound_datetime_exclusive=datetime.datetime(
+                        2015, 1, 2, 2, 2, 2, 2
+                    ),
+                    upper_bound_datetime_inclusive=datetime.datetime(
                         2015, 1, 2, 3, 3, 3, 3
                     ),
                 )
@@ -315,8 +317,10 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
                 BQIngestViewMaterializationArgs(
                     ingest_view_name="another_ingest_view",
                     ingest_instance=self.metadata_manager.ingest_instance,
-                    upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
-                    upper_bound_datetime_to_export=datetime.datetime(
+                    lower_bound_datetime_exclusive=datetime.datetime(
+                        2015, 1, 2, 3, 3, 3, 3
+                    ),
+                    upper_bound_datetime_inclusive=datetime.datetime(
                         2015, 1, 2, 3, 4, 4, 4
                     ),
                 )
@@ -378,8 +382,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         with freeze_time("2015-01-02T03:06:06"):
             self.metadata_manager.register_ingest_materialization_job(args)
@@ -410,8 +414,8 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         with freeze_time("2015-01-02T03:06:06"):
             self.metadata_manager.register_ingest_materialization_job(args)
@@ -428,14 +432,14 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",
             ingest_instance=self.metadata_manager.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         args_other_region = BQIngestViewMaterializationArgs(
             ingest_view_name="other_ingest_view_name",
             ingest_instance=self.metadata_manager_other_region.ingest_instance,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         with freeze_time("2015-01-02T03:06:06"):
             self.metadata_manager.register_ingest_materialization_job(args)

@@ -179,8 +179,8 @@ class TestIngestViewMaterializationArgsGeneratorWithLegacyDelegate(unittest.Test
                 GcsfsIngestViewExportArgs(
                     ingest_view_name="ingest_view",
                     output_bucket_name=self.output_bucket_name,
-                    upper_bound_datetime_prev=_DATE_1,
-                    upper_bound_datetime_to_export=_DATE_2,
+                    lower_bound_datetime_exclusive=_DATE_1,
+                    upper_bound_datetime_inclusive=_DATE_2,
                 )
             ],
         )
@@ -316,8 +316,8 @@ class TestIngestViewMaterializationArgsGeneratorWithLegacyDelegate(unittest.Test
                 GcsfsIngestViewExportArgs(
                     ingest_view_name="ingest_view",
                     output_bucket_name=self.output_bucket_name,
-                    upper_bound_datetime_prev=_DATE_1,
-                    upper_bound_datetime_to_export=_DATE_2,
+                    lower_bound_datetime_exclusive=_DATE_1,
+                    upper_bound_datetime_inclusive=_DATE_2,
                 )
             ],
         )
@@ -534,8 +534,8 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                 BQIngestViewMaterializationArgs(
                     ingest_view_name="ingest_view",
                     ingest_instance=self.ingest_instance,
-                    upper_bound_datetime_prev=_DATE_1,
-                    upper_bound_datetime_to_export=_DATE_2,
+                    lower_bound_datetime_exclusive=_DATE_1,
+                    upper_bound_datetime_inclusive=_DATE_2,
                 )
             ],
         )
@@ -660,8 +660,8 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                 BQIngestViewMaterializationArgs(
                     ingest_view_name="ingest_view",
                     ingest_instance=self.ingest_instance,
-                    upper_bound_datetime_prev=_DATE_1,
-                    upper_bound_datetime_to_export=_DATE_2,
+                    lower_bound_datetime_exclusive=_DATE_1,
+                    upper_bound_datetime_inclusive=_DATE_2,
                 )
             ],
         )

@@ -133,15 +133,13 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
     # to generate the exported file.
     ingest_view_name: str = attr.ib()
 
-    # TODO(#9717): Rename this to lower_bound_datetime_exclusive.
     # The lower bound date for updates this query should include. Any rows that have not
     # changed since this date will not be included.
-    upper_bound_datetime_prev: Optional[datetime.datetime] = attr.ib()
+    lower_bound_datetime_exclusive: Optional[datetime.datetime] = attr.ib()
 
-    # TODO(#9717): Rename this to upper_bound_datetime_inclusive.
     # The upper bound date for updates this query should include. Updates will only
     # reflect data received up until this date.
-    upper_bound_datetime_to_export: datetime.datetime = attr.ib()
+    upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
 
     @abc.abstractmethod
     def task_id_tag(self) -> str:
@@ -159,11 +157,11 @@ class BQIngestViewMaterializationArgs(IngestViewMaterializationArgs):
             f"ingest_view_materialization_{self.ingest_view_name}-"
             f"{self.ingest_instance.value}"
         )
-        if self.upper_bound_datetime_prev:
-            tag += f"-{snake_case_datetime(self.upper_bound_datetime_prev)}"
+        if self.lower_bound_datetime_exclusive:
+            tag += f"-{snake_case_datetime(self.lower_bound_datetime_exclusive)}"
         else:
             tag += "-None"
-        tag += f"-{snake_case_datetime(self.upper_bound_datetime_to_export)}"
+        tag += f"-{snake_case_datetime(self.upper_bound_datetime_inclusive)}"
         return tag
 
 
@@ -174,11 +172,11 @@ class GcsfsIngestViewExportArgs(IngestViewMaterializationArgs):
 
     def task_id_tag(self) -> str:
         tag = f"ingest_view_export_{self.ingest_view_name}-{self.output_bucket_name}"
-        if self.upper_bound_datetime_prev:
-            tag += f"-{snake_case_datetime(self.upper_bound_datetime_prev)}"
+        if self.lower_bound_datetime_exclusive:
+            tag += f"-{snake_case_datetime(self.lower_bound_datetime_exclusive)}"
         else:
             tag += "-None"
-        tag += f"-{snake_case_datetime(self.upper_bound_datetime_to_export)}"
+        tag += f"-{snake_case_datetime(self.upper_bound_datetime_inclusive)}"
         return tag
 
     def ingest_instance(self) -> DirectIngestInstance:
