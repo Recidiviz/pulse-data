@@ -99,3 +99,11 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 4500
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing. Rerun on 02/15/2022 did not improve these. 
       There are 4271 of these as of 03/01/2022.
+  - validation_name: multiple_supervision_info_for_commitment_admission
+    hard_num_allowed_rows_override: 5
+    override_reason:
+      TODO(#10614) - In the rare case where a person has multiple periods of parole
+      board holds and multiple revocation admissions on the same day, we end up with
+      more than one commitment from supervision admission with multiple different parole
+      board hold periods (of different lengths) that preceed them, which can cause
+      different dates to be used for identifying SPs associated with an admission.
