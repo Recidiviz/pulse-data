@@ -605,7 +605,7 @@ class BaseDirectIngestController:
         tasks_to_schedule.sort(
             key=lambda args_: (
                 ingest_view_name_rank[args_.ingest_view_name],
-                args_.upper_bound_datetime_to_export,
+                args_.upper_bound_datetime_inclusive,
             )
         )
 

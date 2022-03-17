@@ -140,7 +140,7 @@ class FileBasedMaterializerDelegate(
         output_file_name = to_normalized_unprocessed_file_name(
             f"{ingest_view_export_args.ingest_view_name}.csv",
             GcsfsDirectIngestFileType.INGEST_VIEW,
-            dt=ingest_view_export_args.upper_bound_datetime_to_export,
+            dt=ingest_view_export_args.upper_bound_datetime_inclusive,
         )
 
         return GcsfsFilePath.from_directory_and_file_name(

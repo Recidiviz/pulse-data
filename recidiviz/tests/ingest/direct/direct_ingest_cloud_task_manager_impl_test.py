@@ -180,8 +180,8 @@ class TestIngestViewExportCloudTaskQueueInfo(TestCase):
         self.primary_ingest_view_export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_file_tag",
             output_bucket_name=_PRIMARY_INGEST_BUCKET.bucket_name,
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=datetime.datetime.now(),
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime.now(),
         )
         self.secondary_ingest_view_export_args = attr.evolve(
             self.primary_ingest_view_export_args,
@@ -707,8 +707,8 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_ingest_view",
             output_bucket_name=_PRIMARY_INGEST_BUCKET.bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2020, 4, 29),
-            upper_bound_datetime_to_export=datetime.datetime(2020, 4, 30),
+            lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
+            upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
         )
         body = {
             "cloud_task_args": export_args.to_serializable(),

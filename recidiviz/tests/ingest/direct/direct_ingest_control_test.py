@@ -853,8 +853,8 @@ class TestDirectIngestControl(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_ingest_view",
             output_bucket_name=bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2020, 4, 29),
-            upper_bound_datetime_to_export=datetime.datetime(2020, 4, 30),
+            lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
+            upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
         )
 
         request_args = {

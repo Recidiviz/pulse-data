@@ -312,8 +312,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         # Act
@@ -335,8 +335,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         # Act
@@ -357,8 +357,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -373,8 +373,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 is_file_split=False,
                 job_creation_time=_DATE_1,
                 export_time=_DATE_2,
-                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=export_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = self.to_entity(metadata)
@@ -403,8 +403,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -419,8 +419,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 is_file_split=False,
                 job_creation_time=_DATE_1,
                 export_time=None,
-                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=export_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
@@ -444,7 +444,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
                     query_str=expected_upper_bound_query,
                     query_parameters=[
                         self.generate_query_params_for_date(
-                            export_args.upper_bound_datetime_to_export
+                            export_args.upper_bound_datetime_inclusive
                         )
                     ],
                 ),
@@ -479,8 +479,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -495,8 +495,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 is_file_split=False,
                 job_creation_time=_DATE_1,
                 export_time=None,
-                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=export_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
@@ -571,8 +571,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -587,8 +587,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 is_file_split=False,
                 job_creation_time=_DATE_1,
                 export_time=None,
-                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=export_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
@@ -660,8 +660,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -676,8 +676,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 is_file_split=False,
                 job_creation_time=_DATE_1,
                 export_time=None,
-                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=export_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
 
@@ -709,8 +709,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -725,8 +725,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 is_file_split=False,
                 job_creation_time=_DATE_1,
                 export_time=None,
-                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                datetimes_contained_lower_bound_exclusive=export_args.lower_bound_datetime_exclusive,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_inclusive,
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
@@ -797,8 +797,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         # Act
@@ -963,8 +963,8 @@ ORDER BY colA, colC;"""
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=_DATE_1,
-            upper_bound_datetime_to_export=_DATE_2,
+            lower_bound_datetime_exclusive=_DATE_1,
+            upper_bound_datetime_inclusive=_DATE_2,
         )
 
         # Act
