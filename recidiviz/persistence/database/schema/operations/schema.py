@@ -118,6 +118,8 @@ class DirectIngestRawFileMetadata(OperationsBase):
     datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
 
 
+# TODO(#11424): Delete this class once all states have shipped to BQ-based
+#  ingest view materialization.
 class DirectIngestIngestFileMetadata(OperationsBase):
     """Represents the metadata known about a file that we processed through direct ingest."""
 
@@ -194,6 +196,62 @@ class DirectIngestIngestFileMetadata(OperationsBase):
     # The name of the database that the data in this file has been or will be written
     # to.
     ingest_database_name = Column(String, nullable=False)
+
+
+class DirectIngestViewMaterializationMetadata(OperationsBase):
+    """Represents the metadata known about a job to materialize the results of an ingest
+    view and save them for use later in ingest (as rows in a BQ table).
+    """
+
+    __tablename__ = "direct_ingest_view_materialization_metadata"
+
+    __table_args__ = (
+        CheckConstraint(
+            "lower_bound_datetime_exclusive IS NULL OR "
+            "lower_bound_datetime_exclusive < upper_bound_datetime_inclusive",
+            name="datetime_bounds_ordering",
+        ),
+        CheckConstraint(
+            "materialization_time IS NULL OR "
+            "materialization_time > job_creation_time",
+            name="job_times_ordering",
+        ),
+        # Note: The tuple (region_code, instance, ingest_view_name,
+        # upper_bound_datetime_inclusive, lower_bound_datetime_exclusive) acts as a
+        # primary key for all rows where `is_invalidated` is False. This is enforced in
+        # `recidiviz/persistence/database/schema/operations/session_listener.py`.
+    )
+
+    # Primary key for this row
+    job_id = Column(Integer, primary_key=True)
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The ingest instance associated with this materialization job.
+    instance = Column(direct_ingest_instance, nullable=False, index=True)
+
+    # Shortened name for the ingest view file that corresponds to its ingest view / YAML
+    # mappings definition.
+    ingest_view_name = Column(String(255), nullable=False, index=True)
+
+    # The upper bound date used to query data for these particular ingest view results.
+    # The results will not contain any data we received after this date.
+    upper_bound_datetime_inclusive = Column(DateTime, nullable=False)
+
+    # The lower bound date used to query data for these particular ingest view results.
+    # The results will not contain any rows that have remained unmodified with new raw
+    # data updates we’ve gotten since this date.
+    lower_bound_datetime_exclusive = Column(DateTime)
+
+    # Time the materialization job is first scheduled for this view.
+    job_creation_time = Column(DateTime, nullable=False)
+
+    # Time the results of this view were materialized (i.e. written to BQ).
+    materialization_time = Column(DateTime)
+
+    # Whether or not this row is still valid (i.e. it applies to the current ingest
+    # rerun).
+    is_invalidated = Column(Boolean, nullable=False)
 
 
 class DirectIngestInstanceStatus(OperationsBase):

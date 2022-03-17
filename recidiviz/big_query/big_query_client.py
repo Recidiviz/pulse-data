@@ -1533,8 +1533,8 @@ class BigQueryClientImpl(BigQueryClient):
                 if field.field_type != desired_field.field_type:
                     raise ValueError(
                         f"Trying to change the field type of an existing field in {dataset_id}.{table_id}. Existing "
-                        f"field {desired_field.name} has type {desired_field.field_type}. Cannot change this type to "
-                        f"{field.field_type}."
+                        f"field {field.name} has type {field.field_type}. Cannot change this type to "
+                        f"{desired_field.field_type}."
                     )
 
                 if field.mode != desired_field.mode:
