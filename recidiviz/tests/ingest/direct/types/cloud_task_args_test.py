@@ -18,12 +18,17 @@
 import datetime
 from unittest import TestCase
 
-from recidiviz.ingest.direct.types.cloud_task_args import GcsfsIngestViewExportArgs
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
+    GcsfsIngestViewExportArgs,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class TestCloudTaskArgs(TestCase):
     """Tests for cloud_task_args.py."""
 
+    # TODO(#11424): Delete this test once BQ materialization is enabled for all states.
     def test_gcsfs_ingest_view_export_args(self) -> None:
         dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
         dt_upper = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
@@ -49,5 +54,33 @@ class TestCloudTaskArgs(TestCase):
 
         self.assertEqual(
             "ingest_view_export_my_file_tag-an_ingest_bucket-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
+            args.task_id_tag(),
+        )
+
+    def test_bq_ingest_view_materialization_args(self) -> None:
+        dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
+        dt_upper = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
+
+        args = BQIngestViewMaterializationArgs(
+            ingest_view_name="my_ingest_view_name",
+            upper_bound_datetime_prev=None,
+            upper_bound_datetime_to_export=dt_upper,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        self.assertEqual(
+            "ingest_view_materialization_my_ingest_view_name-SECONDARY-None-2019_11_22_11_22_33_444444",
+            args.task_id_tag(),
+        )
+
+        args = BQIngestViewMaterializationArgs(
+            ingest_view_name="my_ingest_view_name",
+            upper_bound_datetime_prev=dt_lower,
+            upper_bound_datetime_to_export=dt_upper,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        self.assertEqual(
+            "ingest_view_materialization_my_ingest_view_name-PRIMARY-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
             args.task_id_tag(),
         )

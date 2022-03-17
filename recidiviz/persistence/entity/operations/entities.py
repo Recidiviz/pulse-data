@@ -26,9 +26,7 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import entity_graph_eq
 
 
@@ -88,6 +86,8 @@ class DirectIngestRawFileMetadata(OperationsEntity, BuildableAttr, DefaultableAt
         return self.file_tag.startswith("RECIDIVIZ_REFERENCE")
 
 
+# TODO(#11424): Delete this class once all states have shipped to BQ-based
+#  ingest view materialization.
 @attr.s(eq=False)
 class DirectIngestIngestFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr):
     """Metadata about a SQL-preprocessed, persistence-ready direct ingest files."""
@@ -126,6 +126,44 @@ class DirectIngestIngestFileMetadata(OperationsEntity, BuildableAttr, Defaultabl
     # The name of the database that the data in this file has been or will be written
     # to.
     ingest_database_name: str = attr.ib()
+
+
+@attr.s(eq=False)
+class DirectIngestViewMaterializationMetadata(
+    OperationsEntity, BuildableAttr, DefaultableAttr
+):
+    """Represents the metadata known about a job to materialize the results of an ingest
+    view and save them for use later in ingest (as rows in a BQ table).
+    """
+
+    # The region associated with this materialization job (e.g. 'US_XX')
+    region_code: str = attr.ib()
+
+    # The ingest instance associated with this materialization job.
+    instance: DirectIngestInstance = attr.ib()
+
+    # Shortened name for the ingest view file that corresponds to its ingest view / YAML
+    # mappings definition.
+    ingest_view_name: str = attr.ib()
+
+    # The upper bound date used to query data for these particular ingest view results.
+    # The results will not contain any data we received after this date.
+    upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
+
+    # The lower bound date used to query data for these particular ingest view results.
+    # The results will not contain any rows that have remained unmodified with new raw
+    # data updates we’ve gotten since this date.
+    lower_bound_datetime_exclusive: Optional[datetime.datetime] = attr.ib()
+
+    # Time the materialization job is first scheduled for this view.
+    job_creation_time: datetime.datetime = attr.ib()
+
+    # Time the results of this view were materialized (i.e. written to BQ).
+    materialization_time: Optional[datetime.datetime] = attr.ib()
+
+    # Whether or not this row is still valid (i.e. it applies to the current ingest
+    # rerun).
+    is_invalidated: bool = attr.ib()
 
 
 @attr.s(eq=False)

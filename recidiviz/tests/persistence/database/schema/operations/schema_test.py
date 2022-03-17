@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the schema defined in operations/schema.py."""
 import datetime
+import sqlite3
 import unittest
 
 from more_itertools import one
@@ -208,6 +209,7 @@ class OperationsSchemaTest(unittest.TestCase):
                 1, len(session.query(schema.DirectIngestRawFileMetadata).all())
             )
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_metadata(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -232,6 +234,7 @@ class OperationsSchemaTest(unittest.TestCase):
             self.assertEqual(result_metadata, ingest_file_metadata)
             self.assertIsNotNone(result_metadata.file_id)
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_metadata_split_file(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -257,6 +260,7 @@ class OperationsSchemaTest(unittest.TestCase):
             self.assertEqual(result_metadata, ingest_file_metadata)
             self.assertIsNotNone(result_metadata.file_id)
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_metadata_split_file_no_file_name_raises(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -277,6 +281,7 @@ class OperationsSchemaTest(unittest.TestCase):
             with self.assertRaises(IntegrityError):
                 session.commit()
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_metadata_export_time_without_file_name_raises(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -299,6 +304,7 @@ class OperationsSchemaTest(unittest.TestCase):
             with self.assertRaises(IntegrityError):
                 session.commit()
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_metadata_file_name_without_export_time_does_not_raise(
         self,
     ) -> None:
@@ -327,6 +333,7 @@ class OperationsSchemaTest(unittest.TestCase):
             self.assertEqual(result_metadata, ingest_file_metadata)
             self.assertIsNotNone(result_metadata.file_id)
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_discovery_time_no_export_time_raises(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -348,6 +355,7 @@ class OperationsSchemaTest(unittest.TestCase):
             with self.assertRaises(IntegrityError):
                 session.commit()
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_processed_time_no_discovery_time_raises(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -371,6 +379,7 @@ class OperationsSchemaTest(unittest.TestCase):
             with self.assertRaises(IntegrityError):
                 session.commit()
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_datetimes_contained_constraint(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -397,6 +406,7 @@ class OperationsSchemaTest(unittest.TestCase):
             with self.assertRaises(IntegrityError):
                 session.commit()
 
+    # TODO(#11424): Delete this test once BQ materialization shipped to all states
     def test_ingest_file_metadata_no_default_db(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -424,3 +434,149 @@ class OperationsSchemaTest(unittest.TestCase):
             self.assertEqual(
                 "other_database_name", result_metadata.ingest_database_name
             )
+
+    def test_ingest_view_materialization_metadata(self) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = schema.DirectIngestViewMaterializationMetadata(
+                region_code="us_xx_yyyy",
+                instance="SECONDARY",
+                ingest_view_name="ingest_view_name",
+                is_invalidated=False,
+                job_creation_time=datetime.datetime.now(),
+                lower_bound_datetime_exclusive=None,
+                upper_bound_datetime_inclusive=datetime.datetime(2020, 5, 11),
+                materialization_time=None,
+            )
+            session.add(metadata)
+            session.commit()
+            result_metadata = one(
+                session.query(schema.DirectIngestViewMaterializationMetadata).all()
+            )
+            self.assertEqual(result_metadata, metadata)
+
+    def test_ingest_view_materialization_metadata_all_fields(self) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            now = datetime.datetime.now()
+            file_datetime = datetime.datetime(2020, 5, 11)
+            metadata = schema.DirectIngestViewMaterializationMetadata(
+                region_code="us_xx_yyyy",
+                instance="SECONDARY",
+                ingest_view_name="ingest_view_name",
+                is_invalidated=False,
+                job_creation_time=now - datetime.timedelta(hours=1),
+                lower_bound_datetime_exclusive=(
+                    file_datetime - datetime.timedelta(days=1)
+                ),
+                upper_bound_datetime_inclusive=file_datetime,
+                materialization_time=now,
+            )
+            session.add(metadata)
+            session.commit()
+            result_metadata = one(
+                session.query(schema.DirectIngestViewMaterializationMetadata).all()
+            )
+            self.assertEqual(result_metadata, metadata)
+
+    def test_ingest_view_materialization_datetime_bounds_ordering_constraint(
+        self,
+    ) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            now = datetime.datetime.now()
+            file_datetime = datetime.datetime(2020, 5, 11)
+            metadata = schema.DirectIngestViewMaterializationMetadata(
+                region_code="us_xx_yyyy",
+                instance="SECONDARY",
+                ingest_view_name="ingest_view_name",
+                is_invalidated=False,
+                job_creation_time=now,
+                lower_bound_datetime_exclusive=file_datetime,
+                upper_bound_datetime_inclusive=file_datetime,
+                materialization_time=now - datetime.timedelta(hours=1),
+            )
+            session.add(metadata)
+
+            with self.assertRaisesRegex(
+                IntegrityError, "CHECK constraint failed: datetime_bounds_ordering"
+            ):
+                session.commit()
+
+    def test_ingest_view_materialization_job_times_ordering_constraint(self) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            now = datetime.datetime.now()
+            metadata = schema.DirectIngestViewMaterializationMetadata(
+                region_code="us_xx_yyyy",
+                instance="SECONDARY",
+                ingest_view_name="ingest_view_name",
+                is_invalidated=False,
+                job_creation_time=now,
+                lower_bound_datetime_exclusive=None,
+                upper_bound_datetime_inclusive=datetime.datetime(2020, 5, 11),
+                materialization_time=now - datetime.timedelta(hours=1),
+            )
+            session.add(metadata)
+
+            with self.assertRaisesRegex(
+                IntegrityError, "CHECK constraint failed: job_times_ordering"
+            ):
+                session.commit()
+
+    def test_ingest_view_materialization_job_uniqueness_constraint(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestViewMaterializationMetadata(
+                region_code="us_xx_yyyy",
+                instance="SECONDARY",
+                ingest_view_name="ingest_view_name",
+                is_invalidated=False,
+                job_creation_time=datetime.datetime.now(),
+                lower_bound_datetime_exclusive=None,
+                upper_bound_datetime_inclusive=datetime.datetime(2020, 5, 11),
+                materialization_time=None,
+            )
+            session.add(metadata)
+            session.commit()
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            duplicate_metadata = schema.DirectIngestViewMaterializationMetadata(
+                region_code="us_xx_yyyy",
+                instance="SECONDARY",
+                ingest_view_name="ingest_view_name",
+                is_invalidated=False,
+                job_creation_time=datetime.datetime.now(),
+                lower_bound_datetime_exclusive=None,
+                upper_bound_datetime_inclusive=datetime.datetime(2020, 5, 11),
+                materialization_time=None,
+            )
+            session.add(duplicate_metadata)
+            with self.assertRaisesRegex(
+                sqlite3.IntegrityError,
+                "Attempting to commit repeated DirectIngestViewMaterializationMetadata row",
+            ):
+                session.commit()
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata_different_instance = (
+                schema.DirectIngestViewMaterializationMetadata(
+                    region_code="us_xx_yyyy",
+                    instance="PRIMARY",
+                    ingest_view_name="ingest_view_name",
+                    is_invalidated=False,
+                    job_creation_time=datetime.datetime.now(),
+                    lower_bound_datetime_exclusive=None,
+                    upper_bound_datetime_inclusive=datetime.datetime(2020, 5, 11),
+                    materialization_time=None,
+                )
+            )
+            session.add(metadata_different_instance)
+            session.commit()
