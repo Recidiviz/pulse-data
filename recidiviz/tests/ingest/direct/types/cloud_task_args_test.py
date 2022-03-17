@@ -36,8 +36,8 @@ class TestCloudTaskArgs(TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_file_tag",
             output_bucket_name="an_ingest_bucket",
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=dt_upper,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=dt_upper,
         )
 
         self.assertEqual(
@@ -48,8 +48,8 @@ class TestCloudTaskArgs(TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_file_tag",
             output_bucket_name="an_ingest_bucket",
-            upper_bound_datetime_prev=dt_lower,
-            upper_bound_datetime_to_export=dt_upper,
+            lower_bound_datetime_exclusive=dt_lower,
+            upper_bound_datetime_inclusive=dt_upper,
         )
 
         self.assertEqual(
@@ -63,8 +63,8 @@ class TestCloudTaskArgs(TestCase):
 
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="my_ingest_view_name",
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=dt_upper,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=dt_upper,
             ingest_instance=DirectIngestInstance.SECONDARY,
         )
 
@@ -75,8 +75,8 @@ class TestCloudTaskArgs(TestCase):
 
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="my_ingest_view_name",
-            upper_bound_datetime_prev=dt_lower,
-            upper_bound_datetime_to_export=dt_upper,
+            lower_bound_datetime_exclusive=dt_lower,
+            upper_bound_datetime_inclusive=dt_upper,
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
 

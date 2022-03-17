@@ -70,8 +70,8 @@ class DirectIngestViewMaterializationMetadataManager:
                 region_code=self.region_code,
                 instance=self.ingest_instance.value,
                 ingest_view_name=job_args.ingest_view_name,
-                upper_bound_datetime_inclusive=job_args.upper_bound_datetime_to_export,
-                lower_bound_datetime_exclusive=job_args.upper_bound_datetime_prev,
+                upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+                lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
                 job_creation_time=datetime.datetime.now(tz=pytz.UTC),
                 materialization_time=None,
                 is_invalidated=False,
@@ -101,8 +101,8 @@ class DirectIngestViewMaterializationMetadataManager:
                     region_code=self.region_code.upper(),
                     instance=self.ingest_instance.value,
                     ingest_view_name=job_args.ingest_view_name,
-                    upper_bound_datetime_inclusive=job_args.upper_bound_datetime_to_export,
-                    lower_bound_datetime_exclusive=job_args.upper_bound_datetime_prev,
+                    upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+                    lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
                     is_invalidated=False,
                 )
                 .one_or_none()
@@ -172,8 +172,8 @@ class DirectIngestViewMaterializationMetadataManager:
                     region_code=self.region_code.upper(),
                     instance=self.ingest_instance.value,
                     ingest_view_name=job_args.ingest_view_name,
-                    upper_bound_datetime_inclusive=job_args.upper_bound_datetime_to_export,
-                    lower_bound_datetime_exclusive=job_args.upper_bound_datetime_prev,
+                    upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+                    lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
                     is_invalidated=False,
                 )
                 .one()

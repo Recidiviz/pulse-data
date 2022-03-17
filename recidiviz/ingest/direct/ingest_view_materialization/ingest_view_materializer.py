@@ -149,11 +149,11 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
         ingest_view_export_args: IngestViewMaterializationArgs,
     ) -> str:
         """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
-        upper_bound_datetime_to_export in the args.
+        upper_bound_datetime_inclusive in the args.
         """
         return (
             f"{ingest_view_export_args.ingest_view_name}_"
-            f"{ingest_view_export_args.upper_bound_datetime_to_export.strftime(TABLE_NAME_DATE_FORMAT)}_"
+            f"{ingest_view_export_args.upper_bound_datetime_inclusive.strftime(TABLE_NAME_DATE_FORMAT)}_"
             f"upper_bound"
         )
 
@@ -162,17 +162,17 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
         ingest_view_export_args: IngestViewMaterializationArgs,
     ) -> str:
         """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
-        upper_bound_datetime_prev in the args.
+        lower_bound_datetime_exclusive in the args.
 
-        Throws if the args have a null upper_bound_datetime_prev.
+        Throws if the args have a null lower_bound_datetime_exclusive.
         """
-        if not ingest_view_export_args.upper_bound_datetime_prev:
+        if not ingest_view_export_args.lower_bound_datetime_exclusive:
             raise ValueError(
-                f"Expected nonnull upper_bound_datetime_prev for args: {ingest_view_export_args}"
+                f"Expected nonnull lower_bound_datetime_exclusive for args: {ingest_view_export_args}"
             )
         return (
             f"{ingest_view_export_args.ingest_view_name}_"
-            f"{ingest_view_export_args.upper_bound_datetime_prev.strftime(TABLE_NAME_DATE_FORMAT)}_"
+            f"{ingest_view_export_args.lower_bound_datetime_exclusive.strftime(TABLE_NAME_DATE_FORMAT)}_"
             f"lower_bound"
         )
 
@@ -197,7 +197,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
             ),
         )
 
-        if ingest_view_export_args.upper_bound_datetime_prev:
+        if ingest_view_export_args.lower_bound_datetime_exclusive:
 
             upper_bound_prev_query = StrictStringFormatter().format(
                 SELECT_SUBQUERY,
@@ -240,17 +240,17 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
                 ingest_view_export_args
             ),
             ingest_view=ingest_view,
-            date_bound=ingest_view_export_args.upper_bound_datetime_to_export,
+            date_bound=ingest_view_export_args.upper_bound_datetime_inclusive,
         )
         single_date_table_export_jobs.append(upper_bound_table_job)
 
-        if ingest_view_export_args.upper_bound_datetime_prev:
+        if ingest_view_export_args.lower_bound_datetime_exclusive:
             lower_bound_table_job = self._generate_export_job_for_date(
                 table_name=self._get_lower_bound_intermediate_table_name(
                     ingest_view_export_args
                 ),
                 ingest_view=ingest_view,
-                date_bound=ingest_view_export_args.upper_bound_datetime_prev,
+                date_bound=ingest_view_export_args.lower_bound_datetime_exclusive,
             )
             single_date_table_export_jobs.append(lower_bound_table_job)
 
@@ -268,7 +268,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
         single_date_table_ids = [
             self._get_upper_bound_intermediate_table_name(ingest_view_export_args)
         ]
-        if ingest_view_export_args.upper_bound_datetime_prev:
+        if ingest_view_export_args.lower_bound_datetime_exclusive:
             single_date_table_ids.append(
                 self._get_lower_bound_intermediate_table_name(ingest_view_export_args)
             )
@@ -318,7 +318,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
 
         if (
             ingest_view.do_reverse_date_diff
-            and not ingest_view_export_args.upper_bound_datetime_prev
+            and not ingest_view_export_args.lower_bound_datetime_exclusive
         ):
             raise ValueError(
                 f"Attempting to process reverse date diff view "
@@ -397,14 +397,14 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
             ingest_instance=DirectIngestInstance.PRIMARY,
             destination_table_type=DestinationTableType.TEMPORARY,
             destination_table_id=upper_bound_table_id,
-            update_timestamp=ingest_view_export_args.upper_bound_datetime_to_export,
+            update_timestamp=ingest_view_export_args.upper_bound_datetime_inclusive,
             param_name=UPPER_BOUND_TIMESTAMP_PARAM_NAME,
             raw_table_subquery_name_prefix="upper_"
             if ingest_view.materialize_raw_data_table_views
             else "",
         )
 
-        if ingest_view_export_args.upper_bound_datetime_prev:
+        if ingest_view_export_args.lower_bound_datetime_exclusive:
             lower_bound_table_id = cls._get_lower_bound_intermediate_table_name(
                 ingest_view_export_args
             )
@@ -416,7 +416,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 destination_table_type=DestinationTableType.TEMPORARY,
                 destination_table_id=lower_bound_table_id,
-                update_timestamp=ingest_view_export_args.upper_bound_datetime_prev,
+                update_timestamp=ingest_view_export_args.lower_bound_datetime_exclusive,
                 param_name=LOWER_BOUND_TIMESTAMP_PARAM_NAME,
                 raw_table_subquery_name_prefix="lower_"
                 if ingest_view.materialize_raw_data_table_views
@@ -484,8 +484,8 @@ if __name__ == "__main__":
     # Update these variables and run to print an export query you can run in the BigQuery UI
     region_code_: str = "us_mo"
     ingest_view_name_: str = "tak001_offender_identification"
-    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 10, 15)
-    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 12, 18)
+    lower_bound_datetime_exclusive_: datetime.datetime = datetime.datetime(2020, 10, 15)
+    upper_bound_datetime_inclusive_: datetime.datetime = datetime.datetime(2020, 12, 18)
 
     with local_project_id_override(GCP_PROJECT_STAGING):
         region_ = regions.get_region(region_code_, is_direct_ingest=True)
@@ -501,8 +501,8 @@ if __name__ == "__main__":
             #  IngestViewMaterializationArgs.
             GcsfsIngestViewExportArgs(
                 ingest_view_name=ingest_view_name_,
-                upper_bound_datetime_prev=upper_bound_datetime_prev_,
-                upper_bound_datetime_to_export=upper_bound_datetime_to_export_,
+                lower_bound_datetime_exclusive=lower_bound_datetime_exclusive_,
+                upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
                 output_bucket_name="any_bucket",
             ),
         )

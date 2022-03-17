@@ -69,8 +69,8 @@ class FileBasedMaterializationArgsGeneratorDelegate(
     ) -> GcsfsIngestViewExportArgs:
         return GcsfsIngestViewExportArgs(
             ingest_view_name=ingest_view_name,
-            upper_bound_datetime_prev=lower_bound_datetime_exclusive,
-            upper_bound_datetime_to_export=upper_bound_datetime_inclusive,
+            lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
             output_bucket_name=self.output_bucket_name,
         )
 
@@ -100,8 +100,8 @@ class FileBasedMaterializationArgsGeneratorDelegate(
         return [
             GcsfsIngestViewExportArgs(
                 ingest_view_name=metadata.file_tag,
-                upper_bound_datetime_prev=metadata.datetimes_contained_lower_bound_exclusive,
-                upper_bound_datetime_to_export=metadata.datetimes_contained_upper_bound_inclusive,
+                lower_bound_datetime_exclusive=metadata.datetimes_contained_lower_bound_exclusive,
+                upper_bound_datetime_inclusive=metadata.datetimes_contained_upper_bound_inclusive,
                 output_bucket_name=self.output_bucket_name,
             )
             for metadata in metadata_list

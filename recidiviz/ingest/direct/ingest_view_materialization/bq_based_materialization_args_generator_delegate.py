@@ -65,8 +65,8 @@ class BQBasedMaterializationArgsGeneratorDelegate(
     ) -> BQIngestViewMaterializationArgs:
         return BQIngestViewMaterializationArgs(
             ingest_view_name=ingest_view_name,
-            upper_bound_datetime_prev=lower_bound_datetime_exclusive,
-            upper_bound_datetime_to_export=upper_bound_datetime_inclusive,
+            lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
             ingest_instance=self.metadata_manager.ingest_instance,
         )
 
@@ -96,8 +96,8 @@ class BQBasedMaterializationArgsGeneratorDelegate(
         return [
             BQIngestViewMaterializationArgs(
                 ingest_view_name=metadata.ingest_view_name,
-                upper_bound_datetime_prev=metadata.lower_bound_datetime_exclusive,
-                upper_bound_datetime_to_export=metadata.upper_bound_datetime_inclusive,
+                lower_bound_datetime_exclusive=metadata.lower_bound_datetime_exclusive,
+                upper_bound_datetime_inclusive=metadata.upper_bound_datetime_inclusive,
                 ingest_instance=DirectIngestInstance(metadata.instance),
             )
             for metadata in metadata_list

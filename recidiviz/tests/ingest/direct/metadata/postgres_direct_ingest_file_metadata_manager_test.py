@@ -493,8 +493,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -513,8 +513,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         path = _make_unprocessed_path(
@@ -549,8 +549,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -567,8 +567,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -585,8 +585,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -616,8 +616,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -648,8 +648,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=None,
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
         )
 
         ingest_view_unprocessed_path_1 = _make_unprocessed_path(
@@ -664,8 +664,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path_2 = _make_unprocessed_path(
@@ -715,8 +715,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
             is_invalidated=False,
             is_file_split=False,
             job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
-            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+            datetimes_contained_lower_bound_exclusive=export_args.lower_bound_datetime_exclusive,
+            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_inclusive,
             normalized_file_name=None,
             export_time=None,
             discovery_time=None,
@@ -896,8 +896,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -920,8 +920,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -948,8 +948,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
                 GcsfsIngestViewExportArgs(
                     ingest_view_name="file_tag",
                     output_bucket_name=self.output_bucket_name,
-                    upper_bound_datetime_prev=None,
-                    upper_bound_datetime_to_export=datetime.datetime(
+                    lower_bound_datetime_exclusive=None,
+                    upper_bound_datetime_inclusive=datetime.datetime(
                         2015, 1, 2, 2, 2, 2, 2
                     ),
                 )
@@ -960,8 +960,10 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
                 GcsfsIngestViewExportArgs(
                     ingest_view_name="file_tag",
                     output_bucket_name=self.output_bucket_name,
-                    upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-                    upper_bound_datetime_to_export=datetime.datetime(
+                    lower_bound_datetime_exclusive=datetime.datetime(
+                        2015, 1, 2, 2, 2, 2, 2
+                    ),
+                    upper_bound_datetime_inclusive=datetime.datetime(
                         2015, 1, 2, 3, 3, 3, 3
                     ),
                 )
@@ -972,8 +974,10 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
                 GcsfsIngestViewExportArgs(
                     ingest_view_name="another_tag",
                     output_bucket_name=self.output_bucket_name,
-                    upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
-                    upper_bound_datetime_to_export=datetime.datetime(
+                    lower_bound_datetime_exclusive=datetime.datetime(
+                        2015, 1, 2, 3, 3, 3, 3
+                    ),
+                    upper_bound_datetime_inclusive=datetime.datetime(
                         2015, 1, 2, 3, 4, 4, 4
                     ),
                 )
@@ -1034,8 +1038,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         with freeze_time("2015-01-02T03:06:06"):
             self.metadata_manager.register_ingest_file_export_job(args)
@@ -1066,8 +1070,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         with freeze_time("2015-01-02T03:06:06"):
             self.metadata_manager.register_ingest_file_export_job(args)
@@ -1095,14 +1099,14 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         args_other_region = GcsfsIngestViewExportArgs(
             ingest_view_name="other_file_tag",
             output_bucket_name=self.other_output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         with freeze_time("2015-01-02T03:06:06"):
             self.metadata_manager.register_ingest_file_export_job(args)
@@ -1131,8 +1135,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
         metadata_entity = self.metadata_manager.register_ingest_file_export_job(args)
         self.metadata_manager.register_ingest_view_export_file_name(
@@ -1155,8 +1159,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(
@@ -1197,8 +1201,10 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
             args = GcsfsIngestViewExportArgs(
                 ingest_view_name="file_tag",
                 output_bucket_name=self.output_bucket_name,
-                upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-                upper_bound_datetime_to_export=datetime.datetime(
+                lower_bound_datetime_exclusive=datetime.datetime(
+                    2015, 1, 2, 2, 2, 2, 2
+                ),
+                upper_bound_datetime_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 3, 3, 3
                 ),
             )
@@ -1219,8 +1225,10 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
             args_2 = GcsfsIngestViewExportArgs(
                 ingest_view_name="file_tag_2",
                 output_bucket_name=self.output_bucket_name,
-                upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-                upper_bound_datetime_to_export=datetime.datetime(
+                lower_bound_datetime_exclusive=datetime.datetime(
+                    2015, 1, 2, 2, 2, 2, 2
+                ),
+                upper_bound_datetime_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 3, 3, 3
                 ),
             )
@@ -1252,8 +1260,8 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         args = GcsfsIngestViewExportArgs(
             ingest_view_name="file_tag",
             output_bucket_name=self.output_bucket_name,
-            upper_bound_datetime_prev=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
-            upper_bound_datetime_to_export=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
         )
 
         ingest_view_unprocessed_path = _make_unprocessed_path(

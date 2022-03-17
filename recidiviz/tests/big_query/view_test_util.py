@@ -483,17 +483,17 @@ class BaseViewTest(unittest.TestCase):
         """Uses the ingest view diff query from DirectIngestIngestViewExportManager.debug_query_for_args to query
         raw data for ingest view tests."""
         view: BigQueryView = view_builder.build()
-        upper_bound_datetime_prev_: datetime = DEFAULT_FILE_UPDATE_DATETIME - timedelta(
-            days=1
+        lower_bound_datetime_exclusive_: datetime = (
+            DEFAULT_FILE_UPDATE_DATETIME - timedelta(days=1)
         )
-        upper_bound_datetime_to_export_: datetime = self.query_run_dt
+        upper_bound_datetime_inclusive_: datetime = self.query_run_dt
         view_query = str(
             IngestViewMaterializer.debug_query_for_args(
                 ingest_views_by_name={view_builder.ingest_view_name: view},
                 ingest_view_export_args=GcsfsIngestViewExportArgs(
                     ingest_view_name=view_builder.ingest_view_name,
-                    upper_bound_datetime_prev=upper_bound_datetime_prev_,
-                    upper_bound_datetime_to_export=upper_bound_datetime_to_export_,
+                    lower_bound_datetime_exclusive=lower_bound_datetime_exclusive_,
+                    upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
                     output_bucket_name="any_bucket",
                 ),
             )
