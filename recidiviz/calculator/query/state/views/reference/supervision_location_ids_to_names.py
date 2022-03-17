@@ -100,18 +100,24 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         SELECT
             DISTINCT 'US_TN' AS state_code,
             division AS level_3_supervision_location_external_id,
-            INITCAP(division) AS level_3_supervision_location_name,
+            CASE
+                WHEN division = 'NOT_APPLICABLE' THEN division
+                WHEN division = 'INTERNAL_UNKNOWN' THEN division
+                ELSE INITCAP(division)
+            END AS level_3_supervision_location_name,
             district AS level_2_supervision_location_external_id,
-            IF(district = 'NOT_APPLICABLE',
-                'NOT_APPLICABLE',
-                IF(CONTAINS_SUBSTR(district, ','),
+            CASE
+                WHEN district = 'NOT_APPLICABLE' THEN district
+                WHEN district = 'INTERNAL_UNKNOWN' THEN district
+                ELSE IF(CONTAINS_SUBSTR(district, ','),
                     CONCAT('Districts ',
                         SUBSTR(district, 0, STRPOS(district, ',') - 1),
                         ' and ',
-                        SUBSTR(district, STRPOS(district, ',') , 1)),
-                    CONCAT('District ', district))) AS level_2_supervision_location_name,
-            facility_name AS level_1_supervision_location_name,
-            facility_code AS level_1_supervision_location_external_id
+                        SUBSTR(district, STRPOS(district, ',') + 1)),
+                    CONCAT('District ', district))
+            END AS level_2_supervision_location_name,
+            facility_code AS level_1_supervision_location_external_id,
+            facility_name AS level_1_supervision_location_name
         FROM `{project_id}.external_reference.us_tn_supervision_facility_names`
     ),
     id_location_names AS (

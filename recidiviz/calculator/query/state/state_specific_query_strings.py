@@ -35,7 +35,7 @@ VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
 )
 
 # The states in the Pathways views that will be grouping by level 2 incarceration locations.
-PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES: List[str] = ['"US_ID"']
+PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES: List[str] = ['"US_ID"', '"US_TN"']
 PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS: str = (
     f"({', '.join(PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES)})"
 )
@@ -45,14 +45,14 @@ STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_co
 # Select the raw table that ultimately powers a state's incarceration pathways calculations.
 # Note: there are a few limitations with this strategy. Most notably, this only picks one raw table per state. It does
 # not accommodate checking multiple tables that may potentially power incarceration periods in ingest.
+# TODO(#11642) Allow for more than one table per state
 STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode, str
 ] = {
-    # TODO(#10453): Re-enable once we have some raw data
-    # StateCode.US_TN: "OffenderMovement",
     StateCode.US_ID: "movement",
-    StateCode.US_ND: "elite_externalmovements",
     StateCode.US_ME: "CIS_309_MOVEMENT",
+    StateCode.US_ND: "elite_externalmovements",
+    StateCode.US_TN: "OffenderMovement",
 }
 
 # Select the raw table that ultimately powers a state's supervision pathways calculations.
@@ -61,6 +61,7 @@ STATE_CODE_TO_PATHWAYS_SUPERVISION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
 ] = {
     StateCode.US_ID: "movement",
     StateCode.US_ND: "docstars_offendercasestable",
+    StateCode.US_TN: "SupervisionPlan",
 }
 
 
