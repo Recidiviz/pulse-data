@@ -42,7 +42,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    GcsfsIngestViewExportArgs,
+    IngestViewMaterializationArgs,
     LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -259,19 +259,18 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         if self.controller.region.is_ingest_launched_in_env():
             now = datetime.datetime.now()
             yesterday = now - datetime.timedelta(days=1)
-            ingest_file_export_job_args = GcsfsIngestViewExportArgs(
+
+            materialization_job_args = self._register_materialization_job(
+                controller=self.controller,
                 ingest_view_name=fixture_file_name,
-                upper_bound_datetime_to_export=now,
-                upper_bound_datetime_prev=yesterday,
-                output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
+                upper_bound_datetime=now,
+                lower_bound_datetime=yesterday,
             )
 
-            self.controller.ingest_file_metadata_manager.register_ingest_file_export_job(
-                ingest_file_export_job_args
-            )
             self.controller.ingest_view_export_manager.export_view_for_args(
-                ingest_file_export_job_args
+                materialization_job_args
             )
+
         else:
             if isinstance(args, LegacyExtractAndMergeArgs):
                 fixture_util.add_direct_ingest_path(
@@ -336,23 +335,37 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         file_tag, _ext = os.path.splitext(filename)
         if not is_rerun:
             self.file_tags_processed.append(file_tag)
-        ingest_file_export_job_args = GcsfsIngestViewExportArgs(
+
+        materialization_job_args = self._register_materialization_job(
+            controller=self.controller,
             ingest_view_name=file_tag,
-            upper_bound_datetime_to_export=now,
-            upper_bound_datetime_prev=yesterday,
-            output_bucket_name=self.controller.ingest_bucket_path.bucket_name,
+            upper_bound_datetime=now,
+            lower_bound_datetime=yesterday,
         )
 
-        self.controller.ingest_file_metadata_manager.register_ingest_file_export_job(
-            ingest_file_export_job_args
-        )
         self.controller.ingest_view_export_manager.export_view_for_args(
-            ingest_file_export_job_args
+            materialization_job_args
         )
 
         run_task_queues_to_empty(self.controller)
 
         environ_patcher.stop()
+
+    @staticmethod
+    def _register_materialization_job(
+        controller: BaseDirectIngestController,
+        ingest_view_name: str,
+        upper_bound_datetime: datetime.datetime,
+        lower_bound_datetime: Optional[datetime.datetime],
+    ) -> IngestViewMaterializationArgs:
+        delegate = controller.ingest_view_materialization_args_generator.delegate
+        args = delegate.build_new_args(
+            ingest_view_name=ingest_view_name,
+            upper_bound_datetime_inclusive=upper_bound_datetime,
+            lower_bound_datetime_exclusive=lower_bound_datetime,
+        )
+        delegate.register_new_job(args)
+        return args
 
     def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:
         self.invalidate_ingest_view_metadata()

@@ -52,6 +52,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
 )
 from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer import (
     ExtractAndMergeJobPrioritizer,
+    ExtractAndMergeJobPrioritizerImpl,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
@@ -84,6 +85,12 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     IngestViewResultsParserDelegateImpl,
     yaml_mappings_filepath,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materialization_args_generator_delegate import (
+    BQBasedMaterializationArgsGeneratorDelegate,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
+    BQBasedMaterializerDelegate,
+)
 from recidiviz.ingest.direct.ingest_view_materialization.file_based_materialization_args_generator_delegate import (
     FileBasedMaterializationArgsGeneratorDelegate,
 )
@@ -112,6 +119,9 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
+    DirectIngestViewMaterializationMetadataManager,
+)
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestIngestFileMetadataManager,
     PostgresDirectIngestRawFileMetadataManager,
@@ -121,8 +131,8 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
-    GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    IngestViewMaterializationArgs,
     LegacyExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -243,6 +253,17 @@ class BaseDirectIngestController:
         materialization_args_generator_delegate: IngestViewMaterializationArgsGeneratorDelegate
         materializer_delegate: IngestViewMaterializerDelegate
 
+        # TODO(#11424): Delete this variable once BQ ingest view materialization is
+        #  enabled for all states.
+        self.ingest_file_metadata_manager: Optional[
+            PostgresDirectIngestIngestFileMetadataManager
+        ] = None
+        # TODO(#11424): Update the type of this variable to non-optional once BQ ingest
+        #  view materialization is enabled for all states and remove all checks in this
+        #  file for optional view_materialization_metadata_manager.
+        self.view_materialization_metadata_manager: Optional[
+            DirectIngestViewMaterializationMetadataManager
+        ] = None
         if not self.is_bq_materialization_enabled:
             # TODO(#11424): Delete this branch once BQ ingest view materialization is
             #  enabled for all states.
@@ -268,14 +289,24 @@ class BaseDirectIngestController:
                 big_query_client=big_query_client,
             )
         else:
-            # TODO(#9717): Create new BQ-based job prioritizer and set here
-            #  for launched BQ materialization states.
-            # TODO(#9717): Create new BQ-based args generator delegate and set here
-            #  for launched BQ materialization states.
-            # TODO(#9717): Create new BQ-based materializer delegate and set here
-            #  for launched BQ materialization states.
-            raise NotImplementedError(
-                f"BQ materialization unexpectedly enabled for state [{self.region_code}]"
+            self.view_materialization_metadata_manager = (
+                DirectIngestViewMaterializationMetadataManager(
+                    region_code=self.region_code(),
+                    ingest_instance=self.ingest_instance,
+                )
+            )
+            self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
+                bq_client=big_query_client,
+                ingest_view_rank_list=self.get_ingest_view_rank_list(),
+            )
+            materializer_delegate = BQBasedMaterializerDelegate(
+                metadata_manager=self.view_materialization_metadata_manager,
+                big_query_client=big_query_client,
+            )
+            materialization_args_generator_delegate = (
+                BQBasedMaterializationArgsGeneratorDelegate(
+                    metadata_manager=self.view_materialization_metadata_manager
+                )
             )
 
         self.ingest_view_materialization_args_generator = (
@@ -602,6 +633,10 @@ class BaseDirectIngestController:
         if not self.is_bq_materialization_enabled:
             if not isinstance(args, LegacyExtractAndMergeArgs):
                 raise ValueError(f"Unexpected args type: [{args}]")
+            if not self.ingest_file_metadata_manager:
+                raise ValueError(
+                    "Legacy ingest_file_metadata_manager is unexpectedly None."
+                )
             discovered = (
                 self.ingest_file_metadata_manager.has_ingest_view_file_been_discovered(
                     args.file_path
@@ -609,11 +644,13 @@ class BaseDirectIngestController:
             )
 
             if not discovered:
-                # If the file path has not actually been discovered by the controller yet, it likely was just added and a
-                # subsequent call to handle_files will register it and trigger another call to this function so we can
+                # If the file path has not actually been discovered by the controller
+                # yet, it likely was just added and a subsequent call to handle_files
+                # will register it and trigger another call to this function so we can
                 # schedule the appropriate job.
                 logging.info(
-                    "Found args [%s] for a file that has not been discovered by the metadata manager yet - not scheduling.",
+                    "Found args [%s] for a file that has not been discovered by the "
+                    "metadata manager yet - not scheduling.",
                     args,
                 )
                 return None
@@ -883,6 +920,10 @@ class BaseDirectIngestController:
             #  enabled for all states.
             if not isinstance(args, LegacyExtractAndMergeArgs):
                 raise ValueError(f"Unexpected args type: [{type(args)}]")
+            if not self.ingest_file_metadata_manager:
+                raise ValueError(
+                    "Legacy ingest_file_metadata_manager is unexpectedly None."
+                )
 
             self.fs.mv_path_to_processed_path(args.file_path)
 
@@ -897,7 +938,7 @@ class BaseDirectIngestController:
             return
 
         # TODO(#9717): Implement clean up for BQ-based ingest view results. Mark rows
-        #  as processed.
+        #  as processed in BQ.
         raise NotImplementedError(
             f"Functionality not yet supported for BQ-materialization enabled states: "
             f"[{type(args)}]."
@@ -1065,6 +1106,15 @@ class BaseDirectIngestController:
                 ):
                     self.raw_file_metadata_manager.mark_raw_file_as_discovered(path)
             elif parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+                if self.is_bq_materialization_enabled:
+                    raise ValueError(
+                        f"Found INGEST_VIEW file for region with BQ materialization "
+                        f"enabled: [{path.uri()}]."
+                    )
+                if not self.ingest_file_metadata_manager:
+                    raise ValueError(
+                        "Legacy ingest_file_metadata_manager is unexpectedly None."
+                    )
                 if not self.ingest_file_metadata_manager.has_ingest_view_file_been_discovered(
                     path
                 ):
@@ -1235,7 +1285,7 @@ class BaseDirectIngestController:
         self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_materialization(
-        self, ingest_view_export_args: GcsfsIngestViewExportArgs
+        self, ingest_view_export_args: IngestViewMaterializationArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
@@ -1248,9 +1298,14 @@ class BaseDirectIngestController:
         did_export = self.ingest_view_export_manager.export_view_for_args(
             ingest_view_export_args
         )
+
+        args_generator_delegate = (
+            self.ingest_view_materialization_args_generator.delegate
+        )
+
         if (
             not did_export
-            or not self.ingest_file_metadata_manager.get_ingest_view_metadata_pending_export()
+            or not args_generator_delegate.get_registered_jobs_pending_completion()
         ):
             logging.info("Creating cloud task to schedule next job.")
             self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
@@ -1299,6 +1354,14 @@ class BaseDirectIngestController:
 
         Returns True if the file was split, False if splitting was not necessary.
         """
+        if self.is_bq_materialization_enabled:
+            raise ValueError(
+                "Function should not be called for BQ-materialization-enabled states."
+            )
+        if not self.ingest_file_metadata_manager:
+            raise ValueError(
+                "Legacy ingest_file_metadata_manager is unexpectedly None."
+            )
 
         should_split = self._should_split_file(path)
         if not should_split:
