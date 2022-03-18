@@ -16,17 +16,35 @@
 # =============================================================================
 """Flask configs for different environments."""
 
+import os
+
 import attr
 
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
+from recidiviz.utils.environment import in_development
+
+JUSTICE_COUNTS_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(
+    SchemaType.JUSTICE_COUNTS
+)
+JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL = "JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL"
 
 
 @attr.define
 class Config:
-    DB_URL: str
-    DATABASE_KEY: SQLAlchemyDatabaseKey = SQLAlchemyDatabaseKey.for_schema(
-        SchemaType.JUSTICE_COUNTS
-    )
+    DATABASE_KEY: SQLAlchemyDatabaseKey = JUSTICE_COUNTS_DATABASE_KEY
     # Indicates whether CSRF protection is enabled for the whole app. Should be set to False for tests.
     WTF_CSRF_ENABLED: bool = True
+    DB_URL: str = attr.field()
+
+    @DB_URL.default
+    def _db_url_factory(self) -> str:
+        if in_development():
+            return os.environ[JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL]
+
+        return SQLAlchemyEngineManager.get_server_postgres_instance_url(
+            database_key=self.DATABASE_KEY
+        )

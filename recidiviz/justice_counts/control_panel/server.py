@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Backend entry point for Justice Counts Control Panel backend API."""
-from typing import List, Tuple
+from http import HTTPStatus
+from typing import List, Optional, Tuple
 
 from flask import Blueprint, Flask
 from flask_wtf.csrf import CSRFProtect
@@ -25,10 +26,6 @@ from recidiviz.justice_counts.control_panel.routes.api import api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import auth_blueprint
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 
-# Note that we don't have to explicitly call `create_app` anywhere;
-# Flask will automatically detect the factory function during `flask run`
-# source: https://flask.palletsprojects.com/en/2.0.x/patterns/appfactories/#using-applications
-
 
 def get_blueprints_for_justice_counts_documentation() -> List[Tuple[Blueprint, str]]:
     return [
@@ -37,17 +34,35 @@ def get_blueprints_for_justice_counts_documentation() -> List[Tuple[Blueprint, s
     ]
 
 
-def create_app(config: Config) -> Flask:
+def create_app(config: Optional[Config] = None) -> Flask:
+    """
+    This function is known as the application factory. It is responsible
+    for returning the Flask app instance. Any configuration, registration,
+    and other setup the application needs should happen inside the function,
+    and then the application will be returned.
+
+    Note that we don't have to explicitly call `create_app` anywhere;
+    Flask will automatically detect the factory function during `flask run`
+    source: https://flask.palletsprojects.com/en/2.0.x/patterns/appfactories/#using-applications
+    """
     app = Flask(__name__)
+
+    config = config or Config()
     app.config.from_object(config)
 
     setup_scoped_sessions(
-        app=app, database_key=app.config["DATABASE_KEY"], db_url=app.config["DB_URL"]
+        app=app, database_key=config.DATABASE_KEY, db_url=config.DB_URL
     )
 
     app.register_blueprint(api_blueprint, url_prefix="/api")
     app.register_blueprint(auth_blueprint, url_prefix="/auth")
 
     CSRFProtect(app)
+
+    @app.route("/health")
+    def health() -> Tuple[str, HTTPStatus]:
+        """This just returns 200, and is used by Docker to verify that the app is running."""
+
+        return "", HTTPStatus.OK
 
     return app
