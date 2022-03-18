@@ -44,6 +44,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
 from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
     LegacyExtractAndMergeArgs,
+    NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import IngestInfo
@@ -278,8 +279,11 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                     args.file_path,
                     region_code=self.controller.region_code(),
                 )
+            elif isinstance(args, NewExtractAndMergeArgs):
+                raise NotImplementedError(
+                    "TODO(#9717): Implement for BQ-based extract and merge args."
+                )
             else:
-                # TODO(#9717): Implement for BQ-based extract and merge args.
                 raise ValueError(f"Unexpected args type: [{type(args)}]")
 
         # pylint:disable=protected-access

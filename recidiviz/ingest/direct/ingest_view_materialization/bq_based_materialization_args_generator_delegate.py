@@ -67,7 +67,7 @@ class BQBasedMaterializationArgsGeneratorDelegate(
             ingest_view_name=ingest_view_name,
             lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
             upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
-            ingest_instance=self.metadata_manager.ingest_instance,
+            ingest_instance_=self.metadata_manager.ingest_instance,
         )
 
     def register_new_job(self, args: BQIngestViewMaterializationArgs) -> None:
@@ -98,7 +98,7 @@ class BQBasedMaterializationArgsGeneratorDelegate(
                 ingest_view_name=metadata.ingest_view_name,
                 lower_bound_datetime_exclusive=metadata.lower_bound_datetime_exclusive,
                 upper_bound_datetime_inclusive=metadata.upper_bound_datetime_inclusive,
-                ingest_instance=DirectIngestInstance(metadata.instance),
+                ingest_instance_=DirectIngestInstance(metadata.instance),
             )
             for metadata in metadata_list
         ]
