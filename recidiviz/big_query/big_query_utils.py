@@ -22,6 +22,7 @@ from enum import Enum
 from typing import Any, Dict, List, Type
 
 import attr
+import pandas as pd
 import sqlalchemy
 from google.cloud import bigquery
 from sqlalchemy import Column
@@ -189,3 +190,27 @@ def transform_dict_to_bigquery_row(data_point: Dict[str, Any]) -> bigquery.table
         values.append(value)
         indices[key] = idx
     return bigquery.table.Row(values, indices)
+
+
+def make_bq_compatible_types_for_df(
+    df: pd.DataFrame, convert_datetime_to_date: bool, bool_map: Dict[str, bool]
+) -> pd.DataFrame:
+    """Give BigQuery hints about column types:
+    - Convert datetime -> date, if specified
+    - Find strings that look like times and convert them to times
+    - Find strings that should be bool and convert them to bools
+    """
+    # make it possible to distinguish datetime/string/int/float
+    df = df.convert_dtypes()
+
+    time_regex = "(2[0-3]|[01]?[0-9]):([0-5][0-9])(:([0-5][0-9]))?"
+    bool_regex = "[" + "|".join(bool_map.keys()) + "]"
+    if convert_datetime_to_date:
+        for col in df.select_dtypes(include="datetime").columns:
+            df[col] = df[col].dt.date
+    for col in df.select_dtypes(include="string").columns:
+        if df[col].str.fullmatch(time_regex).all():
+            df[col] = pd.to_datetime(df[col], infer_datetime_format=True).dt.time
+        elif df[col].str.fullmatch(bool_regex).all():
+            df[col] = df[col].map(bool_map)
+    return df

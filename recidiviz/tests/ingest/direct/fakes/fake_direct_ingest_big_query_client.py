@@ -17,6 +17,7 @@
 """A fake implementation of BigQueryClient for use in direct ingest tests."""
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
+import pandas as pd
 import sqlalchemy
 from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery
@@ -117,6 +118,14 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
         skip_leading_rows: int = 0,
+    ) -> bigquery.job.LoadJob:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def load_into_table_from_dataframe_async(
+        self,
+        source: pd.DataFrame,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
     ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 

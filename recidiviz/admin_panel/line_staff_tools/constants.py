@@ -26,3 +26,8 @@ ROSTER_STATE_CODES = {
     *EMAIL_STATE_CODES,
     *PRACTICES_STATE_CODES,
 }
+RAW_FILES_STATE_CODES = [StateCode.US_TN]
+RAW_FILES_UPLOAD_TYPES_TABLES = {
+    "STANDARDS_DUE": "us_tn_standards_due",
+    "STANDARDS_ADMIN": "us_tn_standards_admin",
+}
