@@ -84,7 +84,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
-                ingest_args.ingest_instance(),
+                ingest_args.ingest_instance,
                 self.controller.run_extract_and_merge_job_and_kick_scheduler_on_completion,
             ),
             ingest_args,
@@ -177,7 +177,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
-                ingest_view_export_args.ingest_instance(),
+                ingest_view_export_args.ingest_instance,
                 self.controller.do_ingest_view_materialization,
             ),
             ingest_view_export_args,

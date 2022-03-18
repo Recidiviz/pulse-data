@@ -111,7 +111,7 @@ class FileBasedMaterializerDelegate(
                 query=query,
                 query_parameters=[],
                 intermediate_dataset_id=ingest_view_materialization_temp_dataset(
-                    ingest_view, args.ingest_instance()
+                    ingest_view, args.ingest_instance
                 ),
                 intermediate_table_name=f"{args.ingest_view_name}_latest_export",
                 output_uri=self.generate_output_path(args).uri(),
