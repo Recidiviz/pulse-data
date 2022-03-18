@@ -476,7 +476,7 @@ class ManualUploadTest(TestCase):
                 "CMCF": 3125,
                 "SMCI": 2403,
                 "County Jails (approved)": 835,
-                "County Jails (unapproved)": 729,
+                "County Jails (unapproved)": 728,
                 "Youthful Offender Facility": 13,
                 "Private Prisons": 3489,
                 "Regional Correctional Facilities": 3946,
@@ -489,11 +489,31 @@ class ManualUploadTest(TestCase):
                 "Court Order": 141,
             }
             self.assertEqual(EXPECTED_TOTALS, facility_totals)
-            # The report itself has an inconsistency, the totals column has 729 for unapproved county jails, but summing
-            # across the demographics column yields 728. The ingest process simply persists the data provided but does not
-            # attempt to resolve inconsistencies.
             EXPECTED_TOTALS["County Jails (unapproved)"] = 728
             self.assertEqual(EXPECTED_TOTALS, facility_totals_from_demographics)
+
+    def test_ingestMalformedMultiDimensionReport_isNotPersisted(self) -> None:
+        # Act
+        with pytest.raises(
+            ValueError,
+            # 'Prison Population by Facility', manifest - facility_with_demographics.csv Prison Population by Demographics'\]\]"
+            match=r"Sums across dimensions do not match for the following table group\(s\) \[\['manifest - facility_totals.csv', 'manifest - facility_with_demographics.csv'\]\]",
+        ):
+            manual_upload.ingest(
+                self.fs,
+                test_utils.prepare_files(
+                    self.fs, manifest_filepath("report2_multidimension_malformed")
+                ),
+            )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query_result = session.query(schema.Source).all()
+            self.assertEqual(
+                [], query_result
+            )  # table with malformed inputs was not persisted in the databases
 
     def test_ingestMalformedReport_negativeValue_isNotPersisted(self) -> None:
         # Act

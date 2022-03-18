@@ -1853,6 +1853,8 @@ def _convert_publish_date(value: Optional[str]) -> datetime.date:
 
 @attr.s(frozen=True)
 class Report:
+    """Ingest model that represents a report"""
+
     # Name of the website or organization that published the report, e.g. 'Mississippi Department of Corrections'
     source_name: str = attr.ib()
     # Distinguishes between the many types of reports that a single source may produce, e.g. 'Daily Status Report' or
@@ -1870,9 +1872,60 @@ class Report:
     # The URL for the report on the source's website
     url: parse.ParseResult = attr.ib(converter=parse.urlparse)
 
+    # Parsing Layer
+    # TODO(#4480): Pull this out to somewhere within ingest
 
-# Parsing Layer
-# TODO(#4480): Pull this out to somewhere within ingest
+    @tables.validator
+    def _sums_across_tables_match(
+        self, _attribute: attr.Attribute, tables: List[Table]
+    ) -> None:
+        """Raises error if sums across dimesions do not match among tables."""
+        # sums dictionary is {table attributes (metric, dimension, date, filters) --> (table names, expected total)}
+        # sums keeps track of a single table name that is the source of the expected total, any table names that have
+        # sums that don't match are added to the value tuple,
+        sums: Dict[
+            Tuple[
+                Metric,
+                Type[Dimension],
+                datetime.date,
+                datetime.date,
+                str,
+            ],
+            Tuple[List[str], decimal.Decimal],
+        ] = {}
+        for table in tables:
+            table_sum = decimal.Decimal(
+                sum([data_point[1] for data_point in table.data_points])
+            )
+            for dimension in table.dimensions:
+                table_filters_hashable = [
+                    (f.dimension_identifier(), f.dimension_value) for f in table.filters
+                ]
+                key = (
+                    table.metric,
+                    dimension,
+                    table.date_range.lower_bound_inclusive_date,
+                    table.date_range.upper_bound_exclusive_date,
+                    str(table_filters_hashable),
+                )
+                table_name_key = table.filename or "<Table name not found>"
+                if key in sums and table_sum != sums[key][1]:
+                    # If sum of the current table does not match another table with the same date,
+                    # one of the tables has an incorrect value
+                    sums[key][0].append(table_name_key)
+                if key not in sums:
+                    sums[key] = (
+                        [table_name_key],
+                        table_sum,
+                    )
+
+        invalid_table_groups = [
+            table_names for table_names, sum in sums.values() if len(table_names) > 1
+        ]
+        if len(invalid_table_groups) > 0:
+            raise ValueError(
+                f"Sums across dimensions do not match for the following table group(s) {str(invalid_table_groups)}."
+            )
 
 
 def _parse_location(location_input: Optional[YAMLDict]) -> Optional[Location]:
