@@ -1,0 +1,38 @@
+file_tag: FeePriceSheet
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - FeePriceSheetSAK
+columns:
+  - name: FeePriceSheetSAK
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: FeeTypeID
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: Description
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: FeeItemID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: ListPrice
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: EndDate
+    is_datetime: True
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: FeeFrequencyID
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: PaymentOrder
+    description: |-
+      TODO(#11524) - Add in descriptions.
+  - name: DiversionType
+    description: |-
+      TODO(#11524) - Add in descriptions.
