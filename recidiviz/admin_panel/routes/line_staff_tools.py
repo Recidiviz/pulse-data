@@ -18,10 +18,12 @@
 import csv
 import logging
 import os
+from datetime import date
 from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Optional, Tuple, Union
 
+import pandas as pd
 from flask import Blueprint, Response, g, jsonify, request
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
@@ -31,9 +33,19 @@ from recidiviz.admin_panel.case_triage_helpers import (
 )
 from recidiviz.admin_panel.line_staff_tools.constants import (
     EMAIL_STATE_CODES,
+    RAW_FILES_STATE_CODES,
+    RAW_FILES_UPLOAD_TYPES_TABLES,
     ROSTER_STATE_CODES,
 )
 from recidiviz.admin_panel.line_staff_tools.rosters import RosterManager
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_utils import (
+    make_bq_compatible_types_for_df,
+    normalize_column_name_for_bq,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.case_triage.views.view_config import (
     CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
     ETL_TABLES,
@@ -42,6 +54,7 @@ from recidiviz.cloud_sql.cloud_sql_export_to_gcs import export_from_cloud_sql_to
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import is_date_str
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
@@ -499,4 +512,54 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         # Update roster after access is fully granted.
         manager.store_roster()
 
+        return "", HTTPStatus.OK
+
+    @bp.route(
+        "/api/line_staff_tools/<state_code_str>/upload_raw_files", methods=["POST"]
+    )
+    @requires_gae_auth
+    def _upload_raw_files(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        """Handles uploading raw files, which are then loaded into BigQuery."""
+
+        try:
+            state_code = StateCode(state_code_str)
+            if state_code not in RAW_FILES_STATE_CODES:
+                raise ValueError(
+                    f"Raw file uploads are not supported for {state_code.value}"
+                )
+            data = assert_type(request.form, dict)
+            date_of_standards = str(data.get("dateOfStandards"))
+            if not is_date_str(date_of_standards):
+                raise ValueError(
+                    f"dateOfStandards date must be YYYY-MM-DD formatted, received {date_of_standards}"
+                )
+            upload_type = str(data.get("uploadType"))
+            try:
+                table_name = RAW_FILES_UPLOAD_TYPES_TABLES[upload_type]
+            except KeyError as e:
+                raise ValueError(
+                    f"Standards upload type must be one of {list(RAW_FILES_UPLOAD_TYPES_TABLES.keys())}, received {upload_type}"
+                ) from e
+
+        except ValueError as error:
+            logging.error(error)
+            return str(error), HTTPStatus.BAD_REQUEST
+
+        df = pd.read_excel(request.files["file"], engine="openpyxl")
+        df["date_of_standards"] = date.fromisoformat(date_of_standards)
+
+        df.rename(columns=normalize_column_name_for_bq, inplace=True)
+        df = make_bq_compatible_types_for_df(
+            df, convert_datetime_to_date=True, bool_map={"Y": True, "N": False}
+        )
+
+        if in_development():
+            with local_project_id_override(GCP_PROJECT_STAGING):
+                bq = BigQueryClientImpl()
+        else:
+            bq = BigQueryClientImpl()
+        insert_job = bq.load_into_table_from_dataframe_async(
+            df, bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET), table_name
+        )
+        insert_job.result()
         return "", HTTPStatus.OK
