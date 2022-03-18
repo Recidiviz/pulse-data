@@ -248,6 +248,12 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         state_code_info = fetch_state_codes(ROSTER_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
+    @bp.route("/api/line_staff_tools/fetch_raw_files_state_codes", methods=["POST"])
+    @requires_gae_auth
+    def _fetch_raw_files_state_codes() -> Tuple[Response, HTTPStatus]:
+        state_code_info = fetch_state_codes(RAW_FILES_STATE_CODES)
+        return jsonify(state_code_info), HTTPStatus.OK
+
     @bp.route("/api/line_staff_tools/fetch_report_types", methods=["POST"])
     def _fetch_report_types() -> Tuple[Response, HTTPStatus]:
         return jsonify([t.value for t in ReportType]), HTTPStatus.OK
