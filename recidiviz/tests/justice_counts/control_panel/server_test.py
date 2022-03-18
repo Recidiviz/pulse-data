@@ -16,27 +16,20 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 from http import HTTPStatus
-from typing import Optional
-from unittest import TestCase
 
 import pytest
+from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.persistence.database.schema.justice_counts.schema import Source
+from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
 @pytest.mark.uses_db
-class TestJusticeCountsControlPanelAPI(TestCase):
+class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     """Implements tests for the Justice Counts Control Panel backend API."""
-
-    # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         test_config = Config(
@@ -50,19 +43,10 @@ class TestJusticeCountsControlPanelAPI(TestCase):
         # even though this is not specified in the types for `app`.
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
 
-        # Auto-generate all tables that exist in our schema in this database
-        engine = self.session.get_bind()
-        self.database_key = self.app.config["DATABASE_KEY"]
-        self.database_key.declarative_meta.metadata.create_all(engine)
+        super().setUp()
 
-    def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
-        )
+    def get_engine(self) -> Engine:
+        return self.session.get_bind()
 
     def test_hello(self) -> None:
         response = self.client.get("/api/hello")

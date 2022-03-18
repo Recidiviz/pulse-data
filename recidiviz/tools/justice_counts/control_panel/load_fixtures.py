@@ -17,36 +17,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Tool for loading fixture data into our Case Triage development database.
+Tool for loading fixture data into the Justice Counts development database.
 
 This script should be run only after `docker-compose up` has been run.
-This will delete everything from the etl_* tables and then re-add them from the
+This will delete everything from the tables and then re-add them from the
 fixture files.
 
 Usage against default development database:
-python -m recidiviz.tools.case_triage.load_fixtures
+python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 
 Usage against non-default development database:
 SQLALCHEMY_DB_HOST="" SQLALCHEMY_DB_USER="" SQLALCHEMY_DB_PASSWORD="" SQLALCHEMY_DB_NAME="" \
-python -m recidiviz.tools.case_triage.load_fixtures
+python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 """
 import os
 
-from recidiviz.case_triage.views.view_config import ETL_TABLES
+from recidiviz.persistence.database.schema.justice_counts.schema import Source
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 
 
-def reset_case_triage_fixtures() -> None:
-    """Deletes all ETL data and re-imports data from our fixture files"""
+def reset_justice_counts_fixtures() -> None:
+    """Deletes all data and then re-imports data from our fixture files."""
     reset_fixtures(
-        tables=ETL_TABLES,
+        # TODO(#11588): Add fixture data for all Justice Counts schema tables
+        tables=[Source],
         fixture_directory=os.path.join(
             os.path.dirname(__file__),
-            "../../..",
-            "recidiviz/tools/case_triage/fixtures",
+            "../../../..",
+            "recidiviz/tools/justice_counts/control_panel/fixtures/",
         ),
     )
 
 
 if __name__ == "__main__":
-    reset_case_triage_fixtures()
+    reset_justice_counts_fixtures()
