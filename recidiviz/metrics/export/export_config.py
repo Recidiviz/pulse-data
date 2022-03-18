@@ -521,10 +521,24 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             *PATHWAYS_SUPERVISION_VIEW_BUILDERS,
             *PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
             *PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
-            *POPULATION_PROJECTION_VIEW_BUILDERS,
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS",
+        bq_view_namespace=BigQueryViewNamespace.STATE,
+    ),
+    # All modules for the Pathways with projected prison and supervision populations
+    ExportViewCollectionConfig(
+        view_builders_to_export=[
+            *PATHWAYS_PRISON_VIEW_BUILDERS,
+            *PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
+            *PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
+            *PATHWAYS_SUPERVISION_VIEW_BUILDERS,
+            *PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
+            *PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
+            *POPULATION_PROJECTION_VIEW_BUILDERS,
+        ],
+        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PATHWAYS_AND_PROJECTIONS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Pathways Prison Module
