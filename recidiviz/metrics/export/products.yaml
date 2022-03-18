@@ -98,18 +98,23 @@ products:
       - state_code: US_ND
         environment: production
   - name: Pathways
-    description: Prison and Supervision populations and flows over time which can be drilled down by time period, gender and legal status or supervision type.
+    description: Prison and Supervision populations and transitions over time which can be drilled down by geographic region, demographic categories, time period, etc. Also see PATHWAYS_AND_PROJECTIONS and PATHWAYS_PRISON for variations on the Pathways exports..
     exports:
       - PATHWAYS
     states:
-      - state_code: US_ID
-        environment: production
       - state_code: US_ND
         environment: production
       - state_code: US_TN
         environment: staging
+  - name: Pathways With Population Projections
+    description: Prison and Supervision populations and transitions over time including prison and supervsion population projections. Also see PATHWAYS for Pathways exports that do not include projections.
+    exports:
+      - PATHWAYS_AND_PROJECTIONS
+    states:
+      - state_code: US_ID
+        environment: production
   - name: Pathways Prison Module
-    description: The Prison population and flows over time which can be drilled down by time period, gender, and legal status.
+    description: The Prison population and flows over time which can be drilled down by geographic region, demographic categories, time period, etc.
     exports:
       - PATHWAYS_PRISON
     states:
