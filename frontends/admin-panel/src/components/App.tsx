@@ -34,6 +34,7 @@ import IngestOperationsView from "./IngestOperationsView";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
 import TableView from "./TableView";
+import UploadRawFilesView from "./UploadRawFilesView";
 import UploadRostersView from "./UploadRostersView";
 import ValidationDetailView from "./Validation/ValidationDetailView";
 import ValidationStatusView from "./Validation/ValidationStatusView";
@@ -133,6 +134,11 @@ const App = (): JSX.Element => {
                 Upload Rosters
               </Link>
             </Menu.Item>
+            <Menu.Item key={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}>
+              <Link to={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}>
+                Upload Raw Files
+              </Link>
+            </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
@@ -201,6 +207,10 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.UPLOAD_ROSTERS_ROUTE}
             component={UploadRostersView}
+          />
+          <Route
+            path={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}
+            component={UploadRawFilesView}
           />
           <Redirect
             from="/"

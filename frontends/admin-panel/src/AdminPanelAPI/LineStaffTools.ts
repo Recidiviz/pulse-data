@@ -48,6 +48,12 @@ export const fetchRosterStateCodes = async (): Promise<Response> => {
   return postWithURLAndBody("/api/line_staff_tools/fetch_roster_state_codes");
 };
 
+export const fetchRawFilesStateCodes = async (): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/line_staff_tools/fetch_raw_files_state_codes"
+  );
+};
+
 export const fetchReportTypes = async (): Promise<Response> => {
   return postWithURLAndBody("/api/line_staff_tools/fetch_report_types");
 };
