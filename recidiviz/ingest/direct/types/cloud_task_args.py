@@ -66,18 +66,19 @@ class ExtractAndMergeArgs(CloudTaskArgs):
     def task_id_tag(self) -> str:
         pass
 
+    @property
     @abc.abstractmethod
     def ingest_instance(self) -> DirectIngestInstance:
         pass
-
-    @abc.abstractmethod
-    def job_tag(self) -> str:
-        """Returns a (short) string tag to identify an ingest run in logs."""
 
     @property
     @abc.abstractmethod
     def ingest_view_name(self) -> str:
         pass
+
+    @abc.abstractmethod
+    def job_tag(self) -> str:
+        """Returns a (short) string tag to identify an ingest run in logs."""
 
 
 # TODO(#11424): Eliminate all usages of this class in favor of a non-file-based
@@ -93,6 +94,7 @@ class LegacyExtractAndMergeArgs(ExtractAndMergeArgs):
         parts = filename_parts_from_path(self.file_path)
         return f"ingest_job_{parts.stripped_file_name}_{parts.date_str}"
 
+    @property
     def ingest_instance(self) -> DirectIngestInstance:
         return DirectIngestInstanceFactory.for_ingest_bucket(self.file_path.bucket_path)
 
@@ -111,6 +113,36 @@ class LegacyExtractAndMergeArgs(ExtractAndMergeArgs):
     @property
     def ingest_view_name(self) -> str:
         return filename_parts_from_path(self.file_path).file_tag
+
+
+# TODO(#11424): Merge this class with base class once LegacyExtractAndMergeArgs
+#  class has been deleted.
+@attr.s(frozen=True)
+class NewExtractAndMergeArgs(ExtractAndMergeArgs):
+    # These are private attributes that must be accessed via @property
+    _ingest_view_name: str = attr.ib()
+    _ingest_instance: DirectIngestInstance = attr.ib()
+
+    upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
+    batch_number: int = attr.ib()
+
+    @property
+    def ingest_instance(self) -> DirectIngestInstance:
+        return self._ingest_instance
+
+    @property
+    def ingest_view_name(self) -> str:
+        return self._ingest_view_name
+
+    def task_id_tag(self) -> str:
+        return (
+            f"extract_and_merge_{self.ingest_view_name}_"
+            f"{self.upper_bound_datetime_inclusive.date().isoformat()}_"
+            f"batch_{self.batch_number}"
+        )
+
+    def job_tag(self) -> str:
+        return f"{self.ingest_instance.value}_{self.task_id_tag()}: {self.ingest_time}"
 
 
 @attr.s(frozen=True)
@@ -141,6 +173,11 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
     # reflect data received up until this date.
     upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
 
+    @property
+    @abc.abstractmethod
+    def ingest_instance(self) -> DirectIngestInstance:
+        pass
+
     @abc.abstractmethod
     def task_id_tag(self) -> str:
         pass
@@ -150,7 +187,13 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
 #  class has been deleted.
 @attr.s(frozen=True)
 class BQIngestViewMaterializationArgs(IngestViewMaterializationArgs):
-    ingest_instance: DirectIngestInstance = attr.ib()
+    # TODO(#11424): Rename this attribute to ingest_instance when this class is merged
+    #  with base class.
+    ingest_instance_: DirectIngestInstance = attr.ib()
+
+    @property
+    def ingest_instance(self) -> DirectIngestInstance:
+        return self.ingest_instance_
 
     def task_id_tag(self) -> str:
         tag = (
@@ -179,6 +222,7 @@ class GcsfsIngestViewExportArgs(IngestViewMaterializationArgs):
         tag += f"-{snake_case_datetime(self.upper_bound_datetime_inclusive)}"
         return tag
 
+    @property
     def ingest_instance(self) -> DirectIngestInstance:
         return DirectIngestInstanceFactory.for_ingest_bucket(
             GcsfsBucketPath(self.output_bucket_name)

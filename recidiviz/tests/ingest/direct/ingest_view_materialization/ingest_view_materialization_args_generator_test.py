@@ -533,7 +533,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
             [
                 BQIngestViewMaterializationArgs(
                     ingest_view_name="ingest_view",
-                    ingest_instance=self.ingest_instance,
+                    ingest_instance_=self.ingest_instance,
                     lower_bound_datetime_exclusive=_DATE_1,
                     upper_bound_datetime_inclusive=_DATE_2,
                 )
@@ -659,7 +659,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                 # the time between None and DATE 1 (e.g. the historical query).
                 BQIngestViewMaterializationArgs(
                     ingest_view_name="ingest_view",
-                    ingest_instance=self.ingest_instance,
+                    ingest_instance_=self.ingest_instance,
                     lower_bound_datetime_exclusive=_DATE_1,
                     upper_bound_datetime_inclusive=_DATE_2,
                 )

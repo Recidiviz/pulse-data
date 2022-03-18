@@ -129,7 +129,7 @@ def build_ingest_view_export_task_id(
 ) -> str:
     return _build_task_id(
         region.region_code,
-        ingest_view_export_args.ingest_instance(),
+        ingest_view_export_args.ingest_instance,
         task_id_tag=ingest_view_export_args.task_id_tag(),
         prefix_only=False,
     )
@@ -140,7 +140,7 @@ def build_process_job_task_id(
 ) -> str:
     return _build_task_id(
         region.region_code,
-        ingest_args.ingest_instance(),
+        ingest_args.ingest_instance,
         ingest_args.task_id_tag(),
         prefix_only=False,
     )
@@ -298,7 +298,7 @@ class ProcessIngestJobCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
 
         task_id_prefix = _build_task_id(
             region_code,
-            ingest_args.ingest_instance(),
+            ingest_args.ingest_instance,
             ingest_args.task_id_tag(),
             prefix_only=True,
         )
@@ -351,7 +351,7 @@ class IngestViewExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
             and task_args.task_id_tag() in task_name
             for task_name in self._task_names_for_instance(
                 region_code,
-                task_args.ingest_instance(),
+                task_args.ingest_instance,
             )
         )
 
@@ -632,7 +632,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         body = self._get_body_from_args(ingest_args)
 
         self._get_process_job_queue_manager(
-            region, ingest_args.ingest_instance()
+            region, ingest_args.ingest_instance
         ).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
@@ -720,7 +720,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         body = self._get_body_from_args(ingest_view_export_args)
 
         self._get_ingest_view_export_queue_manager(
-            region, ingest_view_export_args.ingest_instance()
+            region, ingest_view_export_args.ingest_instance
         ).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
