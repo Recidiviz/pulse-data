@@ -50,21 +50,28 @@ class UsTnController(BaseDirectIngestController):
                     "AssignedStaffSupervisionPeriod",
                     "VantagePointAssessments",
                     "SentencesChargesAndCourtCases",
-                    "SupervisionContactsPre1990",
-                    "SupervisionContacts1990to1995",
-                    "SupervisionContacts1995to1997",
-                    "SupervisionContacts1997to2000",
-                    "SupervisionContacts2000to2003",
-                    "SupervisionContacts2003to2005",
-                    "SupervisionContacts2005to2007",
-                    "SupervisionContacts2007to2010",
-                    "SupervisionContacts2010to2013",
-                    "SupervisionContacts2013to2015",
-                    "SupervisionContacts2015to2017",
-                    "SupervisionContacts2017to2020",
-                    "SupervisionContactsPost2020",
                 ]
             )
+
+            # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes faster than current infra allows.
+            if not environment.in_gcp():
+                tags.extend(
+                    [
+                        "SupervisionContactsPre1990",
+                        "SupervisionContacts1990to1995",
+                        "SupervisionContacts1995to1997",
+                        "SupervisionContacts1997to2000",
+                        "SupervisionContacts2000to2003",
+                        "SupervisionContacts2003to2005",
+                        "SupervisionContacts2005to2007",
+                        "SupervisionContacts2007to2010",
+                        "SupervisionContacts2010to2013",
+                        "SupervisionContacts2013to2015",
+                        "SupervisionContacts2015to2017",
+                        "SupervisionContacts2017to2020",
+                        "SupervisionContactsPost2020",
+                    ]
+                )
 
             # TODO(#11123): Ungate AssignedStaffSupervisionPeriod_v2 from secondary
             # Run AssignedStaffSupervisionPeriod_v2 instead of AssignedStaffSupervisionPeriod
