@@ -24,7 +24,7 @@ This will delete everything from the tables and then re-add them from the
 fixture files.
 
 Usage against default development database:
-python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
+SQLALCHEMY_DB_NAME=justice_counts python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 
 Usage against non-default development database:
 SQLALCHEMY_DB_HOST="" SQLALCHEMY_DB_USER="" SQLALCHEMY_DB_PASSWORD="" SQLALCHEMY_DB_NAME="" \

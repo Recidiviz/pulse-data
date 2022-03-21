@@ -1,58 +1,20 @@
+# Defines services that shared across multiple apps, such as Postgres databases and Redis
+# Run via `docker-compose up`
+
 version: "3"
 
 services:
   db:
     image: postgres:13.1-alpine
     environment:
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: example
+      POSTGRES_MULTIPLE_DATABASES: case_triage,justice_counts
     ports:
       - "5432:5432"
     volumes:
+      - ./recidiviz/tools/postgres/pg_init_scripts:/docker-entrypoint-initdb.d
       - pgdata:/var/lib/postgresql/data
-
-  case_triage_backend:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
-    volumes:
-      - "./recidiviz:/app/recidiviz/"
-      - "./frontends:/app/frontends/"
-    depends_on:
-      - migrations
-    ports:
-      - "5000:5000"
-    command: pipenv run flask run -h 0.0.0.0
-    environment:
-      - FLASK_APP=/app/recidiviz/case_triage/server.py
-      - FLASK_ENV=development
-      - IS_DEV=true
-      - SEGMENT_WRITE_KEY=dev-key-wont-send-data
-      - CASE_TRIAGE_DEVELOPMENT_POSTGRES_URL=postgresql://postgres:example@db/postgres
-    links:
-      - "redis:rate_limit_cache"
-      - "redis:sessions_cache"
-
-  redis:
-    image: redis:5.0
-    ports:
-      - "6379:6379"
-
-  admin_panel_backend:
-    image: us.gcr.io/recidiviz-staging/appengine/default:latest
-    volumes:
-      - "./recidiviz:/app/recidiviz/"
-      - "./frontends:/app/frontends/"
-      - "~/.config:/root/.config"
-    depends_on:
-      - migrations
-      - redis
-    ports:
-      - "5050:5000"
-    command: pipenv run flask run -h 0.0.0.0
-    environment:
-      - FLASK_APP=/app/recidiviz/server.py
-      - FLASK_ENV=development
-      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
-      - IS_DEV=true
-      - SEGMENT_WRITE_KEY=dev-key-wont-send-data
 
   migrations:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
@@ -60,13 +22,19 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - db
-    command: pipenv run alembic -c recidiviz/persistence/database/migrations/case_triage_alembic.ini upgrade head
+    command: >
+      bash -c "SQLALCHEMY_DB_NAME=case_triage pipenv run alembic -c recidiviz/persistence/database/migrations/case_triage_alembic.ini upgrade head
+      && SQLALCHEMY_DB_NAME=justice_counts pipenv run alembic -c recidiviz/persistence/database/migrations/justice_counts_alembic.ini upgrade head"
     environment:
-      - SQLALCHEMY_DB_NAME=postgres
       - SQLALCHEMY_DB_HOST=db
       - SQLALCHEMY_USE_SSL=0
       - SQLALCHEMY_DB_USER=postgres
       - SQLALCHEMY_DB_PASSWORD=example
+
+  redis:
+    image: redis:5.0
+    ports:
+      - "6379:6379"
 
 volumes:
   pgdata:

@@ -1,0 +1,25 @@
+# Defines services needed to run the Admin Panel app (on top of shared services already in docker-compose.yaml)
+# Run via `docker-compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up`
+
+version: "3"
+
+services:
+  admin_panel_backend:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+      - "./frontends:/app/frontends/"
+      - "~/.config:/root/.config"
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "5050:5000"
+    command: pipenv run flask run -h 0.0.0.0
+    environment:
+      - FLASK_APP=/app/recidiviz/server.py
+      - FLASK_ENV=development
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
+      - IS_DEV=true
+      - SEGMENT_WRITE_KEY=dev-key-wont-send-data
+      - JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL=postgresql://postgres:example@db/justice_counts
