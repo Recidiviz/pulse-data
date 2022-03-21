@@ -17,15 +17,12 @@
 """Class that parses the results of an ingest view query into entities based on the
 manifest file for this ingest view.
 """
-import csv
 import os
 from typing import Dict, Iterator, List, Set, Tuple
 
 from more_itertools import one
 
 from recidiviz.common.common_utils import bidirectional_set_difference
-from recidiviz.common.io.contents_handle import ContentsHandle
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
@@ -52,18 +49,8 @@ class IngestViewResultsParser:
     def __init__(self, delegate: IngestViewResultsParserDelegate):
         self.delegate = delegate
 
-    @staticmethod
-    def _row_iterator(contents_handle: ContentsHandle) -> Iterator[Dict]:
-        if isinstance(contents_handle, LocalFileContentsHandle):
-            return csv.DictReader(contents_handle.get_contents_iterator())
-        # TODO(#9717): Add support for reading from a contents handle that pulls results
-        #  from BigQuery.
-        raise ValueError(
-            f"Unsupported contents handle type: [{type(contents_handle)}]."
-        )
-
     def parse(
-        self, *, ingest_view_name: str, contents_handle: ContentsHandle
+        self, *, ingest_view_name: str, contents_iterator: Iterator[Dict[str, str]]
     ) -> List[Entity]:
         """Parses ingest view query results into entities based on the manifest file for
         this ingest view.
@@ -72,7 +59,7 @@ class IngestViewResultsParser:
         manifest_path = self.delegate.get_ingest_view_manifest_path(ingest_view_name)
         output_manifest, expected_input_columns = self.parse_manifest(manifest_path)
         result = []
-        for i, row in enumerate(self._row_iterator(contents_handle)):
+        for i, row in enumerate(contents_iterator):
             self._validate_row_columns(i, row, expected_input_columns)
             output_tree = output_manifest.build_from_row(row)
             if not output_tree:
