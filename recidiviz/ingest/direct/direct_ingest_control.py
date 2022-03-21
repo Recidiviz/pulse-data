@@ -198,7 +198,7 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
 @requires_gae_auth
 def handle_new_files() -> Tuple[str, HTTPStatus]:
     """Normalizes and splits files in the ingest bucket for a given region as
-    is appropriate. Will schedule the next process_job task if no renaming /
+    is appropriate. Will schedule the next extract_and_merge task if no renaming /
     splitting work has been done that will trigger subsequent calls to this
     endpoint.
     """

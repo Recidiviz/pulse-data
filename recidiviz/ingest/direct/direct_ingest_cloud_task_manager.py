@@ -126,8 +126,7 @@ def build_raw_data_import_task_id(
     )
 
 
-# TODO(#9717): Rename to build_ingest_view_materialization_task_id
-def build_ingest_view_export_task_id(
+def build_ingest_view_materialization_task_id(
     region: Region,
     materialization_args: IngestViewMaterializationArgs,
 ) -> str:
@@ -139,8 +138,7 @@ def build_ingest_view_export_task_id(
     )
 
 
-# TODO(#9717): Rename to build_extract_and_merge_task_id
-def build_process_job_task_id(
+def build_extract_and_merge_task_id(
     region: Region, extract_and_merge_args: ExtractAndMergeArgs
 ) -> str:
     return _build_task_id(
@@ -292,9 +290,8 @@ class SftpCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     pass
 
 
-# TODO(#9717): Rename to ExtractAndMergeCloudTaskQueueInfo
 @attr.s
-class ProcessIngestJobCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
+class ExtractAndMergeCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     """Class containing information about tasks in a given region's extract and merge
     task processing queue.
     """
@@ -322,35 +319,32 @@ class RawDataImportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     queue.
     """
 
-    # TODO(#9717): Rename to _is_raw_data_import_task
     @staticmethod
-    def _is_raw_data_export_task(task_name: str) -> bool:
+    def _is_raw_data_import_task(task_name: str) -> bool:
         return "raw_data_import" in task_name
 
     def is_raw_data_import_task_already_queued(
         self, task_args: GcsfsRawDataBQImportArgs
     ) -> bool:
         return any(
-            self._is_raw_data_export_task(task_name)
+            self._is_raw_data_import_task(task_name)
             and task_args.task_id_tag() in task_name
             for task_name in self.task_names
         )
 
     def has_raw_data_import_jobs_queued(self) -> bool:
         return any(
-            self._is_raw_data_export_task(task_name) for task_name in self.task_names
+            self._is_raw_data_import_task(task_name) for task_name in self.task_names
         )
 
 
-# TODO(#9717): Rename to IngestViewMaterializationCloudTaskQueueInfo
 @attr.s
-class IngestViewExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
+class IngestViewMaterializationCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     """Class containing information about tasks in a given region's ingest view
     materialization task queue.
     """
 
-    # TODO(#9717): Rename to is_ingest_view_materialization_task_already_queued
-    def is_ingest_view_export_task_already_queued(
+    def is_ingest_view_materialization_task_already_queued(
         self,
         region_code: str,
         task_args: IngestViewMaterializationArgs,
@@ -363,8 +357,7 @@ class IngestViewExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
             )
         )
 
-    # TODO(#9717): Rename to has_ingest_view_materialization_jobs_queued
-    def has_ingest_view_export_jobs_queued(
+    def has_ingest_view_materialization_jobs_queued(
         self, region_code: str, ingest_instance: DirectIngestInstance
     ) -> bool:
         return bool(list(self._task_names_for_instance(region_code, ingest_instance)))
@@ -381,12 +374,12 @@ class DirectIngestCloudTaskManager:
         the given region."""
 
     @abc.abstractmethod
-    def get_process_job_queue_info(
+    def get_extract_and_merge_queue_info(
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> ProcessIngestJobCloudTaskQueueInfo:
+    ) -> ExtractAndMergeCloudTaskQueueInfo:
         """Returns information about tasks in the job processing queue for the
         given region."""
 
@@ -398,12 +391,12 @@ class DirectIngestCloudTaskManager:
         the given region."""
 
     @abc.abstractmethod
-    def get_ingest_view_export_queue_info(
+    def get_ingest_view_materialization_queue_info(
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> IngestViewExportCloudTaskQueueInfo:
+    ) -> IngestViewMaterializationCloudTaskQueueInfo:
         """Returns information about the tasks in the raw data import queue for
         the given region."""
 
@@ -412,7 +405,7 @@ class DirectIngestCloudTaskManager:
         """Returns information about the tasks in the sftp queue for the given region."""
 
     @abc.abstractmethod
-    def create_direct_ingest_process_job_task(
+    def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
         task_args: ExtractAndMergeArgs,
@@ -434,7 +427,7 @@ class DirectIngestCloudTaskManager:
         just_finished_job: bool,
     ) -> None:
         """Creates a scheduler task for direct ingest for a given region.
-        Scheduler tasks should be short-running and queue process_job tasks if
+        Scheduler tasks should be short-running and queue extract_and_merge tasks if
         there is more work to do.
 
         Args:
@@ -474,7 +467,7 @@ class DirectIngestCloudTaskManager:
         pass
 
     @abc.abstractmethod
-    def create_direct_ingest_ingest_view_export_task(
+    def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
         task_args: IngestViewMaterializationArgs,
@@ -572,7 +565,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> CloudTaskQueueManager[IngestViewExportCloudTaskQueueInfo]:
+    ) -> CloudTaskQueueManager[IngestViewMaterializationCloudTaskQueueInfo]:
         # TODO(#11424): Always use MATERIALIZE_INGEST_VIEW once BQ materialization is
         #  enabled for all states.
         queue_type = (
@@ -588,18 +581,17 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
         return CloudTaskQueueManager(
-            queue_info_cls=IngestViewExportCloudTaskQueueInfo,
+            queue_info_cls=IngestViewMaterializationCloudTaskQueueInfo,
             queue_name=queue_name,
             cloud_tasks_client=self.cloud_tasks_client,
         )
 
-    # TODO(#9717): Rename to _get_extract_and_merge_queue_manager
-    def _get_process_job_queue_manager(
+    def _get_extract_and_merge_queue_manager(
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> CloudTaskQueueManager[ProcessIngestJobCloudTaskQueueInfo]:
+    ) -> CloudTaskQueueManager[ExtractAndMergeCloudTaskQueueInfo]:
         # TODO(#11424): Always use EXTRACT_AND_MERGE once BQ materialization is
         #  enabled for all states.
         queue_type = (
@@ -613,7 +605,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
         return CloudTaskQueueManager(
-            queue_info_cls=ProcessIngestJobCloudTaskQueueInfo,
+            queue_info_cls=ExtractAndMergeCloudTaskQueueInfo,
             queue_name=queue_name,
             cloud_tasks_client=self.cloud_tasks_client,
         )
@@ -633,14 +625,13 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             cloud_tasks_client=self.cloud_tasks_client,
         )
 
-    # TODO(#9717): Rename to get_extract_and_merge_queue_info
-    def get_process_job_queue_info(
+    def get_extract_and_merge_queue_info(
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> ProcessIngestJobCloudTaskQueueInfo:
-        return self._get_process_job_queue_manager(
+    ) -> ExtractAndMergeCloudTaskQueueInfo:
+        return self._get_extract_and_merge_queue_manager(
             region,
             ingest_instance,
             is_bq_materialization_enabled=is_bq_materialization_enabled,
@@ -660,13 +651,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             task_id_prefix=region.region_code
         )
 
-    # TODO(#9717): Rename to get_ingest_view_materialization_queue_info
-    def get_ingest_view_export_queue_info(
+    def get_ingest_view_materialization_queue_info(
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> IngestViewExportCloudTaskQueueInfo:
+    ) -> IngestViewMaterializationCloudTaskQueueInfo:
         return self._get_ingest_view_export_queue_manager(
             region,
             ingest_instance,
@@ -678,14 +668,13 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             task_id_prefix=region.region_code
         )
 
-    # TODO(#9717): Rename to create_direct_ingest_extract_and_merge_job_task
-    def create_direct_ingest_process_job_task(
+    def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
         task_args: ExtractAndMergeArgs,
         is_bq_materialization_enabled: bool,
     ) -> None:
-        task_id = build_process_job_task_id(region, task_args)
+        task_id = build_extract_and_merge_task_id(region, task_args)
 
         if isinstance(task_args, LegacyExtractAndMergeArgs):
             if is_bq_materialization_enabled:
@@ -716,7 +705,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         body = self._get_body_from_args(task_args)
 
-        self._get_process_job_queue_manager(
+        self._get_extract_and_merge_queue_manager(
             region,
             task_args.ingest_instance,
             is_bq_materialization_enabled=is_bq_materialization_enabled,
@@ -792,14 +781,13 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             body=body,
         )
 
-    # TODO(#9717): Rename to create_direct_ingest_view_materialization_task
-    def create_direct_ingest_ingest_view_export_task(
+    def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
         task_args: IngestViewMaterializationArgs,
         is_bq_materialization_enabled: bool,
     ) -> None:
-        task_id = build_ingest_view_export_task_id(region, task_args)
+        task_id = build_ingest_view_materialization_task_id(region, task_args)
 
         if isinstance(task_args, GcsfsIngestViewExportArgs):
             # TODO(#11424): Delete this block when BQ materialization has fully shipped.

@@ -318,7 +318,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with self.assertRaises(ValueError):
-            export_manager.export_view_for_args(export_args)
+            export_manager.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.create_dataset_if_necessary.assert_not_called()
@@ -341,7 +341,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with self.assertRaises(ValueError):
-            export_manager.export_view_for_args(export_args)
+            export_manager.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.run_query_async.assert_not_called()
@@ -381,7 +381,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             session.add(metadata)
 
         # Act
-        export_manager.export_view_for_args(export_args)
+        export_manager.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.run_query_async.assert_not_called()
@@ -433,7 +433,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
         with freeze_time(_DATE_4.isoformat()):
             export_manager = self.create_export_manager(region)
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.export_view_for_args(export_args)
+            export_manager.materialize_view_for_args(export_args)
 
         # Assert
         expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
@@ -508,7 +508,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
         with freeze_time(_DATE_4.isoformat()):
             export_manager = self.create_export_manager(region)
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.export_view_for_args(export_args)
+            export_manager.materialize_view_for_args(export_args)
 
         # Assert
         expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
@@ -602,7 +602,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 region, materialize_raw_data_table_views=True
             )
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.export_view_for_args(export_args)
+            export_manager.materialize_view_for_args(export_args)
 
         # Assert
         expected_upper_bound_query = (
@@ -694,7 +694,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 r"Attempting to process reverse date diff view \[ingest_view\] with "
                 r"no lower bound date.",
             ):
-                export_manager.export_view_for_args(export_args)
+                export_manager.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.run_query_async.assert_not_called()
@@ -740,7 +740,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 region, is_detect_row_deletion_view=True
             )
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.export_view_for_args(export_args)
+            export_manager.materialize_view_for_args(export_args)
 
         expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
         expected_lower_bound_query = expected_upper_bound_query.replace(

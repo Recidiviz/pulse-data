@@ -34,8 +34,8 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     DirectIngestQueueType,
-    IngestViewExportCloudTaskQueueInfo,
-    ProcessIngestJobCloudTaskQueueInfo,
+    ExtractAndMergeCloudTaskQueueInfo,
+    IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
     _build_task_id,
 )
@@ -175,8 +175,8 @@ class TestRawDataImportQueueInfo(TestCase):
         self.assertTrue(info.has_raw_data_import_jobs_queued())
 
 
-class TestIngestViewExportCloudTaskQueueInfo(TestCase):
-    """Tests for the IngestViewExportCloudTaskQueueInfo."""
+class TestIngestViewMaterializationCloudTaskQueueInfo(TestCase):
+    """Tests for the IngestViewMaterializationCloudTaskQueueInfo."""
 
     def setUp(self) -> None:
         self.primary_ingest_view_export_args = GcsfsIngestViewExportArgs(
@@ -191,7 +191,7 @@ class TestIngestViewExportCloudTaskQueueInfo(TestCase):
         )
 
     def test_info_no_tasks(self) -> None:
-        info = IngestViewExportCloudTaskQueueInfo(
+        info = IngestViewMaterializationCloudTaskQueueInfo(
             queue_name="queue_name", task_names=[]
         )
 
@@ -200,10 +200,12 @@ class TestIngestViewExportCloudTaskQueueInfo(TestCase):
                 info.has_any_tasks_for_instance(_REGION.region_code, instance)
             )
             self.assertFalse(
-                info.has_ingest_view_export_jobs_queued(_REGION.region_code, instance)
+                info.has_ingest_view_materialization_jobs_queued(
+                    _REGION.region_code, instance
+                )
             )
         self.assertFalse(
-            info.is_ingest_view_export_task_already_queued(
+            info.is_ingest_view_materialization_task_already_queued(
                 _REGION.region_code, self.primary_ingest_view_export_args
             )
         )
@@ -215,7 +217,7 @@ class TestIngestViewExportCloudTaskQueueInfo(TestCase):
             self.secondary_ingest_view_export_args.task_id_tag(),
         )
 
-        info = IngestViewExportCloudTaskQueueInfo(
+        info = IngestViewMaterializationCloudTaskQueueInfo(
             queue_name="queue_name",
             task_names=[
                 f"projects/path/to/{full_task_name}",
@@ -225,7 +227,9 @@ class TestIngestViewExportCloudTaskQueueInfo(TestCase):
         for instance in DirectIngestInstance:
             self.assertEqual(
                 instance == DirectIngestInstance.SECONDARY,
-                info.has_ingest_view_export_jobs_queued(_REGION.region_code, instance),
+                info.has_ingest_view_materialization_jobs_queued(
+                    _REGION.region_code, instance
+                ),
             )
             self.assertEqual(
                 instance == DirectIngestInstance.SECONDARY,
@@ -233,19 +237,19 @@ class TestIngestViewExportCloudTaskQueueInfo(TestCase):
             )
 
         self.assertFalse(
-            info.is_ingest_view_export_task_already_queued(
+            info.is_ingest_view_materialization_task_already_queued(
                 _REGION.region_code, self.primary_ingest_view_export_args
             )
         )
         self.assertTrue(
-            info.is_ingest_view_export_task_already_queued(
+            info.is_ingest_view_materialization_task_already_queued(
                 _REGION.region_code, self.secondary_ingest_view_export_args
             )
         )
 
 
-class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
-    """Tests for the ProcessIngestJobCloudTaskQueueInfo."""
+class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
+    """Tests for the ExtractAndMergeCloudTaskQueueInfo."""
 
     def setUp(self) -> None:
         bucket = gcsfs_direct_ingest_bucket_for_region(
@@ -263,9 +267,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
 
     def test_info_no_tasks(self) -> None:
         # Arrange
-        info = ProcessIngestJobCloudTaskQueueInfo(
-            queue_name="queue_name", task_names=[]
-        )
+        info = ExtractAndMergeCloudTaskQueueInfo(queue_name="queue_name", task_names=[])
 
         gcsfs_args = LegacyExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
@@ -294,7 +296,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
         full_task_name = _build_task_id(
             _REGION.region_code, DirectIngestInstance.PRIMARY, gcsfs_args.task_id_tag()
         )
-        info = ProcessIngestJobCloudTaskQueueInfo(
+        info = ExtractAndMergeCloudTaskQueueInfo(
             queue_name="queue_name",
             task_names=[
                 "projects/path/to/random_task",
@@ -338,7 +340,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
             for ingest_instance in DirectIngestInstance
         ]
 
-        info = ProcessIngestJobCloudTaskQueueInfo(
+        info = ExtractAndMergeCloudTaskQueueInfo(
             queue_name="queue_name",
             task_names=[
                 "projects/path/to/random_task",
@@ -468,7 +470,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
-    def test_create_direct_ingest_process_job_task(
+    def test_create_direct_ingest_extract_and_merge_task_legacy(
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
@@ -511,7 +513,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
             _REGION, ingest_args, is_bq_materialization_enabled=False
         )
 
@@ -570,7 +572,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
             _REGION, args, is_bq_materialization_enabled=True
         )
 
@@ -588,7 +590,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
-    def test_create_direct_ingest_process_job_task_secondary(
+    def test_create_direct_ingest_extract_and_merge_task_secondary_legacy(
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
@@ -630,7 +632,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
             _REGION, ingest_args, is_bq_materialization_enabled=False
         )
 
@@ -689,7 +691,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
             _REGION, args, is_bq_materialization_enabled=True
         )
 
@@ -767,7 +769,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
-    def test_create_direct_ingest_ingest_view_export_task(
+    def test_create_direct_ingest_view_materialization_task(
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
@@ -806,7 +808,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_ingest_view_export_task(
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_view_materialization_task(
             _REGION, export_args, is_bq_materialization_enabled=False
         )
 
@@ -863,7 +865,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_ingest_view_export_task(
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_view_materialization_task(
             _REGION, export_args, is_bq_materialization_enabled=True
         )
 

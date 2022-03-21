@@ -170,7 +170,7 @@ class TestIngestViewMaterializationArgsGeneratorWithLegacyDelegate(unittest.Test
         )
 
         # Act
-        args = args_generator.get_ingest_view_export_task_args()
+        args = args_generator.get_ingest_view_materialization_task_args()
 
         # Assert
         self.assertListEqual(
@@ -224,7 +224,7 @@ class TestIngestViewMaterializationArgsGeneratorWithLegacyDelegate(unittest.Test
         with self.assertRaisesRegex(
             ValueError, r"upper bound date.*before the last valid export"
         ):
-            args_generator.get_ingest_view_export_task_args()
+            args_generator.get_ingest_view_materialization_task_args()
 
     def test_getIngestViewExportTaskArgs_rawCodeTableOlderThanLastExport(self) -> None:
         # Arrange
@@ -266,7 +266,7 @@ class TestIngestViewMaterializationArgsGeneratorWithLegacyDelegate(unittest.Test
         )
 
         # Act
-        args = args_generator.get_ingest_view_export_task_args()
+        args = args_generator.get_ingest_view_materialization_task_args()
 
         # Assert
         # New code tables are backdated but don't need to be re-ingested, so ignore them.
@@ -305,7 +305,7 @@ class TestIngestViewMaterializationArgsGeneratorWithLegacyDelegate(unittest.Test
         )
 
         # Act
-        args = args_generator.get_ingest_view_export_task_args()
+        args = args_generator.get_ingest_view_materialization_task_args()
 
         # Assert
         self.assertListEqual(
@@ -441,7 +441,7 @@ class TestIngestViewMaterializationArgsGeneratorWithLegacyDelegate(unittest.Test
         with freeze_time(_DATE_4.isoformat()):
             args_generator = self.create_args_generator(region)
         with freeze_time(_DATE_5.isoformat()):
-            args = args_generator.get_ingest_view_export_task_args()
+            args = args_generator.get_ingest_view_materialization_task_args()
 
         return args
 
@@ -525,7 +525,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         )
 
         # Act
-        args = args_generator.get_ingest_view_export_task_args()
+        args = args_generator.get_ingest_view_materialization_task_args()
 
         # Assert
         self.assertListEqual(
@@ -574,7 +574,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, r"upper bound date.*before the last valid export"
         ):
-            args_generator.get_ingest_view_export_task_args()
+            args_generator.get_ingest_view_materialization_task_args()
 
     def test_getIngestViewExportTaskArgs_rawCodeTableOlderThanLastExport(self) -> None:
         # Arrange
@@ -610,7 +610,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         )
 
         # Act
-        args = args_generator.get_ingest_view_export_task_args()
+        args = args_generator.get_ingest_view_materialization_task_args()
 
         # Assert
         # New code tables are backdated but don't need to be re-ingested, so ignore them.
@@ -649,7 +649,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         )
 
         # Act
-        args = args_generator.get_ingest_view_export_task_args()
+        args = args_generator.get_ingest_view_materialization_task_args()
 
         # Assert
         self.assertListEqual(
@@ -785,6 +785,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         with freeze_time(_DATE_4.isoformat()):
             args_generator = self.create_args_generator(region)
         with freeze_time(_DATE_5.isoformat()):
-            args = args_generator.get_ingest_view_export_task_args()
+            args = args_generator.get_ingest_view_materialization_task_args()
 
         return args
