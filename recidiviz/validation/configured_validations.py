@@ -872,10 +872,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=["external_recidivated", "internal_recidivated"],
             hard_max_allowed_error=0.02,
-            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
             region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
