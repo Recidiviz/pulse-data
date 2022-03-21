@@ -315,6 +315,8 @@ def get_all_validations() -> List[DataValidationCheck]:
     views cannot be built locally being run inside of a local_project_id_override block.
     """
 
+    region_configs = get_validation_region_configs()
+
     all_data_validations: List[DataValidationCheck] = [
         ExistenceDataValidationCheck(
             view_builder=ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
@@ -451,6 +453,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_name_suffix="absconsions",
             comparison_columns=["absconsions_by_month", "absconsions_from_po_report"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
@@ -458,6 +461,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=["discharges_by_month", "discharges_from_po_report"],
             hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=FTR_REFERRALS_COMPARISON_VIEW_BUILDER,
@@ -468,11 +472,13 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "race_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
             comparison_columns=PO_REPORT_COMPARISON_COLUMNS,
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
@@ -481,16 +487,19 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "total_caseload_admissions",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
             comparison_columns=["cell_sum", "caseload_sum", "caseload_num_rows"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER,
             comparison_columns=["reference_sum", "month_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER,
@@ -501,17 +510,20 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "race_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER,
             comparison_columns=["officer_sum", "caseload_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER,
             validation_name_suffix="revocation",
             comparison_columns=["revocation_count_all", "revocation_count_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER,
@@ -521,6 +533,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "supervision_population_count_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER,
@@ -530,12 +543,14 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "recommended_for_revocation_count_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER,
             validation_name_suffix="revocation",
             comparison_columns=["revocation_count_all", "revocation_count_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER,
@@ -545,6 +560,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "supervision_population_count_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER,
@@ -554,6 +570,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "recommended_for_revocation_count_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
@@ -562,6 +579,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "public_dashboard_revocation_count",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,
@@ -571,6 +589,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "public_dashboard_successful_termination",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,
@@ -580,6 +599,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "public_dashboard_projected_completion",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
@@ -589,6 +609,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "public_dashboard_successful_termination",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
@@ -598,6 +619,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "public_dashboard_projected_completion",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER,
@@ -606,6 +628,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "population_by_facility_by_demographics_total_population",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -616,6 +639,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -626,16 +650,19 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
             comparison_columns=["metric_total", "race_or_ethnicity_breakdown_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
             comparison_columns=["metric_total", "race_or_ethnicity_breakdown_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -646,6 +673,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -656,6 +684,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -666,6 +695,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -676,6 +706,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -686,6 +717,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         # TODO(#3743): This validation will fail until we fix the view to handle people who age into new buckets
         SamenessDataValidationCheck(
@@ -696,20 +728,23 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "gender_breakdown_sum",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
             comparison_columns=["metric_total", "race_or_ethnicity_breakdown_sum"],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=MOST_RECENT_ASSESSMENT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.DATES,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "most_recent_etl_date",
                 "most_recent_state_date",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=MOST_RECENT_ASSESSMENT_SCORE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
@@ -718,20 +753,22 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "most_recent_state_score",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.DATES,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "most_recent_etl_face_to_face_contact_date",
                 "most_recent_state_face_to_face_contact_date",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         # External comparison validations
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_data_person_id",
                 "internal_data_person_id",
@@ -748,10 +785,11 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_data_person_id",
                 "internal_data_person_id",
@@ -762,7 +800,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_FACILITY_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=["external_facility", "internal_facility"],
             partition_columns=["region_code", "date_of_stay"],
             hard_max_allowed_error=0.02,
@@ -770,7 +808,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_data_person_id",
                 "internal_data_person_id",
@@ -781,7 +819,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_person_external_id",
                 "internal_person_external_id",
@@ -792,7 +830,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_DISTRICT_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=["external_district", "internal_district"],
             partition_columns=["region_code", "date_of_supervision"],
             hard_max_allowed_error=0.01,
@@ -801,7 +839,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_LEVEL_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_supervision_level",
                 "internal_supervision_level",
@@ -812,7 +850,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_OFFICER_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_supervising_officer",
                 "internal_supervising_officer",
@@ -823,7 +861,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_person_external_id",
                 "internal_person_external_id",
@@ -834,14 +872,15 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
             comparison_columns=["external_recidivated", "internal_recidivated"],
             hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_person_external_id",
                 "internal_person_external_id",
@@ -852,7 +891,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_person_external_id",
                 "internal_person_external_id",
@@ -863,7 +902,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
                 "external_person_external_id",
                 "internal_person_external_id",
@@ -875,7 +914,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view_builder=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
             validation_name_suffix="facility",
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=["external_facility", "internal_facility"],
             partition_columns=["region_code", "date_of_stay"],
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
@@ -883,39 +922,42 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view_builder=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
             validation_name_suffix="legal_status",
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=["external_legal_status", "internal_legal_status"],
             partition_columns=["region_code", "date_of_stay"],
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
             view_builder=POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
             comparison_columns=[
                 "external_total_population",
                 "internal_total_population",
             ],
             hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
             comparison_columns=[
                 "justice_counts_total_population",
                 "internal_total_population",
             ],
             hard_max_allowed_error=0.06,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
             comparison_columns=[
                 "total_count",
                 "distinct_id_count",
             ],
             validation_category=ValidationCategory.INVARIANT,
+            region_configs=region_configs,
         ),
     ]
 

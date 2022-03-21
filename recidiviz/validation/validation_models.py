@@ -76,6 +76,14 @@ class DataValidationCheck(BuildableAttr):
 
     @property
     @abc.abstractmethod
+    def error_view_builder(self) -> SimpleBigQueryViewBuilder:
+        """Returns generated view builder for a view where all rows represent validation
+        errors. The error may be simply that the row exists at all, or there may be some
+        columns that are being compared in the row which show a discrepancy.
+        """
+
+    @property
+    @abc.abstractmethod
     def managed_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
         """Returns the list of builders for views that should be managed via the deployment."""
 
@@ -85,6 +93,10 @@ class DataValidationCheck(BuildableAttr):
     ) -> "DataValidationCheck":
         """Returns a copy of this DataValidationCheck that has been modified
         appropriately based on the region config."""
+
+    @abc.abstractmethod
+    def get_checker(self) -> "ValidationChecker":
+        """Returns the validation checker to use for this validation"""
 
 
 DataValidationType = TypeVar("DataValidationType", bound=DataValidationCheck)
@@ -107,8 +119,14 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
     # Optional dataset overrides to change which datasets will be used for query
     dataset_overrides: Optional[Dict[str, str]] = attr.ib(default=None)
 
-    def query_str(self) -> str:
+    def original_builder_query_str(self) -> str:
         view = self.validation.view_builder.build(
+            dataset_overrides=self.dataset_overrides
+        )
+        return _query_str_for_region_code(view=view, region_code=self.region_code)
+
+    def error_builder_query_str(self) -> str:
+        view = self.validation.error_view_builder.build(
             dataset_overrides=self.dataset_overrides
         )
         return _query_str_for_region_code(view=view, region_code=self.region_code)
@@ -197,3 +215,18 @@ class DataValidationJobResult:
             f"\n\t]"
             f"\n]"
         )
+
+
+# pylint: disable=unused-argument
+class ValidationChecker(Generic[DataValidationType]):
+    """Defines the interface for performing a particular kind of check."""
+
+    @abc.abstractmethod
+    def run_check(
+        self, validation_job: DataValidationJob[DataValidationType]
+    ) -> DataValidationJobResult:
+        pass
+
+    @classmethod
+    def get_validation_query_str(cls, validation_check: DataValidationType) -> str:
+        return ""

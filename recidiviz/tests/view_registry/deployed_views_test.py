@@ -63,9 +63,18 @@ class DeployedViewsTest(unittest.TestCase):
 
             self.assertGreater(len(all_view_builders), 0)
 
+            combined_view_builder_view_ids = {
+                builder.view_id
+                for builder in staging_view_builders + prod_view_builders
+            }
+
+            all_view_builder_view_ids = {
+                builder.view_id for builder in all_view_builders
+            }
+
             self.assertSetEqual(
-                set(staging_view_builders) | set(prod_view_builders),
-                set(all_view_builders),
+                combined_view_builder_view_ids,
+                all_view_builder_view_ids,
             )
 
             self.assertGreater(len(staging_view_builders), 0)
