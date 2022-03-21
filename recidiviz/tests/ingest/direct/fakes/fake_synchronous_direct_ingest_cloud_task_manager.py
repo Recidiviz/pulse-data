@@ -34,9 +34,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    GcsfsIngestViewExportArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -55,7 +55,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def __init__(self) -> None:
         super().__init__()
-        self.process_job_tasks: List[Tuple[str, LegacyExtractAndMergeArgs]] = []
+        self.extract_and_merge_tasks: List[Tuple[str, ExtractAndMergeArgs]] = []
         self.num_finished_process_job_tasks = 0
         self.scheduler_tasks: List[Tuple[str, GcsfsBucketPath, bool]] = []
         self.num_finished_scheduler_tasks = 0
@@ -63,17 +63,23 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.raw_data_import_tasks: List[Tuple[str, GcsfsRawDataBQImportArgs]] = []
         self.num_finished_raw_data_import_tasks = 0
 
-        self.ingest_view_export_tasks: List[Tuple[str, GcsfsIngestViewExportArgs]] = []
-        self.num_finished_ingest_view_export_tasks = 0
+        self.ingest_view_materialization_tasks: List[
+            Tuple[str, IngestViewMaterializationArgs]
+        ] = []
+        self.num_finished_ingest_view_materialization_tasks = 0
 
         self.sftp_tasks: List[str] = []
 
     def get_process_job_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        is_bq_materialization_enabled: bool,
     ) -> ProcessIngestJobCloudTaskQueueInfo:
 
         return ProcessIngestJobCloudTaskQueueInfo(
-            queue_name="process", task_names=[t[0] for t in self.process_job_tasks]
+            queue_name="process",
+            task_names=[t[0] for t in self.extract_and_merge_tasks],
         )
 
     def get_scheduler_queue_info(
@@ -92,11 +98,14 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         )
 
     def get_ingest_view_export_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        is_bq_materialization_enabled: bool,
     ) -> IngestViewExportCloudTaskQueueInfo:
         return IngestViewExportCloudTaskQueueInfo(
-            queue_name="ingest_view_export",
-            task_names=[t[0] for t in self.ingest_view_export_tasks],
+            queue_name="ingest_view_materialization",
+            task_names=[t[0] for t in self.ingest_view_materialization_tasks],
         )
 
     def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
@@ -107,14 +116,15 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_args: LegacyExtractAndMergeArgs,
+        task_args: ExtractAndMergeArgs,
+        is_bq_materialization_enabled: bool,
     ) -> None:
         """Queues *but does not run* a process job task."""
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = build_process_job_task_id(region, ingest_args)
-        self.process_job_tasks.append((f"projects/path/to/{task_id}", ingest_args))
+        task_id = build_process_job_task_id(region, task_args)
+        self.extract_and_merge_tasks.append((f"projects/path/to/{task_id}", task_args))
 
     def create_direct_ingest_scheduler_queue_task(
         self,
@@ -167,13 +177,14 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def create_direct_ingest_ingest_view_export_task(
         self,
         region: Region,
-        ingest_view_export_args: GcsfsIngestViewExportArgs,
+        task_args: IngestViewMaterializationArgs,
+        is_bq_materialization_enabled: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        task_id = build_ingest_view_export_task_id(region, ingest_view_export_args)
-        self.ingest_view_export_tasks.append(
-            (f"projects/path/to/{task_id}", ingest_view_export_args)
+        task_id = build_ingest_view_export_task_id(region, task_args)
+        self.ingest_view_materialization_tasks.append(
+            (f"projects/path/to/{task_id}", task_args)
         )
 
     def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
@@ -196,7 +207,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def test_run_next_process_job_task(self) -> None:
         """Synchronously executes the next queued process job task, but *does
         not remove it from the queue*."""
-        if not self.process_job_tasks:
+        if not self.extract_and_merge_tasks:
             raise ValueError("Process job tasks should not be empty.")
 
         if self.num_finished_process_job_tasks:
@@ -205,7 +216,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task = self.process_job_tasks[0]
+        task = self.extract_and_merge_tasks[0]
 
         with monitoring.push_region_tag(
             self.controller.region.region_code, self.controller.ingest_instance.value
@@ -270,7 +281,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         """Synchronously executes the next queued raw data import task, but *does not
         remove it from the queue*."""
         if not self.raw_data_import_tasks:
-            raise ValueError("BQ import/export job tasks should not be empty.")
+            raise ValueError("Raw data import tasks should not be empty.")
 
         if self.num_finished_raw_data_import_tasks:
             raise ValueError("Must first pop last finished task.")
@@ -287,35 +298,39 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
         self.num_finished_raw_data_import_tasks += 1
 
+    # TODO(#9717): Rename to test_run_next_ingest_view_materialization_task
     def test_run_next_ingest_view_export_task(self) -> None:
-        """Synchronously executes the next queued ingest view export task, but *does not
-        remove it from the queue*."""
-        if not self.ingest_view_export_tasks:
-            raise ValueError("BQ import/export job tasks should not be empty.")
+        """Synchronously executes the next queued ingest view materialization task, but
+        *does not remove it from the queue*.
+        """
+        if not self.ingest_view_materialization_tasks:
+            raise ValueError("Ingest view materialization tasks should not be empty.")
 
-        if self.num_finished_ingest_view_export_tasks:
+        if self.num_finished_ingest_view_materialization_tasks:
             raise ValueError("Must first pop last finished task.")
 
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        _task_id, args = self.ingest_view_export_tasks[0]
+        _task_id, args = self.ingest_view_materialization_tasks[0]
 
         with monitoring.push_region_tag(
             self.controller.region.region_code, self.controller.ingest_instance.value
         ):
-            self.controller.do_ingest_view_materialization(ingest_view_export_args=args)
+            self.controller.do_ingest_view_materialization(
+                ingest_view_materialization_args=args
+            )
 
-        self.num_finished_ingest_view_export_tasks += 1
+        self.num_finished_ingest_view_materialization_tasks += 1
 
     def test_pop_finished_process_job_task(
         self,
-    ) -> Tuple[str, LegacyExtractAndMergeArgs]:
+    ) -> Tuple[str, ExtractAndMergeArgs]:
         """Removes most recently run process job task from the queue."""
         if self.num_finished_process_job_tasks == 0:
             raise ValueError("No finished tasks to pop.")
 
-        task = self.process_job_tasks.pop(0)
+        task = self.extract_and_merge_tasks.pop(0)
         self.num_finished_process_job_tasks -= 1
         return task
 
@@ -335,10 +350,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.raw_data_import_tasks.pop(0)
         self.num_finished_raw_data_import_tasks -= 1
 
+    # TODO(#9717): Rename to test_pop_finished_ingest_view_materialization_task
     def test_pop_finished_ingest_view_export_task(self) -> None:
-        """Removes most recently run ingest view export task from the queue."""
-        if self.num_finished_ingest_view_export_tasks == 0:
+        """Removes most recently run ingest view materialization task from the queue."""
+        if self.num_finished_ingest_view_materialization_tasks == 0:
             raise ValueError("No finished tasks to pop.")
 
-        self.ingest_view_export_tasks.pop(0)
-        self.num_finished_ingest_view_export_tasks -= 1
+        self.ingest_view_materialization_tasks.pop(0)
+        self.num_finished_ingest_view_materialization_tasks -= 1

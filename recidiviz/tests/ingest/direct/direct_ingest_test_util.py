@@ -112,20 +112,28 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
         queue_args = (controller.region, controller.ingest_instance)
         while (
             tm.get_scheduler_queue_info(*queue_args).size()
-            or tm.get_process_job_queue_info(*queue_args).size()
+            or tm.get_process_job_queue_info(
+                *queue_args, controller.is_bq_materialization_enabled
+            ).size()
             or tm.get_raw_data_import_queue_info(controller.region).size()
-            or tm.get_ingest_view_export_queue_info(*queue_args).size()
+            or tm.get_ingest_view_export_queue_info(
+                *queue_args, controller.is_bq_materialization_enabled
+            ).size()
         ):
             if tm.get_raw_data_import_queue_info(controller.region).size():
                 tm.test_run_next_raw_data_import_task()
                 tm.test_pop_finished_raw_data_import_task()
-            if tm.get_ingest_view_export_queue_info(*queue_args).size():
+            if tm.get_ingest_view_export_queue_info(
+                *queue_args, controller.is_bq_materialization_enabled
+            ).size():
                 tm.test_run_next_ingest_view_export_task()
                 tm.test_pop_finished_ingest_view_export_task()
             if tm.get_scheduler_queue_info(*queue_args).size():
                 tm.test_run_next_scheduler_task()
                 tm.test_pop_finished_scheduler_task()
-            if tm.get_process_job_queue_info(*queue_args).size():
+            if tm.get_process_job_queue_info(
+                *queue_args, controller.is_bq_materialization_enabled
+            ).size():
                 tm.test_run_next_process_job_task()
                 tm.test_pop_finished_process_job_task()
     else:

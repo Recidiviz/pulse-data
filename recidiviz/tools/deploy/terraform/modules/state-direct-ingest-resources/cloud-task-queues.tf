@@ -41,6 +41,7 @@ module "raw-data-import-queue" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "ingest-view-export-queue" {
   source = "../serial-task-queue"
 
@@ -49,6 +50,7 @@ module "ingest-view-export-queue" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "ingest-view-export-queue-secondary" {
   source = "../serial-task-queue"
 
@@ -57,6 +59,24 @@ module "ingest-view-export-queue-secondary" {
   max_dispatches_per_second = 100
 }
 
+module "materialize-ingest-view-queue" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-materialize-ingest-view"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+module "materialize-ingest-view-queue-secondary" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-materialize-ingest-view-secondary"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+
+# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "process-job-queue" {
   source = "../serial-task-queue"
 
@@ -65,10 +85,27 @@ module "process-job-queue" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "process-job-queue-secondary" {
   source = "../serial-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-process-job-queue-secondary"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+module "extract-and-merge-queue" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-extract-and-merge"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+module "extract-and-merge-queue-secondary" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-extract-and-merge-secondary"
   region                    = var.region
   max_dispatches_per_second = 100
 }
