@@ -1,0 +1,12 @@
+client_id,incarceration_period_id,previous_status,current_status,next_status,current_status_location,location_type,previous_location_type,next_location_type,jurisdiction_location_type,housing_unit,start_date,end_date,movement_type,next_movement_type,transfer_type,transfer_reason
+45771,1,Pending Violation - Incarcerated,Incarcerated,Incarcerated,Maine Correctional Center,2,4,2,2,Unit 2,2007-06-14,2007-12-24,Transfer,Furlough,DOC Transfer,Population Distribution
+45771,2,Incarcerated,Incarcerated,Probation,Maine Correctional Center,2,2,4,2,Unit 2,2007-12-26,2008-03-06,Furlough,Release,,
+45771,3,Pending Violation - Incarcerated,Incarcerated,Inactive,Maine Correctional Center,2,4,8,2,County,2009-07-15,2010-03-15,Transfer,Discharge,DOC Transfer,Violation of Probation
+45771,4,Inactive,Incarcerated,Incarcerated,Maine Correctional Center,2,8,2,2,Unit 2,2016-12-21,2017-02-24,Sentence/Disposition,Transfer,Society In,Sentence/Disposition
+45771,5,Incarcerated,Incarcerated,Incarcerated,Bolduc Correctional Facility,2,2,2,2,Unit 1,2017-02-24,2017-07-13,Transfer,Transfer,DOC Transfer,Population Distribution
+45771,6,Incarcerated,Incarcerated,Incarcerated,Maine State Prison,2,2,2,2,Medical,2017-07-13,2017-07-14,Transfer,Transfer,DOC Transfer,Medical
+45771,7,Incarcerated,Incarcerated,Probation,Bolduc Correctional Facility,2,2,4,2,Unit 1,2017-07-14,2018-01-19,Transfer,Release,DOC Transfer,Medical
+508408,1,,Incarcerated,Incarcerated,Maine Correctional Center,2,,2,2,,2007-10-29,2008-06-27,Sentence/Disposition,Furlough,Society In,Sentence/Disposition
+508408,2,Incarcerated,Incarcerated,Probation,Maine Correctional Center,2,2,4,2,,2008-06-29,2008-08-26,Furlough,Transfer,,
+508408,3,Pending Violation - Incarcerated,Incarcerated,Incarcerated,Maine Correctional Center,2,4,2,2,Unit 1,2013-04-16,2014-02-27,Transfer,Transfer,DOC Transfer,Violation of Probation
+508408,4,Incarcerated,Incarcerated,Probation,Bolduc Correctional Facility,2,2,4,2,Unit 1,2014-02-27,2014-08-29,Transfer,Release,DOC Transfer,Population Distribution

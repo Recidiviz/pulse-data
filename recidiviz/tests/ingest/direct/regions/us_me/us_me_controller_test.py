@@ -236,7 +236,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # CURRENT_STATUS_incarceration_period
+        # CURRENT_STATUS_incarceration_period_v2
         ######################################
 
         # Person 1 starts new period and is released to SCCP
@@ -385,7 +385,7 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         ]
 
         # Act
-        self._run_ingest_job_for_filename("CURRENT_STATUS_incarceration_periods")
+        self._run_ingest_job_for_filename("CURRENT_STATUS_incarceration_periods_v2")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -1338,7 +1338,6 @@ class TestUsMeController(BaseDirectIngestControllerTests):
         ######################################
         # FULL RERUN FOR IDEMPOTENCE
         ######################################
-
         self._do_ingest_job_rerun_for_tags(self.controller.get_ingest_view_rank_list())
 
         self.assert_expected_db_people(expected_people)

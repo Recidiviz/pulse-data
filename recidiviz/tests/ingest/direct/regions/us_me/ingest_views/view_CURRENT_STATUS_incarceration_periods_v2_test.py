@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# TODO(#11586): Remove this test and all its fixtures when this view is deprecated
-"""Tests the US_ME `CURRENT_STATUS_incarceration_periods` view logic."""
+"""Tests the US_ME `CURRENT_STATUS_incarceration_periods_v2` view logic."""
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -24,16 +23,30 @@ from recidiviz.tests.big_query.view_test_util import BaseViewTest
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class CurrentStatusIncarcerationPeriodTest(BaseViewTest):
-    """Tests the US_ME `CURRENT_STATUS_incarceration_periods` view query functionality."""
+class CurrentStatusIncarcerationPeriodsV2Test(BaseViewTest):
+    """Tests the US_ME `CURRENT_STATUS_incarceration_periods_v2` view query functionality."""
 
     def setUp(self) -> None:
         super().setUp()
         self.region_code = StateCode.US_ME.value
         self.view_builder = self.view_builder_for_tag(
-            self.region_code, "CURRENT_STATUS_incarceration_periods"
+            self.region_code, "CURRENT_STATUS_incarceration_periods_v2"
         )
         self.query_run_dt = datetime(2022, 3, 1, 0, 0, 0)
+        # Postgres does not have COUNTIF () OVER ()
+        self.sql_regex_replacements = {
+            r"COUNTIF\(movement_date != previous_movement_date\s+ OR movement_direction != previous_movement_direction"
+            r"\s+OR movement_status != previous_movement_status\s+OR CASE WHEN movement_type != 'Release' THEN "
+            r"transfer_id != previous_transfer_id ELSE NULL END\)": """COUNT(COND(movement_date != previous_movement_date
+                OR movement_direction != previous_movement_direction
+                OR movement_status != previous_movement_status
+                OR CASE WHEN movement_type != 'Release' THEN transfer_id != previous_transfer_id ELSE NULL END, 
+                movement_date != previous_movement_date
+                OR movement_direction != previous_movement_direction
+                OR movement_status != previous_movement_status
+                OR CASE WHEN movement_type != 'Release' THEN transfer_id != previous_transfer_id ELSE NULL END,
+             NULL))"""
+        }
         self.data_types = str
 
     def test_juvenile_locations(self) -> None:
@@ -89,3 +102,7 @@ class CurrentStatusIncarcerationPeriodTest(BaseViewTest):
         self.run_ingest_view_test(
             fixtures_files_name="pending_discharges_in_the_past.csv"
         )
+
+    def test_many_events_on_the_same_day(self) -> None:
+        """Assert that when there are many events on the same day we have a deterministic result."""
+        self.run_ingest_view_test(fixtures_files_name="many_events_on_the_same_day.csv")

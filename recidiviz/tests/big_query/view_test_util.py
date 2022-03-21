@@ -499,8 +499,8 @@ class BaseViewTest(unittest.TestCase):
             )
         )
         if self.sql_regex_replacements:
-            for bq_sql, pg_sql in self.sql_regex_replacements.items():
-                view_query = re.sub(bq_sql, pg_sql, view_query)
+            for bq_sql_regex_pattern, pg_sql in self.sql_regex_replacements.items():
+                view_query = re.sub(bq_sql_regex_pattern, pg_sql, view_query)
 
         return self.query_view(
             view.table_for_query,
@@ -769,7 +769,7 @@ class BaseViewTest(unittest.TestCase):
         # and becomes timestamp_col::date
         query = _replace_iter(
             query,
-            r"EXTRACT\(DATE\sFROM\s(?P<clause>.+)\)(?P<end>.+)?",
+            r"EXTRACT\(DATE\sFROM\s(?P<clause>\S+)\)(?P<end>.+)?",
             "{clause}::date{end}",
         )
 
@@ -819,6 +819,12 @@ class BaseViewTest(unittest.TestCase):
             "CAST({value} AS VARCHAR)",
             flags=re.IGNORECASE,
         )
+
+        # Postgres doesn't support COUNTIF()
+        query = _replace_iter(
+            query, r"COUNTIF\((?P<value>.+?)\)", "COUNT({value} OR null)"
+        )
+
         query = _replace_iter(query, r"IFNULL", "COALESCE", flags=re.IGNORECASE)
         query = _replace_iter(query, r"(^| )IF\s*\(", " COND(", flags=re.IGNORECASE)
 
@@ -838,6 +844,7 @@ class BaseViewTest(unittest.TestCase):
             "timestamp '{year}-{month}-{day}'",
             flags=re.IGNORECASE,
         )
+
         query = _replace_iter(query, r"int64", "integer", flags=re.IGNORECASE)
         query = _replace_iter(query, r"float64", "float", flags=re.IGNORECASE)
 
@@ -865,11 +872,6 @@ class BaseViewTest(unittest.TestCase):
 
         # Allow trailing commas in SELECT.
         query = _replace_iter(query, r",(?P<whitespace>\s+)FROM", "{whitespace}FROM")
-
-        # Postgres doesn't support COUNTIF()
-        query = _replace_iter(
-            query, r"COUNTIF\((?P<value>.+?)\)", "COUNT({value} OR null)"
-        )
 
         # Postgres does not have LOGICAL_OR operator, use BOOL_OR instead
         query = _replace_iter(query, r"LOGICAL_OR", "BOOL_OR")

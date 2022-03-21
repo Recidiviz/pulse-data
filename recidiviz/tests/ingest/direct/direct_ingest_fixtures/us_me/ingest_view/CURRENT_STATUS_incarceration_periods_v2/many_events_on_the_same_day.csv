@@ -1,0 +1,27 @@
+client_id,incarceration_period_id,previous_status,current_status,next_status,current_status_location,location_type,previous_location_type,next_location_type,jurisdiction_location_type,housing_unit,start_date,end_date,movement_type,next_movement_type,transfer_type,transfer_reason
+0847,1,,Incarcerated,Interstate Compact Out,Maine Correctional Center,2,,8,2,,1980-12-05,2002-02-07,Sentence/Disposition,Transfer,Society In,Sentence/Disposition
+0847,2,Interstate Compact Out,Incarcerated,Interstate Compact Out,Maine Correctional Center,2,8,8,2,,2002-02-07,2002-02-07,Transfer,Transfer,DOC Interstate Compact Return From/In,Interstate Compact
+0847,3,Interstate Compact Out,Incarcerated,Inactive,Maine Correctional Center,2,8,8,2,MPU,2008-04-22,2008-04-25,Transfer,Discharge,DOC Interstate Active Detainer Return,Interstate Compact
+706,1,,Incarcerated,Incarcerated,Maine State Prison,2,,2,2,Medium,1992-05-29,2017-07-20,Sentence/Disposition,Transfer,Society In,Sentence/Disposition
+706,2,Incarcerated,Incarcerated,Incarcerated,Downeast Correctional Facility,2,2,2,2,Unit I,2017-07-20,2018-02-09,Transfer,Transfer,DOC Transfer,Case Management Plan
+706,3,Incarcerated,Incarcerated,Escape,Mountain View Correctional Facility,2,2,2,2,Unit 2,2018-02-09,2018-09-13,Transfer,Escape,DOC Transfer,Population Distribution
+706,4,Incarcerated,Incarcerated,Incarcerated,Mountain View Correctional Facility,2,2,2,2,,2018-09-18,2018-09-18,Transfer,Transfer,DOC Transfer,Security
+706,5,Incarcerated,Incarcerated,Incarcerated,Maine State Prison,2,2,2,2,Receiving,2018-09-18,2018-09-18,Transfer,Escape,DOC Transfer,Security
+706,6,Incarcerated,Incarcerated,Incarcerated,Mountain View Correctional Facility,2,2,2,2,,2018-09-18,2018-09-18,Escape,,,
+706,7,Escape,Incarcerated,Incarcerated,Mountain View Correctional Facility,2,2,2,2,,2018-09-18,2018-09-18,Escape,,,
+706,8,Incarcerated,Incarcerated,Inactive,Maine State Prison,2,2,14,2,Receiving,2018-09-18,2022-01-13,Escape,,,
+747208,1,,Incarcerated,Incarcerated,Maine Correctional Center,2,,2,2,MPU,2011-06-15,2011-08-18,Sentence/Disposition,Transfer,Society In,Sentence/Disposition
+747208,10,Incarcerated,Incarcerated,,Downeast Correctional Facility,2,2,,2,Unit 1,2022-02-03,,Transfer,Release,DOC Transfer,Population Distribution
+747208,2,Incarcerated,Incarcerated,Incarcerated,Maine State Prison,2,2,2,2,Medium,2011-08-18,2012-04-26,Transfer,Transfer,DOC Transfer,Population Distribution
+747208,3,Incarcerated,Incarcerated,Incarcerated,Mountain View Correctional Facility,2,2,2,2,Unit 2,2012-04-26,2013-01-12,Transfer,Furlough,DOC Transfer,Case Management Plan
+747208,4,Incarcerated,Incarcerated,Incarcerated,Mountain View Correctional Facility,2,2,2,2,Unit 2,2013-01-12,2013-03-08,Furlough,Furlough,,
+747208,5,Incarcerated,Incarcerated,SCCP,Mountain View Correctional Facility,2,2,4,2,Unit 2,2013-03-10,2013-05-08,Furlough,Transfer,,
+747208,6,Pending Violation,Incarcerated,Incarcerated,Maine State Prison,2,4,2,2,Close,2019-06-06,2022-01-12,Transfer,Transfer,DOC Transfer,Release to Probation/JCCO
+747208,7,Incarcerated,Incarcerated,Incarcerated,Bolduc Correctional Facility,2,2,2,2,Unit 2,2022-01-12,2022-01-12,Transfer,Transfer,DOC Transfer,Population Distribution
+747208,8,Incarcerated,Incarcerated,Incarcerated,Bolduc Correctional Facility,2,2,2,2,,2022-01-12,2022-01-12,Transfer,Transfer,DOC Transfer,Change of Custody Level
+747208,9,Incarcerated,Incarcerated,Incarcerated,Bolduc Correctional Facility,2,2,2,2,Unit 2,2022-01-12,2022-02-03,Transfer,Transfer,DOC Transfer,Change of Custody Level
+7600,1,,Incarcerated,Incarcerated,Mountain View Correctional Facility,2,,2,2,,2004-08-04,2004-08-04,Transfer,Discharge,DOC Transfer,Discharge
+7600,2,Incarcerated,Incarcerated,Incarcerated,Maine Correctional Center,2,2,2,2,Unit 2,2015-08-31,2016-01-21,Sentence/Disposition,Transfer,Society In,Sentence/Disposition
+7600,3,Incarcerated,Incarcerated,Probation,Mountain View Correctional Facility,2,2,4,2,Unit I,2016-01-21,2016-10-31,Transfer,Release,DOC Transfer,Population Distribution
+7600,4,Inactive,Incarcerated,Incarcerated,Maine Correctional Center,2,8,2,2,MPU,2021-12-08,2022-01-20,Transfer,Transfer,Society In,Drug Court Sanction
+7600,5,Incarcerated,Incarcerated,,Mountain View Correctional Facility,2,2,,2,Unit 1,2022-01-20,,Transfer,Release,DOC Transfer,Population Distribution

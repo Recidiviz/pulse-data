@@ -17,6 +17,13 @@
 
 """Shared helper fragments for the US_ME ingest view queries."""
 
+# TODO(#10573): Investigate using sentencing data to determine revocation admission reasons
+# A quick analysis showed that a 7 day look back period captured most of instances when a person transitioned from
+# supervision to incarceration because of a revocation.
+NUM_DAYS_STATUS_LOOK_BACK = 7
+
+REGEX_TIMESTAMP_NANOS_FORMAT = r"\.\d+"
+
 # TODO(#10111): Reconsider filtering test clients in ingest view
 VIEW_CLIENT_FILTER_CONDITION = """(
         -- Filters out clients that are test or duplicate accounts
@@ -114,4 +121,41 @@ LEFT JOIN terms term on sentence.Term_Id = term.Term_Id
 LEFT JOIN conditions condition on sentence.Court_Order_Id = condition.Court_Order_Id
 LEFT JOIN judges judge on sentence.Judge_Professional_Id = judge.Professional_Id
 WHERE charge.Juvenile_Ind != 'Y'
+"""
+
+CURRENT_STATUS_ORDER_BY = """
+    CASE current_status
+        WHEN 'County Jail' THEN 10
+        WHEN 'Incarcerated' THEN 20
+        WHEN 'Interstate Compact Out' THEN 30
+        WHEN 'Interstate Compact In' THEN 40
+        WHEN 'Interstate Active Detainer' THEN 50
+        WHEN 'Probation' THEN 60
+        WHEN 'SCCP' THEN 70
+        WHEN 'Escape' THEN 80
+        WHEN 'Parole' THEN 90
+        WHEN 'Partial Revocation - County Jail' THEN 100
+        WHEN 'Partial Revocation - incarcerated' THEN 110
+        WHEN 'Pending Violation' THEN 120
+        WHEN 'Pending Violation - Incarcerated' THEN 130
+        WHEN 'Warrant Absconded' THEN 140
+        WHEN 'Inactive' THEN 150
+        WHEN 'Referral' THEN 160
+        WHEN 'Active' THEN 170
+        ELSE 200
+    END
+"""
+
+MOVEMENT_TYPE_ORDER_BY = """
+    CASE 
+        WHEN movement_type = 'Sentence/Disposition' THEN 10
+        WHEN movement_type = 'Detention' THEN 20
+        WHEN movement_type = 'Escape' THEN 30
+        WHEN movement_type = 'Furlough' THEN 40
+        WHEN movement_type = 'Furlough Hospital' THEN 50
+        WHEN movement_type = 'Transfer' THEN 60
+        WHEN movement_type = 'Release' THEN 70
+        WHEN movement_type = 'Discharge' THEN 80
+        ELSE 100
+    END
 """
