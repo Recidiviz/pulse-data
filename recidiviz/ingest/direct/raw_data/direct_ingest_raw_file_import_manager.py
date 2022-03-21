@@ -441,6 +441,36 @@ _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
 _PER_TABLE_UPDATE_RATE_LIMITING_SEC = 2.5
 
 
+def get_unprocessed_raw_files_in_bucket(
+    fs: DirectIngestGCSFileSystem,
+    bucket_path: GcsfsBucketPath,
+    region_raw_file_config: DirectIngestRegionRawFileConfig,
+) -> List[GcsfsFilePath]:
+    """Returns a list of paths to unprocessed raw files in the provided bucket that have
+    registered file tags for a given region.
+    """
+    unprocessed_paths = fs.get_unprocessed_file_paths(
+        bucket_path, GcsfsDirectIngestFileType.RAW_DATA
+    )
+    unprocessed_raw_files = []
+    unrecognized_file_tags = set()
+    for path in unprocessed_paths:
+        parts = filename_parts_from_path(path)
+        if parts.file_tag in region_raw_file_config.raw_file_tags:
+            unprocessed_raw_files.append(path)
+        else:
+            unrecognized_file_tags.add(parts.file_tag)
+
+    for file_tag in sorted(unrecognized_file_tags):
+        logging.warning(
+            "Unrecognized raw file tag [%s] for region [%s].",
+            file_tag,
+            region_raw_file_config.region_code,
+        )
+
+    return unprocessed_raw_files
+
+
 class DirectIngestRawFileImportManager:
     """Class that stores raw data import configs for a region, with functionality for executing an import of a specific
     file.
@@ -484,26 +514,11 @@ class DirectIngestRawFileImportManager:
         )
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
-        unprocessed_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_bucket_path, GcsfsDirectIngestFileType.RAW_DATA
+        return get_unprocessed_raw_files_in_bucket(
+            fs=self.fs,
+            bucket_path=self.ingest_bucket_path,
+            region_raw_file_config=self.region_raw_file_config,
         )
-        paths_to_import = []
-        unrecognized_file_tags = set()
-        for path in unprocessed_paths:
-            parts = filename_parts_from_path(path)
-            if parts.file_tag in self.region_raw_file_config.raw_file_tags:
-                paths_to_import.append(path)
-            else:
-                unrecognized_file_tags.add(parts.file_tag)
-
-        for file_tag in sorted(unrecognized_file_tags):
-            logging.warning(
-                "Unrecognized raw file tag [%s] for region [%s].",
-                file_tag,
-                self.region.region_code,
-            )
-
-        return paths_to_import
 
     def import_raw_file_to_big_query(
         self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata

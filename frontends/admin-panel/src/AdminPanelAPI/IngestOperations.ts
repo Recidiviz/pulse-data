@@ -168,7 +168,7 @@ export const importRawDataToSandbox = async (
   stateCode: string,
   sandboxDatasetPrefix: string,
   sourceBucket: string,
-  fileTagFilterRegex: string | undefined
+  fileTagFilters: string[] | undefined
 ): Promise<Response> => {
   return postWithURLAndBody(
     `/api/ingest_operations/direct/sandbox_raw_data_import`,
@@ -176,7 +176,7 @@ export const importRawDataToSandbox = async (
       stateCode,
       sandboxDatasetPrefix,
       sourceBucket,
-      fileTagFilterRegex,
+      fileTagFilters,
     }
   );
 };
@@ -186,4 +186,15 @@ export const listSandboxBuckets = async (): Promise<Response> => {
   return postWithURLAndBody(
     `/api/ingest_operations/direct/list_sandbox_buckets`
   );
+};
+
+// Get list of raw files and dates in sandbox bucket
+export const listRawFilesInSandboxBucket = async (
+  stateCode: string,
+  sourceBucket: string
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/ingest_operations/direct/list_raw_files`, {
+    stateCode,
+    sourceBucket,
+  });
 };

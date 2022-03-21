@@ -73,6 +73,7 @@ class GcsfsFilenameParts:
 
     processed_state: str = attr.ib()
     utc_upload_datetime: datetime.datetime = attr.ib()
+    utc_upload_datetime_str: str = attr.ib()
     date_str: str = attr.ib()
     file_type: GcsfsDirectIngestFileType = attr.ib()
     # May contain letters, numbers, and the '_' char. If it contains numbers trailing an _, it must be a RAW_DATA file type.
@@ -110,6 +111,7 @@ def _filename_parts_from_raw_data_path(file_path: GcsfsFilePath) -> GcsfsFilenam
     return GcsfsFilenameParts(
         processed_state=match.group("processed_state"),
         utc_upload_datetime=utc_upload_datetime,
+        utc_upload_datetime_str=full_upload_timestamp_str,
         date_str=utc_upload_datetime.date().isoformat(),
         file_type=file_type,
         file_tag=match.group("file_tag"),
@@ -155,6 +157,7 @@ def _filename_parts_from_ingest_view_path(
     return GcsfsFilenameParts(
         processed_state=match.group("processed_state"),
         utc_upload_datetime=utc_upload_datetime,
+        utc_upload_datetime_str=full_upload_timestamp_str,
         date_str=utc_upload_datetime.date().isoformat(),
         file_type=file_type,
         file_tag=match.group("file_tag"),
