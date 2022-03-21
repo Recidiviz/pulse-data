@@ -1,7 +1,6 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 # This file associates the columns outputted from the query in `view_CURRENT_STATUS_incarceration_periods` to the corresponding
 # Ingest Object fields.
-# TODO(#11586): Remove this mapping once it is deprecated
 manifest_language: 1.0.0
 input_columns:
   - client_id
@@ -12,6 +11,7 @@ input_columns:
   - next_status
   - current_status_location
   - location_type
+  - previous_location_type
   - next_location_type
   - jurisdiction_location_type
   - housing_unit
@@ -20,7 +20,9 @@ input_columns:
   - transfer_type
   - transfer_reason
   - incarceration_period_id
-unused_columns: []
+unused_columns:
+  #  TODO(#11517): Update custom parser to use previous_location_type for admission reason
+  - previous_location_type
 output:
   StatePerson:
     external_ids:
