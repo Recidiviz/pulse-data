@@ -54,7 +54,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         self._project_id = project_id
         self.fs = fs
         self.region_code = region_code
-        self.exported_file_tags: List[str] = []
+        self.materialized_ingest_views: List[str] = []
 
     @property
     def project_id(self) -> str:
@@ -148,7 +148,8 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
             fixture_util.add_direct_ingest_path(
                 self.fs, export_path, region_code=self.region_code
             )
-            self.exported_file_tags.append(
+            # TODO(#9717): Will need to replicate this logic for new materialization
+            self.materialized_ingest_views.append(
                 filename_parts_from_path(export_path).file_tag
             )
 

@@ -319,8 +319,7 @@ class BaseDirectIngestController:
             )
         )
 
-        # TODO(#9717): Rename to ingest_view_materializer
-        self.ingest_view_export_manager = IngestViewMaterializer(
+        self.ingest_view_materializer = IngestViewMaterializer(
             region=self.region,
             ingest_instance=self.ingest_instance,
             delegate=materializer_delegate,
@@ -434,22 +433,31 @@ class BaseDirectIngestController:
             )
             return
 
-        if self._schedule_any_pre_ingest_tasks():
-            logging.info("Found pre-ingest tasks to schedule - returning.")
+        if self._schedule_raw_data_import_tasks():
+            logging.info(
+                "Found pre-ingest raw data import tasks to schedule - returning."
+            )
+            return
+
+        if self._schedule_ingest_view_materialization_tasks():
+            logging.info(
+                "Found ingest view materialization tasks to schedule - returning."
+            )
             return
 
         if self.region_lock_manager.is_locked():
             logging.info("Direct ingest is already locked on region [%s]", self.region)
             return
 
-        # TODO(#9717): Rename to extract_and_merge_queue_info
-        process_job_queue_info = self.cloud_task_manager.get_process_job_queue_info(
-            self.region,
-            self.ingest_instance,
-            is_bq_materialization_enabled=self.is_bq_materialization_enabled,
+        extract_and_merge_queue_info = (
+            self.cloud_task_manager.get_extract_and_merge_queue_info(
+                self.region,
+                self.ingest_instance,
+                is_bq_materialization_enabled=self.is_bq_materialization_enabled,
+            )
         )
         if (
-            process_job_queue_info.has_any_tasks_for_instance(
+            extract_and_merge_queue_info.has_any_tasks_for_instance(
                 region_code=self.region_code(), ingest_instance=self.ingest_instance
             )
             and not just_finished_job
@@ -457,7 +465,7 @@ class BaseDirectIngestController:
             logging.info(
                 "Already running job [%s] - will not schedule another job for "
                 "region [%s]",
-                process_job_queue_info.task_names[0],
+                extract_and_merge_queue_info.task_names[0],
                 self.region.region_code,
             )
             return
@@ -471,7 +479,7 @@ class BaseDirectIngestController:
             )
             return
 
-        if process_job_queue_info.is_task_already_queued(
+        if extract_and_merge_queue_info.is_task_already_queued(
             self.region_code(), next_job_args
         ):
             logging.info(
@@ -482,7 +490,7 @@ class BaseDirectIngestController:
 
         if not self.region_lock_manager.can_proceed():
             logging.info(
-                "Postgres to BigQuery export is running, cannot run ingest - returning"
+                "CloudSQL to BigQuery refresh is running, cannot run ingest - returning"
             )
             return
 
@@ -491,33 +499,18 @@ class BaseDirectIngestController:
             next_job_args.job_tag(),
         )
 
-        self.cloud_task_manager.create_direct_ingest_process_job_task(
+        self.cloud_task_manager.create_direct_ingest_extract_and_merge_task(
             region=self.region,
             task_args=next_job_args,
             is_bq_materialization_enabled=self.is_bq_materialization_enabled,
         )
 
-    def _schedule_any_pre_ingest_tasks(self) -> bool:
-        """Schedules any tasks related to SQL preprocessing of new files in preparation
-         for ingest of those files into our Postgres database.
-
-        Returns True if any jobs were scheduled or if there were already any pre-ingest
-        jobs scheduled. Returns False if there are no remaining ingest jobs to schedule
-        and it is safe to proceed with ingest.
-        """
-        if self._schedule_raw_data_import_tasks():
-            logging.info("Found pre-ingest raw data import tasks to schedule.")
-            return True
-        if self._schedule_ingest_view_export_tasks():
-            logging.info("Found pre-ingest view export tasks to schedule.")
-            return True
-        return False
-
     def _schedule_raw_data_import_tasks(self) -> bool:
-        """Schedules all pending ingest view export tasks for launched ingest view tags,
-        if they have not been scheduled. If tasks are scheduled or are still running,
+        """Schedules all pending raw data import tasks for launched ingest view tags, if
+        they have not been scheduled. If tasks are scheduled or are still running,
         returns True. Otherwise, if it's safe to proceed with next steps of ingest,
-        returns False."""
+        returns False.
+        """
         queue_info = self.cloud_task_manager.get_raw_data_import_queue_info(self.region)
 
         did_schedule = False
@@ -555,27 +548,28 @@ class BaseDirectIngestController:
 
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
 
-    def _schedule_ingest_view_export_tasks(self) -> bool:
-        """Schedules all pending ingest view export tasks for launched ingest view tags,
-         if they have not been scheduled. If tasks are scheduled or are still running,
-        returns True. Otherwise, if it's safe to proceed with next steps of ingest,
-        returns False.
+    def _schedule_ingest_view_materialization_tasks(self) -> bool:
+        """Schedules all pending ingest view materialization tasks for launched ingest
+        view tags, if they have not been scheduled. If tasks are scheduled or are still
+        running, returns True. Otherwise, if it's safe to proceed with next steps of
+        ingest, returns False.
         """
-        queue_info = self.cloud_task_manager.get_ingest_view_export_queue_info(
+        queue_info = self.cloud_task_manager.get_ingest_view_materialization_queue_info(
             self.region,
             self.ingest_instance,
             is_bq_materialization_enabled=self.is_bq_materialization_enabled,
         )
-        if queue_info.has_ingest_view_export_jobs_queued(
+        if queue_info.has_ingest_view_materialization_jobs_queued(
             self.region_code(), self.ingest_instance
         ):
-            # Since we schedule all export jobs at once, after all raw files have been processed, we wait for all of the
-            # export jobs to be done before checking if we need to schedule more.
+            # Since we schedule all materialization jobs at once, after all raw files
+            # have been processed, we wait for all of the materialization jobs to be
+            # done before checking if we need to schedule more.
             return True
 
         did_schedule = False
         tasks_to_schedule = (
-            self.ingest_view_materialization_args_generator.get_ingest_view_export_task_args()
+            self.ingest_view_materialization_args_generator.get_ingest_view_materialization_task_args()
         )
 
         rank_list = self.get_ingest_view_rank_list()
@@ -605,11 +599,11 @@ class BaseDirectIngestController:
         )
 
         for task_args in tasks_to_schedule:
-            if not queue_info.is_ingest_view_export_task_already_queued(
+            if not queue_info.is_ingest_view_materialization_task_already_queued(
                 self.region_code(),
                 task_args,
             ):
-                self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(
+                self.cloud_task_manager.create_direct_ingest_view_materialization_task(
                     self.region,
                     task_args,
                     is_bq_materialization_enabled=self.is_bq_materialization_enabled,
@@ -679,10 +673,10 @@ class BaseDirectIngestController:
 
         if not self.region_lock_manager.can_proceed():
             logging.warning(
-                "Postgres to BigQuery export is running, can not run ingest"
+                "CloudSQL to BigQuery refresh is running, can not run ingest"
             )
             raise GCSPseudoLockAlreadyExists(
-                "Postgres to BigQuery export is running, can not run ingest"
+                "CloudSQL to BigQuery refresh is running, can not run ingest"
             )
 
         with self.region_lock_manager.using_region_lock(
@@ -1292,7 +1286,7 @@ class BaseDirectIngestController:
             )
             return
 
-        did_export = self.ingest_view_export_manager.export_view_for_args(
+        did_materialize = self.ingest_view_materializer.materialize_view_for_args(
             ingest_view_materialization_args
         )
 
@@ -1301,7 +1295,7 @@ class BaseDirectIngestController:
         )
 
         if (
-            not did_export
+            not did_materialize
             or not args_generator_delegate.get_registered_jobs_pending_completion()
         ):
             logging.info("Creating cloud task to schedule next job.")

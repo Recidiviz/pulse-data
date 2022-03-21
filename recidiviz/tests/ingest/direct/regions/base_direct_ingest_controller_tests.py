@@ -268,7 +268,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
                 lower_bound_datetime=yesterday,
             )
 
-            self.controller.ingest_view_export_manager.export_view_for_args(
+            self.controller.ingest_view_materializer.materialize_view_for_args(
                 materialization_job_args
             )
 
@@ -347,7 +347,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             lower_bound_datetime=yesterday,
         )
 
-        self.controller.ingest_view_export_manager.export_view_for_args(
+        self.controller.ingest_view_materializer.materialize_view_for_args(
             materialization_job_args
         )
 
