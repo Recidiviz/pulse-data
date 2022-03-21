@@ -73,11 +73,16 @@ class IngestOperationsStore(AdminPanelStore):
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
+        self.ingest_view_materialization_gating_context: Optional[
+            IngestViewMaterializationGatingContext
+        ] = None
 
     def recalculate_store(self) -> None:
         # This store currently does not store any internal state that can be refreshed.
         # Data must be fetched manually from other public methods.
-        pass
+        self.ingest_view_materialization_gating_context = (
+            IngestViewMaterializationGatingContext.load_from_gcs()
+        )
 
     @property
     def state_codes_launched_in_env(self) -> List[StateCode]:
@@ -279,11 +284,11 @@ class IngestOperationsStore(AdminPanelStore):
                 state_code, instance
             )
 
-            materialization_gating_context = (
-                IngestViewMaterializationGatingContext.load_from_gcs()
-            )
-
-            is_bq_materialization_enabled = materialization_gating_context.is_bq_ingest_view_materialization_enabled(
+            if not self.ingest_view_materialization_gating_context:
+                self.ingest_view_materialization_gating_context = (
+                    IngestViewMaterializationGatingContext.load_from_gcs()
+                )
+            is_bq_materialization_enabled = self.ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
                 state_code=state_code, ingest_instance=instance
             )
             ingest_instance_summary: Dict[str, Any] = {

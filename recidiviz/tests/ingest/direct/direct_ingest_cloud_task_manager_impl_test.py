@@ -24,7 +24,7 @@ import attr
 import mock
 from freezegun import freeze_time
 from google.cloud import tasks_v2
-from mock import MagicMock, patch
+from mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
@@ -47,9 +47,11 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
     LegacyExtractAndMergeArgs,
+    NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import regions
@@ -378,7 +380,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_scheduler_queue_task(
-        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+        self,
+        mock_client: mock.MagicMock,
+        mock_uuid: mock.MagicMock,
     ) -> None:
         # Arrange
         body_encoded = json.dumps({}).encode()
@@ -420,7 +424,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_scheduler_queue_task_secondary(
-        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+        self,
+        mock_client: mock.MagicMock,
+        mock_uuid: mock.MagicMock,
     ) -> None:
         # Arrange
         body_encoded = json.dumps({}).encode()
@@ -458,6 +464,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             parent=queue_path, task=task
         )
 
+    # TODO(#11424): Delete this test when BQ materialization has fully shipped.
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
@@ -505,7 +512,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, ingest_args
+            _REGION, ingest_args, is_bq_materialization_enabled=False
         )
 
         # Assert
@@ -518,6 +525,66 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             parent=queue_path, task=task
         )
 
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-07-20")
+    def test_create_direct_ingest_extract_and_merge_task(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
+        # Arrange
+        dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
+        args = NewExtractAndMergeArgs(
+            ingest_time=datetime.datetime.now(),
+            ingest_view_name="my_ingest_view_name",
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            upper_bound_datetime_inclusive=dt,
+            batch_number=2,
+        )
+        body = {
+            "cloud_task_args": args.to_serializable(),
+            "args_type": "NewExtractAndMergeArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+        uuid = "random-uuid"
+        mock_uuid.uuid4.return_value = uuid
+        date = "2019-07-20"
+        queue_path = "us-xx-extract-and-merge-path"
+        queue_name = "direct-ingest-state-us-xx-extract-and-merge"
+
+        task_name = f"{queue_name}/{_REGION.region_code}-{date}-{uuid}"
+        url_params = {
+            "region": _REGION.region_code,
+            "ingest_instance": "primary",
+            "ingest_view_name": "my_ingest_view_name",
+        }
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_name,
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": f"/direct/extract_and_merge?{urlencode(url_params)}",
+                "body": body_encoded,
+            },
+        )
+
+        mock_client.return_value.task_path.return_value = task_name
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
+            _REGION, args, is_bq_materialization_enabled=True
+        )
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id,
+            QUEUES_REGION,
+            queue_name,
+        )
+        mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=task
+        )
+
+    # TODO(#11424): Delete this test when BQ materialization has fully shipped.
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
@@ -564,7 +631,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, ingest_args
+            _REGION, ingest_args, is_bq_materialization_enabled=False
         )
 
         # Assert
@@ -577,46 +644,43 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             parent=queue_path, task=task
         )
 
-    @patch(
-        "recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper." "datetime"
-    )
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
-    def test_create_direct_ingest_process_job_task_gcsfs_args(
-        self, mock_client: MagicMock, mock_uuid: MagicMock, mock_datetime: MagicMock
+    @freeze_time("2019-07-20")
+    def test_create_direct_ingest_extract_and_merge_task_secondary(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        file_path = GcsfsFilePath.from_directory_and_file_name(
-            _PRIMARY_INGEST_BUCKET,
-            to_normalized_unprocessed_file_name(
-                file_name="file_path.csv",
-                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-            ),
-        )
-
-        ingest_args = LegacyExtractAndMergeArgs(
-            ingest_time=datetime.datetime(year=2019, month=7, day=20),
-            file_path=file_path,
+        dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
+        args = NewExtractAndMergeArgs(
+            ingest_time=datetime.datetime.now(),
+            ingest_view_name="my_ingest_view_name",
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            upper_bound_datetime_inclusive=dt,
+            batch_number=2,
         )
         body = {
-            "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "LegacyExtractAndMergeArgs",
+            "cloud_task_args": args.to_serializable(),
+            "args_type": "NewExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
-        mock_datetime.date.today.return_value = date
-        queue_name = "direct-ingest-state-us-xx-process-job-queue"
-        queue_path = f"{queue_name}-path"
+        queue_path = "us-xx-extract-and-merge-path"
+        queue_name = "direct-ingest-state-us-xx-extract-and-merge-secondary"
 
-        task_name = _REGION.get_queue_name() + f"/{_REGION.region_code}-{date}-{uuid}"
-        url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
+        task_name = f"{queue_name}/{_REGION.region_code}-{date}-{uuid}"
+        url_params = {
+            "region": _REGION.region_code,
+            "ingest_instance": "secondary",
+            "ingest_view_name": "my_ingest_view_name",
+        }
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": f"/direct/process_job?{urlencode(url_params)}",
+                "relative_uri": f"/direct/extract_and_merge?{urlencode(url_params)}",
                 "body": body_encoded,
             },
         )
@@ -626,7 +690,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, ingest_args
+            _REGION, args, is_bq_materialization_enabled=True
         )
 
         # Assert
@@ -643,7 +707,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_raw_data_import_task(
-        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+        self,
+        mock_client: mock.MagicMock,
+        mock_uuid: mock.MagicMock,
     ) -> None:
         # Arrange
         raw_data_path = GcsfsFilePath.from_directory_and_file_name(
@@ -697,6 +763,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             parent=queue_path, task=task
         )
 
+    # TODO(#11424): Delete this test when BQ materialization has fully shipped.
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
@@ -740,7 +807,64 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_ingest_view_export_task(
-            _REGION, export_args
+            _REGION, export_args, is_bq_materialization_enabled=False
+        )
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id,
+            QUEUES_REGION,
+            queue_name,
+        )
+        mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=task
+        )
+
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-07-20")
+    def test_create_direct_ingest_ingest_view_materialization_task(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
+        # Arrange
+        export_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="my_ingest_view",
+            ingest_instance_=DirectIngestInstance.PRIMARY,
+            lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
+            upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
+        )
+        body = {
+            "cloud_task_args": export_args.to_serializable(),
+            "args_type": "BQIngestViewMaterializationArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+        uuid = "random-uuid"
+        mock_uuid.uuid4.return_value = uuid
+        date = "2019-07-20"
+        queue_name = "direct-ingest-state-us-xx-materialize-ingest-view"
+        queue_path = f"{queue_name}-path"
+
+        task_name = queue_name + f"/{_REGION.region_code}-{date}-{uuid}"
+        url_params = {
+            "region": _REGION.region_code,
+            "ingest_instance": "primary",
+            "ingest_view_name": "my_ingest_view",
+        }
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_name,
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": f"/direct/materialize_ingest_view?{urlencode(url_params)}",
+                "body": body_encoded,
+            },
+        )
+
+        mock_client.return_value.task_path.return_value = task_name
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_ingest_view_export_task(
+            _REGION, export_args, is_bq_materialization_enabled=True
         )
 
         # Assert
@@ -757,7 +881,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2021-01-01")
     def test_create_direct_ingest_sftp_download_task(
-        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+        self,
+        mock_client: mock.MagicMock,
+        mock_uuid: mock.MagicMock,
     ) -> None:
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid

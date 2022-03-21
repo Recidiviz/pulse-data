@@ -245,7 +245,7 @@ class BaseDirectIngestController:
                     StateCode(self.region_code().upper()), self.ingest_instance
                 )
             )
-            if StateCode.is_state_code(self.region_code())
+            if StateCode.is_state_code(self.region_code().upper())
             else False
         )
 
@@ -319,6 +319,7 @@ class BaseDirectIngestController:
             )
         )
 
+        # TODO(#9717): Rename to ingest_view_materializer
         self.ingest_view_export_manager = IngestViewMaterializer(
             region=self.region,
             ingest_instance=self.ingest_instance,
@@ -441,8 +442,11 @@ class BaseDirectIngestController:
             logging.info("Direct ingest is already locked on region [%s]", self.region)
             return
 
+        # TODO(#9717): Rename to extract_and_merge_queue_info
         process_job_queue_info = self.cloud_task_manager.get_process_job_queue_info(
-            self.region, self.ingest_instance
+            self.region,
+            self.ingest_instance,
+            is_bq_materialization_enabled=self.is_bq_materialization_enabled,
         )
         if (
             process_job_queue_info.has_any_tasks_for_instance(
@@ -487,22 +491,11 @@ class BaseDirectIngestController:
             next_job_args.job_tag(),
         )
 
-        if not self.is_bq_materialization_enabled:
-            # TODO(#11424): Delete this block once BQ materialization is enabled for
-            #  all states.
-            if not isinstance(next_job_args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{type(next_job_args)}]")
-
-            self.cloud_task_manager.create_direct_ingest_process_job_task(
-                region=self.region,
-                ingest_args=next_job_args,
-            )
-        else:
-            # TODO(#9717): Implement queueing for BQ-based extract and merge job.
-            raise NotImplementedError(
-                f"Functionality not yet supported for BQ-materialization enabled states: "
-                f"[{type(next_job_args)}]"
-            )
+        self.cloud_task_manager.create_direct_ingest_process_job_task(
+            region=self.region,
+            task_args=next_job_args,
+            is_bq_materialization_enabled=self.is_bq_materialization_enabled,
+        )
 
     def _schedule_any_pre_ingest_tasks(self) -> bool:
         """Schedules any tasks related to SQL preprocessing of new files in preparation
@@ -569,7 +562,9 @@ class BaseDirectIngestController:
         returns False.
         """
         queue_info = self.cloud_task_manager.get_ingest_view_export_queue_info(
-            self.region, self.ingest_instance
+            self.region,
+            self.ingest_instance,
+            is_bq_materialization_enabled=self.is_bq_materialization_enabled,
         )
         if queue_info.has_ingest_view_export_jobs_queued(
             self.region_code(), self.ingest_instance
@@ -593,7 +588,7 @@ class BaseDirectIngestController:
         for args in tasks_to_schedule:
             if args.ingest_view_name not in ingest_view_name_rank:
                 logging.warning(
-                    "Skipping ingest view task export for [%s] - not in controller ingest tags.",
+                    "Skipping ingest view materialization for [%s] - not in controller ingest view list.",
                     args.ingest_view_name,
                 )
                 continue
@@ -601,7 +596,7 @@ class BaseDirectIngestController:
 
         tasks_to_schedule = filtered_tasks_to_schedule
 
-        # Sort by tag order and export datetime
+        # Sort by tag order and file datetime
         tasks_to_schedule.sort(
             key=lambda args_: (
                 ingest_view_name_rank[args_.ingest_view_name],
@@ -615,7 +610,9 @@ class BaseDirectIngestController:
                 task_args,
             ):
                 self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(
-                    self.region, task_args
+                    self.region,
+                    task_args,
+                    is_bq_materialization_enabled=self.is_bq_materialization_enabled,
                 )
                 did_schedule = True
 
@@ -1285,7 +1282,7 @@ class BaseDirectIngestController:
         self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_materialization(
-        self, ingest_view_export_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
@@ -1296,7 +1293,7 @@ class BaseDirectIngestController:
             return
 
         did_export = self.ingest_view_export_manager.export_view_for_args(
-            ingest_view_export_args
+            ingest_view_materialization_args
         )
 
         args_generator_delegate = (
