@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+# TODO(#11586): Remove this view once it is deprecated
 """Query containing MDOC client incarceration periods."""
 from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragments import (
     VIEW_CLIENT_FILTER_CONDITION,
@@ -42,10 +43,10 @@ VIEW_QUERY_TEMPLATE = f"""
             IF(Cancelled_Ind = 'Y', TRUE, NULL) AS cancelled,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Transfer_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS transfer_datetime,
         FROM {{CIS_314_TRANSFER}}
-        
+
         LEFT JOIN {{CIS_3140_TRANSFER_TYPE}} type
         ON Cis_3140_Transfer_Type_Cd = type.Transfer_Type_Cd
-        
+
         LEFT JOIN {{CIS_3141_TRANSFER_REASON}} reason
         ON Cis_3141_Transfer_Reason_Cd = reason.Transfer_Reason_Cd
     ),
@@ -69,23 +70,22 @@ VIEW_QUERY_TEMPLATE = f"""
             t.transfer_type,
             t.transfer_reason,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Effct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS effective_datetime,
-            # TODO(#10663): Investigate the use of End_Date vs Ineffct_Date
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(End_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS end_datetime,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Ineffct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS ineffective_datetime
         FROM {{CIS_125_CURRENT_STATUS_HIST}}
-        
+
         LEFT JOIN {{CIS_1000_CURRENT_STATUS}} status_code
         ON Cis_1000_Current_Status_Cd = status_code.Current_Status_Cd
-        
+
         LEFT JOIN {{CIS_908_CCS_LOCATION}} l
         ON Cis_908_Ccs_Location_2_Id = l.Ccs_Location_Id
-        
+
         LEFT JOIN {{CIS_908_CCS_LOCATION}} juris_loc
         on Cis_908_Ccs_Location_Id = juris_loc.Ccs_Location_Id
-        
+
         LEFT JOIN {{CIS_912_UNIT}} unit
         ON Cis_912_Unit_Id = unit.Unit_Id
-        
+
         LEFT JOIN transfers t
         ON Cis_314_Transfer_Id = t.transfer_id
 
@@ -196,7 +196,7 @@ VIEW_QUERY_TEMPLATE = f"""
             ineffective_datetime,
             EXTRACT(DATE FROM ineffective_datetime) AS ineffective_date
         FROM all_statuses
-        
+
         -- Remove statuses with effective dates in 1900
         WHERE EXTRACT(YEAR FROM effective_datetime) != 1900
 
@@ -261,13 +261,13 @@ VIEW_QUERY_TEMPLATE = f"""
             status.E_Mvmt_Status_Desc AS movement_status,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Movement_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS movement_datetime
         FROM {{CIS_309_MOVEMENT}}
-        
+
         LEFT JOIN {{CIS_3090_MOVEMENT_TYPE}} type
         ON Cis_3090_Movement_Type_Cd = type.Movement_Type_Cd
-        
+
         LEFT JOIN {{CIS_3095_MVMT_DIRECTION}} direction
         ON Cis_3095_Mvmt_Direction_Cd = direction.Mvmt_Direction_Cd
-        
+
         LEFT JOIN {{CIS_3093_MVMT_STATUS}} status
         ON Cis_3093_Mvmt_Status_Cd = Mvmt_Status_Cd
 
@@ -297,7 +297,7 @@ VIEW_QUERY_TEMPLATE = f"""
 
         LEFT JOIN transfers t
         ON t.transfer_id = m.transfer_id
-        
+
         -- Only keep movements associated with non-cancelled transfers
         WHERE t.cancelled IS NULL
     ),
@@ -366,7 +366,7 @@ VIEW_QUERY_TEMPLATE = f"""
             IF(LAG(s.transfer_id) OVER movement_seq = s.transfer_id, m.transfer_type, s.transfer_type) AS transfer_type,
             IF(LAG(s.transfer_id) OVER movement_seq = s.transfer_id, m.transfer_reason, s.transfer_reason) AS transfer_reason,
         FROM join_statuses_and_bed_assignments s
-        
+
         LEFT JOIN filtered_movements_with_next_type m
             ON m.client_id = s.client_id
             AND (
@@ -385,7 +385,7 @@ VIEW_QUERY_TEMPLATE = f"""
                 next_effective_datetime IS NOT NULL AND next_effective_datetime < s.end_datetime
             )
         )
-        
+
         WINDOW movement_seq AS (
             PARTITION BY s.client_id 
             ORDER BY CASE WHEN m.movement_date = s.effective_date
@@ -440,12 +440,12 @@ VIEW_QUERY_TEMPLATE = f"""
             transfer_type,
             transfer_reason,
         FROM join_statuses_and_movements s
-        
+
         -- Filter out periods for test client IDs that have been removed from the client table
         INNER JOIN {{CIS_100_CLIENT}} c
         ON s.client_id = c.Client_Id
         AND {VIEW_CLIENT_FILTER_CONDITION}
-    
+
         WHERE current_status IN (
             'Incarcerated',
             'Partial Revocation - incarcerated',
@@ -456,7 +456,7 @@ VIEW_QUERY_TEMPLATE = f"""
         AND location_type IN ('2','7','9')
         -- Filter out periods with a Juvenile DOC jurisdiction
         AND jurisdiction_location_type NOT IN ('3','15')
-        
+
         -- Include periods that either do not have a movement_type, or have a Transfer "In" movement
         AND (
             movement_type IS NULL OR (
