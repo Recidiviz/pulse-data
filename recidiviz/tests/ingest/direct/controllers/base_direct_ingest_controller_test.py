@@ -899,7 +899,9 @@ class TestDirectIngestController(unittest.TestCase):
         # Single process job request should be waiting for the first file
         self.assertEqual(
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
             1,
         )
@@ -911,7 +913,9 @@ class TestDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
             0,
         )
@@ -935,7 +939,9 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             1,
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
         )
 
@@ -972,7 +978,9 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             1,
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
         )
 
@@ -1022,7 +1030,9 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             0,
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
         )
         self.validate_file_metadata(
@@ -1118,7 +1128,9 @@ class TestDirectIngestController(unittest.TestCase):
 
         _, args = task_manager.test_pop_finished_process_job_task()
 
-        task_manager.create_direct_ingest_process_job_task(controller.region, args)
+        task_manager.create_direct_ingest_process_job_task(
+            controller.region, args, controller.is_bq_materialization_enabled
+        )
 
         # Now run the repeated task
         task_manager.test_run_next_process_job_task()
@@ -1137,7 +1149,9 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             0,
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
         )
         self.validate_file_metadata(
@@ -1295,7 +1309,9 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             0,
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
         )
         self.validate_file_metadata(
@@ -1590,7 +1606,9 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             0,
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
         )
 
@@ -1671,7 +1689,9 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             0,
             task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
+                controller.region,
+                controller.ingest_instance,
+                controller.is_bq_materialization_enabled,
             ).size(),
         )
 

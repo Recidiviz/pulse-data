@@ -33,9 +33,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    GcsfsIngestViewExportArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -66,28 +66,31 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def __init__(self) -> None:
         super().__init__()
         self.scheduler_queue = SingleThreadTaskQueue(name="scheduler")
-        self.process_job_queue = SingleThreadTaskQueue(name="process_job")
-        self.ingest_view_export_queue = SingleThreadTaskQueue(name="ingest_view_export")
+        self.extract_and_merge_queue = SingleThreadTaskQueue(name="extract_and_merge")
+        self.ingest_view_materialization_queue = SingleThreadTaskQueue(
+            name="ingest_view_materialization"
+        )
         self.raw_data_import_queue = SingleThreadTaskQueue(name="raw_data_import")
         self.sftp_queue = SingleThreadTaskQueue(name="sftp")
 
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_args: LegacyExtractAndMergeArgs,
+        task_args: ExtractAndMergeArgs,
+        is_bq_materialization_enabled: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = build_process_job_task_id(region, ingest_args)
-        self.process_job_queue.add_task(
+        task_id = build_process_job_task_id(region, task_args)
+        self.extract_and_merge_queue.add_task(
             f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
-                ingest_args.ingest_instance,
+                task_args.ingest_instance,
                 self.controller.run_extract_and_merge_job_and_kick_scheduler_on_completion,
             ),
-            ingest_args,
+            task_args,
         )
 
     def create_direct_ingest_scheduler_queue_task(
@@ -167,20 +170,21 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_ingest_view_export_task(
         self,
         region: Region,
-        ingest_view_export_args: GcsfsIngestViewExportArgs,
+        task_args: IngestViewMaterializationArgs,
+        is_bq_materialization_enabled: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = build_ingest_view_export_task_id(region, ingest_view_export_args)
-        self.ingest_view_export_queue.add_task(
+        task_id = build_ingest_view_export_task_id(region, task_args)
+        self.ingest_view_materialization_queue.add_task(
             f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
-                ingest_view_export_args.ingest_instance,
+                task_args.ingest_instance,
                 self.controller.do_ingest_view_materialization,
             ),
-            ingest_view_export_args,
+            task_args,
         )
 
     def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
@@ -193,13 +197,16 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.scheduler_queue.delete_task(task_name)
 
     def get_process_job_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        is_bq_materialization_enabled: bool,
     ) -> ProcessIngestJobCloudTaskQueueInfo:
-        with self.process_job_queue.all_tasks_mutex:
-            task_names = self.process_job_queue.get_unfinished_task_names_unsafe()
+        with self.extract_and_merge_queue.all_tasks_mutex:
+            task_names = self.extract_and_merge_queue.get_unfinished_task_names_unsafe()
 
         return ProcessIngestJobCloudTaskQueueInfo(
-            queue_name=self.process_job_queue.name, task_names=task_names
+            queue_name=self.extract_and_merge_queue.name, task_names=task_names
         )
 
     def get_scheduler_queue_info(
@@ -223,15 +230,19 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_ingest_view_export_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        is_bq_materialization_enabled: bool,
     ) -> IngestViewExportCloudTaskQueueInfo:
-        with self.ingest_view_export_queue.all_tasks_mutex:
+        with self.ingest_view_materialization_queue.all_tasks_mutex:
             task_names = (
-                self.ingest_view_export_queue.get_unfinished_task_names_unsafe()
+                self.ingest_view_materialization_queue.get_unfinished_task_names_unsafe()
             )
 
         return IngestViewExportCloudTaskQueueInfo(
-            queue_name=self.ingest_view_export_queue.name, task_names=task_names
+            queue_name=self.ingest_view_materialization_queue.name,
+            task_names=task_names,
         )
 
     def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
@@ -247,32 +258,32 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def wait_for_all_tasks_to_run(self) -> None:
         raw_data_import_done = False
-        ingest_view_export_done = False
+        ingest_view_materialization_done = False
         scheduler_done = False
-        process_job_queue_done = False
+        extract_and_merge_queue_done = False
         while not (
-            ingest_view_export_done
+            ingest_view_materialization_done
             and scheduler_done
-            and process_job_queue_done
+            and extract_and_merge_queue_done
             and raw_data_import_done
         ):
             self.raw_data_import_queue.join()
-            self.ingest_view_export_queue.join()
+            self.ingest_view_materialization_queue.join()
             self.scheduler_queue.join()
-            self.process_job_queue.join()
+            self.extract_and_merge_queue.join()
 
-            with self.ingest_view_export_queue.all_tasks_mutex:
+            with self.ingest_view_materialization_queue.all_tasks_mutex:
                 with self.scheduler_queue.all_tasks_mutex:
-                    with self.process_job_queue.all_tasks_mutex:
+                    with self.extract_and_merge_queue.all_tasks_mutex:
                         raw_data_import_done = (
                             not self.raw_data_import_queue.get_unfinished_task_names_unsafe()
                         )
-                        ingest_view_export_done = (
-                            not self.ingest_view_export_queue.get_unfinished_task_names_unsafe()
+                        ingest_view_materialization_done = (
+                            not self.ingest_view_materialization_queue.get_unfinished_task_names_unsafe()
                         )
                         scheduler_done = (
                             not self.scheduler_queue.get_unfinished_task_names_unsafe()
                         )
-                        process_job_queue_done = (
-                            not self.process_job_queue.get_unfinished_task_names_unsafe()
+                        extract_and_merge_queue_done = (
+                            not self.extract_and_merge_queue.get_unfinished_task_names_unsafe()
                         )
