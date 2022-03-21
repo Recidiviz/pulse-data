@@ -1,0 +1,36 @@
+client_id,supervision_period_id,start_date,end_date,previous_status,current_status,next_status,supervision_location,previous_jurisdiction_location_type,current_jurisdiction_location_type,next_jurisdiction_location_type,transfer_type,transfer_reason,next_transfer_type,next_transfer_reason,officer_external_id,officer_status,officer_first_name,officer_middle_name,officer_last_name
+47215,1,2012-06-12,2012-07-07,Inactive,Probation,Probation,"Biddeford, Adult",8,4,4,Society In,Sentence/Disposition,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,2,2012-06-13,2012-07-07,Probation,Probation,Warrant Absconded,"Biddeford, Adult",4,4,4,Society In,Sentence/Disposition,None,None,1070,Secondary,CRIJHE,O,KFXGOJ
+47215,3,2012-07-07,2012-08-06,Probation,Warrant Absconded,Warrant Absconded,"Biddeford, Adult",4,4,4,None,None,None,None,1070,Secondary,CRIJHE,O,KFXGOJ
+47215,4,2012-07-07,2012-08-06,Warrant Absconded,Warrant Absconded,Probation,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,5,2012-08-06,2012-08-07,Warrant Absconded,Probation,Probation,"Biddeford, Adult",4,4,4,None,None,None,None,1070,Secondary,CRIJHE,O,KFXGOJ
+47215,6,2012-08-06,2012-09-21,Probation,Probation,Pending Violation - Incarcerated,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,7,2012-09-21,2012-09-24,Probation,Pending Violation - Incarcerated,Probation,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,8,2012-09-24,2012-10-25,Pending Violation - Incarcerated,Probation,Pending Violation - Incarcerated,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,9,2012-10-25,2012-10-25,Probation,Pending Violation - Incarcerated,Pending Violation,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,10,2012-10-25,2012-12-20,Pending Violation - Incarcerated,Pending Violation,Warrant Absconded,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,11,2012-12-20,2012-12-20,Pending Violation,Warrant Absconded,Pending Violation - Incarcerated,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,12,2012-12-20,2013-01-15,Warrant Absconded,Pending Violation - Incarcerated,Probation,"Biddeford, Adult",4,4,4,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,13,2013-01-15,2013-01-15,Pending Violation - Incarcerated,Probation,None,"Biddeford, Adult",4,4,None,None,None,None,None,3851,Primary,DZSVRIYCZ,None,CHONLI
+47215,14,2014-07-11,2014-07-17,Inactive,Probation,Probation,"Biddeford, Adult",8,4,4,Society In,Sentence/Disposition,None,None,3956,Secondary,VVAEATOH,None,TGVMOI
+47215,15,2014-07-11,2014-09-02,Probation,Probation,Warrant Absconded,"Biddeford, Adult",4,4,4,Society In,Sentence/Disposition,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,16,2014-09-02,2014-09-22,Probation,Warrant Absconded,Pending Violation - Incarcerated,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,17,2014-09-22,2014-10-09,Warrant Absconded,Pending Violation - Incarcerated,Partial Revocation - County Jail,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,18,2014-10-09,2014-12-24,Pending Violation - Incarcerated,Partial Revocation - County Jail,Probation,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,19,2014-12-24,2015-01-22,Partial Revocation - County Jail,Probation,Warrant Absconded,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,20,2015-01-22,2015-05-22,Probation,Warrant Absconded,Warrant Absconded,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,21,2015-05-22,2015-05-22,Warrant Absconded,Warrant Absconded,Incarcerated,Maine Correctional Center,4,4,2,None,None,None,None,3706,Primary,NFRVVXE,None,YVBMJSPY
+47215,22,2016-08-09,2016-09-05,Inactive,County Jail,County Jail,"Biddeford, Adult",8,4,4,DOC County Jail Out,Writ / Court Order,None,None,1051,Secondary,UHPJT,W,CPPVHC
+47215,23,2016-08-09,2016-09-05,County Jail,County Jail,Probation,"Biddeford, Adult",4,4,4,DOC County Jail Out,Writ / Court Order,DOC County Jail Return From,Release to Probation/JCCO,1074,Primary,WSPAEC,W,NGQGYG
+47215,24,2016-09-05,2016-09-30,County Jail,Probation,Warrant Absconded,"Biddeford, Adult",4,4,4,DOC County Jail Return From,Release to Probation/JCCO,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,25,2016-09-30,2016-10-04,Probation,Warrant Absconded,Pending Violation - Incarcerated,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,26,2016-10-04,2016-10-04,Warrant Absconded,Pending Violation - Incarcerated,Pending Violation,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,27,2016-10-04,2017-04-01,Pending Violation - Incarcerated,Pending Violation,Pending Violation,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,28,2017-03-08,2017-04-01,Pending Violation,Pending Violation,Pending Violation - Incarcerated,"Biddeford, Adult",4,4,4,None,None,None,None,2727,Secondary,TKTVZRG,None,AISOBXL
+47215,29,2017-04-01,2017-04-03,Pending Violation,Pending Violation - Incarcerated,Pending Violation - Incarcerated,"Biddeford, Adult",4,4,4,None,None,None,None,2727,Secondary,TKTVZRG,None,AISOBXL
+47215,30,2017-04-01,2017-04-10,Pending Violation - Incarcerated,Pending Violation - Incarcerated,Partial Revocation - County Jail,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,31,2017-04-10,2017-05-28,Pending Violation - Incarcerated,Partial Revocation - County Jail,Probation,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,32,2017-05-28,2017-06-05,Partial Revocation - County Jail,Probation,Probation,"Biddeford, Adult",4,4,4,None,None,None,None,1074,Primary,WSPAEC,W,NGQGYG
+47215,33,2017-06-05,2017-06-05,Probation,Probation,Probation,"Lewiston (Main Office), Adult",4,4,4,None,None,None,None,1088,Primary,TCSFVDV,W,AEHCUVUX
+47215,34,2017-06-05,2017-07-11,Probation,Probation,Pending Violation - Incarcerated,"Lewiston (Main Office), Adult",4,4,4,DOC Transfer,Individual Client Request,None,None,1088,Primary,TCSFVDV,W,AEHCUVUX
+47215,35,2017-07-11,2017-08-01,Probation,Pending Violation - Incarcerated,Incarcerated,"Lewiston (Main Office), Adult",4,4,2,None,None,None,None,1088,Primary,TCSFVDV,W,AEHCUVUX

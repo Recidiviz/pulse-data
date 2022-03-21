@@ -1,0 +1,6 @@
+client_id,supervision_period_id,start_date,end_date,previous_status,current_status,next_status,supervision_location,previous_jurisdiction_location_type,current_jurisdiction_location_type,next_jurisdiction_location_type,transfer_type,transfer_reason,next_transfer_type,next_transfer_reason,officer_external_id,officer_status,officer_first_name,officer_middle_name,officer_last_name
+82761,1,2003-11-21,2003-11-21,None,Probation,Probation,"Farmington, Adult",None,4,4,Society In,Sentence/Disposition,Society In,Sentence/Disposition,1037,Primary,QYOBJGR,Z,WJYGRIB
+82761,2,2003-11-21,2003-12-22,Probation,Probation,Warrant Absconded,"Farmington, Adult",4,4,4,Society In,Sentence/Disposition,Society In,Sentence/Disposition,1037,Primary,QYOBJGR,Z,WJYGRIB
+82761,3,2003-12-22,2009-04-02,Probation,Warrant Absconded,Warrant Absconded,"Farmington, Adult",4,4,4,Society In,Sentence/Disposition,None,None,1037,Primary,QYOBJGR,Z,WJYGRIB
+82761,4,2009-04-02,2020-05-18,Warrant Absconded,Warrant Absconded,Warrant Absconded,"Farmington, Adult",4,4,4,Society In,Sentence/Disposition,None,None,1090,Primary,HQVT,Y,HTGTJD
+82761,5,2020-05-18,None,Warrant Absconded,Warrant Absconded,None,"Farmington, Adult",4,4,None,Society In,Sentence/Disposition,None,None,5247,Primary,FWXJP,None,EJMTH
