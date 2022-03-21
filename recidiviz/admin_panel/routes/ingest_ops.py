@@ -17,7 +17,7 @@
 """Defines admin panel routes for ingest operations."""
 import logging
 from http import HTTPStatus
-from typing import Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from flask import Blueprint, Response, jsonify, request
 from google.cloud import storage
@@ -33,7 +33,10 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockDoesNotExist,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsFilePath,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
@@ -41,15 +44,21 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+    get_unprocessed_raw_files_in_bucket,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.regions import get_region
 from recidiviz.utils.types import assert_type
+
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
 
@@ -366,30 +375,23 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             state_code = StateCode(data["stateCode"])
             sandbox_dataset_prefix = data["sandboxDatasetPrefix"]
             source_bucket = GcsfsBucketPath(data["sourceBucket"])
-            file_tag_filter_regex = data.get("fileTagFilterRegex", None)
+            file_tags: Optional[List[str]] = data.get("fileTagFilters", None)
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
-        with local_project_id_override(project_id):
+        if not file_tags:
+            file_tags = None
+
+        # To run/develope locally need to use with local_project_id_override(project_id)
+        try:
             import_status = import_raw_files_to_bq_sandbox(
                 state_code=state_code,
                 sandbox_dataset_prefix=sandbox_dataset_prefix,
                 source_bucket=source_bucket,
-                file_tag_filter_regex=file_tag_filter_regex,
+                file_tag_filters=file_tags,
             )
-
-        if import_status.to_serializable()["errorMessage"] is not None:
-            return (
-                jsonify(
-                    {
-                        "fileStatusList": import_status.to_serializable()[
-                            "fileStatuses"
-                        ],
-                        "errorMessage": import_status.to_serializable()["errorMessage"],
-                    }
-                ),
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
+        except ValueError as error:
+            return str(error), HTTPStatus.INTERNAL_SERVER_ERROR
 
         return (
             jsonify(
@@ -425,5 +427,48 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
 
         return (
             jsonify({"bucketNames": filtered_buckets}),
+            HTTPStatus.OK,
+        )
+
+    @bp.route("/api/ingest_operations/direct/list_raw_files", methods=["POST"])
+    @requires_gae_auth
+    def _list_raw_files_in_sandbox_bucket() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            data = assert_type(request.json, dict)
+            state_code = StateCode(data["stateCode"])
+            source_bucket = GcsfsBucketPath(data["sourceBucket"])
+        except ValueError:
+            return "invalid source bucket", HTTPStatus.BAD_REQUEST
+
+        try:
+            # To run/develope locally need to use with local_project_id_override(project_id)
+            region_code = state_code.value.lower()
+            region = get_region(region_code, is_direct_ingest=True)
+            raw_files_to_import = get_unprocessed_raw_files_in_bucket(
+                fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
+                bucket_path=source_bucket,
+                region_raw_file_config=DirectIngestRegionRawFileConfig(
+                    region_code=region.region_code,
+                    region_module=region.region_module,
+                ),
+            )
+        except ValueError:
+            return (
+                f"Something went wrong trying to get unprocessed raw files from {source_bucket} bucket",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        raw_files_list = []
+        for file_path in raw_files_to_import:
+            parts = filename_parts_from_path(file_path)
+            raw_files_list.append(
+                {
+                    "fileTag": parts.file_tag,
+                    "uploadDate": parts.utc_upload_datetime_str,
+                }
+            )
+
+        return (
+            jsonify({"rawFilesList": raw_files_list}),
             HTTPStatus.OK,
         )
