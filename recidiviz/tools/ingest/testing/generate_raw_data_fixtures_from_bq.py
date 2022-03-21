@@ -31,7 +31,7 @@ Example Usage:
     [--file_tags_to_load_in_full CIS_3150_TRANSFER_TYPE OTHER_TABLE] \
     [--project_id GCP_PROJECT_STAGING] \
     [--overwrite True] \
-    [--randomized_values_map '{"123": "456"}'] \
+    [--randomized_values_map '{"person_id_here": "randomized_id_here"}'] \
 """
 import argparse
 import json
