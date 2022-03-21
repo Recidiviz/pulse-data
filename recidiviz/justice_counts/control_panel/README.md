@@ -10,11 +10,12 @@ First build the Docker image:
 
 ```bash
 docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest
+```
 
 Then run `docker-compose`:
 
 ```bash
-docker-compose -f docker-compose.justice-counts.yaml -p justice-counts up
+docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up
 ```
 
 We use `docker-compose` to run all services that the app depends on. This includes:
