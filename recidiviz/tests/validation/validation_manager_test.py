@@ -539,17 +539,6 @@ class TestFetchValidations(TestCase):
             description="sameness_view description",
             view_query_template="SELECT NULL LIMIT 1",
         )
-        mock_get_all_validations_fn.return_value = [
-            ExistenceDataValidationCheck(
-                view_builder=existence_builder,
-                validation_category=ValidationCategory.INVARIANT,
-            ),
-            SamenessDataValidationCheck(
-                view_builder=sameness_builder,
-                comparison_columns=["col1", "col2"],
-                validation_category=ValidationCategory.CONSISTENCY,
-            ),
-        ]
         mock_get_region_configs_fn.return_value = {
             "US_XX": ValidationRegionConfig(
                 region_code="US_XX",
@@ -582,6 +571,20 @@ class TestFetchValidations(TestCase):
                 max_allowed_error_overrides={},
             ),
         }
+        region_configs = mock_get_region_configs_fn()
+
+        mock_get_all_validations_fn.return_value = [
+            ExistenceDataValidationCheck(
+                view_builder=existence_builder,
+                validation_category=ValidationCategory.INVARIANT,
+            ),
+            SamenessDataValidationCheck(
+                view_builder=sameness_builder,
+                comparison_columns=["col1", "col2"],
+                validation_category=ValidationCategory.CONSISTENCY,
+                region_configs=region_configs,
+            ),
+        ]
         result = _fetch_validation_jobs_to_perform()
 
         expected_jobs = [
@@ -614,11 +617,12 @@ class TestFetchValidations(TestCase):
                     view_builder=sameness_builder,
                     validation_name_suffix=None,
                     comparison_columns=["col1", "col2"],
-                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
                     dev_mode=False,
                     hard_max_allowed_error=0.3,
                     soft_max_allowed_error=0.3,
                     validation_type=ValidationCheckType.SAMENESS,
+                    region_configs=region_configs,
                 ),
                 region_code="US_XX",
             ),
@@ -628,11 +632,12 @@ class TestFetchValidations(TestCase):
                     view_builder=sameness_builder,
                     validation_name_suffix=None,
                     comparison_columns=["col1", "col2"],
-                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
                     dev_mode=True,
                     hard_max_allowed_error=0.02,
                     soft_max_allowed_error=0.02,
                     validation_type=ValidationCheckType.SAMENESS,
+                    region_configs=region_configs,
                 ),
                 region_code="US_YY",
             ),
@@ -698,7 +703,7 @@ class TestFetchValidations(TestCase):
     def test_all_builders_referenced_by_validations_are_in_view_config(self) -> None:
         builders_in_validations = {v.view_builder for v in get_all_validations()}
         validation_views_not_in_view_config = builders_in_validations.difference(
-            validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
+            validation_view_config.get_view_builders_for_views_to_update()
         )
 
         self.assertEqual(set(), validation_views_not_in_view_config)
@@ -722,7 +727,7 @@ class TestFetchValidations(TestCase):
 
         self.assertEqual(
             "SELECT * FROM `recidiviz-456.my_dataset.test_2` WHERE region_code = 'US_XX';",
-            existence_check_job.query_str(),
+            existence_check_job.original_builder_query_str(),
         )
 
         existence_check_job = DataValidationJob(
@@ -735,5 +740,5 @@ class TestFetchValidations(TestCase):
 
         self.assertEqual(
             "SELECT * FROM `recidiviz-456.my_dataset_override.test_2` WHERE region_code = 'US_XX';",
-            existence_check_job.query_str(),
+            existence_check_job.original_builder_query_str(),
         )

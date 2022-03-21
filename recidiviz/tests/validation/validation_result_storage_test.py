@@ -62,13 +62,14 @@ class TestValidationResultStorage(unittest.TestCase):
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["a", "b", "c"],
-                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
                     view_builder=SimpleBigQueryViewBuilder(
                         dataset_id="my_dataset",
                         view_id="test_view",
                         description="test_view description",
                         view_query_template="select * from literally_anything",
                     ),
+                    region_configs={},
                 ),
             ),
             result_details=SamenessPerRowValidationResultDetails(
@@ -144,7 +145,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["internal", "external"],
                     partition_columns=["state_code", "date"],
-                    sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+                    sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
                     view_builder=SimpleBigQueryViewBuilder(
                         dataset_id="my_dataset",
                         view_id="test_view",
@@ -217,13 +218,14 @@ class TestValidationResultStorage(unittest.TestCase):
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["a", "b", "c"],
-                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
                     view_builder=SimpleBigQueryViewBuilder(
                         dataset_id="my_dataset",
                         view_id="test_view",
                         description="test_view description",
                         view_query_template="select * from literally_anything",
                     ),
+                    region_configs={},
                 ),
             ),
             result_details=result_details,
@@ -294,13 +296,14 @@ class TestValidationResultStorage(unittest.TestCase):
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
+                region_configs={},
             ),
         )
 

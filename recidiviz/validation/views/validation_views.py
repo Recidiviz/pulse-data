@@ -39,11 +39,11 @@ def generate_validation_view_builders(
     )
 
 
-GENERATED_VALIDATION_VIEW_BUILDERS: List[
-    SimpleBigQueryViewBuilder
-] = generate_validation_view_builders(get_all_validations())
+def get_generated_validation_view_builders() -> List[SimpleBigQueryViewBuilder]:
+    return generate_validation_view_builders(get_all_validations())
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        for builder in GENERATED_VALIDATION_VIEW_BUILDERS:
+        for builder in get_generated_validation_view_builders():
             builder.build_and_print()

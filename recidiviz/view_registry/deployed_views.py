@@ -48,24 +48,26 @@ from recidiviz.validation.views.view_config import (
     METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_METADATA_VIEW_BUILDERS,
 )
 from recidiviz.validation.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS,
+    get_view_builders_for_views_to_update as get_validation_view_builders,
 )
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
-_DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE: Dict[
+
+def get_deployed_view_builders_by_namespace() -> Dict[
     BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
-] = {
-    BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
-    BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
-    BigQueryViewNamespace.DIRECT_INGEST: DIRECT_INGEST_VIEW_BUILDERS,
-    BigQueryViewNamespace.EXPERIMENTS: EXPERIMENTS_VIEW_BUILDERS,
-    BigQueryViewNamespace.EXTERNALLY_SHARED_VIEWS: EXTERNALLY_SHARED_VIEW_BUILDERS,
-    BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
-    BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
-    BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
-    BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
-    BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
-}
+]:
+    return {
+        BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
+        BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
+        BigQueryViewNamespace.DIRECT_INGEST: DIRECT_INGEST_VIEW_BUILDERS,
+        BigQueryViewNamespace.EXPERIMENTS: EXPERIMENTS_VIEW_BUILDERS,
+        BigQueryViewNamespace.EXTERNALLY_SHARED_VIEWS: EXTERNALLY_SHARED_VIEW_BUILDERS,
+        BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
+        BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
+        BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
+        BigQueryViewNamespace.VALIDATION: get_validation_view_builders(),
+        BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
+    }
 
 
 def deployed_view_builders_for_namespace(
@@ -73,7 +75,7 @@ def deployed_view_builders_for_namespace(
 ) -> List[BigQueryViewBuilder]:
     return [
         builder
-        for builder in _DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[namespace]
+        for builder in get_deployed_view_builders_by_namespace()[namespace]
         if builder.should_deploy_in_project(project_id)
     ]
 
@@ -81,7 +83,7 @@ def deployed_view_builders_for_namespace(
 def deployed_view_builders(project_id: str) -> List[BigQueryViewBuilder]:
     return [
         builder
-        for builder_list in _DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
+        for builder_list in get_deployed_view_builders_by_namespace().values()
         for builder in builder_list
         if builder.should_deploy_in_project(project_id)
     ]
@@ -92,7 +94,7 @@ def deployed_view_builders(project_id: str) -> List[BigQueryViewBuilder]:
 def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
     return [
         builder
-        for builder_list in _DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
+        for builder_list in get_deployed_view_builders_by_namespace().values()
         for builder in builder_list
     ]
 

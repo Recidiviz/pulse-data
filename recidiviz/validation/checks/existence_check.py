@@ -25,13 +25,13 @@ import more_itertools
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
     DataValidationCheck,
     DataValidationJob,
     DataValidationJobResult,
     DataValidationJobResultDetails,
+    ValidationChecker,
     ValidationCheckType,
     ValidationResultStatus,
     validate_result_status,
@@ -49,6 +49,10 @@ class ExistenceDataValidationCheck(DataValidationCheck):
 
     hard_num_allowed_rows: int = attr.ib(default=0)
     soft_num_allowed_rows: int = attr.ib(default=0)
+
+    @property
+    def error_view_builder(self) -> SimpleBigQueryViewBuilder:
+        return self.view_builder
 
     @property
     def managed_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
@@ -92,6 +96,9 @@ class ExistenceDataValidationCheck(DataValidationCheck):
             hard_num_allowed_rows=hard_num_allowed_rows,
             soft_num_allowed_rows=soft_num_allowed_rows,
         )
+
+    def get_checker(self) -> ValidationChecker:
+        return ExistenceValidationChecker()
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -164,7 +171,9 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
     def run_check(
         cls, validation_job: DataValidationJob[ExistenceDataValidationCheck]
     ) -> DataValidationJobResult:
-        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str(), [])
+        query_job = BigQueryClientImpl().run_query_async(
+            validation_job.original_builder_query_str(), []
+        )
 
         return DataValidationJobResult(
             validation_job=validation_job,
@@ -175,3 +184,9 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
                 soft_num_allowed_rows=validation_job.validation.soft_num_allowed_rows,
             ),
         )
+
+    @classmethod
+    def get_validation_query_str(
+        cls, validation_check: ExistenceDataValidationCheck
+    ) -> str:
+        return ""
