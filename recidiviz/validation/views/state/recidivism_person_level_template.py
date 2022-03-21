@@ -58,7 +58,7 @@ RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
       follow_up_period,
       external_data.person_external_id as external_person_external_id,
       internal_data.person_external_id as internal_person_external_id,
-      external_data.recidivated as external_recidivated,
+      CAST(external_data.recidivated AS BOOL) as external_recidivated,
       internal_data.recidivated as internal_recidivated
     FROM
      external_data
