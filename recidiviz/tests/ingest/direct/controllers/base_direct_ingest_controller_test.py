@@ -447,17 +447,17 @@ class TestDirectIngestController(unittest.TestCase):
         self, controller: BaseDirectIngestController, tags: List[str]
     ) -> None:
         self.assertIsInstance(
-            controller.ingest_view_export_manager.big_query_client,
+            controller.ingest_view_materializer.big_query_client,
             FakeDirectIngestBigQueryClient,
         )
         if not isinstance(
-            controller.ingest_view_export_manager.big_query_client,
+            controller.ingest_view_materializer.big_query_client,
             FakeDirectIngestBigQueryClient,
         ):
             self.fail("Expected FakeDirectIngestBigQueryClient but did not find one.")
         self.assertCountEqual(
             tags,
-            controller.ingest_view_export_manager.big_query_client.exported_file_tags,
+            controller.ingest_view_materializer.big_query_client.materialized_ingest_views,
         )
 
     def get_fake_task_manager(
@@ -482,14 +482,14 @@ class TestDirectIngestController(unittest.TestCase):
             expected_count, len(controller.raw_file_import_manager.imported_paths)
         )
 
-    def add_and_process_through_ingest_view_export(
+    def add_and_process_through_ingest_view_materialization(
         self,
         controller: BaseDirectIngestController,
         file_path: GcsfsFilePath,
         clear_scheduler_queue_after: bool = False,
     ) -> None:
         """Adds a file path and runs all ingest steps through the resulting ingest view
-        exports, but does not process any new ingest view files.
+        materialization tasks, but does not process any new ingest view results.
         """
         task_manager = self.get_fake_task_manager(controller)
         fixture_util.add_direct_ingest_path(
@@ -508,9 +508,9 @@ class TestDirectIngestController(unittest.TestCase):
         while task_manager.scheduler_tasks:
             task_manager.test_run_next_scheduler_task()
             task_manager.test_pop_finished_scheduler_task()
-        # file_path ingest view export
-        task_manager.test_run_next_ingest_view_export_task()
-        task_manager.test_pop_finished_ingest_view_export_task()
+        # file_path ingest view materialization
+        task_manager.test_run_next_ingest_view_materialization_task()
+        task_manager.test_pop_finished_ingest_view_materialization_task()
 
         if clear_scheduler_queue_after:
             while task_manager.scheduler_tasks:
@@ -892,13 +892,13 @@ class TestDirectIngestController(unittest.TestCase):
                 f"type [{type(controller.fs.gcs_file_system)}]"
             )
 
-        self.add_and_process_through_ingest_view_export(
+        self.add_and_process_through_ingest_view_materialization(
             controller, file_path, clear_scheduler_queue_after=True
         )
 
         # Single process job request should be waiting for the first file
         self.assertEqual(
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -906,13 +906,13 @@ class TestDirectIngestController(unittest.TestCase):
             1,
         )
 
-        self.add_and_process_through_ingest_view_export(controller, file_path2)
+        self.add_and_process_through_ingest_view_materialization(controller, file_path2)
 
-        task_manager.test_run_next_process_job_task()
-        task_manager.test_pop_finished_process_job_task()
+        task_manager.test_run_next_extract_and_merge_task()
+        task_manager.test_pop_finished_extract_and_merge_task()
 
         self.assertEqual(
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -921,11 +921,12 @@ class TestDirectIngestController(unittest.TestCase):
         )
 
         # This is the task that got queued by after we normalized the path,
-        # which will schedule the next process_job.
+        # which will schedule the next extract_and_merge.
         task_manager.test_run_next_scheduler_task()
         task_manager.test_pop_finished_scheduler_task()
 
-        # These are the tasks that got queued by finishing an ingest view export
+        # These are the tasks that got queued by finishing an ingest view
+        # materialization job.
         while task_manager.scheduler_tasks:
             task_manager.test_run_next_scheduler_task()
             task_manager.test_pop_finished_scheduler_task()
@@ -938,7 +939,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         self.assertEqual(
             1,
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -957,7 +958,7 @@ class TestDirectIngestController(unittest.TestCase):
             ],
         )
 
-    def test_next_schedule_runs_before_process_job_clears(self) -> None:
+    def test_next_schedule_runs_before_extract_and_merge_clears(self) -> None:
         controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -971,13 +972,13 @@ class TestDirectIngestController(unittest.TestCase):
             should_normalize=False,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
-        self.add_and_process_through_ingest_view_export(
+        self.add_and_process_through_ingest_view_materialization(
             controller, file_path, clear_scheduler_queue_after=True
         )
 
         self.assertEqual(
             1,
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -990,7 +991,7 @@ class TestDirectIngestController(unittest.TestCase):
             should_normalize=False,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
-        self.add_and_process_through_ingest_view_export(controller, file_path2)
+        self.add_and_process_through_ingest_view_materialization(controller, file_path2)
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -1007,16 +1008,16 @@ class TestDirectIngestController(unittest.TestCase):
             task_manager.test_pop_finished_scheduler_task()
 
         # Process job tasks starts as a result of the first schedule.
-        task_manager.test_run_next_process_job_task()
+        task_manager.test_run_next_extract_and_merge_task()
 
         task_manager.test_run_next_scheduler_task()
-        task_manager.test_pop_finished_process_job_task()
+        task_manager.test_pop_finished_extract_and_merge_task()
         task_manager.test_pop_finished_scheduler_task()
 
         # We should have still queued a process job, even though the last
         # one hadn't run when schedule executes
-        task_manager.test_run_next_process_job_task()
-        task_manager.test_pop_finished_process_job_task()
+        task_manager.test_run_next_extract_and_merge_task()
+        task_manager.test_pop_finished_extract_and_merge_task()
 
         task_manager.test_run_next_scheduler_task()
         task_manager.test_pop_finished_scheduler_task()
@@ -1029,7 +1030,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -1063,7 +1064,7 @@ class TestDirectIngestController(unittest.TestCase):
         delegate.register_new_job(args)
         return args
 
-    def test_process_job_task_run_twice(self) -> None:
+    def test_extract_and_merge_task_run_twice(self) -> None:
         # Cloud Tasks has an at-least once guarantee - make sure rerunning a task in series does not crash
         controller = build_fake_direct_ingest_controller(
             StateTestDirectIngestController,
@@ -1124,17 +1125,17 @@ class TestDirectIngestController(unittest.TestCase):
             task_manager.test_pop_finished_scheduler_task()
 
         # Process job tasks starts as a result of the first schedule.
-        task_manager.test_run_next_process_job_task()
+        task_manager.test_run_next_extract_and_merge_task()
 
-        _, args = task_manager.test_pop_finished_process_job_task()
+        _, args = task_manager.test_pop_finished_extract_and_merge_task()
 
-        task_manager.create_direct_ingest_process_job_task(
+        task_manager.create_direct_ingest_extract_and_merge_task(
             controller.region, args, controller.is_bq_materialization_enabled
         )
 
         # Now run the repeated task
-        task_manager.test_run_next_process_job_task()
-        task_manager.test_pop_finished_process_job_task()
+        task_manager.test_run_next_extract_and_merge_task()
+        task_manager.test_pop_finished_extract_and_merge_task()
 
         while task_manager.scheduler_tasks:
             task_manager.test_run_next_scheduler_task()
@@ -1148,7 +1149,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -1282,7 +1283,7 @@ class TestDirectIngestController(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        self.add_and_process_through_ingest_view_export(controller, file_path)
+        self.add_and_process_through_ingest_view_materialization(controller, file_path)
 
         while task_manager.scheduler_tasks:
             with self.assertRaisesRegex(ValueError, "^Splitting crashed$"):
@@ -1294,8 +1295,8 @@ class TestDirectIngestController(unittest.TestCase):
         task_manager.test_run_next_scheduler_task()
         task_manager.test_pop_finished_scheduler_task()
 
-        task_manager.test_run_next_process_job_task()
-        task_manager.test_pop_finished_process_job_task()
+        task_manager.test_run_next_extract_and_merge_task()
+        task_manager.test_pop_finished_extract_and_merge_task()
 
         # The process job task, which will try to process a file that is too
         # big, will not schedule another job for the same file (which would
@@ -1308,7 +1309,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -1605,7 +1606,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,
@@ -1688,7 +1689,7 @@ class TestDirectIngestController(unittest.TestCase):
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
+            task_manager.get_extract_and_merge_queue_info(
                 controller.region,
                 controller.ingest_instance,
                 controller.is_bq_materialization_enabled,

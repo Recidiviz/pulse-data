@@ -20,14 +20,14 @@ from typing import Any, Callable
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    IngestViewExportCloudTaskQueueInfo,
-    ProcessIngestJobCloudTaskQueueInfo,
+    ExtractAndMergeCloudTaskQueueInfo,
+    IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
     SftpCloudTaskQueueInfo,
+    build_extract_and_merge_task_id,
     build_handle_new_files_task_id,
-    build_ingest_view_export_task_id,
-    build_process_job_task_id,
+    build_ingest_view_materialization_task_id,
     build_raw_data_import_task_id,
     build_scheduler_task_id,
     build_sftp_download_task_id,
@@ -73,7 +73,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.raw_data_import_queue = SingleThreadTaskQueue(name="raw_data_import")
         self.sftp_queue = SingleThreadTaskQueue(name="sftp")
 
-    def create_direct_ingest_process_job_task(
+    def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
         task_args: ExtractAndMergeArgs,
@@ -82,7 +82,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = build_process_job_task_id(region, task_args)
+        task_id = build_extract_and_merge_task_id(region, task_args)
         self.extract_and_merge_queue.add_task(
             f"projects/path/to/{task_id}",
             with_monitoring(
@@ -167,7 +167,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             data_import_args,
         )
 
-    def create_direct_ingest_ingest_view_export_task(
+    def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
         task_args: IngestViewMaterializationArgs,
@@ -176,7 +176,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = build_ingest_view_export_task_id(region, task_args)
+        task_id = build_ingest_view_materialization_task_id(region, task_args)
         self.ingest_view_materialization_queue.add_task(
             f"projects/path/to/{task_id}",
             with_monitoring(
@@ -196,16 +196,16 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     ) -> None:
         self.scheduler_queue.delete_task(task_name)
 
-    def get_process_job_queue_info(
+    def get_extract_and_merge_queue_info(
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> ProcessIngestJobCloudTaskQueueInfo:
+    ) -> ExtractAndMergeCloudTaskQueueInfo:
         with self.extract_and_merge_queue.all_tasks_mutex:
             task_names = self.extract_and_merge_queue.get_unfinished_task_names_unsafe()
 
-        return ProcessIngestJobCloudTaskQueueInfo(
+        return ExtractAndMergeCloudTaskQueueInfo(
             queue_name=self.extract_and_merge_queue.name, task_names=task_names
         )
 
@@ -229,18 +229,18 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             queue_name=self.raw_data_import_queue.name, task_names=task_names
         )
 
-    def get_ingest_view_export_queue_info(
+    def get_ingest_view_materialization_queue_info(
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
         is_bq_materialization_enabled: bool,
-    ) -> IngestViewExportCloudTaskQueueInfo:
+    ) -> IngestViewMaterializationCloudTaskQueueInfo:
         with self.ingest_view_materialization_queue.all_tasks_mutex:
             task_names = (
                 self.ingest_view_materialization_queue.get_unfinished_task_names_unsafe()
             )
 
-        return IngestViewExportCloudTaskQueueInfo(
+        return IngestViewMaterializationCloudTaskQueueInfo(
             queue_name=self.ingest_view_materialization_queue.name,
             task_names=task_names,
         )

@@ -149,6 +149,7 @@ class TestDirectIngestGcsFileSystem(TestCase):
         )
 
         # Each file gets re-exported as ingest view
+        # TODO(#11424): This will can become 0 when BQ materialization is enabled.
         splitting_factor = 2
 
         expected_final_total_files = start_num_total_files + splitting_factor - 1

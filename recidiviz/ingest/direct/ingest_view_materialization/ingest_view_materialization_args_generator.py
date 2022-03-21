@@ -107,8 +107,9 @@ class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationAr
             if builder.ingest_view_name in launched_ingest_views
         }
 
-    # TODO(#9717): Rename to get_ingest_view_materialization_task_args
-    def get_ingest_view_export_task_args(self) -> List[IngestViewMaterializationArgsT]:
+    def get_ingest_view_materialization_task_args(
+        self,
+    ) -> List[IngestViewMaterializationArgsT]:
         """Looks at what files have been exported for a given region and returns args for all the export jobs that
         should be started, given what has updated in the raw data tables since the last time we exported data. Also
         returns any tasks that have not yet completed.

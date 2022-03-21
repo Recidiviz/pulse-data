@@ -282,7 +282,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
             )
             logging.info("Deleted intermediate table [%s]", table_id)
 
-    def export_view_for_args(
+    def materialize_view_for_args(
         self, ingest_view_export_args: IngestViewMaterializationArgsT
     ) -> bool:
         """Performs an Cloud Storage export of a single ingest view with date bounds specified in the provided args. If
