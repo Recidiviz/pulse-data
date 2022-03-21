@@ -19,10 +19,12 @@ results and persist the contents appropriately to the Recidiviz schema in Postgr
 """
 
 import abc
-from typing import List, cast
+import csv
+from typing import Dict, Iterator, List, cast
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
     IngestViewResultsParser,
 )
@@ -59,6 +61,16 @@ class IngestViewProcessorImpl(IngestViewProcessor):
     def __init__(self, ingest_view_file_parser: IngestViewResultsParser):
         self.ingest_view_file_parser = ingest_view_file_parser
 
+    @staticmethod
+    def _row_iterator(contents_handle: ContentsHandle) -> Iterator[Dict[str, str]]:
+        if isinstance(contents_handle, LocalFileContentsHandle):
+            return csv.DictReader(contents_handle.get_contents_iterator())
+        # TODO(#9717): Add support for reading from a contents handle that pulls results
+        #  from BigQuery.
+        raise ValueError(
+            f"Unsupported contents handle type: [{type(contents_handle)}]."
+        )
+
     def parse_and_persist_contents(
         self,
         args: ExtractAndMergeArgs,
@@ -67,7 +79,7 @@ class IngestViewProcessorImpl(IngestViewProcessor):
     ) -> bool:
         parsed_entities = self.ingest_view_file_parser.parse(
             ingest_view_name=args.ingest_view_name,
-            contents_handle=contents_handle,
+            contents_iterator=self._row_iterator(contents_handle),
         )
 
         if all(isinstance(e, state_entities.StatePerson) for e in parsed_entities):
