@@ -14,11 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Shared helper fragments for the US_ME ingest view queries."""
 
 # TODO(#10573): Investigate using sentencing data to determine revocation admission reasons
-# A quick analysis showed that a 7 day look back period captured most of instances when a person transitioned from
+# A quick analysis showed that a 7 day look back period captured most of the instances when a person transitioned from
 # supervision to incarceration because of a revocation.
 NUM_DAYS_STATUS_LOOK_BACK = 7
 

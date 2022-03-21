@@ -393,6 +393,7 @@ class BaseViewTest(unittest.TestCase):
             data_types=data_types,
         )
         expected = pd.DataFrame(expected_output, columns=expected_columns)
+        expected = expected.astype(self.data_types)
         expected = expected.set_index(expected_columns)
         print("**** EXPECTED ****")
         print(expected)
@@ -707,9 +708,11 @@ class BaseViewTest(unittest.TestCase):
         )
         # replace `DATE(` with `make_date(`, but not `(DATE(`
         query = _replace_iter(
-            query, r"(^| )DATE\s*\(", " make_date(", flags=re.IGNORECASE
+            query,
+            r"(^| )DATE\s*\((?!PARSE_TIMESTAMP\()",
+            " make_date(",
+            flags=re.IGNORECASE,
         )
-
         # Postgres doesn't have DATE_DIFF where you can specify the units to return, but subtracting two dates always
         # returns the number of days between them.
         query = _replace_iter(
@@ -837,10 +840,18 @@ class BaseViewTest(unittest.TestCase):
             flags=re.IGNORECASE,
         )
 
-        # Replace TIMESTAMP() calls from query diffs
+        # Replace timestamp(2020,1,1,0,0,0,0) calls from query diffs
         query = _replace_iter(
             query,
             r"timestamp\((?P<year>\d{4}), (?P<month>\d{0,2}), (?P<day>\d{0,2}), .+\)",
+            "timestamp '{year}-{month}-{day}'",
+            flags=re.IGNORECASE,
+        )
+
+        #  Replace TIMESTAMP('9999-12-31') calls
+        query = _replace_iter(
+            query,
+            r"TIMESTAMP\('(?P<year>\d{4})-(?P<month>\d{0,2})-(?P<day>\d{0,2})'\)",
             "timestamp '{year}-{month}-{day}'",
             flags=re.IGNORECASE,
         )
