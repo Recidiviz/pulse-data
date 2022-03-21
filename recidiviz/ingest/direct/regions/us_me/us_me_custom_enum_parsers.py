@@ -138,6 +138,7 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
     """Parse admission reason from raw text"""
     (
         previous_status,
+        previous_location_type,
         current_status,
         movement_type,
         transfer_type,
@@ -148,7 +149,7 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
     if (
         previous_status
         in SUPERVISION_STATUSES + SUPERVISION_PRECEDING_INCARCERATION_STATUSES
-    ):
+    ) or previous_location_type in SUPERVISION_LOCATION_TYPES:
         # This includes when someone violates the terms of their community confinement (SCCP) and is sent back to
         # prison. Maine does not use the term "revocation" to describe these instances, but they fit our internal
         # definition of revocations.
@@ -159,6 +160,11 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
 
     if movement_type in FURLOUGH_MOVEMENT_TYPES:
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
+
+    # Check for escapes before temporary custody since many escape movements flow through
+    # County Jail beforehand.
+    if previous_status == "Escape" or movement_type == "Escape":
+        return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
 
     if _in_temporary_custody(current_status, location_type, transfer_reason):
         return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
@@ -176,9 +182,6 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
         # These rare cases happen if the previous supervision period occurred in a supervision office, or if the
         # supervision period occurred before the year 2000.
         return StateIncarcerationPeriodAdmissionReason.REVOCATION
-
-    if previous_status == "Escape" or movement_type == "Escape":
-        return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
 
     return StateIncarcerationPeriodAdmissionReason.TRANSFER
 

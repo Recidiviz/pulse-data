@@ -164,6 +164,7 @@ class UsMeCustomEnumParsersTest(unittest.TestCase):
     @staticmethod
     def _build_admission_reason_raw_text(
         previous_status: Optional[str] = "NONE",
+        previous_location_type: Optional[str] = "NONE",
         current_status: Optional[str] = "NONE",
         movement_type: Optional[str] = "NONE",
         transfer_type: Optional[str] = "NONE",
@@ -171,7 +172,7 @@ class UsMeCustomEnumParsersTest(unittest.TestCase):
         location_type: Optional[str] = "NONE",
     ) -> str:
         return (
-            f"{previous_status}@@{current_status}@@{movement_type}@@{transfer_type}"
+            f"{previous_status}@@{previous_location_type}@@{current_status}@@{movement_type}@@{transfer_type}"
             f"@@{transfer_reason}@@{location_type}"
         )
 
@@ -195,8 +196,8 @@ class UsMeCustomEnumParsersTest(unittest.TestCase):
             parse_admission_reason(admission_reason_raw_text),
         )
 
-    def test_parse_admission_reason_revocation(self) -> None:
-        # Next status is supervision
+    def test_parse_admission_reason_revocation_previous_status(self) -> None:
+        # Previous status is supervision
         for supervision_status in (
             SUPERVISION_STATUSES + SUPERVISION_PRECEDING_INCARCERATION_STATUSES
         ):
@@ -208,6 +209,17 @@ class UsMeCustomEnumParsersTest(unittest.TestCase):
                 StateIncarcerationPeriodAdmissionReason.REVOCATION,
                 parse_admission_reason(admission_reason_raw_text),
             )
+
+    def test_parse_admission_reason_revocation_previous_location(self) -> None:
+        #  Previous location type is supervision
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            transfer_reason="Sentence/Disposition",
+            previous_location_type="4",
+        )
+        self.assertEqual(
+            StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            parse_admission_reason(admission_reason_raw_text),
+        )
 
     def test_parse_admission_reason_temporary_custody(self) -> None:
         # Current status is County Jail and location type is a DOC Facility
@@ -268,6 +280,16 @@ class UsMeCustomEnumParsersTest(unittest.TestCase):
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
                 parse_admission_reason(admission_reason_raw_text),
             )
+
+    def test_parse_admission_reason_escape_county_jail(self) -> None:
+        # Movement type is Escape and location type is County Jail
+        admission_reason_raw_text = self._build_admission_reason_raw_text(
+            movement_type="Escape", location_type="9"
+        )
+        self.assertEqual(
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+            parse_admission_reason(admission_reason_raw_text),
+        )
 
     def test_parse_admission_reason_escape(self) -> None:
         # Previous status or movement type is Escape

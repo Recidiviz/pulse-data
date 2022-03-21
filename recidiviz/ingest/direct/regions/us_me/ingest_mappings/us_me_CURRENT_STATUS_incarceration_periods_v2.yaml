@@ -20,9 +20,7 @@ input_columns:
   - transfer_type
   - transfer_reason
   - incarceration_period_id
-unused_columns:
-  #  TODO(#11517): Update custom parser to use previous_location_type for admission reason
-  - previous_location_type
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -83,6 +81,7 @@ output:
                   $separator: "@@"
                   $values:
                     - previous_status
+                    - previous_location_type
                     - current_status
                     - movement_type
                     - transfer_type
