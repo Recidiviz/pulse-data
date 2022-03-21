@@ -17,7 +17,6 @@
 import {
   Button,
   Card,
-  Divider,
   Empty,
   Form,
   Input,
@@ -33,17 +32,20 @@ import * as React from "react";
 import {
   importRawDataToSandbox,
   listSandboxBuckets,
+  listRawFilesInSandboxBucket,
 } from "../AdminPanelAPI/IngestOperations";
-import ImportSandboxFileStatusTable from "./IngestOperationsView/ImportSandboxFileStatusTable";
+import ImportSandboxFileStatusTable from "./DirectSandboxImport/ImportSandboxFileStatusTable";
+import FileUploadDatesTable from "./DirectSandboxImport/FileUploadDatesTable";
 import { fetchIngestStateCodes } from "../AdminPanelAPI";
-import { StateCodeInfo, FileStatus } from "./IngestOperationsView/constants";
+import { FileStatus, FileUploadInfo } from "./DirectSandboxImport/constants";
+import { StateCodeInfo } from "./IngestOperationsView/constants";
 import StateSelector from "./Utilities/StateSelector";
 import { layout, tailLayout } from "./POEmails/constants";
 
 interface SandboxFormData {
   sandboxDatasetPrefix: string;
   sourceBucket: string;
-  fileTagFilterRegex: string;
+  fileTagFilters: string[];
 }
 
 const DirectSandboxRawImport = (): JSX.Element => {
@@ -57,14 +59,51 @@ const DirectSandboxRawImport = (): JSX.Element => {
   const [fileStatusList, setFileStatusList] =
     React.useState<FileStatus[] | undefined>(undefined);
   const [statusTableSpinner, setStatusTableSpinner] = React.useState(false);
+  const [rawFilesSpinner, setRawFilesSpinner] = React.useState(false);
   const [errorList, setErrorList] =
     React.useState<FileStatus[] | undefined>(undefined);
   const [visible, setVisible] = React.useState(false);
+  const [rawFileUploadList, setRawFileUploadList] =
+    React.useState<FileUploadInfo[] | undefined>(undefined);
+  const [tempSourceBucket, setTempSourceBucket] =
+    React.useState<string | undefined>(undefined);
 
   const onFinish = (values?: SandboxFormData | undefined) => {
     setFormData(values);
     setVisible(true);
   };
+
+  const onFieldsChange = (values: SandboxFormData | undefined) => {
+    setTempSourceBucket(values?.sourceBucket);
+  };
+
+  const getRawFilesList = React.useCallback(() => {
+    if (!stateInfo?.code || !tempSourceBucket) return;
+
+    setRawFileUploadList(undefined);
+    setRawFilesSpinner(true);
+    const rawFileList = async () => {
+      const r = await listRawFilesInSandboxBucket(
+        stateInfo.code,
+        tempSourceBucket
+      );
+      const json = await r.json();
+      if (r.status >= 400) {
+        message.error(
+          <>
+            <p>Get Raw Files List... failed: Potentially invalid parameters:</p>
+            <p>stateCode: ${stateInfo.code}</p>
+            <p>sourceBucket: ${tempSourceBucket}</p>
+          </>
+        );
+      } else {
+        message.success(`Getting Raw Files From Bucket... succeeded!`);
+        setRawFileUploadList(json.rawFilesList);
+      }
+      setRawFilesSpinner(false);
+    };
+    rawFileList();
+  }, [stateInfo?.code, tempSourceBucket]);
 
   const onImportActionConfirmation = async () => {
     setVisible(false);
@@ -75,30 +114,22 @@ const DirectSandboxRawImport = (): JSX.Element => {
         stateInfo.code,
         formData.sandboxDatasetPrefix,
         formData.sourceBucket,
-        formData?.fileTagFilterRegex
+        formData?.fileTagFilters
       );
-      const json = await r.json();
       if (r.status >= 400) {
-        const errorMessage = `Import Data... failed: Either invalid parameters:\n 
-        stateCode: ${stateInfo.code} \n sandboxDatasetPrefix: ${formData.sandboxDatasetPrefix} \n
-        sourceBucket: ${formData.sourceBucket} \n fileTagFilterRegex: ${formData.fileTagFilterRegex}\n
-        OR raw files are not already uploaded to \n [gs://${formData.sourceBucket}]. 
-        `;
+        const text = await r.text();
         message.error(
           <>
-            <p>
-              {errorMessage?.split("\n")?.map((error) => (
-                <p>{error}</p>
-              ))}
-              {json.errorMessage ? (
-                <p>{json.errorMessage}</p>
-              ) : (
-                <p>{json.message}</p>
-              )}
-            </p>
+            <p>Import Data... failed: Either invalid parameters:</p>
+            <p>stateCode: {stateInfo.code}</p>
+            <p>sandboxDatasetPrefix: {formData.sandboxDatasetPrefix}</p>
+            <p>sourceBucket: {formData.sourceBucket}</p>
+            <p>fileTagFilters: {formData.fileTagFilters}</p>
+            <p>OR {text}</p>
           </>
         );
       } else {
+        const json = await r.json();
         message.success(`Importing Raw Files to BQ Sandbox... succeeded!`);
         setFileStatusList(json.fileStatusList);
         getErrorList(json.fileStatusList);
@@ -124,12 +155,9 @@ const DirectSandboxRawImport = (): JSX.Element => {
 
   const handleCancel = () => {
     setVisible(false);
-    setFormData(undefined);
   };
 
-  const getBucketNames = React.useCallback(() => {
-    if (!stateInfo?.code) return;
-
+  React.useEffect(() => {
     const getBucketList = async () => {
       form.setFieldsValue({
         sourceBucket: undefined,
@@ -139,11 +167,11 @@ const DirectSandboxRawImport = (): JSX.Element => {
       setSourceBucketList(json.bucketNames);
     };
     getBucketList();
-  }, [stateInfo?.code, form]);
+  }, [form]);
 
   React.useEffect(() => {
-    getBucketNames();
-  }, [getBucketNames]);
+    getRawFilesList();
+  }, [getRawFilesList]);
 
   return (
     <>
@@ -166,6 +194,7 @@ const DirectSandboxRawImport = (): JSX.Element => {
                 {...layout}
                 className="buffer"
                 onFinish={onFinish}
+                onValuesChange={(_, values) => onFieldsChange(values)}
               >
                 <Form.Item
                   label="Dataset Prefix"
@@ -215,8 +244,27 @@ const DirectSandboxRawImport = (): JSX.Element => {
                   </Form.Item>
                 )}
 
-                <Form.Item label="File Tag Regex" name="fileTagFilterRegex">
-                  <Input />
+                <Form.Item
+                  label="File Tag Filters"
+                  name="fileTagFilters"
+                  extra={<>{rawFilesSpinner ? <Spin size="small" /> : null}</>}
+                >
+                  <Select
+                    mode="tags"
+                    tokenSeparators={[",", " "]}
+                    placeholder="CIS_100_CLIENT, CIS_125_CURRENT_STATUS_HIST"
+                    allowClear
+                  >
+                    {rawFileUploadList?.map((file) => (
+                      <Select.Option
+                        key={file.fileTag}
+                        label={file.fileTag}
+                        value={file.fileTag}
+                      >
+                        {file.fileTag}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </Form.Item>
                 <Form.Item {...tailLayout}>
                   <Button type="primary" htmlType="submit">
@@ -248,36 +296,51 @@ const DirectSandboxRawImport = (): JSX.Element => {
           </Card>
         </span>
       </div>
-      {fileStatusList ? (
-        <div
-          style={{
-            width: "80%",
-            marginTop: "10px",
-            display: "block",
-            marginLeft: "auto",
-            marginRight: "auto",
-          }}
-        >
-          <Divider orientation="left">Error Log</Divider>
-          <List
-            pagination={{ pageSize: 1 }}
-            dataSource={errorList}
-            renderItem={(item) => (
-              <>
-                <List.Item>
-                  <Card title={item.fileTag} style={{ width: "100%" }}>
-                    {item.errorMessage?.split("\n")?.map((fail) => (
-                      <>
-                        <p>{fail}</p>
-                      </>
-                    ))}
-                  </Card>
-                </List.Item>
-              </>
-            )}
-          />
-        </div>
-      ) : null}
+      <div
+        style={{
+          width: "100%",
+          marginTop: "10px",
+          display: "inline-flex",
+        }}
+      >
+        <span style={{ width: "35%", marginRight: "10px" }}>
+          {tempSourceBucket ? (
+            <Card title={`Raw files in ${tempSourceBucket}`}>
+              {rawFileUploadList ? (
+                <FileUploadDatesTable fileUploadList={rawFileUploadList} />
+              ) : (
+                <>{rawFilesSpinner ? <Spin size="large" /> : <Empty />}</>
+              )}
+            </Card>
+          ) : null}
+        </span>
+        <span style={{ width: "60%" }}>
+          {fileStatusList ? (
+            <>
+              <Card title="Error Log">
+                <List
+                  pagination={{ pageSize: 1 }}
+                  dataSource={errorList}
+                  style={{ width: "inherit" }}
+                  renderItem={(item) => (
+                    <>
+                      <List.Item>
+                        <Card title={item.fileTag} style={{ width: "100%" }}>
+                          {item.errorMessage?.split("\n")?.map((fail) => (
+                            <>
+                              <p>{fail}</p>
+                            </>
+                          ))}
+                        </Card>
+                      </List.Item>
+                    </>
+                  )}
+                />
+              </Card>
+            </>
+          ) : null}
+        </span>
+      </div>
 
       {stateInfo && formData?.sourceBucket ? (
         <Modal

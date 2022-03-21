@@ -17,7 +17,6 @@
 """Ingest Operations utilities """
 
 import logging
-import re
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
@@ -72,7 +71,6 @@ class FileStatus:
 @attr.s
 class SandboxRawFileImportResult:
     fileStatuses: List[FileStatus] = attr.ib()
-    errorMessage: Optional[str] = attr.ib()
 
     def to_serializable(self) -> Dict[str, Any]:
         return cattr.Converter().unstructure(self)
@@ -82,11 +80,13 @@ def import_raw_files_to_bq_sandbox(
     state_code: StateCode,
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
-    file_tag_filter_regex: Optional[str],
+    file_tag_filters: Optional[List[str]],
 ) -> SandboxRawFileImportResult:
     """Imports a set of raw data files in the given source bucket into a sandbox
-    dataset.
+    dataset. If |file_tag_filters| is set, then will only import files with that set
+    of tags.
     """
+
     file_status_list = []
 
     try:
@@ -112,19 +112,16 @@ def import_raw_files_to_bq_sandbox(
 
         raw_files_to_import = import_manager.get_unprocessed_raw_files_to_import()
 
-    except Exception:
-        fail_string = (
+    except ValueError as error:
+        raise ValueError(
             "Something went wrong trying to get unprocessed raw files to import"
-        )
-        return SandboxRawFileImportResult(fileStatuses=[], errorMessage=fail_string)
+        ) from error
 
     failures_by_exception = defaultdict(list)
 
     for i, file_path in enumerate(raw_files_to_import):
         parts = filename_parts_from_path(file_path)
-        if file_tag_filter_regex and not re.search(
-            file_tag_filter_regex, parts.file_tag
-        ):
+        if file_tag_filters is not None and parts.file_tag not in file_tag_filters:
             file_status_list.append(
                 FileStatus(
                     fileTag=parts.file_tag,
@@ -171,7 +168,6 @@ def import_raw_files_to_bq_sandbox(
             failures_by_exception[str(e)].append(file_path.abs_path())
 
     if failures_by_exception:
-        fail_string = ""
         logging.error("************************* FAILURES ************************")
         total_files = 0
         all_failed_paths = []
@@ -188,8 +184,6 @@ def import_raw_files_to_bq_sandbox(
 
         logging.error("***********************************************************")
         logging.error("Failed to import [%s] files: %s", total_files, all_failed_paths)
-        return SandboxRawFileImportResult(
-            fileStatuses=file_status_list, errorMessage=None
-        )
+        return SandboxRawFileImportResult(fileStatuses=file_status_list)
 
-    return SandboxRawFileImportResult(fileStatuses=file_status_list, errorMessage=None)
+    return SandboxRawFileImportResult(fileStatuses=file_status_list)

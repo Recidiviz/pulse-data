@@ -34,6 +34,7 @@ python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
 
 import argparse
 import logging
+import re
 import sys
 from typing import List, Optional, Tuple
 
@@ -42,6 +43,9 @@ from recidiviz.admin_panel.ingest_operations.ingest_utils import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -62,11 +66,21 @@ def do_sandbox_raw_file_import(
         f"with arg `--destination-bucket {source_bucket.bucket_name}`?"
     )
 
+    file_tag_filters = None
+    if file_tag_filter_regex:
+        file_tag_filters = []
+        region_raw_file_config = DirectIngestRegionRawFileConfig(
+            region_code=state_code.value.lower()
+        )
+        for raw_file_tag in region_raw_file_config.raw_file_tags:
+            if re.search(file_tag_filter_regex, raw_file_tag):
+                file_tag_filters.append(raw_file_tag)
+
     import_raw_files_to_bq_sandbox(
         state_code=state_code,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         source_bucket=source_bucket,
-        file_tag_filter_regex=file_tag_filter_regex,
+        file_tag_filters=file_tag_filters,
     )
 
 

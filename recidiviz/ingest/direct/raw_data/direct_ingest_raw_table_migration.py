@@ -29,6 +29,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 )
 from recidiviz.utils import metadata
 
+
 RAW_DATA_SUBDIR = "raw_data"
 MIGRATIONS_SUBDIR = "migrations"
 RAW_TABLE_MIGRATION_FILE_PREFIX = "migrations_"
