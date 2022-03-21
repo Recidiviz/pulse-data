@@ -29,6 +29,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
     dataset_overrides_for_view_builders,
@@ -118,13 +119,14 @@ class TestDatasetOverrides(unittest.TestCase):
 
     def test_dataset_overrides_for_deployed_view_datasets(self) -> None:
         prefix = "my_prefix"
-        overrides = dataset_overrides_for_deployed_view_datasets(
-            GCP_PROJECT_STAGING, prefix
-        )
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            overrides = dataset_overrides_for_deployed_view_datasets(
+                GCP_PROJECT_STAGING, prefix
+            )
 
-        datasets = self._all_datasets(deployed_view_builders(GCP_PROJECT_STAGING))
+            datasets = self._all_datasets(deployed_view_builders(GCP_PROJECT_STAGING))
 
-        datasets.remove(DATAFLOW_METRICS_MATERIALIZED_DATASET)
+            datasets.remove(DATAFLOW_METRICS_MATERIALIZED_DATASET)
         self.assertEqual(datasets, set(overrides.keys()))
         for override in overrides.values():
             self.assertTrue(override.startswith(prefix))
@@ -134,12 +136,13 @@ class TestDatasetOverrides(unittest.TestCase):
     ) -> None:
         prefix = "my_prefix"
         dataflow_dataset_override = "test_dataflow"
-        overrides = dataset_overrides_for_deployed_view_datasets(
-            GCP_PROJECT_STAGING, prefix, dataflow_dataset_override
-        )
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            overrides = dataset_overrides_for_deployed_view_datasets(
+                GCP_PROJECT_STAGING, prefix, dataflow_dataset_override
+            )
 
-        datasets = self._all_datasets(deployed_view_builders(GCP_PROJECT_STAGING))
+            datasets = self._all_datasets(deployed_view_builders(GCP_PROJECT_STAGING))
 
-        datasets.add(DATAFLOW_METRICS_DATASET)
+            datasets.add(DATAFLOW_METRICS_DATASET)
 
         self.assertEqual(datasets, set(overrides.keys()))

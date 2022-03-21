@@ -17,47 +17,45 @@
 
 """Models a sameness check, which identifies a validation issue by observing that values in a configured set of
 columns are not the same."""
-import datetime
+
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
-from google.cloud.bigquery import QueryJob
 from google.cloud.bigquery.table import Row
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.validation.checks.validation_checker import ValidationChecker
 from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
     DataValidationCheck,
     DataValidationJob,
     DataValidationJobResult,
     DataValidationJobResultDetails,
+    ValidationChecker,
     ValidationCheckType,
     ValidationResultStatus,
     validate_result_status,
 )
 
-EMPTY_STRING_VALUE = "EMPTY_STRING_VALUE"
-EMPTY_DATE_VALUE = datetime.date.min
-
-PerViewRowType = TypeVar("PerViewRowType")
-
 
 class SamenessDataValidationCheckType(Enum):
     # Used for comparing integer and/or float columns. The validation fails if the two
     # numbers differ by a percentage larger than the threshold for any single row.
-    NUMBERS = "NUMBERS"
+    PER_ROW = "PER_ROW"
 
-    # Used for comparing string columns. The validation fails if the percentage of rows
-    # for which the string columns are not equal is more than the threshold.
-    STRINGS = "STRINGS"
+    # Used for comparing categorical columns. The validation fails if the percentage of rows
+    # for which the categorical columns are not equal is more than the threshold.
+    PER_VIEW = "PER_VIEW"
 
-    # Used for comparing date columns. The validation fails if the percentage of rows
-    # for which the date columns are not equal to the YYYY-MM-DD granularity is more than
-    # the threshold
-    DATES = "DATES"
+
+ERROR_ROWS_VIEW_BUILDER_TEMPLATE: str = """
+    /*{description}*/
+    WITH validation as (
+        {validation_view}
+    )
+    {validation_check}
+    """
 
 
 @attr.s(frozen=True)
@@ -82,7 +80,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
 
     # The type of sameness check this is
     sameness_check_type: SamenessDataValidationCheckType = attr.ib(
-        default=SamenessDataValidationCheckType.NUMBERS
+        default=SamenessDataValidationCheckType.PER_ROW
     )
 
     # The acceptable margin of error across the range of compared values. Defaults to 0.02 (small difference allowed)
@@ -130,12 +128,49 @@ class SamenessDataValidationCheck(DataValidationCheck):
                 f"Found instead: {value} vs. {self.hard_max_allowed_error}"
             )
 
+    # Used to override PER_ROW max_allowed_errors for each region when creating error validation query
+    region_configs: Optional[Dict[str, ValidationRegionConfig]] = attr.ib(default=None)
+
+    @region_configs.validator
+    def _check_region_configs(
+        self,
+        _attribute: attr.Attribute,
+        value: Optional[Dict[str, ValidationRegionConfig]],
+    ) -> None:
+        if (
+            self.sameness_check_type == SamenessDataValidationCheckType.PER_ROW
+            and value is None
+        ):
+            raise ValueError(
+                "Region configs has to be set for sameness validations where the sameness check type is PER_ROW"
+            )
+
     validation_type: ValidationCheckType = attr.ib(default=ValidationCheckType.SAMENESS)
 
     @property
     def managed_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
-        # TODO(#11273): Update this to include error_view_builder when error validation check logic is moved to views
-        return [self.view_builder]
+        return [self.view_builder, self.error_view_builder]
+
+    @property
+    def error_view_builder(self) -> SimpleBigQueryViewBuilder:
+        # TODO(#8646): Build a way for view builders to depend on other view *builders*
+        #  so that we don't have to build the view query for the parent view while we
+        #  are constructing the builder for the error rows view here.
+        validation_view_query = self.view_builder.build().view_query
+
+        view_id = self.view_builder.view_id
+        if self.validation_name_suffix is not None:
+            view_id += self.validation_name_suffix
+
+        return SimpleBigQueryViewBuilder(
+            dataset_id=self.view_builder.dataset_id,
+            view_id=f"{view_id}_errors",
+            view_query_template=ERROR_ROWS_VIEW_BUILDER_TEMPLATE,
+            description=self.view_builder.description,
+            validation_view=validation_view_query,
+            should_materialize=self.view_builder.should_materialize,
+            validation_check=self.get_checker().get_validation_query_str(self),
+        )
 
     def updated_for_region(
         self, region_config: ValidationRegionConfig
@@ -167,6 +202,15 @@ class SamenessDataValidationCheck(DataValidationCheck):
             dev_mode=region_config.dev_mode,
             hard_max_allowed_error=hard_max_allowed_error,
             soft_max_allowed_error=soft_max_allowed_error,
+        )
+
+    def get_checker(self) -> ValidationChecker:
+        if self.sameness_check_type == SamenessDataValidationCheckType.PER_ROW:
+            return SamenessPerRowValidationChecker()
+        if self.sameness_check_type == SamenessDataValidationCheckType.PER_VIEW:
+            return SamenessPerViewValidationChecker()
+        raise ValueError(
+            f"Unexpected sameness_check_type of {self.sameness_check_type}."
         )
 
 
@@ -372,77 +416,34 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
         )
 
 
-class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
-    """Performs the validation check for sameness check types."""
+class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
+    """
+    Performs the validation check for sameness check type PerRow.
+    This is done by checking each row of data and calculating the error rate for that row.
+    Each row should be a number.
+    """
 
     @classmethod
     def run_check(
         cls, validation_job: DataValidationJob[SamenessDataValidationCheck]
     ) -> DataValidationJobResult:
         comparison_columns = validation_job.validation.comparison_columns
+        validation = validation_job.validation
 
-        query_job = BigQueryClientImpl().run_query_async(validation_job.query_str(), [])
-
-        if (
-            validation_job.validation.sameness_check_type
-            == SamenessDataValidationCheckType.NUMBERS
-        ):
-            return DataValidationJobResult(
-                validation_job=validation_job,
-                result_details=SamenessValidationChecker.run_check_per_row(
-                    validation_job.validation,
-                    comparison_columns,
-                    query_job,
-                ),
-            )
-        if (
-            validation_job.validation.sameness_check_type
-            == SamenessDataValidationCheckType.STRINGS
-        ):
-            return DataValidationJobResult(
-                validation_job=validation_job,
-                result_details=SamenessValidationChecker.run_check_per_view(
-                    validation_job.validation,
-                    comparison_columns,
-                    query_job,
-                    str,
-                    EMPTY_STRING_VALUE,
-                ),
-            )
-        if (
-            validation_job.validation.sameness_check_type
-            == SamenessDataValidationCheckType.DATES
-        ):
-            return DataValidationJobResult(
-                validation_job=validation_job,
-                result_details=SamenessValidationChecker.run_check_per_view(
-                    validation_job.validation,
-                    comparison_columns,
-                    query_job,
-                    datetime.date,
-                    EMPTY_DATE_VALUE,
-                ),
-            )
-
-        raise ValueError(
-            f"Unexpected sameness_check_type of {validation_job.validation.sameness_check_type}."
+        error_query_job = BigQueryClientImpl().run_query_async(
+            validation_job.error_builder_query_str(), []
         )
 
-    @staticmethod
-    def run_check_per_row(
-        validation: SamenessDataValidationCheck,
-        comparison_columns: List[str],
-        query_job: QueryJob,
-    ) -> SamenessPerRowValidationResultDetails:
-        """Performs the validation check for sameness check types, where the values being compares are numbers (either
-        ints or floats)."""
         failed_rows: List[Tuple[ResultRow, float]] = []
 
         row: Row
-        for row in query_job:
+        for row in error_query_job:
             label_values: List[str] = []
             comparison_values: List[float] = []
+
             for column, value in row.items():
+                if column in ["error_rate", "error_type"]:
+                    continue
                 if column in comparison_columns:
                     if value is None:
                         raise ValueError(
@@ -460,56 +461,130 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                 else:
                     label_values.append(str(value))
 
-            max_value = max(comparison_values)
-            min_value = min(comparison_values)
-
-            # If max and min are 0, then there's no issue
-            if max_value == 0 and min_value == 0:
-                break
-
-            # If comparing negative values to 0, swap min and max
-            if max_value == 0 and min_value < 0:
-                max_value, min_value = min_value, max_value
-
-            error = (max_value - min_value) / max_value
-            if error > validation.soft_max_allowed_error:
-                failed_rows.append(
-                    (
-                        ResultRow(
-                            label_values=tuple(label_values),
-                            comparison_values=tuple(comparison_values),
-                        ),
-                        error,
-                    )
+            error = float(row.get("error_rate"))
+            failed_rows.append(
+                (
+                    ResultRow(
+                        label_values=tuple(label_values),
+                        comparison_values=tuple(comparison_values),
+                    ),
+                    error,
                 )
+            )
 
-        return SamenessPerRowValidationResultDetails(
-            failed_rows=failed_rows,
-            dev_mode=validation.dev_mode,
-            hard_max_allowed_error=validation.hard_max_allowed_error,
-            soft_max_allowed_error=validation.soft_max_allowed_error,
+        return DataValidationJobResult(
+            validation_job=validation_job,
+            result_details=SamenessPerRowValidationResultDetails(
+                failed_rows=failed_rows,
+                dev_mode=validation.dev_mode,
+                hard_max_allowed_error=validation.hard_max_allowed_error,
+                soft_max_allowed_error=validation.soft_max_allowed_error,
+            ),
         )
 
-    @staticmethod
-    def run_check_per_view(
-        validation: SamenessDataValidationCheck,
-        comparison_columns: List[str],
-        query_job: QueryJob,
-        type_to_check: Type[PerViewRowType],
-        empty_value: PerViewRowType,
-    ) -> SamenessPerViewValidationResultDetails:
-        """Performs the validation check for sameness check types, where the values being compared are strings."""
-        num_errors = 0
-        num_rows = 0
+    @classmethod
+    def get_validation_query_str(
+        cls, validation_check: SamenessDataValidationCheck
+    ) -> str:
+        """Creates a query that adds the error rate between the comparison columns for each row of data.
+        It takes into account region code soft max allowed error overrides and only returns rows that exceed the max."""
+
+        comparison_str = ", ".join(validation_check.comparison_columns)
+        error_rate_filters: List[str] = []
+        set_config_error_types: List[str] = []
+        region_code_with_filter_overrides: List[str] = []
+
+        if validation_check.region_configs is None:
+            raise ValueError("Expected nonnull region_configs at this point.")
+
+        for region_code, region_config in validation_check.region_configs.items():
+            soft_max_allowed_error = (
+                _get_soft_max_allowed_error_override_for_validation_name(
+                    region_config, validation_check.validation_name
+                )
+            )
+            hard_max_allowed_error = (
+                _get_hard_max_allowed_error_override_for_validation_name(
+                    region_config, validation_check.validation_name
+                )
+            )
+            if soft_max_allowed_error is not None or hard_max_allowed_error is not None:
+                region_code_with_filter_overrides.append(f"{region_code}")
+                error_rate_filters.append(
+                    f"(region_code = '{region_code}' AND error_rate > {soft_max_allowed_error or validation_check.soft_max_allowed_error})"
+                )
+                set_config_error_types.append(
+                    f"WHEN '{region_code}' THEN IF(error_rate <= {soft_max_allowed_error or validation_check.soft_max_allowed_error}, null, IF(error_rate <= {hard_max_allowed_error or validation_check.hard_max_allowed_error}, CAST('soft' AS STRING), CAST('hard' AS STRING)))"
+                )
+
+        basic_error_type = f"IF(error_rate <= {validation_check.soft_max_allowed_error}, null, IF(error_rate <= {validation_check.hard_max_allowed_error}, CAST('soft' AS STRING), CAST('hard' AS STRING)))"
+        set_error_type_str = f" {basic_error_type} as error_type"
+        error_rate_filters_str = f"error_rate > {validation_check.soft_max_allowed_error} OR error_rate IS NULL"
+        # use region code filters instead if at least one region code filter added to error_rate_filters
+        if len(error_rate_filters) > 0:
+            joined_config_error_types = "\n\t\t".join(set_config_error_types)
+            set_error_type_str = f"CASE region_code \n\t\t{joined_config_error_types} \n\t\tELSE {basic_error_type} \n\tEND as error_type"
+            error_rate_filters.extend(
+                [
+                    f"(region_code NOT IN ('{', '.join(region_code_with_filter_overrides)}') AND error_rate > {validation_check.soft_max_allowed_error})",
+                    "error_rate IS NULL",
+                ]
+            )
+            error_rate_filters_str = " OR ".join(error_rate_filters)
+
+        return f""",
+    validations_potential_min_max as (
+        SELECT *, ABS(GREATEST({comparison_str})) as potential_max_value,
+        ABS(LEAST({comparison_str})) as potential_min_value,
+        FROM validation
+    ),
+    validations_min_max as (
+        -- Get true min and max values accounting for negative numbers
+        SELECT * EXCEPT (potential_max_value, potential_min_value),
+        IF(potential_max_value > potential_min_value, potential_max_value, potential_min_value) as max_value,
+        IF(potential_max_value > potential_min_value, potential_min_value, potential_max_value) as min_value,
+        FROM validations_potential_min_max
+    ),
+    validations_error_rate as (
+        SELECT * EXCEPT(max_value, min_value),
+        IF(max_value = 0 AND min_value = 0, CAST(0 as FLOAT64), (max_value - min_value) / CAST(max_value AS FLOAT64)) as error_rate,
+        FROM validations_min_max
+    )
+    SELECT *, {set_error_type_str}
+    FROM validations_error_rate
+    WHERE {error_rate_filters_str}
+    """
+
+
+class SamenessPerViewValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
+    """
+    Performs the validation check for sameness check type PerView.
+    This is done by dividing the number of rows that have mismatching columns with the total number of rows in the view.
+    """
+
+    @classmethod
+    def run_check(
+        cls, validation_job: DataValidationJob[SamenessDataValidationCheck]
+    ) -> DataValidationJobResult:
+        comparison_columns = validation_job.validation.comparison_columns
+        validation = validation_job.validation
+
+        error_query_job = BigQueryClientImpl().run_query_async(
+            validation_job.error_builder_query_str(), []
+        )
+        original_query_job = BigQueryClientImpl().run_query_async(
+            validation_job.original_builder_query_str(), []
+        )
+
+        num_errors = len(error_query_job)
+        num_rows = len(original_query_job)
         non_null_counts_per_column_per_partition: Dict[
             Tuple[str, ...], Dict[str, int]
         ] = {}
 
         row: Row
-        for row in query_job:
-            num_rows += 1
-            unique_values: Set[PerViewRowType] = set()
-
+        for row in original_query_job:
+            unique_values: Set[Any] = set()
             partition_key = (
                 tuple(str(row.get(column)) for column in validation.partition_columns)
                 if validation.partition_columns
@@ -526,28 +601,65 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             for column in comparison_columns:
                 value = row[column]
                 if value is None:
-                    unique_values.add(empty_value)
-                elif isinstance(value, type_to_check):
+                    unique_values.add(None)
+                else:
                     non_null_counts_per_column[column] += 1
                     unique_values.add(value)
-                else:
-                    raise ValueError(
-                        f"Unexpected type [{type(value)}] for value [{value}] in {validation.sameness_check_type.value} validation "
-                        f"[{validation.validation_name}]."
-                    )
 
-            # If there is more than one unique value in the row, then there's an issue
-            if len(unique_values) > 1:
-                # Increment the number of errors
-                num_errors += 1
-
-        return SamenessPerViewValidationResultDetails(
-            num_error_rows=num_errors,
-            total_num_rows=num_rows,
-            dev_mode=validation.dev_mode,
-            hard_max_allowed_error=validation.hard_max_allowed_error,
-            soft_max_allowed_error=validation.soft_max_allowed_error,
-            non_null_counts_per_column_per_partition=list(
-                non_null_counts_per_column_per_partition.items()
+        return DataValidationJobResult(
+            validation_job=validation_job,
+            result_details=SamenessPerViewValidationResultDetails(
+                num_error_rows=num_errors,
+                total_num_rows=num_rows,
+                dev_mode=validation.dev_mode,
+                hard_max_allowed_error=validation.hard_max_allowed_error,
+                soft_max_allowed_error=validation.soft_max_allowed_error,
+                non_null_counts_per_column_per_partition=list(
+                    non_null_counts_per_column_per_partition.items()
+                ),
             ),
         )
+
+    @classmethod
+    def get_validation_query_str(
+        cls, validation_check: SamenessDataValidationCheck
+    ) -> str:
+        comparison_str = ", ".join(validation_check.comparison_columns)
+
+        return f""",
+    validation_unique_columns as (
+        SELECT *,
+        ARRAY_LENGTH( ARRAY(SELECT DISTINCT * FROM UNNEST(ARRAY[{comparison_str}]))) as unique_count
+        FROM validation
+    )
+    SELECT * EXCEPT(unique_count) FROM validation_unique_columns
+    WHERE unique_count > 1
+    """
+
+
+def _get_soft_max_allowed_error_override_for_validation_name(
+    region_config: ValidationRegionConfig, validation_name: str
+) -> Optional[float]:
+    soft_max_allowed_error_override: Optional[float] = None
+    if (
+        validation_name not in region_config.exclusions
+        and validation_name in region_config.max_allowed_error_overrides
+    ):
+        soft_max_allowed_error_override = region_config.max_allowed_error_overrides[
+            validation_name
+        ].soft_max_allowed_error_override
+    return soft_max_allowed_error_override
+
+
+def _get_hard_max_allowed_error_override_for_validation_name(
+    region_config: ValidationRegionConfig, validation_name: str
+) -> Optional[float]:
+    hard_max_allowed_error_override: Optional[float] = None
+    if (
+        validation_name not in region_config.exclusions
+        and validation_name in region_config.max_allowed_error_overrides
+    ):
+        hard_max_allowed_error_override = region_config.max_allowed_error_overrides[
+            validation_name
+        ].hard_max_allowed_error_override
+    return hard_max_allowed_error_override
