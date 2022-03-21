@@ -9,18 +9,20 @@ brew install yarn
 # Running the app
 
 ### Spin up the backend
-1) Navigate to the root of the repo.
-1) Run `docker-compose up`.
 
-If your local development environment is failing to build properly on main, try 
+1. Navigate to the root of the repo.
+2. Run `docker-compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up`.
+
+If your local development environment is failing to build properly on main, try
 running `docker build . -t http://us.gcr.io/recidiviz-staging/appengine/default:latest`
-to ensure that you have the latest dependencies in your docker image. If it’s still not 
+to ensure that you have the latest dependencies in your docker image. If it’s still not
 working, ping `#eng`.
 
 ### Spin up the frontend
-1) Navigate to this directory (`frontends/admin-panel`).
-1) Run `yarn` to install all dependencies.
-1) Run `yarn-dev`. 
+
+1. Navigate to this directory (`frontends/admin-panel`).
+2. Run `yarn` to install all dependencies.
+3. Run `yarn-dev`.
 
 The admin panel will now be accessible at `http://localhost:3030`.
 

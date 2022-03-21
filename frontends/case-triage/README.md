@@ -3,7 +3,7 @@
 ## Backend
 
 ```bash
-docker-compose up
+docker-compose -f docker-compose.yaml -f docker-compose.case-triage.yaml up
 ```
 
 We use `docker-compose` to run our development services locally, this includes:
@@ -49,7 +49,7 @@ We have a suite of end-to-end tests built with [WebdriverIO](https://webdriver.i
 We run the test suite against set of services that are separate from the development services. To start the test services, run:
 
 ```bash
-docker-compose -f docker-compose.yaml -f docker-compose.case-triage.test.yaml up
+docker-compose -f docker-compose.yaml -f docker-compose.case-triage.yaml -f docker-compose.case-triage.test.yaml up
 ```
 
 You will need valid login credentials for the "dev" Auth0 tenant.
