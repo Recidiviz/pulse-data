@@ -7,6 +7,6 @@ columns:
   - name: ID
     description: |-
       TODO(#11323): fill out description once received.
-  - name: SnactionStatus
+  - name: SanctionStatus
     description: |-
       TODO(#11323): fill out description once received.
