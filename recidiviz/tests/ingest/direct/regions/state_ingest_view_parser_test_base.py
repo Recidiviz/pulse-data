@@ -112,6 +112,7 @@ class StateIngestViewParserTestBase:
         expected_output: Sequence[Entity],
         debug: bool = False,
     ) -> None:
+        """Runs a test that parses the ingest view into Python entities."""
         self._check_test_matches_file_tag(ingest_view_name)
 
         parser = self._build_parser()
@@ -121,7 +122,11 @@ class StateIngestViewParserTestBase:
         )
         parsed_output = parser.parse(
             ingest_view_name=ingest_view_name,
-            contents_handle=LocalFileContentsHandle(fixture_path, cleanup_file=False),
+            contents_iterator=csv.DictReader(
+                LocalFileContentsHandle(
+                    fixture_path, cleanup_file=False
+                ).get_contents_iterator()
+            ),
         )
 
         if debug:

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for IngestViewFileParser."""
-
+import csv
 import datetime
 import os
 import unittest
@@ -219,15 +219,19 @@ class IngestViewFileParserTest(unittest.TestCase):
         parser = IngestViewResultsParser(
             FakeSchemaIngestViewResultsParserDelegate(ingest_instance, is_production)
         )
+        contents_handle = LocalFileContentsHandle(
+            os.path.join(
+                os.path.dirname(ingest_view_files.__file__),
+                f"{ingest_view_name}.csv",
+            ),
+            # This is a fixture file checked into our codebase - do not delete it when
+            # we are done with this contents handle.
+            cleanup_file=False,
+        )
+
         return parser.parse(
             ingest_view_name=ingest_view_name,
-            contents_handle=LocalFileContentsHandle(
-                os.path.join(
-                    os.path.dirname(ingest_view_files.__file__),
-                    f"{ingest_view_name}.csv",
-                ),
-                cleanup_file=False,
-            ),
+            contents_iterator=csv.DictReader(contents_handle.get_contents_iterator()),
         )
 
     def _run_parse_manifest_for_ingest_view(
