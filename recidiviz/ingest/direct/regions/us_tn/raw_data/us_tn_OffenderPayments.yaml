@@ -1,6 +1,6 @@
 file_tag: OffenderPayments
 file_description: |-
-   TODO(#11524) - Add in descriptions.
+  TODO(#11524) - Add in descriptions.
 primary_key_cols:
   - OffenderPaymentsSAK
 columns:
@@ -36,7 +36,7 @@ columns:
     is_datetime: True
     description: |-
       TODO(#11524) - Add in descriptions.
-  - name: LastUpdateUpserID
+  - name: LastUpdateUserID
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: VoidedDate
