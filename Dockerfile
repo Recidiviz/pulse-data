@@ -25,6 +25,20 @@ COPY ./frontends/case-triage/public /usr/case-triage/public
 
 RUN yarn build
 
+FROM node:14-alpine as justice-counts-build
+
+WORKDIR /usr/justice-counts/control-panel
+COPY ./frontends/justice-counts/control-panel/package.json /usr/justice-counts/control-panel
+COPY ./frontends/justice-counts/control-panel/yarn.lock /usr/justice-counts/control-panel
+COPY ./frontends/justice-counts/control-panel/tsconfig.json /usr/justice-counts/control-panel
+
+RUN yarn
+
+COPY ./frontends/justice-counts/control-panel/src /usr/justice-counts/control-panel/src
+COPY ./frontends/justice-counts/control-panel/public /usr/justice-counts/control-panel/public
+
+RUN yarn build
+
 FROM ubuntu:focal
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -109,9 +123,10 @@ RUN if [ "$DEV_MODE" = "True" ]; \
 # Add the rest of the application code once all dependencies are installed
 ADD . /app
 
-# Add the built admin panel frontend to the image
+# Add the built Admin Panel, Case Triage, and Justice Counts frontends to the image
 COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
 COPY --from=case-triage-build /usr/case-triage/build /app/frontends/case-triage/build
+COPY --from=justice-counts-build /usr/justice-counts/control-panel/build /app/frontends/justice-counts/control-panel/build
 
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""
