@@ -37,6 +37,7 @@ from recidiviz.utils.environment import (
     in_gcp_staging,
 )
 from recidiviz.utils.types import assert_type
+from recidiviz.validation.configured_validations import get_all_validations
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -164,6 +165,22 @@ def fetch_validation_metadata_status_for_validation(
     return (
         records.SerializeToString(),
         HTTPStatus.OK,
+    )
+
+
+@admin_panel.route(
+    "/api/validation_metadata/description/<validation_name>", methods=["POST"]
+)
+@requires_gae_auth
+def fetch_validation_description(validation_name: str) -> Tuple[str, HTTPStatus]:
+    validations = get_all_validations()
+    for validation in validations:
+        if validation.validation_name == validation_name:
+            return validation.view_builder.description, HTTPStatus.OK
+
+    return (
+        f"No validation name matches the name {validation_name}",
+        HTTPStatus.BAD_REQUEST,
     )
 
 

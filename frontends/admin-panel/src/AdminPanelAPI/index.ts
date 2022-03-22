@@ -71,6 +71,14 @@ export const fetchValidationDetails = async (
   );
 };
 
+export const fetchValidationDescription = async (
+  validationName: string
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/validation_metadata/description/${validationName}`
+  );
+};
+
 export {
   createDiscovery,
   fetchDiscoveryStatus,
