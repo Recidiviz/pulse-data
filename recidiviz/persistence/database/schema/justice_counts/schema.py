@@ -31,6 +31,7 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 import enum
 from typing import TypeVar
 
+from sqlalchemy import ForeignKey, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.schema import (
     Column,
@@ -95,6 +96,15 @@ class Project(enum.Enum):
     JUSTICE_COUNTS_CONTROL_PANEL = "JUSTICE_COUNTS_CONTROL_PANEL"
 
 
+# This table maintains the many-to-many relationship between User and Agency.
+agency_user_association_table = Table(
+    "agency_user_association",
+    JusticeCountsBase.metadata,
+    Column("agency_id", ForeignKey("source.id"), primary_key=True),
+    Column("user_id", ForeignKey("user.id"), primary_key=True),
+)
+
+
 class Source(JusticeCountsBase):
     """A website or organization that publishes reports.
 
@@ -107,7 +117,51 @@ class Source(JusticeCountsBase):
 
     name = Column(String(255), nullable=False)
 
+    # Type is the "discriminator" column, and is configured to act as such by the
+    # "mapper.polymorphic_on" parameter (see below).
+    # This column will store a value which indicates the type of object represented within the row;
+    # in this case, either "source" or "agency".
+    type = Column(String(255))
+
     __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(name)])
+
+    # We use SQLAlchemy's single table inheritance (https://docs.sqlalchemy.org/en/14/orm/inheritance.html)
+    # to represent different types of Sources.
+    __mapper_args__ = {"polymorphic_identity": "source", "polymorphic_on": type}
+
+
+class Agency(Source):
+    """A organization that has users and publishes reports via the Control Panel.
+
+    All Agencies are Sources, but not all Sources are Agencies.
+    """
+
+    users = relationship(
+        "User", secondary=agency_user_association_table, back_populates="agencies"
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": "agency",
+    }
+
+
+class User(JusticeCountsBase):
+    """A user (belonging to one or multiple Agencies) who publishes reports via the Control Panel."""
+
+    __tablename__ = "user"
+
+    id = Column(Integer, autoincrement=True)
+
+    # Auth0 is an authentication and authorization platform we use for users of the Control Panel.
+    # This field refers to the Auth0 `user_id` property:
+    # https://auth0.com/docs/manage-users/user-accounts/identify-users
+    auth0_user_id = Column(String(255), nullable=False)
+
+    agencies = relationship(
+        "Agency", secondary=agency_user_association_table, back_populates="users"
+    )
+
+    __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(auth0_user_id)])
 
 
 class Report(JusticeCountsBase):
