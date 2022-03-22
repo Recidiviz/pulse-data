@@ -26,7 +26,14 @@ from recidiviz.utils.metadata import local_project_id_override
 
 DATAFLOW_SESSIONS_VIEW_NAME = "dataflow_sessions"
 
-DATAFLOW_SESSIONS_SUPPORTED_STATES = ("US_ND", "US_ID", "US_MO", "US_PA", "US_TN")
+DATAFLOW_SESSIONS_SUPPORTED_STATES = (
+    "US_ND",
+    "US_ID",
+    "US_MO",
+    "US_PA",
+    "US_TN",
+    "US_ME",
+)
 
 DATAFLOW_SESSIONS_VIEW_DESCRIPTION = """
 ## Overview
