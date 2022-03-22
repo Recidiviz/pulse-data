@@ -126,7 +126,12 @@ def get_all_table_classes_in_module(module: ModuleType) -> Iterator[Type[Table]]
         if isinstance(member, Table):
             yield member
         elif _is_database_entity_subclass(member):
-            yield member.__table__
+            if "__tablename__" in member.__dict__:
+                # When using SQLAlchemy's single table inheritance (https://docs.sqlalchemy.org/en/14/orm/inheritance.html#single-table-inheritance)
+                # we define a class in our schema that extends from another class, and will look like its own table,
+                # but is actually not. Instances of this subclass will actually exist as rows in the parent class's table.
+                # The way we can distinguish this case is that the subclass does not have a "__tablename__" attribute.
+                yield member.__table__
 
 
 def get_aggregate_table_classes() -> Iterator[Table]:
