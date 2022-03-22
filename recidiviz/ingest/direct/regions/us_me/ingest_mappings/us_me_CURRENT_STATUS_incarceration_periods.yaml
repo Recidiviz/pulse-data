@@ -87,7 +87,7 @@ output:
                     - transfer_reason
                     - location_type
                   $include_nulls: True
-              $custom_parser: us_me_custom_enum_parsers.parse_admission_reason
+              $custom_parser: us_me_custom_enum_parsers.parse_admission_reason_v1
           release_reason:
             $conditional:
                 - $if:
