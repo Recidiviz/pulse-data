@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# Create a new service account for all things Cloud Run
+# Create a new service account for Case Triage Cloud Run
 resource "google_service_account" "cloud_run" {
   account_id   = "cloud-run-service-account"
   display_name = "Cloud Run Service Account"
@@ -46,10 +46,18 @@ resource "google_project_iam_member" "cloud_run_log_writer" {
   member = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+# Use existing Justice Counts service account for Justice Counts Cloud Run
+data "google_service_account" "justice_counts_cloud_run" {
+  account_id = "jstc-counts-spotlights-staging"
+
+  # TODO(#11710): Remove staging-only check when we create production environment
+  count      = var.project_id == "recidiviz-123" ? 0 : 1
+}
+
 # Env vars from secrets
 data "google_secret_manager_secret_version" "segment_write_key" { secret = "case_triage_segment_backend_key" }
 
-# Initializes actual service
+# Initializes Case Triage Cloud Run service
 resource "google_cloud_run_service" "case-triage" {
   name     = "case-triage-web"
   location = var.region
@@ -120,11 +128,61 @@ resource "google_cloud_run_service" "case-triage" {
   autogenerate_revision_name = false
 }
 
-# Sets up public access
+# Initializes Justice Counts Cloud Run service
+# TODO(#11710): Remove staging-only check when we create production environment
+resource "google_cloud_run_service" "justice-counts" {
+  name     = "justice-counts-web"
+  location = var.region
+
+  # TODO(#11710): Remove staging-only check when we create production environment
+  count    = var.project_id == "recidiviz-123" ? 0 : 1
+
+  template {
+    spec {
+      containers {
+        image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        command = ["pipenv"]
+        args    = ["run", "flask", "run", "-h", "0.0.0.0", "-p", "$PORT"]
+
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+        
+        env {
+          name  = "FLASK_APP"
+          value = "/app/recidiviz/justice_counts/control_panel/server.py"
+        }
+      }
+      
+      service_account_name = data.google_service_account.justice_counts_cloud_run[count.index].email
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+} 
+
+# By default, Cloud Run services are private and secured by IAM. 
+# The blocks below set up public access so that anyone (e.g. our frontends)
+# can invoke the services through an HTTP endpoint.
 resource "google_cloud_run_service_iam_member" "public-access" {
   location = google_cloud_run_service.case-triage.location
   project  = google_cloud_run_service.case-triage.project
   service  = google_cloud_run_service.case-triage.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
+  # TODO(#11710): Remove staging-only check when we create production environment
+  count    = var.project_id == "recidiviz-123" ? 0 : 1
+
+  location = google_cloud_run_service.justice-counts[count.index].location
+  project  = google_cloud_run_service.justice-counts[count.index].project
+  service  = google_cloud_run_service.justice-counts[count.index].name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
