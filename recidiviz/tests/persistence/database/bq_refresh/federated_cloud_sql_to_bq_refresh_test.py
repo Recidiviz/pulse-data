@@ -32,7 +32,9 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
@@ -250,6 +252,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             ],
         )
 
+        self.mock_bq_client.list_tables.assert_called_with(dataset_id="operations")
         self.mock_bq_client.backup_dataset_tables_if_dataset_exists.assert_called_with(
             dataset_id="operations"
         )
@@ -339,6 +342,15 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
 
         self.mock_bq_client.backup_dataset_tables_if_dataset_exists.assert_called_with(
             dataset_id="my_prefix_operations"
+        )
+        self.mock_bq_client.list_tables.assert_called_with(
+            dataset_id="my_prefix_operations"
+        )
+        self.mock_bq_client.delete_table.assert_has_calls(
+            [
+                mock.call("my_prefix_operations", "table_1"),
+                mock.call("my_prefix_operations", "table_2"),
+            ]
         )
         self.mock_bq_client.copy_dataset_tables_across_regions.assert_called_with(
             source_dataset_id="my_prefix_operations_regional",
