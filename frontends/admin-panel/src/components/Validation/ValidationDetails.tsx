@@ -16,9 +16,20 @@
 // =============================================================================
 
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { Badge, Card, Descriptions, Divider, Spin, Tooltip } from "antd";
+import {
+  Badge,
+  Card,
+  Descriptions,
+  Divider,
+  message,
+  Spin,
+  Tooltip,
+} from "antd";
 import React from "react";
-import { fetchValidationDetails } from "../../AdminPanelAPI";
+import {
+  fetchValidationDetails,
+  fetchValidationDescription,
+} from "../../AdminPanelAPI";
 import { useFetchedDataProtobuf } from "../../hooks";
 import {
   ValidationStatusRecord,
@@ -43,8 +54,19 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   validationName,
   stateInfo,
 }) => {
+  const [validationDescription, setValidationDescription] =
+    React.useState<string | undefined>(undefined);
+
   // TODO(#9480): Allow user to see more than last 14 days.
   const fetchResults = React.useCallback(async () => {
+    const r = await fetchValidationDescription(validationName);
+    const text = await r.text();
+    if (r.status >= 400) {
+      message.error(`Fetching validation description... failed: ${text}`);
+    } else {
+      setValidationDescription(text);
+    }
+
     return fetchValidationDetails(validationName, stateInfo.code);
   }, [validationName, stateInfo]);
 
@@ -104,6 +126,9 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
             </Descriptions.Item>
             <Descriptions.Item label="Message" span={3}>
               {latestRecord?.getFailureDescription() || "None"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Description" span={3}>
+              {validationDescription}
             </Descriptions.Item>
           </Descriptions>
         )}
