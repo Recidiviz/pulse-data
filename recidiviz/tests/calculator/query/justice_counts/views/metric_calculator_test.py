@@ -33,7 +33,8 @@ from recidiviz.big_query.big_query_view import (
 from recidiviz.calculator.query.justice_counts.views import metric_calculator
 from recidiviz.common import date
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.tests.big_query.view_test_util import BaseViewTest, MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.view_test_util import BaseViewTest
 from recidiviz.tools.justice_counts import manual_upload
 
 _npd = np.datetime64
