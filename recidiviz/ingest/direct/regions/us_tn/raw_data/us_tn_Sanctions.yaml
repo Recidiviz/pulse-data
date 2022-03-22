@@ -38,7 +38,7 @@ columns:
     is_datetime: True
     description: |-
       TODO(#11323): fill out description once received.
-  - name: PPMAprove
+  - name: PPMApprove
     description: |-
       TODO(#11323): fill out description once received.
   - name: PPMReview
@@ -51,7 +51,7 @@ columns:
     is_datetime: True
     description: |-
       TODO(#11323): fill out description once received.
-  - name: CAAprove
+  - name: CAApprove
     description: |-
       TODO(#11323): fill out description once received.
   - name: CAReview
