@@ -29,7 +29,7 @@ from sqlalchemy.sql import sqltypes
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
-    IngestViewMaterializer,
+    IngestViewMaterializerImpl,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
@@ -249,7 +249,7 @@ class BaseViewTest(unittest.TestCase):
         )
         upper_bound_datetime_inclusive_: datetime = self.query_run_dt
         view_query = str(
-            IngestViewMaterializer.debug_query_for_args(
+            IngestViewMaterializerImpl.debug_query_for_args(
                 ingest_views_by_name={view_builder.ingest_view_name: view},
                 ingest_view_export_args=GcsfsIngestViewExportArgs(
                     ingest_view_name=view_builder.ingest_view_name,

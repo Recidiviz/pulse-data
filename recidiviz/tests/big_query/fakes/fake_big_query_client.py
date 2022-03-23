@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A fake implementation of BigQueryClient for use in direct ingest tests."""
+"""A fake implementation of BigQueryClient for use in tests.
+TODO(#9717): Implement functionality in this class more fully by using a
+  FakeBigQueryDatabase that talks to Postgres.
+"""
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pandas as pd
@@ -28,10 +31,7 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest.direct import fixture_util
 
 
 class FakeQueryJob:
@@ -47,14 +47,15 @@ class FakeQueryJob:
         return
 
 
-class FakeDirectIngestBigQueryClient(BigQueryClient):
-    """A fake implementation of BigQueryClient for use in direct ingest tests."""
+class FakeBigQueryClient(BigQueryClient):
+    """A fake implementation of BigQueryClient for use in tests.
+    TODO(#9717): Implement functionality in this class more fully by using a
+      FakeBigQueryDatabase that talks to Postgres.
+    """
 
-    def __init__(self, project_id: str, fs: FakeGCSFileSystem, region_code: str):
+    def __init__(self, project_id: str, fs: FakeGCSFileSystem):
         self._project_id = project_id
         self.fs = fs
-        self.region_code = region_code
-        self.materialized_ingest_views: List[str] = []
 
     @property
     def project_id(self) -> str:
@@ -142,23 +143,14 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def export_query_results_to_cloud_storage(
         self, export_configs: List[ExportQueryConfig], print_header: bool
     ) -> None:
-
-        for export_config in export_configs:
-            export_path = GcsfsFilePath.from_absolute_path(export_config.output_uri)
-            fixture_util.add_direct_ingest_path(
-                self.fs, export_path, region_code=self.region_code
-            )
-            # TODO(#9717): Will need to replicate this logic for new materialization
-            self.materialized_ingest_views.append(
-                filename_parts_from_path(export_path).file_tag
-            )
+        raise ValueError("Must be implemented for use in tests.")
 
     def run_query_async(
         self,
         query_str: str,
         query_parameters: List[bigquery.ScalarQueryParameter] = None,
     ) -> bigquery.QueryJob:
-        return FakeQueryJob()
+        raise ValueError("Must be implemented for use in tests.")
 
     def paged_read_and_process(
         self,
@@ -185,7 +177,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
     ) -> bigquery.QueryJob:
-        return FakeQueryJob()
+        raise ValueError("Must be implemented for use in tests.")
 
     def insert_into_table_from_table_async(
         self,
@@ -282,7 +274,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         raise ValueError("Must be implemented for use in tests.")
 
     def delete_table(self, dataset_id: str, table_id: str) -> None:
-        return
+        raise ValueError("Must be implemented for use in tests.")
 
     def update_description(
         self, dataset_id: str, table_id: str, description: str

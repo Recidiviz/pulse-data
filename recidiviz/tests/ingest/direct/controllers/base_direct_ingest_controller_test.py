@@ -84,12 +84,10 @@ from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     path_for_fixture_file,
     run_task_queues_to_empty,
 )
-from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_big_query_client import (
-    FakeDirectIngestBigQueryClient,
-)
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
     FakeDirectIngestRawFileImportManager,
     FakeDirectIngestRegionRawFileConfig,
+    FakeIngestViewMaterializer,
     build_fake_direct_ingest_controller,
 )
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
@@ -306,7 +304,7 @@ class TestDirectIngestController(unittest.TestCase):
     """Tests for BaseDirectIngestController."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    temp_db_dir: str
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -406,6 +404,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             sorted(expected_raw_metadata_tags_with_is_processed),
             sorted(actual_raw_metadata_tags_with_is_processed),
+            "Raw file metadata does not match expected",
         )
 
         actual_ingest_metadata_tags_with_is_processed = [
@@ -419,6 +418,7 @@ class TestDirectIngestController(unittest.TestCase):
         self.assertEqual(
             sorted(expected_ingest_metadata_tags_with_is_processed),
             sorted(actual_ingest_metadata_tags_with_is_processed),
+            "Ingest file metadata does not match expected",
         )
 
     def run_async_file_order_test_for_controller_cls(
@@ -446,18 +446,13 @@ class TestDirectIngestController(unittest.TestCase):
     def check_tags(
         self, controller: BaseDirectIngestController, tags: List[str]
     ) -> None:
-        self.assertIsInstance(
-            controller.ingest_view_materializer.big_query_client,
-            FakeDirectIngestBigQueryClient,
-        )
-        if not isinstance(
-            controller.ingest_view_materializer.big_query_client,
-            FakeDirectIngestBigQueryClient,
-        ):
-            self.fail("Expected FakeDirectIngestBigQueryClient but did not find one.")
+        materializer = controller.ingest_view_materializer
+        if not isinstance(materializer, FakeIngestViewMaterializer):
+            self.fail("Expected FakeIngestViewMaterializer but did not find one.")
+
         self.assertCountEqual(
             tags,
-            controller.ingest_view_materializer.big_query_client.materialized_ingest_views,
+            materializer.get_materialized_ingest_views(),
         )
 
     def get_fake_task_manager(
@@ -570,6 +565,13 @@ class TestDirectIngestController(unittest.TestCase):
                     "The view_materialization_metadata_manager is unexpectedly None."
                 )
             controller.view_materialization_metadata_manager.clear_instance_metadata()
+        if not isinstance(
+            controller.ingest_view_materializer, FakeIngestViewMaterializer
+        ):
+            raise ValueError(
+                f"Unexpected materializer type [{controller.ingest_view_materializer}]"
+            )
+        controller.ingest_view_materializer.processed_args = []
 
         # We should now have no ingest metadata rows
         self.validate_file_metadata(
