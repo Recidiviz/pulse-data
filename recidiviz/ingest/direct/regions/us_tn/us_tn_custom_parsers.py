@@ -24,6 +24,7 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
@@ -64,3 +65,40 @@ def parse_sentence_status(raw_text: str) -> StateSentenceStatus:
         return StateSentenceStatus.COMPLETED
 
     return StateSentenceStatus.EXTERNAL_UNKNOWN
+
+
+def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
+    """
+    Returns the StateCustodialAuthority associated with an incarceration period using the site and site type columns.
+    """
+    site_type, site = raw_text.split("-")
+
+    if (
+        # The following sites are all courts.
+        # TODO(#2912): We actually can't be sure what the custodial authority is for people in these courts -
+        # they may be the responsibility of the state DOC (STATE_PRISON) or county based on where they've
+        # been transferred from. We ideally would use this logic to hydrate a new `facility_type` or `location_type`
+        # enum that allows us to differentiate between JAIL/PRISON/COUR and potentially more.
+        site in ("019", "033", "046", "047", "054", "057", "075", "079", "082")
+        or site_type == "JA"
+    ):
+        return StateCustodialAuthority.COURT
+    if site_type == "IN":  # Institution
+        return StateCustodialAuthority.STATE_PRISON
+    if site_type in (
+        "PA",  # Parole Office
+        "PR",  # Probation Office
+        "PX",
+    ):  # Parole and Probation Office
+        return StateCustodialAuthority.SUPERVISION_AUTHORITY
+    if site_type is None or site_type in (
+        "BC",  # Bootcamp (No longer in use)
+        "CC",  # Usually, but not always, describes a community corrections facility.
+        "CV",  # Conversion (Deprecated after 1992)
+        "IJ",  # Institutional Juvenile
+        "TC",
+    ):  # TN DOC Central Office
+        # TODO(#9421): Update mapping when we have support for community corrections
+        return StateCustodialAuthority.INTERNAL_UNKNOWN
+
+    return StateCustodialAuthority.INTERNAL_UNKNOWN
