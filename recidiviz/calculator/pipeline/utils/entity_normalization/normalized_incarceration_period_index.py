@@ -26,6 +26,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
+)
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
 )
@@ -47,8 +50,7 @@ def _incarceration_periods_sorter(
     incarceration_periods: List[NormalizedStateIncarcerationPeriod],
 ) -> List[NormalizedStateIncarcerationPeriod]:
     """Sorts the NormalizedStateIncarcerationPeriod by the sequence_num."""
-    sorted_periods = sorted(incarceration_periods, key=lambda key: key.sequence_num)
-    return sorted_periods
+    return sort_normalized_entities_by_sequence_num(incarceration_periods)
 
 
 @attr.s

@@ -38,8 +38,10 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     AdditionalAttributesMap,
-    convert_entity_trees_to_normalized_versions,
     normalized_entity_class_with_base_class_name,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,

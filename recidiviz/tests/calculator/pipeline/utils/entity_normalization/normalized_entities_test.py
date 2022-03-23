@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NormalizedStateSupervisionViolationResponse,
     get_entity_class_names_excluded_from_normalization,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     fields_unique_to_normalized_class,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (

@@ -19,17 +19,17 @@ import unittest
 from datetime import date
 from typing import List
 
+from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
+    _shorthand_for_violation_subtype,
+    filter_violation_responses_for_violation_history,
+    sorted_violation_subtypes_by_severity,
+    violation_type_from_subtype,
+    violation_type_subtypes_with_violation_type_mappings,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
     UsMoViolationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.violation_utils import (
-    filter_violation_responses_for_violation_history,
-    shorthand_for_violation_subtype,
-    sorted_violation_subtypes_by_severity,
-    violation_type_from_subtype,
-    violation_type_subtypes_with_violation_type_mappings,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -460,7 +460,9 @@ class TestUsMoViolationUtilsSubtypeFunctions(unittest.TestCase):
         # Assert that all of the StateSupervisionViolationType values are supported
         for violation_type in StateSupervisionViolationType:
             if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                _ = shorthand_for_violation_subtype(self.delegate, violation_type.value)
+                _ = _shorthand_for_violation_subtype(
+                    self.delegate, violation_type.value
+                )
 
     def test_violationTypeAndSubtypeShorthandMap_isComplete(self) -> None:
         all_types_subtypes = [

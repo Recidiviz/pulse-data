@@ -60,9 +60,14 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             delegate=self.delegate,
         )
 
-        return (
+        (
+            processed_vrs,
+            _,
+        ) = (
             entity_normalization_manager.normalized_violation_responses_for_calculations()
         )
+
+        return processed_vrs
 
     def test_default_filtered_violation_responses_for_violation_history_draft(self):
         placeholder_violation = StateSupervisionViolation.new_with_defaults(

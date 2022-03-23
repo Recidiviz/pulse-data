@@ -40,6 +40,8 @@ from recidiviz.calculator.pipeline.supplemental.dataset_config import (
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,
 )
 from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (

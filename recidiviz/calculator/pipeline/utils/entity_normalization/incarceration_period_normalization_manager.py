@@ -26,6 +26,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
@@ -58,10 +61,7 @@ from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
     is_placeholder,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 ATTRIBUTES_TRIGGERING_STATUS_CHANGE = [
     "custodial_authority",
@@ -105,7 +105,9 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ],
     ) -> PurposeForIncarcerationInfo:
         """State-specific implementations of this class should return a
         PurposeForIncarcerationInfo object complete with the correct
@@ -235,7 +237,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         incarceration_periods: List[StateIncarcerationPeriod],
         normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
         normalized_supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        normalized_violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ],
         field_index: CoreEntityFieldIndex,
         earliest_death_date: Optional[date] = None,
     ):
@@ -258,8 +262,10 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         # Only store the violation_responses if StateSupervisionViolationResponse
         # entities are required for this state's StateIncarcerationPeriod
         # normalization
-        self._violation_responses: Optional[List[StateSupervisionViolationResponse]] = (
-            violation_responses
+        self._violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ] = (
+            normalized_violation_responses
             if self.normalization_delegate.normalization_relies_on_violation_responses()
             else None
         )
@@ -887,7 +893,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         mid_processing_periods: List[StateIncarcerationPeriod],
         original_sorted_periods: List[StateIncarcerationPeriod],
         supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ],
     ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
         """Updates attributes on incarceration periods that represent a commitment
         from supervision admission and require updated attribute values,

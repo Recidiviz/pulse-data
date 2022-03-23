@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the US_ND-specific aspects of the when the state-specific delegate is used in
+"""Tests the US_ND-specific aspects of when the state-specific delegate is used in
 the ViolationResponseNormalizationManager."""
 import datetime
 import unittest
@@ -77,9 +77,14 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             delegate=self.delegate,
         )
 
-        return (
+        (
+            processed_vrs,
+            _,
+        ) = (
             entity_normalization_manager.normalized_violation_responses_for_calculations()
         )
+
+        return processed_vrs
 
     def test_prepare_violation_responses_for_calculations_us_nd(self) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(

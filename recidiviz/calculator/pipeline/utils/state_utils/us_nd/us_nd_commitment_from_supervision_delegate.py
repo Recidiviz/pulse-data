@@ -23,6 +23,7 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -44,7 +45,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionSentence,
-    StateSupervisionViolationResponse,
 )
 
 
@@ -100,7 +100,7 @@ class UsNdCommitmentFromSupervisionDelegate(
         self,
         admission_date: datetime.date,
         sorted_and_filtered_violation_responses: List[
-            StateSupervisionViolationResponse
+            NormalizedStateSupervisionViolationResponse
         ],
         default_violation_history_window_months: int,
     ) -> DateRange:
