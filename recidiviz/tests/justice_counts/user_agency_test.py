@@ -18,24 +18,24 @@
 
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.user import UserInterface
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 
 
 class TestUserInterface(JusticeCountsDatabaseTestCase):
-    """Implements tests for the UserInterface."""
+    """Implements tests for the UserAccountInterface."""
 
     def test_create_and_get_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             AgencyInterface.create_agency(session=session, name="Agency Alpha")
-            UserInterface.create_user(session=session, auth0_user_id="id0")
-            UserInterface.add_agency_to_user(
+            UserAccountInterface.create_user(session=session, auth0_user_id="id0")
+            UserAccountInterface.add_agency_to_user(
                 session=session, auth0_user_id="id0", agency_name="Agency Alpha"
             )
 
         with SessionFactory.using_database(self.database_key) as session:
-            user = UserInterface.get_user_by_auth0_user_id(
+            user = UserAccountInterface.get_user_by_auth0_user_id(
                 session=session, auth0_user_id="id0"
             )
             self.assertEqual(user.auth0_user_id, "id0")

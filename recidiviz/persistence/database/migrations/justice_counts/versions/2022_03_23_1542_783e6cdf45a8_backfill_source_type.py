@@ -1,19 +1,20 @@
 # pylint: skip-file
-"""backfill type column
+"""backfill source type
 
-Revision ID: 9412e89d7924
-Revises: d50163044ba2
-Create Date: 2022-03-21 11:02:34.832855
+Revision ID: 783e6cdf45a8
+Revises: 71fb90aaa368
+Create Date: 2022-03-23 15:42:16.534228
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "9412e89d7924"
-down_revision = "d50163044ba2"
+revision = "783e6cdf45a8"
+down_revision = "71fb90aaa368"
 branch_labels = None
 depends_on = None
+
 
 UPDATE_QUERY = "UPDATE source SET type = 'source';"
 DOWNGRADE_QUERY = "UPDATE source SET type = NULL;"
