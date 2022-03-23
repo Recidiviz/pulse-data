@@ -1973,6 +1973,10 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             )
         )
 
+        placeholder_violation = StateSupervisionViolation.new_with_defaults(
+            state_code=state_code
+        )
+
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
             state_code=state_code,
             response_date=date(year=2018, month=5, day=16),
@@ -1981,7 +1985,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text="PAROLE_BOARD",
             supervision_violation_response_decisions=[parole_board_decision_entry],
+            supervision_violation=placeholder_violation,
         )
+
+        placeholder_violation.supervision_violation_responses = [
+            parole_board_permanent_decision
+        ]
 
         parole_board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
