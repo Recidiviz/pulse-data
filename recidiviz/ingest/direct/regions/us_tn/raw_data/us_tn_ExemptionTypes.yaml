@@ -1,0 +1,15 @@
+file_tag: ExemptionTypes
+file_description: |-
+  TODO(#11323): fill out description once received.
+primary_key_cols:
+  - Code
+columns:
+  - name: Code
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: Decode
+    description: |-
+      TODO(#11323): fill out description once received.
+  - name: ExemptionLength
+    description: |-
+      TODO(#11323): fill out description once received.
