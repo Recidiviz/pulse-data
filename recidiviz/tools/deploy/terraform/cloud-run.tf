@@ -176,6 +176,17 @@ resource "google_cloud_run_service_iam_member" "public-access" {
   member   = "allUsers"
 }
 
+resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
+  # TODO(#11710): Remove staging-only check when we create production environment
+  count    = var.project_id == "recidiviz-123" ? 0 : 1
+
+  location = google_cloud_run_service.justice-counts[count.index].location
+  project  = google_cloud_run_service.justice-counts[count.index].project
+  service  = google_cloud_run_service.justice-counts[count.index].name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 # Setting up load balancer
 # Drawn from https://github.com/terraform-google-modules/terraform-google-lb-http/blob/master/examples/cloudrun/main.tf
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
