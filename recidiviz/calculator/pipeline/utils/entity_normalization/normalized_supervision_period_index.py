@@ -22,13 +22,23 @@ from typing import Dict, List, Optional
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     is_official_supervision_admission,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+
+
+def _supervision_periods_sorter(
+    supervision_periods: List[NormalizedStateSupervisionPeriod],
+) -> List[NormalizedStateSupervisionPeriod]:
+    """Sorts the NormalizedStateSupervisionPeriods by the sequence_num."""
+    sorted_periods = sorted(supervision_periods, key=lambda key: key.sequence_num)
+    return sorted_periods
 
 
 @attr.s
@@ -37,7 +47,9 @@ class NormalizedSupervisionPeriodIndex:
     for use in the metric calculation pipelines.
     """
 
-    supervision_periods: List[StateSupervisionPeriod] = attr.ib()
+    sorted_supervision_periods: List[NormalizedStateSupervisionPeriod] = attr.ib(
+        converter=_supervision_periods_sorter
+    )
 
     # A dictionary mapping supervision_period_id values to the date on which the person started serving the
     # supervision represented by that period. For parole, this is the date the person started parole after being
@@ -55,7 +67,7 @@ class NormalizedSupervisionPeriodIndex:
         most_recent_official_start = None
         most_recent_nonnull_supervision_type = None
 
-        for index, supervision_period in enumerate(self.supervision_periods):
+        for index, supervision_period in enumerate(self.sorted_supervision_periods):
             supervision_period_id = supervision_period.supervision_period_id
 
             if not supervision_period_id:
@@ -106,19 +118,19 @@ class NormalizedSupervisionPeriodIndex:
     # A dictionary mapping years and months of terminations of supervision to the StateSupervisionPeriods that ended in
     # that month.
     supervision_periods_by_termination_month: Dict[
-        int, Dict[int, List[StateSupervisionPeriod]]
+        int, Dict[int, List[NormalizedStateSupervisionPeriod]]
     ] = attr.ib()
 
     @supervision_periods_by_termination_month.default
     def _supervision_periods_by_termination_month(
         self,
-    ) -> Dict[int, Dict[int, List[StateSupervisionPeriod]]]:
+    ) -> Dict[int, Dict[int, List[NormalizedStateSupervisionPeriod]]]:
         """Organizes the list of StateSupervisionPeriods by the year and month of the termination_date on the period."""
         supervision_periods_by_termination_month: Dict[
-            int, Dict[int, List[StateSupervisionPeriod]]
+            int, Dict[int, List[NormalizedStateSupervisionPeriod]]
         ] = defaultdict()
 
-        for supervision_period in self.supervision_periods:
+        for supervision_period in self.sorted_supervision_periods:
             if supervision_period.termination_date:
                 year = supervision_period.termination_date.year
                 month = supervision_period.termination_date.month
@@ -139,8 +151,8 @@ class NormalizedSupervisionPeriodIndex:
         return supervision_periods_by_termination_month
 
     def get_most_recent_previous_supervision_period(
-        self, current_supervision_period: StateSupervisionPeriod
-    ) -> Optional[StateSupervisionPeriod]:
+        self, current_supervision_period: NormalizedStateSupervisionPeriod
+    ) -> Optional[NormalizedStateSupervisionPeriod]:
         """Given a current supervision period, return the most recent previous supervision period, if present."""
         if not current_supervision_period.supervision_period_id:
             raise ValueError(
@@ -149,20 +161,20 @@ class NormalizedSupervisionPeriodIndex:
 
         current_supervision_period_index: Optional[
             int
-        ] = self.supervision_periods.index(current_supervision_period)
+        ] = self.sorted_supervision_periods.index(current_supervision_period)
 
         if current_supervision_period_index is None:
             raise ValueError(
                 "Current supervision period was not located in supervision period index."
             )
 
-        # `supervision_periods` sorts supervision periods from least recent to most recent, so if the current
+        # `sorted_supervision_periods` sorts supervision periods from least recent to most recent, so if the current
         # supervision period is first in the list, that means there is no most recent previous supervision
         # period.
         if current_supervision_period_index == 0:
             return None
 
-        most_recent_previous_supervision_period = self.supervision_periods[
+        most_recent_previous_supervision_period = self.sorted_supervision_periods[
             current_supervision_period_index - 1
         ]
 
@@ -170,9 +182,9 @@ class NormalizedSupervisionPeriodIndex:
 
     def get_supervision_period_overlapping_with_date_range(
         self, date_range: DateRange
-    ) -> Optional[StateSupervisionPeriod]:
+    ) -> Optional[NormalizedStateSupervisionPeriod]:
         """Returns the first supervision period that overlaps with the given date range."""
-        for supervision_period in self.supervision_periods:
+        for supervision_period in self.sorted_supervision_periods:
             if DateRangeDiff(supervision_period.duration, date_range).overlapping_range:
                 return supervision_period
         return None

@@ -19,12 +19,14 @@
 import unittest
 from datetime import date
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_sp_index_for_tests,
 )
@@ -34,16 +36,18 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
     """Tests the supervision_start_dates_by_period_id variable setter on the SupervisionPeriodIndex class."""
 
     def test_supervision_start_dates_by_period_id(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            sequence_num=1,
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -53,8 +57,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -68,8 +71,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
     def test_supervision_start_dates_by_period_id_multiple_official_admissions(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -77,8 +81,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            sequence_num=1,
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -86,8 +91,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
         )
 
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            sequence_num=2,
             supervision_period_id=333,
             start_date=date(2020, 5, 1),
             termination_date=date(2020, 10, 3),
@@ -95,8 +101,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
-        supervision_period_4 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_4 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            sequence_num=3,
             supervision_period_id=444,
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
@@ -112,8 +119,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -129,36 +135,40 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
     def test_supervision_start_dates_by_period_id_multiple_absconsion_periods(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
             termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
         )
 
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
         )
 
-        supervision_period_4 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_4 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=444,
+            sequence_num=3,
             start_date=date(2001, 1, 4),
             termination_date=date(2001, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
@@ -173,8 +183,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -191,17 +200,19 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_no_official_admission(self):
         # The first supervision period always counts as the official start of supervision
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -210,8 +221,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -227,9 +237,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
     def test_supervision_start_dates_by_period_id_official_transfer_admission_investigation(
         self,
     ):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -237,9 +248,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -248,9 +260,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         # Transferring from INVESTIGATION to PROBATION is a new official start of supervision
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -265,8 +278,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -283,9 +295,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
     def test_supervision_start_dates_by_period_id_official_transfer_admission_informal_probation(
         self,
     ):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -293,9 +306,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -304,9 +318,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         # Transferring from INFORMAL_PROBATION to PROBATION is a new official start of supervision
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -321,8 +336,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -337,9 +351,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
     def test_supervision_start_dates_by_period_id_official_transfer_types(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -347,9 +362,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -358,9 +374,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -375,8 +392,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -393,9 +409,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
     def test_supervision_start_dates_by_period_id_not_official_transfer_admissions(
         self,
     ):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -403,9 +420,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -414,9 +432,10 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -431,8 +450,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -451,17 +469,19 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
     """Tests the supervision_periods_by_termination_month variable setter on the SupervisionPeriodIndex class."""
 
     def test_supervision_periods_by_termination_month(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -470,8 +490,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {2000: {10: [supervision_period_1, supervision_period_2]}}
@@ -482,17 +501,19 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         )
 
     def test_supervision_periods_by_termination_month_multiple_months(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -501,8 +522,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -515,17 +535,19 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         )
 
     def test_supervision_periods_by_termination_month_multiple_years(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -534,8 +556,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         expected_output = {
@@ -553,16 +574,18 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
     """Tests get_most_recent_previous_supervision_period."""
 
     def test_get_most_recent_previous_supervision_period_valid(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
         )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
-            supervision_period_id=111,
+            supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2000, 10, 1),
             termination_date=date(2000, 11, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -571,8 +594,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         self.assertEqual(
@@ -583,16 +605,18 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         )
 
     def test_get_most_recent_previous_supervision_period_first_in_list(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
         )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
-            supervision_period_id=111,
+            supervision_period_id=222,
+            sequence_num=1,
             start_date=date(2010, 10, 1),
             termination_date=date(2010, 11, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -601,8 +625,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         self.assertIsNone(
@@ -612,7 +635,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         )
 
     def test_get_most_recent_previous_supervision_period_single_period_in_list(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
@@ -623,8 +646,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_periods = [supervision_period]
 
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=supervision_periods,
-            sort_periods=True,
+            supervision_periods=supervision_periods
         )
 
         self.assertIsNone(

@@ -20,7 +20,7 @@ import abc
 import datetime
 import logging
 from copy import deepcopy
-from typing import List, Optional, Type
+from typing import List, Optional, Tuple, Type
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -28,9 +28,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
-    NormalizedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -124,8 +121,8 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     ):
         self._person_id = person_id
         self._supervision_periods = deepcopy(supervision_periods)
-        self._normalized_supervision_period_index: Optional[
-            NormalizedSupervisionPeriodIndex
+        self._normalized_supervision_periods_and_additional_attributes: Optional[
+            Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap]
         ] = None
 
         self.delegate = delegate
@@ -156,9 +153,9 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateSupervisionPeriod, StateSupervisionCaseTypeEntry]
 
-    def normalized_supervision_period_index_for_calculations(
+    def normalized_supervision_periods_and_additional_attributes(
         self,
-    ) -> NormalizedSupervisionPeriodIndex:
+    ) -> Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap]:
         """Validates and sorts the supervision period inputs.
 
         Ensures the necessary dates and fields are set on each supervision period.
@@ -167,7 +164,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         entities for some states. Tread carefully if you are implementing any changes to
         SP normalization that may create circular dependencies between these processes.
         """
-        if not self._normalized_supervision_period_index:
+        if not self._normalized_supervision_periods_and_additional_attributes:
             # Make a deep copy of the original supervision periods to preprocess
             periods_for_normalization = deepcopy(self._supervision_periods)
 
@@ -211,12 +208,13 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 )
             )
 
-            self._normalized_supervision_period_index = (
-                NormalizedSupervisionPeriodIndex(
+            self._normalized_supervision_periods_and_additional_attributes = (
+                mid_processing_periods,
+                self.additional_attributes_map_for_normalized_sps(
                     supervision_periods=mid_processing_periods
-                )
+                ),
             )
-        return self._normalized_supervision_period_index
+        return self._normalized_supervision_periods_and_additional_attributes
 
     def _drop_placeholder_periods(
         self,

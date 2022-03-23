@@ -23,15 +23,15 @@ from itertools import permutations
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
-)
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     standard_date_sort_for_incarceration_periods,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
     find_last_terminated_period_on_or_before_date,
+)
+from recidiviz.calculator.pipeline.utils.shared_constants import (
+    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     standard_date_sort_for_supervision_periods,

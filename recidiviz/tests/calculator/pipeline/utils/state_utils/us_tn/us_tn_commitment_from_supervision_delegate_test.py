@@ -14,11 +14,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Tests the functions in us_tn_commitment_from_supervision_utils.py"""
+"""Tests the functions in us_tn_commitment_from_supervision_delegate.py"""
 
 import unittest
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from_supervision_delegate import (
     UsTnCommitmentFromSupervisionDelegate,
 )
 from recidiviz.common.constants.states import StateCode

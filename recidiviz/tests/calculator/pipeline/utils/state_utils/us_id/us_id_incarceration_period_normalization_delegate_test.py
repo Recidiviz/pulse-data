@@ -25,6 +25,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_normalization_delegate import (
     UsIdIncarcerationNormalizationDelegate,
 )
@@ -40,7 +43,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
-    StateSupervisionPeriod,
     StateSupervisionViolationResponse,
 )
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
@@ -56,7 +58,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     @staticmethod
     def _normalized_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
         # IP pre-processing for US_ID does not rely on violation responses
@@ -192,7 +194,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_normalized_incarceration_periods_commitment_with_general_purpose(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
@@ -257,7 +259,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_normalized_incarceration_periods_commitment_with_treatment_transfer(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_ID",
             start_date=date(2017, 1, 1),
@@ -313,7 +315,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_normalized_incarceration_periods_admission_from_investigation(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -353,7 +355,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_id_normalize_period_if_commitment_from_supervision_probation_revocation(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
@@ -390,7 +392,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_id_normalize_period_if_commitment_from_supervision_treatment(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
@@ -425,7 +427,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self.assertEqual([expected_period], validated_incarceration_periods)
 
     def test_us_id_sanction_admission_shock_incarceration(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
@@ -455,7 +457,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_id_normalize_period_if_commitment_from_supervision_parole_board_revocation(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
@@ -516,7 +518,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_id_normalize_period_if_commitment_from_supervision_parole_board_to_treatment_revocation(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
@@ -577,7 +579,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_id_normalize_period_if_commitment_from_supervision_treatment_transfer_not_revocation(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
@@ -687,7 +689,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_id_normalize_period_if_commitment_from_supervision_investigation_not_revocation(
         self,
     ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),

@@ -26,6 +26,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_normalization_delegate import (
     PAROLE_REVOCATION_NORMALIZED_PREFIX,
     UsNdIncarcerationNormalizationDelegate,
@@ -44,7 +47,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
-    StateSupervisionPeriod,
     StateSupervisionViolationResponse,
 )
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
@@ -62,7 +64,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     @staticmethod
     def _normalized_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
         # IP pre-processing for US_ND does not rely on violation responses
@@ -391,7 +393,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
         supervision period directly, then the admission_reason on the period is
         updated to be REVOCATION."""
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -431,7 +433,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         """Tests that when a NEW_ADMISSION incarceration follows a PAROLE+REVOCATION
         supervision period directly, then the admission_reason on the period is
         updated to be REVOCATION."""
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -471,7 +473,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         """Tests that when a NEW_ADMISSION incarceration follows a
         INVESTIGATION+NOT REVOCATION supervision period directly, then the
         incarceration period is not updated."""
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -509,7 +511,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+NOT REVOCATION
         supervision period directly, then the incarceration period is not updated."""
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -549,24 +551,30 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision period, but not directly, as there is a INVESTIGATION+REVOCATION
         supervision period in between them, then the incarceration period is not
         updated."""
-        earlier_probation_supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code=_STATE_CODE,
-            start_date=date(2019, 3, 5),
-            termination_date=date(2019, 5, 4),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        earlier_probation_supervision_period = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                sequence_num=0,
+                external_id="sp1",
+                state_code=_STATE_CODE,
+                start_date=date(2019, 3, 5),
+                termination_date=date(2019, 5, 4),
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            )
         )
 
-        later_parole_supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code=_STATE_CODE,
-            start_date=date(2019, 3, 5),
-            termination_date=date(2019, 6, 9),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+        later_parole_supervision_period = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=222,
+                sequence_num=1,
+                external_id="sp1",
+                state_code=_STATE_CODE,
+                start_date=date(2019, 3, 5),
+                termination_date=date(2019, 6, 9),
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            )
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -602,7 +610,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision period, but not directly, as there is a separate incarceration
         admission in the interim, then the subsequent incarceration period is not
         updated."""
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,
@@ -668,7 +676,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         admission in the interim, but that admission is to a county jail (i.e. is a
         temporary hold while revocation proceedings take place), then the
         admission_reason on the period is updated to be REVOCATION."""
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=_STATE_CODE,

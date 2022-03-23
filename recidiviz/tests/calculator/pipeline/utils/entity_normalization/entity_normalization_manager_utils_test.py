@@ -129,10 +129,15 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
 
         self.assertEqual([incarceration_period], processed_ips)
         assert sp_normalization_manager is not None
-        self.assertEqual(
-            [supervision_period],
-            sp_normalization_manager.normalized_supervision_period_index_for_calculations().supervision_periods,
+
+        (
+            processed_sps,
+            _,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
         )
+
+        self.assertEqual([supervision_period], processed_sps)
 
     def test_normalization_managers_for_calculations_no_sps(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -291,10 +296,15 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
 
         self.assertIsNone(ip_normalization_manager)
         assert sp_normalization_manager is not None
-        self.assertEqual(
-            [supervision_period],
-            sp_normalization_manager.normalized_supervision_period_index_for_calculations().supervision_periods,
+
+        (
+            processed_sps,
+            _,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
         )
+
+        self.assertEqual([supervision_period], processed_sps)
 
     def test_normalization_managers_for_calculations_empty_lists(self) -> None:
 

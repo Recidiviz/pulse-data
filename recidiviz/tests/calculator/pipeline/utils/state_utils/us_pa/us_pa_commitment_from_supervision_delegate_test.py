@@ -20,12 +20,16 @@ import unittest
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from recidiviz.calculator.pipeline.utils import commitment_from_supervision_utils
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.metrics.utils import (
+    commitment_from_supervision_utils,
+)
+from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -59,11 +63,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionCaseTypeEntry,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
 )
@@ -103,7 +103,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
     def _test_get_commitment_from_supervision_supervision_type(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        previous_supervision_period: Optional[StateSupervisionPeriod] = None,
+        previous_supervision_period: Optional[NormalizedStateSupervisionPeriod] = None,
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         return self.delegate.get_commitment_from_supervision_supervision_type(
             incarceration_sentences=[],
@@ -140,7 +140,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         self,
     ) -> None:
         """Right now, all sanction admissions are assumed to be from parole."""
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_PA",
@@ -198,7 +198,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
     @staticmethod
     def _test_get_commitment_from_supervision_details(
         incarceration_period: NormalizedStateIncarcerationPeriod,
-        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
         supervision_period_to_agent_associations: Optional[
             Dict[int, Dict[Any, Any]]
@@ -218,7 +218,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         supervision_period_index = NormalizedSupervisionPeriodIndex(
-            supervision_periods=(supervision_periods or [])
+            sorted_supervision_periods=(supervision_periods or [])
         )
 
         return commitment_from_supervision_utils.get_commitment_from_supervision_details(
@@ -234,11 +234,11 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
     def test_get_commitment_from_supervision_details_pvc(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             case_type_entries=[
-                StateSupervisionCaseTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
                     state_code=STATE_CODE, case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
@@ -327,27 +327,32 @@ class TestGetCommitmentDetails(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
         )
 
-        pre_board_hold_sp = StateSupervisionPeriod.new_with_defaults(
+        pre_board_hold_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            sequence_num=0,
             state_code=STATE_CODE,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 1),
             termination_date=date(2019, 8, 3),
         )
 
-        pre_commitment_sp = StateSupervisionPeriod.new_with_defaults(
+        pre_commitment_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+            sequence_num=1,
             state_code=STATE_CODE,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2019, 8, 3),
             termination_date=shock_period.admission_date,
         )
 
-        supervision_period_while_in_prison = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_3,
-            state_code=STATE_CODE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            start_date=shock_period.admission_date,
+        supervision_period_while_in_prison = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_3,
+                sequence_num=2,
+                state_code=STATE_CODE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                start_date=shock_period.admission_date,
+            )
         )
 
         ip_index = default_normalized_ip_index_for_tests(
@@ -380,6 +385,96 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_commitment_sp.supervision_level,
                 supervision_level_raw_text=pre_commitment_sp.supervision_level_raw_text,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            ),
+            commitment_details,
+        )
+
+    def test_get_commitment_from_supervision_details_transfer_on_board_hold(
+        self,
+    ) -> None:
+        """Tests that the period *prior to the incarceration admission*, the one that
+        ends when the board hold starts, is chosen when a person is transferred to a new
+        supervision period on the date of an admission to incarceration, and has a
+        supervision period that terminated a few months before the parole board hold."""
+        board_hold = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            state_code=STATE_CODE,
+            incarceration_period_id=111,
+            sequence_num=0,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_date=date(2019, 11, 18),
+            release_date=date(2020, 1, 1),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        shock_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            state_code=STATE_CODE,
+            incarceration_period_id=222,
+            sequence_num=1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            admission_date=date(2020, 1, 1),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        pre_board_hold_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            sequence_num=0,
+            state_code=STATE_CODE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            start_date=date(2010, 12, 1),
+            termination_date=board_hold.admission_date,
+        )
+
+        board_hold_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+            sequence_num=1,
+            state_code=STATE_CODE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            start_date=board_hold.admission_date,
+            termination_date=shock_period.admission_date,
+        )
+
+        supervision_period_while_in_prison = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_3,
+                sequence_num=2,
+                state_code=STATE_CODE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                start_date=shock_period.admission_date,
+            )
+        )
+
+        ip_index = default_normalized_ip_index_for_tests(
+            incarceration_periods=[board_hold, shock_period],
+            incarceration_delegate=UsPaIncarcerationDelegate(),
+        )
+
+        commitment_details = self._test_get_commitment_from_supervision_details(
+            incarceration_period=shock_period,
+            supervision_periods=[
+                pre_board_hold_sp,
+                board_hold_sp,
+                supervision_period_while_in_prison,
+            ],
+            incarceration_period_index=ip_index,
+        )
+
+        assert pre_board_hold_sp.supervision_period_id is not None
+        self.assertEqual(
+            CommitmentDetails(
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                purpose_for_incarceration_subtype=None,
+                level_1_supervision_location_external_id=pre_board_hold_sp.supervision_site,
+                level_2_supervision_location_external_id=None,
+                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                    pre_board_hold_sp.supervision_period_id, {}
+                ).get(
+                    "agent_external_id"
+                ),
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=pre_board_hold_sp.supervision_level,
+                supervision_level_raw_text=pre_board_hold_sp.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             ),
             commitment_details,

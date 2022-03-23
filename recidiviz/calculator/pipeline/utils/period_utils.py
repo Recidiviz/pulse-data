@@ -18,7 +18,7 @@
 StateSupervisionPeriod)."""
 from datetime import date
 from functools import cmp_to_key
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Sequence
 
 from dateutil.relativedelta import relativedelta
 
@@ -222,7 +222,7 @@ def sort_periods_by_set_dates_and_statuses(
 
 def find_last_terminated_period_on_or_before_date(
     upper_bound_date_inclusive: date,
-    periods: Optional[List[PeriodType]],
+    periods: Optional[Sequence[PeriodType]],
     maximum_months_proximity: int,
     same_date_sort_fn: Callable[
         [PeriodType, PeriodType], int

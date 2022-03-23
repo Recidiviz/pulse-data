@@ -247,9 +247,9 @@ def _convert_entity_tree_to_normalized_version(
 
     normalized_base_entity_builder = normalized_base_entity_class.builder()
     normalized_base_entity_attributes = base_entity.__dict__
-    additional_args_for_base_entity = additional_attributes_map[
-        base_entity_cls_name
-    ].get(base_entity.get_id())
+    additional_args_for_base_entity = additional_attributes_map.get(
+        base_entity_cls_name, {}
+    ).get(base_entity.get_id())
 
     if additional_args_for_base_entity:
         normalized_base_entity_attributes.update(additional_args_for_base_entity)
@@ -374,8 +374,6 @@ def _convert_entity_tree_to_normalized_version(
     return normalized_entity
 
 
-# TODO(#10730): Move this to normalized_entities_utils_test.py once it is only being
-#  used in tests
 def convert_entity_trees_to_normalized_versions(
     root_entities: Sequence[Entity],
     normalized_entity_class: Type[NormalizedStateEntityT],
