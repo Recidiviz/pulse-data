@@ -55,6 +55,9 @@ from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_disc
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.practices.firestore.firestore_views import (
+    FIRESTORE_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
@@ -418,6 +421,7 @@ PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_repor
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
+PRACTICES_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 
 
 _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
@@ -546,6 +550,13 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=PATHWAYS_PRISON_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_PRISON",
+        bq_view_namespace=BigQueryViewNamespace.STATE,
+    ),
+    # Practices V2 Firestore ETL views
+    ExportViewCollectionConfig(
+        view_builders_to_export=FIRESTORE_VIEW_BUILDERS,
+        output_directory_uri_template=PRACTICES_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PRACTICES_FIRESTORE",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
 ]

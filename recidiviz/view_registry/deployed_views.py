@@ -123,6 +123,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "partner_data_csg",
     "po_report_views",
     "population_projection_data",
+    "practices_views",
     "public_dashboard_views",
     "reference_views",
     "sessions",

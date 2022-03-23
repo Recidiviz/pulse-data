@@ -200,6 +200,14 @@ module "ingest-metadata" {
   uniform_bucket_level_access = false
 }
 
+module "practices-etl-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "practices-etl-data"
+  uniform_bucket_level_access = false
+}
+
 module "processed-state-aggregates" {
   source = "./modules/cloud-storage-bucket"
 
