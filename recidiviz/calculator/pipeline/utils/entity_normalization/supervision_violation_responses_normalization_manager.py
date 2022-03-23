@@ -20,7 +20,7 @@ pipelines."""
 import datetime
 from collections import defaultdict
 from copy import deepcopy
-from typing import Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Set, Tuple, Type
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -98,7 +98,7 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
         self._violation_responses = deepcopy(violation_responses)
         self.delegate = delegate
         self._normalized_violation_responses_and_additional_attributes: Optional[
-            List[StateSupervisionViolationResponse]
+            Tuple[List[StateSupervisionViolationResponse], AdditionalAttributesMap]
         ] = None
 
     @staticmethod
@@ -113,7 +113,7 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
 
     def normalized_violation_responses_for_calculations(
         self,
-    ) -> List[StateSupervisionViolationResponse]:
+    ) -> Tuple[List[StateSupervisionViolationResponse], AdditionalAttributesMap]:
         """Performs normalization on violation responses. Filters out draft
         responses or those with null dates, sorts responses by `response_date`,
         updates missing violation data (if needed by the state), de-duplicates
@@ -139,7 +139,10 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
             self.validate_vr_invariants(updated_responses)
 
             self._normalized_violation_responses_and_additional_attributes = (
-                updated_responses
+                updated_responses,
+                self.additional_attributes_map_for_normalized_vrs(
+                    violation_responses=updated_responses
+                ),
             )
 
         return self._normalized_violation_responses_and_additional_attributes

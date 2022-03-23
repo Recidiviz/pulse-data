@@ -26,6 +26,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     PurposeForIncarcerationInfo,
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
@@ -43,10 +46,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 PURPOSE_FOR_INCARCERATION_PVC = "CCIS-26"
 SHOCK_INCARCERATION_12_MONTHS = "RESCR12"
@@ -82,7 +82,9 @@ class UsPaIncarcerationNormalizationDelegate(
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ],
     ) -> PurposeForIncarcerationInfo:
         """Commitment from supervision admissions in US_PA sometimes require updated
         pfi information."""
@@ -131,7 +133,7 @@ class UsPaIncarcerationNormalizationDelegate(
 def _us_pa_get_pfi_info_for_incarceration_period(
     incarceration_period_list_index: int,
     sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    violation_responses: Optional[List[NormalizedStateSupervisionViolationResponse]],
 ) -> PurposeForIncarcerationInfo:
     """Determines the correct purpose_for_incarceration for the given
     incarceration_period and, if applicable, the subtype of the
@@ -228,7 +230,7 @@ def _us_pa_get_pfi_info_for_incarceration_period(
 def _purpose_for_incarceration_subtype(
     commitment_admission_date: datetime.date,
     specialized_purpose_for_incarceration_raw_text: Optional[str],
-    violation_responses: List[StateSupervisionViolationResponse],
+    violation_responses: List[NormalizedStateSupervisionViolationResponse],
 ) -> Optional[str]:
     """Determines the purpose_for_incarceration_subtype using either the raw text of the
     specialized_purpose_for_incarceration or the decisions made by the parole board.
@@ -265,7 +267,7 @@ def _purpose_for_incarceration_subtype(
 
 
 def _most_severe_purpose_for_incarceration_subtype(
-    violation_responses: List[StateSupervisionViolationResponse],
+    violation_responses: List[NormalizedStateSupervisionViolationResponse],
 ) -> Optional[str]:
     """Returns the most severe purpose_for_incarceration_subtype listed on all of the
     violation_responses (stored in the decision_raw_text), according to the

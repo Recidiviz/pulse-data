@@ -41,7 +41,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (

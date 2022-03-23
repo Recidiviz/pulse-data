@@ -25,6 +25,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_normalization_delegate import (
     UsMoIncarcerationNormalizationDelegate,
 )
@@ -35,10 +38,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_sp_index_for_tests,
 )
@@ -57,14 +57,16 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> List[StateIncarcerationPeriod]:
         # IP pre-processing for US_MO does not rely on violation responses or
         # supervision periods
-        violation_responses: Optional[List[StateSupervisionViolationResponse]] = []
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ] = []
         sp_index = default_normalized_sp_index_for_tests()
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsMoIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
-            violation_responses=violation_responses,
+            normalized_violation_responses=violation_responses,
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=earliest_death_date,
         )

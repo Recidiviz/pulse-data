@@ -25,12 +25,25 @@ from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContextT,
 )
+from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
+    filter_violation_responses_for_violation_history,
+    most_severe_violation_subtype,
+    sorted_violation_subtypes_by_severity,
+    violation_type_from_subtype,
+    violation_type_subtypes_with_violation_type_mappings,
+)
 from recidiviz.calculator.pipeline.metrics.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     normalized_violation_responses_for_calculations,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
@@ -42,13 +55,6 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
     identify_most_severe_response_decision,
 )
-from recidiviz.calculator.pipeline.utils.violation_utils import (
-    filter_violation_responses_for_violation_history,
-    most_severe_violation_subtype,
-    sorted_violation_subtypes_by_severity,
-    violation_type_from_subtype,
-    violation_type_subtypes_with_violation_type_mappings,
-)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
@@ -59,7 +65,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionViolation,
-    StateSupervisionViolationResponse,
 )
 
 
@@ -154,14 +159,21 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         is_violent = violation.is_violent
         is_sex_offense = violation.is_sex_offense
 
-        sorted_violation_responses = normalized_violation_responses_for_calculations(
+        # TODO(#10731): Remove calls get the normalized violation responses once this
+        #  metric pipeline is hydrating Normalized versions of all entities
+        normalized_violation_responses = normalized_violation_responses_for_calculations(
             person_id=person_id,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
             violation_responses=violation.supervision_violation_responses,
+            field_index=self.field_index,
+        )
+
+        sorted_violation_responses = sort_normalized_entities_by_sequence_num(
+            normalized_violation_responses
         )
 
         appropriate_violation_responses_with_dates: List[
-            StateSupervisionViolationResponse
+            NormalizedStateSupervisionViolationResponse
         ] = filter_violation_responses_for_violation_history(
             violation_delegate,
             violation_responses=sorted_violation_responses,

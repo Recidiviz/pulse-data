@@ -19,16 +19,16 @@ import unittest
 from datetime import date
 from typing import List
 
+from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
+    _shorthand_for_violation_subtype,
+    sorted_violation_subtypes_by_severity,
+    violation_type_from_subtype,
+    violation_type_subtypes_with_violation_type_mappings,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
     UsPaViolationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.violation_utils import (
-    shorthand_for_violation_subtype,
-    sorted_violation_subtypes_by_severity,
-    violation_type_from_subtype,
-    violation_type_subtypes_with_violation_type_mappings,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -407,7 +407,9 @@ class TestUsPaViolationUtilsSubtypeFunctions(unittest.TestCase):
         # Assert that all of the StateSupervisionViolationType values are supported
         for violation_type in StateSupervisionViolationType:
             if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                _ = shorthand_for_violation_subtype(self.delegate, violation_type.value)
+                _ = _shorthand_for_violation_subtype(
+                    self.delegate, violation_type.value
+                )
 
     # pylint: disable=protected-access
     def test_violationTypeAndSubtypeShorthandMap_isComplete(self) -> None:

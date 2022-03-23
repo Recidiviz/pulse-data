@@ -41,6 +41,10 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
+from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
+    filter_violation_responses_for_violation_history,
+    get_violation_and_response_history,
+)
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_periods,
@@ -52,8 +56,12 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
@@ -90,10 +98,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     sentence_supervision_type_to_supervision_periods_supervision_type,
-)
-from recidiviz.calculator.pipeline.utils.violation_utils import (
-    filter_violation_responses_for_violation_history,
-    get_violation_and_response_history,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -231,10 +235,17 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionPeriod.get_class_id_name(),
         )
 
+        # TODO(#10731): Remove calls get the normalized violation responses once this
+        #  metric pipeline is hydrating Normalized versions of all entities
         normalized_violation_responses = normalized_violation_responses_for_calculations(
             person_id=person.person_id,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
             violation_responses=violation_responses,
+            field_index=self.field_index,
+        )
+
+        normalized_violation_responses = sort_normalized_entities_by_sequence_num(
+            normalized_violation_responses
         )
 
         (
@@ -388,7 +399,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         assessments: List[StateAssessment],
-        violation_responses_for_history: List[StateSupervisionViolationResponse],
+        violation_responses_for_history: List[
+            NormalizedStateSupervisionViolationResponse
+        ],
         supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         violation_delegate: StateSpecificViolationDelegate,
@@ -750,7 +763,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         assessments: List[StateAssessment],
-        violation_responses_for_history: List[StateSupervisionViolationResponse],
+        violation_responses_for_history: List[
+            NormalizedStateSupervisionViolationResponse
+        ],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         violation_delegate: StateSpecificViolationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
