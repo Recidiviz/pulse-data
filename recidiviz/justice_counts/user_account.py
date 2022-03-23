@@ -19,21 +19,21 @@
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.persistence.database.schema.justice_counts.schema import User
+from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
 
 
-class UserInterface:
+class UserAccountInterface:
     """Contains methods for setting and getting User info."""
 
     @staticmethod
     def create_user(session: Session, auth0_user_id: str) -> None:
-        session.add(User(auth0_user_id=auth0_user_id))
+        session.add(UserAccount(auth0_user_id=auth0_user_id))
 
     @staticmethod
-    def get_user_by_auth0_user_id(session: Session, auth0_user_id: str) -> User:
+    def get_user_by_auth0_user_id(session: Session, auth0_user_id: str) -> UserAccount:
         return (
-            session.query(User)
-            .filter(User.auth0_user_id == auth0_user_id)
+            session.query(UserAccount)
+            .filter(UserAccount.auth0_user_id == auth0_user_id)
             .one_or_none()
         )
 
@@ -41,7 +41,7 @@ class UserInterface:
     def add_agency_to_user(
         session: Session, auth0_user_id: str, agency_name: str
     ) -> None:
-        user = UserInterface.get_user_by_auth0_user_id(
+        user = UserAccountInterface.get_user_by_auth0_user_id(
             session=session, auth0_user_id=auth0_user_id
         )
         agency = AgencyInterface.get_agency_by_name(session=session, name=agency_name)

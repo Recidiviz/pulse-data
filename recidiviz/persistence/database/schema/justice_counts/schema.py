@@ -96,12 +96,12 @@ class Project(enum.Enum):
     JUSTICE_COUNTS_CONTROL_PANEL = "JUSTICE_COUNTS_CONTROL_PANEL"
 
 
-# This table maintains the many-to-many relationship between User and Agency.
-agency_user_association_table = Table(
-    "agency_user_association",
+# This table maintains the many-to-many relationship between UserAccount and Agency.
+agency_user_account_association_table = Table(
+    "agency_user_account_association",
     JusticeCountsBase.metadata,
     Column("agency_id", ForeignKey("source.id"), primary_key=True),
-    Column("user_id", ForeignKey("user.id"), primary_key=True),
+    Column("user_account_id", ForeignKey("user_account.id"), primary_key=True),
 )
 
 
@@ -136,8 +136,10 @@ class Agency(Source):
     All Agencies are Sources, but not all Sources are Agencies.
     """
 
-    users = relationship(
-        "User", secondary=agency_user_association_table, back_populates="agencies"
+    user_accounts = relationship(
+        "UserAccount",
+        secondary=agency_user_account_association_table,
+        back_populates="agencies",
     )
 
     __mapper_args__ = {
@@ -145,10 +147,10 @@ class Agency(Source):
     }
 
 
-class User(JusticeCountsBase):
+class UserAccount(JusticeCountsBase):
     """A user (belonging to one or multiple Agencies) who publishes reports via the Control Panel."""
 
-    __tablename__ = "user"
+    __tablename__ = "user_account"
 
     id = Column(Integer, autoincrement=True)
 
@@ -158,7 +160,9 @@ class User(JusticeCountsBase):
     auth0_user_id = Column(String(255), nullable=False)
 
     agencies = relationship(
-        "Agency", secondary=agency_user_association_table, back_populates="users"
+        "Agency",
+        secondary=agency_user_account_association_table,
+        back_populates="user_accounts",
     )
 
     __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(auth0_user_id)])
