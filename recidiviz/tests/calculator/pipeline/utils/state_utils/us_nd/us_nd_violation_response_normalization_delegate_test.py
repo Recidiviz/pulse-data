@@ -241,7 +241,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         )
 
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123,
+            supervision_violation_id=456,
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -253,7 +253,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         other_ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
-            supervision_violation_response_id=123,
+            supervision_violation_response_id=456,
             supervision_violation=other_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
