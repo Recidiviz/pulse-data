@@ -28,9 +28,9 @@ import attr
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
+import recidiviz.calculator.pipeline.metrics.utils.violation_utils
 import recidiviz.calculator.pipeline.utils.supervision_period_utils
 import recidiviz.calculator.pipeline.utils.violation_response_utils
-import recidiviz.calculator.pipeline.utils.violation_utils
 from recidiviz.calculator.pipeline.metrics.supervision import identifier
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
@@ -58,6 +58,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -4295,7 +4298,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessments: List[StateAssessment] = []
 
-        violation_reports: List[StateSupervisionViolationResponse] = []
+        violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -4380,7 +4383,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         incarceration_sentences: List[StateIncarcerationSentence] = []
         assessments: List[StateAssessment] = []
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         supervision_sentences = [supervision_sentence]
 
@@ -4464,7 +4467,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
         assessments: List[StateAssessment] = []
 
-        violation_reports: List[StateSupervisionViolationResponse] = []
+        violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -4559,7 +4562,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessments: List[StateAssessment] = []
 
-        violation_reports: List[StateSupervisionViolationResponse] = []
+        violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -4639,7 +4642,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessments: List[StateAssessment] = []
 
-        violation_reports: List[StateSupervisionViolationResponse] = []
+        violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -4722,7 +4725,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessments: List[StateAssessment] = []
 
-        violation_reports: List[StateSupervisionViolationResponse] = []
+        violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -4799,7 +4802,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessments: List[StateAssessment] = []
 
-        violation_reports: List[StateSupervisionViolationResponse] = []
+        violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -4873,7 +4876,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessments: List[StateAssessment] = []
 
-        violation_reports: List[StateSupervisionViolationResponse] = []
+        violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
@@ -4959,7 +4962,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessments = [assessment_1, assessment_2]
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -5047,7 +5050,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         assessments = [assessment]
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -5133,7 +5136,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         assessments: List[StateAssessment] = []
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
@@ -5218,7 +5221,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         assessments: List[StateAssessment] = []
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
@@ -6494,7 +6497,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         incarceration_period_index = default_normalized_ip_index_for_tests()
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             supervision_period,
@@ -6548,7 +6551,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         incarceration_period_index = default_normalized_ip_index_for_tests()
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             supervision_period,
@@ -6607,7 +6610,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         incarceration_period_index = default_normalized_ip_index_for_tests()
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             supervision_period,
@@ -6656,7 +6659,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         incarceration_period_index = default_normalized_ip_index_for_tests()
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             supervision_period,
@@ -6735,7 +6738,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         incarceration_period_index = default_normalized_ip_index_for_tests()
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             second_supervision_period,
@@ -6914,7 +6917,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         incarceration_period_index = default_normalized_ip_index_for_tests()
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             first_supervision_period,
@@ -7009,7 +7012,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         incarceration_period_index = default_normalized_ip_index_for_tests()
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             first_supervision_period,
@@ -7088,7 +7091,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_periods=[incarceration_period]
         )
 
-        violation_responses: List[StateSupervisionViolationResponse] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         termination_event = self.identifier._find_supervision_termination_event(
             supervision_period,
@@ -7431,30 +7434,28 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
         self.identifier = identifier.SupervisionIdentifier()
 
     def test_get_most_severe_response_decision(self) -> None:
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             state_code="US_XX",
             violation_date=date(2009, 1, 3),
         )
 
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                state_code="US_XX",
-                response_date=date(2009, 1, 7),
-                supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                        state_code="US_XX",
-                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    ),
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                        state_code="US_XX",
-                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    ),
-                ],
-                supervision_violation=supervision_violation,
-            )
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_XX",
+            response_date=date(2009, 1, 7),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                ),
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                ),
+            ],
+            supervision_violation=supervision_violation,
         )
 
         most_severe_response_decision = recidiviz.calculator.pipeline.utils.violation_response_utils.get_most_severe_response_decision(
@@ -8246,7 +8247,9 @@ def _generate_case_compliances(
     face_to_face_contacts: Optional[List[StateSupervisionContact]] = None,
     end_date_override: Optional[date] = None,
     next_recommended_assessment_date: Optional[date] = None,
-    violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
+    violation_responses: Optional[
+        List[NormalizedStateSupervisionViolationResponse]
+    ] = None,
     incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
     incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
     supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,

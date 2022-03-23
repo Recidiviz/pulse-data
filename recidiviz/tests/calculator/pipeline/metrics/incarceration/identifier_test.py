@@ -42,6 +42,10 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -1965,9 +1969,15 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             assessment_date=date(2018, 3, 1),
         )
 
+        placeholder_violation = StateSupervisionViolation.new_with_defaults(
+            state_code=state_code,
+            supervision_violation_id=123,
+        )
+
         parole_board_decision_entry = (
             StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
+                supervision_violation_response_decision_entry_id=123,
                 decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
                 decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             )
@@ -1979,6 +1989,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
             state_code=state_code,
+            supervision_violation_response_id=123,
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -2609,7 +2620,9 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         assessments: Optional[List[StateAssessment]] = None,
-        violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ] = None,
         state_specific_override: Optional[str] = None,
         county_of_residence: Optional[str] = _COUNTY_OF_RESIDENCE,
     ) -> Optional[IncarcerationAdmissionEvent]:
@@ -2885,7 +2898,9 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
-        violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ] = None,
         commitment_from_supervision_delegate: Optional[
             StateSpecificCommitmentFromSupervisionDelegate
         ] = None,
@@ -2948,48 +2963,46 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         revocation date. Test that the `old` response is included in the response
         history."""
 
-        supervision_violation_1 = StateSupervisionViolation.new_with_defaults(
+        supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             state_code="US_XX",
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                 )
             ],
         )
 
-        supervision_violation_response_1 = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2008, 12, 7),
-                supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                        state_code="US_XX",
-                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    )
-                ],
-                supervision_violation=supervision_violation_1,
-            )
+        supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2008, 12, 7),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                )
+            ],
+            supervision_violation=supervision_violation_1,
         )
 
-        supervision_violation_2 = StateSupervisionViolation.new_with_defaults(
+        supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             state_code="US_XX",
             violation_date=date(2009, 11, 13),
         )
 
-        supervision_violation_response_2 = StateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_XX",
             response_date=date(2009, 11, 13),
             supervision_violation_response_decisions=[
                 # This REVOCATION decision is the most severe, but this is not the most recent response
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 )
@@ -2997,32 +3010,30 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervision_violation=supervision_violation_2,
         )
 
-        supervision_violation_3 = StateSupervisionViolation.new_with_defaults(
+        supervision_violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=6789,
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 )
             ],
         )
 
-        supervision_violation_response_3 = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2009, 12, 1),
-                supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                        state_code="US_XX",
-                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    )
-                ],
-                supervision_violation=supervision_violation_3,
-            )
+        supervision_violation_response_3 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2009, 12, 1),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                )
+            ],
+            supervision_violation=supervision_violation_3,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -3098,64 +3109,62 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         reports within the violation window. The `old` response and violation falls before the violation history
         window. Test that the `old` response is not included in the response history."""
 
-        supervision_violation_old = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123455,
-            state_code="US_XX",
-            violation_date=date(2007, 12, 7),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code="US_XX",
-                    violation_type=StateSupervisionViolationType.FELONY,
-                )
-            ],
-        )
-
-        supervision_violation_response_old = (
-            StateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_old = (
+            NormalizedStateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=123455,
                 state_code="US_XX",
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2007, 12, 7),
-                supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                violation_date=date(2007, 12, 7),
+                supervision_violation_types=[
+                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
-                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                        violation_type=StateSupervisionViolationType.FELONY,
                     )
                 ],
-                supervision_violation=supervision_violation_old,
             )
         )
 
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
+        supervision_violation_response_old = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2007, 12, 7),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                )
+            ],
+            supervision_violation=supervision_violation_old,
+        )
+
+        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=6789,
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_XX",
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                 )
             ],
         )
 
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2009, 12, 1),
-                supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                        state_code="US_XX",
-                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    ),
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                        state_code="US_XX",
-                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    ),
-                ],
-                supervision_violation=supervision_violation,
-            )
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2009, 12, 1),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                ),
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                ),
+            ],
+            supervision_violation=supervision_violation,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -3234,55 +3243,55 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         """
         state_code = "US_MO"
 
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             state_code=state_code,
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=state_code,
                     violation_type=StateSupervisionViolationType.FELONY,
                 )
             ],
         )
 
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            state_code=state_code,
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_subtype="INI",
+            response_date=date(2008, 12, 7),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code=state_code,
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                )
+            ],
+            supervision_violation=supervision_violation,
+        )
+
+        supervision_violation_sup = (
+            NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code=state_code,
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="INI",
-                response_date=date(2008, 12, 7),
-                supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                supervision_violation_id=6789,
+                violation_date=date(2012, 12, 1),
+                supervision_violation_types=[
+                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code=state_code,
-                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                        violation_type=StateSupervisionViolationType.TECHNICAL,
                     )
                 ],
-                supervision_violation=supervision_violation,
             )
         )
 
-        supervision_violation_sup = StateSupervisionViolation.new_with_defaults(
-            state_code=state_code,
-            supervision_violation_id=6789,
-            violation_date=date(2012, 12, 1),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=state_code,
-                    violation_type=StateSupervisionViolationType.TECHNICAL,
-                )
-            ],
-        )
-
-        supervision_violation_response_sup = StateSupervisionViolationResponse.new_with_defaults(
+        supervision_violation_response_sup = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=state_code,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_subtype="SUP",
             response_date=date(2012, 12, 1),
             supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                     state_code=state_code,
                     decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
                 )
@@ -3447,19 +3456,19 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervision_site="X",
         )
 
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
+        supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             state_code="US_ND",
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_ND",
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
-        ssvr = StateSupervisionViolationResponse.new_with_defaults(
+        ssvr = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_ND",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             supervision_violation=supervision_violation,

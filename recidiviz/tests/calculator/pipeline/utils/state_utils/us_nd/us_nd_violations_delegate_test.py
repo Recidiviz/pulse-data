@@ -19,11 +19,11 @@ import unittest
 from datetime import date
 from typing import List
 
+from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
+    filter_violation_responses_for_violation_history,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.violation_utils import (
-    filter_violation_responses_for_violation_history,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,

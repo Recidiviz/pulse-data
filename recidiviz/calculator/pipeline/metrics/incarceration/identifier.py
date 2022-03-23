@@ -36,6 +36,11 @@ from recidiviz.calculator.pipeline.metrics.incarceration.events import (
 from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     get_commitment_from_supervision_details,
 )
+from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
+    VIOLATION_HISTORY_WINDOW_MONTHS,
+    filter_violation_responses_for_violation_history,
+    get_violation_and_response_history,
+)
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_periods,
@@ -47,8 +52,12 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
@@ -86,11 +95,6 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
     responses_on_most_recent_response_date,
     violation_responses_in_window,
-)
-from recidiviz.calculator.pipeline.utils.violation_utils import (
-    VIOLATION_HISTORY_WINDOW_MONTHS,
-    filter_violation_responses_for_violation_history,
-    get_violation_and_response_history,
 )
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -229,10 +233,17 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             StateSupervisionPeriod.get_class_id_name(),
         )
 
+        # TODO(#10731): Remove calls get the normalized violation responses once this
+        #  metric pipeline is hydrating Normalized versions of all entities
         normalized_violation_responses = normalized_violation_responses_for_calculations(
             person_id=person_id,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
             violation_responses=violation_responses,
+            field_index=self.field_index,
+        )
+
+        normalized_violation_responses = sort_normalized_entities_by_sequence_num(
+            normalized_violation_responses
         )
 
         (
@@ -338,7 +349,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         ip_index: NormalizedIncarcerationPeriodIndex,
         sp_index: NormalizedSupervisionPeriodIndex,
         assessments: List[StateAssessment],
-        sorted_violation_responses: List[StateSupervisionViolationResponse],
+        sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
     ) -> Tuple[
@@ -550,7 +561,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         assessments: List[StateAssessment],
-        sorted_violation_responses: List[StateSupervisionViolationResponse],
+        sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
     ) -> Optional[IncarcerationAdmissionEvent]:
@@ -607,7 +618,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         assessments: List[StateAssessment],
-        sorted_violation_responses: List[StateSupervisionViolationResponse],
+        sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
         commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,

@@ -23,6 +23,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     PurposeForIncarcerationInfo,
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
@@ -35,10 +38,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     SHOCK_SANCTION_STATUS_CODES,
     TREATMENT_SANCTION_STATUS_CODES,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsMoIncarcerationNormalizationDelegate(
@@ -59,7 +59,9 @@ class UsMoIncarcerationNormalizationDelegate(
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ],
     ) -> PurposeForIncarcerationInfo:
         return _us_mo_get_pfi_info_for_period_if_commitment_from_supervision(
             incarceration_period_list_index,

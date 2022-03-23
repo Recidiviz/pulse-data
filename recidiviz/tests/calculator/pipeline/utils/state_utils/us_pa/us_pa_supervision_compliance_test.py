@@ -25,6 +25,8 @@ from parameterized import parameterized
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
@@ -68,8 +70,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationResponseDecisionEntry,
 )
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
@@ -1869,13 +1869,13 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     supervision_violation_response_id=123,
                     external_id="svr1",
                     state_code=StateCode.US_PA.value,
                     response_date=date(2018, 5, 20),
                     supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                             supervision_violation_response_decision_entry_id=13,
                             state_code=StateCode.US_PA.value,
                             decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
@@ -1972,7 +1972,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     supervision_violation_response_id=123,
                     external_id="svr1",
                     state_code=StateCode.US_PA.value,
@@ -1980,7 +1980,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                         2017, 5, 20
                     ),  # Happened before most recent assessment
                     supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                             supervision_violation_response_decision_entry_id=13,
                             state_code=StateCode.US_PA.value,
                             decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
@@ -2033,7 +2033,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[
-                StateSupervisionViolationResponse.new_with_defaults(
+                NormalizedStateSupervisionViolationResponse.new_with_defaults(
                     supervision_violation_response_id=123,
                     external_id="svr1",
                     state_code=StateCode.US_PA.value,
@@ -2041,7 +2041,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                         2018, 5, 20
                     ),  # Happened after most recent assessment
                     supervision_violation_response_decisions=[
-                        StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                             supervision_violation_response_decision_entry_id=13,
                             state_code=StateCode.US_PA.value,
                             decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,

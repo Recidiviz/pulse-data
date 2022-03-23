@@ -25,6 +25,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -37,8 +40,7 @@ def _supervision_periods_sorter(
     supervision_periods: List[NormalizedStateSupervisionPeriod],
 ) -> List[NormalizedStateSupervisionPeriod]:
     """Sorts the NormalizedStateSupervisionPeriods by the sequence_num."""
-    sorted_periods = sorted(supervision_periods, key=lambda key: key.sequence_num)
-    return sorted_periods
+    return sort_normalized_entities_by_sequence_num(supervision_periods)
 
 
 @attr.s

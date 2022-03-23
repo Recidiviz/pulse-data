@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for working with StateSupervisionViolations and their related entities."""
+"""Utils for working with StateSupervisionViolations and their related entities in
+metric pipelines."""
 import sys
 from collections import OrderedDict, defaultdict
 from datetime import date
@@ -23,10 +24,15 @@ from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import safe_list_index
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
+    StateSupervisionViolationResponseT,
     get_most_severe_response_decision,
     violation_responses_in_window,
 )
@@ -36,11 +42,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
 
@@ -50,32 +52,7 @@ SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
 VIOLATION_HISTORY_WINDOW_MONTHS = 12
 
 
-def get_violations_of_type(
-    violations: List[StateSupervisionViolation],
-    violation_type: StateSupervisionViolationType,
-) -> List[StateSupervisionViolation]:
-    """Returns the violations in |violations| that contain a
-    StateSupervisionViolationTypeEntry with a violation_type matching
-    |violation_type|."""
-    return [
-        violation
-        for violation in violations
-        if is_violation_of_type(violation, violation_type)
-    ]
-
-
-def is_violation_of_type(
-    violation: StateSupervisionViolation, violation_type: StateSupervisionViolationType
-) -> bool:
-    """Determined whether the violation_type on any of the violation type entries on
-    the |violation| match the given |violation_type|."""
-    for violation_type_entry in violation.supervision_violation_types:
-        if violation_type_entry.violation_type == violation_type:
-            return True
-    return False
-
-
-def shorthand_description_for_ranked_violation_counts(
+def _shorthand_description_for_ranked_violation_counts(
     subtype_counts: Dict[str, int],
     violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[str]:
@@ -96,7 +73,7 @@ def shorthand_description_for_ranked_violation_counts(
         if violation_count:
             # Convert to string shorthand
             ranked_shorthand_counts[
-                shorthand_for_violation_subtype(violation_delegate, subtype)
+                _shorthand_for_violation_subtype(violation_delegate, subtype)
             ] = violation_count
 
     descriptions = [
@@ -111,8 +88,8 @@ def shorthand_description_for_ranked_violation_counts(
     return None
 
 
-def identify_most_severe_violation_type_and_subtype(
-    violations: List[StateSupervisionViolation],
+def _identify_most_severe_violation_type_and_subtype(
+    violations: List[NormalizedStateSupervisionViolation],
     violation_delegate: StateSpecificViolationDelegate,
 ) -> Tuple[Optional[StateSupervisionViolationType], Optional[str]]:
     """Identifies the most severe violation type on the provided |violations|, and,
@@ -167,8 +144,8 @@ def most_severe_violation_subtype(
     return None
 
 
-def get_violation_type_frequency_counter(
-    violations: List[StateSupervisionViolation],
+def _get_violation_type_frequency_counter(
+    violations: List[NormalizedStateSupervisionViolation],
     violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[List[List[str]]]:
     """For every violation in violations, builds a list of strings, where each string
@@ -214,7 +191,7 @@ ViolationHistory = NamedTuple(
 
 def get_violation_and_response_history(
     upper_bound_exclusive_date: date,
-    violation_responses_for_history: List[StateSupervisionViolationResponse],
+    violation_responses_for_history: List[NormalizedStateSupervisionViolationResponse],
     violation_delegate: StateSpecificViolationDelegate,
     incarceration_period: Optional[StateIncarcerationPeriod] = None,
     lower_bound_inclusive_date_override: Optional[date] = None,
@@ -250,15 +227,23 @@ def get_violation_and_response_history(
         lower_bound_inclusive=lower_bound_inclusive_date,
     )
 
-    violations_in_window: List[StateSupervisionViolation] = []
+    violations_in_window: List[NormalizedStateSupervisionViolation] = []
     violation_ids_in_window: Set[int] = set()
 
     for response in responses_in_window:
         violation = response.supervision_violation
 
+        if not violation or not isinstance(
+            violation, NormalizedStateSupervisionViolation
+        ):
+            raise TypeError(
+                "Expected supervision_violation on "
+                "NormalizedStateSupervisionViolationResponse to be of type "
+                "NormalizedStateSupervisionViolation, found: "
+                f"{type(violation)}."
+            )
         if (
-            violation
-            and violation.supervision_violation_id
+            violation.supervision_violation_id
             and violation.supervision_violation_id not in violation_ids_in_window
         ):
             violations_in_window.append(violation)
@@ -268,7 +253,7 @@ def get_violation_and_response_history(
     (
         most_severe_violation_type,
         most_severe_violation_type_subtype,
-    ) = identify_most_severe_violation_type_and_subtype(
+    ) = _identify_most_severe_violation_type_and_subtype(
         violations_in_window, violation_delegate
     )
 
@@ -276,11 +261,11 @@ def get_violation_and_response_history(
     for violation in violations_in_window:
         violation_type_entries.extend(violation.supervision_violation_types)
 
-    violation_history_description = get_violation_history_description(
+    violation_history_description = _get_violation_history_description(
         violations_in_window, violation_delegate
     )
 
-    violation_type_frequency_counter = get_violation_type_frequency_counter(
+    violation_type_frequency_counter = _get_violation_type_frequency_counter(
         violations_in_window, violation_delegate
     )
 
@@ -303,8 +288,8 @@ def get_violation_and_response_history(
     return violation_history_result
 
 
-def get_violation_history_description(
-    violations: List[StateSupervisionViolation],
+def _get_violation_history_description(
+    violations: List[NormalizedStateSupervisionViolation],
     violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[str]:
     """Returns a string description of the violation history given the violation type
@@ -323,7 +308,7 @@ def get_violation_history_description(
     # Count all violation types and subtypes
     for violation in violations:
         most_severe_violation_type_and_subtype = (
-            identify_most_severe_violation_type_and_subtype(
+            _identify_most_severe_violation_type_and_subtype(
                 [violation], violation_delegate
             )
         )
@@ -334,16 +319,16 @@ def get_violation_history_description(
         if most_severe_subtype:
             subtype_counts[most_severe_subtype] += 1
 
-    return shorthand_description_for_ranked_violation_counts(
+    return _shorthand_description_for_ranked_violation_counts(
         subtype_counts, violation_delegate
     )
 
 
 def filter_violation_responses_for_violation_history(
     violation_delegate: StateSpecificViolationDelegate,
-    violation_responses: List[StateSupervisionViolationResponse],
+    violation_responses: List[StateSupervisionViolationResponseT],
     include_follow_up_responses: bool = False,
-) -> List[StateSupervisionViolationResponse]:
+) -> List[StateSupervisionViolationResponseT]:
     """Returns the list of violation responses that should be included in analyses of
     violation history. Uses the state-specific code to determine whether each
     response should also be included."""
@@ -367,7 +352,7 @@ def sorted_violation_subtypes_by_severity(
     sorted_violation_subtypes = sorted(
         violation_subtypes,
         key=lambda subtype: safe_list_index(
-            get_violation_subtype_sort_order(violation_delegate), subtype, sys.maxsize
+            _get_violation_subtype_sort_order(violation_delegate), subtype, sys.maxsize
         ),
     )
 
@@ -388,7 +373,7 @@ def violation_type_subtypes_with_violation_type_mappings(
     }
 
 
-def get_violation_subtype_sort_order(
+def _get_violation_subtype_sort_order(
     violation_delegate: StateSpecificViolationDelegate,
 ) -> List[str]:
     """Returns the sort order of violation subtypes by severity. Severity order
@@ -418,7 +403,7 @@ def violation_type_from_subtype(
     raise ValueError(f"Unexpected violation_subtype {violation_subtype}.")
 
 
-def shorthand_for_violation_subtype(
+def _shorthand_for_violation_subtype(
     violation_delegate: StateSpecificViolationDelegate, violation_subtype: str
 ) -> str:
     """Returns the shorthand string representing the given |violation_subtype| in the

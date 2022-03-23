@@ -27,8 +27,13 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
@@ -56,6 +61,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateProgramAssignment,
     StateSupervisionPeriod,
     StateSupervisionSentence,
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
 
@@ -80,7 +86,9 @@ def entity_normalization_managers_for_periods(
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
     incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     supervision_periods: Optional[List[StateSupervisionPeriod]],
-    normalized_violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    normalized_violation_responses: Optional[
+        List[NormalizedStateSupervisionViolationResponse]
+    ],
     field_index: CoreEntityFieldIndex,
     incarceration_sentences: Optional[List[StateIncarcerationSentence]],
     supervision_sentences: Optional[List[StateSupervisionSentence]],
@@ -177,7 +185,7 @@ def entity_normalization_managers_for_periods(
             incarceration_periods=incarceration_periods,
             normalization_delegate=ip_normalization_delegate,
             normalized_supervision_period_index=supervision_period_index,
-            violation_responses=normalized_violation_responses,
+            normalized_violation_responses=normalized_violation_responses,
             field_index=field_index,
             earliest_death_date=earliest_death_date,
         )
@@ -188,11 +196,70 @@ def entity_normalization_managers_for_periods(
     return ip_normalization_manager, sp_normalization_manager
 
 
+def normalized_violation_responses_from_processed_versions(
+    processed_violation_responses: List[StateSupervisionViolationResponse],
+    additional_vr_attributes: AdditionalAttributesMap,
+    field_index: CoreEntityFieldIndex,
+) -> List[NormalizedStateSupervisionViolationResponse]:
+    """Converts the entity trees connected to the |processed_violation_responses|
+    into their Normalized versions.
+
+    First, identifies the list of distinct StateSupervisionViolations in the list of
+    StateSupervisionViolationResponse entity trees. Then, converts those distinct
+    entity trees to the Normalized versions. Finally, assembles and returns the list of
+    distinct NormalizedStateSupervisionViolationResponses.
+    """
+    distinct_processed_violations: List[StateSupervisionViolation] = []
+
+    # We must convert the entity tree from the StateSupervisionViolation roots,
+    # otherwise we will drop the StateSupervisionViolations that are attached to the
+    # responses.
+    for response in processed_violation_responses:
+        if not response.supervision_violation:
+            raise ValueError(
+                "Found empty supervision_violation on response: " f"{response}."
+            )
+
+        if response.supervision_violation not in distinct_processed_violations:
+            distinct_processed_violations.append(response.supervision_violation)
+
+    normalized_violations = convert_entity_trees_to_normalized_versions(
+        root_entities=distinct_processed_violations,
+        normalized_entity_class=NormalizedStateSupervisionViolation,
+        additional_attributes_map=additional_vr_attributes,
+        field_index=field_index,
+    )
+
+    distinct_normalized_violation_responses: List[
+        NormalizedStateSupervisionViolationResponse
+    ] = []
+
+    for normalized_violation in normalized_violations:
+        for normalized_response in normalized_violation.supervision_violation_responses:
+            if not isinstance(
+                normalized_response, NormalizedStateSupervisionViolationResponse
+            ):
+                raise ValueError(
+                    "Found supervision_violation_responses entry that is "
+                    "not of type "
+                    "NormalizedStateSupervisionViolationResponse. Type "
+                    f"is: {type(normalized_response)}."
+                )
+
+            if normalized_response not in distinct_normalized_violation_responses:
+                distinct_normalized_violation_responses.append(normalized_response)
+
+    return distinct_normalized_violation_responses
+
+
+# TODO(#10731): Delete this function once all metric pipelines are hydrating
+#  Normalized versions of all entities
 def normalized_violation_responses_for_calculations(
     person_id: int,
     violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
     violation_responses: List[StateSupervisionViolationResponse],
-) -> List[StateSupervisionViolationResponse]:
+    field_index: CoreEntityFieldIndex,
+) -> List[NormalizedStateSupervisionViolationResponse]:
     """Instantiates the violation response manager and its appropriate delegate. Then
     returns normalized violation responses."""
     violation_response_manager = ViolationResponseNormalizationManager(
@@ -200,7 +267,17 @@ def normalized_violation_responses_for_calculations(
         violation_responses,
         violation_response_normalization_delegate,
     )
-    return violation_response_manager.normalized_violation_responses_for_calculations()
+
+    (
+        processed_violation_responses,
+        additional_vr_attributes,
+    ) = violation_response_manager.normalized_violation_responses_for_calculations()
+
+    return normalized_violation_responses_from_processed_versions(
+        processed_violation_responses=processed_violation_responses,
+        additional_vr_attributes=additional_vr_attributes,
+        field_index=field_index,
+    )
 
 
 def normalized_program_assignments_for_calculations(

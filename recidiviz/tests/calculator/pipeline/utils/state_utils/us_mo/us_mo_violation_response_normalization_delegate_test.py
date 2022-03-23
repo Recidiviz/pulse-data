@@ -81,9 +81,14 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             delegate=self.delegate,
         )
 
-        return (
+        (
+            processed_vrs,
+            _,
+        ) = (
             entity_normalization_manager.normalized_violation_responses_for_calculations()
         )
+
+        return processed_vrs
 
     def test_prepare_violation_responses_for_calculations_law_citation(self) -> None:
         # Arrange

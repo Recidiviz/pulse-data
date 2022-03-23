@@ -26,7 +26,7 @@ from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_periods,
     normalized_program_assignments_for_calculations,
-    normalized_violation_responses_for_calculations,
+    normalized_violation_responses_from_processed_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
@@ -157,10 +157,23 @@ def all_normalized_entities(
     Returns a dictionary mapping the entity class name to the list of normalized
     entities.
     """
-    processed_violation_responses = normalized_violation_responses_for_calculations(
+    violation_response_manager = ViolationResponseNormalizationManager(
         person_id=person_id,
-        violation_response_normalization_delegate=violation_response_normalization_delegate,
+        delegate=violation_response_normalization_delegate,
         violation_responses=violation_responses,
+    )
+
+    (
+        processed_violation_responses,
+        additional_vr_attributes,
+    ) = violation_response_manager.normalized_violation_responses_for_calculations()
+
+    normalized_violation_responses = (
+        normalized_violation_responses_from_processed_versions(
+            processed_violation_responses=processed_violation_responses,
+            additional_vr_attributes=additional_vr_attributes,
+            field_index=field_index,
+        )
     )
 
     processed_program_assignments = normalized_program_assignments_for_calculations(
@@ -177,7 +190,7 @@ def all_normalized_entities(
         sp_normalization_delegate=sp_normalization_delegate,
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
-        normalized_violation_responses=processed_violation_responses,
+        normalized_violation_responses=normalized_violation_responses,
         field_index=field_index,
         incarceration_sentences=incarceration_sentences,
         supervision_sentences=supervision_sentences,
@@ -209,24 +222,22 @@ def all_normalized_entities(
         sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
     )
 
-    distinct_processed_violations: List[StateSupervisionViolation] = []
-
-    # TODO(#10729): Move these to get returned with the normalized entities once the
-    #  metric pipelines start using the Normalized versions of entities
     additional_attributes_map = merge_additional_attributes_maps(
         # We don't expect any overlapping entity types in this list, but we just merge
         # so that we can return one unified map.
         additional_attributes_maps=[
             additional_ip_attributes,
             additional_sp_attributes,
+            # TODO(#10729): Move these to get returned with the normalized entities once
+            #  the metric pipelines start using the Normalized versions of entities
             ProgramAssignmentNormalizationManager.additional_attributes_map_for_normalized_pas(
                 program_assignments=processed_program_assignments
             ),
-            ViolationResponseNormalizationManager.additional_attributes_map_for_normalized_vrs(
-                violation_responses=processed_violation_responses
-            ),
+            additional_vr_attributes,
         ]
     )
+
+    distinct_processed_violations: List[StateSupervisionViolation] = []
 
     # We return the StateSupervisionViolation entities as the top-level entity being
     # normalized, since they are the root of the entity tree that contains all

@@ -68,7 +68,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
-            violation_responses=violation_responses,
+            normalized_violation_responses=violation_responses,
             field_index=self.field_index,
             earliest_death_date=earliest_death_date,
         )
@@ -1171,7 +1171,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=None,
-            violation_responses=[],
+            normalized_violation_responses=[],
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )
@@ -1211,7 +1211,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
-            violation_responses=violation_responses,
+            normalized_violation_responses=violation_responses,
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )

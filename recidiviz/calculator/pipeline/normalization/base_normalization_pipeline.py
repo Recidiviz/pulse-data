@@ -52,6 +52,8 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     AdditionalAttributesMap,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     convert_entities_to_normalized_dicts,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (

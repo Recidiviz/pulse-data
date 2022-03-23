@@ -27,6 +27,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_normalization_delegate import (
     UsIdIncarcerationNormalizationDelegate,
@@ -41,10 +42,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_sp_index_for_tests,
 )
@@ -61,8 +59,11 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
+        """Helper function for testing the normalization of US_ID IPs."""
         # IP pre-processing for US_ID does not rely on violation responses
-        violation_responses: Optional[List[StateSupervisionViolationResponse]] = []
+        violation_responses: Optional[
+            List[NormalizedStateSupervisionViolationResponse]
+        ] = []
 
         sp_index = default_normalized_sp_index_for_tests(
             supervision_periods=supervision_periods
@@ -72,7 +73,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsIdIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
-            violation_responses=violation_responses,
+            normalized_violation_responses=violation_responses,
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=earliest_death_date,
         )

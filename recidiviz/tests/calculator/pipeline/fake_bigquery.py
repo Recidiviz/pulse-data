@@ -41,8 +41,10 @@ from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     UNIFYING_ID_KEY,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    column_names_on_bq_schema_for_normalized_state_entity,
     normalized_entity_class_with_base_class_name,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
+    column_names_on_bq_schema_for_normalized_state_entity,
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
