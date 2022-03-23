@@ -38,6 +38,12 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalizati
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
@@ -52,6 +58,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     supervising_officer_and_location_info,
+    supervision_periods_overlapping_with_date,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
@@ -63,10 +70,7 @@ from recidiviz.common.constants.state.state_assessment import (
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    is_placeholder,
-)
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StatePerson,
@@ -170,15 +174,28 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         if not sp_normalization_manager:
             raise ValueError("Expected normalized SPs for this pipeline.")
 
-        supervision_periods_for_calculations = (
-            sp_normalization_manager.normalized_supervision_period_index_for_calculations().supervision_periods
+        # TODO(#10731): Remove calls to sp_normalization_manager and conversion to
+        #  NormalizedStateSupervisionPeriods once this metric pipeline is hydrating
+        #  Normalized versions of all entities
+        (
+            processed_sps,
+            additional_sp_attributes,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
+        )
+
+        normalized_sps = convert_entity_trees_to_normalized_versions(
+            root_entities=processed_sps,
+            normalized_entity_class=NormalizedStateSupervisionPeriod,
+            additional_attributes_map=additional_sp_attributes,
+            field_index=self.field_index,
         )
 
         for program_assignment in program_assignments:
             program_referrals = self._find_program_referrals(
                 program_assignment,
                 assessments,
-                supervision_periods_for_calculations,
+                normalized_sps,
                 supervision_period_to_agent_associations,
                 supervision_delegate,
             )
@@ -186,7 +203,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             program_events.extend(program_referrals)
 
             program_participation_events = self._find_program_participation_events(
-                program_assignment, supervision_periods_for_calculations
+                program_assignment, normalized_sps
             )
 
             program_events.extend(program_participation_events)
@@ -197,7 +214,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         self,
         program_assignment: StateProgramAssignment,
         assessments: List[StateAssessment],
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_periods: List[NormalizedStateSupervisionPeriod],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProgramReferralEvent]:
@@ -233,10 +250,8 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                 supervision_delegate=supervision_delegate,
             )
 
-            relevant_supervision_periods = (
-                self._find_supervision_periods_overlapping_with_date(
-                    referral_date, supervision_periods
-                )
+            relevant_supervision_periods = supervision_periods_overlapping_with_date(
+                referral_date, supervision_periods
             )
 
             program_referrals.extend(
@@ -258,7 +273,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
     def _find_program_participation_events(
         self,
         program_assignment: StateProgramAssignment,
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_periods: List[NormalizedStateSupervisionPeriod],
     ) -> List[ProgramParticipationEvent]:
         """Finds instances of actively participating in a program. Produces a
         ProgramParticipationEvent for each day that the person was actively
@@ -326,10 +341,8 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         participation_date = start_date
 
         while participation_date < discharge_date:
-            overlapping_supervision_periods = (
-                self._find_supervision_periods_overlapping_with_date(
-                    participation_date, supervision_periods
-                )
+            overlapping_supervision_periods = supervision_periods_overlapping_with_date(
+                participation_date, supervision_periods
             )
             is_first_day_in_program = participation_date == start_date
 
@@ -370,7 +383,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         participation_status: Optional[StateProgramAssignmentParticipationStatus],
         assessment_score: Optional[int],
         assessment_type: Optional[StateAssessmentType],
-        supervision_periods: Optional[List[StateSupervisionPeriod]],
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProgramReferralEvent]:
@@ -438,20 +451,3 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             ]
 
         return program_referrals
-
-    def _find_supervision_periods_overlapping_with_date(
-        self,
-        event_date: date,
-        supervision_periods: List[StateSupervisionPeriod],
-    ) -> List[StateSupervisionPeriod]:
-        """Identifies supervision_periods where the event_date falls between the start
-        and end of the supervision period, inclusive of the start date and exclusive
-        of the end date."""
-        return [
-            sp
-            for sp in supervision_periods
-            if not is_placeholder(sp, self.field_index)
-            and sp.start_date is not None
-            and sp.start_date <= event_date
-            and (sp.termination_date is None or event_date < sp.termination_date)
-        ]

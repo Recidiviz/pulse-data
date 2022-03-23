@@ -25,6 +25,12 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     IncarcerationPeriodNormalizationManager,
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
@@ -62,6 +68,12 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
 ]
 
 
+# TODO(#10730): Update this to return a tuple of:
+#  Tuple[
+#   Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap],
+#   Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap]
+#  ]
+#  once this is only being used by the normalization pipeline
 def entity_normalization_managers_for_periods(
     person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
@@ -142,8 +154,22 @@ def entity_normalization_managers_for_periods(
             incarceration_periods=incarceration_periods,
         )
 
-        supervision_period_index = (
-            sp_normalization_manager.normalized_supervision_period_index_for_calculations()
+        (
+            processed_sps,
+            additional_sp_attributes,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
+        )
+
+        normalized_sps = convert_entity_trees_to_normalized_versions(
+            root_entities=processed_sps,
+            normalized_entity_class=NormalizedStateSupervisionPeriod,
+            additional_attributes_map=additional_sp_attributes,
+            field_index=field_index,
+        )
+
+        supervision_period_index = NormalizedSupervisionPeriodIndex(
+            sorted_supervision_periods=normalized_sps
         )
 
     ip_normalization_manager = (

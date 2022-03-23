@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_complian
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     find_most_recent_applicable_assessment_of_class_for_state,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
@@ -55,7 +58,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
-    StateSupervisionPeriod,
     StateSupervisionViolationResponse,
 )
 
@@ -66,7 +68,7 @@ class StateSupervisionCaseComplianceManager:
     def __init__(
         self,
         person: StatePerson,
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         case_type: StateSupervisionCaseType,
         start_of_supervision: date,
         assessments: List[StateAssessment],

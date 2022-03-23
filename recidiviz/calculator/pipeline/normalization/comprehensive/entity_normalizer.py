@@ -40,7 +40,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
-    SupervisionPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
@@ -203,8 +202,11 @@ def all_normalized_entities(
         ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
     )
 
-    sp_index = (
-        sp_normalization_manager.normalized_supervision_period_index_for_calculations()
+    (
+        processed_supervision_periods,
+        additional_sp_attributes,
+    ) = (
+        sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
     )
 
     distinct_processed_violations: List[StateSupervisionViolation] = []
@@ -213,12 +215,10 @@ def all_normalized_entities(
     #  metric pipelines start using the Normalized versions of entities
     additional_attributes_map = merge_additional_attributes_maps(
         # We don't expect any overlapping entity types in this list, but we just merge
-        # so we can return one unified map.
+        # so that we can return one unified map.
         additional_attributes_maps=[
             additional_ip_attributes,
-            SupervisionPeriodNormalizationManager.additional_attributes_map_for_normalized_sps(
-                supervision_periods=sp_index.supervision_periods
-            ),
+            additional_sp_attributes,
             ProgramAssignmentNormalizationManager.additional_attributes_map_for_normalized_pas(
                 program_assignments=processed_program_assignments
             ),
@@ -244,7 +244,7 @@ def all_normalized_entities(
     return (
         {
             StateIncarcerationPeriod.__name__: processed_incarceration_periods,
-            StateSupervisionPeriod.__name__: sp_index.supervision_periods,
+            StateSupervisionPeriod.__name__: processed_supervision_periods,
             StateSupervisionViolation.__name__: distinct_processed_violations,
             StateProgramAssignment.__name__: processed_program_assignments,
         },

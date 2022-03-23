@@ -55,9 +55,14 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=None,
         )
 
-        return (
-            sp_normalization_manager.normalized_supervision_period_index_for_calculations().supervision_periods
+        (
+            processed_sps,
+            _,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
         )
+
+        return processed_sps
 
     def test_prepare_supervision_periods_for_calculations(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -384,3 +389,50 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
         sorted_supervision_periods = [supervision_period_1, supervision_period_2]
 
         self.assertEqual(sorted_supervision_periods, updated_periods)
+
+    def test_additional_attributes(self) -> None:
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            supervision_period_id=111,
+            start_date=datetime.date(2000, 1, 1),
+            termination_date=datetime.date(2000, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            supervision_period_id=222,
+            start_date=datetime.date(2000, 1, 1),
+            termination_date=datetime.date(2000, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+        )
+
+        supervision_periods = [supervision_period_1, supervision_period_2]
+
+        sp_normalization_manager = SupervisionPeriodNormalizationManager(
+            person_id=123,
+            supervision_periods=supervision_periods,
+            delegate=UsXxSupervisionNormalizationDelegate(),
+            earliest_death_date=None,
+            incarceration_sentences=None,
+            supervision_sentences=None,
+            incarceration_periods=None,
+        )
+
+        (
+            _,
+            additional_attributes,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
+        )
+
+        expected_additional_attributes = {
+            StateSupervisionPeriod.__name__: {
+                111: {"sequence_num": 0},
+                222: {"sequence_num": 1},
+            }
+        }
+
+        self.assertEqual(expected_additional_attributes, additional_attributes)

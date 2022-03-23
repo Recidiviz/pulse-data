@@ -19,8 +19,11 @@ supervision."""
 import datetime
 from typing import Any, Dict, List, NamedTuple, Optional
 
+from dateutil.relativedelta import relativedelta
+
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -35,6 +38,9 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_on_or_before_date,
     sort_period_by_external_id,
 )
+from recidiviz.calculator.pipeline.utils.shared_constants import (
+    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -45,6 +51,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     filter_out_unknown_supervision_type_periods,
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
+    supervision_periods_overlapping_with_date,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -59,16 +66,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateSupervisionPeriod,
     StateSupervisionSentence,
 )
-
-# The number of months for the window of time prior to a commitment to
-# from supervision in which we look for the associated terminated supervision
-# period
-SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 
 CommitmentDetails = NamedTuple(
     "CommitmentDetails",
@@ -191,7 +191,7 @@ def get_commitment_from_supervision_details(
 
 
 def period_is_commitment_from_supervision_admission_from_parole_board_hold(
-    incarceration_period: StateIncarcerationPeriod,
+    incarceration_period: NormalizedStateIncarcerationPeriod,
     most_recent_board_hold_span: Optional[DateRange],
 ) -> bool:
     """Determines whether the incarceration_period represents a commitment from
@@ -223,8 +223,8 @@ def _filter_to_matching_supervision_types(
     supervision_type_for_admission_reason: Optional[
         StateSupervisionPeriodSupervisionType
     ],
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
+    supervision_periods: List[NormalizedStateSupervisionPeriod],
+) -> List[NormalizedStateSupervisionPeriod]:
     """Filters the given |supervision_periods| to ony the ones that have a
     supervision type that matches the supervision type implied in the
     |admission_reason| or |admission_reason_raw_text| (for example, filtering to only PAROLE periods if the
@@ -258,11 +258,11 @@ def _filter_to_matching_supervision_types(
 
 
 def _get_commitment_from_supervision_supervision_period(
-    incarceration_period: StateIncarcerationPeriod,
+    incarceration_period: NormalizedStateIncarcerationPeriod,
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
     supervision_period_index: NormalizedSupervisionPeriodIndex,
     incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-) -> Optional[StateSupervisionPeriod]:
+) -> Optional[NormalizedStateSupervisionPeriod]:
     """Identifies the supervision period associated with the commitment to supervision
     admission on the given |admission_date|.
 
@@ -271,7 +271,7 @@ def _get_commitment_from_supervision_supervision_period(
     most recently terminated within SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT months of
     the |admission_date|.
     """
-    if not supervision_period_index.supervision_periods:
+    if not supervision_period_index.sorted_supervision_periods:
         return None
 
     if not incarceration_period.admission_date:
@@ -327,19 +327,24 @@ def _get_commitment_from_supervision_supervision_period(
     relevant_periods = _get_relevant_sps_for_pre_commitment_sp_search(
         admission_reason=admission_reason,
         admission_reason_raw_text=admission_reason_raw_text,
-        supervision_periods=supervision_period_index.supervision_periods,
+        supervision_periods=supervision_period_index.sorted_supervision_periods,
         commitment_from_supervision_delegate=commitment_from_supervision_delegate,
     )
 
-    overlapping_periods = _supervision_periods_overlapping_with_date(
-        admission_date, relevant_periods
+    overlapping_periods = supervision_periods_overlapping_with_date(
+        # We are looking for periods that overlap with the date the person was
+        # admitted, where the period was active before the admission_date. We do not
+        # include periods that started on the admission_date.
+        admission_date - relativedelta(days=1),
+        relevant_periods,
     )
 
     # If there's more than one recently terminated period with the same
     # termination_date, prioritize the ones with REVOCATION or RETURN_TO_INCARCERATION
     # termination_reasons
     def _same_date_sort_override(
-        period_a: StateSupervisionPeriod, period_b: StateSupervisionPeriod
+        period_a: NormalizedStateSupervisionPeriod,
+        period_b: NormalizedStateSupervisionPeriod,
     ) -> int:
         prioritized_termination_reasons = [
             StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -400,34 +405,16 @@ def _get_commitment_from_supervision_supervision_period(
     )
 
 
-def _supervision_periods_overlapping_with_date(
-    intersection_date: datetime.date, supervision_periods: List[StateSupervisionPeriod]
-) -> List[StateSupervisionPeriod]:
-    """Returns the supervision periods that overlap with the intersection_date."""
-    overlapping_periods = [
-        supervision_period
-        for supervision_period in supervision_periods
-        if supervision_period.start_date is not None
-        and supervision_period.start_date < intersection_date
-        and (
-            supervision_period.termination_date is None
-            or intersection_date <= supervision_period.termination_date
-        )
-    ]
-
-    return overlapping_periods
-
-
 def _get_relevant_sps_for_pre_commitment_sp_search(
     admission_reason: StateIncarcerationPeriodAdmissionReason,
     admission_reason_raw_text: Optional[str],
-    supervision_periods: List[StateSupervisionPeriod],
+    supervision_periods: List[NormalizedStateSupervisionPeriod],
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-) -> List[StateSupervisionPeriod]:
+) -> List[NormalizedStateSupervisionPeriod]:
     """Filters the provided |supervision_periods| to the ones that should be
     considered when looking for pre-commitment supervision periods based on the filter
     configuration defined in the provided |commitment_from_supervision_delegate|."""
-    relevant_sps = supervision_periods
+    relevant_sps: List[NormalizedStateSupervisionPeriod] = supervision_periods
 
     if (
         commitment_from_supervision_delegate.should_filter_out_unknown_supervision_type_in_pre_commitment_sp_search()

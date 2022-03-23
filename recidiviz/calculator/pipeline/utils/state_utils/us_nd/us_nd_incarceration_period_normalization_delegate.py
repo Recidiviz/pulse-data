@@ -22,6 +22,9 @@ from typing import Dict, List, Optional
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
@@ -44,10 +47,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 # The number of months for the window of time prior to a new admission return to search
 # for a previous probation supervision period that ended due to revocation to which we
@@ -229,7 +229,7 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
     if admission_reason == StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
         most_recent_supervision_period = find_last_terminated_period_on_or_before_date(
             upper_bound_date_inclusive=admission_date,
-            periods=supervision_period_index.supervision_periods,
+            periods=supervision_period_index.sorted_supervision_periods,
             maximum_months_proximity=_NEW_ADMISSION_PROBATION_COMMITMENT_LOOKBACK_MONTHS,
         )
 
@@ -316,7 +316,7 @@ def _get_earliest_adjacent_original_temp_custody_period(
 
 
 def _updated_ip_after_revoked_sp(
-    most_recent_supervision_period: StateSupervisionPeriod,
+    most_recent_supervision_period: NormalizedStateSupervisionPeriod,
     incarceration_period: StateIncarcerationPeriod,
     sorted_incarceration_periods: List[StateIncarcerationPeriod],
 ) -> StateIncarcerationPeriod:
@@ -413,7 +413,7 @@ def _update_ip_after_temp_custody(
 
 
 def _intermediate_state_prison_admission(
-    most_recent_supervision_period: StateSupervisionPeriod,
+    most_recent_supervision_period: NormalizedStateSupervisionPeriod,
     incarceration_period: StateIncarcerationPeriod,
     incarceration_periods: List[StateIncarcerationPeriod],
 ) -> bool:

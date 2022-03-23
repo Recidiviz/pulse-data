@@ -22,6 +22,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -35,10 +36,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    standard_date_sort_for_supervision_periods,
-)
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 def default_normalized_ip_index_for_tests(
@@ -58,14 +55,8 @@ def default_normalized_ip_index_for_tests(
 
 
 def default_normalized_sp_index_for_tests(
-    supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
-    sort_periods: Optional[bool] = False,
+    supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
 ) -> NormalizedSupervisionPeriodIndex:
-    if supervision_periods and sort_periods:
-        supervision_periods = standard_date_sort_for_supervision_periods(
-            supervision_periods
-        )
-
     return NormalizedSupervisionPeriodIndex(
-        supervision_periods=supervision_periods or []
+        sorted_supervision_periods=supervision_periods or []
     )

@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for validating and manipulating supervision periods for use in calculations."""
+import datetime
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 from dateutil.relativedelta import relativedelta
 
@@ -60,6 +61,10 @@ CASE_TYPE_SEVERITY_ORDER = [
 
 POST_RELEASE_LOOKFORWARD_DAYS = 30
 
+StateSupervisionPeriodT = TypeVar(
+    "StateSupervisionPeriodT", bound=StateSupervisionPeriod
+)
+
 
 def _is_transfer_start(period: StateSupervisionPeriod) -> bool:
     return (
@@ -76,8 +81,8 @@ def _is_transfer_end(period: StateSupervisionPeriod) -> bool:
 
 
 def standard_date_sort_for_supervision_periods(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
+    supervision_periods: List[StateSupervisionPeriodT],
+) -> List[StateSupervisionPeriodT]:
     """Sorts supervision periods chronologically by dates and statuses."""
     sort_periods_by_set_dates_and_statuses(
         supervision_periods,
@@ -112,8 +117,8 @@ def identify_most_severe_case_type(
 
 
 def filter_out_unknown_supervision_type_periods(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
+    supervision_periods: List[StateSupervisionPeriodT],
+) -> List[StateSupervisionPeriodT]:
     """Filters the list of supervision periods to only include ones with a set
     supervision_type."""
     # Drop any supervision periods that don't have a set
@@ -139,7 +144,6 @@ def supervising_officer_and_location_info(
 
     Returns a tuple of supervising_officer_external_id and level 1/2 location information.
     """
-    supervising_officer_external_id = None
     (
         level_1_supervision_location,
         level_2_supervision_location,
@@ -189,9 +193,9 @@ def should_produce_supervision_event_for_period(
     supervision population during the period time span (e.g. if they are incarcerated
     the whole time).
 
-    Default behavior is to not produce any supervision events associated with investigation
-    or pre-confinement supervision. Currenlty, there should be no supervision events associated
-    with investigation or pre-confinement supervision.
+    Default behavior is to not produce any supervision events associated with
+    investigation or pre-confinement supervision. Currently, there should be no
+    supervision events associated with investigation or pre-confinement supervision.
     """
     return (
         supervision_period.supervision_type
@@ -220,7 +224,7 @@ def get_post_incarceration_supervision_type(
 
     overlapping_sps = [
         supervision_period
-        for supervision_period in supervision_period_index.supervision_periods
+        for supervision_period in supervision_period_index.sorted_supervision_periods
         if DateRangeDiff(
             supervision_period.duration, release_date_lookforward_date_range
         ).overlapping_range
@@ -276,3 +280,18 @@ def _sort_supervision_periods_for_release_type(
     ).days
 
     return (proximity, matches_supervision_type, duration)
+
+
+def supervision_periods_overlapping_with_date(
+    intersection_date: datetime.date, supervision_periods: List[StateSupervisionPeriodT]
+) -> List[StateSupervisionPeriodT]:
+    """Identifies supervision_periods where the |intersection_date| falls between the
+    start and end of the supervision period, inclusive of the start_date and
+    exclusive of the termination_date."""
+    return [
+        sp
+        for sp in supervision_periods
+        if sp.start_date is not None
+        and sp.start_date <= intersection_date
+        and (sp.termination_date is None or intersection_date < sp.termination_date)
+    ]

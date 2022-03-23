@@ -22,6 +22,9 @@ from typing import List, Optional
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_delegate import (
     UsIdIncarcerationDelegate,
 )
@@ -59,7 +62,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StatePerson,
     StateSupervisionContact,
-    StateSupervisionPeriod,
 )
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
@@ -131,7 +133,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
         )
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -220,7 +222,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             status=StateSupervisionContactStatus.COMPLETED,
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -279,7 +281,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -331,7 +333,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -384,7 +386,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -437,7 +439,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -711,7 +713,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_contact_date: Optional[date],
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -760,7 +762,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(1999, 8, 13)  # This was a Friday
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -803,7 +805,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(1999, 8, 13)  # This was a Friday
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -944,7 +946,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_contact_date: Optional[date],
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1015,7 +1017,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_next_contact: date,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1064,7 +1066,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_next_recommended_home_visit_no_previous_contacts(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1103,7 +1105,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_next_recommended_home_visit_non_existent_level(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1142,7 +1144,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_next_recommended_home_visit_contact_type_agnostic(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1224,7 +1226,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         expected_next_contact: date,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1273,7 +1275,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1312,7 +1314,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1349,7 +1351,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
 
     def test_is_new_level_system_case_sensitivity(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1389,7 +1391,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_general(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1424,7 +1426,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_no_supervision_level_general(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1460,7 +1462,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1495,7 +1497,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_invalid_case_type(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1530,7 +1532,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_applicable_for_case_sex_offense(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1567,7 +1569,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guidelines_not_applicable_for_case_invalid_leveL_sex_offense(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1606,7 +1608,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1643,7 +1645,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     #  cases then this will no longer be an invalid case
     def test_guidelines_applicable_for_case_invalid_bench_warrant(self) -> None:
         start_date = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1677,7 +1679,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
     def test_guideline_applicability_around_date_change(self) -> None:
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ID",
@@ -1729,7 +1731,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def test_next_recommended_reassessment_general_minimum(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ID.value,
@@ -1771,7 +1773,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def test_next_recommended_reassessment_sex_offense_with_score(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ID.value,
@@ -1813,7 +1815,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     def test_reassessment_requirements_are_not_met(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ID.value,
@@ -1866,7 +1868,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     ) -> None:
         self.person.gender = gender
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ID.value,
@@ -1952,8 +1954,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
 
     def _supervision_period_with_level(
         self, supervision_level: StateSupervisionLevel
-    ) -> StateSupervisionPeriod:
-        return StateSupervisionPeriod.new_with_defaults(
+    ) -> NormalizedStateSupervisionPeriod:
+        return NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ID.value,
