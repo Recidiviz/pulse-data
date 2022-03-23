@@ -20,8 +20,14 @@ from typing import Dict, List, Optional, Type
 
 import attr
 
+from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
+    StateSupervisionCaseComplianceManager,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -179,7 +185,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     UsPaViolationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from_supervision_delegate import (
     UsTnCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_delegate import (
@@ -203,9 +209,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violations_delegate import (
     UsTnViolationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
-    StateSupervisionCaseComplianceManager,
-)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
@@ -213,7 +216,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
-    StateSupervisionPeriod,
     StateSupervisionViolationResponse,
 )
 
@@ -287,7 +289,7 @@ def get_all_state_specific_delegates(
 
 def get_state_specific_case_compliance_manager(
     person: StatePerson,
-    supervision_period: StateSupervisionPeriod,
+    supervision_period: NormalizedStateSupervisionPeriod,
     case_type: StateSupervisionCaseType,
     start_of_supervision: date,
     assessments: List[StateAssessment],

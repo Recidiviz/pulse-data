@@ -51,6 +51,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     convert_entity_trees_to_normalized_versions,
@@ -276,8 +277,25 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             incarceration_delegate=incarceration_delegate,
         )
 
-        supervision_period_index = (
-            sp_normalization_manager.normalized_supervision_period_index_for_calculations()
+        # TODO(#10731): Remove calls to sp_normalization_manager and conversion to
+        #  NormalizedStateSupervisionPeriods once this metric pipeline is hydrating
+        #  Normalized versions of all entities
+        (
+            processed_sps,
+            additional_sp_attributes,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
+        )
+
+        normalized_sps = convert_entity_trees_to_normalized_versions(
+            root_entities=processed_sps,
+            normalized_entity_class=NormalizedStateSupervisionPeriod,
+            additional_attributes_map=additional_sp_attributes,
+            field_index=self.field_index,
+        )
+
+        supervision_period_index = NormalizedSupervisionPeriodIndex(
+            sorted_supervision_periods=normalized_sps
         )
 
         violation_responses_for_history = (
@@ -293,7 +311,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         projected_supervision_completion_events = self._classify_supervision_success(
             supervision_sentences,
             incarceration_sentences,
-            supervision_periods,
+            supervision_period_index,
             incarceration_period_index,
             supervision_delegate,
             supervision_period_to_agent_associations,
@@ -301,7 +319,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
 
         supervision_events.extend(projected_supervision_completion_events)
-        for supervision_period in supervision_period_index.supervision_periods:
+        for supervision_period in supervision_period_index.sorted_supervision_periods:
             if should_produce_supervision_event_for_period(supervision_period):
                 judicial_district_code = self._get_judicial_district_code(
                     supervision_period,
@@ -366,7 +384,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         person: StatePerson,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         assessments: List[StateAssessment],
@@ -575,7 +593,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         self,
         date_range: DateRange,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         supervising_officer_external_id: Optional[str],
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> bool:
@@ -604,7 +622,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _in_supervision_population_for_period_on_date(
         self,
         evaluation_date: date,
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervising_officer_external_id: Optional[str],
@@ -644,7 +662,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         This calls out to on_supervision_on_date for each supervision period in the
         supervision period index.
         """
-        for period in supervision_period_index.supervision_periods:
+        for period in supervision_period_index.sorted_supervision_periods:
             # validate_duration=False because in this use case we are handling supervision
             # periods that may have, for example, the same start and termination date
             if self._in_supervision_population_for_period_on_date(
@@ -661,7 +679,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _find_supervision_start_event(
         self,
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -728,7 +746,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _find_supervision_termination_event(
         self,
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         assessments: List[StateAssessment],
@@ -888,7 +906,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         self,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -965,7 +983,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 )
             ) or StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
-            for supervision_period in supervision_periods:
+            for (
+                supervision_period
+            ) in supervision_period_index.sorted_supervision_periods:
                 termination_date = supervision_period.termination_date
 
                 # Skips supervision periods without termination dates or not within sentence bounds
@@ -1015,7 +1035,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         self,
         sentence: Union[StateSupervisionSentence, StateIncarcerationSentence],
         projected_completion_date: date,
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         supervision_type_for_event: StateSupervisionPeriodSupervisionType,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -1306,7 +1326,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _get_judicial_district_code(
         self,
-        supervision_period: StateSupervisionPeriod,
+        supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_to_judicial_district: Dict[int, Dict[Any, Any]],
     ) -> Optional[str]:
         """Retrieves the judicial_district_code corresponding to the supervision_period, if one exists."""
@@ -1405,7 +1425,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _get_supervision_downgrade_details_if_downgrade_occurred(
         self,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
-        current_supervision_period: StateSupervisionPeriod,
+        current_supervision_period: NormalizedStateSupervisionPeriod,
     ) -> Tuple[bool, Optional[StateSupervisionLevel]]:
         """Given a supervision period and the supervision period index it belongs to, determine whether a supervision
         level downgrade has occurred between the current supervision period and the most recent previous supervision

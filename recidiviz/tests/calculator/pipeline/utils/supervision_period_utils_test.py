@@ -27,6 +27,9 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     SupervisionPopulationEvent,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
@@ -47,6 +50,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
     supervision_period_is_out_of_state,
+    supervision_periods_overlapping_with_date,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -55,6 +59,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -450,8 +455,9 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
             release_date=self.release_date,
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
-        self.supervision_period = StateSupervisionPeriod.new_with_defaults(
+        self.supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            sequence_num=0,
             state_code="US_XX",
             start_date=self.release_date,
             termination_date=date(2020, 4, 1),
@@ -505,6 +511,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
     ) -> None:
         second_supervision_period = attr.evolve(
             self.supervision_period,
+            sequence_num=1,
             start_date=self.release_date + relativedelta(days=40),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
@@ -534,6 +541,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
         second_supervision_period = attr.evolve(
             self.supervision_period,
             supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+            sequence_num=1,
         )
         self.assertEqual(
             StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
@@ -554,6 +562,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
     ) -> None:
         second_supervision_period = attr.evolve(
             self.supervision_period,
+            sequence_num=1,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             termination_date=date(2020, 6, 1),
         )
@@ -570,3 +579,89 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
                 self.supervision_delegate,
             ),
         )
+
+
+class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
+    """Tests the supervision_periods_overlapping_with_date function."""
+
+    def test_supervision_periods_overlapping_with_date(self) -> None:
+        intersection_date = date(2013, 3, 1)
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_XX",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2015, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        supervision_periods = [supervision_period]
+
+        supervision_periods_during_referral = supervision_periods_overlapping_with_date(
+            intersection_date, supervision_periods
+        )
+
+        self.assertEqual(supervision_periods, supervision_periods_during_referral)
+
+    def test_supervision_periods_overlapping_with_date_no_termination(
+        self,
+    ) -> None:
+        intersection_date = date(2013, 3, 1)
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_XX",
+            start_date=date(2002, 11, 5),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        supervision_periods = [supervision_period]
+
+        supervision_periods_during_referral = supervision_periods_overlapping_with_date(
+            intersection_date, supervision_periods
+        )
+
+        self.assertEqual(supervision_periods, supervision_periods_during_referral)
+
+    def test_supervision_periods_overlapping_with_date_no_overlap(self) -> None:
+        intersection_date = date(2019, 3, 1)
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_XX",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2015, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        supervision_periods = [supervision_period]
+
+        supervision_periods_during_referral = supervision_periods_overlapping_with_date(
+            intersection_date, supervision_periods
+        )
+
+        self.assertEqual([], supervision_periods_during_referral)
+
+    def test_supervision_periods_overlapping_with_date_start_on_intersection(
+        self,
+    ) -> None:
+        intersection_date = date(2013, 3, 1)
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            state_code="US_XX",
+            start_date=intersection_date,
+            termination_date=date(2015, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        supervision_periods = [supervision_period]
+
+        supervision_periods_during_referral = supervision_periods_overlapping_with_date(
+            intersection_date, supervision_periods
+        )
+
+        self.assertEqual(supervision_periods, supervision_periods_during_referral)

@@ -19,9 +19,6 @@ StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
 from typing import List, Optional
 
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
@@ -33,6 +30,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_on_or_before_date,
+)
+from recidiviz.calculator.pipeline.utils.shared_constants import (
+    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     filter_out_unknown_supervision_type_periods,
@@ -104,7 +104,7 @@ def _us_id_normalize_period_if_commitment_from_supervision(
         )
 
     relevant_sps = filter_out_unknown_supervision_type_periods(
-        supervision_period_index.supervision_periods
+        supervision_period_index.sorted_supervision_periods
     )
 
     incarceration_period = sorted_incarceration_periods[incarceration_period_list_index]

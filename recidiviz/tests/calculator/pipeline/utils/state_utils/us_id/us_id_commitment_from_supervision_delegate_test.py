@@ -19,11 +19,12 @@ import unittest
 from datetime import date
 from typing import List, Optional
 
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     _get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_delegate import (
     UsIdCommitmentFromSupervisionDelegate,
@@ -38,7 +39,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
     default_normalized_sp_index_for_tests,
@@ -53,8 +53,8 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     def _test_us_id_pre_commitment_supervision_period(
         admission_date: date,
         admission_reason: StateIncarcerationPeriodAdmissionReason,
-        supervision_periods: List[StateSupervisionPeriod],
-    ) -> Optional[StateSupervisionPeriod]:
+        supervision_periods: List[NormalizedStateSupervisionPeriod],
+    ) -> Optional[NormalizedStateSupervisionPeriod]:
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_ID",
             incarceration_period_id=111,
@@ -78,8 +78,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
     def test_us_id_pre_commitment_supervision_period(self) -> None:
-        supervision_period_set = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_set = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ID",
             start_date=date(2017, 3, 5),
@@ -87,8 +88,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_period_unset = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+        supervision_period_unset = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            sequence_num=1,
             external_id="sp1",
             state_code="US_ID",
             start_date=date(2017, 3, 5),
@@ -110,8 +112,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     def test_us_id_pre_commitment_supervision_period_internal_unknown(
         self,
     ) -> None:
-        supervision_period_set = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_set = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ID",
             start_date=date(2017, 3, 5),
@@ -119,8 +122,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_period_unset = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+        supervision_period_unset = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            sequence_num=1,
             external_id="sp1",
             state_code="US_ID",
             start_date=date(2017, 3, 5),

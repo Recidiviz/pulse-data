@@ -40,6 +40,9 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
@@ -236,7 +239,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessment_date=date(2009, 7, 10),
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=999,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
@@ -286,7 +289,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
         assessments: List[StateAssessment] = []
-        supervision_periods: List[StateSupervisionPeriod] = []
+        supervision_periods: List[NormalizedStateSupervisionPeriod] = []
 
         program_referrals = self.identifier._find_program_referrals(
             program_assignment,
@@ -320,7 +323,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessment_date=date(2009, 9, 14),
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
@@ -381,7 +384,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
         assessments = [assessment_1, assessment_2]
-        supervision_periods: List[StateSupervisionPeriod] = []
+        supervision_periods: List[NormalizedStateSupervisionPeriod] = []
 
         program_referrals = self.identifier._find_program_referrals(
             program_assignment,
@@ -423,7 +426,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessment_date=date(2009, 7, 10),
         )
 
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
@@ -432,7 +435,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2006, 12, 1),
@@ -495,7 +498,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessment_date=date(2009, 7, 10),
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_ND",
             start_date=date(2008, 3, 5),
@@ -565,7 +568,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             start_date=date(1999, 12, 31),
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(1990, 3, 5),
@@ -611,7 +614,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             discharge_date=date(2009, 11, 8),
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(1990, 3, 5),
@@ -665,7 +668,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             program_location_id="LOCATION",
         )
 
-        supervision_periods: List[StateSupervisionPeriod] = []
+        supervision_periods: List[NormalizedStateSupervisionPeriod] = []
 
         participation_events = self.identifier._find_program_participation_events(
             program_assignment, supervision_periods
@@ -684,86 +687,13 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             start_date=date(1999, 11, 2),
         )
 
-        supervision_periods: List[StateSupervisionPeriod] = []
+        supervision_periods: List[NormalizedStateSupervisionPeriod] = []
 
         participation_events = self.identifier._find_program_participation_events(
             program_assignment, supervision_periods
         )
 
         self.assertEqual([], participation_events)
-
-
-class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
-    """Tests the find_supervision_periods_overlapping_with_date function."""
-
-    def setUp(self) -> None:
-        self.identifier = identifier.ProgramIdentifier()
-
-    def test_find_supervision_periods_overlapping_with_date(self) -> None:
-        referral_date = date(2013, 3, 1)
-
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            state_code="US_XX",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2015, 5, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-        )
-
-        supervision_periods = [supervision_period]
-
-        supervision_periods_during_referral = (
-            self.identifier._find_supervision_periods_overlapping_with_date(
-                referral_date, supervision_periods
-            )
-        )
-
-        self.assertListEqual(supervision_periods, supervision_periods_during_referral)
-
-    def test_find_supervision_periods_overlapping_with_date_no_termination(
-        self,
-    ) -> None:
-        referral_date = date(2013, 3, 1)
-
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            state_code="US_XX",
-            start_date=date(2002, 11, 5),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-        )
-
-        supervision_periods = [supervision_period]
-
-        supervision_periods_during_referral = (
-            self.identifier._find_supervision_periods_overlapping_with_date(
-                referral_date, supervision_periods
-            )
-        )
-
-        self.assertListEqual(supervision_periods, supervision_periods_during_referral)
-
-    def test_find_supervision_periods_overlapping_with_date_no_overlap(self) -> None:
-        referral_date = date(2019, 3, 1)
-
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            state_code="US_XX",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2015, 5, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-        )
-
-        supervision_periods = [supervision_period]
-
-        supervision_periods_during_referral = (
-            self.identifier._find_supervision_periods_overlapping_with_date(
-                referral_date, supervision_periods
-            )
-        )
-
-        self.assertListEqual([], supervision_periods_during_referral)
 
 
 class TestReferralsForSupervisionPeriods(unittest.TestCase):
@@ -773,7 +703,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         self.identifier = identifier.ProgramIdentifier()
 
     def test_referrals_for_supervision_periods(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
@@ -811,7 +741,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         )
 
     def test_referrals_for_supervision_periods_same_type(self) -> None:
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
@@ -820,7 +750,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
@@ -870,7 +800,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
         )
 
     def test_referrals_for_supervision_periods_different_types(self) -> None:
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
@@ -879,7 +809,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
             start_date=date(2008, 3, 5),

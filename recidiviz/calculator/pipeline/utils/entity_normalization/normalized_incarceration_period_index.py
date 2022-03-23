@@ -43,7 +43,7 @@ from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
-def _incarceration_periods_converter(
+def _incarceration_periods_sorter(
     incarceration_periods: List[NormalizedStateIncarcerationPeriod],
 ) -> List[NormalizedStateIncarcerationPeriod]:
     """Sorts the NormalizedStateIncarcerationPeriod by the sequence_num."""
@@ -58,7 +58,7 @@ class NormalizedIncarcerationPeriodIndex:
     """
 
     sorted_incarceration_periods: List[NormalizedStateIncarcerationPeriod] = attr.ib(
-        converter=_incarceration_periods_converter
+        converter=_incarceration_periods_sorter
     )
 
     # The delegate for state-specific configurations related to incarceration

@@ -21,7 +21,7 @@ from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
+from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
 from recidiviz.calculator.pipeline.utils.supervision_level_policy import (

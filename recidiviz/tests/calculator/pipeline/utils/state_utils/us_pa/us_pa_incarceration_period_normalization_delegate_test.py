@@ -24,6 +24,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
@@ -54,7 +57,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
-    StateSupervisionPeriod,
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
 )
@@ -73,7 +75,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     @staticmethod
     def _normalized_incarceration_periods_for_calculations(
         incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
         earliest_death_date: Optional[date] = None,
     ) -> Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap]:

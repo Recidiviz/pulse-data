@@ -23,6 +23,9 @@ from typing import List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -39,7 +42,6 @@ from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
@@ -152,7 +154,7 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC, StateSpecificDeleg
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
-        previous_supervision_period: Optional[StateSupervisionPeriod],
+        previous_supervision_period: Optional[NormalizedStateSupervisionPeriod],
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         """Returns the supervision type the person was on before they were committed to
         incarceration from supervision.

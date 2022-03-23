@@ -19,11 +19,12 @@ import unittest
 from datetime import date
 from typing import List, Optional
 
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     _get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
@@ -88,7 +89,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_date: date,
         admission_reason: StateIncarcerationPeriodAdmissionReason,
         admission_reason_raw_text: str,
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_periods: List[NormalizedStateSupervisionPeriod],
     ) -> Optional[StateSupervisionPeriod]:
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_ND",
@@ -121,8 +122,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "PV"
 
         # Overlapping parole period
-        parole_period = StateSupervisionPeriod.new_with_defaults(
+        parole_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -132,8 +134,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         # Overlapping probation period
-        probation_period = StateSupervisionPeriod.new_with_defaults(
+        probation_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
+            sequence_num=1,
             external_id="sp2",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -163,8 +166,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "PV"
 
         # Overlapping parole period
-        overlapping_parole_period = StateSupervisionPeriod.new_with_defaults(
+        overlapping_parole_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -174,8 +178,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         # Terminated parole period.
-        terminated_parole_period = StateSupervisionPeriod.new_with_defaults(
+        terminated_parole_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
+            sequence_num=1,
             external_id="sp2",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -208,8 +213,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "PV"
 
         # Overlapping revoked parole period
-        revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
+        revoked_parole_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -219,8 +225,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         # Overlapping parole period
-        expired_parole_period = StateSupervisionPeriod.new_with_defaults(
+        expired_parole_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
+            sequence_num=1,
             external_id="sp2",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -250,8 +257,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "PV"
 
         # Overlapping revoked parole period, 5 days after admission
-        revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
+        revoked_parole_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -261,14 +269,17 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         # Overlapping revoked parole period, 1 day after admission
-        closer_revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=222,
-            external_id="sp2",
-            state_code="US_ND",
-            start_date=date(2019, 3, 5),
-            termination_date=date(2019, 5, 26),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        closer_revoked_parole_period = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=222,
+                sequence_num=1,
+                external_id="sp2",
+                state_code="US_ND",
+                start_date=date(2019, 3, 5),
+                termination_date=date(2019, 5, 26),
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            )
         )
 
         pre_commitment_supervision_period = (
@@ -295,8 +306,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "NPROB"
 
         # Overlapping parole period
-        parole_period = StateSupervisionPeriod.new_with_defaults(
+        parole_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -306,8 +318,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         # Overlapping probation period
-        probation_period = StateSupervisionPeriod.new_with_defaults(
+        probation_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
+            sequence_num=1,
             external_id="sp2",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -337,25 +350,31 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "NPROB"
 
         # Overlapping probation period
-        overlapping_probation_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ND",
-            start_date=date(2019, 3, 5),
-            termination_date=date(2019, 6, 9),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        overlapping_probation_period = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                sequence_num=0,
+                external_id="sp1",
+                state_code="US_ND",
+                start_date=date(2019, 3, 5),
+                termination_date=date(2019, 6, 9),
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            )
         )
 
         # Terminated probation period
-        terminated_probation_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=222,
-            external_id="sp2",
-            state_code="US_ND",
-            start_date=date(2019, 3, 5),
-            termination_date=date(2019, 5, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        terminated_probation_period = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=222,
+                sequence_num=1,
+                external_id="sp2",
+                state_code="US_ND",
+                start_date=date(2019, 3, 5),
+                termination_date=date(2019, 5, 1),
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            )
         )
 
         pre_commitment_supervision_period = (
@@ -382,8 +401,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "NPROB"
 
         # Terminated revoked probation period
-        revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
+        revoked_probation_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -393,8 +413,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         # Expired terminated probation period
-        expired_probation_period = StateSupervisionPeriod.new_with_defaults(
+        expired_probation_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
+            sequence_num=1,
             external_id="sp2",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -427,8 +448,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_reason_raw_text = "NPROB"
 
         # Overlapping revoked probation period, 5 days after admission
-        revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
+        revoked_probation_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            sequence_num=0,
             external_id="sp1",
             state_code="US_ND",
             start_date=date(2019, 3, 5),
@@ -438,14 +460,17 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         # Overlapping revoked probation period, 1 day after admission
-        closer_revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=222,
-            external_id="sp2",
-            state_code="US_ND",
-            start_date=date(2019, 3, 5),
-            termination_date=date(2019, 5, 26),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        closer_revoked_probation_period = (
+            NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=222,
+                sequence_num=1,
+                external_id="sp2",
+                state_code="US_ND",
+                start_date=date(2019, 3, 5),
+                termination_date=date(2019, 5, 26),
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            )
         )
 
         pre_commitment_supervision_period = (
@@ -621,7 +646,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
     def _test_get_commitment_from_supervision_supervision_type(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        previous_supervision_period: Optional[StateSupervisionPeriod] = None,
+        previous_supervision_period: Optional[NormalizedStateSupervisionPeriod] = None,
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         return self.delegate.get_commitment_from_supervision_supervision_type(
             incarceration_sentences=[],
