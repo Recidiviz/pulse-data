@@ -225,6 +225,9 @@ def parse_datetime(
     ):
         return None
 
+    if is_iso_datetime(date_string):
+        return datetime.datetime.fromisoformat(date_string)
+
     if is_yyyymmdd_date(date_string):
         as_date = parse_yyyymmdd_date(date_string)
         if not as_date:
@@ -296,6 +299,15 @@ def parse_datetime_with_negative_component(
     return parsed_date
 
 
+def is_iso_datetime(datetime_str: str) -> bool:
+    try:
+        datetime.datetime.fromisoformat(datetime_str)
+    except ValueError:
+        return False
+
+    return True
+
+
 def is_yyyymmdd_date(date_string: str) -> bool:
     try:
         datetime.datetime.strptime(date_string, "%Y%m%d")
@@ -326,12 +338,6 @@ def parse_date(
     Parses a string into a datetime.date object, using |from_dt| as a base for
     any relative dates.
     """
-    if _is_str_field_zeros(date_string):
-        return None
-
-    if is_yyyymmdd_date(date_string):
-        return parse_yyyymmdd_date(date_string)
-
     parsed = parse_datetime(date_string, from_dt=from_dt)
     return parsed.date() if parsed else None
 

@@ -97,9 +97,6 @@ def entity_deserialize(
         if field_value is None:
             return None
 
-        if is_forward_ref(field) or is_list(field):
-            return field_value
-
         if isinstance(field_value, str):
             if not field_value or not field_value.strip():
                 return None
@@ -147,6 +144,9 @@ def entity_deserialize(
         if isinstance(field_value, bool):
             if is_bool(field):
                 return field_value
+
+        if is_forward_ref(field) or is_list(field):
+            return field_value
 
         raise ValueError(f"Unsupported field {field.name} with value: {field_value}.")
 
