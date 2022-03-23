@@ -40,8 +40,17 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer_delegate import (
+    FileBasedMaterializerDelegate,
+)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
+    IngestViewMaterializer,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
+    IngestViewMaterializerDelegate,
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -49,6 +58,10 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    GcsfsIngestViewExportArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -66,13 +79,12 @@ from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_big_query_client import (
-    FakeDirectIngestBigQueryClient,
-)
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-from recidiviz.utils import metadata
+from recidiviz.tests.ingest.direct.fixture_util import (
+    _get_fixture_for_direct_ingest_path,
+)
 from recidiviz.utils.regions import Region
 
 
@@ -267,6 +279,72 @@ states:
 """
 
 
+class _MockBigQueryClientForControllerTests:
+    """A fake BQ client that only wraps a test FS that other mocks can access."""
+
+    def __init__(self, fs: FakeGCSFileSystem) -> None:
+        self.fs = fs
+
+
+class FakeIngestViewMaterializer(IngestViewMaterializer):
+    """A fake implementation of IngestViewMaterializer for use in tests."""
+
+    def __init__(
+        self,
+        *,
+        region: Region,
+        ingest_instance: DirectIngestInstance,
+        delegate: IngestViewMaterializerDelegate,
+        big_query_client: _MockBigQueryClientForControllerTests,
+        view_collector: BigQueryViewCollector[
+            DirectIngestPreProcessedIngestViewBuilder
+        ],
+        launched_ingest_views: List[str],
+    ):
+        self.region = region
+        self.fs = big_query_client.fs
+        self.delegate = delegate
+        self.processed_args: List[IngestViewMaterializationArgs] = []
+
+        self.ingest_instance = ingest_instance
+        self.view_collector = view_collector
+        self.launched_ingest_views = launched_ingest_views
+
+    def materialize_view_for_args(
+        self, ingest_view_export_args: IngestViewMaterializationArgs
+    ) -> bool:
+        if ingest_view_export_args in self.processed_args:
+            return False
+
+        self.delegate.prepare_for_job(ingest_view_export_args)
+
+        if isinstance(self.delegate, FileBasedMaterializerDelegate):
+            if not isinstance(ingest_view_export_args, GcsfsIngestViewExportArgs):
+                raise ValueError(f"Unexpected args type [{ingest_view_export_args}]")
+            export_path = FileBasedMaterializerDelegate.generate_output_path(
+                ingest_view_export_args
+            )
+            data_local_path = _get_fixture_for_direct_ingest_path(
+                export_path, region_code=self.region.region_code.upper()
+            )
+            if not data_local_path:
+                raise ValueError("No support yet for actually running export queries")
+            self.fs.test_add_path(export_path, data_local_path)
+        else:
+            # TODO(#9717): Will need to replicate this logic for new materialization
+            raise NotImplementedError(
+                "TODO(#9717): Will need to fake materialization logic for BQ materialization."
+            )
+
+        self.delegate.mark_job_complete(ingest_view_export_args)
+        self.processed_args.append(ingest_view_export_args)
+
+        return True
+
+    def get_materialized_ingest_views(self) -> List[str]:
+        return [arg.ingest_view_name for arg in self.processed_args]
+
+
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_fake_direct_ingest_controller(
     controller_cls: Type[BaseDirectIngestController],
@@ -306,6 +384,9 @@ def build_fake_direct_ingest_controller(
         f"{BaseDirectIngestController.__module__}.DirectIngestRawFileImportManager",
         FakeDirectIngestRawFileImportManager,
     ), patch(
+        f"{BaseDirectIngestController.__module__}.IngestViewMaterializerImpl",
+        FakeIngestViewMaterializer,
+    ), patch(
         f"{BaseDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector",
         view_collector_cls,
     ):
@@ -315,10 +396,8 @@ def build_fake_direct_ingest_controller(
             else FakeSynchronousDirectIngestCloudTaskManager()
         )
         mock_task_factory_cls.return_value = task_manager
-        mock_big_query_client_cls.return_value = FakeDirectIngestBigQueryClient(
-            project_id=metadata.project_id(),
-            fs=fake_fs,
-            region_code=controller_cls.region_code(),
+        mock_big_query_client_cls.return_value = _MockBigQueryClientForControllerTests(
+            fs=fake_fs
         )
         with patch.object(GcsfsFactory, "build", new=mock_build_fs):
             with patch.object(

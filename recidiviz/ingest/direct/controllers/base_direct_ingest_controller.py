@@ -107,7 +107,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
     IngestViewMaterializationGatingContext,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
-    IngestViewMaterializer,
+    IngestViewMaterializerImpl,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
     IngestViewMaterializerDelegate,
@@ -319,7 +319,7 @@ class BaseDirectIngestController:
             )
         )
 
-        self.ingest_view_materializer = IngestViewMaterializer(
+        self.ingest_view_materializer = IngestViewMaterializerImpl(
             region=self.region,
             ingest_instance=self.ingest_instance,
             delegate=materializer_delegate,
