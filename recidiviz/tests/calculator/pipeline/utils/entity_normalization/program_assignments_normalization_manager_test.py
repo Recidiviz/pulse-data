@@ -48,9 +48,15 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
             program_assignments=program_assignments,
             normalization_delegate=self.delegate,
         )
-        return (
-            entity_normalization_manager.normalized_program_assignments_for_calculations()
+
+        (
+            processed_program_assignments,
+            _,
+        ) = (
+            entity_normalization_manager.normalized_program_assignments_and_additional_attributes()
         )
+
+        return processed_program_assignments
 
     def test_default_filtered_program_assignments_null_dates(self) -> None:
         null_dates = StateProgramAssignment.new_with_defaults(
@@ -115,3 +121,40 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
             ],
             normalized_assignments,
         )
+
+    def test_default_filtered_program_assignments_additional_attributes(self) -> None:
+        pg_1 = StateProgramAssignment.new_with_defaults(
+            state_code=self.state_code,
+            program_assignment_id=1,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            referral_date=datetime.date(2000, 1, 1),
+        )
+        pg_2 = StateProgramAssignment.new_with_defaults(
+            state_code=self.state_code,
+            program_assignment_id=2,
+            participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
+            discharge_date=datetime.date(2001, 2, 3),
+        )
+        program_assignments = [pg_1, pg_2]
+
+        entity_normalization_manager = ProgramAssignmentNormalizationManager(
+            program_assignments=program_assignments,
+            normalization_delegate=self.delegate,
+        )
+
+        (
+            _,
+            additional_attributes,
+        ) = (
+            entity_normalization_manager.normalized_program_assignments_and_additional_attributes()
+        )
+
+        expected_additional_attributes = {
+            StateProgramAssignment.__name__: {
+                1: {"sequence_num": 0},
+                2: {"sequence_num": 1},
+            }
+        }
+
+        self.assertEqual(expected_additional_attributes, additional_attributes)

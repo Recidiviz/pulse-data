@@ -41,6 +41,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
@@ -225,8 +226,9 @@ class TestFindProgramReferrals(unittest.TestCase):
         self.identifier = identifier.ProgramIdentifier()
 
     def test_find_program_referrals(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -282,8 +284,9 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
     def test_find_program_referrals_no_referral(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
         )
@@ -302,8 +305,9 @@ class TestFindProgramReferrals(unittest.TestCase):
         self.assertListEqual([], program_referrals)
 
     def test_find_program_referrals_multiple_assessments(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -362,8 +366,9 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
     def test_find_program_referrals_assessment_after_referral(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -412,8 +417,9 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
     def test_find_program_referrals_multiple_supervisions(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.PENDING,
@@ -484,7 +490,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
     def test_find_program_referrals_officer_info_us_nd(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_ND",
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -559,8 +565,9 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
     @freeze_time("2000-01-01")
     def test_find_program_participation_events(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(1999, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -604,8 +611,9 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         self.assertListEqual(expected_events, participation_events)
 
     def test_find_program_participation_events_not_actively_participating(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -659,8 +667,9 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         self.assertListEqual(expected_events, participation_events)
 
     def test_find_program_participation_events_no_start_date(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(1999, 10, 3),
             # This program assignment is in progress, but it's missing a required start_date
@@ -677,8 +686,9 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         self.assertEqual([], participation_events)
 
     def test_find_program_participation_events_no_discharge_date(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            sequence_num=0,
             program_id="PG3",
             referral_date=date(1999, 10, 3),
             # This program assignment has a DISCHARGED status, but it's missing a required discharge_date
