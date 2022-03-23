@@ -25,7 +25,6 @@ from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
     entity_normalization_managers_for_periods,
-    normalized_program_assignments_for_calculations,
     normalized_violation_responses_from_processed_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
@@ -176,9 +175,16 @@ def all_normalized_entities(
         )
     )
 
-    processed_program_assignments = normalized_program_assignments_for_calculations(
-        program_assignment_normalization_delegate=program_assignment_normalization_delegate,
-        program_assignments=program_assignments,
+    program_assignment_manager = ProgramAssignmentNormalizationManager(
+        program_assignments,
+        program_assignment_normalization_delegate,
+    )
+
+    (
+        processed_program_assignments,
+        additional_pa_attributes,
+    ) = (
+        program_assignment_manager.normalized_program_assignments_and_additional_attributes()
     )
 
     (
@@ -228,11 +234,7 @@ def all_normalized_entities(
         additional_attributes_maps=[
             additional_ip_attributes,
             additional_sp_attributes,
-            # TODO(#10729): Move these to get returned with the normalized entities once
-            #  the metric pipelines start using the Normalized versions of entities
-            ProgramAssignmentNormalizationManager.additional_attributes_map_for_normalized_pas(
-                program_assignments=processed_program_assignments
-            ),
+            additional_pa_attributes,
             additional_vr_attributes,
         ]
     )

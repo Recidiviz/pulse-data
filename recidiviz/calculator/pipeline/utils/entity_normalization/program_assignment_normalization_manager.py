@@ -19,7 +19,7 @@ normalization of StateProgramAssignment entities in the calculation
 pipelines."""
 import datetime
 from copy import deepcopy
-from typing import List, Type
+from typing import List, Optional, Tuple, Type
 
 from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -59,24 +59,36 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
     ) -> None:
         self._program_assignments = deepcopy(program_assignments)
         self.normalization_delegate = normalization_delegate
+        self._normalized_program_assignments_and_additional_attributes: Optional[
+            Tuple[List[StateProgramAssignment], AdditionalAttributesMap]
+        ] = None
 
-    def normalized_program_assignments_for_calculations(
+    def normalized_program_assignments_and_additional_attributes(
         self,
-    ) -> List[StateProgramAssignment]:
+    ) -> Tuple[List[StateProgramAssignment], AdditionalAttributesMap]:
         """Performs normalization on program assignments. Filters out responses
         with null dates, sorts assignments by `referral_date`, `start_date`,
         `discharge_date`, merges appropriate assignments (if the state delegate
         says we should), and returns the list of sorted, normalized
         StateProgramAssignments."""
-        assignments_for_normalization = deepcopy(self._program_assignments)
-        filtered_assignments = self._drop_assignments_with_missing_dates(
-            assignments_for_normalization
-        )
-        sorted_assignments = self._sorted_program_assignments(filtered_assignments)
-        merged_assignments = self.normalization_delegate.merge_program_assignments(
-            sorted_assignments
-        )
-        return merged_assignments
+        if not self._normalized_program_assignments_and_additional_attributes:
+            assignments_for_normalization = deepcopy(self._program_assignments)
+            filtered_assignments = self._drop_assignments_with_missing_dates(
+                assignments_for_normalization
+            )
+            sorted_assignments = self._sorted_program_assignments(filtered_assignments)
+            merged_assignments = self.normalization_delegate.merge_program_assignments(
+                sorted_assignments
+            )
+
+            self._normalized_program_assignments_and_additional_attributes = (
+                merged_assignments,
+                self.additional_attributes_map_for_normalized_pas(
+                    program_assignments=merged_assignments
+                ),
+            )
+
+        return self._normalized_program_assignments_and_additional_attributes
 
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:

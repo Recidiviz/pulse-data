@@ -26,6 +26,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
@@ -283,11 +284,25 @@ def normalized_violation_responses_for_calculations(
 def normalized_program_assignments_for_calculations(
     program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
     program_assignments: List[StateProgramAssignment],
-) -> List[StateProgramAssignment]:
+    field_index: CoreEntityFieldIndex,
+) -> List[NormalizedStateProgramAssignment]:
     """Instantiates the program assignment manager and its appropriate delegate. Then
     returns normalized program assignments."""
     program_assignment_manager = ProgramAssignmentNormalizationManager(
         program_assignments,
         program_assignment_normalization_delegate,
     )
-    return program_assignment_manager.normalized_program_assignments_for_calculations()
+
+    (
+        processed_program_assignments,
+        additional_pa_attributes,
+    ) = (
+        program_assignment_manager.normalized_program_assignments_and_additional_attributes()
+    )
+
+    return convert_entity_trees_to_normalized_versions(
+        root_entities=processed_program_assignments,
+        normalized_entity_class=NormalizedStateProgramAssignment,
+        additional_attributes_map=additional_pa_attributes,
+        field_index=field_index,
+    )
