@@ -64,7 +64,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
             IF(internal_role IS NULL,
-                'case_triage_user',
+                'line_staff_user',
                 internal_role) AS internal_role,
             CASE
                 WHEN internal_role LIKE '%leadership_role%' THEN TRUE
@@ -147,24 +147,36 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
     tn_restricted_access AS (
         SELECT
             'US_TN' AS state_code,
-            LOWER(leadership.email_address) AS restricted_user_email,
+            LOWER(IF(leadership.email_address IS NULL,
+                    tn_roster.email_address,
+                    leadership.email_address)) AS restricted_user_email,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
-            internal_role,
+            IF(internal_role IS NULL,
+                'line_staff_user',
+                internal_role) AS internal_role,
             TRUE AS can_access_leadership_dashboard,
             FALSE AS can_access_case_triage,
             FALSE AS should_see_beta_charts,
-            TO_JSON_STRING(STRUCT(
-                system_libertyToPrison,
-                system_prison,
-                system_prisonToSupervision,
-                system_supervision,
-                system_supervisionToLiberty,
-                system_supervisionToPrison,
-                operations
-            )) AS routes
+            CASE
+                WHEN internal_role LIKE '%leadership_role%'
+                    THEN TO_JSON_STRING(STRUCT(
+                        system_libertyToPrison,
+                        system_prison,
+                        system_prisonToSupervision,
+                        system_supervision,
+                        system_supervisionToLiberty,
+                        system_supervisionToPrison,
+                        operations,
+                        TRUE AS practices
+                    ))
+                ELSE TO_JSON_STRING(STRUCT(TRUE AS practices))
+            END AS routes
         FROM
             `{project_id}.{static_reference_dataset_id}.us_tn_leadership_users` leadership
+        FULL OUTER JOIN
+            `{project_id}.{static_reference_dataset_id}.us_tn_roster` tn_roster
+        ON LOWER(leadership.email_address)=LOWER(tn_roster.email_address)
     ),
     recidiviz_test_users AS (
         SELECT
