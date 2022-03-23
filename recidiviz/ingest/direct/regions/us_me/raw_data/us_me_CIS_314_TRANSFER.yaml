@@ -136,12 +136,17 @@ columns:
         description: "Weekly Transfers – Classification Only"
   - name : Cis_3142_Tran_Typ_Rsn_Cd
   - name : Cis_319_Term_Cust_Id
+    description: The Term ID associated with this transfer
   - name : Cis_900_Employee_Id
   - name : Cis_900_Weekly_Tfr_Employee_Id
   - name : Cis_908_Ccs_Loc_Jur_From_Id
+    description: The "From" jurisdiction location ID
   - name : Cis_908_Ccs_Loc_Jur_To_Id
+    description: The "To" jurisdiction location ID
   - name : Cis_908_Ccs_Location_Frm_Id
+    description: The "From" physical location ID
   - name : Cis_908_Ccs_Location_To_Id
+    description: The "To" physical location ID
   - name : Cis_912_Unit_Id
   - name : Created_By_Tx
   - name : Created_On_Date
