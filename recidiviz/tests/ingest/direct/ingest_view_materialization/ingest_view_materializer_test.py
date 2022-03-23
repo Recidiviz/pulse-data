@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer
     FileBasedMaterializerDelegate,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
-    IngestViewMaterializer,
+    IngestViewMaterializerImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestIngestFileMetadataManager,
@@ -256,17 +256,17 @@ class IngestViewMaterializerTest(unittest.TestCase):
             environment=environment,
         )
 
-    def create_export_manager(
+    def create_materializer(
         self,
         region: Region,
         is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
-    ) -> IngestViewMaterializer:
+    ) -> IngestViewMaterializerImpl:
         metadata_manager = PostgresDirectIngestIngestFileMetadataManager(
             region.region_code, self.ingest_database_name
         )
         ingest_view_name = "ingest_view"
-        return IngestViewMaterializer(
+        return IngestViewMaterializerImpl(
             region=region,
             ingest_instance=DirectIngestInstance.SECONDARY,
             delegate=FileBasedMaterializerDelegate(
@@ -308,7 +308,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
     def test_exportViewForArgs_ingestViewExportsDisabled(self) -> None:
         # Arrange
         region = self.create_fake_region(environment="staging")
-        export_manager = self.create_export_manager(region)
+        ingest_view_materializer = self.create_materializer(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -318,7 +318,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with self.assertRaises(ValueError):
-            export_manager.materialize_view_for_args(export_args)
+            ingest_view_materializer.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.create_dataset_if_necessary.assert_not_called()
@@ -331,7 +331,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
     def test_exportViewForArgs_noExistingMetadata(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(region)
+        ingest_view_materializer = self.create_materializer(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -341,7 +341,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with self.assertRaises(ValueError):
-            export_manager.materialize_view_for_args(export_args)
+            ingest_view_materializer.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.run_query_async.assert_not_called()
@@ -353,7 +353,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
     def test_exportViewForArgs_alreadyExported(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(region)
+        ingest_view_materializer = self.create_materializer(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -381,7 +381,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             session.add(metadata)
 
         # Act
-        export_manager.materialize_view_for_args(export_args)
+        ingest_view_materializer.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.run_query_async.assert_not_called()
@@ -431,9 +431,9 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
-            export_manager = self.create_export_manager(region)
+            ingest_view_materializer = self.create_materializer(region)
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.materialize_view_for_args(export_args)
+            ingest_view_materializer.materialize_view_for_args(export_args)
 
         # Assert
         expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
@@ -506,9 +506,9 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
-            export_manager = self.create_export_manager(region)
+            ingest_view_materializer = self.create_materializer(region)
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.materialize_view_for_args(export_args)
+            ingest_view_materializer.materialize_view_for_args(export_args)
 
         # Assert
         expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
@@ -598,11 +598,11 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
-            export_manager = self.create_export_manager(
+            ingest_view_materializer = self.create_materializer(
                 region, materialize_raw_data_table_views=True
             )
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.materialize_view_for_args(export_args)
+            ingest_view_materializer.materialize_view_for_args(export_args)
 
         # Assert
         expected_upper_bound_query = (
@@ -685,7 +685,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
-            export_manager = self.create_export_manager(
+            ingest_view_materializer = self.create_materializer(
                 region, is_detect_row_deletion_view=True
             )
         with freeze_time(_DATE_5.isoformat()):
@@ -694,7 +694,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 r"Attempting to process reverse date diff view \[ingest_view\] with "
                 r"no lower bound date.",
             ):
-                export_manager.materialize_view_for_args(export_args)
+                ingest_view_materializer.materialize_view_for_args(export_args)
 
         # Assert
         self.mock_client.run_query_async.assert_not_called()
@@ -736,11 +736,11 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
-            export_manager = self.create_export_manager(
+            ingest_view_materializer = self.create_materializer(
                 region, is_detect_row_deletion_view=True
             )
         with freeze_time(_DATE_5.isoformat()):
-            export_manager.materialize_view_for_args(export_args)
+            ingest_view_materializer.materialize_view_for_args(export_args)
 
         expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
         expected_lower_bound_query = expected_upper_bound_query.replace(
@@ -803,10 +803,10 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
-            export_manager = self.create_export_manager(region)
+            ingest_view_materializer = self.create_materializer(region)
         with freeze_time(_DATE_5.isoformat()):
-            debug_query = IngestViewMaterializer.debug_query_for_args(
-                export_manager.ingest_views_by_name, export_args
+            debug_query = IngestViewMaterializerImpl.debug_query_for_args(
+                ingest_view_materializer.ingest_views_by_name, export_args
             )
 
         expected_debug_query = """CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound AS (
@@ -969,12 +969,12 @@ ORDER BY colA, colC;"""
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
-            export_manager = self.create_export_manager(
+            ingest_view_materializer = self.create_materializer(
                 region, materialize_raw_data_table_views=True
             )
         with freeze_time(_DATE_5.isoformat()):
-            debug_query = IngestViewMaterializer.debug_query_for_args(
-                export_manager.ingest_views_by_name, export_args
+            debug_query = IngestViewMaterializerImpl.debug_query_for_args(
+                ingest_view_materializer.ingest_views_by_name, export_args
             )
 
         expected_debug_query = """CREATE TEMP TABLE upper_file_tag_first_generated_view AS (

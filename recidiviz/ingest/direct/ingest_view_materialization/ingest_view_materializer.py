@@ -17,6 +17,7 @@
 """Class that manages logic related to materializing ingest views for a region so
 the results can be processed and merged into our Postgres database.
 """
+import abc
 import datetime
 import logging
 from typing import Dict, Generic, List, Optional, Tuple
@@ -63,6 +64,19 @@ TABLE_NAME_DATE_FORMAT = "%Y_%m_%d_%H_%M_%S"
 
 
 class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
+    @abc.abstractmethod
+    def materialize_view_for_args(
+        self, ingest_view_export_args: IngestViewMaterializationArgsT
+    ) -> bool:
+        """Performs an Cloud Storage export of a single ingest view with date bounds
+        specified in the provided args. If the provided args contain an upper and lower
+        bound date, the exported view contains only the delta between the two dates. If
+        only the upper bound is provided, then the exported view contains historical
+        results up until the bound date.
+        """
+
+
+class IngestViewMaterializerImpl(IngestViewMaterializer):
     """Class that manages logic related to materializing ingest views for a region so
     the results can be processed and merged into our Postgres database.
     """
@@ -90,15 +104,16 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
             if builder.ingest_view_name in launched_ingest_views
         }
 
+    # TODO(#9717): Rename to _generate_export_job_for_date
     def _generate_export_job_for_date(
         self,
         table_name: str,
         ingest_view: DirectIngestPreProcessedIngestView,
         date_bound: datetime.datetime,
     ) -> bigquery.QueryJob:
-        """Generates a query for the provided |ingest view| on the given |date bound| and starts a job to load the
-        results of that query into the provided |table_name|. Returns the potentially in progress QueryJob to the
-        caller.
+        """Generates a query for the provided |ingest view| on the given |date bound|
+        and starts a job to load the results of that query into the provided
+        |table_name|. Returns the potentially in progress QueryJob to the caller.
         """
         query, query_params = self._generate_export_query_and_params_for_date(
             ingest_view=ingest_view,
@@ -209,7 +224,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
                     ingest_view_export_args
                 ),
             )
-            export_query = IngestViewMaterializer._create_date_diff_query(
+            export_query = self._create_date_diff_query(
                 upper_bound_query=export_query,
                 upper_bound_prev_query=upper_bound_prev_query,
                 do_reverse_date_diff=ingest_view.do_reverse_date_diff,
@@ -285,14 +300,16 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
     def materialize_view_for_args(
         self, ingest_view_export_args: IngestViewMaterializationArgsT
     ) -> bool:
-        """Performs an Cloud Storage export of a single ingest view with date bounds specified in the provided args. If
-        the provided args contain an upper and lower bound date, the exported view contains only the delta between the
-        two dates. If only the upper bound is provided, then the exported view contains historical results up until the
-        bound date.
+        """Performs an Cloud Storage export of a single ingest view with date bounds
+        specified in the provided args. If the provided args contain an upper and lower
+        bound date, the exported view contains only the delta between the two dates. If
+        only the upper bound is provided, then the exported view contains historical
+        results up until the bound date.
 
-        Note: In order to prevent resource exhaustion in BigQuery, the ultimate query in this method is broken down
-        into distinct parts. This method first persists the results of historical queries for each given bound date
-        (upper and lower) into temporary tables. The delta between those tables is then queried separately using
+        Note: In order to prevent resource exhaustion in BigQuery, the ultimate query in
+        this method is broken down into distinct parts. This method first persists the
+        results of historical queries for each given bound date (upper and lower) into
+        temporary tables. The delta between those tables is then queried separately using
         SQL's `EXCEPT DISTINCT` and those final results are exported to Cloud Storage.
         """
         if not self.region.is_ingest_launched_in_env():
@@ -425,7 +442,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
 
             query_params.extend(lower_bound_query_params)
 
-            diff_query = IngestViewMaterializer._create_date_diff_query(
+            diff_query = cls._create_date_diff_query(
                 upper_bound_query=f"SELECT * FROM {upper_bound_table_id}",
                 upper_bound_prev_query=f"SELECT * FROM {lower_bound_table_id}",
                 do_reverse_date_diff=ingest_view.do_reverse_date_diff,
@@ -437,6 +454,7 @@ class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
             query = f"{query}\n{lower_bound_query}\n{diff_query}"
         return query, query_params
 
+    # TODO(#9717): Rename to _generate_export_query_and_params_for_date
     @staticmethod
     def _generate_export_query_and_params_for_date(
         *,
@@ -495,7 +513,7 @@ if __name__ == "__main__":
             for builder in view_collector_.collect_view_builders()
         }
 
-        debug_query = IngestViewMaterializer.debug_query_for_args(
+        debug_query = IngestViewMaterializerImpl.debug_query_for_args(
             views_by_name_,
             # TODO(#9717): Migrate to new BQ-based implementation of
             #  IngestViewMaterializationArgs.
