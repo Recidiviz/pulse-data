@@ -576,14 +576,15 @@ class SamenessPerViewValidationChecker(ValidationChecker[SamenessDataValidationC
             validation_job.original_builder_query_str(), []
         )
 
-        num_errors = len(error_query_job)
-        num_rows = len(original_query_job)
+        num_errors = len(list(error_query_job))
+        num_rows = 0
         non_null_counts_per_column_per_partition: Dict[
             Tuple[str, ...], Dict[str, int]
         ] = {}
 
         row: Row
         for row in original_query_job:
+            num_rows += 1
             unique_values: Set[Any] = set()
             partition_key = (
                 tuple(str(row.get(column)) for column in validation.partition_columns)
