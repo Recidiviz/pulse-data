@@ -173,6 +173,11 @@ class TestStrFieldUtils(TestCase):
         assert parse_datetime("0 0 0") is None
         assert parse_datetime("0000-00-00") is None
 
+    def test_parseDateTime_ISO(self) -> None:
+        assert parse_datetime("1992-05-26 00:00:00") == datetime.datetime(
+            year=1992, month=5, day=26, hour=0, minute=0, second=0
+        )
+
     def test_parseDate(self) -> None:
         assert parse_date("Jan 1, 2018") == datetime.date(year=2018, month=1, day=1)
 
@@ -218,6 +223,11 @@ class TestStrFieldUtils(TestCase):
 
     def test_parseNoDate(self) -> None:
         assert parse_date("None set") is None
+
+    def test_parseDate_ISO(self) -> None:
+        assert parse_date("1992-05-26 00:00:00") == datetime.date(
+            year=1992, month=5, day=26
+        )
 
     def test_parseBadDate(self) -> None:
         with self.assertRaises(ValueError):

@@ -34,6 +34,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     IngestViewResultsParserDelegate,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # This key tracks the version number for the actual mappings manifest structure,
@@ -105,11 +106,13 @@ class IngestViewResultsParser:
         if not os.path.exists(json_schema_dir_path):
             raise ValueError(f"Unsupported language version: [{version}]")
 
-        manifest_dict.validate(
-            json_schema_path=os.path.join(
-                os.path.dirname(yaml_schema.__file__), version, "schema.json"
+        if not environment.in_gcp():
+            # Run schema validation in tests / CI
+            manifest_dict.validate(
+                json_schema_path=os.path.join(
+                    os.path.dirname(yaml_schema.__file__), version, "schema.json"
+                )
             )
-        )
         _ = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
 
         # TODO(#8981): Add logic to enforce that version changes are accompanied with
