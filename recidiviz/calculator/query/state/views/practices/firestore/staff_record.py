@@ -30,7 +30,7 @@ STAFF_RECORD_QUERY_TEMPLATE = """
     /*{description}*/
     WITH staff_from_report AS (
         SELECT DISTINCT officer_id AS logic_staff
-        FROM `{project_id}.{static_reference_views_dataset}.us_tn_compliant_reporting_logic`
+        FROM `{project_id}.{reference_views_dataset}.us_tn_compliant_reporting_logic`
     )
 
     SELECT 
@@ -53,7 +53,7 @@ STAFF_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=STAFF_RECORD_VIEW_NAME,
     view_query_template=STAFF_RECORD_QUERY_TEMPLATE,
     description=STAFF_RECORD_DESCRIPTION,
-    static_reference_views_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
