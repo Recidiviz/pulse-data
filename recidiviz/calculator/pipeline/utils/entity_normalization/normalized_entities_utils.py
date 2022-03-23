@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for working with NormalizedStateEntity objects.
 
-TODO(#10729): Move this file to recidiviz/calculator/pipeline/normalization once all
+TODO(#10731): Move this file to recidiviz/calculator/pipeline/normalization once all
   functions are only used by the normalization pipeline.
 """
 from collections import defaultdict

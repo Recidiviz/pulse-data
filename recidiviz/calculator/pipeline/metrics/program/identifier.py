@@ -39,7 +39,11 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
@@ -149,9 +153,17 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         if not program_assignments:
             return program_events
 
-        program_assignments = normalized_program_assignments_for_calculations(
+        # TODO(#10731): Remove calls to get the normalized versions of program
+        #  assignments once this metric pipeline is hydrating Normalized versions of
+        #  all entities
+        normalized_program_assignments = normalized_program_assignments_for_calculations(
             program_assignment_normalization_delegate=program_assignment_normalization_delegate,
             program_assignments=program_assignments,
+            field_index=self.field_index,
+        )
+
+        sorted_program_assignments = sort_normalized_entities_by_sequence_num(
+            normalized_program_assignments
         )
 
         supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
@@ -191,7 +203,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             field_index=self.field_index,
         )
 
-        for program_assignment in program_assignments:
+        for program_assignment in sorted_program_assignments:
             program_referrals = self._find_program_referrals(
                 program_assignment,
                 assessments,
@@ -212,7 +224,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
     def _find_program_referrals(
         self,
-        program_assignment: StateProgramAssignment,
+        program_assignment: NormalizedStateProgramAssignment,
         assessments: List[StateAssessment],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -272,7 +284,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
     def _find_program_participation_events(
         self,
-        program_assignment: StateProgramAssignment,
+        program_assignment: NormalizedStateProgramAssignment,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
     ) -> List[ProgramParticipationEvent]:
         """Finds instances of actively participating in a program. Produces a

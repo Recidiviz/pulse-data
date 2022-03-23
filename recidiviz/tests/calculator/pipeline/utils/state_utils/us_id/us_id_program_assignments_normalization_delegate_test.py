@@ -38,7 +38,7 @@ from recidiviz.persistence.entity.state.entities import StateProgramAssignment
 
 class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
     """Tests the US_ID-specific aspects of the
-    normalized_program_assignments_for_calculations function on the
+    normalized_program_assignments_and_additional_attributes function on the
     ProgramAssignmentNormalizationManager when a
     UsIdProgramAssignmentNormalizationDelegate is provided."""
 
@@ -53,9 +53,15 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
             program_assignments=program_assignments,
             normalization_delegate=self.delegate,
         )
-        return (
-            entity_normalization_manager.normalized_program_assignments_for_calculations()
+
+        (
+            processed_program_assignments,
+            _,
+        ) = (
+            entity_normalization_manager.normalized_program_assignments_and_additional_attributes()
         )
+
+        return processed_program_assignments
 
     def test_prepare_program_assignments_for_calculations_us_id_merged_program_assignments(
         self,
