@@ -1198,6 +1198,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         )
         violation_response_non_perm = (
             StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=1,
                 state_code=state_code,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
@@ -1212,6 +1213,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
         )
         violation_response_perm = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=2,
             state_code=state_code,
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_date=date(2021, 1, 5),

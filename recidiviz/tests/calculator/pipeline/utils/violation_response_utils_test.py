@@ -20,12 +20,6 @@ import unittest
 from typing import List
 
 from recidiviz.calculator.pipeline.utils import violation_response_utils
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    normalized_violation_responses_for_calculations,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
-    UsXxViolationResponseNormalizationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
@@ -333,61 +327,3 @@ class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
             most_severe_decision = identify_most_severe_response_decision(decisions)
 
             self.assertEqual(most_severe_decision, decision)
-
-
-class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
-    """Tests the prepare_violation_responses_for_calculation function."""
-
-    def setUp(self) -> None:
-        self.delegate = UsXxViolationDelegate()
-
-    def test_prepare_violation_responses_for_calculation_preserves_order_post_filtering(
-        self,
-    ) -> None:
-        state_code = "US_XX"
-        first_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=datetime.date(2020, 1, 1),
-            is_draft=False,
-        )
-        second_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=datetime.date(2020, 1, 2),
-            is_draft=False,
-        )
-        third_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.CITATION,
-            response_date=datetime.date(2020, 1, 4),
-            is_draft=False,
-        )
-        filtered_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_date=datetime.date(2020, 1, 3),
-            is_draft=False,
-        )
-
-        violation_responses = [
-            filtered_response,
-            third_response,
-            first_response,
-            second_response,
-        ]
-
-        sorted_filtered_violations = filter_violation_responses_for_violation_history(
-            violation_delegate=self.delegate,
-            violation_responses=normalized_violation_responses_for_calculations(
-                person_id=9900000123,
-                violation_response_normalization_delegate=UsXxViolationResponseNormalizationDelegate(),
-                violation_responses=violation_responses,
-            ),
-            include_follow_up_responses=False,
-        )
-
-        for index, violation_response in enumerate(
-            [first_response, second_response, third_response]
-        ):
-            self.assertEqual(sorted_filtered_violations[index], violation_response)
