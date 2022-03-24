@@ -155,7 +155,12 @@ resource "google_cloud_run_service" "justice-counts" {
         }
       }
       
+      
       service_account_name = data.google_service_account.justice_counts_cloud_run[count.index].email
+    }
+
+    metadata {
+      name = "justice-counts-web-${replace(var.docker_image_tag, ".", "-")}"
     }
   }
 
@@ -163,6 +168,8 @@ resource "google_cloud_run_service" "justice-counts" {
     percent         = 100
     latest_revision = true
   }
+
+  autogenerate_revision_name = false
 } 
 
 # By default, Cloud Run services are private and secured by IAM. 
