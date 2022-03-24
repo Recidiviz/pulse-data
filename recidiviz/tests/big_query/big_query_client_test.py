@@ -195,7 +195,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_table_schema=[
                 SchemaField("my_column", "STRING", "NULLABLE", None, ())
             ],
-            source_uri="gs://bucket/export-uri",
+            source_uris=["gs://bucket/export-uri"],
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         )
 
         self.mock_client.create_dataset.assert_called()
@@ -211,7 +212,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_table_schema=[
                 SchemaField("my_column", "STRING", "NULLABLE", None, ())
             ],
-            source_uri="gs://bucket/export-uri",
+            source_uris=["gs://bucket/export-uri"],
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         )
 
         self.mock_client.create_dataset.assert_not_called()
@@ -449,13 +451,14 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_load_into_table_from_cloud_storage_async(self) -> None:
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
-        self.bq_client.load_into_table_from_cloud_storage_async(
+        self.bq_client.load_table_from_cloud_storage_async(
             destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[
                 SchemaField("my_column", "STRING", "NULLABLE", None, ())
             ],
-            source_uri="gs://bucket/export-uri",
+            source_uris=["gs://bucket/export-uri"],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
 
         self.mock_client.create_dataset.assert_called()

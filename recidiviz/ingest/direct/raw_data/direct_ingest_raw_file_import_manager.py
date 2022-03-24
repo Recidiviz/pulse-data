@@ -19,7 +19,6 @@ import csv
 import datetime
 import logging
 import os
-import time
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -436,10 +435,6 @@ class DirectIngestRegionRawFileConfig:
 
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
 
-# The number of seconds of spacing we need to have between each table load operation to avoid going over the
-# "5 operations every 10 seconds per table" rate limit (with a little buffer): https://cloud.google.com/bigquery/quotas
-_PER_TABLE_UPDATE_RATE_LIMITING_SEC = 2.5
-
 
 def get_unprocessed_raw_files_in_bucket(
     fs: DirectIngestGCSFileSystem,
@@ -539,8 +534,13 @@ class DirectIngestRawFileImportManager:
         logging.info("Beginning BigQuery upload of raw file [%s]", path.abs_path())
 
         self._delete_conflicting_contents_from_bigquery(path, file_metadata.file_id)
-        temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata)
-        self._load_contents_to_bigquery(path, temp_output_paths)
+        temp_output_paths, columns = self._upload_contents_to_temp_gcs_paths(
+            path, file_metadata
+        )
+        if temp_output_paths:
+            if not columns:
+                raise ValueError("Found delegate output_columns is unexpectedly None.")
+            self._load_contents_to_bigquery(parts.file_tag, temp_output_paths, columns)
 
         migration_queries = self.raw_table_migrations.get(parts.file_tag, [])
         logging.info(
@@ -557,7 +557,7 @@ class DirectIngestRawFileImportManager:
 
     def _upload_contents_to_temp_gcs_paths(
         self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
-    ) -> List[Tuple[GcsfsFilePath, List[str]]]:
+    ) -> Tuple[List[GcsfsFilePath], Optional[List[str]]]:
         """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
         additional metadata columns added.
         Returns a list of tuple pairs containing the destination paths and corrected CSV columns for that file.
@@ -586,7 +586,7 @@ class DirectIngestRawFileImportManager:
             **self._common_read_csv_kwargs(file_config),
         )
 
-        return delegate.output_paths_with_columns
+        return delegate.output_paths, delegate.output_columns
 
     def _delete_conflicting_contents_from_bigquery(
         self, path: GcsfsFilePath, file_id: int
@@ -617,75 +617,51 @@ class DirectIngestRawFileImportManager:
         delete_job.result()
 
     def _load_contents_to_bigquery(
-        self,
-        path: GcsfsFilePath,
-        temp_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]],
+        self, file_tag: str, temp_output_paths: List[GcsfsFilePath], columns: List[str]
     ) -> None:
         """Loads the contents in the given handle to the appropriate table in BigQuery."""
 
         logging.info("Starting chunked load of contents to BigQuery")
-        temp_output_paths = [path for path, _ in temp_paths_with_columns]
-        temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob] = {}
 
         try:
-            for i, (temp_output_path, columns) in enumerate(temp_paths_with_columns):
-                if i > 0:
-                    # Note: If this sleep becomes a serious performance issue, we could refactor to intersperse reading
-                    # chunks to temp paths with starting each load job. In this case, we'd have to be careful to delete
-                    # any partially uploaded uploaded portion of the file if we fail to parse a chunk in the middle.
-                    logging.info(
-                        "Sleeping for [%s] seconds to avoid exceeding per-table update rate quotas.",
-                        _PER_TABLE_UPDATE_RATE_LIMITING_SEC,
-                    )
-                    time.sleep(_PER_TABLE_UPDATE_RATE_LIMITING_SEC)
-
-                parts = filename_parts_from_path(path)
-                load_job = self.big_query_client.load_into_table_from_cloud_storage_async(
-                    source_uri=temp_output_path.uri(),
-                    destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
-                        self.raw_tables_dataset
-                    ),
-                    destination_table_id=parts.file_tag,
-                    destination_table_schema=self._create_raw_table_schema_from_columns(
-                        columns
-                    ),
-                )
-                logging.info("Load job [%s] for chunk [%d] started", load_job.job_id, i)
-
-                temp_path_to_load_job[temp_output_path] = load_job
+            load_job = self.big_query_client.load_table_from_cloud_storage_async(
+                source_uris=[p.uri() for p in temp_output_paths],
+                destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
+                    self.raw_tables_dataset
+                ),
+                destination_table_id=file_tag,
+                destination_table_schema=self._create_raw_table_schema_from_columns(
+                    columns
+                ),
+                write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            )
         except Exception as e:
-            logging.error("Failed to start load jobs - cleaning up temp paths")
+            logging.error("Failed to start load job - cleaning up temp paths")
             self._delete_temp_output_paths(temp_output_paths)
             raise e
 
         try:
-            self._wait_for_jobs(temp_path_to_load_job)
+            logging.info(
+                "[%s] Waiting for load of [%s] paths into [%s]",
+                datetime.datetime.now().isoformat(),
+                len(temp_output_paths),
+                load_job.destination,
+            )
+            load_job.result()
+            logging.info(
+                "[%s] BigQuery load of [%s] paths complete",
+                datetime.datetime.now().isoformat(),
+                len(temp_output_paths),
+            )
+        except BadRequest as e:
+            logging.error(
+                "Insert job [%s] failed with errors: [%s]",
+                load_job.job_id,
+                load_job.errors,
+            )
+            raise e
         finally:
             self._delete_temp_output_paths(temp_output_paths)
-
-    @staticmethod
-    def _wait_for_jobs(
-        temp_path_to_load_job: Dict[GcsfsFilePath, bigquery.LoadJob]
-    ) -> None:
-        for temp_output_path, load_job in temp_path_to_load_job.items():
-            try:
-                logging.info(
-                    "Waiting for load of [%s] into [%s]",
-                    temp_output_path.abs_path(),
-                    load_job.destination,
-                )
-                load_job.result()
-                logging.info(
-                    "BigQuery load of [%s] complete", temp_output_path.abs_path()
-                )
-            except BadRequest as e:
-                logging.error(
-                    "Insert job [%s] for path [%s] failed with errors: [%s]",
-                    load_job.job_id,
-                    temp_output_path,
-                    load_job.errors,
-                )
-                raise e
 
     def _delete_temp_output_paths(self, temp_output_paths: List[GcsfsFilePath]) -> None:
         for temp_output_path in temp_output_paths:
