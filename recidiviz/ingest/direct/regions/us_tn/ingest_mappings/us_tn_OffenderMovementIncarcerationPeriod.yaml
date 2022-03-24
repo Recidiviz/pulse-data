@@ -146,6 +146,8 @@ output:
                   # These only happen once, each in the very early 1990s.
                   - PAFA-DETAN  # Parole to facility - Detainer
                   - PAFA-EXPIR  # Parole to facility - Expiration
+                  # These started appearing in Feb 2022 and appear to be new codes
+                  - PAFA-PTVOS  # Parole to facility - TODO(#11765) Add in description
           admission_reason:
             $enum_mapping:
               $raw_text:
