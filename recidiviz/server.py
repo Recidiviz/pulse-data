@@ -19,6 +19,7 @@
 import datetime
 import gc
 import logging
+import os
 from http import HTTPStatus
 from typing import List, Tuple
 
@@ -56,6 +57,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control i
     cloud_sql_to_bq_blueprint,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -152,8 +154,17 @@ config_integration.trace_integrations(
         "sqlalchemy",
     ]
 )
-
-if environment.in_gcp():
+if environment.in_development():
+    # If we're running the server in development (e.g. via docker-compose),
+    # we can specify the URL of our local Postgres DBs via environment variables
+    # and initialize an engine that way. Currently we only connect to the Justice Counts
+    # database, which we need for its section of the admin panel, but we can add
+    # other connections in the future in the same way.
+    engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+        database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
+        db_url=os.environ.get("JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL"),
+    )
+elif environment.in_gcp():
     # This attempts to connect to all of our databases. Any connections that fail will
     # be logged and not raise an error, so that a single database outage doesn't take
     # down the entire application. Any attempt to use those databases later will
