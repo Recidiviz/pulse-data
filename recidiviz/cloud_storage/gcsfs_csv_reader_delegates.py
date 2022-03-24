@@ -19,7 +19,7 @@
 import abc
 import csv
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import pandas as pd
 
@@ -79,7 +79,8 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         self.fs = fs
         self.include_header = include_header
 
-        self.output_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]] = []
+        self.output_paths: List[GcsfsFilePath] = []
+        self.output_columns: Optional[List[str]] = None
 
     def on_start_read_with_encoding(self, encoding: str) -> None:
         logging.info(
@@ -129,7 +130,18 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         )
         logging.info("Done writing to output path")
 
-        self.output_paths_with_columns.append((output_path, transformed_df.columns))
+        columns_as_list = list(transformed_df.columns.values)
+        if self.output_columns is None:
+            self.output_columns = columns_as_list
+
+        if columns_as_list != self.output_columns:
+            raise ValueError(
+                f"Found columns written to [{output_path}] that don't match previous "
+                f"columns. Found columns: {columns_as_list}. Previous columns: "
+                f"{self.output_columns}."
+            )
+
+        self.output_paths.append(output_path)
         return True
 
     def on_unicode_decode_error(self, encoding: str, e: UnicodeError) -> bool:
@@ -155,10 +167,11 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         )
 
     def _delete_temp_output_paths(self) -> None:
-        for temp_output_path in [path for path, _ in self.output_paths_with_columns]:
+        for temp_output_path in self.output_paths:
             logging.info("Deleting temp file [%s].", temp_output_path.abs_path())
             self.fs.delete(temp_output_path)
-        self.output_paths_with_columns.clear()
+        self.output_paths.clear()
+        self.output_columns = None
 
     @abc.abstractmethod
     def transform_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:

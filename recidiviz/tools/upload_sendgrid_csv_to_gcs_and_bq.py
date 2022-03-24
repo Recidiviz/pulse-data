@@ -158,7 +158,7 @@ def load_from_gcs_to_temp_table(
     """Upload raw data from GCS to temporary BQ table"""
     bucket_name = f"{project_id}{BUCKET_SUFFIX}"
     load_job = bq_client.load_table_from_cloud_storage_async(
-        source_uri=f"gs://{bucket_name}/" f"{blob_name}",
+        source_uris=[f"gs://{bucket_name}/{blob_name}"],
         destination_dataset_ref=bigquery.DatasetReference(
             project=project_id,
             dataset_id=SENDGRID_EMAIL_DATA_DATASET,
@@ -198,6 +198,7 @@ def load_from_gcs_to_temp_table(
             ),
             bigquery.SchemaField("unique_args", "STRING", mode="NULLABLE"),
         ],
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         skip_leading_rows=1,
     )
     table_load_success = wait_for_table_load(bq_client, load_job)

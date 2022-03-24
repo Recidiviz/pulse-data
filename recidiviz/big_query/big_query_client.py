@@ -208,31 +208,37 @@ class BigQueryClient:
     @abc.abstractmethod
     def load_table_from_cloud_storage_async(
         self,
-        source_uri: str,
+        source_uris: List[str],
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
+        write_disposition: bigquery.WriteDisposition,
         skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
         """Loads a table from CSV data in GCS to BigQuery.
 
-        Given a desired table name, source data URI and destination schema, loads the table into BigQuery.
+        Given a desired table name, source data URI(s) and destination schema, loads the
+        table into BigQuery.
 
         This starts the job, but does not wait until it completes.
 
-        Tables are created if they do not exist, and overwritten if they do exist.
-
-        Because we are using bigquery.WriteDisposition.WRITE_TRUNCATE, the table's
-        data will be completely wiped and overwritten with the contents of the CSV.
+        The table is created if it does not exist, and overwritten with the contents of
+        the new data if they do exist and the write_disposition is WRITE_TRUNCATE. If
+        the write_disposition is WRITE_APPEND, data will be added to the table if it
+        already exists.
 
         Args:
-            source_uri: The path in Google Cloud Storage to read contents from (starts with 'gs://').
+            source_uris: The paths in Google Cloud Storage to read contents from (starts with 'gs://').
             destination_dataset_ref: The BigQuery dataset to load the table into. Gets created
                 if it does not already exist.
             destination_table_id: String name of the table to import.
             destination_table_schema: Defines a list of field schema information for each expected column in the input
                 file.
-            skip_leading_rows: Optional number of leading rows to skip. Defaults to zero
+            write_disposition: Indicates whether BigQuery should overwrite the table
+                completely (WRITE_TRUNCATE) or adds to the table with new rows
+                (WRITE_APPEND). By default, WRITE_APPEND is used.
+            skip_leading_rows: Optional number of leading rows to skip on each input
+                file. Defaults to zero
         Returns:
             The LoadJob object containing job details.
         """
@@ -435,33 +441,6 @@ class BigQueryClient:
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
-        """
-
-    @abc.abstractmethod
-    def load_into_table_from_cloud_storage_async(
-        self,
-        source_uri: str,
-        destination_dataset_ref: bigquery.DatasetReference,
-        destination_table_id: str,
-        destination_table_schema: List[bigquery.SchemaField],
-    ) -> bigquery.job.LoadJob:
-        """Inserts rows from CSV data in GCS into a table in BigQuery.
-
-        Given a desired table name, source data URI and destination schema, inserts the data into the BigQuery table.
-
-        This starts the job, but does not wait until it completes.
-
-        Tables are created if they do not exist, and rows are merely appended if they do exist.
-
-        Args:
-            source_uri: The path in Google Cloud Storage to read contents from (starts with 'gs://').
-            destination_dataset_ref: The BigQuery dataset to load the table into. Gets created
-                if it does not already exist.
-            destination_table_id: String name of the table to import.
-            destination_table_schema: Defines a list of field schema information for each expected column in the input
-                file.
-        Returns:
-            The LoadJob object containing job details.
         """
 
     @abc.abstractmethod
@@ -842,33 +821,17 @@ class BigQueryClientImpl(BigQueryClient):
 
     def load_table_from_cloud_storage_async(
         self,
-        source_uri: str,
-        destination_dataset_ref: bigquery.DatasetReference,
-        destination_table_id: str,
-        destination_table_schema: List[bigquery.SchemaField],
-        skip_leading_rows: int = 0,
-    ) -> bigquery.job.LoadJob:
-
-        return self._load_table_from_cloud_storage_async(
-            source_uri=source_uri,
-            destination_dataset_ref=destination_dataset_ref,
-            destination_table_id=destination_table_id,
-            destination_table_schema=destination_table_schema,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-            skip_leading_rows=skip_leading_rows,
-        )
-
-    def _load_table_from_cloud_storage_async(
-        self,
-        source_uri: str,
+        source_uris: List[str],
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
         write_disposition: bigquery.WriteDisposition,
         skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
-        """Triggers a load job, i.e. a job that will copy all of the data from the given Cloud Storage source into
-        the given BigQuery destination. Returns once the job has been started."""
+        """Triggers a load job, i.e. a job that will copy all of the data from the given
+        Cloud Storage source into the given BigQuery destination. Returns once the job
+        has been started.
+        """
 
         self.create_dataset_if_necessary(destination_dataset_ref)
 
@@ -882,7 +845,7 @@ class BigQueryClientImpl(BigQueryClient):
         job_config.skip_leading_rows = skip_leading_rows
 
         load_job = self.client.load_table_from_uri(
-            source_uri, destination_table_ref, job_config=job_config
+            source_uris, destination_table_ref, job_config=job_config
         )
 
         logging.info(
@@ -1280,21 +1243,6 @@ class BigQueryClientImpl(BigQueryClient):
             hydrate_missing_columns_with_null=hydrate_missing_columns_with_null,
             allow_field_additions=allow_field_additions,
             write_disposition=write_disposition,
-        )
-
-    def load_into_table_from_cloud_storage_async(
-        self,
-        source_uri: str,
-        destination_dataset_ref: bigquery.DatasetReference,
-        destination_table_id: str,
-        destination_table_schema: List[bigquery.SchemaField],
-    ) -> bigquery.job.LoadJob:
-        return self._load_table_from_cloud_storage_async(
-            source_uri=source_uri,
-            destination_dataset_ref=destination_dataset_ref,
-            destination_table_id=destination_table_id,
-            destination_table_schema=destination_table_schema,
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
 
     def stream_into_table(

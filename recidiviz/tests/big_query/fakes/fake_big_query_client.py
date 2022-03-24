@@ -114,10 +114,11 @@ class FakeBigQueryClient(BigQueryClient):
 
     def load_table_from_cloud_storage_async(
         self,
-        source_uri: str,
+        source_uris: List[str],
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
+        write_disposition: bigquery.WriteDisposition,
         skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
@@ -190,15 +191,6 @@ class FakeBigQueryClient(BigQueryClient):
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
-        raise ValueError("Must be implemented for use in tests.")
-
-    def load_into_table_from_cloud_storage_async(
-        self,
-        source_uri: str,
-        destination_dataset_ref: bigquery.DatasetReference,
-        destination_table_id: str,
-        destination_table_schema: List[bigquery.SchemaField],
-    ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 
     def insert_into_table_from_query_async(
