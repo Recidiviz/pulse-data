@@ -291,6 +291,8 @@ columns:
         description: PROBATION REVOKED
       - value: PTVOK
         description: PARTIAL REVOCATION
+      - value: PTVOS
+        description: # TODO(#11765): Fill in definition for code description
       - value: RCPAR
         description: ALREADY RECOMMENDED PAROLE
       - value: RECIS
