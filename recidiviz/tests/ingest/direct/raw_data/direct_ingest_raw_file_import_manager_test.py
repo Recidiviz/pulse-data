@@ -23,7 +23,7 @@ from unittest import mock
 import attr
 import pandas as pd
 from google.cloud import bigquery
-from mock import call, create_autospec, patch
+from mock import create_autospec, patch
 from more_itertools import one
 from pandas.errors import ParserError
 
@@ -246,7 +246,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.mock_big_query_client = create_autospec(BigQueryClient)
         self.num_lines_uploaded = 0
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.side_effect = (
+        self.mock_big_query_client.load_table_from_cloud_storage_async.side_effect = (
             self.mock_import_raw_file_to_big_query
         )
 
@@ -260,11 +260,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         )
         self.import_manager.csv_reader = GcsfsCsvReader(self.fs.gcs_file_system)
 
-        self.time_patcher = patch(
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager.time"
-        )
-        self.mock_time = self.time_patcher.start()
-
         def fake_get_dataset_ref(dataset_id: str) -> bigquery.DatasetReference:
             return bigquery.DatasetReference(
                 project=self.project_id, dataset_id=dataset_id
@@ -273,31 +268,35 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.mock_big_query_client.dataset_ref_for_id = fake_get_dataset_ref
 
     def tearDown(self) -> None:
-        self.time_patcher.stop()
         self.project_id_patcher.stop()
 
     def mock_import_raw_file_to_big_query(
         self,
         *,
-        source_uri: str,
+        source_uris: List[str],
         destination_table_schema: List[bigquery.SchemaField],
         **_kwargs: Any,
     ) -> mock.MagicMock:
         col_names = [schema_field.name for schema_field in destination_table_schema]
-        temp_path = GcsfsFilePath.from_absolute_path(source_uri)
-        local_temp_path = self.fs.gcs_file_system.real_absolute_path_for_path(temp_path)
+        for source_uri in source_uris:
+            temp_path = GcsfsFilePath.from_absolute_path(source_uri)
+            local_temp_path = self.fs.gcs_file_system.real_absolute_path_for_path(
+                temp_path
+            )
 
-        df = pd.read_csv(local_temp_path, header=None, dtype=str)
-        for value in df.values:
-            for cell in value:
-                if isinstance(cell, str):
-                    stripped_cell = cell.strip()
-                    if stripped_cell != cell:
-                        raise ValueError("Did not strip white space from raw data cell")
+            df = pd.read_csv(local_temp_path, header=None, dtype=str)
+            for value in df.values:
+                for cell in value:
+                    if isinstance(cell, str):
+                        stripped_cell = cell.strip()
+                        if stripped_cell != cell:
+                            raise ValueError(
+                                "Did not strip white space from raw data cell"
+                            )
 
-                if cell in col_names:
-                    raise ValueError(f"Wrote column row to output file: {value}")
-        self.num_lines_uploaded += len(df)
+                    if cell in col_names:
+                        raise ValueError(f"Wrote column row to output file: {value}")
+            self.num_lines_uploaded += len(df)
 
         return mock.MagicMock()
 
@@ -442,8 +441,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         # Delete should not be called since the table does not exist
         self.mock_big_query_client.delete_from_table_async.assert_not_called()
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -455,6 +454,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(2, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -485,8 +485,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             + str(self._metadata_for_unprocessed_file_path(file_path).file_id),
         )
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -498,6 +498,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(2, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -542,8 +543,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -556,6 +557,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(2, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -581,8 +583,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -595,6 +597,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -620,8 +623,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -634,6 +637,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -659,8 +663,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -673,6 +677,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -698,30 +703,23 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.assertEqual(5, len(self.fs.gcs_file_system.uploaded_paths))
 
-        expected_insert_calls = [
-            call(
-                source_uri=uploaded_path.uri(),
-                destination_dataset_ref=bigquery.DatasetReference(
-                    self.project_id, "us_xx_raw_data"
-                ),
-                destination_table_id="tagPipeSeparatedNonUTF8",
-                destination_table_schema=[
-                    bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("COL4", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
-                    bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
-                ],
-            )
-            for uploaded_path in self.fs.gcs_file_system.uploaded_paths
-        ]
-
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_has_calls(
-            expected_insert_calls, any_order=True
-        )
-        self.assertEqual(
-            len(expected_insert_calls) - 1, self.mock_time.sleep.call_count
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=sorted(
+                [p.uri() for p in self.fs.gcs_file_system.uploaded_paths]
+            ),
+            destination_dataset_ref=bigquery.DatasetReference(
+                self.project_id, "us_xx_raw_data"
+            ),
+            destination_table_id="tagPipeSeparatedNonUTF8",
+            destination_table_schema=[
+                bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL4", "STRING", "NULLABLE"),
+                bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+            ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -747,30 +745,23 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.assertEqual(3, len(self.fs.gcs_file_system.uploaded_paths))
 
-        expected_insert_calls = [
-            call(
-                source_uri=uploaded_path.uri(),
-                destination_dataset_ref=bigquery.DatasetReference(
-                    self.project_id, "us_xx_raw_data"
-                ),
-                destination_table_id="tagPipeSeparatedNonUTF8",
-                destination_table_schema=[
-                    bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("COL4", "STRING", "NULLABLE"),
-                    bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
-                    bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
-                ],
-            )
-            for uploaded_path in self.fs.gcs_file_system.uploaded_paths
-        ]
-
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_has_calls(
-            expected_insert_calls, any_order=True
-        )
-        self.assertEqual(
-            len(expected_insert_calls) - 1, self.mock_time.sleep.call_count
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=sorted(
+                [p.uri() for p in self.fs.gcs_file_system.uploaded_paths]
+            ),
+            destination_dataset_ref=bigquery.DatasetReference(
+                self.project_id, "us_xx_raw_data"
+            ),
+            destination_table_id="tagPipeSeparatedNonUTF8",
+            destination_table_schema=[
+                bigquery.SchemaField("PRIMARY_COL1", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL4", "STRING", "NULLABLE"),
+                bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+            ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -794,8 +785,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -808,6 +799,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(1, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
@@ -831,8 +823,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
-            source_uri=path.uri(),
+        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+            source_uris=[path.uri()],
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
             ),
@@ -844,6 +836,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         self.assertEqual(2, self.num_lines_uploaded)
         self._check_no_temp_files_remain()

@@ -1466,9 +1466,8 @@ class BaseDirectIngestController:
         self.csv_reader.streaming_read(
             path, delegate=delegate, chunk_size=self.ingest_file_split_line_limit
         )
-        output_paths = [path for path, _ in delegate.output_paths_with_columns]
 
-        return output_paths
+        return delegate.output_paths
 
 
 def check_is_region_launched_in_env(region: Region) -> None:
