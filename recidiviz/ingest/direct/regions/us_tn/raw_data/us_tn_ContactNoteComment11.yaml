@@ -15,6 +15,9 @@ columns:
   - name: SupervisionType
     description: |-
       The supervision type associated with the contact.
+  - name: SiteID
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: PostedByStaffID
     description: |-
       The staff ID of the person who posted the comment associated with a contact.
