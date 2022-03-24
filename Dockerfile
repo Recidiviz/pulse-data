@@ -58,7 +58,8 @@ RUN apt update -y && \
     libxml2-dev libxslt1-dev \
     python3.8-dev python3-pip \
     default-jre \
-    libpq-dev
+    libpq-dev \
+    curl
 
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
