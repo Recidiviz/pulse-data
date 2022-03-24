@@ -20,8 +20,10 @@ import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
+import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import "../style/App.css";
+import AgencyProvisioningView from "./AgencyProvisioningView";
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
 import ColumnView from "./ColumnView";
@@ -140,6 +142,13 @@ const App = (): JSX.Element => {
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
+          <Menu.ItemGroup title="Justice Counts Tools">
+            <Menu.Item key={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}>
+              <Link to={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}>
+                Agency Provisioning
+              </Link>
+            </Menu.Item>
+          </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
       <div className="main-content">
@@ -211,6 +220,10 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}
             component={UploadRawFilesView}
+          />
+          <Route
+            path={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}
+            component={AgencyProvisioningView}
           />
           <Redirect
             from="/"
