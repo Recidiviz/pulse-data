@@ -29,7 +29,7 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 """
 
 import enum
-from typing import TypeVar
+from typing import Any, Dict, TypeVar
 
 from sqlalchemy import ForeignKey, Table
 from sqlalchemy.orm import relationship
@@ -123,6 +123,12 @@ class Source(JusticeCountsBase):
     # in this case, either "source" or "agency".
     type = Column(String(255))
 
+    # Type is the "discriminator" column, and is configured to act as such by the
+    # "mapper.polymorphic_on" parameter (see below).
+    # This column will store a value which indicates the type of object represented within the row;
+    # in this case, either "source" or "agency".
+    type = Column(String(255))
+
     __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(name)])
 
     # We use SQLAlchemy's single table inheritance (https://docs.sqlalchemy.org/en/14/orm/inheritance.html)
@@ -145,6 +151,9 @@ class Agency(Source):
     __mapper_args__ = {
         "polymorphic_identity": "agency",
     }
+
+    def to_json(self) -> Dict[str, Any]:
+        return {"id": self.id, "name": self.name}
 
 
 class UserAccount(JusticeCountsBase):

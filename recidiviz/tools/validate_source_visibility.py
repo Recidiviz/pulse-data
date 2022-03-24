@@ -284,6 +284,7 @@ def main() -> int:
                 "recidiviz.common",
                 "recidiviz.datasets",
                 "recidiviz.ingest",
+                "recidiviz.justice_counts",
                 "recidiviz.metrics",
                 "recidiviz.persistence",
                 "recidiviz.reporting",
