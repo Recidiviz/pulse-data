@@ -30,12 +30,7 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
 )
 from recidiviz.calculator.pipeline.metrics.recidivism import identifier, metric_producer
 from recidiviz.calculator.pipeline.pipeline_type import RECIDIVISM_METRICS_PIPELINE_NAME
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
+from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -56,14 +51,11 @@ class RecidivismMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 entities.StatePerson,
                 entities.StatePersonRace,
                 entities.StatePersonEthnicity,
-                entities.StateIncarcerationPeriod,
-                entities.StateSupervisionPeriod,
                 entities.StatePersonExternalId,
+                normalized_entities.NormalizedStateIncarcerationPeriod,
             ],
             required_reference_tables=[PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME],
             state_specific_required_delegates=[
-                StateSpecificIncarcerationNormalizationDelegate,
-                StateSpecificSupervisionNormalizationDelegate,
                 StateSpecificIncarcerationDelegate,
             ],
             state_specific_required_reference_tables={},
