@@ -24,6 +24,7 @@ from typing import (
     Dict,
     Generic,
     List,
+    Optional,
     Set,
     Type,
     TypeVar,
@@ -41,6 +42,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     UNIFYING_ID_KEY,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    normalized_entity_class_exists_for_base_class_with_name,
     normalized_entity_class_with_base_class_name,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
@@ -57,7 +59,8 @@ DatasetStr = str
 QueryStr = str
 DataTablesDict = Dict[str, List[NormalizedDatabaseDict]]
 DataDictQueryFn = Callable[
-    [DatasetStr, QueryStr, DataTablesDict, str], List[NormalizedDatabaseDict]
+    [DatasetStr, QueryStr, DataTablesDict, str, Optional[DatasetStr]],
+    List[NormalizedDatabaseDict],
 ]
 
 # Regex matching queries used by calc pipelines to hydrate database entities.
@@ -173,6 +176,7 @@ class FakeReadFromBigQueryFactory:
         expected_dataset: str,
         data_dict: DataTablesDict,
         unifying_id_field: str = "person_id",
+        expected_normalized_dataset: Optional[str] = None,
     ) -> Callable[[QueryStr], FakeReadFromBigQuery]:
         """Returns a constructors function that can mock the ReadFromBigQuery class and will return a
         FakeReadFromBigQuery instead.
@@ -182,7 +186,11 @@ class FakeReadFromBigQueryFactory:
 
         def _fake_bq_source_constructor(query: QueryStr) -> FakeReadFromBigQuery:
             table_values = data_dict_query_fn(
-                expected_dataset, query, data_dict, unifying_id_field
+                expected_dataset,
+                query,
+                data_dict,
+                unifying_id_field,
+                expected_normalized_dataset,
             )
             return FakeReadFromBigQuery(table_values=table_values)
 
@@ -194,18 +202,29 @@ class FakeReadFromBigQueryFactory:
         query: QueryStr,
         data_dict: DataTablesDict,
         unifying_id_field: str,
+        expected_normalized_dataset: Optional[str],
     ) -> List[NormalizedDatabaseDict]:
         """Default implementation of the fake query function, which parses, validates,
         and replicates the behavior of the provided query string, returning data out
         of the data_dict object."""
+        expected_normalized_dataset = expected_normalized_dataset or None
+
         if re.match(ASSOCIATION_VALUES_QUERY_REGEX, query):
             return FakeReadFromBigQueryFactory._do_fake_association_values_query(
-                data_dict, query, expected_dataset, unifying_id_field
+                data_dict,
+                query,
+                expected_dataset,
+                unifying_id_field,
+                expected_normalized_dataset,
             )
 
         if re.match(ENTITY_TABLE_QUERY_REGEX, query):
             return FakeReadFromBigQueryFactory._do_fake_entity_table_query(
-                data_dict, query, expected_dataset, unifying_id_field
+                data_dict,
+                query,
+                expected_dataset,
+                unifying_id_field,
+                expected_normalized_dataset,
             )
 
         raise ValueError(f"Query string does not match known query format: {query}")
@@ -216,6 +235,7 @@ class FakeReadFromBigQueryFactory:
         query: str,
         expected_dataset: str,
         expected_unifying_id_field: str,
+        expected_normalized_dataset: Optional[str] = None,
     ) -> List[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided entity table
         query string, returning data out of the data_dict object.
@@ -227,15 +247,32 @@ class FakeReadFromBigQueryFactory:
 
         dataset = match.group(2)
 
-        if dataset != expected_dataset:
-            raise ValueError(
-                f"Found dataset {dataset} does not match expected "
-                f"dataset {expected_dataset}"
-            )
-
         table_name = match.group(3)
         if table_name not in data_dict:
             raise ValueError(f"Table {table_name} not in data dict")
+
+        try:
+            db_entity = get_database_entity_by_table_name(schema, table_name)
+        except ValueError:
+            db_entity = None
+
+        if (
+            db_entity
+            and expected_normalized_dataset
+            and normalized_entity_class_exists_for_base_class_with_name(
+                db_entity.__name__
+            )
+        ):
+            if dataset != expected_normalized_dataset:
+                raise ValueError(
+                    f"Found dataset [{dataset}] does not match expected "
+                    f"dataset [{expected_normalized_dataset}]"
+                )
+        elif dataset != expected_dataset:
+            raise ValueError(
+                f"Found dataset [{dataset}] does not match expected "
+                f"dataset [{expected_dataset}]"
+            )
 
         all_table_rows = data_dict[table_name]
 
@@ -308,6 +345,9 @@ class FakeReadFromBigQueryFactory:
         query: str,
         expected_dataset: str,
         expected_unifying_id_field: str,
+        # TODO(#10730): Implement support for association queries from normalized
+        #  datasets
+        _expected_normalized_dataset: Optional[str] = None,
     ) -> List[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided association
         value query string, returning data out of the data_dict object.

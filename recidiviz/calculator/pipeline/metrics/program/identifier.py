@@ -31,13 +31,6 @@ from recidiviz.calculator.pipeline.metrics.program.events import (
     ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    entity_normalization_managers_for_periods,
-    normalized_program_assignments_for_calculations,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
@@ -45,14 +38,8 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
-    convert_entity_trees_to_normalized_versions,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
-    StateSpecificProgramAssignmentNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
@@ -75,12 +62,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
-    StatePerson,
-    StateProgramAssignment,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 
 EXTERNAL_UNKNOWN_VALUE = "EXTERNAL_UNKNOWN"
 
@@ -93,28 +75,20 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def find_events(
-        self, person: StatePerson, identifier_context: IdentifierContextT
+        self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[ProgramEvent]:
-        if not person.person_id:
-            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
 
         return self._find_program_events(
-            person_id=person.person_id,
-            ip_normalization_delegate=identifier_context[
-                StateSpecificIncarcerationNormalizationDelegate.__name__
+            program_assignments=identifier_context[
+                NormalizedStateProgramAssignment.base_class_name()
             ],
-            sp_normalization_delegate=identifier_context[
-                StateSpecificSupervisionNormalizationDelegate.__name__
+            supervision_periods=identifier_context[
+                NormalizedStateSupervisionPeriod.base_class_name()
             ],
-            program_assignment_normalization_delegate=identifier_context[
-                StateSpecificProgramAssignmentNormalizationDelegate.__name__
-            ],
+            assessments=identifier_context[StateAssessment.__name__],
             supervision_delegate=identifier_context[
                 StateSpecificSupervisionDelegate.__name__
             ],
-            program_assignments=identifier_context[StateProgramAssignment.__name__],
-            assessments=identifier_context[StateAssessment.__name__],
-            supervision_periods=identifier_context[StateSupervisionPeriod.__name__],
             supervision_period_to_agent_association=identifier_context[
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
             ],
@@ -122,14 +96,10 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
     def _find_program_events(
         self,
-        person_id: int,
-        ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
-        sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
-        program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
-        program_assignments: List[StateProgramAssignment],
+        supervision_periods: List[NormalizedStateSupervisionPeriod],
+        program_assignments: List[NormalizedStateProgramAssignment],
         assessments: List[StateAssessment],
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_period_to_agent_association: List[Dict[str, Any]],
     ) -> List[ProgramEvent]:
         """Finds instances of interaction with a program.
@@ -153,61 +123,24 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         if not program_assignments:
             return program_events
 
-        # TODO(#10731): Remove calls to get the normalized versions of program
-        #  assignments once this metric pipeline is hydrating Normalized versions of
-        #  all entities
-        normalized_program_assignments = normalized_program_assignments_for_calculations(
-            program_assignment_normalization_delegate=program_assignment_normalization_delegate,
-            program_assignments=program_assignments,
-            field_index=self.field_index,
-        )
-
         sorted_program_assignments = sort_normalized_entities_by_sequence_num(
-            normalized_program_assignments
+            program_assignments
         )
 
         supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
             supervision_period_to_agent_association,
-            StateSupervisionPeriod.get_class_id_name(),
+            NormalizedStateSupervisionPeriod.get_class_id_name(),
         )
 
-        (_, sp_normalization_manager,) = entity_normalization_managers_for_periods(
-            person_id=person_id,
-            ip_normalization_delegate=ip_normalization_delegate,
-            sp_normalization_delegate=sp_normalization_delegate,
-            incarceration_periods=None,
-            supervision_periods=supervision_periods,
-            normalized_violation_responses=None,
-            field_index=self.field_index,
-            incarceration_sentences=None,
-            supervision_sentences=None,
-        )
-
-        if not sp_normalization_manager:
-            raise ValueError("Expected normalized SPs for this pipeline.")
-
-        # TODO(#10731): Remove calls to sp_normalization_manager and conversion to
-        #  NormalizedStateSupervisionPeriods once this metric pipeline is hydrating
-        #  Normalized versions of all entities
-        (
-            processed_sps,
-            additional_sp_attributes,
-        ) = (
-            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
-        )
-
-        normalized_sps = convert_entity_trees_to_normalized_versions(
-            root_entities=processed_sps,
-            normalized_entity_class=NormalizedStateSupervisionPeriod,
-            additional_attributes_map=additional_sp_attributes,
-            field_index=self.field_index,
+        sp_index = NormalizedSupervisionPeriodIndex(
+            sorted_supervision_periods=supervision_periods
         )
 
         for program_assignment in sorted_program_assignments:
             program_referrals = self._find_program_referrals(
                 program_assignment,
                 assessments,
-                normalized_sps,
+                sp_index.sorted_supervision_periods,
                 supervision_period_to_agent_associations,
                 supervision_delegate,
             )
@@ -215,7 +148,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             program_events.extend(program_referrals)
 
             program_participation_events = self._find_program_participation_events(
-                program_assignment, normalized_sps
+                program_assignment, sp_index.sorted_supervision_periods
             )
 
             program_events.extend(program_participation_events)

@@ -50,7 +50,9 @@ class CoreEntity:
     @lru_cache(maxsize=None)
     def get_class_id_name(cls) -> str:
         id_name = to_snake_case(cls.__name__) + "_id"
-        if id_name.startswith("state_"):
+        if id_name.startswith("normalized_state_"):
+            id_name = id_name.replace("normalized_state_", "")
+        elif id_name.startswith("state_"):
             id_name = id_name.replace("state_", "")
         return id_name
 
