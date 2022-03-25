@@ -23,15 +23,21 @@ from flask import Blueprint, Flask, Response, send_from_directory
 from flask_wtf.csrf import CSRFProtect
 
 from recidiviz.justice_counts.control_panel.config import Config
-from recidiviz.justice_counts.control_panel.routes.api import api_blueprint
-from recidiviz.justice_counts.control_panel.routes.auth import auth_blueprint
+from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
+from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
+from recidiviz.utils.secrets import get_local_secret
 
 
 def get_blueprints_for_justice_counts_documentation() -> List[Tuple[Blueprint, str]]:
+
     return [
-        (api_blueprint, "/justice_counts/api"),
-        (auth_blueprint, "/justice_counts/auth"),
+        (
+            get_api_blueprint(passthrough_authorization_decorator()),
+            "/justice_counts/api",
+        ),
+        (get_auth_blueprint(), "/justice_counts/auth"),
     ]
 
 
@@ -55,17 +61,19 @@ def create_app(config: Optional[Config] = None) -> Flask:
         )
     )
 
+    local_path = os.path.join(
+        os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
+    )
     app = Flask(__name__, static_folder=static_folder)
 
     config = config or Config()
     app.config.from_object(config)
-
+    app.secret_key = get_local_secret(local_path, "justice_counts_secret")
     setup_scoped_sessions(
         app=app, database_key=config.DATABASE_KEY, db_url=config.DB_URL
     )
-
-    app.register_blueprint(api_blueprint, url_prefix="/api")
-    app.register_blueprint(auth_blueprint, url_prefix="/auth")
+    app.register_blueprint(get_api_blueprint(config.AUTH_DECORATOR), url_prefix="/api")
+    app.register_blueprint(get_auth_blueprint(), url_prefix="/auth")
 
     CSRFProtect(app)
 

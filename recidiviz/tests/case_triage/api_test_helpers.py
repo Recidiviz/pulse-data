@@ -17,9 +17,8 @@
 """ Test helpers for the Case Triage app """
 import contextlib
 from datetime import datetime, timedelta
-from functools import wraps
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 from unittest import TestCase
 
 import attr
@@ -37,21 +36,11 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 from recidiviz.tests.case_triage.case_triage_helpers import hash_email
+from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 from recidiviz.utils.types import assert_type
 
 DEMO_USER_EMAIL = "demo_user@not-recidiviz.org"
 ADMIN_USER_EMAIL = "admin@not-recidiviz.org"
-
-
-def passthrough_authorization_decorator() -> Callable:
-    def decorated(route: Callable) -> Callable:
-        @wraps(route)
-        def inner(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-            return route(*args, **kwargs)
-
-        return inner
-
-    return decorated
 
 
 @attr.s

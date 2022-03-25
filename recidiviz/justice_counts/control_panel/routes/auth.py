@@ -15,15 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements authentication routes for the Justice Counts Control Panel backend API."""
+
 from http import HTTPStatus
 
 from flask import Blueprint, Response
 
-auth_blueprint = Blueprint("auth", __name__)
 
+def get_auth_blueprint() -> Blueprint:
+    auth_blueprint = Blueprint("auth", __name__)
 
-@auth_blueprint.route("/logout", methods=["POST"])
-def logout() -> Response:
-    # Deletes the session cookie and corresponding data
-    # TODO(#11550): Implement logout endpoint
-    return Response(status=HTTPStatus.OK)
+    @auth_blueprint.route("/logout", methods=["POST"])
+    def logout() -> Response:
+        # Deletes the session cookie and corresponding data
+        # TODO(#11550): Implement logout endpoint
+        return Response(status=HTTPStatus.OK)
+
+    return auth_blueprint
