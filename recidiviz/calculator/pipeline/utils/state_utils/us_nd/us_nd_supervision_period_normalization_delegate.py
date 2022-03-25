@@ -17,7 +17,7 @@
 """US_ND implementation of the supervision normalization delegate"""
 from typing import List, Optional
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (

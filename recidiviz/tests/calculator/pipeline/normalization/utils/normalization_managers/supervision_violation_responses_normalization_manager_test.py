@@ -21,7 +21,7 @@ from typing import List
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
@@ -69,7 +69,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         return processed_vrs
 
-    def test_default_filtered_violation_responses_for_violation_history_draft(self):
+    def test_default_filtered_violation_responses_for_violation_history_draft(
+        self,
+    ) -> None:
         placeholder_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
         )
@@ -135,7 +137,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             normalized_responses,
         )
 
-    def test_default_filtered_violation_responses_for_violation_history_null_date(self):
+    def test_default_filtered_violation_responses_for_violation_history_null_date(
+        self,
+    ) -> None:
         placeholder_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
         )
@@ -410,11 +414,11 @@ class TestValidateVrInvariants(unittest.TestCase):
 
         hydrate_bidirectional_relationships_on_expected_response(self.ssvr)
 
-    def test_validate_vr_invariants_valid(self):
+    def test_validate_vr_invariants_valid(self) -> None:
         # Assert no error
         ViolationResponseNormalizationManager.validate_vr_invariants([self.ssvr])
 
-    def test_validate_vr_invariants_invalid_ids(self):
+    def test_validate_vr_invariants_invalid_ids(self) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=456,
             external_id="123",
@@ -449,7 +453,7 @@ class TestValidateVrInvariants(unittest.TestCase):
             e.exception.args[0],
         )
 
-    def test_validate_vr_invariants_invalid_bad_tree(self):
+    def test_validate_vr_invariants_invalid_bad_tree(self) -> None:
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=456,
             external_id="123",
@@ -488,7 +492,7 @@ class TestValidateVrInvariants(unittest.TestCase):
             "parent StateSupervisionViolation" in e.exception.args[0]
         )
 
-    def test_validate_vr_invariants_invalid_bad_tree_not_dropped(self):
+    def test_validate_vr_invariants_invalid_bad_tree_not_dropped(self) -> None:
         bad_ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
             external_id="123",

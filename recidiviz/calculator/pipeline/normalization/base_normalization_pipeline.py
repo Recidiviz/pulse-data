@@ -43,18 +43,18 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entities_to_normalized_dicts,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     WriteToBigQuery,
     json_serializable_dict,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
-    EntityNormalizationManager,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    AdditionalAttributesMap,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
-    convert_entities_to_normalized_dicts,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     TableRow,

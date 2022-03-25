@@ -24,11 +24,11 @@ from recidiviz.big_query.big_query_utils import (
     schema_field_for_attribute,
     schema_for_sqlalchemy_table,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
     get_entity_class_names_excluded_from_normalization,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
     NormalizedStateEntityT,
     normalized_entity_class_with_base_class_name,

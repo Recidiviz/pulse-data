@@ -18,11 +18,11 @@
 
 from typing import List
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     LAW_CITATION_SUBTYPE_STR,

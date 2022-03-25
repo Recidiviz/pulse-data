@@ -26,7 +26,7 @@ from recidiviz.calculator.pipeline.metrics.utils import (
 from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,

@@ -20,7 +20,7 @@ from typing import Any, Dict, Sequence, Tuple
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
 from recidiviz.persistence.entity.base_entity import Entity

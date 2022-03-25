@@ -17,7 +17,7 @@
 """Contains state-specific logic for certain aspects of pre-processing US_ME
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
 

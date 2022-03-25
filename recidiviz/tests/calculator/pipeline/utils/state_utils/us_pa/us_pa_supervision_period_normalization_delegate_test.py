@@ -20,7 +20,7 @@ from datetime import date
 
 import mock
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     clear_entity_id_index_cache,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_period_normalization_delegate import (
@@ -52,7 +52,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
 
         clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization."
+            "recidiviz.calculator.pipeline.normalization.utils."
             "normalized_entities_utils._fixed_length_object_id_for_entity"
         )
         self.mock_unique_id = self.unique_id_patcher.start()

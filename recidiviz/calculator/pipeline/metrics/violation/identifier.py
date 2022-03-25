@@ -36,11 +36,11 @@ from recidiviz.calculator.pipeline.metrics.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (

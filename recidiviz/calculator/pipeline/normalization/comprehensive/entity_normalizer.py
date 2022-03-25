@@ -23,26 +23,26 @@ from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     EntityNormalizerContext,
     EntityNormalizerResult,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    entity_normalization_managers_for_periods,
+from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_manager_utils import (
+    normalized_periods_for_calculations,
     normalized_violation_responses_from_processed_versions,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    merge_additional_attributes_maps,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    merge_additional_attributes_maps,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -188,9 +188,9 @@ def all_normalized_entities(
     )
 
     (
-        ip_normalization_manager,
-        sp_normalization_manager,
-    ) = entity_normalization_managers_for_periods(
+        (processed_incarceration_periods, additional_ip_attributes),
+        (processed_supervision_periods, additional_sp_attributes),
+    ) = normalized_periods_for_calculations(
         person_id=person_id,
         ip_normalization_delegate=ip_normalization_delegate,
         sp_normalization_delegate=sp_normalization_delegate,
@@ -200,32 +200,6 @@ def all_normalized_entities(
         field_index=field_index,
         incarceration_sentences=incarceration_sentences,
         supervision_sentences=supervision_sentences,
-    )
-
-    if not ip_normalization_manager:
-        raise ValueError(
-            "Expected instantiated "
-            "IncarcerationPeriodNormalizationManager. Found None."
-        )
-
-    if not sp_normalization_manager:
-        raise ValueError(
-            "Expected instantiated "
-            "SupervisionPeriodNormalizationManager. Found None."
-        )
-
-    (
-        processed_incarceration_periods,
-        additional_ip_attributes,
-    ) = (
-        ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
-    )
-
-    (
-        processed_supervision_periods,
-        additional_sp_attributes,
-    ) = (
-        sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
     )
 
     additional_attributes_map = merge_additional_attributes_maps(

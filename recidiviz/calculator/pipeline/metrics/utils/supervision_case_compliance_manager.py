@@ -28,12 +28,12 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    find_most_recent_applicable_assessment_of_class_for_state,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    find_most_recent_applicable_assessment_of_class_for_state,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

@@ -21,17 +21,17 @@ import inspect
 import unittest
 from typing import Dict, Set, Type
 
-from recidiviz.calculator.pipeline.utils.entity_normalization import (
+from recidiviz.calculator.pipeline.normalization.utils import (
     entity_normalization_manager_utils,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
-    EntityNormalizationManager,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    entity_normalization_managers_for_periods,
+from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_manager_utils import (
+    normalized_periods_for_calculations,
     normalized_violation_responses_from_processed_versions,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
@@ -57,10 +57,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
-from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalized_entities_test import (
+from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities_test import (
     classes_in_normalized_entity_subtree,
 )
-from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalized_entities_utils_test import (
+from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities_utils_test import (
     get_normalized_violation_tree,
     get_violation_tree,
 )
@@ -82,14 +82,14 @@ class TestSupervisionNormalizationDelegate(UsXxSupervisionNormalizationDelegate)
         return True
 
 
-class TestNormalizationManagersForCalculations(unittest.TestCase):
-    """Tests the entity_normalization_managers_for_periods function."""
+class TestNormalizedPeriodsForCalculations(unittest.TestCase):
+    """Tests the normalized_periods_for_calculations function."""
 
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
         self.person_id = 123
 
-    def test_normalization_managers_for_calculations(self) -> None:
+    def test_normalized_periods_for_calculations(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -112,10 +112,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        (
-            ip_normalization_manager,
-            sp_normalization_manager,
-        ) = entity_normalization_managers_for_periods(
+        ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
@@ -127,27 +124,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             supervision_sentences=None,
         )
 
-        assert ip_normalization_manager is not None
-        (
-            processed_ips,
-            _,
-        ) = (
-            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
-        )
-
         self.assertEqual([incarceration_period], processed_ips)
-        assert sp_normalization_manager is not None
-
-        (
-            processed_sps,
-            _,
-        ) = (
-            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
-        )
-
         self.assertEqual([supervision_period], processed_sps)
 
-    def test_normalization_managers_for_calculations_no_sps(self) -> None:
+    def test_normalized_periods_for_calculations_no_sps(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
@@ -160,10 +140,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        (
-            ip_normalization_manager,
-            sp_normalization_manager,
-        ) = entity_normalization_managers_for_periods(
+        ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
@@ -175,21 +152,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             supervision_sentences=None,
         )
 
-        assert ip_normalization_manager is not None
-        (
-            processed_ips,
-            _,
-        ) = (
-            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
-        )
+        self.assertEqual([incarceration_period], processed_ips)
+        self.assertEqual([], processed_sps)
 
-        self.assertEqual(
-            [incarceration_period],
-            processed_ips,
-        )
-        self.assertIsNone(sp_normalization_manager)
-
-    def test_normalization_managers_for_calculations_no_sps_state_requires(
+    def test_normalized_periods_for_calculations_no_sps_state_requires(
         self,
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -206,7 +172,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Assert an error is raised if the supervision_periods arg is None for a
             # state that relies on supervision periods for IP pre-processing
-            (_, _,) = entity_normalization_managers_for_periods(
+            (_, _,) = normalized_periods_for_calculations(
                 person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
                 sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
@@ -218,7 +184,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
                 supervision_sentences=None,
             )
 
-    def test_normalization_managers_for_calculations_no_violation_responses_state_requires(
+    def test_normalized_periods_for_calculations_no_violation_responses_state_requires(
         self,
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -235,7 +201,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Assert an error is raised if the violation_responses arg is None for a
             # state that relies on violation responses for IP pre-processing
-            (_, _,) = entity_normalization_managers_for_periods(
+            (_, _,) = normalized_periods_for_calculations(
                 person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
                 sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
@@ -247,7 +213,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
                 supervision_sentences=None,
             )
 
-    def test_normalization_managers_for_calculations_no_sentences_state_requires(
+    def test_normalized_periods_for_calculations_no_sentences_state_requires(
         self,
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -264,7 +230,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Assert an error is raised if either sentences arg is None for a state
             # that relies on sentences for SP pre-processing
-            (_, _) = entity_normalization_managers_for_periods(
+            (_, _) = normalized_periods_for_calculations(
                 person_id=self.person_id,
                 ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
                 sp_normalization_delegate=TestSupervisionNormalizationDelegate(),
@@ -276,7 +242,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
                 supervision_sentences=None,
             )
 
-    def test_normalization_managers_for_calculations_no_ips(self) -> None:
+    def test_normalized_periods_for_calculations_no_ips(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -287,10 +253,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
         )
 
-        (
-            ip_normalization_manager,
-            sp_normalization_manager,
-        ) = entity_normalization_managers_for_periods(
+        ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
@@ -302,24 +265,12 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             supervision_sentences=None,
         )
 
-        self.assertIsNone(ip_normalization_manager)
-        assert sp_normalization_manager is not None
-
-        (
-            processed_sps,
-            _,
-        ) = (
-            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
-        )
-
+        self.assertEqual([], processed_ips)
         self.assertEqual([supervision_period], processed_sps)
 
-    def test_normalization_managers_for_calculations_empty_lists(self) -> None:
+    def test_normalized_periods_for_calculations_empty_lists(self) -> None:
 
-        (
-            ip_normalization_manager,
-            sp_normalization_manager,
-        ) = entity_normalization_managers_for_periods(
+        ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
             ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
             sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
@@ -331,12 +282,10 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             supervision_sentences=None,
         )
 
-        assert ip_normalization_manager is not None
-        assert sp_normalization_manager is not None
-        self.assertEqual([], ip_normalization_manager._original_incarceration_periods)
-        self.assertEqual([], sp_normalization_manager._supervision_periods)
+        self.assertEqual([], processed_ips)
+        self.assertEqual([], processed_sps)
 
-    def test_normalization_managers_completeness(self):
+    def test_normalization_managers_completeness(self) -> None:
         all_normalization_managers = [
             obj
             for _, obj in inspect.getmembers(entity_normalization_manager_utils)
@@ -350,14 +299,16 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
             entity_normalization_manager_utils.NORMALIZATION_MANAGERS,
         )
 
-    def test_non_overlapping_normalized_subtrees(self):
+    def test_non_overlapping_normalized_subtrees(self) -> None:
         """Confirms that there are no entity types that are modified by more than one
         normalization manager."""
         normalized_entities_by_manager: Dict[str, Set[Type[Entity]]] = {}
 
-        for manager in entity_normalization_manager_utils.NORMALIZATION_MANAGERS:
-            normalized_entities_by_manager[manager.__name__] = set(
-                manager.normalized_entity_classes()
+        for (
+            normalization_manager
+        ) in entity_normalization_manager_utils.NORMALIZATION_MANAGERS:
+            normalized_entities_by_manager[normalization_manager.__name__] = set(
+                normalization_manager.normalized_entity_classes()
             )
 
         for manager, normalized_entities in normalized_entities_by_manager.items():
@@ -378,7 +329,7 @@ class TestNormalizationManagersForCalculations(unittest.TestCase):
                         f"manager."
                     )
 
-    def test_subtree_completeness(self):
+    def test_subtree_completeness(self) -> None:
         """Tests that there are no entities reachable by any of the entities in the
         normalized_entity_classes list of a normalization manager that aren't also
         listed as modified by the manager during normalization."""

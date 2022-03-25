@@ -29,18 +29,18 @@ from recidiviz.calculator.pipeline.normalization.comprehensive import (
     entity_normalizer,
     pipeline,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
     normalized_entity_class_with_base_class_name,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
@@ -60,7 +60,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
-from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalized_entities_utils_test import (
+from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities_utils_test import (
     get_normalized_violation_tree,
     get_violation_tree,
 )

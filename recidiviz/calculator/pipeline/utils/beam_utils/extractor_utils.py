@@ -37,15 +37,15 @@ from apache_beam import PCollection, Pipeline
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateEntity,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    state_base_entity_class_for_entity_class,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
     ReadFromBigQuery,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateEntity,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    state_base_entity_class_for_entity_class,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     EntityAssociation,

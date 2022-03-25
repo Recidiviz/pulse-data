@@ -23,8 +23,8 @@ import attr
 import mock
 
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
@@ -33,7 +33,7 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NormalizedStateSupervisionViolationTypeEntry,
     add_normalized_entity_validator_to_ref_fields,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
     AdditionalAttributesMap,
     clear_entity_id_index_cache,
@@ -53,7 +53,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
-from recidiviz.tests.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager_test import (
+from recidiviz.tests.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
     hydrate_bidirectional_relationships_on_expected_response,
 )
 
@@ -104,7 +104,7 @@ class TestNormalizedEntityClassesCoverage(unittest.TestCase):
 class TestMergeAdditionalAttributesMaps(unittest.TestCase):
     """Tests the merge_additional_attributes_maps function."""
 
-    def test_merge_additional_attributes_maps(self):
+    def test_merge_additional_attributes_maps(self) -> None:
         map_1: AdditionalAttributesMap = {
             StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
         }
@@ -125,7 +125,7 @@ class TestMergeAdditionalAttributesMaps(unittest.TestCase):
 
         self.assertEqual(expected_merged_maps, merged_map)
 
-    def test_merge_additional_attributes_maps_diff_entity_types(self):
+    def test_merge_additional_attributes_maps_diff_entity_types(self) -> None:
         map_1: AdditionalAttributesMap = {
             StateSupervisionViolationResponse.__name__: {123: {"sequence_num": 0}}
         }
@@ -147,7 +147,7 @@ class TestMergeAdditionalAttributesMaps(unittest.TestCase):
 
         self.assertEqual(expected_merged_maps, merged_map)
 
-    def test_merge_additional_attributes_maps_diff_entity_ids(self):
+    def test_merge_additional_attributes_maps_diff_entity_ids(self) -> None:
         map_1: AdditionalAttributesMap = {
             StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
         }
@@ -169,7 +169,7 @@ class TestMergeAdditionalAttributesMaps(unittest.TestCase):
 
         self.assertEqual(expected_merged_maps, merged_map)
 
-    def test_merge_additional_attributes_maps_empty_map(self):
+    def test_merge_additional_attributes_maps_empty_map(self) -> None:
         map_1: AdditionalAttributesMap = {
             StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
         }
@@ -186,7 +186,7 @@ class TestMergeAdditionalAttributesMaps(unittest.TestCase):
 
         self.assertEqual(expected_merged_maps, merged_map)
 
-    def test_merge_additional_attributes_maps_empty_map_with_name(self):
+    def test_merge_additional_attributes_maps_empty_map_with_name(self) -> None:
         map_1: AdditionalAttributesMap = {
             StateIncarcerationPeriod.__name__: {123: {"sequence_num": 0}}
         }
@@ -208,7 +208,7 @@ class TestMergeAdditionalAttributesMaps(unittest.TestCase):
 class TestGetSharedAdditionalAttributesMapForEntities(unittest.TestCase):
     """Tests the get_shared_additional_attributes_map_for_entities function."""
 
-    def test_get_shared_additional_attributes_map_for_entities(self):
+    def test_get_shared_additional_attributes_map_for_entities(self) -> None:
         entities_for_map = [
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
@@ -238,7 +238,9 @@ class TestGetSharedAdditionalAttributesMapForEntities(unittest.TestCase):
 
         self.assertEqual(expected_attributes_map, attributes_map)
 
-    def test_get_shared_additional_attributes_map_for_entities_not_sequenced(self):
+    def test_get_shared_additional_attributes_map_for_entities_not_sequenced(
+        self,
+    ) -> None:
         entities_for_map = [get_violation_tree()]
 
         attributes_map = get_shared_additional_attributes_map_for_entities(
@@ -417,8 +419,8 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
     def setUp(self) -> None:
         clear_entity_id_index_cache()
         self.mock_safe_object_id_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils."
-            "entity_normalization.normalized_entities_utils._fixed_length_object_id_for_entity",
+            "recidiviz.calculator.pipeline.normalization."
+            "utils.normalized_entities_utils._fixed_length_object_id_for_entity",
             return_value=88888,
         )
         self.mock_safe_object_id = self.mock_safe_object_id_patcher.start()
@@ -446,7 +448,8 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         self.assertEqual(expected_id_value, entity.get_id())
 
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils._get_entity_id_index_for_person_id_entity"
+        "recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils"
+        "._get_entity_id_index_for_person_id_entity"
     )
     def test_update_normalized_entity_with_globally_unique_id_id_taken(
         self, mock_id_index: mock.MagicMock
@@ -475,7 +478,8 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         self.assertEqual(expected_id_value, entity.get_id())
 
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils._get_entity_id_index_for_person_id_entity"
+        "recidiviz.calculator.pipeline.normalization.utils"
+        ".normalized_entities_utils._get_entity_id_index_for_person_id_entity"
     )
     def test_update_normalized_entity_with_globally_unique_id_id_taken_over_5_digits(
         self, mock_id_index: mock.MagicMock
@@ -505,7 +509,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         self.assertEqual(expected_id_value, entity.get_id())
 
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.entity_normalization."
+        "recidiviz.calculator.pipeline.normalization.utils."
         "normalized_entities_utils._add_entity_id_to_cache"
     )
     def test_update_normalized_entity_with_globally_unique_id_assert_added_to_index(
@@ -618,8 +622,8 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
     def setUp(self) -> None:
         clear_entity_id_index_cache()
         self.mock_safe_object_id_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils."
-            "entity_normalization.normalized_entities_utils._fixed_length_object_id_for_entity",
+            "recidiviz.calculator.pipeline.normalization."
+            "utils.normalized_entities_utils._fixed_length_object_id_for_entity",
             return_value=88888,
         )
         self.mock_safe_object_id_patcher.start()

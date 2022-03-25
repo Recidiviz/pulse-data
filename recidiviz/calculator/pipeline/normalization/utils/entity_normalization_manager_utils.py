@@ -18,36 +18,36 @@
 import datetime
 from typing import List, Optional, Tuple, Type, Union
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
+    ProgramAssignmentNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
+    SupervisionPeriodNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
+    ViolationResponseNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
-    ProgramAssignmentNormalizationManager,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-    SupervisionPeriodNormalizationManager,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    ViolationResponseNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
@@ -71,13 +71,7 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
 ]
 
 
-# TODO(#10731): Update this to return a tuple of:
-#  Tuple[
-#   Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap],
-#   Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap]
-#  ]
-#  once this is only being used by the normalization pipeline
-def entity_normalization_managers_for_periods(
+def normalized_periods_for_calculations(
     person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
@@ -90,12 +84,11 @@ def entity_normalization_managers_for_periods(
     incarceration_sentences: Optional[List[StateIncarcerationSentence]],
     supervision_sentences: Optional[List[StateSupervisionSentence]],
 ) -> Tuple[
-    Optional[IncarcerationPeriodNormalizationManager],
-    Optional[SupervisionPeriodNormalizationManager],
+    Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap],
+    Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap],
 ]:
-    """Helper for returning the IncarcerationNormalizationManager and
-    SupervisionNormalizationManager needed to access normalized incarceration and
-    supervision periods for calculations.
+    """Helper for returning the normalized incarceration and supervision periods for
+    calculations.
 
     DISCLAIMER: IP normalization may rely on normalized StateSupervisionPeriod
     entities for some states. Tread carefully if you are implementing any changes to
@@ -145,8 +138,10 @@ def entity_normalization_managers_for_periods(
         datetime.date
     ] = find_earliest_date_of_period_ending_in_death(periods=all_periods)
 
-    sp_normalization_manager: Optional[SupervisionPeriodNormalizationManager] = None
     supervision_period_index: Optional[NormalizedSupervisionPeriodIndex] = None
+
+    processed_sps: List[StateSupervisionPeriod] = []
+    additional_sp_attributes: AdditionalAttributesMap = {}
 
     if supervision_periods is not None:
         sp_normalization_manager = SupervisionPeriodNormalizationManager(
@@ -177,20 +172,34 @@ def entity_normalization_managers_for_periods(
             sorted_supervision_periods=normalized_sps
         )
 
-    ip_normalization_manager = (
-        IncarcerationPeriodNormalizationManager(
-            incarceration_periods=incarceration_periods,
-            normalization_delegate=ip_normalization_delegate,
-            normalized_supervision_period_index=supervision_period_index,
-            normalized_violation_responses=normalized_violation_responses,
-            field_index=field_index,
-            earliest_death_date=earliest_death_date,
-        )
-        if incarceration_periods is not None
-        else None
-    )
+    processed_ips: List[StateIncarcerationPeriod] = []
+    additional_ip_attributes: AdditionalAttributesMap = {}
 
-    return ip_normalization_manager, sp_normalization_manager
+    if incarceration_periods:
+        ip_normalization_manager = (
+            IncarcerationPeriodNormalizationManager(
+                incarceration_periods=incarceration_periods,
+                normalization_delegate=ip_normalization_delegate,
+                normalized_supervision_period_index=supervision_period_index,
+                normalized_violation_responses=normalized_violation_responses,
+                field_index=field_index,
+                earliest_death_date=earliest_death_date,
+            )
+            if incarceration_periods is not None
+            else None
+        )
+
+        (
+            processed_ips,
+            additional_ip_attributes,
+        ) = (
+            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
+        )
+
+    return (
+        (processed_ips, additional_ip_attributes),
+        (processed_sps, additional_sp_attributes),
+    )
 
 
 def normalized_violation_responses_from_processed_versions(
