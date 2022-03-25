@@ -683,12 +683,18 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self._check_no_temp_files_remain()
 
     def test_import_bq_file_multiple_chunks_even_division(self) -> None:
+        file_tag = "tagPipeSeparatedNonUTF8"
 
-        self.import_manager.upload_chunk_size = 1
+        # Update config chunk size to 1
+        config = attr.evolve(
+            self.region_raw_file_config.raw_file_configs[file_tag],
+            import_chunk_size_rows=1,
+        )
+        self.region_raw_file_config.raw_file_configs[file_tag] = config
 
         file_path = path_for_fixture_file_in_test_gcs_directory(
             bucket_path=self.ingest_bucket_path,
-            filename="tagPipeSeparatedNonUTF8.txt",
+            filename=f"{file_tag}.txt",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
@@ -725,12 +731,18 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self._check_no_temp_files_remain()
 
     def test_import_bq_file_multiple_chunks_uneven_division(self) -> None:
+        file_tag = "tagPipeSeparatedNonUTF8"
 
-        self.import_manager.upload_chunk_size = 2
+        # Update config chunk size to 2
+        config = attr.evolve(
+            self.region_raw_file_config.raw_file_configs[file_tag],
+            import_chunk_size_rows=2,
+        )
+        self.region_raw_file_config.raw_file_configs[file_tag] = config
 
         file_path = path_for_fixture_file_in_test_gcs_directory(
             bucket_path=self.ingest_bucket_path,
-            filename="tagPipeSeparatedNonUTF8.txt",
+            filename=f"{file_tag}.txt",
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )

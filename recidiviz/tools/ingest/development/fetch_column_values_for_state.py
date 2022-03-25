@@ -131,6 +131,7 @@ def _update_enum_known_values(
         ignore_quotes=original_config.ignore_quotes,
         supplemental_order_by_clause=original_config.supplemental_order_by_clause,
         always_historical_export=original_config.always_historical_export,
+        import_chunk_size_rows=original_config.import_chunk_size_rows,
     )
 
 
