@@ -109,6 +109,9 @@ class RawTableColumnInfo:
         return self.known_values
 
 
+_DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
+
+
 @attr.s(frozen=True)
 class DirectIngestRawFileConfig:
     """Struct for storing any configuration for raw data imports for a certain file tag."""
@@ -158,6 +161,13 @@ class DirectIngestRawFileConfig:
     # If true, means that we **always** will get a historical version of this raw data file from the state and will
     # never change to incremental uploads (for example, because we need to detect row deletions).
     always_historical_export: bool = attr.ib()
+
+    # Defines the number of rows in each chunk we will read one at a time from the
+    # original raw data file and write back to GCS files before loading into BQ.
+    # Increasing this value may increase import speed, but should only be done carefully
+    # - if the table has too much data in a row, increasing the number of rows per chunk
+    # may push us over VM memory limits. Defaults to 250,000 rows per chunk.
+    import_chunk_size_rows: int = attr.ib()
 
     # A comma-separated string representation of the primary keys
     primary_key_str: str = attr.ib()
@@ -267,6 +277,9 @@ class DirectIngestRawFileConfig:
         always_historical_export = file_config_dict.pop_optional(
             "always_historical_export", bool
         )
+        import_chunk_size_rows = file_config_dict.pop_optional(
+            "import_chunk_size_rows", int
+        )
 
         if len(file_config_dict) > 0:
             raise ValueError(
@@ -307,6 +320,8 @@ class DirectIngestRawFileConfig:
             always_historical_export=always_historical_export
             if always_historical_export
             else False,
+            import_chunk_size_rows=import_chunk_size_rows
+            or _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
         )
 
 
@@ -433,9 +448,6 @@ class DirectIngestRegionRawFileConfig:
         return set(self.raw_file_configs.keys())
 
 
-_DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
-
-
 def get_unprocessed_raw_files_in_bucket(
     fs: DirectIngestGCSFileSystem,
     bucket_path: GcsfsBucketPath,
@@ -480,7 +492,6 @@ class DirectIngestRawFileImportManager:
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
-        upload_chunk_size: int = _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
         sandbox_dataset_prefix: Optional[str] = None,
     ):
 
@@ -497,7 +508,6 @@ class DirectIngestRawFileImportManager:
                 region_module=self.region.region_module,
             )
         )
-        self.upload_chunk_size = upload_chunk_size
         self.csv_reader = GcsfsCsvReader(fs)
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region.region_code,
@@ -577,7 +587,7 @@ class DirectIngestRawFileImportManager:
         self.csv_reader.streaming_read(
             path,
             delegate=delegate,
-            chunk_size=self.upload_chunk_size,
+            chunk_size=file_config.import_chunk_size_rows,
             encodings_to_try=file_config.encodings_to_try(),
             index_col=False,
             header=0,
