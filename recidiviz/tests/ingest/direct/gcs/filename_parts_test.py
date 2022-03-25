@@ -310,3 +310,26 @@ class TestFilenamePartsFromPath(TestCase):
 
         self.assertEqual(parts.is_file_split, False)
         self.assertEqual(parts.file_split_size, None)
+
+    def test_filename_parts_from_path_raw_file_type_suffix(
+        self,
+    ) -> None:
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                "bucket-us-tn/unprocessed_2022-03-24T06:02:28:607028_raw_ContactNoteType-1.csv"
+            )
+        )
+
+        self.assertEqual(parts.processed_state, "unprocessed")
+        self.assertEqual(parts.extension, "csv")
+        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
+        self.assertEqual(parts.file_tag, "ContactNoteType")
+        self.assertEqual(parts.filename_suffix, "1")
+        self.assertEqual(
+            parts.utc_upload_datetime,
+            datetime.datetime.fromisoformat("2022-03-24T06:02:28:607028"),
+        )
+        self.assertEqual(parts.date_str, "2022-03-24")
+
+        self.assertEqual(parts.is_file_split, False)
+        self.assertEqual(parts.file_split_size, None)
