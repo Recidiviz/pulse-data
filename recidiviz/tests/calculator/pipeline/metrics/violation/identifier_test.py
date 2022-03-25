@@ -31,8 +31,12 @@ from recidiviz.calculator.pipeline.metrics.violation.events import (
 from recidiviz.calculator.pipeline.metrics.violation.pipeline import (
     ViolationMetricsPipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolatedConditionEntry,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
@@ -51,14 +55,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSupervisionViolatedConditionEntry,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateSupervisionViolationTypeEntry,
-)
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
@@ -77,7 +74,7 @@ class TestFindViolationEvents(unittest.TestCase):
 
     def _run_find_violation_events(
         self,
-        violations: List[StateSupervisionViolation],
+        violations: List[NormalizedStateSupervisionViolation],
         state_code_override: Optional[str] = None,
     ) -> List[ViolationEvent]:
         """Helper function for testing the find_events function."""
@@ -104,30 +101,32 @@ class TestFindViolationEvents(unittest.TestCase):
 
         all_kwargs: Dict[str, Any] = {
             **required_delegates,
-            StateSupervisionViolation.__name__: violations,
+            NormalizedStateSupervisionViolation.base_class_name(): violations,
         }
 
         return self.identifier.find_events(self.person, all_kwargs)
 
     def test_find_violation_events(self) -> None:
-        violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.FELONY,
         )
         violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -170,24 +169,28 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     """Tests the find_violation_with_response_events function."""
 
     def setUp(self) -> None:
-        self.violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code="US_XX",
-            violation_type=StateSupervisionViolationType.TECHNICAL,
+        self.violation_type = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code="US_XX",
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+            )
         )
         self.violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
-        self.violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[self.violation_decision],
+        self.violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[self.violation_decision],
+            )
         )
-        self.violation = StateSupervisionViolation.new_with_defaults(
+        self.violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -203,7 +206,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
 
     def _run_find_violation_with_response_events(
         self,
-        violation: StateSupervisionViolation,
+        violation: NormalizedStateSupervisionViolation,
         state_code_override: Optional[str] = None,
     ) -> List[ViolationWithResponseEvent]:
         """Helper for running _find_violation_with_response_events."""
@@ -215,11 +218,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         )
         if not state_code_override:
             state_specific_delegate_patcher.start()
-            person_id = 99000123
-        else:
-            person_id = (
-                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
-            )
 
         required_delegates = get_required_state_specific_delegates(
             state_code=(state_code_override or _STATE_CODE),
@@ -228,19 +226,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
 
         if not state_code_override:
             state_specific_delegate_patcher.stop()
-
-        response_normalization_delegate = required_delegates[
-            StateSpecificViolationResponseNormalizationDelegate.__name__
-        ]
-
-        if not isinstance(
-            response_normalization_delegate,
-            StateSpecificViolationResponseNormalizationDelegate,
-        ):
-            raise ValueError(
-                "Typing error. Expected "
-                "StateSpecificViolationResponseNormalizationDelegate."
-            )
 
         violation_delegate = required_delegates[StateSpecificViolationDelegate.__name__]
 
@@ -254,8 +239,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
 
         return self.identifier._find_violation_with_response_events(
-            person_id=person_id,
-            violation_response_normalization_delegate=response_normalization_delegate,
             violation_delegate=violation_delegate,
             violation=violation,
         )
@@ -295,36 +278,40 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     ) -> None:
         self.violation_response.response_date = None
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            self.violation
-        )
-        self.assertEqual([], violation_with_response_events)
+        with self.assertRaises(ValueError):
+            _ = self._run_find_violation_with_response_events(self.violation)
 
     def test_find_violation_with_response_events_includes_all_violation_types(
         self,
     ) -> None:
-        violation_type_1 = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code="US_XX",
-            violation_type=StateSupervisionViolationType.TECHNICAL,
+        violation_type_1 = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code="US_XX",
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+            )
         )
-        violation_type_2 = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code="US_XX",
-            violation_type=StateSupervisionViolationType.ABSCONDED,
+        violation_type_2 = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code="US_XX",
+                violation_type=StateSupervisionViolationType.ABSCONDED,
+            )
         )
         violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -374,18 +361,18 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_filters_permanent_decisions(
         self,
     ) -> None:
-        violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.TECHNICAL,
         )
         violation_decision_non_perm = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
         violation_response_non_perm = (
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
@@ -394,19 +381,21 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
         )
         violation_decision_perm = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
             )
         )
-        violation_response_perm = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_date=date(2021, 1, 5),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision_perm],
+        violation_response_perm = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_date=date(2021, 1, 5),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision_perm],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -452,18 +441,18 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_filters_draft_responses(
         self,
     ) -> None:
-        violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.TECHNICAL,
         )
         violation_decision_non_draft = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
         violation_response_non_draft = (
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
@@ -472,19 +461,21 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
         )
         violation_decision_draft = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
             )
         )
-        violation_response_draft = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 3),
-            is_draft=True,
-            supervision_violation_response_decisions=[violation_decision_draft],
+        violation_response_draft = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 3),
+                is_draft=True,
+                supervision_violation_response_decisions=[violation_decision_draft],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -532,37 +523,41 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_takes_first_response(
         self,
     ) -> None:
-        violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.TECHNICAL,
         )
         violation_decision_1 = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
-        violation_response_1 = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision_1],
+        violation_response_1 = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision_1],
+            )
         )
         violation_decision_2 = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
             )
         )
-        violation_response_2 = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 5),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision_2],
+        violation_response_2 = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 5),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision_2],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -605,33 +600,35 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_takes_most_severe_decision(
         self,
     ) -> None:
-        violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.FELONY,
         )
         violation_decision_1 = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.REVOCATION,
             )
         )
         violation_decision_2 = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[
-                violation_decision_1,
-                violation_decision_2,
-            ],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[
+                    violation_decision_1,
+                    violation_decision_2,
+                ],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -675,29 +672,35 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     ) -> None:
         state_code = "US_MO"
 
-        violation_type_technical = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
+        violation_type_technical = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+            )
         )
-        violation_type_absconded = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.ABSCONDED,
+        violation_type_absconded = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.ABSCONDED,
+            )
         )
         violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_subtype="INI",
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype="INI",
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -752,40 +755,46 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     ) -> None:
         state_code = "US_MO"
 
-        violation_type_technical = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
+        violation_type_technical = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+            )
         )
-        violation_type_absconded = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.ABSCONDED,
+        violation_type_absconded = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.ABSCONDED,
+            )
         )
         violation_condition_law = (
-            StateSupervisionViolatedConditionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
                 condition="law_citation",
             )
         )
         violation_condition_sub = (
-            StateSupervisionViolatedConditionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code, condition="substance_abuse"
             )
         )
         violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_subtype="INI",
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype="INI",
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -857,24 +866,26 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     ) -> None:
         state_code = "US_MO"
 
-        violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=state_code,
             violation_type=StateSupervisionViolationType.TECHNICAL,
         )
         violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -896,94 +907,51 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
             self.assertEqual([], violation_with_response_events)
 
-    def test_find_violation_with_response_events_handles_citations_correctly(
-        self,
-    ) -> None:
-        state_code = "US_MO"
-
-        violated_condition = StateSupervisionViolatedConditionEntry.new_with_defaults(
-            state_code=state_code, condition="LAW"
-        )
-        violation_response_citation = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code=state_code,
-                response_type=StateSupervisionViolationResponseType.CITATION,
-                response_date=date(2021, 1, 4),
-                is_draft=False,
-            )
-        )
-        violation_with_no_types = StateSupervisionViolation.new_with_defaults(
-            state_code=state_code,
-            supervision_violation_id=1,
-            violation_date=date(2021, 1, 1),
-            is_violent=False,
-            is_sex_offense=False,
-            supervision_violation_responses=[violation_response_citation],
-            supervision_violated_conditions=[violated_condition],
-        )
-        violation_response_citation.supervision_violation = violation_with_no_types
-        violated_condition.supervision_violation = violation_with_no_types
-
-        expected = [
-            ViolationWithResponseEvent(
-                state_code=state_code,
-                supervision_violation_id=1,
-                event_date=date(2021, 1, 4),
-                violation_date=date(2021, 1, 1),
-                violation_type=StateSupervisionViolationType.TECHNICAL,
-                violation_type_subtype="LAW_CITATION",
-                is_most_severe_violation_type=True,
-                is_violent=False,
-                is_sex_offense=False,
-                most_severe_response_decision=None,
-            )
-        ]
-
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation_with_no_types, state_code_override=state_code
-        )
-
-        self.assertEqual(expected, violation_with_response_events)
-
     def test_find_violation_with_response_events_skips_unexpected_subtypes(
         self,
     ) -> None:
         state_code = "US_MO"
 
-        violation_type_technical = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
+        violation_type_technical = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+            )
         )
-        violation_type_absconded = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.ABSCONDED,
+        violation_type_absconded = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.ABSCONDED,
+            )
         )
         violation_condition_unk = (
-            StateSupervisionViolatedConditionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
                 condition="UNK",
             )
         )
         violation_condition_sub = (
-            StateSupervisionViolatedConditionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code, condition="substance_abuse"
             )
         )
         violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_subtype="INI",
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype="INI",
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -1053,45 +1021,57 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self,
     ) -> None:
         state_code = "US_PA"
-        violation_type_low = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="L01",
+        violation_type_low = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="L01",
+            )
         )
-        violation_type_med = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="M01",
+        violation_type_med = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="M01",
+            )
         )
-        violation_type_high = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="H01",
+        violation_type_high = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="H01",
+            )
         )
-        violation_type_sub = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="H03",
+        violation_type_sub = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="H03",
+            )
         )
-        violation_type_elec = StateSupervisionViolationTypeEntry.new_with_defaults(
-            state_code=state_code,
-            violation_type=StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="M16",
+        violation_type_elec = (
+            NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code=state_code,
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="M16",
+            )
         )
         violation_decision = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
                 decision=StateSupervisionViolationResponseDecision.REVOCATION,
             )
         )
-        violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2021, 1, 4),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision],
+        violation_response = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=state_code,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2021, 1, 4),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision],
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),
@@ -1186,41 +1166,45 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self,
     ) -> None:
         state_code = "US_ND"
-        violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=state_code,
             violation_type=StateSupervisionViolationType.TECHNICAL,
         )
         violation_decision_non_perm = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
         violation_response_non_perm = (
-            StateSupervisionViolationResponse.new_with_defaults(
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=1,
                 state_code=state_code,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision_non_perm],
+                sequence_num=0,
             )
         )
         violation_decision_perm = (
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=state_code,
                 decision=StateSupervisionViolationResponseDecision.SUSPENSION,
             )
         )
-        violation_response_perm = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id=2,
-            state_code=state_code,
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_date=date(2021, 1, 5),
-            is_draft=False,
-            supervision_violation_response_decisions=[violation_decision_perm],
+        violation_response_perm = (
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=2,
+                state_code=state_code,
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_date=date(2021, 1, 5),
+                is_draft=False,
+                supervision_violation_response_decisions=[violation_decision_perm],
+                sequence_num=1,
+            )
         )
-        violation = StateSupervisionViolation.new_with_defaults(
+        violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
             violation_date=date(2021, 1, 1),

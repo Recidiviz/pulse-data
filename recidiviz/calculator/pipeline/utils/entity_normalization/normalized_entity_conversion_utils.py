@@ -195,6 +195,8 @@ def _convert_entity_tree_to_normalized_version(
 
     for related_normalized_entity, reverse_field, field_type in reverse_fields_to_set:
         if field_type == BuildableAttrFieldType.LIST:
+            # TODO(#11734): Implement support for normalizing entities that have
+            #  many:many relationships
             raise ValueError(
                 "Recursive normalization conversion cannot support "
                 "reverse fields that store lists. Found entity of type "

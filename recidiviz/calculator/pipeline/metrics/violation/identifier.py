@@ -36,17 +36,12 @@ from recidiviz.calculator.pipeline.metrics.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    normalized_violation_responses_for_calculations,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -58,14 +53,8 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    is_placeholder,
-)
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSupervisionViolation,
-)
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
@@ -76,28 +65,21 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def find_events(
-        self, person: StatePerson, identifier_context: IdentifierContextT
+        self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[ViolationEvent]:
-        if not person.person_id:
-            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
-
         return self._find_violation_events(
-            person_id=person.person_id,
-            violation_response_normalization_delegate=identifier_context[
-                StateSpecificViolationResponseNormalizationDelegate.__name__
-            ],
             violation_delegate=identifier_context[
                 StateSpecificViolationDelegate.__name__
             ],
-            violations=identifier_context[StateSupervisionViolation.__name__],
+            violations=identifier_context[
+                NormalizedStateSupervisionViolation.base_class_name()
+            ],
         )
 
     def _find_violation_events(
         self,
-        person_id: int,
-        violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
         violation_delegate: StateSpecificViolationDelegate,
-        violations: List[StateSupervisionViolation],
+        violations: List[NormalizedStateSupervisionViolation],
     ) -> List[ViolationEvent]:
         """Finds instances of a violation.
 
@@ -116,14 +98,10 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
         violation_with_response_events: List[ViolationWithResponseEvent] = []
         for violation in violations:
-            if is_placeholder(violation, self.field_index):
-                continue
             violation_with_response_events.extend(
                 self._find_violation_with_response_events(
-                    person_id=person_id,
-                    violation_response_normalization_delegate=violation_response_normalization_delegate,
-                    violation_delegate=violation_delegate,
                     violation=violation,
+                    violation_delegate=violation_delegate,
                 )
             )
 
@@ -138,10 +116,8 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
     def _find_violation_with_response_events(
         self,
-        person_id: int,
-        violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
+        violation: NormalizedStateSupervisionViolation,
         violation_delegate: StateSpecificViolationDelegate,
-        violation: StateSupervisionViolation,
     ) -> List[ViolationWithResponseEvent]:
         """Finds instances of a violation with its earliest response."""
 
@@ -159,14 +135,20 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         is_violent = violation.is_violent
         is_sex_offense = violation.is_sex_offense
 
-        # TODO(#10731): Remove calls get the normalized violation responses once this
-        #  metric pipeline is hydrating Normalized versions of all entities
-        normalized_violation_responses = normalized_violation_responses_for_calculations(
-            person_id=person_id,
-            violation_response_normalization_delegate=violation_response_normalization_delegate,
-            violation_responses=violation.supervision_violation_responses,
-            field_index=self.field_index,
-        )
+        normalized_violation_responses: List[
+            NormalizedStateSupervisionViolationResponse
+        ] = []
+
+        for response in violation.supervision_violation_responses:
+            if not isinstance(response, NormalizedStateSupervisionViolationResponse):
+                raise ValueError(
+                    "Expected all supervision_violation_responses on "
+                    "NormalizedStateSupervisionViolation to be of type "
+                    "NormalizedStateSupervisionViolationResponse. Found: "
+                    f"{type(response)}."
+                )
+
+            normalized_violation_responses.append(response)
 
         sorted_violation_responses = sort_normalized_entities_by_sequence_num(
             normalized_violation_responses
