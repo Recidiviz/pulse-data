@@ -280,9 +280,13 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
               <ol style={{ paddingLeft: 20 }}>
                 <li>
-                  SSH into <code>prod-data-client</code> and log into the
-                  operations database via{" "}
-                  <code>{isProduction ? "prod" : "dev"}-operations-psql</code>.
+                  Run{" "}
+                  <code>
+                    ./recidiviz/tools/postgres/access_cloudsql_instance.sh
+                  </code>{" "}
+                  in pipenv shell. Select <code>{projectId}</code>,{" "}
+                  <code>operations_v2</code>, then{" "}
+                  <code>operations_v2_db_user</code>.
                 </li>
                 <li>
                   Drop all rows for{" "}
@@ -337,8 +341,13 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
               <ol style={{ paddingLeft: 20 }}>
                 <li>
-                  SSH into <code>prod-data-client</code> and run{" "}
-                  <code>{isProduction ? "prod" : "dev"}-operations-psql</code>.
+                  Run{" "}
+                  <code>
+                    ./recidiviz/tools/postgres/access_cloudsql_instance.sh
+                  </code>{" "}
+                  in pipenv shell . Select <code>{projectId}</code>,{" "}
+                  <code>operations_v2</code>, then{" "}
+                  <code>operations_v2_db_user</code>.
                 </li>
                 <li>
                   Run the following SQL query to update the tables:
