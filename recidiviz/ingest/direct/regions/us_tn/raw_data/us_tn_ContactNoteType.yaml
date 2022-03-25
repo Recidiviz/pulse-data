@@ -21,3 +21,6 @@ columns:
   - name: LastUpdateDateTime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+# Increase raw data import chunk size by 10x from default. Verified that this still only
+# uses 877 MB per chunk, well under the 16 GB memory limit per VM.
+import_chunk_size_rows: 2500000
