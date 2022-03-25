@@ -29,9 +29,8 @@ Steps:
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
-    --project-id recidiviz-staging --region us_nd \
-    --start-date-bound 2019-08-12  --end-date-bound 2019-08-13 --dry-run True \
-    [--file_filter "docstars_offendercases|elite_offender"]
+    --project-id recidiviz-staging --region us_tn \
+    --start-date-bound 2022-03-24 --dry-run True
 """
 
 import argparse
