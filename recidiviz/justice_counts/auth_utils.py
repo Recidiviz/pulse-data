@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,19 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements API routes for the Justice Counts Control Panel backend API."""
-from typing import Callable
+"""Utils for Justice Counts"""
+from flask import session
 
-from flask import Blueprint
+from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
+from recidiviz.utils.auth.auth0 import update_session_with_user_info
+from recidiviz.utils.types import TokenClaims
 
 
-# TODO(#11504): Replace dummy endpoint
-def get_api_blueprint(auth_decorator: Callable) -> Blueprint:
-    api_blueprint = Blueprint("api", __name__)
+def on_successful_authorization(jwt_claims: TokenClaims) -> None:
+    auth_error = JusticeCountsAuthorizationError(
+        code="no_justice_counts_access",
+        description="You are not authorized to access this application",
+    )
 
-    @api_blueprint.route("/hello")
-    @auth_decorator
-    def hello() -> str:
-        return "Hello, World!"
-
-    return api_blueprint
+    update_session_with_user_info(session, jwt_claims, auth_error)

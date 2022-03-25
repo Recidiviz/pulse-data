@@ -16,7 +16,7 @@
 # =============================================================================
 """General use mypy types."""
 
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
 # A type variable intended for use in generic class methods that return an object with the `cls` type.
 # For example:
@@ -36,6 +36,8 @@ ClsT = TypeVar("ClsT", bound=object)
 
 # A Generic type where the generic can be any object
 T = TypeVar("T")
+
+TokenClaims = Dict[str, Union[str, int]]
 
 
 def non_optional(v: Optional[T]) -> T:

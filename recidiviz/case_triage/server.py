@@ -17,14 +17,12 @@
 """Backend entry point for Case Triage API server."""
 import json
 import os
-from typing import Dict
 
 import sentry_sdk
 from flask import Flask, Response, g, send_from_directory, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
-from jwt.exceptions import MissingRequiredClaimError
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
@@ -41,7 +39,6 @@ from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.redis_sessions import RedisSessionInterface
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.util import (
-    get_local_secret,
     get_rate_limit_storage_uri,
     get_redis_connection_options,
     get_sessions_redis,
@@ -54,14 +51,17 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
-    AuthorizationError,
-    TokenClaims,
     build_auth0_authorization_decorator,
-    get_userinfo,
+    update_session_with_user_info,
 )
 from recidiviz.utils.environment import in_development, in_gcp, in_test
+from recidiviz.utils.secrets import get_local_secret
 from recidiviz.utils.timer import RepeatedTimer
+from recidiviz.utils.types import TokenClaims
 
+local_path = os.path.join(
+    os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
+)
 # Sentry setup
 if in_gcp():
     sentry_sdk.init(
@@ -81,7 +81,7 @@ static_folder = os.path.abspath(
 )
 
 app = Flask(__name__, static_folder=static_folder)
-app.secret_key = get_local_secret("case_triage_secret_key")
+app.secret_key = get_local_secret(local_path, "case_triage_secret_key")
 
 sessions_redis = get_sessions_redis()
 
@@ -119,45 +119,15 @@ setup_scoped_sessions(
 )
 
 
-# Auth setup
-def _get_userinfo_from_token(claims: TokenClaims) -> Dict[str, str]:
-    try:
-        return get_userinfo(claims)
-    except MissingRequiredClaimError as e:
-        raise AuthorizationError(
-            code="invalid_claims", description="claims must include email address"
-        ) from e
-
-
 def on_successful_authorization(jwt_claims: TokenClaims) -> None:
-    """
-    Memoize the user's info (email_address, picture, etc) into our session
-    """
-
-    # Populate the session with user information; This could have changed since the last request
-    if session.get("jwt_sub", None) != jwt_claims["sub"]:
-        session["jwt_sub"] = jwt_claims["sub"]
-        session["user_info"] = _get_userinfo_from_token(jwt_claims)
-        # Also pop the impersonated email key if it exists, since the request could've been an impersonation request prior.
-        if IMPERSONATED_EMAIL_KEY in session:
-            session.pop(IMPERSONATED_EMAIL_KEY)
 
     auth_error = CaseTriageAuthorizationError(
         code="no_case_triage_access",
         description="You are not authorized to access this application",
     )
-
-    if "email" not in session["user_info"]:
-        # This happens when API routes are hit with well-formed but
-        # invalid authorization tokens, or if a previous error in populating user_info
-        # was stored on the session.
-
-        # to recover from errors, try refreshing user info
-        session["user_info"] = _get_userinfo_from_token(jwt_claims)
-
-        # if that didn't work, deny access
-        if "email" not in session["user_info"]:
-            raise auth_error
+    update_session_with_user_info(
+        session, jwt_claims, auth_error, IMPERSONATED_EMAIL_KEY
+    )
 
     email = session["user_info"]["email"].lower()
     # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
@@ -171,7 +141,7 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
         raise auth_error
 
 
-auth0_configuration = get_local_secret("case_triage_auth0")
+auth0_configuration = get_local_secret(local_path, "case_triage_auth0")
 
 if not auth0_configuration:
     raise ValueError("Missing Case Triage Auth0 configuration secret")
