@@ -26,7 +26,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_peri
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
@@ -42,14 +41,12 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervi
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
-    StateSpecificProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
@@ -59,7 +56,6 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateProgramAssignment,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolation,
@@ -251,58 +247,3 @@ def normalized_violation_responses_from_processed_versions(
                 distinct_normalized_violation_responses.append(normalized_response)
 
     return distinct_normalized_violation_responses
-
-
-# TODO(#10731): Delete this function once all metric pipelines are hydrating
-#  Normalized versions of all entities
-def normalized_violation_responses_for_calculations(
-    person_id: int,
-    violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
-    violation_responses: List[StateSupervisionViolationResponse],
-    field_index: CoreEntityFieldIndex,
-) -> List[NormalizedStateSupervisionViolationResponse]:
-    """Instantiates the violation response manager and its appropriate delegate. Then
-    returns normalized violation responses."""
-    violation_response_manager = ViolationResponseNormalizationManager(
-        person_id,
-        violation_responses,
-        violation_response_normalization_delegate,
-    )
-
-    (
-        processed_violation_responses,
-        additional_vr_attributes,
-    ) = violation_response_manager.normalized_violation_responses_for_calculations()
-
-    return normalized_violation_responses_from_processed_versions(
-        processed_violation_responses=processed_violation_responses,
-        additional_vr_attributes=additional_vr_attributes,
-        field_index=field_index,
-    )
-
-
-def normalized_program_assignments_for_calculations(
-    program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
-    program_assignments: List[StateProgramAssignment],
-    field_index: CoreEntityFieldIndex,
-) -> List[NormalizedStateProgramAssignment]:
-    """Instantiates the program assignment manager and its appropriate delegate. Then
-    returns normalized program assignments."""
-    program_assignment_manager = ProgramAssignmentNormalizationManager(
-        program_assignments,
-        program_assignment_normalization_delegate,
-    )
-
-    (
-        processed_program_assignments,
-        additional_pa_attributes,
-    ) = (
-        program_assignment_manager.normalized_program_assignments_and_additional_attributes()
-    )
-
-    return convert_entity_trees_to_normalized_versions(
-        root_entities=processed_program_assignments,
-        normalized_entity_class=NormalizedStateProgramAssignment,
-        additional_attributes_map=additional_pa_attributes,
-        field_index=field_index,
-    )
