@@ -179,7 +179,13 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
-        """Returns a list of tables in the dataset with the given dataset id."""
+        """Returns a list of tables and views in the dataset with the given dataset id."""
+
+    @abc.abstractmethod
+    def list_tables_excluding_views(
+        self, dataset_id: str
+    ) -> Iterator[bigquery.table.TableListItem]:
+        """Returns a list of tables (skipping views) in the dataset with the given dataset id."""
 
     @abc.abstractmethod
     def create_table(self, table: bigquery.Table) -> bigquery.Table:
@@ -647,12 +653,17 @@ class BigQueryClient:
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
+        overwrite_destination_tables: bool = False,
         timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
     ) -> None:
         """Copies tables (but NOT views) from |source_dataset_id| to
         |destination_dataset_id|. This only works if the datasets live in different
         regions (e.g. 'us' vs 'us-east1'), because the API for doing an inter-region
         dataset copy is inexplicably different than for copies between regions.
+
+        If `overwrite_destination_tables` is set, then any tables that already exist in
+        the destination dataset will be overwritten with the contents from the source
+        dataset, or removed if no matching table exists in the source dataset.
         """
 
     @abc.abstractmethod
@@ -788,6 +799,15 @@ class BigQueryClientImpl(BigQueryClient):
 
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
         return self.client.list_tables(dataset_id)
+
+    def list_tables_excluding_views(
+        self, dataset_id: str
+    ) -> Iterator[bigquery.table.TableListItem]:
+        return (
+            table
+            for table in self.client.list_tables(dataset_id)
+            if table.table_type == "TABLE"
+        )
 
     def get_table(
         self, dataset_ref: bigquery.DatasetReference, table_id: str
@@ -1645,14 +1665,38 @@ class BigQueryClientImpl(BigQueryClient):
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
+        overwrite_destination_tables: bool = False,
         timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
     ) -> None:
-        expected_destination_tables = {
+        source_dataset_ref = self.dataset_ref_for_id(source_dataset_id)
+        destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
+
+        # Get source tables
+        source_table_ids = {
             table.table_id
-            for table in self.list_tables(source_dataset_id)
-            if table.table_type == "TABLE"
+            for table in self.list_tables_excluding_views(source_dataset_id)
+        }
+        source_tables_by_id = {
+            table_id: self.get_table(source_dataset_ref, table_id)
+            for table_id in source_table_ids
         }
 
+        # Check existing destination tables
+        initial_destination_table_ids = {
+            table.table_id
+            for table in self.list_tables_excluding_views(destination_dataset_id)
+        }
+        if overwrite_destination_tables:
+            for table_id in initial_destination_table_ids:
+                if table_id not in source_table_ids:
+                    self.delete_table(destination_dataset_id, table_id)
+        else:
+            if initial_destination_table_ids:
+                raise ValueError(
+                    f"Destination dataset [{destination_dataset_id}] for copy is not empty."
+                )
+
+        # Start the transfer
         transfer_client = DataTransferServiceClient()
         if not self.dataset_exists(self.dataset_ref_for_id(destination_dataset_id)):
             raise ValueError(
@@ -1672,6 +1716,7 @@ class BigQueryClientImpl(BigQueryClient):
             params={
                 "source_project_id": self.project_id,
                 "source_dataset_id": source_dataset_id,
+                "overwrite_destination_table": overwrite_destination_tables,
             },
             schedule_options=ScheduleOptions(disable_auto_scheduling=True),
         )
@@ -1680,6 +1725,8 @@ class BigQueryClientImpl(BigQueryClient):
             transfer_config=transfer_config,
         )
         logging.info("Created transfer config [%s]", transfer_config.name)
+
+        # Check for success
         try:
             requested_run_time = timestamp_pb2.Timestamp()
             requested_run_time.FromDatetime(datetime.datetime.now(tz=pytz.UTC))
@@ -1702,11 +1749,29 @@ class BigQueryClientImpl(BigQueryClient):
             while True:
                 logging.info("Checking status of transfer run [%s]", run.name)
 
-                destination_tables = {
-                    table.table_id for table in self.list_tables(destination_dataset_id)
+                destination_table_ids = {
+                    table.table_id
+                    for table in self.list_tables_excluding_views(
+                        destination_dataset_id
+                    )
                 }
+                missing_tables = source_table_ids - destination_table_ids
 
-                if destination_tables == expected_destination_tables:
+                stale_tables = set()
+                for destination_table_id in destination_table_ids:
+                    destination_table = self.get_table(
+                        destination_dataset_ref, destination_table_id
+                    )
+                    source_table = source_tables_by_id[destination_table.table_id]
+                    # We compare against the time that the source table was last
+                    # modified, not the time that the transfer began, because the
+                    # transfer may not update the destination table at all if the source
+                    # table has not changed since the last refresh:
+                    # https://cloud.google.com/bigquery/docs/copying-datasets#table_limitations
+                    if destination_table.modified <= source_table.modified:
+                        stale_tables.add(destination_table.table_id)
+
+                if not missing_tables and not stale_tables:
                     logging.info("Transfer run succeeded")
 
                     run = transfer_client.get_transfer_run(
@@ -1729,9 +1794,10 @@ class BigQueryClientImpl(BigQueryClient):
                     )
 
                 logging.info(
-                    "Transfer run in progress, missing [%s] tables - sleeping for %s "
-                    "seconds",
-                    expected_destination_tables.difference(destination_tables),
+                    "Transfer run in progress, missing [%s] tables and [%s] tables are "
+                    "stale - sleeping for %s seconds",
+                    missing_tables,
+                    stale_tables,
                     CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC,
                 )
                 time.sleep(CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC)

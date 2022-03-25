@@ -181,16 +181,14 @@ def _copy_regional_dataset_to_multi_region(
     )
 
     try:
-        if bq_client.dataset_exists(destination_dataset):
-            tables = bq_client.list_tables(destination_dataset_id)
-            for table in tables:
-                bq_client.delete_table(table.dataset_id, table.table_id)
 
         bq_client.create_dataset_if_necessary(
             destination_dataset,
-            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if dataset_override_prefix
-            else None,
+            default_table_expiration_ms=(
+                TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if dataset_override_prefix
+                else None
+            ),
         )
 
         # Copy into the canonical unioned source datasets in the US multi-region

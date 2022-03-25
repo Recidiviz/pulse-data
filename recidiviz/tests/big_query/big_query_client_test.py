@@ -1097,10 +1097,22 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table = create_autospec(bigquery.Table)
         mock_table.table_type = "TABLE"
         mock_table.table_id = "my_table"
+        mock_table.modified = datetime.datetime(2020, 1, 1)
+
+        updated_mock_table = create_autospec(bigquery.Table)
+        updated_mock_table.table_type = "TABLE"
+        updated_mock_table.table_id = "my_table"
+        updated_mock_table.modified = datetime.datetime(2020, 1, 2)
 
         mock_table_2 = create_autospec(bigquery.Table)
         mock_table_2.table_type = "TABLE"
         mock_table_2.table_id = "my_table_2"
+        mock_table_2.modified = datetime.datetime(2020, 1, 1)
+
+        updated_mock_table_2 = create_autospec(bigquery.Table)
+        updated_mock_table_2.table_type = "TABLE"
+        updated_mock_table_2.table_id = "my_table_2"
+        updated_mock_table_2.modified = datetime.datetime(2020, 1, 2)
 
         config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
 
@@ -1108,6 +1120,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             parent: str, transfer_config: TransferConfig
         ) -> TransferConfig:
             self.assertIsNotNone(parent)
+            self.assertFalse(transfer_config.params["overwrite_destination_table"])
             transfer_config.name = config_name
             return transfer_config
 
@@ -1135,10 +1148,23 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.list_tables.side_effect = [
             # Expected destination tables
             [mock_table, mock_table_2],
+            # Initial destination tables
+            [],
             # Pending
-            [mock_table],
+            [updated_mock_table],
             # Success
-            [mock_table, mock_table_2],
+            [updated_mock_table, updated_mock_table_2],
+        ]
+
+        self.mock_client.get_table.side_effect = [
+            # Source tables
+            mock_table,
+            mock_table_2,
+            # Destination tables, attempt 1
+            updated_mock_table,
+            # Destination tables, attempt 2
+            updated_mock_table,
+            updated_mock_table_2,
         ]
 
         # Transfer still pending even though all tables are present
@@ -1156,6 +1182,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 mock.call("my_src_dataset"),
                 mock.call("my_dst_dataset"),
                 mock.call("my_dst_dataset"),
+                mock.call("my_dst_dataset"),
             ]
         )
         mock_transfer_client.delete_transfer_config.assert_called_once()
@@ -1165,7 +1192,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
         0.1,
     )
-    def test_copy_dataset_tables_across_regions_timeout(
+    def test_copy_dataset_tables_across_regions_nonempty(
         self, mock_transfer_client_fn: mock.MagicMock
     ) -> None:
         mock_transfer_client = create_autospec(DataTransferServiceClient)
@@ -1185,6 +1212,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             parent: str, transfer_config: TransferConfig
         ) -> TransferConfig:
             self.assertIsNotNone(parent)
+            self.assertFalse(transfer_config.params["overwrite_destination_table"])
             transfer_config.name = config_name
             return transfer_config
 
@@ -1209,6 +1237,197 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.list_tables.side_effect = [
             # Expected destination tables
             [mock_table, mock_table_2],
+            # Initial destination tables
+            [mock_table, mock_table_2],
+        ]
+
+        with self.assertRaisesRegex(ValueError, "not empty"):
+            self.bq_client.copy_dataset_tables_across_regions(
+                "my_src_dataset",
+                "my_dst_dataset",
+            )
+
+        mock_transfer_client.create_transfer_config.assert_not_called()
+        self.mock_client.list_tables.assert_has_calls(
+            [
+                mock.call("my_src_dataset"),
+                mock.call("my_dst_dataset"),
+            ]
+        )
+
+    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @mock.patch(
+        "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
+        0.1,
+    )
+    def test_copy_dataset_tables_across_regions_overwrite(
+        self,
+        mock_transfer_client_fn: mock.MagicMock,
+    ) -> None:
+        mock_transfer_client = create_autospec(DataTransferServiceClient)
+        mock_transfer_client_fn.return_value = mock_transfer_client
+
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.table_type = "TABLE"
+        mock_table.table_id = "my_table"
+        mock_table.modified = datetime.datetime(2020, 1, 1)
+
+        updated_mock_table = create_autospec(bigquery.Table)
+        updated_mock_table.table_type = "TABLE"
+        updated_mock_table.table_id = "my_table"
+        updated_mock_table.modified = datetime.datetime(2020, 1, 2)
+
+        mock_table_2 = create_autospec(bigquery.Table)
+        mock_table_2.table_type = "TABLE"
+        mock_table_2.table_id = "my_table_2"
+        mock_table_2.modified = datetime.datetime(2020, 1, 1)
+
+        updated_mock_table_2 = create_autospec(bigquery.Table)
+        updated_mock_table_2.table_type = "TABLE"
+        updated_mock_table_2.table_id = "my_table_2"
+        updated_mock_table_2.modified = datetime.datetime(2020, 1, 2)
+
+        mock_table_3 = create_autospec(bigquery.Table)
+        mock_table_3.table_type = "TABLE"
+        mock_table_3.table_id = "my_table_3"
+
+        config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
+
+        def mock_create_transfer_config(
+            parent: str, transfer_config: TransferConfig
+        ) -> TransferConfig:
+            self.assertIsNotNone(parent)
+            self.assertTrue(transfer_config.params["overwrite_destination_table"])
+            transfer_config.name = config_name
+            return transfer_config
+
+        mock_transfer_client.create_transfer_config.side_effect = (
+            mock_create_transfer_config
+        )
+
+        run_name = f"{config_name}/runs/61394d2b-0000-2201-90bd-883d24f36b70"
+
+        run_info_pending = create_autospec(TransferRun)
+        run_info_pending.name = run_name
+        run_info_pending.state = TransferState.PENDING
+        run_info_success = create_autospec(TransferRun)
+        run_info_success.name = run_name
+        run_info_success.state = TransferState.SUCCEEDED
+
+        mock_start_runs_response = create_autospec(StartManualTransferRunsResponse)
+        mock_start_runs_response.runs = [run_info_pending]
+
+        mock_transfer_client.start_manual_transfer_runs.return_value = (
+            mock_start_runs_response
+        )
+
+        # Return pending, then success
+        self.mock_client.list_tables.side_effect = [
+            # Expected destination tables
+            [mock_table, mock_table_2],
+            # Initial destination tables
+            [mock_table_2, mock_table_3],
+            # Pending
+            [updated_mock_table],
+            # Success
+            [updated_mock_table, updated_mock_table_2],
+        ]
+
+        self.mock_client.get_table.side_effect = [
+            # Source tables
+            mock_table,
+            mock_table_2,
+            # Destination tables, attempt 1
+            updated_mock_table,
+            # Destination tables, attempt 2
+            updated_mock_table,
+            updated_mock_table_2,
+        ]
+
+        # Transfer still pending even though all tables are present
+        mock_transfer_client.get_transfer_run.side_effect = [
+            run_info_pending,
+        ]
+
+        self.bq_client.copy_dataset_tables_across_regions(
+            "my_src_dataset", "my_dst_dataset", overwrite_destination_tables=True
+        )
+
+        mock_transfer_client.create_transfer_config.assert_called_once()
+        self.mock_client.list_tables.assert_has_calls(
+            [
+                mock.call("my_src_dataset"),
+                mock.call("my_dst_dataset"),
+                mock.call("my_dst_dataset"),
+                mock.call("my_dst_dataset"),
+            ]
+        )
+        self.mock_client.delete_table.assert_called_with(
+            bigquery.DatasetReference(self.mock_project_id, "my_dst_dataset").table(
+                mock_table_3.table_id
+            )
+        )
+        mock_transfer_client.delete_transfer_config.assert_called_once()
+
+    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @mock.patch(
+        "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
+        0.1,
+    )
+    def test_copy_dataset_tables_across_regions_timeout(
+        self, mock_transfer_client_fn: mock.MagicMock
+    ) -> None:
+        mock_transfer_client = create_autospec(DataTransferServiceClient)
+        mock_transfer_client_fn.return_value = mock_transfer_client
+
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.table_type = "TABLE"
+        mock_table.table_id = "my_table"
+        mock_table.modified = datetime.datetime(2020, 1, 1)
+
+        updated_mock_table = create_autospec(bigquery.Table)
+        updated_mock_table.table_type = "TABLE"
+        updated_mock_table.table_id = "my_table"
+        updated_mock_table.modified = datetime.datetime(2020, 1, 2)
+
+        mock_table_2 = create_autospec(bigquery.Table)
+        mock_table_2.table_type = "TABLE"
+        mock_table_2.table_id = "my_table_2"
+        mock_table_2.modified = datetime.datetime(2020, 1, 1)
+
+        config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
+
+        def mock_create_transfer_config(
+            parent: str, transfer_config: TransferConfig
+        ) -> TransferConfig:
+            self.assertIsNotNone(parent)
+            self.assertTrue(transfer_config.params["overwrite_destination_table"])
+            transfer_config.name = config_name
+            return transfer_config
+
+        mock_transfer_client.create_transfer_config.side_effect = (
+            mock_create_transfer_config
+        )
+
+        run_name = f"{config_name}/runs/61394d2b-0000-2201-90bd-883d24f36b70"
+
+        run_info_pending = create_autospec(TransferRun)
+        run_info_pending.name = run_name
+        run_info_pending.state = TransferState.PENDING
+
+        mock_start_runs_response = create_autospec(StartManualTransferRunsResponse)
+        mock_start_runs_response.runs = [run_info_pending]
+
+        mock_transfer_client.start_manual_transfer_runs.return_value = (
+            mock_start_runs_response
+        )
+
+        # Return pending always
+        self.mock_client.list_tables.side_effect = [
+            # Expected destination tables
+            [mock_table, mock_table_2],
+            # Initial destination tables
+            [mock_table, mock_table_2],
             # Pending
             [mock_table],
             # Pending
@@ -1217,11 +1436,26 @@ class BigQueryClientImplTest(unittest.TestCase):
             [mock_table],
         ]
 
+        self.mock_client.get_table.side_effect = [
+            # Source tables
+            mock_table,
+            mock_table_2,
+            # Destination tables, attempt 1
+            updated_mock_table,
+            # Destination tables, attempt 2
+            updated_mock_table,
+            # Destination tables, attempt 3
+            updated_mock_table,
+        ]
+
         with self.assertRaisesRegex(
             TimeoutError, "^Did not complete dataset copy before timeout"
         ):
             self.bq_client.copy_dataset_tables_across_regions(
-                "my_src_dataset", "my_dst_dataset", timeout_sec=0.15
+                "my_src_dataset",
+                "my_dst_dataset",
+                overwrite_destination_tables=True,
+                timeout_sec=0.15,
             )
 
         mock_transfer_client.create_transfer_config.assert_called_once()
