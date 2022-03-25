@@ -256,6 +256,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.mock_bq_client.copy_dataset_tables_across_regions.assert_called_with(
             source_dataset_id="operations_regional",
             destination_dataset_id="operations",
+            overwrite_destination_tables=True,
         )
         self.mock_bq_client.delete_dataset.assert_has_calls(
             [
@@ -343,6 +344,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.mock_bq_client.copy_dataset_tables_across_regions.assert_called_with(
             source_dataset_id="my_prefix_operations_regional",
             destination_dataset_id="my_prefix_operations",
+            overwrite_destination_tables=True,
         )
         self.mock_bq_client.delete_dataset.assert_has_calls(
             [

@@ -195,6 +195,7 @@ def _copy_regional_dataset_to_multi_region(
         bq_client.copy_dataset_tables_across_regions(
             source_dataset_id=source_dataset_id,
             destination_dataset_id=destination_dataset_id,
+            overwrite_destination_tables=True,
         )
     except Exception as e:
         logging.info(
