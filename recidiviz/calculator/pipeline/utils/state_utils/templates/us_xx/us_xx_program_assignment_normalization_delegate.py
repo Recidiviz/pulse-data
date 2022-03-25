@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains generic implementation of the StateSpecificProgramAssignmentNormalizationDelegate."""
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
 

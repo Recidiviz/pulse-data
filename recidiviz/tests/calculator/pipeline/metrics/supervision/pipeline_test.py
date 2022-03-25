@@ -50,6 +50,10 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
     RecidivizMetric,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -60,10 +64,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,

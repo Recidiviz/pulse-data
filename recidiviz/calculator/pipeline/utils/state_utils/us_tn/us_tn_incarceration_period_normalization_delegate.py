@@ -17,7 +17,7 @@
 """Contains US_TN implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 from typing import List
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod

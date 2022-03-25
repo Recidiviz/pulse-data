@@ -22,7 +22,7 @@ from typing import List
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignment_normalization_delegate import (

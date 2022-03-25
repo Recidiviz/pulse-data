@@ -23,24 +23,24 @@ import attr
 from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
+    StateSpecificProgramAssignmentNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
+    StateSpecificViolationResponseNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
-    StateSpecificProgramAssignmentNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,

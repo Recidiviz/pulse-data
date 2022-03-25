@@ -20,18 +20,18 @@ from typing import List, Set, Type
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
+from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
     get_entity_class_names_excluded_from_normalization,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     fields_unique_to_normalized_class,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -64,7 +64,7 @@ class TestNormalizedEntities(unittest.TestCase):
             entity_class.__base__ for entity_class in self.normalized_entity_classes
         }
 
-    def test_normalized_class_naming(self):
+    def test_normalized_class_naming(self) -> None:
         """Tests that the name of all normalized classes is 'Normalized' + the name
         of the base entity class being normalized."""
         for normalized_entity_class in self.normalized_entity_classes:
@@ -79,7 +79,7 @@ class TestNormalizedEntities(unittest.TestCase):
                 entity_name.replace(NORMALIZED_PREFIX, ""),
             )
 
-    def test_subtree_coverage(self):
+    def test_subtree_coverage(self) -> None:
         """Tests that all entities in the subtrees of the root entities that get
         normalized have NormalizedStateEntity counterparts."""
         classes_in_subtrees: Set[Type[Entity]] = set()
@@ -90,12 +90,12 @@ class TestNormalizedEntities(unittest.TestCase):
 
         self.assertEqual(self.normalized_entity_bases, classes_in_subtrees)
 
-    def test_not_normalized_entity_in_ref(self):
+    def test_not_normalized_entity_in_ref(self) -> None:
         # This should raise an error because we are trying to store a
         # StateSupervisionViolation in the supervision_violation field instead of a
         # NormalizedStateSupervisionViolation
         with self.assertRaises(TypeError) as e:
-            self.normalized_sp = NormalizedStateSupervisionViolationResponse(
+            _ = NormalizedStateSupervisionViolationResponse(
                 state_code=STATE_CODE,
                 sequence_num=1,
                 supervision_violation=state_entities.StateSupervisionViolation(
@@ -111,12 +111,12 @@ class TestNormalizedEntities(unittest.TestCase):
 
         self.assertEqual(expected_error, e.exception.args[0])
 
-    def test_not_normalized_entity_in_list_ref(self):
+    def test_not_normalized_entity_in_list_ref(self) -> None:
         # This should raise an error because we are trying to store a
         # StateSupervisionCaseTypeEntry in the case_type_entries field instead of a
         # NormalizedStateSupervisionCaseTypeEntry
         with self.assertRaises(TypeError) as e:
-            self.normalized_sp = NormalizedStateSupervisionPeriod(
+            _ = NormalizedStateSupervisionPeriod(
                 state_code=STATE_CODE,
                 sequence_num=1,
                 case_type_entries=[
@@ -132,23 +132,23 @@ class TestNormalizedEntities(unittest.TestCase):
 
         self.assertEqual(expected_error, e.exception.args[0])
 
-    def test_not_list_in_list_ref(self):
+    def test_not_list_in_list_ref(self) -> None:
         """Tests that the original validators are also kept on the attributes,
         so that this raises an error for case_type_entries not being a list."""
         with self.assertRaises(TypeError):
-            self.normalized_sp = NormalizedStateSupervisionPeriod(
+            _ = NormalizedStateSupervisionPeriod(
                 state_code=STATE_CODE,
                 sequence_num=1,
-                case_type_entries=NormalizedStateSupervisionCaseTypeEntry(
+                case_type_entries=NormalizedStateSupervisionCaseTypeEntry(  # type: ignore[arg-type]
                     state_code=STATE_CODE
                 ),
             )
 
-    def test_ref_is_unset(self):
+    def test_ref_is_unset(self) -> None:
         # Assert that this does not fail when case_type_entries is unset
         _ = NormalizedStateSupervisionPeriod(state_code=STATE_CODE, sequence_num=1)
 
-    def test_new_fields_are_all_flat_fields(self):
+    def test_new_fields_are_all_flat_fields(self) -> None:
         """Tests that all attributes added to NormalizedStateEntity classes are flat
         fields."""
         for entity_cls in self.normalized_entity_classes:
@@ -214,7 +214,7 @@ def classes_in_normalized_entity_subtree(
 class TestClassesInNormalizedEntitySubtree(unittest.TestCase):
     """Tests the classes_in_normalized_entity_subtree helper function."""
 
-    def test_classes_in_normalized_entity_subtree(self):
+    def test_classes_in_normalized_entity_subtree(self) -> None:
         entity_class = state_entities.StateSupervisionSentence
 
         # StateSupervisionSentence can be connected to any of the following without
@@ -231,7 +231,7 @@ class TestClassesInNormalizedEntitySubtree(unittest.TestCase):
             expected_subtree, classes_in_normalized_entity_subtree(entity_class)
         )
 
-    def test_classes_in_normalized_entity_subtree_leaf_node(self):
+    def test_classes_in_normalized_entity_subtree_leaf_node(self) -> None:
         entity_class = state_entities.StateIncarcerationPeriod
 
         # StateIncarcerationPeriod is a leaf node
@@ -241,7 +241,7 @@ class TestClassesInNormalizedEntitySubtree(unittest.TestCase):
             expected_subtree, classes_in_normalized_entity_subtree(entity_class)
         )
 
-    def test_classes_in_normalized_entity_subtree_cannot_be_hydrated(self):
+    def test_classes_in_normalized_entity_subtree_cannot_be_hydrated(self) -> None:
         # StateAgent is not a valid entity for a normalized subtree
         entity_class = state_entities.StateAgent
 

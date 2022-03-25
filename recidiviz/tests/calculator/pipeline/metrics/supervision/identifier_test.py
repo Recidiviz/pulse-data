@@ -51,10 +51,7 @@ from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_complian
 from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
@@ -62,6 +59,9 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
+)
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

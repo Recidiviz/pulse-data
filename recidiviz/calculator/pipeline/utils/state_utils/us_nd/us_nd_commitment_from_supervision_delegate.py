@@ -21,7 +21,7 @@ from typing import List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )

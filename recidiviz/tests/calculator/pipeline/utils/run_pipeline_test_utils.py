@@ -32,11 +32,11 @@ from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
 from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline import (
     NormalizationPipelineRunDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    state_base_entity_class_for_entity_class,
+)
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    state_base_entity_class_for_entity_class,
 )
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase

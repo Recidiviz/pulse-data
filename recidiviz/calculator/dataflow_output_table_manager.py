@@ -32,17 +32,17 @@ from recidiviz.calculator import dataflow_config
 from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    NORMALIZED_ENTITY_CLASSES,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    bq_schema_for_normalized_state_entity,
+)
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
-    bq_schema_for_normalized_state_entity,
 )
 from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
     collect_all_pipeline_run_delegate_classes,

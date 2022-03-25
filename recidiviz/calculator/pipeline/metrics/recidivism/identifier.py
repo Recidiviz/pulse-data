@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.metrics.recidivism.events import (
     RecidivismReleaseEvent,
     ReleaseEvent,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (

@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.metrics.violation.events import (
 from recidiviz.calculator.pipeline.metrics.violation.pipeline import (
     ViolationMetricsPipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,

@@ -56,6 +56,9 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
@@ -63,9 +66,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
@@ -98,7 +98,6 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
-from recidiviz.tests.persistence.database import database_test_utils
 
 _COUNTY_OF_RESIDENCE = "county"
 

@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_uti
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     VIOLATION_HISTORY_WINDOW_MONTHS,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,

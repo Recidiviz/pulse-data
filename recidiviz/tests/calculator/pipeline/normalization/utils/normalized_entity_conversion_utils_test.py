@@ -25,20 +25,20 @@ import mock
 from google.cloud import bigquery
 from google.cloud.bigquery.schema import SchemaField
 
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,
     convert_entities_to_normalized_dicts,
     convert_entity_trees_to_normalized_versions,
@@ -59,7 +59,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalized_entities_utils_test import (
+from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities_utils_test import (
     TestNormalizedStateCharge,
     TestNormalizedStateCourtCase,
     TestNormalizedStateSupervisionSentence,
@@ -147,10 +147,10 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
 
-    def test_convert_entity_trees_to_normalized_versions(self):
+    def test_convert_entity_trees_to_normalized_versions(self) -> None:
         violation_with_tree = get_violation_tree()
 
-        additional_attributes_map = {
+        additional_attributes_map: AdditionalAttributesMap = {
             StateSupervisionViolationResponse.__name__: {
                 4: {"sequence_num": 0},
                 6: {"sequence_num": 1},
@@ -170,7 +170,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
         self.assertEqual([get_normalized_violation_tree()], normalized_trees)
 
-    def test_convert_entity_trees_to_normalized_versions_ips(self):
+    def test_convert_entity_trees_to_normalized_versions_ips(self) -> None:
         ips = [
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
@@ -213,7 +213,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
         self.assertEqual(expected_normalized_ips, normalized_trees)
 
-    def test_convert_entity_trees_to_normalized_versions_subtree(self):
+    def test_convert_entity_trees_to_normalized_versions_subtree(self) -> None:
         """Tests that we can normalize a list of entities that are not directly connected
         to the state person.
         """
@@ -242,7 +242,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         self.assertEqual(expected_normalized_svrs, normalized_trees)
 
     @mock.patch(
-        "recidiviz.calculator.pipeline.utils.entity_normalization."
+        "recidiviz.calculator.pipeline.normalization.utils."
         "normalized_entities_utils.NORMALIZED_ENTITY_CLASSES",
         [
             TestNormalizedStateSupervisionSentence,
@@ -250,7 +250,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             TestNormalizedStateCourtCase,
         ],
     )
-    def test_convert_entity_trees_to_normalized_versions_invalid_subtree(self):
+    def test_convert_entity_trees_to_normalized_versions_invalid_subtree(self) -> None:
         ss = entities.StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -283,7 +283,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             e.exception.args[0],
         )
 
-    def test_convert_entity_trees_to_normalized_versions_empty_list(self):
+    def test_convert_entity_trees_to_normalized_versions_empty_list(self) -> None:
         normalized_trees = convert_entity_trees_to_normalized_versions(
             root_entities=[],
             normalized_entity_class=NormalizedStateIncarcerationPeriod,
@@ -300,7 +300,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
 
-    def test_convert_entities_to_normalized_dicts(self):
+    def test_convert_entities_to_normalized_dicts(self) -> None:
         person_id = 123
 
         entities_to_convert = [
@@ -360,7 +360,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
 
         self.assertEqual(expected_output, converted_output)
 
-    def test_convert_entities_to_normalized_dicts_violations(self):
+    def test_convert_entities_to_normalized_dicts_violations(self) -> None:
         person_id = 123
 
         entities_to_convert = [get_violation_tree()]

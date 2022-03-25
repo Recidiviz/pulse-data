@@ -45,6 +45,7 @@ from recidiviz.calculator.pipeline.metrics.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
@@ -53,7 +54,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,

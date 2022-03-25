@@ -23,13 +23,13 @@ from typing import Any, Dict, List, Set, Type
 
 import mock
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils import (

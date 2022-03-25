@@ -23,11 +23,11 @@ from typing import List
 import attr
 import mock
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    clear_entity_id_index_cache,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    clear_entity_id_index_cache,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_response_normalization_delegate import (
     UsNdViolationResponseNormalizationDelegate,
@@ -43,7 +43,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.tests.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager_test import (
+from recidiviz.tests.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
     hydrate_bidirectional_relationships_on_expected_response,
 )
 
@@ -61,7 +61,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_normalization."
+            "recidiviz.calculator.pipeline.normalization.utils."
             "normalized_entities_utils._fixed_length_object_id_for_entity"
         )
         self.mock_unique_id = self.unique_id_patcher.start()

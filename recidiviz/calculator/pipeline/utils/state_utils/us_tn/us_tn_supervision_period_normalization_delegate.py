@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_TN implementation of the StateSpecificSupervisionNormalizationDelegate."""
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
 

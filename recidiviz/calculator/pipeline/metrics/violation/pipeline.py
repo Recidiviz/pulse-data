@@ -26,8 +26,8 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
 from recidiviz.calculator.pipeline.metrics.violation import identifier, metric_producer
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
 from recidiviz.calculator.pipeline.pipeline_type import VIOLATION_METRICS_PIPELINE_NAME
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )

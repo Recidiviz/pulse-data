@@ -29,10 +29,10 @@ from recidiviz.calculator.pipeline.metrics.supervision import (
     identifier,
     metric_producer,
 )
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
 from recidiviz.calculator.pipeline.pipeline_type import (
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )

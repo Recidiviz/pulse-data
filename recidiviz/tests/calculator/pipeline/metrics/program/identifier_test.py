@@ -34,12 +34,12 @@ from recidiviz.calculator.pipeline.metrics.program.events import (
 from recidiviz.calculator.pipeline.metrics.program.pipeline import (
     ProgramMetricsPipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
+)
+from recidiviz.calculator.pipeline.utils.assessment_utils import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,

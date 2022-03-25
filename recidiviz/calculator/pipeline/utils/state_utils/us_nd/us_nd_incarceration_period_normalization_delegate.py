@@ -19,10 +19,10 @@ StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
 from typing import Dict, List, Optional
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (

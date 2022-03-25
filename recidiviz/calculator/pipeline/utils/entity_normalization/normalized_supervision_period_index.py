@@ -22,10 +22,10 @@ from typing import Dict, List, Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.common.constants.state.state_supervision_period import (

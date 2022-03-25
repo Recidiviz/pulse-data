@@ -25,14 +25,14 @@ import attr
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.pvalue import PBegin
 
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateEntity,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     ExtractDataForPipeline,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
-    NormalizedStateEntity,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,

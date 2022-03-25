@@ -18,11 +18,11 @@
 from datetime import date
 from typing import List, Optional
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,

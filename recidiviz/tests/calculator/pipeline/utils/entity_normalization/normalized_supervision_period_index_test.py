@@ -19,7 +19,7 @@
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.common.constants.state.state_supervision_period import (

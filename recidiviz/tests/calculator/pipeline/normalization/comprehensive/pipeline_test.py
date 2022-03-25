@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Set, Type
 import mock
 
 from recidiviz.calculator.pipeline.normalization.comprehensive import pipeline
-from recidiviz.calculator.pipeline.utils.entity_normalization import (
+from recidiviz.calculator.pipeline.normalization.utils import (
     entity_normalization_manager_utils,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType

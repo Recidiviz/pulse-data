@@ -15,9 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for working with NormalizedStateEntity objects.
-
-TODO(#10731): Move this file to recidiviz/calculator/pipeline/normalization once all
-  functions are only used by the normalization pipeline.
 """
 from collections import defaultdict
 from copy import copy
@@ -26,7 +23,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar, Unio
 from more_itertools import one
 
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateProgramAssignment,

@@ -45,6 +45,7 @@ from recidiviz.calculator.pipeline.metrics.program.metrics import (
     ProgramReferralMetric,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -56,7 +57,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,

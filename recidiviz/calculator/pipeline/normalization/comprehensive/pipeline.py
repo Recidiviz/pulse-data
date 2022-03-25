@@ -28,27 +28,27 @@ from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline imp
     NormalizationPipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.normalization.comprehensive import entity_normalizer
-from recidiviz.calculator.pipeline.pipeline_type import (
-    COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
+)
+from recidiviz.calculator.pipeline.pipeline_type import (
+    COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
 )
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,

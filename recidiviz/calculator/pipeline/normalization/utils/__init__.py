@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,13 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains US_TN implementation of the StateSpecificViolationResponseNormalizationDelegate."""
-from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
-)
-
-
-class UsTnViolationResponseNormalizationDelegate(
-    StateSpecificViolationResponseNormalizationDelegate
-):
-    """US_TN implementation of the StateSpecificViolationResponseNormalizationDelegate."""

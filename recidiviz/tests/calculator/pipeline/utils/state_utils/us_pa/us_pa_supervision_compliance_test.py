@@ -22,7 +22,7 @@ from typing import List, Optional
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,

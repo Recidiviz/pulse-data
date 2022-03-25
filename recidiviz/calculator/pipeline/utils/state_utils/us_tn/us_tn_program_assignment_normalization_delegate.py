@@ -16,7 +16,7 @@
 # =============================================================================
 """US_TN implementation of the program assignment delegate"""
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
 
