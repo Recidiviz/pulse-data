@@ -358,6 +358,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
                 "person_id": fake_person_id,
                 "agent_external_id": "OFFICER0009",
                 "supervision_period_id": supervision_period.supervision_period_id,
+                "agent_start_date": supervision_period.start_date,
+                "agent_end_date": supervision_period.termination_date,
             }
         ]
 
@@ -434,6 +436,20 @@ class TestIncarcerationPipeline(unittest.TestCase):
             unifying_id_field_filter_set={fake_person_id},
         )
 
+    def testIncarcerationPipelineUsMo(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+        fake_person_id = 12345
+        data_dict = self.build_incarceration_pipeline_data_dict(
+            fake_person_id=fake_person_id, state_code="US_MO"
+        )
+
+        self.run_test_pipeline(
+            state_code="US_MO",
+            data_dict=data_dict,
+            expected_metric_types=ALL_METRIC_TYPES_SET,
+        )
+
     def run_test_pipeline(
         self,
         state_code: str,
@@ -445,7 +461,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         """Runs a test version of the supervision pipeline."""
         project = "project"
         dataset = "dataset"
-        normalized_dataset = "us_xx_normalized_state"
+        normalized_dataset = f"{state_code.lower()}_normalized_state"
 
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
