@@ -126,6 +126,7 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_con
 from recidiviz.tests.persistence.database import database_test_utils
 
 SUPERVISION_PIPELINE_PACKAGE_NAME = pipeline.__name__
+_STATE_CODE = "US_XX"
 
 
 class TestSupervisionPipeline(unittest.TestCase):
@@ -162,14 +163,17 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.run_delegate_class = pipeline.SupervisionMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.state_specific_delegate_patcher.stop()
 
     def build_supervision_pipeline_data_dict(
-        self, fake_person_id: int, fake_supervision_period_id: int
+        self, state_code: str, fake_person_id: int, fake_supervision_period_id: int
     ) -> Dict[str, List[Any]]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
-            state_code="US_XX",
+            state_code=state_code,
             person_id=fake_person_id,
             gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
@@ -179,7 +183,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         persons_data = [normalized_database_base_dict(fake_person)]
 
         fake_person_race = schema.StatePersonRace(
-            state_code="US_XX",
+            state_code=state_code,
             person_id=fake_person_id,
             race=Race.BLACK,
             race_raw_text=Race.BLACK.name,
@@ -188,7 +192,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
-            state_code="US_XX",
+            state_code=state_code,
             county_code="124",
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -202,7 +206,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
-            state_code="US_XX",
+            state_code=state_code,
             county_code="124",
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -216,7 +220,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
-            state_code="US_XX",
+            state_code=state_code,
             county_code="124",
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -228,7 +232,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=fake_supervision_period_id,
-            state_code="US_XX",
+            state_code=state_code,
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
@@ -241,7 +245,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=1122,
-            state_code="US_XX",
+            state_code=state_code,
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             start_date=date(2015, 3, 1),
             projected_completion_date=date(2016, 12, 31),
@@ -252,7 +256,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=123,
-            state_code="US_XX",
+            state_code=state_code,
             person_id=fake_person_id,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -265,14 +269,14 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
-            state_code="US_XX",
+            state_code=state_code,
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
             person_id=fake_person_id,
         )
 
         supervision_contact = schema.StateSupervisionContact(
-            state_code="US_XX",
+            state_code=state_code,
             contact_date=supervision_period.start_date,
             person_id=fake_person_id,
         )
@@ -329,17 +333,19 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_period_to_agent_data = [
             {
-                "state_code": "US_XX",
+                "state_code": state_code,
                 "agent_id": 1010,
                 "person_id": fake_person_id,
                 "agent_external_id": "OFFICER0009",
                 "supervision_period_id": fake_supervision_period_id,
+                "agent_start_date": supervision_period.start_date,
+                "agent_end_date": supervision_period.termination_date,
             }
         ]
 
         supervision_period_judicial_district_association_data = [
             {
-                "state_code": "US_XX",
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "supervision_period_id": fake_supervision_period_id,
                 "judicial_district_code": "XXX",
@@ -348,7 +354,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         state_race_ethnicity_population_count_data = [
             {
-                "state_code": "US_XX",
+                "state_code": state_code,
                 "race_or_ethnicity": "BLACK",
                 "population_count": 1,
                 "representation_priority": 1,
@@ -357,6 +363,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         us_mo_sentence_status_data: List[Dict[str, Any]] = [
             {
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "sentence_external_id": "is-123",
                 "sentence_status_external_id": "is-123-1",
@@ -365,6 +372,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                 "status_description": "New Court Comm-Institution",
             },
             {
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "sentence_external_id": "is-123",
                 "sentence_status_external_id": "is-123-2",
@@ -373,6 +381,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                 "status_description": "Parole Release",
             },
             {
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "sentence_external_id": "is-123",
                 "sentence_status_external_id": "is-123-2",
@@ -381,6 +390,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                 "status_description": "Parole Ret-Treatment Center",
             },
             {
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "sentence_external_id": "is-123",
                 "sentence_status_external_id": "is-123-3",
@@ -389,6 +399,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                 "status_description": "Parole Re-Release",
             },
             {
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "sentence_external_id": "ss-1122",
                 "sentence_status_external_id": "ss-1122-1",
@@ -397,6 +408,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                 "status_description": "Court Probation - Addl Chg",
             },
             {
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "sentence_external_id": "ss-1122",
                 "sentence_status_external_id": "ss-1122-2",
@@ -405,6 +417,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                 "status_description": "Field to DAI-Other Sentence",
             },
             {
+                "state_code": state_code,
                 "person_id": fake_person_id,
                 "sentence_external_id": "is-123",
                 "sentence_status_external_id": "is-123-2",
@@ -442,7 +455,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         fake_supervision_period_id = 1111
 
         data_dict = self.build_supervision_pipeline_data_dict(
-            fake_person_id, fake_supervision_period_id
+            _STATE_CODE, fake_person_id, fake_supervision_period_id
         )
 
         expected_metric_types = {
@@ -452,7 +465,32 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_TERMINATION,
         }
 
-        self.run_test_pipeline(data_dict, expected_metric_types)
+        self.run_test_pipeline(_STATE_CODE, data_dict, expected_metric_types)
+
+    def testSupervisionPipelineUsMo(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+        fake_person_id = 12345
+        fake_supervision_period_id = 1111
+
+        data_dict = self.build_supervision_pipeline_data_dict(
+            fake_person_id=fake_person_id,
+            state_code="US_MO",
+            fake_supervision_period_id=fake_supervision_period_id,
+        )
+
+        expected_metric_types = {
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_START,
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+        }
+
+        self.run_test_pipeline(
+            state_code="US_MO",
+            data_dict=data_dict,
+            expected_metric_types=expected_metric_types,
+        )
 
     @freeze_time("2017-01-31")
     def testSupervisionPipelineWithPersonIdFilterSet(self) -> None:
@@ -460,7 +498,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         fake_supervision_period_id = 1111
 
         data_dict = self.build_supervision_pipeline_data_dict(
-            fake_person_id, fake_supervision_period_id
+            _STATE_CODE, fake_person_id, fake_supervision_period_id
         )
 
         expected_metric_types = {
@@ -471,6 +509,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         }
 
         self.run_test_pipeline(
+            _STATE_CODE,
             data_dict,
             expected_metric_types,
             unifying_id_field_filter_set={fake_person_id},
@@ -478,6 +517,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
     def run_test_pipeline(
         self,
+        state_code: str,
         data_dict: DataTablesDict,
         expected_metric_types: Set[SupervisionMetricType],
         expected_violation_types: Set[ViolationType] = None,
@@ -487,7 +527,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         """Runs a test version of the supervision pipeline."""
         project = "project"
         dataset = "dataset"
-        normalized_dataset = "us_xx_normalized_state"
+        normalized_dataset = f"{state_code.lower()}_normalized_state"
 
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
@@ -505,7 +545,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
         run_test_pipeline(
             run_delegate=self.run_delegate_class,
-            state_code="US_XX",
+            state_code=state_code,
             project_id=project,
             dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
@@ -752,7 +792,10 @@ class TestSupervisionPipeline(unittest.TestCase):
         metric_types_filter = {metric.value for metric in expected_metric_types}
 
         self.run_test_pipeline(
-            data_dict, expected_metric_types, metric_types_filter=metric_types_filter
+            _STATE_CODE,
+            data_dict,
+            expected_metric_types,
+            metric_types_filter=metric_types_filter,
         )
 
     @freeze_time("2019-11-26")
@@ -979,7 +1022,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_START,
         }
 
-        self.run_test_pipeline(data_dict, expected_metric_types)
+        self.run_test_pipeline(_STATE_CODE, data_dict, expected_metric_types)
 
 
 class TestClassifyEvents(unittest.TestCase):

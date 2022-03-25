@@ -48,6 +48,10 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_judicia
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
+    US_MO_SENTENCE_STATUSES_VIEW_NAME,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
@@ -85,7 +89,11 @@ class SupervisionMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 StateSpecificSupervisionDelegate,
                 StateSpecificViolationDelegate,
             ],
-            state_specific_required_reference_tables={},
+            state_specific_required_reference_tables={
+                # We need to bring in the US_MO sentence status table to load
+                # state-specific versions of sentences
+                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
+            },
         )
 
     @classmethod
