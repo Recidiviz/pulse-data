@@ -57,6 +57,10 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -224,6 +228,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
@@ -239,6 +244,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             facility="San Quentin",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id,
@@ -275,12 +281,16 @@ class TestIncarcerationPipeline(unittest.TestCase):
         ]
 
         incarceration_periods_data = [
-            normalized_database_base_dict(initial_incarceration),
-            normalized_database_base_dict(first_reincarceration),
-            normalized_database_base_dict(subsequent_reincarceration),
+            normalized_database_base_dict(initial_incarceration, {"sequence_num": 0}),
+            normalized_database_base_dict(first_reincarceration, {"sequence_num": 1}),
+            normalized_database_base_dict(
+                subsequent_reincarceration, {"sequence_num": 2}
+            ),
         ]
 
-        supervision_periods_data = [normalized_database_base_dict(supervision_period)]
+        supervision_periods_data = [
+            normalized_database_base_dict(supervision_period, {"sequence_num": 0})
+        ]
 
         supervision_violation_response = (
             database_test_utils.generate_test_supervision_violation_response(
@@ -301,7 +311,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
 
         supervision_violation_response_data = [
-            normalized_database_base_dict(supervision_violation_response)
+            normalized_database_base_dict(
+                supervision_violation_response, {"sequence_num": 0}
+            )
         ]
 
         assessment_data = [normalized_database_base_dict(assessment)]
@@ -409,20 +421,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             metric_types_filter=metric_types_filter,
         )
 
-    def testIncarcerationPipelineUsMo(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-        fake_person_id = 12345
-        data_dict = self.build_incarceration_pipeline_data_dict(
-            fake_person_id=fake_person_id, state_code="US_MO"
-        )
-
-        self.run_test_pipeline(
-            state_code="US_MO",
-            data_dict=data_dict,
-            expected_metric_types=ALL_METRIC_TYPES_SET,
-        )
-
     def testIncarcerationPipelineWithFilterSet(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(
@@ -447,10 +445,11 @@ class TestIncarcerationPipeline(unittest.TestCase):
         """Runs a test version of the supervision pipeline."""
         project = "project"
         dataset = "dataset"
+        normalized_dataset = "us_xx_normalized_state"
 
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                dataset, data_dict, expected_normalized_dataset=normalized_dataset
             )
         )
         write_to_bq_constructor = (
@@ -665,7 +664,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             state_code=state_code,
             county_code="124",
@@ -678,17 +677,20 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             supervision_level_raw_text="MEDM",
             supervision_site="10",
             person=fake_person,
+            sequence_num=0,
         )
 
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON XX",
             admission_date=date(2010, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2010, 11, 21),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            sequence_num=0,
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
@@ -829,146 +831,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         )
 
         assert_that(output, equal_to([]))
-
-        test_pipeline.run()
-
-    def testClassifyIncarcerationEventsWithPeriodsAfterDeath(self) -> None:
-        """Tests the ClassifyIncarcerationEvents DoFn for when a person has periods
-        that occur after a period ending in their death."""
-        fake_person_id = 12345
-        state_code = "US_XX"
-
-        fake_person = StatePerson.new_with_defaults(
-            state_code=state_code,
-            person_id=fake_person_id,
-            gender=Gender.MALE,
-            birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
-        )
-
-        incarceration_period_with_death = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code=state_code,
-            facility="PRISON XX",
-            admission_date=date(2010, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-            release_date=date(2010, 11, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
-        )
-
-        post_mortem_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code=state_code,
-            facility="PRISON XX",
-            admission_date=date(2010, 11, 22),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            release_date=date(2010, 11, 23),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-        )
-
-        post_mortem_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code=state_code,
-            facility="PRISON XX",
-            admission_date=date(2010, 11, 24),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-        )
-
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code=state_code,
-            incarceration_sentence_id=123,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            start_date=date(2009, 2, 9),
-        )
-
-        fake_person_id_to_county_query_result = {
-            "person_id": fake_person_id,
-            "county_of_residence": _COUNTY_OF_RESIDENCE,
-        }
-
-        fake_incarceration_period_judicial_district_association_result = {
-            "person_id": fake_person_id,
-            "incarceration_period_id": 123,
-            "judicial_district_code": "NW",
-        }
-
-        assert incarceration_period_with_death.admission_date is not None
-        assert incarceration_period_with_death.release_date is not None
-        assert incarceration_period_with_death.admission_reason is not None
-        assert incarceration_period_with_death.release_reason is not None
-        incarceration_events = [
-            IncarcerationCommitmentFromSupervisionAdmissionEvent(
-                state_code=incarceration_period_with_death.state_code,
-                event_date=incarceration_period_with_death.admission_date,
-                facility=incarceration_period_with_death.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=incarceration_period_with_death.admission_reason,
-                admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
-                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                case_type=StateSupervisionCaseType.GENERAL,
-                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            ),
-            IncarcerationReleaseEvent(
-                state_code=incarceration_period_with_death.state_code,
-                event_date=incarceration_period_with_death.release_date,
-                facility=incarceration_period_with_death.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                release_reason=incarceration_period_with_death.release_reason,
-                admission_reason=incarceration_period_with_death.admission_reason,
-                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-                total_days_incarcerated=(
-                    incarceration_period_with_death.release_date
-                    - incarceration_period_with_death.admission_date
-                ).days,
-                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            ),
-            IncarcerationStayEvent(
-                admission_reason=incarceration_period_with_death.admission_reason,
-                admission_reason_raw_text=incarceration_period_with_death.admission_reason_raw_text,
-                state_code=incarceration_period_with_death.state_code,
-                event_date=incarceration_period_with_death.admission_date,
-                facility=incarceration_period_with_death.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-            ),
-        ]
-
-        correct_output = [(fake_person_id, (fake_person, incarceration_events))]
-
-        test_pipeline = TestPipeline()
-
-        person_entities = self.load_person_entities_dict(
-            person=fake_person,
-            incarceration_periods=[
-                incarceration_period_with_death,
-                post_mortem_incarceration_period_1,
-                post_mortem_incarceration_period_2,
-            ],
-            incarceration_sentences=[incarceration_sentence],
-            ip_to_judicial_district_kv=[
-                fake_incarceration_period_judicial_district_association_result
-            ],
-            person_id_to_county_kv=[fake_person_id_to_county_query_result],
-        )
-
-        output = (
-            test_pipeline
-            | beam.Create([(fake_person_id, person_entities)])
-            | "Identify Incarceration Events"
-            >> beam.ParDo(
-                ClassifyEvents(),
-                state_code=state_code,
-                identifier=self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
-            )
-        )
-
-        assert_that(output, equal_to(correct_output))
 
         test_pipeline.run()
 
