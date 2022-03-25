@@ -106,6 +106,11 @@ class FakeBigQueryClient(BigQueryClient):
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
         raise ValueError("Must be implemented for use in tests.")
 
+    def list_tables_excluding_views(
+        self, dataset_id: str
+    ) -> Iterator[bigquery.table.TableListItem]:
+        raise ValueError("Must be implemented for use in tests.")
+
     def create_table(self, table: bigquery.Table) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
@@ -277,6 +282,7 @@ class FakeBigQueryClient(BigQueryClient):
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
+        overwrite_destination_tables: bool = True,
         timeout_sec: float = DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
     ) -> None:
         raise ValueError("Must be implemented for use in tests.")
