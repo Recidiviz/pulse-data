@@ -42,13 +42,6 @@ from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     get_violation_and_response_history,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    entity_normalization_managers_for_periods,
-    normalized_violation_responses_for_calculations,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
@@ -57,20 +50,11 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entitie
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
-    convert_entity_trees_to_normalized_versions,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
@@ -117,12 +101,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
-    StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionViolationResponse,
 )
 
 
@@ -134,22 +115,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def find_events(
-        self, person: StatePerson, identifier_context: IdentifierContextT
+        self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> List[IncarcerationEvent]:
-        if not person.person_id:
-            raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
 
         return self._find_incarceration_events(
-            person_id=person.person_id,
-            ip_normalization_delegate=identifier_context[
-                StateSpecificIncarcerationNormalizationDelegate.__name__
-            ],
-            sp_normalization_delegate=identifier_context[
-                StateSpecificSupervisionNormalizationDelegate.__name__
-            ],
-            violation_response_normalization_delegate=identifier_context[
-                StateSpecificViolationResponseNormalizationDelegate.__name__
-            ],
             incarceration_delegate=identifier_context[
                 StateSpecificIncarcerationDelegate.__name__
             ],
@@ -162,15 +131,19 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             commitment_from_supervision_delegate=identifier_context[
                 StateSpecificCommitmentFromSupervisionDelegate.__name__
             ],
-            incarceration_periods=identifier_context[StateIncarcerationPeriod.__name__],
+            incarceration_periods=identifier_context[
+                NormalizedStateIncarcerationPeriod.base_class_name()
+            ],
             incarceration_sentences=identifier_context[
                 StateIncarcerationSentence.__name__
             ],
             supervision_sentences=identifier_context[StateSupervisionSentence.__name__],
-            supervision_periods=identifier_context[StateSupervisionPeriod.__name__],
+            supervision_periods=identifier_context[
+                NormalizedStateSupervisionPeriod.base_class_name()
+            ],
             assessments=identifier_context[StateAssessment.__name__],
             violation_responses=identifier_context[
-                StateSupervisionViolationResponse.__name__
+                NormalizedStateSupervisionViolationResponse.base_class_name()
             ],
             incarceration_period_judicial_district_association=identifier_context[
                 INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
@@ -185,20 +158,16 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_incarceration_events(
         self,
-        person_id: int,
-        ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
-        sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
-        violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
         violation_delegate: StateSpecificViolationDelegate,
         commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-        incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_periods: List[NormalizedStateSupervisionPeriod],
         assessments: List[StateAssessment],
-        violation_responses: List[StateSupervisionViolationResponse],
+        violation_responses: List[NormalizedStateSupervisionViolationResponse],
         incarceration_period_judicial_district_association: List[Dict[str, Any]],
         persons_to_recent_county_of_residence: List[Dict[str, Any]],
         supervision_period_to_agent_association: List[Dict[str, Any]],
@@ -225,86 +194,25 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             Any, Dict[str, Any]
         ] = list_of_dicts_to_dict_with_keys(
             incarceration_period_judicial_district_association,
-            key=StateIncarcerationPeriod.get_class_id_name(),
+            key=NormalizedStateIncarcerationPeriod.get_class_id_name(),
         )
 
         supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
             supervision_period_to_agent_association,
-            StateSupervisionPeriod.get_class_id_name(),
-        )
-
-        # TODO(#10731): Remove calls get the normalized violation responses once this
-        #  metric pipeline is hydrating Normalized versions of all entities
-        normalized_violation_responses = normalized_violation_responses_for_calculations(
-            person_id=person_id,
-            violation_response_normalization_delegate=violation_response_normalization_delegate,
-            violation_responses=violation_responses,
-            field_index=self.field_index,
+            NormalizedStateSupervisionPeriod.get_class_id_name(),
         )
 
         normalized_violation_responses = sort_normalized_entities_by_sequence_num(
-            normalized_violation_responses
-        )
-
-        (
-            ip_normalization_manager,
-            sp_normalization_manager,
-        ) = entity_normalization_managers_for_periods(
-            person_id=person_id,
-            ip_normalization_delegate=ip_normalization_delegate,
-            sp_normalization_delegate=sp_normalization_delegate,
-            incarceration_periods=incarceration_periods,
-            supervision_periods=supervision_periods,
-            normalized_violation_responses=normalized_violation_responses,
-            field_index=self.field_index,
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences,
-        )
-
-        if not ip_normalization_manager or not sp_normalization_manager:
-            raise ValueError("Expected both normalized IPs and SPs for this pipeline.")
-
-        # TODO(#10731): Remove calls to ip_normalization_manager and conversion to
-        #  NormalizedStateIncarcerationPeriods once this metric pipeline is hydrating
-        #  Normalized versions of all entities
-        (
-            processed_ips,
-            additional_ip_attributes,
-        ) = (
-            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
-        )
-
-        normalized_ips = convert_entity_trees_to_normalized_versions(
-            root_entities=processed_ips,
-            normalized_entity_class=NormalizedStateIncarcerationPeriod,
-            additional_attributes_map=additional_ip_attributes,
-            field_index=self.field_index,
+            violation_responses
         )
 
         ip_index = NormalizedIncarcerationPeriodIndex(
-            sorted_incarceration_periods=normalized_ips,
+            sorted_incarceration_periods=incarceration_periods,
             incarceration_delegate=incarceration_delegate,
         )
 
-        # TODO(#10731): Remove calls to sp_normalization_manager and conversion to
-        #  NormalizedStateSupervisionPeriods once this metric pipeline is hydrating
-        #  Normalized versions of all entities
-        (
-            processed_sps,
-            additional_sp_attributes,
-        ) = (
-            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
-        )
-
-        normalized_sps = convert_entity_trees_to_normalized_versions(
-            root_entities=processed_sps,
-            normalized_entity_class=NormalizedStateSupervisionPeriod,
-            additional_attributes_map=additional_sp_attributes,
-            field_index=self.field_index,
-        )
-
         sp_index = NormalizedSupervisionPeriodIndex(
-            sorted_supervision_periods=normalized_sps
+            sorted_supervision_periods=supervision_periods
         )
 
         (
@@ -445,7 +353,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_incarceration_stays(
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
@@ -529,7 +437,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _get_judicial_district_code(
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
     ) -> Optional[str]:
         """Retrieves the judicial_district_code corresponding to the incarceration period, if one exists."""
