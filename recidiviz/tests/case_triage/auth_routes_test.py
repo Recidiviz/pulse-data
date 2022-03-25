@@ -18,29 +18,16 @@
 import unittest
 
 from flask import Flask, session
-from jwt import PyJWKSet
 
 from recidiviz.case_triage.auth_routes import create_auth_blueprint
-from recidiviz.tests.utils.auth.auth0_test import generate_keypair, get_public_jwk
-from recidiviz.utils.auth.auth0 import Auth0Config
+from recidiviz.tests.auth.utils import get_test_auth0_config
 
 
 class TestAuthRoutes(unittest.TestCase):
     """Tests the auth blueprint"""
 
     def setUp(self) -> None:
-        _private_key, public_key = generate_keypair()
-        jwks = PyJWKSet.from_dict({"keys": [get_public_jwk(public_key, "keyid")]})
-
-        authorization_config = Auth0Config(
-            {
-                "algorithms": ["RS256"],
-                "domain": "auth0.localhost",
-                "clientId": "test_client_id",
-                "audience": "http://localhost",
-            },
-            jwks=jwks,
-        )
+        authorization_config = get_test_auth0_config()
 
         auth_blueprint = create_auth_blueprint(authorization_config)
 

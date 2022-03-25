@@ -18,12 +18,15 @@
 """Secrets for use at runtime."""
 
 import logging
+import os
+from pathlib import Path
 from typing import Dict, Optional
 
 from google.cloud import exceptions
 from google.cloud import secretmanager_v1beta1 as secretmanager
-from recidiviz.utils import environment, metadata
 
+from recidiviz.utils import environment, metadata
+from recidiviz.utils.environment import in_development, in_test
 
 __sm = None
 
@@ -82,3 +85,22 @@ def get_secret(secret_id: str) -> Optional[str]:
         return None
     CACHED_SECRETS[secret_id] = secret_value
     return secret_value
+
+
+def get_local_secret(local_path: str, secret_name: str) -> Optional[str]:
+    """
+    Helper function for supporting local development flows.
+    When in development environments, we fetch file contents from `recidiviz/<app name>/local/gsm`
+    In Google Cloud environments, we delegate to Secrets Manager.
+    """
+    if in_development() or in_test():
+        try:
+            secret = Path(os.path.join(local_path, "gsm", secret_name)).read_text(
+                "utf-8"
+            )
+            return secret.strip()
+        except OSError:
+            logging.error("Couldn't locate secret %s", secret_name)
+            return None
+
+    return get_secret(secret_name)
