@@ -554,17 +554,24 @@ class BigQueryClient:
         table_id: str,
         schema_fields: List[bigquery.SchemaField],
         clustering_fields: List[str] = None,
+        date_partition_field: Optional[str] = None,
     ) -> bigquery.Table:
-        """Creates a table in the given dataset with the given schema fields. Raises an error if a table with the same
-        table_id already exists in the dataset.
+        """Creates a table in the given dataset with the given schema fields. Raises an
+        error if a table with the same table_id already exists in the dataset.
 
         Args:
             dataset_id: The name of the dataset where the table should be created
             table_id: The name of the table to be created
             schema_fields: A list of fields defining the table's schema
-            clustering_fields: A list of fields to cluster the table by
-            The clustering columns that are specified are used to colocate related data
-            https://cloud.google.com/bigquery/docs/clustered-tables
+            clustering_fields: A list of fields to cluster the table by. The clustering
+                columns that are specified are used to co-locate related data. For more:
+                https://cloud.google.com/bigquery/docs/clustered-tables.
+            date_partition_field: The name of a single field to partition this table on
+                using TimePartitioningType.DAY. Field may have time DATE, DATETIME or
+                TIMESTAMP. See https://cloud.google.com/bigquery/docs/partitioned-tables#partitioning_versus_clustering
+                for details on the tradeoffs of clustering vs partitioning. You can also combine partitioning with
+                clustering. Data is first partitioned and then data in each partition is
+                clustered by the clustering columns.
 
         Returns:
             The bigquery.Table that is created.
@@ -1377,6 +1384,7 @@ class BigQueryClientImpl(BigQueryClient):
         table_id: str,
         schema_fields: List[bigquery.SchemaField],
         clustering_fields: List[str] = None,
+        date_partition_field: Optional[str] = None,
     ) -> bigquery.Table:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
@@ -1390,6 +1398,28 @@ class BigQueryClientImpl(BigQueryClient):
 
         if clustering_fields is not None:
             table.clustering_fields = clustering_fields
+
+        if date_partition_field:
+            field_type = one(
+                f.field_type for f in schema_fields if f.name == date_partition_field
+            )
+
+            # BigQuery only allows partitioning on tables of these types. See:
+            # https://cloud.google.com/bigquery/docs/partitioned-tables#date_timestamp_partitioned_tables
+            if field_type not in (
+                bigquery.enums.SqlTypeNames.DATE.value,
+                bigquery.enums.SqlTypeNames.DATETIME.value,
+                bigquery.enums.SqlTypeNames.TIMESTAMP.value,
+            ):
+                raise ValueError(
+                    f"Date partition field [{date_partition_field}] has unsupported "
+                    f"type: [{field_type}]."
+                )
+
+            table.time_partitioning = bigquery.TimePartitioning(
+                type_=bigquery.TimePartitioningType.DAY,
+                field=date_partition_field,
+            )
 
         logging.info("Creating table %s.%s", dataset_id, table_id)
         return self.client.create_table(table)

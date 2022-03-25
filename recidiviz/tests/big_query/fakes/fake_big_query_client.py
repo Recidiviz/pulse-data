@@ -267,6 +267,7 @@ class FakeBigQueryClient(BigQueryClient):
         table_id: str,
         schema_fields: List[bigquery.SchemaField],
         clustering_fields: List[bigquery.SchemaField] = None,
+        date_partition_field: Optional[str] = None,
     ) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
