@@ -277,6 +277,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
             state_code=base_pipeline_args.state_code,
             project_id=base_pipeline_args.project_id,
             input_dataset=base_pipeline_args.input_dataset,
+            normalized_input_dataset=base_pipeline_args.normalized_input_dataset,
             reference_dataset=base_pipeline_args.reference_dataset,
             output_dataset=base_pipeline_args.output_dataset,
             apache_beam_pipeline_options=base_pipeline_args.apache_beam_pipeline_options,

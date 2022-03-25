@@ -35,6 +35,9 @@ from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline imp
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    state_base_entity_class_for_entity_class,
+)
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
@@ -178,10 +181,15 @@ def default_data_dict_for_run_delegate(
     Returns a dictionary where the keys are the required tables, and the values are
     empty lists.
     """
+    required_base_entities = [
+        state_base_entity_class_for_entity_class(entity_class)
+        for entity_class in run_delegate.pipeline_config().required_entities
+    ]
+
     return default_data_dict_for_root_schema_classes(
         [
-            get_state_database_entity_with_name(entity_class.__name__)
-            for entity_class in run_delegate.pipeline_config().required_entities
+            get_state_database_entity_with_name(base_entity_class.__name__)
+            for base_entity_class in required_base_entities
         ]
     )
 

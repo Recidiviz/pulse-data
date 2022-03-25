@@ -41,6 +41,12 @@ from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
     ReadFromBigQuery,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateEntity,
+)
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+    state_base_entity_class_for_entity_class,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     EntityAssociation,
     EntityClassName,
@@ -93,9 +99,12 @@ class ExtractDataForPipeline(beam.PTransform):
         self,
         state_code: str,
         project_id: str,
-        dataset: str,
+        entities_dataset: str,
+        normalized_entities_dataset: str,
         reference_dataset: str,
-        required_entity_classes: Optional[List[Type[Entity]]],
+        required_entity_classes: Optional[
+            List[Union[Type[Entity], Type[NormalizedStateEntity]]]
+        ],
         required_reference_tables: Optional[List[str]],
         unifying_class: Type[Entity],
         unifying_id_field_filter_set: Optional[Set[UnifyingId]] = None,
@@ -105,7 +114,10 @@ class ExtractDataForPipeline(beam.PTransform):
         Arguments:
             state_code: The state code to filter all results by
             project_id: The project_id of the BigQuery project to query from.
-            dataset: The name of the dataset_id to read from BigQuery.
+            entities_dataset: The name of the dataset_id to read from BigQuery.
+            normalized_entities_dataset: The name of the dataset_id to read from
+                BigQuery for any entities in required_entity_classes that are
+                of type NormalizedStateEntity.
             required_entity_classes: The list of required entity classes for the
                 pipeline. Must not contain any duplicates of any entities.
             unifying_class: The Entity type whose id should be used to connect the
@@ -122,9 +134,10 @@ class ExtractDataForPipeline(beam.PTransform):
         self._state_code = state_code
         self._project_id = project_id
 
-        if not dataset:
+        if not entities_dataset:
             raise ValueError("No valid data source passed to the pipeline.")
-        self._dataset = dataset
+        self._entities_dataset = entities_dataset
+        self._normalized_entities_dataset = normalized_entities_dataset
 
         if not reference_dataset:
             raise ValueError("No valid data reference source passed to the pipeline.")
@@ -140,7 +153,16 @@ class ExtractDataForPipeline(beam.PTransform):
                 f"{required_entity_classes}."
             )
 
-        self._required_entities = required_entity_classes or []
+        self._entity_class_to_hydrated_entity_class: Dict[
+            Type[Entity], Union[Type[Entity], Type[NormalizedStateEntity]]
+        ] = {}
+
+        for entity_class in required_entity_classes or []:
+            base_entity_class = state_base_entity_class_for_entity_class(entity_class)
+            self._entity_class_to_hydrated_entity_class[
+                base_entity_class
+            ] = entity_class
+
         self._direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
 
         if not unifying_class:
@@ -159,7 +181,7 @@ class ExtractDataForPipeline(beam.PTransform):
             EntityClassName, List[EntityRelationshipDetails]
         ] = {}
 
-        for root_entity_class in self._required_entities:
+        for root_entity_class in self._entity_class_to_hydrated_entity_class:
             root_entity_class_name = root_entity_class.__name__
             if root_entity_class_name not in relationships_to_hydrate:
                 relationships_to_hydrate[root_entity_class_name] = []
@@ -203,7 +225,7 @@ class ExtractDataForPipeline(beam.PTransform):
                     # of the python objects.
                     continue
 
-                if property_entity_class in self._required_entities:
+                if property_entity_class in self._entity_class_to_hydrated_entity_class:
                     is_property_forward_edge = self._direction_checker.is_higher_ranked(
                         root_schema_class, property_schema_class
                     )
@@ -281,6 +303,21 @@ class ExtractDataForPipeline(beam.PTransform):
                 # determined
                 continue
 
+            if issubclass(
+                self._entity_class_to_hydrated_entity_class[root_entity_class],
+                NormalizedStateEntity,
+            ) or issubclass(
+                self._entity_class_to_hydrated_entity_class[related_entity_class],
+                NormalizedStateEntity,
+            ):
+                # TODO(#10730): Implement support for association queries between
+                #  normalized entities
+                raise NotImplementedError(
+                    "Hydrating Normalized entities that have "
+                    "relationships to other entities in the "
+                    "pipeline is not yet supported."
+                )
+
             # Get the association values for this relationship
             association_values = (
                 pipeline | f"Extract association values for "
@@ -288,7 +325,8 @@ class ExtractDataForPipeline(beam.PTransform):
                 f"{related_entity_class.__name__} relationship."
                 >> _ExtractAssociationValues(
                     project_id=self._project_id,
-                    dataset=self._dataset,
+                    entities_dataset=self._entities_dataset,
+                    normalized_entities_dataset=self._normalized_entities_dataset,
                     root_entity_class=root_entity_class,
                     related_entity_class=related_entity_class,
                     unifying_id_field=self._unifying_id_field,
@@ -302,17 +340,20 @@ class ExtractDataForPipeline(beam.PTransform):
             hydrated_association_info[relationship_key] = association_values
 
     def get_shallow_hydrated_entity_pcollection(
-        self, pipeline: PBegin, entity_class: Type[Entity]
+        self,
+        pipeline: PBegin,
+        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
     ) -> PCollection[Tuple[UnifyingId, Entity]]:
         """Returns the hydrated entities of type |entity_class| as a PCollection,
         where each element is a tuple in the format: (unifying_id, entity).
         """
         return (
-            pipeline | f"Extract {entity_class.__name__} "
-            f"instances"
+            pipeline
+            | f"Extract {entity_class.__name__} instances"
             >> _ExtractAllEntitiesOfType(
                 project_id=self._project_id,
-                dataset=self._dataset,
+                entities_dataset=self._entities_dataset,
+                normalized_entities_dataset=self._normalized_entities_dataset,
                 entity_class=entity_class,
                 unifying_id_field=self._unifying_id_field,
                 unifying_id_field_filter_set=self._unifying_id_field_filter_set,
@@ -330,7 +371,7 @@ class ExtractDataForPipeline(beam.PTransform):
         hydrated_association_info: Dict[
             EntityClassName, PCollection[Tuple[UnifyingId, EntityAssociation]]
         ] = {}
-        for root_entity_class in self._required_entities:
+        for root_entity_class in self._entity_class_to_hydrated_entity_class:
             # Populate relationships_to_hydrate with the relationships between all
             # required entities that require hydrating, and add association values
             # for these relationships to the entities_and_associations dict
@@ -360,11 +401,15 @@ class ExtractDataForPipeline(beam.PTransform):
             EntityClassName, PCollection[Tuple[UnifyingId, Entity]]
         ] = {}
 
-        for entity_class in self._required_entities:
+        for (
+            entity_class,
+            entity_class_for_hydration,
+        ) in self._entity_class_to_hydrated_entity_class.items():
             shallow_hydrated_entities[
                 entity_class.__name__
             ] = self.get_shallow_hydrated_entity_pcollection(
-                pipeline=input_or_inputs, entity_class=entity_class
+                pipeline=input_or_inputs,
+                entity_class=entity_class_for_hydration,
             )
 
         relationships_to_hydrate = self._get_relationships_to_hydrate()
@@ -708,59 +753,55 @@ class _PackageAssociationIDValues(beam.DoFn):
         pass
 
 
-class _ExtractEntityBase(beam.PTransform):
+class _ExtractValuesFromEntityBase(beam.PTransform):
     """Shared functionality between any PTransforms doing entity extraction."""
 
     def __init__(
         self,
         project_id: str,
-        dataset: str,
-        entity_class: Type[Entity],
+        entities_dataset: str,
+        normalized_entities_dataset: str,
+        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         unifying_id_field: str,
         unifying_id_field_filter_set: Optional[Set[int]],
         state_code: str,
     ):
         super().__init__()
         self._project_id = project_id
-        self._dataset = dataset
 
         self._unifying_id_field = unifying_id_field
         self._unifying_id_field_filter_set = unifying_id_field_filter_set
 
-        self._entity_class = entity_class
-        self._schema_class: Type[
+        if issubclass(entity_class, NormalizedStateEntity):
+            self._base_entity_class = state_base_entity_class_for_entity_class(
+                entity_class
+            )
+            self._dataset = normalized_entities_dataset
+        elif issubclass(entity_class, Entity):
+            self._base_entity_class = entity_class
+            self._dataset = entities_dataset
+        else:
+            raise ValueError(f"Unexpected entity_class [{entity_class}]")
+
+        self._entity_class_to_hydrate = entity_class
+        self._base_schema_class: Type[
             StateBase
         ] = schema_utils.get_state_database_entity_with_name(
-            self._entity_class.__name__
+            self._base_entity_class.__name__
         )
-        self._entity_table_name = self._schema_class.__tablename__
-        self._entity_id_field = self._entity_class.get_class_id_name()
+        self._base_entity_table_name = self._base_schema_class.__tablename__
+        self._entity_id_field = self._base_entity_class.get_class_id_name()
         self._state_code = state_code
 
-    def _entity_has_unifying_id_field(self):
-        return hasattr(self._schema_class, self._unifying_id_field)
-
-    def _entity_has_state_code_field(self):
-        return hasattr(self._schema_class, "state_code")
-
-    def _is_unifying_id_field_in_filter_set(self, association_raw_tuple):
-        if (
-            not self._unifying_id_field_filter_set
-            or not self._entity_has_unifying_id_field()
-        ):
-            return True
-
-        return (
-            getattr(association_raw_tuple, self._unifying_id_field)
-            in self._unifying_id_field_filter_set
-        )
+    def _entity_has_unifying_id_field(self) -> bool:
+        return hasattr(self._base_schema_class, self._unifying_id_field)
 
     def _get_entities_table_sql_query(
         self, columns_to_include: Optional[List[str]] = None
     ):
         if not self._entity_has_unifying_id_field():
             raise ValueError(
-                f"Shouldn't be querying table for entity {self._entity_class} that doesn't have field "
+                f"Shouldn't be querying table for entity {self._base_entity_class} that doesn't have field "
                 f"{self._unifying_id_field} - these values will never get grouped with results, so it's "
                 f"a waste to query for them."
             )
@@ -774,7 +815,7 @@ class _ExtractEntityBase(beam.PTransform):
         entity_query = select_query(
             project_id=self._project_id,
             dataset=self._dataset,
-            table=self._entity_table_name,
+            table=self._base_entity_table_name,
             state_code_filter=self._state_code,
             unifying_id_field=self._unifying_id_field,
             unifying_id_field_filter_set=unifying_id_field_filter_set,
@@ -783,11 +824,41 @@ class _ExtractEntityBase(beam.PTransform):
 
         return entity_query
 
+    @abc.abstractmethod
+    def expand(self, input_or_inputs):
+        pass
+
+
+class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
+    """Reads all entities of a given type from the corresponding table in BigQuery,
+    then hydrates individual entity instances.
+    """
+
+    def __init__(
+        self,
+        project_id: str,
+        entities_dataset: str,
+        normalized_entities_dataset: str,
+        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
+        unifying_id_field: str,
+        unifying_id_field_filter_set: Optional[Set[int]],
+        state_code: str,
+    ):
+        super().__init__(
+            project_id,
+            entities_dataset,
+            normalized_entities_dataset,
+            entity_class,
+            unifying_id_field,
+            unifying_id_field_filter_set,
+            state_code,
+        )
+
     def _get_entities_raw_pcollection(self, input_or_inputs: PBegin):
         if not self._entity_has_unifying_id_field():
             empty_output = (
                 input_or_inputs
-                | f"{self._entity_class} does not have {self._unifying_id_field}."
+                | f"{self._base_entity_class} does not have {self._unifying_id_field}."
                 >> beam.Create([])
             )
             return empty_output
@@ -797,51 +868,23 @@ class _ExtractEntityBase(beam.PTransform):
         # Read entities from BQ
         entities_raw = (
             input_or_inputs
-            | f"Read {self._entity_table_name} from BigQuery"
+            | f"Read {self._base_entity_table_name} from BigQuery"
             >> ReadFromBigQuery(query=entity_query)
         )
 
         return entities_raw
 
-    @abc.abstractmethod
-    def expand(self, input_or_inputs):
-        pass
-
-
-class _ExtractAllEntitiesOfType(_ExtractEntityBase):
-    """Reads all entities of a given type from the corresponding table in BigQuery,
-    then hydrates individual entity instances.
-    """
-
-    def __init__(
-        self,
-        project_id: str,
-        dataset: str,
-        entity_class: Type[Entity],
-        unifying_id_field: str,
-        unifying_id_field_filter_set: Optional[Set[int]],
-        state_code: str,
-    ):
-        super().__init__(
-            project_id,
-            dataset,
-            entity_class,
-            unifying_id_field,
-            unifying_id_field_filter_set,
-            state_code,
-        )
-
     def expand(self, input_or_inputs: PBegin):
         entities_raw = self._get_entities_raw_pcollection(input_or_inputs)
 
         hydrate_kwargs: Dict[str, Any] = {
-            "entity_class": self._entity_class,
+            "entity_class": self._entity_class_to_hydrate,
             "unifying_id_field": self._unifying_id_field,
         }
 
         return (
             entities_raw
-            | f"Hydrate flat fields of {self._entity_class.__name__} instances"
+            | f"Hydrate flat fields of {self._base_entity_class.__name__} instances"
             >> beam.ParDo(_ShallowHydrateEntity(), **hydrate_kwargs)
         )
 
@@ -943,13 +986,14 @@ class ImportTableAsKVTuples(beam.PTransform):
         return table_contents_as_kv
 
 
-class _ExtractAssociationValues(_ExtractEntityBase):
+class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
     """Extracts the values needed to associate two entity types."""
 
     def __init__(
         self,
         project_id: str,
-        dataset: str,
+        entities_dataset: str,
+        normalized_entities_dataset: str,
         root_entity_class: Type[Entity],
         related_entity_class: Type[Entity],
         related_id_field: str,
@@ -984,7 +1028,8 @@ class _ExtractAssociationValues(_ExtractEntityBase):
 
         super().__init__(
             project_id,
-            dataset,
+            entities_dataset,
+            normalized_entities_dataset,
             self._entity_class_for_query,
             unifying_id_field,
             unifying_id_field_filter_set,
@@ -993,9 +1038,9 @@ class _ExtractAssociationValues(_ExtractEntityBase):
 
     def _entity_has_all_fields_for_association(self) -> bool:
         return (
-            hasattr(self._schema_class, self._unifying_id_field)
-            and hasattr(self._schema_class, self._root_id_field)
-            and hasattr(self._schema_class, self._related_id_field)
+            hasattr(self._base_schema_class, self._unifying_id_field)
+            and hasattr(self._base_schema_class, self._root_id_field)
+            and hasattr(self._base_schema_class, self._related_id_field)
         )
 
     def _get_association_values_raw_pcollection(
@@ -1008,10 +1053,10 @@ class _ExtractAssociationValues(_ExtractEntityBase):
                 "Should not be querying for the association between two "
                 "entities if one entity does not have the unifying "
                 f"field. No {self._unifying_id_field} found on schema "
-                f"class: {self._schema_class}."
+                f"class: {self._base_schema_class}."
             )
 
-        if self._association_table == self._schema_class.__tablename__:
+        if self._association_table == self._base_schema_class.__tablename__:
             if not self._entity_has_all_fields_for_association():
                 raise ValueError(
                     "All three association fields must exist on the "
@@ -1044,13 +1089,13 @@ class _ExtractAssociationValues(_ExtractEntityBase):
             # rows we will need.
             association_view_query = (
                 f"SELECT "
-                f"{self._entity_class.get_entity_name()}.{self._unifying_id_field} as {UNIFYING_ID_KEY}, "
+                f"{self._base_entity_class.get_entity_name()}.{self._unifying_id_field} as {UNIFYING_ID_KEY}, "
                 f"{self._association_table}.{self._root_id_field}, "
                 f"{self._association_table}.{self._related_id_field} "
                 f"FROM `{self._project_id}.{self._dataset}.{self._association_table}`"
                 f" {self._association_table} "
-                f"JOIN ({self._get_entities_table_sql_query()}) {self._entity_class.get_entity_name()} "
-                f"ON {self._entity_class.get_entity_name()}.{self._entity_id_field} = "
+                f"JOIN ({self._get_entities_table_sql_query()}) {self._base_entity_class.get_entity_name()} "
+                f"ON {self._base_entity_class.get_entity_name()}.{self._entity_id_field} = "
                 f"{self._association_table}.{self._root_id_field}"
             )
 

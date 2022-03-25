@@ -15,22 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for testing the calculator code."""
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.persistence.database.base_schema import StateBase
 
-
 NormalizedDatabaseDict = Dict[str, Any]
 
 
-def normalized_database_base_dict(database_base: StateBase) -> NormalizedDatabaseDict:
+def normalized_database_base_dict(
+    database_base: StateBase,
+    additional_attributes: Optional[NormalizedDatabaseDict] = None,
+) -> NormalizedDatabaseDict:
     """Takes in a Base object and returns a dictionary with only keys
     that are column property names in the database. If any columns are not
     currently represented in the entity, sets the value as None for that key.
     For values that are EntityEnum, stores the value of the enum in the
     dictionary instead of the entire enum."""
-    new_object_dict = {}
+    new_object_dict: NormalizedDatabaseDict = {}
 
     for column in database_base.get_column_property_names():
         # Set any required columns as None if they aren't present
@@ -39,6 +41,9 @@ def normalized_database_base_dict(database_base: StateBase) -> NormalizedDatabas
             new_object_dict[column] = v.value
         else:
             new_object_dict[column] = v
+
+    if additional_attributes:
+        new_object_dict.update(additional_attributes)
 
     return new_object_dict
 

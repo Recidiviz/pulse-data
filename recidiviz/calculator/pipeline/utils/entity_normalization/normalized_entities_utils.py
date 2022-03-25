@@ -21,7 +21,7 @@ TODO(#10731): Move this file to recidiviz/calculator/pipeline/normalization once
 """
 from collections import defaultdict
 from copy import copy
-from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar
+from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar, Union
 
 from more_itertools import one
 
@@ -92,6 +92,41 @@ def normalized_entity_class_with_base_class_name(
         "No NormalizedStateEntity class corresponding with a base class name of: "
         f"{base_class_name}."
     )
+
+
+def normalized_entity_class_exists_for_base_class_with_name(
+    base_class_name: str,
+) -> bool:
+    """Returns whether there is a Normalized version of the state entity class that has
+    the |base_class_name| name.
+
+    Example behavior:
+        "StateIncarcerationPeriod" -> True (since NormalizedStateIncarcerationPeriod)
+        "StateCharge" -> False (since there is no NormalizedStateCharge)
+    """
+    try:
+        _ = normalized_entity_class_with_base_class_name(base_class_name)
+        return True
+    except ValueError:
+        return False
+
+
+def state_base_entity_class_for_entity_class(
+    entity_class: Union[Type[Entity], Type[NormalizedStateEntity]]
+) -> Type[Entity]:
+    """Returns the state Entity type of the provided |entity_class|."""
+    if issubclass(entity_class, NormalizedStateEntity):
+        if not issubclass(entity_class, Entity):
+            raise ValueError(
+                f"Found entity_class [{entity_class}] that is not a subclass of "
+                f"Entity."
+            )
+        return one(b for b in entity_class.__bases__ if issubclass(b, Entity))
+
+    if issubclass(entity_class, Entity):
+        return entity_class
+
+    raise ValueError(f"Unexpected entity_class [{entity_class}]")
 
 
 def merge_additional_attributes_maps(

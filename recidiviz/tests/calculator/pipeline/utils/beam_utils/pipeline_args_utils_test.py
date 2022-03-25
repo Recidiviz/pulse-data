@@ -60,6 +60,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         state_code=STATE_CODE,
         project_id="recidiviz-staging",
         input_dataset="state",
+        normalized_input_dataset=STATE_CODE.lower() + "_normalized_state",
         output_dataset="dataflow_metrics",
         metric_inclusions=ALL_METRICS,
         person_id_filter_set=None,
