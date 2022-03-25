@@ -27,12 +27,14 @@ import sqlalchemy
 import recidiviz.common.constants.county.charge
 from recidiviz.common.constants.county import bond
 from recidiviz.common.constants.shared_enums import charge, person_characteristics
+from recidiviz.persistence.database.reserved_words import RESERVED_WORDS
 from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import (
     _get_all_database_entities_in_module,
+    get_all_table_classes,
     get_all_table_classes_in_module,
 )
 
@@ -189,3 +191,16 @@ class TestSchemaTableConsistency(TestCase):
                 cls.get_foreign_key_names()
                 cls.get_relationship_property_names()
                 cls.get_relationship_property_names_and_properties()
+
+
+class TestSchemaNoReservedKeywords(TestCase):
+    """Test class for validating that our schema tables and columns don't contain
+    any reserved keywords for Postgres or BigQuery.
+    """
+
+    def testNoReservedKeywords(self):
+        for table in get_all_table_classes():
+            self.assertNotIn(table.name.lower(), RESERVED_WORDS)
+
+            for column in table.columns:
+                self.assertNotIn(column.name.lower(), RESERVED_WORDS)
