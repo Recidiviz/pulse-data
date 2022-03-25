@@ -15,17 +15,22 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 #
-"""Tool to generate raw data fixture files to test ingest view queries. It generates a CSV fixture for each raw data
-table referenced in the ingest view query. The script requires a list of person-level IDs to filter by and a list
-of columns to use to filter by person ID. It optionally takes a list of tables that should be generated in full.
-The script also takes a list of columns with data that should be randomized. The script will produce the same
-randomized value for matching values across each of the raw data fixtures.
+"""Tool to generate raw data fixture files to test ingest view queries.
+
+This script will query BigQuery for each raw table defined in the ingest view and filter on the person external IDs
+provided. It can take multiple person external IDs and multiple person external ID column names. It can filter
+a table by one or more column names provided, this is useful if there is a table with multiple external ID columns,
+like US_PA. The output will be CSV fixtures for each raw data table referenced in the ingest view, with randomized
+values for the columns listed in the `columns_to_randomize` option. The script will produce the same
+randomized value for matching values across each of the raw data fixtures. List all PII columns for this option.
+
+It optionally takes a list of tables that should be generated in full.
 
 Example Usage:
     python -m recidiviz.tools.ingest.testing.generate_raw_data_fixtures_from_bq --region_code US_ME \
     --ingest_view_tag CLIENT \
     --output_filename basic \
-    --columns_to_randomize CIS_100_CLIENT_ID \
+    --columns_to_randomize CIS_100_CLIENT_ID First_Name Last_Name\
     --person_external_ids 111 222 333
     --person_external_id_columns Cis_100_Client_Id Cis_Client_Id \
     [--file_tags_to_load_in_full CIS_3150_TRANSFER_TYPE OTHER_TABLE] \
@@ -38,11 +43,10 @@ import json
 import os
 import string
 import sys
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import numpy
 from google.cloud import bigquery
-from more_itertools import only
 from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -71,7 +75,7 @@ def randomize_value(value: str) -> str:
     randomized_value = ""
     for character in value:
         if character.isnumeric():
-            randomized_value += str(numpy.random.randint(0, 9, 1)[0])
+            randomized_value += str(numpy.random.randint(1, 9, 1)[0])
         if character.isalpha():
             randomized_value += numpy.random.choice(
                 list(string.ascii_uppercase), size=1
@@ -142,16 +146,27 @@ def randomize_column_data(
 def build_query_for_raw_table(
     table: str,
     person_external_ids: List[str],
-    person_external_id_column: Optional[str],
+    person_external_id_columns: List[str],
 ) -> str:
 
     filter_by_values = ", ".join(f"'{id_filter}'" for id_filter in person_external_ids)
+
+    person_external_id_column = (
+        person_external_id_columns.pop(0) if person_external_id_columns else None
+    )
 
     id_filter_condition = (
         f"WHERE {person_external_id_column} IN ({filter_by_values})"
         if person_external_id_column
         else ""
     )
+
+    if person_external_id_columns and id_filter_condition:
+        for person_external_id_column in person_external_id_columns:
+            id_filter_condition += (
+                f" OR {person_external_id_column} IN ({filter_by_values})"
+            )
+
     query_str = f"SELECT * FROM {table} {id_filter_condition};"
     print(query_str)
     return query_str
@@ -188,16 +203,14 @@ def output_fixture_for_raw_file(
     """Queries BigQuery for the provided raw table and writes the results to CSV."""
     raw_table_file_tag = raw_table_config.file_tag
 
-    person_external_id_column = only(
-        [
-            column.name
-            for column in raw_table_config.columns
-            if column.name in person_external_id_columns
-        ]
-    )
+    person_external_id_columns = [
+        column.name
+        for column in raw_table_config.columns
+        if column.name in person_external_id_columns
+    ]
 
     if (
-        not person_external_id_column
+        not person_external_id_columns
         and file_tags_to_load_in_full
         and raw_table_file_tag not in file_tags_to_load_in_full
     ):
@@ -210,7 +223,7 @@ def output_fixture_for_raw_file(
     query_str = build_query_for_raw_table(
         table=raw_table,
         person_external_ids=person_external_ids,
-        person_external_id_column=person_external_id_column,
+        person_external_id_columns=person_external_id_columns,
     )
 
     query_job = bq_client.run_query_async(query_str)
