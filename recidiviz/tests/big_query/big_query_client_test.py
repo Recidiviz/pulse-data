@@ -656,7 +656,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.bq_client.create_table_with_schema(
             self.mock_dataset_id, self.mock_table_id, schema_fields
         )
-        self.mock_client.create_table.assert_called()
+        self.mock_client.create_table.assert_called_once()
+        table = self.mock_client.create_table.mock_calls[0].args[0]
+        self.assertIsInstance(table, bigquery.Table)
+        self.assertEqual(None, table.time_partitioning)
 
     def test_create_table_with_schema_table_exists(self) -> None:
         """Tests that the create_table_with_schema function raises an error when the table already exists."""
@@ -668,6 +671,49 @@ class BigQueryClientImplTest(unittest.TestCase):
                 self.mock_dataset_id, self.mock_table_id, schema_fields
             )
         self.mock_client.create_table.assert_not_called()
+
+    def test_create_table_with_schema_partition(self) -> None:
+        """Tests that the create_table_with_schema function calls the create_table
+        function on the client and properly adds a partition if one is specified."""
+        self.mock_client.get_table.side_effect = exceptions.NotFound("!")
+        schema_fields = [
+            bigquery.SchemaField("new_schema_field", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("partition_field", "DATETIME", mode="REQUIRED"),
+        ]
+
+        self.bq_client.create_table_with_schema(
+            self.mock_dataset_id,
+            self.mock_table_id,
+            schema_fields,
+            date_partition_field="partition_field",
+        )
+        self.mock_client.create_table.assert_called_once()
+        table = self.mock_client.create_table.mock_calls[0].args[0]
+        self.assertIsInstance(table, bigquery.Table)
+        self.assertEqual(
+            bigquery.TimePartitioning(
+                field="partition_field", type_=bigquery.TimePartitioningType.DAY
+            ),
+            table.time_partitioning,
+        )
+
+    def test_create_table_with_schema_partition_bad_field_type(self) -> None:
+        self.mock_client.get_table.side_effect = exceptions.NotFound("!")
+        schema_fields = [
+            bigquery.SchemaField("new_schema_field", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("partition_field", "STRING", mode="REQUIRED"),
+        ]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Date partition field \[partition_field\] has unsupported type: \[STRING\].",
+        ):
+            self.bq_client.create_table_with_schema(
+                self.mock_dataset_id,
+                self.mock_table_id,
+                schema_fields,
+                date_partition_field="partition_field",
+            )
 
     def test_add_missing_fields_to_schema(self) -> None:
         """Tests that the add_missing_fields_to_schema function calls the client to update the table."""

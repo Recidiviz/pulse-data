@@ -22,7 +22,7 @@ all data in production to be imported in staging (e.g. in MO where data is only 
 in production each week).
 
 Example usage:
-python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --region us_pa --exact
+python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --region us_tn --exact
 python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --region us_mo
 """
 
