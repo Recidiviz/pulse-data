@@ -27,9 +27,7 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
 )
 from recidiviz.calculator.pipeline.metrics.violation import identifier, metric_producer
 from recidiviz.calculator.pipeline.pipeline_type import VIOLATION_METRICS_PIPELINE_NAME
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
-)
+from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -47,15 +45,14 @@ class ViolationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 entities.StatePerson,
                 entities.StatePersonRace,
                 entities.StatePersonEthnicity,
-                entities.StateSupervisionViolation,
-                entities.StateSupervisionViolationTypeEntry,
-                entities.StateSupervisionViolatedConditionEntry,
-                entities.StateSupervisionViolationResponse,
-                entities.StateSupervisionViolationResponseDecisionEntry,
+                normalized_entities.NormalizedStateSupervisionViolation,
+                normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
+                normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
+                normalized_entities.NormalizedStateSupervisionViolationResponse,
+                normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
             ],
             required_reference_tables=[],
             state_specific_required_delegates=[
-                StateSpecificViolationResponseNormalizationDelegate,
                 StateSpecificViolationDelegate,
             ],
             state_specific_required_reference_tables={},

@@ -345,7 +345,7 @@ class FakeReadFromBigQueryFactory:
         query: str,
         expected_dataset: str,
         expected_unifying_id_field: str,
-        # TODO(#10730): Implement support for association queries from normalized
+        # TODO(#11734): Implement support for association queries from normalized
         #  datasets
         _expected_normalized_dataset: Optional[str] = None,
     ) -> List[NormalizedDatabaseDict]:

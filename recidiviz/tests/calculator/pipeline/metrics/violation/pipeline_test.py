@@ -53,6 +53,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
@@ -184,7 +185,9 @@ class TestViolationPipeline(unittest.TestCase):
         violation_response.supervision_violation_id = fake_supervision_violation_id
 
         violations_data = [normalized_database_base_dict(violation)]
-        violation_responses_data = [normalized_database_base_dict(violation_response)]
+        violation_responses_data = [
+            normalized_database_base_dict(violation_response, {"sequence_num": 0})
+        ]
         violation_types_data = [normalized_database_base_dict(violation_type)]
         violation_decisions_data = [normalized_database_base_dict(violation_decision)]
 
@@ -223,10 +226,11 @@ class TestViolationPipeline(unittest.TestCase):
         """Runs a test version of the violation pipeline."""
         project = "project"
         dataset = "dataset"
+        normalized_dataset = "us_xx_normalized_state"
 
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                dataset, data_dict, expected_normalized_dataset=normalized_dataset
             )
         )
         write_to_bq_constructor = (
@@ -318,31 +322,31 @@ class TestClassifyViolationEvents(unittest.TestCase):
 
     def testClassifyViolationEvents(self) -> None:
         """Tests the ClassifyViolationEvents DoFn."""
-        violation_type = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = normalized_entities.NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.FELONY,
         )
-        violation_decision = (
-            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                state_code="US_XX",
-                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            )
+        violation_decision = normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code="US_XX",
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
         )
-        violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
+        violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
             response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2021, 1, 4),
             is_draft=False,
             supervision_violation_response_decisions=[violation_decision],
         )
-        violation = entities.StateSupervisionViolation.new_with_defaults(
-            state_code="US_XX",
-            supervision_violation_id=self.fake_supervision_violation_id,
-            violation_date=date(2021, 1, 1),
-            is_violent=False,
-            is_sex_offense=False,
-            supervision_violation_types=[violation_type],
-            supervision_violation_responses=[violation_response],
+        violation = (
+            normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_id=self.fake_supervision_violation_id,
+                violation_date=date(2021, 1, 1),
+                is_violent=False,
+                is_sex_offense=False,
+                supervision_violation_types=[violation_type],
+                supervision_violation_responses=[violation_response],
+            )
         )
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
@@ -417,17 +421,19 @@ class TestClassifyViolationEvents(unittest.TestCase):
 
     def testClassifyViolationEventsNoResponses(self) -> None:
         """Tests the ClassifyViolationEvents DoFn with a violation that has no responses for a person."""
-        violation_type = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+        violation_type = normalized_entities.NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code="US_XX",
             violation_type=StateSupervisionViolationType.FELONY,
         )
-        violation = entities.StateSupervisionViolation.new_with_defaults(
-            state_code="US_XX",
-            supervision_violation_id=self.fake_supervision_violation_id,
-            violation_date=date(2021, 1, 1),
-            is_violent=False,
-            is_sex_offense=False,
-            supervision_violation_types=[violation_type],
+        violation = (
+            normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_id=self.fake_supervision_violation_id,
+                violation_date=date(2021, 1, 1),
+                is_violent=False,
+                is_sex_offense=False,
+                supervision_violation_types=[violation_type],
+            )
         )
         violation_type.supervision_violation = violation
 
