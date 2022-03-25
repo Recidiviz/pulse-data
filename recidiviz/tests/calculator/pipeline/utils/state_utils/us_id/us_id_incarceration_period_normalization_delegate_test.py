@@ -353,6 +353,62 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(updated_periods, validated_incarceration_periods)
 
+    def test_normalized_incarceration_periods_purpose_for_incarceration_change_us_id(
+        self,
+    ) -> None:
+        """Tests that with state code US_ID, treatment in prison periods that are followed by a transfer to general
+        result in the correctly updated STATUS_CHANGE reasons."""
+
+        treatment_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_ID",
+            external_id="1",
+            facility="PRISON3",
+            admission_date=date(2009, 11, 29),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="NA",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2009, 12, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        general_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_ID",
+            external_id="2",
+            facility="PRISON 10",
+            admission_date=date(2009, 12, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2009, 12, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        updated_periods = [
+            attr.evolve(
+                treatment_incarceration_period,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            ),
+            attr.evolve(
+                general_incarceration_period,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            ),
+        ]
+
+        validated_incarceration_periods = (
+            self._normalized_incarceration_periods_for_calculations(
+                incarceration_periods=[
+                    treatment_incarceration_period,
+                    general_incarceration_period,
+                ],
+                supervision_periods=[],
+            )
+        )
+
+        self.assertEqual(updated_periods, validated_incarceration_periods)
+
     def test_us_id_normalize_period_if_commitment_from_supervision_probation_revocation(
         self,
     ) -> None:

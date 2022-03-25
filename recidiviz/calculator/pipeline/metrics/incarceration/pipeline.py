@@ -35,15 +35,7 @@ from recidiviz.calculator.pipeline.metrics.incarceration import (
 from recidiviz.calculator.pipeline.pipeline_type import (
     INCARCERATION_METRICS_PIPELINE_NAME,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
-)
+from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -65,10 +57,6 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_NAME,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
@@ -87,14 +75,14 @@ class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 entities.StateAssessment,
                 entities.StateSupervisionSentence,
                 entities.StateIncarcerationSentence,
-                entities.StateIncarcerationPeriod,
-                entities.StateSupervisionPeriod,
-                entities.StateSupervisionCaseTypeEntry,
-                entities.StateSupervisionViolation,
-                entities.StateSupervisionViolationTypeEntry,
-                entities.StateSupervisionViolatedConditionEntry,
-                entities.StateSupervisionViolationResponse,
-                entities.StateSupervisionViolationResponseDecisionEntry,
+                normalized_entities.NormalizedStateIncarcerationPeriod,
+                normalized_entities.NormalizedStateSupervisionPeriod,
+                normalized_entities.NormalizedStateSupervisionCaseTypeEntry,
+                normalized_entities.NormalizedStateSupervisionViolation,
+                normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
+                normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
+                normalized_entities.NormalizedStateSupervisionViolationResponse,
+                normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
             ],
             required_reference_tables=[
                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
@@ -102,19 +90,12 @@ class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
             ],
             state_specific_required_delegates=[
-                StateSpecificIncarcerationNormalizationDelegate,
-                StateSpecificSupervisionNormalizationDelegate,
-                StateSpecificViolationResponseNormalizationDelegate,
                 StateSpecificCommitmentFromSupervisionDelegate,
                 StateSpecificIncarcerationDelegate,
                 StateSpecificSupervisionDelegate,
                 StateSpecificViolationDelegate,
             ],
-            state_specific_required_reference_tables={
-                # We need to bring in the US_MO sentence status table to do
-                # do state-specific processing of the sentences.
-                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
-            },
+            state_specific_required_reference_tables={},
         )
 
     @classmethod

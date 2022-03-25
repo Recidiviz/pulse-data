@@ -1153,6 +1153,109 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([period_copy], validated_incarceration_periods)
 
+    @freeze_time("2000-01-01")
+    def test_normalized_incarceration_periods_for_calculations_dates_in_future(
+        self,
+    ) -> None:
+        incarceration_period_in_future_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(1990, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            # Erroneous release_date in the future
+            release_date=date(2009, 1, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_period_in_future_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            # Erroneous admission_date in the future, period should be dropped entirely
+            admission_date=date(2010, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2010, 1, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self._normalized_incarceration_periods_for_calculations(
+                incarceration_periods=[
+                    incarceration_period_in_future_1,
+                    incarceration_period_in_future_2,
+                ]
+            )
+        )
+
+        expected_periods = [
+            attr.evolve(
+                incarceration_period_in_future_1, release_date=None, release_reason=None
+            )
+        ]
+
+        self.assertEqual(expected_periods, validated_incarceration_periods)
+
+    def test_normalized_incarceration_periods_for_calculations_transfer_status_change(
+        self,
+    ) -> None:
+        """Tests that adjacent IPs with TRANSFER edges are updated to have STATUS_CHANGE
+        release and admission reasons when the IPs have different
+        specialized_purpose_for_incarceration values.
+        """
+        state_code = "US_XX"
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2019, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 8),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        validated_incarceration_periods = (
+            self._normalized_incarceration_periods_for_calculations(
+                incarceration_periods=[
+                    incarceration_period_1,
+                    incarceration_period_2,
+                ]
+            )
+        )
+
+        expected_periods = [
+            attr.evolve(
+                incarceration_period_1,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            ),
+            attr.evolve(
+                incarceration_period_2,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            ),
+        ]
+
+        self.assertEqual(expected_periods, validated_incarceration_periods)
+
     def test_additional_attributes_map(self):
         incarceration_periods = [
             StateIncarcerationPeriod.new_with_defaults(
