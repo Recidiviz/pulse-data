@@ -303,32 +303,43 @@ class ExtractDataForPipeline(beam.PTransform):
                 # determined
                 continue
 
-            if issubclass(
-                self._entity_class_to_hydrated_entity_class[root_entity_class],
+            root_entity_class_being_hydrated = (
+                self._entity_class_to_hydrated_entity_class[root_entity_class]
+            )
+            related_entity_class_being_hydrated = (
+                self._entity_class_to_hydrated_entity_class[related_entity_class]
+            )
+
+            root_entity_is_normalized = issubclass(
+                root_entity_class_being_hydrated,
                 NormalizedStateEntity,
-            ) or issubclass(
-                self._entity_class_to_hydrated_entity_class[related_entity_class],
+            )
+
+            related_entity_is_normalized = issubclass(
+                related_entity_class_being_hydrated,
                 NormalizedStateEntity,
-            ):
-                # TODO(#10730): Implement support for association queries between
-                #  normalized entities
+            )
+
+            # Assert that either both entities are Normalized versions or neither
+            # of them are
+            if root_entity_is_normalized != related_entity_is_normalized:
                 raise NotImplementedError(
                     "Hydrating Normalized entities that have "
-                    "relationships to other entities in the "
+                    "relationships to other non-normalized entities in the "
                     "pipeline is not yet supported."
                 )
 
             # Get the association values for this relationship
             association_values = (
                 pipeline | f"Extract association values for "
-                f"{root_entity_class.__name__} to "
-                f"{related_entity_class.__name__} relationship."
+                f"{root_entity_class_being_hydrated.__name__} to "
+                f"{related_entity_class_being_hydrated.__name__} relationship."
                 >> _ExtractAssociationValues(
                     project_id=self._project_id,
                     entities_dataset=self._entities_dataset,
                     normalized_entities_dataset=self._normalized_entities_dataset,
-                    root_entity_class=root_entity_class,
-                    related_entity_class=related_entity_class,
+                    root_entity_class=root_entity_class_being_hydrated,
+                    related_entity_class=related_entity_class_being_hydrated,
                     unifying_id_field=self._unifying_id_field,
                     association_table=relationship_property.association_table,
                     related_id_field=relationship_property.association_table_entity_id_field,
@@ -994,25 +1005,33 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         project_id: str,
         entities_dataset: str,
         normalized_entities_dataset: str,
-        root_entity_class: Type[Entity],
-        related_entity_class: Type[Entity],
+        root_entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
+        related_entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         related_id_field: str,
         association_table: str,
         unifying_id_field: str,
         unifying_id_field_filter_set: Optional[Set[int]],
         state_code: str,
     ):
+
         self._root_entity_class = root_entity_class
+        self._root_entity_base_class = state_base_entity_class_for_entity_class(
+            root_entity_class
+        )
         self._root_schema_class: Type[
             StateBase
         ] = schema_utils.get_state_database_entity_with_name(
-            self._root_entity_class.__name__
+            self._root_entity_base_class.__name__
         )
+
         self._related_entity_class = related_entity_class
+        self._related_entity_base_class = state_base_entity_class_for_entity_class(
+            related_entity_class
+        )
         self._related_schema_class: Type[
             StateBase
         ] = schema_utils.get_state_database_entity_with_name(
-            self._related_entity_class.__name__
+            self._related_entity_base_class.__name__
         )
         self._association_table = association_table
 
@@ -1023,7 +1042,7 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         else:
             self._entity_class_for_query = self._root_entity_class
 
-        self._root_id_field = self._root_entity_class.get_class_id_name()
+        self._root_id_field = self._root_entity_base_class.get_class_id_name()
         self._related_id_field = related_id_field
 
         super().__init__(

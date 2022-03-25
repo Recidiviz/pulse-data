@@ -75,7 +75,7 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
 ]
 
 
-# TODO(#10730): Update this to return a tuple of:
+# TODO(#10731): Update this to return a tuple of:
 #  Tuple[
 #   Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap],
 #   Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap]

@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for utils/extractor_utils.py."""
 # pylint: disable=protected-access
+import datetime
 import unittest
 from datetime import date
 from typing import Any, Dict, List, Tuple
@@ -1192,10 +1193,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         required_schema_classes = [
             schema.StatePerson,
             schema.StateSupervisionViolation,
-            schema.StateSupervisionViolationTypeEntry,
-            schema.StateSupervisionViolatedConditionEntry,
             schema.StateSupervisionViolationResponse,
-            schema.StateSupervisionViolationResponseDecisionEntry,
         ]
 
         person_id = 12345
@@ -1210,13 +1208,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             state_code="US_XX",
         )
 
-        schema_violation_decision = database_test_utils.generate_test_supervision_violation_response_decision_entry(
-            person_id
-        )
-
         schema_violation_response = (
             database_test_utils.generate_test_supervision_violation_response(
-                person_id, decisions=[schema_violation_decision]
+                person_id,
             )
         )
 
@@ -1228,130 +1222,97 @@ class TestExtractDataForPipeline(unittest.TestCase):
         schema_violation_response.supervision_violation_id = (
             schema_supervision_violation.supervision_violation_id
         )
-        for (
-            decision
-        ) in schema_violation_response.supervision_violation_response_decisions:
-            decision.supervision_violation_response_id = (
-                schema_violation_response.supervision_violation_response_id
-            )
+
         schema_person.supervision_violations = [schema_supervision_violation]
 
         person_data = [normalized_database_base_dict(schema_person)]
         supervision_violation_data = [
             normalized_database_base_dict(schema_supervision_violation)
         ]
-        supervision_violation_type_entry_data = normalized_database_base_dict_list(
-            schema_supervision_violation.supervision_violation_types
-        )
-        supervision_violation_condition_entry_data = normalized_database_base_dict_list(
-            schema_supervision_violation.supervision_violated_conditions
-        )
+
         supervision_violation_response_data = [
-            normalized_database_base_dict(schema_violation_response)
+            normalized_database_base_dict(
+                schema_violation_response, {"sequence_num": 0}
+            ),
         ]
-        supervision_violation_response_decision_data = (
-            normalized_database_base_dict_list(
-                schema_violation_response.supervision_violation_response_decisions
-            )
-        )
 
         data_dict = default_data_dict_for_root_schema_classes(required_schema_classes)
 
         data_dict_overrides = {
             schema.StatePerson.__tablename__: person_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
-            schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_entry_data,
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: supervision_violation_condition_entry_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: supervision_violation_response_decision_data,
         }
         data_dict.update(data_dict_overrides)
 
         entity_converter = StateSchemaToEntityConverter()
 
         entity_person = entity_converter.convert(schema_person)
-        entity_violation: entities.StateSupervisionViolation = entity_converter.convert(
-            schema_supervision_violation
+        entity_violation = (
+            normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
+                supervision_violation_id=321,
+                state_code="US_XX",
+            )
         )
-        entity_violation_response = entity_violation.supervision_violation_responses[0]
-        entity_violation_types = entity_violation.supervision_violation_types
-        entity_violated_conditions = entity_violation.supervision_violated_conditions
-        entity_violation_response_decisions = (
-            entity_violation_response.supervision_violation_response_decisions
+        entity_violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=456,
+            state_code="US_XX",
+            response_date=datetime.date(2000, 1, 1),
+            supervision_violation=entity_violation,
+            sequence_num=0,
         )
-
-        all_non_person_entities = [
-            entity_violation,
-            entity_violation_response,
-        ]
-
-        all_non_person_entities.extend(entity_violation_types)
-        all_non_person_entities.extend(entity_violated_conditions)
-        all_non_person_entities.extend(entity_violation_response_decisions)
-
-        # The entity converter sets the person field, but we don't hydrate this
-        # relationship
-        for entity in all_non_person_entities:
-            setattr(entity, "person", None)
+        entity_person.supervision_violations = [entity_violation]
+        entity_violation.supervision_violation_responses = [entity_violation_response]
 
         project = "project"
         dataset = "state"
         normalized_dataset = "us_xx_normalized_state"
 
-        # TODO(#10730): Update this test to not assert NotImplementedError once we
-        #  implement support for association queries between normalized entities
-        with self.assertRaises(NotImplementedError):
-            with patch(
-                "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
-                self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                    dataset, data_dict, expected_normalized_dataset=normalized_dataset
+        with patch(
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict, expected_normalized_dataset=normalized_dataset
+            ),
+        ):
+            test_pipeline = TestPipeline()
+
+            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+                state_code=entity_person.state_code,
+                project_id=project,
+                entities_dataset=dataset,
+                normalized_entities_dataset=normalized_dataset,
+                reference_dataset=dataset,
+                required_entity_classes=[
+                    entities.StatePerson,
+                    normalized_entities.NormalizedStateSupervisionViolation,
+                    normalized_entities.NormalizedStateSupervisionViolationResponse,
+                ],
+                required_reference_tables=None,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=None,
+            )
+
+            assert_that(
+                output,
+                equal_to(
+                    [
+                        (
+                            12345,
+                            {
+                                entities.StatePerson.__name__: [entity_person],
+                                entities.StateSupervisionViolation.__name__: [
+                                    entity_violation
+                                ],
+                                entities.StateSupervisionViolationResponse.__name__: [
+                                    entity_violation_response
+                                ],
+                            },
+                        )
+                    ]
                 ),
-            ):
-                test_pipeline = TestPipeline()
+            )
 
-                output = test_pipeline | extractor_utils.ExtractDataForPipeline(
-                    state_code=entity_person.state_code,
-                    project_id=project,
-                    entities_dataset=dataset,
-                    normalized_entities_dataset=normalized_dataset,
-                    reference_dataset=dataset,
-                    required_entity_classes=[
-                        entities.StatePerson,
-                        normalized_entities.NormalizedStateSupervisionViolation,
-                        normalized_entities.NormalizedStateSupervisionViolationResponse,
-                        normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
-                        normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
-                        normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
-                    ],
-                    required_reference_tables=None,
-                    unifying_class=entities.StatePerson,
-                    unifying_id_field_filter_set=None,
-                )
-
-                assert_that(
-                    output,
-                    equal_to(
-                        [
-                            (
-                                12345,
-                                {
-                                    entities.StatePerson.__name__: [entity_person],
-                                    entities.StateSupervisionViolation.__name__: [
-                                        entity_violation
-                                    ],
-                                    entities.StateSupervisionViolationResponse.__name__: [
-                                        entity_violation_response
-                                    ],
-                                    entities.StateSupervisionViolationTypeEntry.__name__: entity_violation_types,
-                                    entities.StateSupervisionViolatedConditionEntry.__name__: entity_violated_conditions,
-                                    entities.StateSupervisionViolationResponseDecisionEntry.__name__: entity_violation_response_decisions,
-                                },
-                            )
-                        ]
-                    ),
-                )
-
-                test_pipeline.run()
+            test_pipeline.run()
 
 
 class TestConnectHydratedRelatedEntities(unittest.TestCase):
