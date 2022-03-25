@@ -22,7 +22,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment
 
 
@@ -47,7 +46,7 @@ class UsTnController(BaseDirectIngestController):
                 [
                     "OffenderName",
                     "OffenderMovementIncarcerationPeriod",
-                    "AssignedStaffSupervisionPeriod",
+                    "AssignedStaffSupervisionPeriod_v2",
                     "VantagePointAssessments",
                     "SentencesChargesAndCourtCases",
                 ]
@@ -72,11 +71,5 @@ class UsTnController(BaseDirectIngestController):
                         "SupervisionContactsPost2020",
                     ]
                 )
-
-            # TODO(#11123): Ungate AssignedStaffSupervisionPeriod_v2 from secondary
-            # Run AssignedStaffSupervisionPeriod_v2 instead of AssignedStaffSupervisionPeriod
-            if self.ingest_instance is DirectIngestInstance.SECONDARY:
-                index = tags.index("AssignedStaffSupervisionPeriod")
-                tags[index] = "AssignedStaffSupervisionPeriod_v2"
 
         return tags
