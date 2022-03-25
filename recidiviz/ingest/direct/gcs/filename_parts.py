@@ -41,6 +41,7 @@ _INGEST_FILE_TYPE_REGEX = re.compile(_INGEST_FILE_PREFIX_REGEX_PATTERN)
 _RAW_DATA_FILE_NAME_REGEX = re.compile(
     _INGEST_FILE_PREFIX_REGEX_PATTERN
     + r"(?P<file_tag>[A-Za-z][A-Za-z\d]*(_[A-Za-z\d]*)*)"  # file_tag
+    r"(-(?P<filename_suffix>\d+))?"  # Optional filename_suffix
     + _INGEST_FILE_SUFFIX_REGEX_PATTERN
 )
 _INGEST_VIEW_FILE_NAME_REGEX = re.compile(
@@ -81,6 +82,9 @@ class GcsfsFilenameParts:
     # Must start a number and be separated from the file_tag by a '_' char.
     filename_suffix: Optional[str] = attr.ib()
     extension: str = attr.ib()
+
+    # TODO(#11424): Remove these fields and associated parts of regex once BQ
+    #   materialization has shipped.
     is_file_split: bool = attr.ib()
     file_split_size: Optional[int] = attr.ib()
 
@@ -118,7 +122,7 @@ def _filename_parts_from_raw_data_path(file_path: GcsfsFilePath) -> GcsfsFilenam
         extension=match.group("extension"),
         is_file_split=False,
         file_split_size=None,
-        filename_suffix=None,
+        filename_suffix=match.group("filename_suffix"),
     )
 
 
