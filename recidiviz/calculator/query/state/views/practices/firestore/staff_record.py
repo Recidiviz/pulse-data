@@ -39,11 +39,12 @@ STAFF_RECORD_QUERY_TEMPLATE = """
         FirstName || " " || LastName AS name,
         SiteID AS district,
         logic_staff IS NOT NULL AS has_caseload,
-        -- TODO(#11726): Get the real email from the TN staff roster once we have it
-        StaffID || "@tn.gov" AS email,
-    FROM `{project_id}.us_tn_raw_data_up_to_date_views.Staff_latest`
+        roster.email_address AS email,
+    FROM `{project_id}.us_tn_raw_data_up_to_date_views.Staff_latest` staff
     LEFT JOIN staff_from_report
     ON logic_staff = StaffID
+    LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_tn_roster` roster
+    ON roster.external_id = staff.UserID
     WHERE Status = 'A'
         AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM')
 """
@@ -54,6 +55,7 @@ STAFF_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=STAFF_RECORD_QUERY_TEMPLATE,
     description=STAFF_RECORD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == "__main__":
