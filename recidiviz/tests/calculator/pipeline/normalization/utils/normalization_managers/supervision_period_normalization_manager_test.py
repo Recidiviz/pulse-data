@@ -24,7 +24,7 @@ from typing import List, Optional
 import attr
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     SupervisionPeriodNormalizationManager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
@@ -270,7 +270,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(expected_periods, updated_periods)
 
-    def test_prepare_supervision_periods_for_calculations_sort(self):
+    def test_prepare_supervision_periods_for_calculations_sort(self) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -301,7 +301,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
 
     def test_prepare_supervision_periods_for_calculations_sort_empty_termination_date(
         self,
-    ):
+    ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -330,7 +330,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
 
     def test_prepare_supervision_periods_for_calculations_sort_sort_by_admission_reason_court(
         self,
-    ):
+    ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -361,7 +361,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
 
     def test_prepare_supervision_periods_for_calculations_sort_sort_by_admission_reason_conditional_release(
         self,
-    ):
+    ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,

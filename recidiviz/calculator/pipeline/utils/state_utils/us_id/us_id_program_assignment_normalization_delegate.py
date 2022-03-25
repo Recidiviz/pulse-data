@@ -18,7 +18,7 @@
 
 from typing import List
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update

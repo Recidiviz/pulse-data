@@ -27,11 +27,11 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 from mock import patch
 
+from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
 from recidiviz.calculator.pipeline.utils.beam_utils import extractor_utils
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoIncarcerationSentence,
     UsMoSentenceStatus,

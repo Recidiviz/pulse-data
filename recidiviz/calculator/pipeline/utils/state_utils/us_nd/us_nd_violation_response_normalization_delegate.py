@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for state-specific normalization logic related to violations in US_ND."""
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_violation_responses_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
 

@@ -23,13 +23,13 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,

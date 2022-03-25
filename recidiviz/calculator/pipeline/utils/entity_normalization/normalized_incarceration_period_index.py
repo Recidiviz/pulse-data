@@ -23,10 +23,10 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (

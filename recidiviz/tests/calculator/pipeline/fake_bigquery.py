@@ -38,15 +38,15 @@ from more_itertools import one
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetricType
-from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
-    UNIFYING_ID_KEY,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     normalized_entity_class_exists_for_base_class_with_name,
     normalized_entity_class_with_base_class_name,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     column_names_on_bq_schema_for_normalized_state_entity,
+)
+from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
+    UNIFYING_ID_KEY,
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (

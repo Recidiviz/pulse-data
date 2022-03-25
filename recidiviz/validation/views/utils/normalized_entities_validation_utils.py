@@ -20,7 +20,7 @@ from typing import List
 from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
 )
 from recidiviz.calculator.query.state.dataset_config import (

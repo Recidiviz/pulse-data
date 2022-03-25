@@ -20,7 +20,7 @@ import datetime
 import unittest
 
 from recidiviz.calculator.pipeline.metrics.utils import violation_utils
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,

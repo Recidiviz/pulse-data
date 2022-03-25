@@ -24,7 +24,7 @@ from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import safe_list_index
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )

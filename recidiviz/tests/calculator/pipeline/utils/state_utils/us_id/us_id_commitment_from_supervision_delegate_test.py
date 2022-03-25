@@ -22,7 +22,7 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     _get_commitment_from_supervision_supervision_period,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )

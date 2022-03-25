@@ -26,7 +26,7 @@ import attr
 import mock
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
     IncarcerationPeriodNormalizationManager,
     PurposeForIncarcerationInfo,
@@ -82,7 +82,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         return ips
 
-    def test_normalized_incarceration_periods_for_calculations(self):
+    def test_normalized_incarceration_periods_for_calculations(self) -> None:
         state_code = "US_XX"
         initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -133,7 +133,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_standardize_parole_board_hold(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
         board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -193,7 +193,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_standardize_parole_board_hold_no_release(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
         board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -226,7 +226,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_board_hold_other_temp_custody(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
 
         temporary_custody_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -301,7 +301,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_not_board_hold_other_temp_custody(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
 
         not_board_hold = StateIncarcerationPeriod.new_with_defaults(
@@ -334,7 +334,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
         )
 
-    def test_parole_board_hold_edges_stay_as_transfers(self):
+    def test_parole_board_hold_edges_stay_as_transfers(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -375,7 +375,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(ip_periods_copied, updated_periods)
 
-    def test_parole_board_hold_edges_updated_as_transfers(self):
+    def test_parole_board_hold_edges_updated_as_transfers(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -422,7 +422,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(ip_periods_copied, updated_periods)
 
-    def test_parole_board_hold_should_not_be_updated_as_transfers(self):
+    def test_parole_board_hold_should_not_be_updated_as_transfers(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -467,7 +467,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(ip_periods_copied, updated_periods)
 
-    def test_update_edges_to_transfers(self):
+    def test_update_edges_to_transfers(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -516,7 +516,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(ip_periods_copied, updated_periods)
 
-    def test_no_update_for_edges_to_transfers_when_gap_in_between(self):
+    def test_no_update_for_edges_to_transfers_when_gap_in_between(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -565,7 +565,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_empty_admission_data(
         self,
-    ):
+    ) -> None:
         """Tests that the admission data is set when it is missing on a period that
         has a preceding period.
         """
@@ -621,7 +621,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_drop_invalid_zero_day(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -678,7 +678,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_drop_periods_for_deceased(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -734,7 +734,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_drop_invalid_zero_day_after_transfer(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -796,7 +796,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_normalized_incarceration_periods_for_calculations_drop_invalid_zero_day_border(
         self,
-    ):
+    ) -> None:
         zero_day_start = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -850,7 +850,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
         )
 
-    def test_standardize_purpose_for_incarceration_values(self):
+    def test_standardize_purpose_for_incarceration_values(self) -> None:
         state_code = "US_XX"
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -883,8 +883,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         "recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate.UsXxIncarcerationNormalizationDelegate.normalize_period_if_commitment_from_supervision"
     )
     def test_standardize_purpose_for_incarceration_values_propagate_pfi(
-        self, mock_normalization, mock_get_pfi_info
-    ):
+        self, mock_normalization: mock.MagicMock, mock_get_pfi_info: mock.MagicMock
+    ) -> None:
         """Tests that when the purpose_for_incarceration value of a period is
         updated, that value is propagated to all subsequent IPs along transfer edges."""
         state_code = "US_XX"
@@ -990,8 +990,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         "recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate.UsXxIncarcerationNormalizationDelegate.normalize_period_if_commitment_from_supervision"
     )
     def test_standardize_purpose_for_incarceration_values_propagate_pfi_avoid_status_changes(
-        self, mock_normalization, mock_get_pfi_info
-    ):
+        self, mock_normalization: mock.MagicMock, mock_get_pfi_info: mock.MagicMock
+    ) -> None:
         """Tests that when the purpose_for_incarceration value of a period is
         updated, that value is propagated to all subsequent IPs along transfer edges,
         excluding edges that are set as STATUS_CHANGE edges mid-processing."""
@@ -1103,7 +1103,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(expected_periods, validated_incarceration_periods)
 
-    def test_apply_overrides_sanction_admission(self):
+    def test_apply_overrides_sanction_admission(self) -> None:
         sanction_admission = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="1",
@@ -1128,7 +1128,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
-    def test_apply_overrides_not_sanction_admission(self):
+    def test_apply_overrides_not_sanction_admission(self) -> None:
         regular_admission = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="1",
@@ -1256,7 +1256,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(expected_periods, validated_incarceration_periods)
 
-    def test_additional_attributes_map(self):
+    def test_additional_attributes_map(self) -> None:
         incarceration_periods = [
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=111,
@@ -1304,7 +1304,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
     @staticmethod
     def _sort_and_infer_missing_dates_and_statuses(
         incarceration_periods: List[StateIncarcerationPeriod],
-    ):
+    ) -> List[StateIncarcerationPeriod]:
         # None of the state-agnostic tests rely on supervision periods
         sp_index = None
         # None of the state-agnostic tests rely on violation responses
@@ -1323,7 +1323,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             incarceration_periods=incarceration_periods,
         )
 
-    def test_sort_and_infer_missing_dates_and_statuses(self):
+    def test_sort_and_infer_missing_dates_and_statuses(self) -> None:
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -1398,7 +1398,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 updated_periods,
             )
 
-    def test_sort_and_infer_missing_dates_and_statuses_all_valid(self):
+    def test_sort_and_infer_missing_dates_and_statuses_all_valid(self) -> None:
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="3",
@@ -1461,7 +1461,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(ordered_periods, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_all_valid_shared_release(self):
+    def test_sort_and_infer_missing_dates_and_statuses_all_valid_shared_release(
+        self,
+    ) -> None:
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="3",
@@ -1498,7 +1500,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(ordered_periods, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_set_empty_reasons(self):
+    def test_sort_and_infer_missing_dates_and_statuses_set_empty_reasons(self) -> None:
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="3",
@@ -1577,7 +1579,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(expected_output, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_only_open(self):
+    def test_sort_and_infer_missing_dates_and_statuses_only_open(self) -> None:
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
             external_id="5",
@@ -1594,7 +1596,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
         self.assertEqual(incarceration_periods, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_invalid_dates(self):
+    def test_sort_and_infer_missing_dates_and_statuses_invalid_dates(self) -> None:
         # We drop any periods with a release_date that precedes the admission_date
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
@@ -1617,7 +1619,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
     @freeze_time("2000-01-01")
     def test_sort_and_infer_missing_dates_and_statuses_invalid_admission_date_in_future(
         self,
-    ):
+    ) -> None:
         # We drop any periods with an admission_date in the future
         invalid_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
@@ -1640,7 +1642,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
     @freeze_time("2000-01-01")
     def test_sort_and_infer_missing_dates_and_statuses_invalid_release_date_in_future(
         self,
-    ):
+    ) -> None:
         # We clear the release information for release_dates in the future
         invalid_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
@@ -1670,7 +1672,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
         self.assertEqual([updated_period], updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_open_with_release_reason(self):
+    def test_sort_and_infer_missing_dates_and_statuses_open_with_release_reason(
+        self,
+    ) -> None:
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
             external_id="5",
@@ -1699,7 +1703,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
         self.assertEqual([updated_period], updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_only_one_closed(self):
+    def test_sort_and_infer_missing_dates_and_statuses_only_one_closed(self) -> None:
         closed_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
             external_id="5",
@@ -1726,7 +1730,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
         self.assertEqual([updated_period], updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_missing_admission(self):
+    def test_sort_and_infer_missing_dates_and_statuses_missing_admission(self) -> None:
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -1803,7 +1807,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
     def test_sort_and_infer_missing_dates_and_statuses_missing_admission_same_day_transfer(
         self,
-    ):
+    ) -> None:
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="5-6",
@@ -1877,7 +1881,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 updated_periods,
             )
 
-    def test_sort_and_infer_missing_dates_and_statuses_mismatch_admission_release(self):
+    def test_sort_and_infer_missing_dates_and_statuses_mismatch_admission_release(
+        self,
+    ) -> None:
         # Open incarceration period with no release_date
         invalid_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1113,
@@ -1930,7 +1936,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 updated_periods,
             )
 
-    def test_sort_and_infer_missing_dates_and_statuses_valid_open_admission(self):
+    def test_sort_and_infer_missing_dates_and_statuses_valid_open_admission(
+        self,
+    ) -> None:
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -1965,7 +1973,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
     def test_sort_and_infer_missing_dates_and_statuses_two_open_two_invalid_closed(
         self,
-    ):
+    ) -> None:
         open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -2068,7 +2076,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 updated_periods,
             )
 
-    def test_sort_and_infer_missing_dates_and_statuses_multiple_open_periods(self):
+    def test_sort_and_infer_missing_dates_and_statuses_multiple_open_periods(
+        self,
+    ) -> None:
         open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -2113,8 +2123,8 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(1, num_open_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_no_periods(self):
-        incarceration_periods = []
+    def test_sort_and_infer_missing_dates_and_statuses_no_periods(self) -> None:
+        incarceration_periods: List[StateIncarcerationPeriod] = []
 
         updated_periods = self._sort_and_infer_missing_dates_and_statuses(
             incarceration_periods=incarceration_periods
@@ -2124,7 +2134,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
     def test_sort_and_infer_missing_dates_and_statuses_set_missing_admission_data_after_transfer(
         self,
-    ):
+    ) -> None:
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -2182,7 +2192,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
     def test_sort_and_infer_missing_dates_and_statuses_same_dates_sort_by_transfer_start(
         self,
-    ):
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -2218,7 +2228,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
     def test_sort_and_infer_missing_dates_and_statuses_same_admission_dates_sort_by_external_ids(
         self,
-    ):
+    ) -> None:
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -2260,7 +2270,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(expected_output, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_no_admission_dates(self):
+    def test_sort_and_infer_missing_dates_and_statuses_no_admission_dates(self) -> None:
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -2316,7 +2326,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(expected_output, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_nested_period(self):
+    def test_sort_and_infer_missing_dates_and_statuses_nested_period(self) -> None:
         outer_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -2350,7 +2360,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(expected_output, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_multiple_nested_periods(self):
+    def test_sort_and_infer_missing_dates_and_statuses_multiple_nested_periods(
+        self,
+    ) -> None:
         outer_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -2420,7 +2432,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(expected_output, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_partial_overlap_period(self):
+    def test_sort_and_infer_missing_dates_and_statuses_partial_overlap_period(
+        self,
+    ) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -2454,7 +2468,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
             self.assertEqual(expected_output, updated_periods)
 
-    def test_sort_and_infer_missing_dates_and_statuses_borders_edges(self):
+    def test_sort_and_infer_missing_dates_and_statuses_borders_edges(self) -> None:
         zero_day_period_start = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -2512,7 +2526,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
     """Tests the _is_zero_day_erroneous_period function on the
     IncarcerationNormalizationManager."""
 
-    def test_drop_zero_day_erroneous_periods(self):
+    def test_drop_zero_day_erroneous_periods(self) -> None:
         state_code = "US_XX"
         invalid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2531,7 +2545,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             )
         )
 
-    def test_drop_zero_day_erroneous_periods_valid(self):
+    def test_drop_zero_day_erroneous_periods_valid(self) -> None:
         state_code = "US_XX"
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2551,7 +2565,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             )
         )
 
-    def test_drop_zero_day_erroneous_periods_transfer_adm(self):
+    def test_drop_zero_day_erroneous_periods_transfer_adm(self) -> None:
         state_code = "US_XX"
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2570,7 +2584,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             )
         )
 
-    def test_drop_zero_day_erroneous_periods_non_erroneous_admission(self):
+    def test_drop_zero_day_erroneous_periods_non_erroneous_admission(self) -> None:
         state_code = "US_XX"
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2589,7 +2603,7 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             )
         )
 
-    def test_drop_zero_day_erroneous_periods_borders_edges(self):
+    def test_drop_zero_day_erroneous_periods_borders_edges(self) -> None:
         zero_day_period_start = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -2645,7 +2659,7 @@ class TestStatusChangeEdges(unittest.TestCase):
     """Tests the various functionality related to setting accurate STATUS_CHANGE
     edges on periods."""
 
-    def test_update_transfers_to_status_changes(self):
+    def test_update_transfers_to_status_changes(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2694,7 +2708,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         self.assertEqual(expected_updated_periods, updated_periods)
 
-    def test_update_transfers_to_status_changes_diff_custodial_authority(self):
+    def test_update_transfers_to_status_changes_diff_custodial_authority(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2741,7 +2755,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         self.assertEqual(expected_updated_periods, updated_periods)
 
-    def test_update_transfers_to_status_changes_not_status_change(self):
+    def test_update_transfers_to_status_changes_not_status_change(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2788,7 +2802,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         self.assertEqual(ip_periods_copied, updated_periods)
 
-    def test_update_transfers_to_status_changes_null_to_set(self):
+    def test_update_transfers_to_status_changes_null_to_set(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2837,7 +2851,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         self.assertEqual(expected_updated_periods, updated_periods)
 
-    def test_update_transfers_to_status_changes_both_null(self):
+    def test_update_transfers_to_status_changes_both_null(self) -> None:
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2884,12 +2898,12 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         self.assertEqual(ip_periods_copied, updated_periods)
 
-    def test_is_status_change_edge_valid_attributes(self):
+    def test_is_status_change_edge_valid_attributes(self) -> None:
         """Tests that all attributes listed in ATTRIBUTES_TRIGGERING_STATUS_CHANGE
         are valid attributes on the StateIncarcerationPeriod class."""
         for attribute in ATTRIBUTES_TRIGGERING_STATUS_CHANGE:
             if attribute not in StateIncarcerationPeriod.__dict__.get(
-                "__annotations__"
+                "__annotations__", []
             ):
                 raise ValueError(
                     "Attribute in ATTRIBUTES_TRIGGERING_STATUS_CHANGE "
@@ -2913,11 +2927,11 @@ class TestValidateIpInvariants(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-    def test_validate_ip_invariants_valid(self):
+    def test_validate_ip_invariants_valid(self) -> None:
         # Assert no error
         IncarcerationPeriodNormalizationManager.validate_ip_invariants([self.valid_ip])
 
-    def test_validate_ip_invariants_missing_admission_reason(self):
+    def test_validate_ip_invariants_missing_admission_reason(self) -> None:
         invalid_ip_missing = attr.evolve(self.valid_ip, admission_reason=None)
 
         with self.assertRaises(ValueError):
@@ -2925,7 +2939,7 @@ class TestValidateIpInvariants(unittest.TestCase):
                 [invalid_ip_missing]
             )
 
-    def test_validate_ip_invariants_missing_admission_date(self):
+    def test_validate_ip_invariants_missing_admission_date(self) -> None:
         invalid_ip_missing = attr.evolve(self.valid_ip, admission_date=None)
 
         with self.assertRaises(ValueError):
@@ -2933,7 +2947,7 @@ class TestValidateIpInvariants(unittest.TestCase):
                 [invalid_ip_missing]
             )
 
-    def test_validate_ip_invariants_missing_pfi(self):
+    def test_validate_ip_invariants_missing_pfi(self) -> None:
         invalid_ip_missing = attr.evolve(
             self.valid_ip, specialized_purpose_for_incarceration=None
         )
@@ -2943,7 +2957,7 @@ class TestValidateIpInvariants(unittest.TestCase):
                 [invalid_ip_missing]
             )
 
-    def test_validate_ip_invariants_invalid_admission_reason(self):
+    def test_validate_ip_invariants_invalid_admission_reason(self) -> None:
         invalid_ip_missing = attr.evolve(
             self.valid_ip,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
