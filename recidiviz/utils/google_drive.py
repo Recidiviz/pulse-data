@@ -29,6 +29,11 @@ from typing import List
 from google.auth.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import Resource, build
+
+
+def get_sheets_service(creds: Credentials) -> Resource:
+    return build("sheets", "v4", credentials=creds)
 
 
 def get_credentials(
