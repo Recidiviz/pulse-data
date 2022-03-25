@@ -36,23 +36,11 @@ from recidiviz.calculator.pipeline.metrics.recidivism.events import (
     RecidivismReleaseEvent,
     ReleaseEvent,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.entity_normalization_manager_utils import (
-    entity_normalization_managers_for_periods,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entity_conversion_utils import (
-    convert_entity_trees_to_normalized_versions,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
@@ -77,11 +65,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StatePerson,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
@@ -98,18 +82,12 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
 
         return self._find_release_events(
-            person_id=person.person_id,
-            ip_normalization_delegate=identifier_context[
-                StateSpecificIncarcerationNormalizationDelegate.__name__
-            ],
-            sp_normalization_delegate=identifier_context[
-                StateSpecificSupervisionNormalizationDelegate.__name__
-            ],
             incarceration_delegate=identifier_context[
                 StateSpecificIncarcerationDelegate.__name__
             ],
-            incarceration_periods=identifier_context[StateIncarcerationPeriod.__name__],
-            supervision_periods=identifier_context[StateSupervisionPeriod.__name__],
+            incarceration_periods=identifier_context[
+                NormalizedStateIncarcerationPeriod.base_class_name()
+            ],
             persons_to_recent_county_of_residence=identifier_context[
                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
             ],
@@ -117,12 +95,8 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def _find_release_events(
         self,
-        person_id: int,
-        ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
-        sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
         incarceration_delegate: StateSpecificIncarcerationDelegate,
-        incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_periods: List[StateSupervisionPeriod],
+        incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         persons_to_recent_county_of_residence: List[Dict[str, Any]],
     ) -> Dict[int, List[ReleaseEvent]]:
         """Finds instances of release and determines if they resulted in recidivism.
@@ -158,40 +132,8 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             persons_to_recent_county_of_residence
         )
 
-        (ip_normalization_manager, _,) = entity_normalization_managers_for_periods(
-            person_id=person_id,
-            ip_normalization_delegate=ip_normalization_delegate,
-            sp_normalization_delegate=sp_normalization_delegate,
-            incarceration_periods=incarceration_periods,
-            supervision_periods=supervision_periods,
-            normalized_violation_responses=None,
-            field_index=self.field_index,
-            incarceration_sentences=None,
-            supervision_sentences=None,
-        )
-
-        if not ip_normalization_manager:
-            raise ValueError("Expected normalized SPs for this pipeline.")
-
-        # TODO(#10731): Remove calls to ip_normalization_manager and conversion to
-        #  NormalizedStateIncarcerationPeriods once this metric pipeline is hydrating
-        #  Normalized versions of all entities
-        (
-            processed_ips,
-            additional_ip_attributes,
-        ) = (
-            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
-        )
-
-        normalized_ips = convert_entity_trees_to_normalized_versions(
-            root_entities=processed_ips,
-            normalized_entity_class=NormalizedStateIncarcerationPeriod,
-            additional_attributes_map=additional_ip_attributes,
-            field_index=self.field_index,
-        )
-
         ip_index = NormalizedIncarcerationPeriodIndex(
-            sorted_incarceration_periods=normalized_ips,
+            sorted_incarceration_periods=incarceration_periods,
             incarceration_delegate=incarceration_delegate,
         )
 
@@ -434,7 +376,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         release_date: Optional[date],
         release_reason: Optional[ReleaseReason],
         purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration],
-        next_incarceration_period: Optional[StateIncarcerationPeriod],
+        next_incarceration_period: Optional[NormalizedStateIncarcerationPeriod],
     ) -> bool:
         """Identifies whether a period of incarceration with the given features should
         be included in the release cohort."""
