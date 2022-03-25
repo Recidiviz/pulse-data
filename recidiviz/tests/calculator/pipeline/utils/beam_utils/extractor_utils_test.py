@@ -30,6 +30,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import extractor_utils
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoIncarcerationSentence,
     UsMoSentenceStatus,
@@ -47,6 +48,9 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
+)
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
@@ -192,7 +196,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=schema_person.state_code,
                 project_id=project,
-                dataset=dataset,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
+                reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -201,7 +207,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                reference_dataset=dataset,
                 required_reference_tables=None,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=None,
@@ -354,7 +359,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
-                dataset=dataset,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
+                reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionViolation,
@@ -363,7 +370,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StateSupervisionViolatedConditionEntry,
                     entities.StateSupervisionViolationResponseDecisionEntry,
                 ],
-                reference_dataset=dataset,
                 required_reference_tables=None,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=None,
@@ -485,7 +491,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code="US_XX",
                 project_id=project,
-                dataset=dataset,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
+                reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePersonRace,
                     entities.StatePersonEthnicity,
@@ -493,7 +501,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                reference_dataset=dataset,
                 required_reference_tables=None,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=None,
@@ -611,13 +618,14 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
-                dataset=dataset,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
+                reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateCharge,
                 ],
-                reference_dataset=dataset,
                 required_reference_tables=None,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=None,
@@ -763,7 +771,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=schema_person.state_code,
                 project_id=project,
-                dataset=dataset,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
+                reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -772,7 +782,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                reference_dataset=dataset,
                 required_reference_tables=[
                     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
                 ],
@@ -933,13 +942,14 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
-                dataset=dataset,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
+                reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateCharge,
                 ],
-                reference_dataset=dataset,
                 required_reference_tables=None,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set={person_id_1},
@@ -992,9 +1002,10 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code="US_ID",
                 project_id=project,
-                dataset=dataset,
-                required_entity_classes=None,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
+                required_entity_classes=None,
                 required_reference_tables=[US_ID_CASE_UPDATE_INFO_VIEW_NAME],
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=None,
@@ -1015,6 +1026,332 @@ class TestExtractDataForPipeline(unittest.TestCase):
             )
 
             test_pipeline.run()
+
+    def testExtractDataForPipeline_Normalized(self):
+        """Tests the extraction of multiple entities with cross-entity
+        relationship properties hydrated."""
+
+        person_id = 12345
+
+        schema_person = schema.StatePerson(
+            person_id=person_id,
+            current_address="123 Street",
+            full_name="Bernard Madoff",
+            birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code="US_XX",
+        )
+
+        schema_person_data = [normalized_database_base_dict(schema_person)]
+
+        schema_ethnicity = schema.StatePersonEthnicity(
+            state_code="US_XX",
+            ethnicity=Ethnicity.NOT_HISPANIC,
+            person_id=person_id,
+            person_ethnicity_id=234,
+        )
+
+        ethnicities_data = [normalized_database_base_dict(schema_ethnicity)]
+
+        schema_alias = schema.StatePersonAlias(
+            state_code="US_XX",
+            full_name="Bernie Madoff",
+            person_alias_id=18615,
+            person_id=person_id,
+        )
+
+        alias_data = [normalized_database_base_dict(schema_alias)]
+
+        schema_external_id = schema.StatePersonExternalId(
+            person_external_id_id=999,
+            external_id="888",
+            state_code="US_XX",
+            id_type="US_XX_TYPE",
+            person_id=person_id,
+        )
+
+        external_ids_data = [normalized_database_base_dict(schema_external_id)]
+
+        schema_race_1 = schema.StatePersonRace(
+            race=Race.WHITE, state_code="US_XX", person_id=person_id
+        )
+
+        schema_race_2 = schema.StatePersonRace(
+            race=Race.BLACK, state_code="US_XX", person_id=person_id
+        )
+
+        races_data = [
+            normalized_database_base_dict(schema_race_1),
+            normalized_database_base_dict(schema_race_2),
+        ]
+
+        schema_program_assignment = schema.StateProgramAssignment(
+            state_code="US_XX",
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            person_id=person_id,
+        )
+
+        program_data = [
+            normalized_database_base_dict(
+                schema_program_assignment, {"sequence_num": 0}
+            )
+        ]
+        data_dict = default_data_dict_for_root_schema_classes([schema.StatePerson])
+
+        data_dict_overrides = {
+            schema.StatePerson.__tablename__: schema_person_data,
+            schema.StatePersonEthnicity.__tablename__: ethnicities_data,
+            schema.StatePersonAlias.__tablename__: alias_data,
+            schema.StatePersonExternalId.__tablename__: external_ids_data,
+            schema.StateProgramAssignment.__tablename__: program_data,
+            schema.StatePersonRace.__tablename__: races_data,
+        }
+        data_dict.update(data_dict_overrides)
+
+        entity_converter = StateSchemaToEntityConverter()
+
+        entity_person = entity_converter.convert(schema_person)
+        entity_ethnicity = entity_converter.convert(schema_ethnicity)
+        entity_alias = entity_converter.convert(schema_alias)
+        entity_external_id = entity_converter.convert(schema_external_id)
+        entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
+        entity_program = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+            state_code="US_XX",
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            sequence_num=0,
+        )
+
+        entity_person.ethnicities = [entity_ethnicity]
+        entity_person.aliases = [entity_alias]
+        entity_person.external_ids = [entity_external_id]
+        entity_person.races = entity_races
+        entity_person.program_assignments = [entity_program]
+
+        project = "project"
+        dataset = "state"
+        normalized_dataset = "us_xx_normalized_state"
+
+        with patch(
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict, expected_normalized_dataset=normalized_dataset
+            ),
+        ):
+            test_pipeline = TestPipeline()
+
+            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+                state_code=schema_person.state_code,
+                project_id=project,
+                entities_dataset=dataset,
+                normalized_entities_dataset=normalized_dataset,
+                reference_dataset=dataset,
+                required_entity_classes=[
+                    entities.StatePerson,
+                    entities.StatePersonRace,
+                    entities.StatePersonEthnicity,
+                    entities.StatePersonAlias,
+                    entities.StatePersonExternalId,
+                    normalized_entities.NormalizedStateProgramAssignment,
+                ],
+                required_reference_tables=None,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=None,
+            )
+
+            assert_that(
+                output,
+                equal_to(
+                    [
+                        (
+                            12345,
+                            {
+                                entities.StatePerson.__name__: [entity_person],
+                                entities.StatePersonRace.__name__: entity_races,
+                                entities.StatePersonEthnicity.__name__: [
+                                    entity_ethnicity
+                                ],
+                                entities.StatePersonAlias.__name__: [entity_alias],
+                                entities.StatePersonExternalId.__name__: [
+                                    entity_external_id
+                                ],
+                                entities.StateProgramAssignment.__name__: [
+                                    entity_program
+                                ],
+                            },
+                        )
+                    ]
+                ),
+            )
+
+            test_pipeline.run()
+
+    def testExtractDataForPipeline_withManyRelationshipTypes_Normalized(self):
+        """Tests the extraction of multiple entities with cross-entity
+        relationship properties hydrated."""
+        required_schema_classes = [
+            schema.StatePerson,
+            schema.StateSupervisionViolation,
+            schema.StateSupervisionViolationTypeEntry,
+            schema.StateSupervisionViolatedConditionEntry,
+            schema.StateSupervisionViolationResponse,
+            schema.StateSupervisionViolationResponseDecisionEntry,
+        ]
+
+        person_id = 12345
+
+        schema_person = schema.StatePerson(
+            person_id=person_id,
+            current_address="123 Street",
+            full_name="Bernard Madoff",
+            birthdate=date(1970, 1, 1),
+            gender=Gender.MALE,
+            residency_status=ResidencyStatus.PERMANENT,
+            state_code="US_XX",
+        )
+
+        schema_violation_decision = database_test_utils.generate_test_supervision_violation_response_decision_entry(
+            person_id
+        )
+
+        schema_violation_response = (
+            database_test_utils.generate_test_supervision_violation_response(
+                person_id, decisions=[schema_violation_decision]
+            )
+        )
+
+        schema_supervision_violation = (
+            database_test_utils.generate_test_supervision_violation(
+                person_id, supervision_violation_responses=[schema_violation_response]
+            )
+        )
+        schema_violation_response.supervision_violation_id = (
+            schema_supervision_violation.supervision_violation_id
+        )
+        for (
+            decision
+        ) in schema_violation_response.supervision_violation_response_decisions:
+            decision.supervision_violation_response_id = (
+                schema_violation_response.supervision_violation_response_id
+            )
+        schema_person.supervision_violations = [schema_supervision_violation]
+
+        person_data = [normalized_database_base_dict(schema_person)]
+        supervision_violation_data = [
+            normalized_database_base_dict(schema_supervision_violation)
+        ]
+        supervision_violation_type_entry_data = normalized_database_base_dict_list(
+            schema_supervision_violation.supervision_violation_types
+        )
+        supervision_violation_condition_entry_data = normalized_database_base_dict_list(
+            schema_supervision_violation.supervision_violated_conditions
+        )
+        supervision_violation_response_data = [
+            normalized_database_base_dict(schema_violation_response)
+        ]
+        supervision_violation_response_decision_data = (
+            normalized_database_base_dict_list(
+                schema_violation_response.supervision_violation_response_decisions
+            )
+        )
+
+        data_dict = default_data_dict_for_root_schema_classes(required_schema_classes)
+
+        data_dict_overrides = {
+            schema.StatePerson.__tablename__: person_data,
+            schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
+            schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_entry_data,
+            schema.StateSupervisionViolatedConditionEntry.__tablename__: supervision_violation_condition_entry_data,
+            schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
+            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: supervision_violation_response_decision_data,
+        }
+        data_dict.update(data_dict_overrides)
+
+        entity_converter = StateSchemaToEntityConverter()
+
+        entity_person = entity_converter.convert(schema_person)
+        entity_violation: entities.StateSupervisionViolation = entity_converter.convert(
+            schema_supervision_violation
+        )
+        entity_violation_response = entity_violation.supervision_violation_responses[0]
+        entity_violation_types = entity_violation.supervision_violation_types
+        entity_violated_conditions = entity_violation.supervision_violated_conditions
+        entity_violation_response_decisions = (
+            entity_violation_response.supervision_violation_response_decisions
+        )
+
+        all_non_person_entities = [
+            entity_violation,
+            entity_violation_response,
+        ]
+
+        all_non_person_entities.extend(entity_violation_types)
+        all_non_person_entities.extend(entity_violated_conditions)
+        all_non_person_entities.extend(entity_violation_response_decisions)
+
+        # The entity converter sets the person field, but we don't hydrate this
+        # relationship
+        for entity in all_non_person_entities:
+            setattr(entity, "person", None)
+
+        project = "project"
+        dataset = "state"
+        normalized_dataset = "us_xx_normalized_state"
+
+        # TODO(#10730): Update this test to not assert NotImplementedError once we
+        #  implement support for association queries between normalized entities
+        with self.assertRaises(NotImplementedError):
+            with patch(
+                "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+                self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                    dataset, data_dict, expected_normalized_dataset=normalized_dataset
+                ),
+            ):
+                test_pipeline = TestPipeline()
+
+                output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+                    state_code=entity_person.state_code,
+                    project_id=project,
+                    entities_dataset=dataset,
+                    normalized_entities_dataset=normalized_dataset,
+                    reference_dataset=dataset,
+                    required_entity_classes=[
+                        entities.StatePerson,
+                        normalized_entities.NormalizedStateSupervisionViolation,
+                        normalized_entities.NormalizedStateSupervisionViolationResponse,
+                        normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
+                        normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
+                        normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
+                    ],
+                    required_reference_tables=None,
+                    unifying_class=entities.StatePerson,
+                    unifying_id_field_filter_set=None,
+                )
+
+                assert_that(
+                    output,
+                    equal_to(
+                        [
+                            (
+                                12345,
+                                {
+                                    entities.StatePerson.__name__: [entity_person],
+                                    entities.StateSupervisionViolation.__name__: [
+                                        entity_violation
+                                    ],
+                                    entities.StateSupervisionViolationResponse.__name__: [
+                                        entity_violation_response
+                                    ],
+                                    entities.StateSupervisionViolationTypeEntry.__name__: entity_violation_types,
+                                    entities.StateSupervisionViolatedConditionEntry.__name__: entity_violated_conditions,
+                                    entities.StateSupervisionViolationResponseDecisionEntry.__name__: entity_violation_response_decisions,
+                                },
+                            )
+                        ]
+                    ),
+                )
+
+                test_pipeline.run()
 
 
 class TestConnectHydratedRelatedEntities(unittest.TestCase):
@@ -1154,6 +1491,7 @@ class TestExtractAssociationValues(unittest.TestCase):
 
         project = "project"
         dataset = "state"
+        normalized_dataset = "us_xx_normalized_state"
 
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
@@ -1168,7 +1506,8 @@ class TestExtractAssociationValues(unittest.TestCase):
                 | "Extract association table entities"
                 >> extractor_utils._ExtractAssociationValues(
                     project_id=project,
-                    dataset=dataset,
+                    entities_dataset=dataset,
+                    normalized_entities_dataset=normalized_dataset,
                     root_entity_class=entities.StateIncarcerationSentence,
                     related_entity_class=entities.StateCharge,
                     related_id_field=entities.StateCharge.get_class_id_name(),
@@ -1217,6 +1556,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
         project = "project"
         dataset = "state"
+        normalized_dataset = "us_xx_normalized_state"
+
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
@@ -1230,7 +1571,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 | "Extract StatePerson Entity"
                 >> extractor_utils._ExtractAllEntitiesOfType(
                     project_id=project,
-                    dataset=dataset,
+                    entities_dataset=dataset,
+                    normalized_entities_dataset=normalized_dataset,
                     entity_class=entity_class,
                     unifying_id_field=entity_class.get_class_id_name(),
                     unifying_id_field_filter_set=None,
@@ -1262,6 +1604,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
         project = "project"
         dataset = "state"
+        normalized_dataset = "us_xx_normalized_state"
+
         with patch(
             "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
@@ -1275,7 +1619,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 | "Extract StatePerson Entity"
                 >> extractor_utils._ExtractAllEntitiesOfType(
                     project_id=project,
-                    dataset=dataset,
+                    entities_dataset=dataset,
+                    normalized_entities_dataset=normalized_dataset,
                     entity_class=entity_class,
                     unifying_id_field="XX",
                     unifying_id_field_filter_set=None,

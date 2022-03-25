@@ -56,6 +56,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization import normalized_entities
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -185,11 +186,15 @@ class TestProgramPipeline(unittest.TestCase):
             person_id=fake_person_id,
         )
 
-        program_assignment_data = [normalized_database_base_dict(program_assignment)]
+        program_assignment_data = [
+            normalized_database_base_dict(program_assignment, {"sequence_num": 0})
+        ]
 
         assessment_data = [normalized_database_base_dict(assessment)]
 
-        supervision_periods_data = [normalized_database_base_dict(supervision_period)]
+        supervision_periods_data = [
+            normalized_database_base_dict(supervision_period, {"sequence_num": 0})
+        ]
 
         supervision_violation_response = (
             database_test_utils.generate_test_supervision_violation_response(
@@ -264,6 +269,7 @@ class TestProgramPipeline(unittest.TestCase):
         """Runs a test version of the program pipeline."""
         project = "project"
         dataset = "dataset"
+        normalized_dataset = "us_xx_normalized_state"
 
         expected_metric_types = {
             ProgramMetricType.PROGRAM_REFERRAL,
@@ -271,7 +277,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                dataset, data_dict, expected_normalized_dataset=normalized_dataset
             )
         )
         write_to_bq_constructor = (
@@ -369,11 +375,15 @@ class TestProgramPipeline(unittest.TestCase):
             person_id=fake_person_id,
         )
 
-        program_assignment_data = [normalized_database_base_dict(program_assignment)]
+        program_assignment_data = [
+            normalized_database_base_dict(program_assignment, {"sequence_num": 0})
+        ]
 
         assessment_data = [normalized_database_base_dict(assessment)]
 
-        supervision_periods_data = [normalized_database_base_dict(supervision_period)]
+        supervision_periods_data = [
+            normalized_database_base_dict(supervision_period, {"sequence_num": 0})
+        ]
 
         supervision_violation_response = (
             database_test_utils.generate_test_supervision_violation_response(
@@ -458,7 +468,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
-        program_assignment = entities.StateProgramAssignment.new_with_defaults(
+        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             program_id="PG3",
             program_location_id="XYZ",
@@ -474,13 +485,16 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             assessment_date=date(2009, 7, 10),
         )
 
-        supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            state_code="US_XX",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2010, 2, 19),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_site="10",
+        supervision_period = (
+            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
+                sequence_num=0,
+                supervision_period_id=111,
+                state_code="US_XX",
+                start_date=date(2008, 3, 5),
+                termination_date=date(2010, 2, 19),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_site="10",
+            )
         )
 
         supervision_period_to_agent_map = {
@@ -560,7 +574,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
-        program_assignment = entities.StateProgramAssignment.new_with_defaults(
+        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+            sequence_num=0,
             state_code="US_ND",
             program_id="PG3",
             program_location_id="XYZ",
@@ -576,13 +591,16 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             assessment_date=date(2009, 7, 10),
         )
 
-        supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2010, 3, 1),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_site="10",
+        supervision_period = (
+            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
+                sequence_num=0,
+                supervision_period_id=111,
+                state_code="US_ND",
+                start_date=date(2008, 3, 5),
+                termination_date=date(2010, 3, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_site="10",
+            )
         )
 
         supervision_period_to_agent_map = {
@@ -667,13 +685,16 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             assessment_date=date(2009, 7, 10),
         )
 
-        supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            state_code="US_XX",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2010, 5, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        supervision_period = (
+            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
+                sequence_num=0,
+                supervision_period_id=111,
+                state_code="US_XX",
+                start_date=date(2008, 3, 5),
+                termination_date=date(2010, 5, 19),
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            )
         )
 
         supervision_period_to_agent_map = {
@@ -723,21 +744,25 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
-        program_assignment = entities.StateProgramAssignment.new_with_defaults(
+        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             program_id="PG3",
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
         )
 
-        supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            state_code="US_XX",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2010, 5, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_site="10",
+        supervision_period = (
+            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
+                sequence_num=0,
+                supervision_period_id=111,
+                state_code="US_XX",
+                start_date=date(2008, 3, 5),
+                termination_date=date(2010, 5, 19),
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervision_site="10",
+            )
         )
 
         supervision_period_to_agent_map = {
@@ -803,7 +828,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
-        program_assignment = entities.StateProgramAssignment.new_with_defaults(
+        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -895,6 +921,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             state_code="US_XX",
             project_id="project",
             input_dataset="dataset_id",
+            normalized_input_dataset="dataset_id",
             reference_dataset="dataset_id",
             static_reference_dataset="dataset_id",
             output_dataset="dataset_id",

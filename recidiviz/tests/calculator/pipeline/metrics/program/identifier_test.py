@@ -37,27 +37,12 @@ from recidiviz.calculator.pipeline.metrics.program.pipeline import (
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.program_assignment_normalization_manager import (
-    StateSpecificProgramAssignmentNormalizationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.entity_normalization.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
@@ -70,12 +55,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
-    StatePerson,
-    StateProgramAssignment,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
@@ -101,9 +81,9 @@ class TestFindProgramEvents(unittest.TestCase):
 
     def _test_find_program_events(
         self,
-        program_assignments: List[StateProgramAssignment],
+        program_assignments: List[NormalizedStateProgramAssignment],
         assessments: List[StateAssessment],
-        supervision_periods: List[StateSupervisionPeriod],
+        supervision_periods: List[NormalizedStateSupervisionPeriod],
         state_code_override: Optional[str] = None,
     ) -> List[ProgramEvent]:
         """Helper for testing the find_events function on the identifier."""
@@ -126,8 +106,8 @@ class TestFindProgramEvents(unittest.TestCase):
 
         all_kwargs = {
             **required_delegates,
-            StateProgramAssignment.__name__: program_assignments,
-            StateSupervisionPeriod.__name__: supervision_periods,
+            NormalizedStateProgramAssignment.base_class_name(): program_assignments,
+            NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
             StateAssessment.__name__: assessments,
             "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         }
@@ -136,7 +116,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:
-        program_assignment = StateProgramAssignment.new_with_defaults(
+        program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
             referral_date=date(2020, 1, 3),
@@ -152,7 +132,7 @@ class TestFindProgramEvents(unittest.TestCase):
             assessment_date=date(2019, 7, 10),
         )
 
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=999,
             state_code="US_XX",
             start_date=date(2019, 3, 5),

@@ -18,7 +18,7 @@
 import abc
 import argparse
 import logging
-from typing import Dict, Generic, List, Optional, Set, Type, TypeVar
+from typing import Dict, Generic, List, Optional, Set, Type, TypeVar, Union
 
 import apache_beam as beam
 import attr
@@ -31,12 +31,16 @@ from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_entities import (
+    NormalizedStateEntity,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     REFERENCE_VIEWS_DATASET,
     STATE_BASE_DATASET,
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
@@ -57,6 +61,9 @@ class PipelineJobArgs:
 
     # Which dataset to query from for the data input
     input_dataset: str = attr.ib()
+
+    # Which dataset to query from for normalized data input
+    normalized_input_dataset: str = attr.ib()
 
     # Which dataset in BigQuery to write output
     output_dataset: str = attr.ib()
@@ -84,7 +91,9 @@ class PipelineConfig:
     pipeline_name: str = attr.ib()
 
     # The list of entities required for the pipeline
-    required_entities: List[Type[Entity]] = attr.ib()
+    required_entities: List[
+        Union[Type[Entity], Type[NormalizedStateEntity]]
+    ] = attr.ib()
 
     # The list of reference tables required for the pipeline
     required_reference_tables: List[str] = attr.ib()
@@ -150,6 +159,13 @@ class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
         )
 
         parser.add_argument(
+            "--normalized_input",
+            type=str,
+            help="BigQuery dataset to query for normalized versions of entities.",
+            required=False,
+        )
+
+        parser.add_argument(
             "--output",
             type=str,
             help="Output dataset to write results to. Pipelines must specify a default "
@@ -204,6 +220,10 @@ class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
             state_code=known_args.state_code,
             project_id=apache_beam_pipeline_options.get_all_options()["project"],
             input_dataset=known_args.data_input,
+            normalized_input_dataset=known_args.normalized_input
+            or normalized_state_dataset_for_state_code(
+                StateCode((known_args.state_code))
+            ),
             output_dataset=known_args.output
             or cls.default_output_dataset(known_args.state_code),
             reference_dataset=known_args.reference_view_input,
@@ -276,7 +296,8 @@ class BasePipeline:
             pipeline_data = p | "Load required data" >> ExtractDataForPipeline(
                 state_code=state_code,
                 project_id=pipeline_job_args.project_id,
-                dataset=pipeline_job_args.input_dataset,
+                entities_dataset=pipeline_job_args.input_dataset,
+                normalized_entities_dataset=pipeline_job_args.normalized_input_dataset,
                 reference_dataset=pipeline_job_args.reference_dataset,
                 required_entity_classes=self.pipeline_run_delegate.pipeline_config().required_entities,
                 required_reference_tables=required_reference_tables,

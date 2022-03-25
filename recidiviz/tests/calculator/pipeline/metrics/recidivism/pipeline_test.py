@@ -1040,6 +1040,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             state_code="US_XX",
             project_id="project",
             input_dataset="dataset_id",
+            normalized_input_dataset="dataset_id",
             reference_dataset="dataset_id",
             static_reference_dataset="dataset_id",
             output_dataset="dataset_id",
