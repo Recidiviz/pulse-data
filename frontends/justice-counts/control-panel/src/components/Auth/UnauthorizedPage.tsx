@@ -15,16 +15,34 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { ReactElement } from "react";
+import {
+  Button,
+  ErrorPage,
+  Link as TypographyLink,
+} from "@recidiviz/design-system";
+import React from "react";
 
-import AuthWall from "./components/Auth";
+import { useStore } from "../../stores/StoreProvider";
 
-const App: React.FC = (): ReactElement => {
+const UnauthorizedPage = () => {
+  const { authStore } = useStore();
+
   return (
-    <AuthWall>
-      <div>Hello World!</div>
-    </AuthWall>
+    <ErrorPage headerText="Thank you for your interest in Recidiviz.">
+      <p>
+        This page is currently unavailable for your account. Please reach out to{" "}
+        <TypographyLink href="mailto:feedback@recidiviz.org?subject=Access to Recidiviz app">
+          Recidiviz Support
+        </TypographyLink>{" "}
+        with any questions.
+      </p>
+
+      {/* Optional: takes user back to login screen */}
+      <Button onClick={() => authStore.logoutUser()} style={{ marginTop: 20 }}>
+        Back
+      </Button>
+    </ErrorPage>
   );
 };
 
-export default App;
+export default UnauthorizedPage;
