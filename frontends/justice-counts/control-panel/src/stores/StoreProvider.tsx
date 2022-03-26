@@ -15,16 +15,28 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { ReactElement } from "react";
+import React, { useContext } from "react";
 
-import AuthWall from "./components/Auth";
+import rootStore from "./RootStore";
 
-const App: React.FC = (): ReactElement => {
+const StoreContext = React.createContext<typeof rootStore | undefined>(
+  undefined
+);
+
+export const StoreProvider: React.FC<React.ReactNode> = ({
+  children,
+}): React.ReactElement => {
   return (
-    <AuthWall>
-      <div>Hello World!</div>
-    </AuthWall>
+    <StoreContext.Provider value={rootStore}>{children}</StoreContext.Provider>
   );
 };
 
-export default App;
+export function useStore(): typeof rootStore {
+  const context = useContext(StoreContext);
+
+  if (context === undefined) {
+    throw new Error("useStore must be used within a StoreProvider");
+  }
+
+  return context;
+}

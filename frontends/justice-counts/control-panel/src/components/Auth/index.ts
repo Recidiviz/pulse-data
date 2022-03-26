@@ -15,16 +15,5 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { ReactElement } from "react";
-
-import AuthWall from "./components/Auth";
-
-const App: React.FC = (): ReactElement => {
-  return (
-    <AuthWall>
-      <div>Hello World!</div>
-    </AuthWall>
-  );
-};
-
-export default App;
+export * from "./AuthStore";
+export { default } from "./AuthWall";
