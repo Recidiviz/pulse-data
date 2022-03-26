@@ -160,9 +160,6 @@ traces
 # Local Case Triage files
 recidiviz/case_triage/local/**/*
 
-# Local Justice Counts files
-recidiviz/justice_counts/control_panel/local/**/*
-
 # ESLint Cache
 .eslintcache
 

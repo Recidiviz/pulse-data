@@ -23,10 +23,8 @@ from sqlalchemy.engine import Engine
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.persistence.database.schema.justice_counts.schema import Source
-from recidiviz.tests.auth.utils import get_test_auth0_config
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 from recidiviz.tools.postgres import local_postgres_helpers
-from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 
 
 @pytest.mark.uses_db
@@ -37,11 +35,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         test_config = Config(
             DB_URL=local_postgres_helpers.on_disk_postgres_db_url(),
             WTF_CSRF_ENABLED=False,
-            AUTH_DECORATOR=passthrough_authorization_decorator(),
-            AUTH0_CONFIGURATION=get_test_auth0_config(),
         )
         self.app = create_app(config=test_config)
         self.client = self.app.test_client()
+
         # `flask_sqlalchemy_session` sets the `scoped_session` attribute on the app,
         # even though this is not specified in the types for `app`.
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
