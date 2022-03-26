@@ -152,6 +152,16 @@ jobs:
       - name: Yarn test (case triage)
         working-directory: ./frontends/case-triage/
         run: yarn test
+      - name: Yarn install (justice counts)
+        if: steps.yarn-caching.outputs.cache-hit != 'true'
+        working-directory: ./frontends/justice-counts/control-panel
+        run: yarn install --frozen-lockfile
+      - name: Yarn lint (justice counts)
+        working-directory: ./frontends/justice-counts/control-panel
+        run: yarn lint
+      - name: Yarn test (justice counts)
+        working-directory: ./frontends/justice-counts/control-panel
+        run: yarn test
 
   unit-tests:
     name: Base unit tests

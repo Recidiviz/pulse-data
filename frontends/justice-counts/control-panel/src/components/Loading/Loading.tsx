@@ -15,16 +15,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { ReactElement } from "react";
+import { Loading as LoadingComponent } from "@recidiviz/design-system";
+import React from "react";
+import styled from "styled-components/macro";
 
-import AuthWall from "./components/Auth";
+const LoadingWrapper = styled.div`
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
 
-const App: React.FC = (): ReactElement => {
+const Loading = () => {
   return (
-    <AuthWall>
-      <div>Hello World!</div>
-    </AuthWall>
+    <LoadingWrapper>
+      <LoadingComponent />
+    </LoadingWrapper>
   );
 };
 
-export default App;
+export default Loading;
