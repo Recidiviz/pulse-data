@@ -90,6 +90,21 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_require
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_treatment_classification_codes import (
     US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
+    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_logic import (
+    US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_referral import (
+    US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_overdue_for_discharge import (
+    US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_supervision_plan_logic import (
+    US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
@@ -116,4 +131,9 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
     US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
+    US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
+    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
+    US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
+    US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
+    US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER,
 ]
