@@ -17,7 +17,6 @@
 """A UserContext for all of the operations for Case Triage"""
 import hashlib
 import hmac
-import os
 from base64 import b64encode
 from datetime import datetime
 from enum import Enum
@@ -38,22 +37,17 @@ from recidiviz.case_triage.demo_helpers import (
     fake_officer_id_for_demo_user,
     fake_person_id_for_demo_user,
 )
+from recidiviz.case_triage.util import get_local_secret
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
     OfficerMetadata,
 )
-from recidiviz.utils.auth.auth0 import get_jwt_claim
-from recidiviz.utils.secrets import get_local_secret
-from recidiviz.utils.types import TokenClaims
+from recidiviz.utils.auth.auth0 import TokenClaims, get_jwt_claim
 
 REGISTRATION_DATE_CLAIM = "https://dashboard.recidiviz.org/registration_date"
 ONBOARDING_LAUNCH_DATE = datetime.fromisoformat("2021-08-20T00:00:00.000")
-
-local_path = os.path.join(
-    os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
-)
 
 
 class Permission(Enum):
@@ -186,7 +180,7 @@ class UserContext:
 
     @property
     def intercom_user_hash(self) -> Optional[str]:
-        key = get_local_secret(local_path, "case_triage_intercom_app_key")
+        key = get_local_secret("case_triage_intercom_app_key")
 
         if not self.segment_user_id or not key:
             return None

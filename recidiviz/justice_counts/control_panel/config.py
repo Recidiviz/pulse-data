@@ -16,22 +16,16 @@
 # =============================================================================
 """Flask configs for different environments."""
 
-import json
 import os
-from typing import Callable
 
 import attr
 
-from recidiviz.justice_counts.auth_utils import on_successful_authorization
-from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.utils.auth.auth0 import Auth0Config, build_auth0_authorization_decorator
 from recidiviz.utils.environment import in_development
-from recidiviz.utils.secrets import get_local_secret
 
 JUSTICE_COUNTS_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(
     SchemaType.JUSTICE_COUNTS
@@ -41,14 +35,10 @@ JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL = "JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_U
 
 @attr.define
 class Config:
-    """Config class builds database and authentication objects for justice counts app"""
-
     DATABASE_KEY: SQLAlchemyDatabaseKey = JUSTICE_COUNTS_DATABASE_KEY
     # Indicates whether CSRF protection is enabled for the whole app. Should be set to False for tests.
     WTF_CSRF_ENABLED: bool = True
     DB_URL: str = attr.field()
-    AUTH0_CONFIGURATION: Auth0Config = attr.field()
-    AUTH_DECORATOR: Callable = attr.field()
 
     @DB_URL.default
     def _db_url_factory(self) -> str:
@@ -58,22 +48,3 @@ class Config:
         return SQLAlchemyEngineManager.get_server_postgres_instance_url(
             database_key=self.DATABASE_KEY
         )
-
-    @AUTH_DECORATOR.default
-    def _auth_decorator_factory(self) -> Callable:
-        return build_auth0_authorization_decorator(
-            self.AUTH0_CONFIGURATION, on_successful_authorization
-        )
-
-    @AUTH0_CONFIGURATION.default
-    def _auth_configuration_factory(self) -> Auth0Config:
-        local_path = os.path.join(
-            os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
-        )
-        auth0_configuration = get_local_secret(local_path, "justice_counts_auth0")
-        if not auth0_configuration:
-            raise JusticeCountsAuthorizationError(
-                code="no_justice_counts_access",
-                description="You are not authorized to access this application",
-            )
-        return Auth0Config.from_config_json(json.loads(auth0_configuration))
