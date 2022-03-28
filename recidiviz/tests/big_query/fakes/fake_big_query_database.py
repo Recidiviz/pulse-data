@@ -22,7 +22,6 @@ from typing import Dict, List, Optional, Type, Union
 
 import pandas as pd
 from sqlalchemy import create_engine
-from sqlalchemy.future import Engine
 from sqlalchemy.orm import close_all_sessions
 
 from recidiviz.big_query.big_query_view import (
@@ -122,34 +121,26 @@ class FakeBigQueryDatabase:
     """A database that can be used for testing BigQuery queries that uses Postgres as
     a backing database. TestCase classes using this class should integrate as follows:
 
-    fake_bq_db: Optional[FakeBigQueryDatabase]
+    temp_db_dir: str
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.fake_bq_db = FakeBigQueryDatabase()
-        cls.fake_bq_db.start_instance()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        self.fake_bq_db.setup_databases()
+        self.fake_bq_db = FakeBigQueryDatabase()
 
     def tearDown(self) -> None:
         self.fake_bq_db.teardown_databases()
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls.fake_bq_db.stop_and_clear_instance()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
     """
 
     def __init__(self) -> None:
-        self._temp_db_dir: Optional[str] = None
-        self._postgres_engine: Optional[Engine] = None
-        self._address_registry: Optional[FakeBigQueryAddressRegistry] = None
-        self._query_rewriter: Optional[BigQueryQueryRewriter] = None
-
-    def start_instance(self) -> None:
-        self._temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-
-    def setup_databases(self) -> None:
         self._address_registry = FakeBigQueryAddressRegistry()
         self._query_rewriter = BigQueryQueryRewriter(self._address_registry)
         self._postgres_engine = create_engine(
@@ -170,13 +161,13 @@ class FakeBigQueryDatabase:
     def teardown_databases(self) -> None:
         close_all_sessions()
 
-        if self._address_registry:
-            # Execute each statement one at a time for resilience.
-            for postgres_table_name in self._address_registry.all_postgres_tables():
-                self._execute_statement(f"DROP TABLE IF EXISTS {postgres_table_name}")
-        if self._query_rewriter:
-            for type_name in self._query_rewriter.all_type_names_generated():
-                self._execute_statement(f"DROP TYPE {type_name}")
+        # Execute each statement one at a time for resilience.
+        for postgres_table_name in self._address_registry.all_postgres_tables():
+            self._execute_statement(f"DROP TABLE IF EXISTS {postgres_table_name}")
+
+        for type_name in self._query_rewriter.all_type_names_generated():
+            self._execute_statement(f"DROP TYPE {type_name}")
+
         self._execute_statement(_DROP_ARRAY_CONCAT_AGG_FUNC)
         self._execute_statement(_DROP_COND_FUNC)
         self._execute_statement(_DROP_LAST_IGNORE_NULLS_FUNC)
@@ -187,11 +178,6 @@ class FakeBigQueryDatabase:
         if self._postgres_engine is not None:
             self._postgres_engine.dispose()
             self._postgres_engine = None
-
-    def stop_and_clear_instance(self) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            self._temp_db_dir
-        )
 
     def _execute_statement(self, statement: str) -> None:
         session = Session(bind=self._postgres_engine)
@@ -211,10 +197,6 @@ class FakeBigQueryDatabase:
         mock_schema: MockTableSchema,
         mock_data: pd.DataFrame,
     ) -> None:
-        if not self._address_registry:
-            raise ValueError(
-                "Found null address registry - did you call setup_databases()?."
-            )
         postgres_table_name = self._address_registry.register_bq_address(
             address=BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
         )
@@ -227,11 +209,6 @@ class FakeBigQueryDatabase:
         )
 
     def create_view(self, view_builder: BigQueryViewBuilder) -> None:
-        if not self._address_registry or not self._query_rewriter:
-            raise ValueError(
-                "Found null address registry or query rewriter - did you call "
-                "setup_databases()?."
-            )
         view: BigQueryView = view_builder.build()
         table_location = view.table_for_query
         self._address_registry.register_bq_address(table_location)
@@ -250,12 +227,11 @@ class FakeBigQueryDatabase:
         )
         logging.debug("Results for `%s`:\n%s", table_location, results.to_string())
 
-    def query_view(
+    def run_query(
         self,
-        table_address: BigQueryAddress,
-        view_query: str,
+        query_str: str,
         data_types: Optional[Union[Type, Dict[str, Type]]],
-        dimensions: List[str],
+        dimensions: Optional[List[str]],
     ) -> pd.DataFrame:
         """Query the PG tables with the Postgres formatted query string and return the
         results as a DataFrame.
@@ -264,13 +240,13 @@ class FakeBigQueryDatabase:
             raise ValueError(
                 "Found null query rewriter - did you call setup_databases()?."
             )
-        view_query = self._query_rewriter.rewrite_to_postgres(view_query)
+        query_str = self._query_rewriter.rewrite_to_postgres(query_str)
 
         # TODO(#5533): Instead of using read_sql_query, we can use
         # `create_view` and `read_sql_table`. That can take a schema which will
         # solve some of the issues. As part of adding `dimensions` to builders
         # (below) we should likely just define a full output schema.
-        results = pd.read_sql_query(view_query, con=self._postgres_engine)
+        results = pd.read_sql_query(query_str, con=self._postgres_engine)
         # If data types are not provided or all columns will be strings, transform 'nan'
         # values to empty strings. These occur when reading null values into a dataframe
         if not data_types or data_types == str:
@@ -280,10 +256,8 @@ class FakeBigQueryDatabase:
         # TODO(#5533): If we add `dimensions` to all `BigQueryViewBuilder`, instead of just
         # `MetricBigQueryViewBuilder`, then we can reuse that here instead of forcing
         # the caller to specify them manually.
-        results = results.set_index(dimensions)
+        if dimensions:
+            results = results.set_index(dimensions)
         results = results.sort_index()
-
-        # Log results to debug log level, to see them pass --log-level DEBUG to pytest
-        logging.debug("Results for `%s`:\n%s", table_address, results.to_string())
 
         return results

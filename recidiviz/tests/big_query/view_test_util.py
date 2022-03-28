@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility class for testing BQ views against Postgres"""
+import logging
 import re
 import unittest
 from datetime import datetime, timedelta
@@ -26,7 +27,11 @@ import pytest
 from pandas._testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
 
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
+    BigQueryView,
+    BigQueryViewBuilder,
+)
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
@@ -45,6 +50,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 from recidiviz.tests.big_query.fakes.fake_big_query_database import FakeBigQueryDatabase
 from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
+from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils import csv
 from recidiviz.utils.regions import get_region
 
@@ -75,12 +81,11 @@ class BaseViewTest(unittest.TestCase):
     would be helpful, or creates more headaches than value it provides, it may not be necessary.
     """
 
-    fake_bq_db: FakeBigQueryDatabase
+    temp_db_dir: str
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.fake_bq_db = FakeBigQueryDatabase()
-        cls.fake_bq_db.start_instance()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.data_types: Optional[Union[Type, Dict[str, Type]]] = {}
@@ -91,14 +96,16 @@ class BaseViewTest(unittest.TestCase):
         self.view_builder: DirectIngestPreProcessedIngestViewBuilder
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
 
-        self.fake_bq_db.setup_databases()
+        self.fake_bq_db = FakeBigQueryDatabase()
 
     def tearDown(self) -> None:
         self.fake_bq_db.teardown_databases()
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls.fake_bq_db.stop_and_clear_instance()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     # ~~~~~~~~ INGEST-SPECIFIC TEST FUNCTIONALITY ~~~~~~~~#
     # TODO(#9717): Refactor all ingest-specific code out of this class and into an
@@ -263,7 +270,7 @@ class BaseViewTest(unittest.TestCase):
             for bq_sql_regex_pattern, pg_sql in self.sql_regex_replacements.items():
                 view_query = re.sub(bq_sql_regex_pattern, pg_sql, view_query)
 
-        return self.fake_bq_db.query_view(
+        return self.query_view(
             view.table_for_query,
             view_query,
             data_types=data_types,
@@ -289,6 +296,19 @@ class BaseViewTest(unittest.TestCase):
     def create_view(self, view_builder: BigQueryViewBuilder) -> None:
         self.fake_bq_db.create_view(view_builder)
 
+    def query_view(
+        self,
+        table_address: BigQueryAddress,
+        view_query: str,
+        data_types: Optional[Union[Type, Dict[str, Type]]],
+        dimensions: List[str],
+    ) -> pd.DataFrame:
+        results = self.fake_bq_db.run_query(view_query, data_types, dimensions)
+
+        # Log results to debug log level, to see them pass --log-level DEBUG to pytest
+        logging.debug("Results for `%s`:\n%s", table_address, results.to_string())
+        return results
+
     def query_view_for_builder(
         self,
         view_builder: BigQueryViewBuilder,
@@ -302,7 +322,7 @@ class BaseViewTest(unittest.TestCase):
             )
 
         view: BigQueryView = view_builder.build()
-        return self.fake_bq_db.query_view(
+        return self.query_view(
             view.table_for_query, view.view_query, data_types, dimensions
         )
 
