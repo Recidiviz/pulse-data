@@ -102,7 +102,7 @@ def build_state_person_entity(
             race_raw_text=race_raw_text,
             state_code=state_code,
         )
-    if ethnicity and ethnicity_raw_text:
+    if ethnicity:
         add_ethnicity_to_person(
             state_person,
             ethnicity_raw_text=ethnicity_raw_text,
@@ -131,7 +131,7 @@ def add_race_to_person(
 
 def add_ethnicity_to_person(
     person: entities.StatePerson,
-    ethnicity_raw_text: str,
+    ethnicity_raw_text: Optional[str],
     ethnicity: entities.Ethnicity,
     state_code: str,
 ) -> None:

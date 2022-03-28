@@ -23,7 +23,6 @@ columns:
     description: The name suffix (Jr., Sr. III) of the justice-involved individual
   - name: birth_date
     description: The birthdate of the justice-involved individual
-    is_datetime: True
   - name: eye_color_id
   - name: eye_color
   - name: hair_color_id

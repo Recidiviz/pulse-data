@@ -17,10 +17,8 @@ columns:
     description: The location ID of the booking (referenced by LOCATION table).
   - name: begin_date
     description: When this booking / jurisdiction period began within MDOC.
-    is_datetime: True
   - name: end_date
     description: When this booking / jurisdiction period ends within MDOC.
-    is_datetime: True
   - name: previous_offender_id
     description: |-
       There might be situations where one individual may have two offender_numbers
