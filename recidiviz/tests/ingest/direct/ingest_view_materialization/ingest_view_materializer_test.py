@@ -224,11 +224,12 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.ingest_database_name = "ingest_database_name"
+        self.ingest_instance = DirectIngestInstance.SECONDARY
         self.output_bucket_name = gcsfs_direct_ingest_bucket_for_region(
             project_id=self.mock_project_id,
             region_code="us_xx",
             system_level=SystemLevel.STATE,
-            ingest_instance=DirectIngestInstance.SECONDARY,
+            ingest_instance=self.ingest_instance,
         ).bucket_name
         fakes.use_in_memory_sqlite_database(self.database_key)
         self.client_patcher = patch(
@@ -272,6 +273,8 @@ class IngestViewMaterializerTest(unittest.TestCase):
             delegate=FileBasedMaterializerDelegate(
                 ingest_file_metadata_manager=metadata_manager,
                 big_query_client=self.mock_client,
+                region_code=region.region_code,
+                ingest_instance=self.ingest_instance,
             ),
             big_query_client=self.mock_client,
             view_collector=FakeSingleIngestViewCollector(  # type: ignore[arg-type]

@@ -51,6 +51,13 @@ class BQBasedMaterializerDelegate(
         self.metadata_manager = metadata_manager
         self.big_query_client = big_query_client
 
+    def temp_dataset_id(self) -> str:
+        # TODO(#9717): Return a dataset prefixed with "temp" or something to
+        #  more clearly indicate that it's meant for ephemeral storage.
+        raise NotImplementedError(
+            "TODO(#9717): BQ-based materialization not yet implemented."
+        )
+
     def get_job_completion_time_for_args(
         self, args: IngestViewMaterializationArgs
     ) -> Optional[datetime.datetime]:

@@ -25,18 +25,9 @@ from typing import Generic, Optional
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
     IngestViewMaterializationArgsT,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
 )
-
-
-# TODO(#9717): Update the naming of this dataset to include "temp" or something to
-#  more clearly indicate that it's meant for ephemeral storage.
-def ingest_view_materialization_temp_dataset(
-    view: DirectIngestPreProcessedIngestView, ingest_instance: DirectIngestInstance
-) -> str:
-    return f"{view.dataset_id}_{ingest_instance.value.lower()}"
 
 
 class IngestViewMaterializerDelegate(Generic[IngestViewMaterializationArgsT]):
@@ -47,6 +38,12 @@ class IngestViewMaterializerDelegate(Generic[IngestViewMaterializationArgsT]):
       IngestViewMaterializer once all states have been migrated to use
       BQ-based materialization.
     """
+
+    @abc.abstractmethod
+    def temp_dataset_id(self) -> str:
+        """Returns a name of the dataset that should be used to store intermediate /
+        ephemeral results from any materialization job.
+        """
 
     @abc.abstractmethod
     def get_job_completion_time_for_args(

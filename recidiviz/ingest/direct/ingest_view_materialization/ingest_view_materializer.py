@@ -34,7 +34,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
     IngestViewMaterializerDelegate,
-    ingest_view_materialization_temp_dataset,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     GcsfsIngestViewExportArgs,
@@ -104,8 +103,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             if builder.ingest_view_name in launched_ingest_views
         }
 
-    # TODO(#9717): Rename to _generate_export_job_for_date
-    def _generate_export_job_for_date(
+    def _generate_ingest_view_query_job_for_date(
         self,
         table_name: str,
         ingest_view: DirectIngestPreProcessedIngestView,
@@ -115,10 +113,10 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         and starts a job to load the results of that query into the provided
         |table_name|. Returns the potentially in progress QueryJob to the caller.
         """
-        query, query_params = self._generate_export_query_and_params_for_date(
+        query, query_params = self._generate_ingest_view_query_and_params_for_date(
             ingest_view=ingest_view,
-            ingest_instance=self.ingest_instance,
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
+            destination_dataset_id=self.delegate.temp_dataset_id(),
             destination_table_id=table_name,
             update_timestamp=date_bound,
         )
@@ -131,9 +129,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
         self.big_query_client.create_dataset_if_necessary(
             dataset_ref=self.big_query_client.dataset_ref_for_id(
-                ingest_view_materialization_temp_dataset(
-                    ingest_view, self.ingest_instance
-                )
+                self.delegate.temp_dataset_id()
             ),
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
@@ -161,6 +157,8 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
     @staticmethod
     def _get_upper_bound_intermediate_table_name(
+        # TODO(#9717): Rename ingest_view_export_args to ingest_view_materialization_args
+        #  here and elsewhere in file.
         ingest_view_export_args: IngestViewMaterializationArgs,
     ) -> str:
         """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
@@ -204,9 +202,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         export_query = StrictStringFormatter().format(
             SELECT_SUBQUERY,
             project_id=self.big_query_client.project_id,
-            dataset_id=ingest_view_materialization_temp_dataset(
-                ingest_view, self.ingest_instance
-            ),
+            dataset_id=self.delegate.temp_dataset_id(),
             table_name=self._get_upper_bound_intermediate_table_name(
                 ingest_view_export_args
             ),
@@ -217,9 +213,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             upper_bound_prev_query = StrictStringFormatter().format(
                 SELECT_SUBQUERY,
                 project_id=self.big_query_client.project_id,
-                dataset_id=ingest_view_materialization_temp_dataset(
-                    ingest_view, self.ingest_instance
-                ),
+                dataset_id=self.delegate.temp_dataset_id(),
                 table_name=self._get_lower_bound_intermediate_table_name(
                     ingest_view_export_args
                 ),
@@ -250,7 +244,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
         single_date_table_export_jobs = []
 
-        upper_bound_table_job = self._generate_export_job_for_date(
+        upper_bound_table_job = self._generate_ingest_view_query_job_for_date(
             table_name=self._get_upper_bound_intermediate_table_name(
                 ingest_view_export_args
             ),
@@ -260,7 +254,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         single_date_table_export_jobs.append(upper_bound_table_job)
 
         if ingest_view_export_args.lower_bound_datetime_exclusive:
-            lower_bound_table_job = self._generate_export_job_for_date(
+            lower_bound_table_job = self._generate_ingest_view_query_job_for_date(
                 table_name=self._get_lower_bound_intermediate_table_name(
                     ingest_view_export_args
                 ),
@@ -276,10 +270,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def _delete_intermediate_tables(
         self, ingest_view_export_args: IngestViewMaterializationArgs
     ) -> None:
-        ingest_view = self.ingest_views_by_name[
-            ingest_view_export_args.ingest_view_name
-        ]
-
         single_date_table_ids = [
             self._get_upper_bound_intermediate_table_name(ingest_view_export_args)
         ]
@@ -290,9 +280,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
         for table_id in single_date_table_ids:
             self.big_query_client.delete_table(
-                dataset_id=ingest_view_materialization_temp_dataset(
-                    ingest_view, self.ingest_instance
-                ),
+                dataset_id=self.delegate.temp_dataset_id(),
                 table_id=table_id,
             )
             logging.info("Deleted intermediate table [%s]", table_id)
@@ -409,10 +397,10 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         upper_bound_table_id = cls._get_upper_bound_intermediate_table_name(
             ingest_view_export_args
         )
-        query, query_params = cls._generate_export_query_and_params_for_date(
+        query, query_params = cls._generate_ingest_view_query_and_params_for_date(
             ingest_view=ingest_view,
-            ingest_instance=DirectIngestInstance.PRIMARY,
             destination_table_type=DestinationTableType.TEMPORARY,
+            destination_dataset_id=None,
             destination_table_id=upper_bound_table_id,
             update_timestamp=ingest_view_export_args.upper_bound_datetime_inclusive,
             param_name=UPPER_BOUND_TIMESTAMP_PARAM_NAME,
@@ -428,10 +416,10 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             (
                 lower_bound_query,
                 lower_bound_query_params,
-            ) = cls._generate_export_query_and_params_for_date(
+            ) = cls._generate_ingest_view_query_and_params_for_date(
                 ingest_view=ingest_view,
-                ingest_instance=DirectIngestInstance.PRIMARY,
                 destination_table_type=DestinationTableType.TEMPORARY,
+                destination_dataset_id=None,
                 destination_table_id=lower_bound_table_id,
                 update_timestamp=ingest_view_export_args.lower_bound_datetime_exclusive,
                 param_name=LOWER_BOUND_TIMESTAMP_PARAM_NAME,
@@ -454,14 +442,13 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             query = f"{query}\n{lower_bound_query}\n{diff_query}"
         return query, query_params
 
-    # TODO(#9717): Rename to _generate_export_query_and_params_for_date
     @staticmethod
-    def _generate_export_query_and_params_for_date(
+    def _generate_ingest_view_query_and_params_for_date(
         *,
         ingest_view: DirectIngestPreProcessedIngestView,
-        ingest_instance: DirectIngestInstance,
         update_timestamp: datetime.datetime,
         destination_table_type: DestinationTableType,
+        destination_dataset_id: Optional[str],
         destination_table_id: str,
         param_name: str = UPDATE_TIMESTAMP_PARAM_NAME,
         raw_table_subquery_name_prefix: Optional[str] = None,
@@ -472,17 +459,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 param_name, bigquery.enums.SqlTypeNames.DATETIME.value, update_timestamp
             )
         ]
-
-        if destination_table_type == DestinationTableType.TEMPORARY:
-            destination_dataset_id = None
-        elif destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
-            destination_dataset_id = ingest_view_materialization_temp_dataset(
-                ingest_view, ingest_instance
-            )
-        else:
-            raise ValueError(
-                f"Unexpected destination_table_type [{destination_table_type.name}]"
-            )
 
         query = ingest_view.expanded_view_query(
             config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
