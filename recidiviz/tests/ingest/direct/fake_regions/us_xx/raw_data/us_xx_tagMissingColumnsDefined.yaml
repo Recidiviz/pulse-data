@@ -1,9 +1,8 @@
-file_tag: tagC
+file_tag: tagMissingColumnsDefined
 file_description: |-
-  tagC file description
+  tagMissingColumnsDefined file description
 primary_key_cols:
   - COL1
 columns:
   - name: COL1
   - name: COL2
-  - name: COL3

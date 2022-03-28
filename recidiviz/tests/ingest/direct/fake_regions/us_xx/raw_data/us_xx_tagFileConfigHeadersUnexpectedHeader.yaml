@@ -1,0 +1,10 @@
+file_tag: tagFileConfigHeadersUnexpectedHeader
+file_description: |-
+  tagFileConfigHeadersUnexpectedHeader file description
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+  - name: COL2
+  - name: COL3
+infer_columns_from_config: True

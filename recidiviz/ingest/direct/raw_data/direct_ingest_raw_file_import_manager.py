@@ -169,6 +169,11 @@ class DirectIngestRawFileConfig:
     # may push us over VM memory limits. Defaults to 250,000 rows per chunk.
     import_chunk_size_rows: int = attr.ib()
 
+    # If true, means that we likely will receive a CSV that does not have a header row
+    # and therefore, we will use the columns defined in the config, in the order they
+    # are defined in, as the column names. By default, False.
+    infer_columns_from_config: bool = attr.ib()
+
     # A comma-separated string representation of the primary keys
     primary_key_str: str = attr.ib()
 
@@ -246,6 +251,7 @@ class DirectIngestRawFileConfig:
         default_separator: str,
         default_line_terminator: Optional[str],
         default_ignore_quotes: bool,
+        default_infer_columns_from_config: Optional[bool],
         file_config_dict: YAMLDict,
         yaml_filename: str,
     ) -> "DirectIngestRawFileConfig":
@@ -279,6 +285,9 @@ class DirectIngestRawFileConfig:
         )
         import_chunk_size_rows = file_config_dict.pop_optional(
             "import_chunk_size_rows", int
+        )
+        infer_columns_from_config = file_config_dict.pop_optional(
+            "infer_columns_from_config", bool
         )
 
         if len(file_config_dict) > 0:
@@ -322,6 +331,13 @@ class DirectIngestRawFileConfig:
             else False,
             import_chunk_size_rows=import_chunk_size_rows
             or _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
+            infer_columns_from_config=infer_columns_from_config
+            if infer_columns_from_config
+            else (
+                default_infer_columns_from_config
+                if default_infer_columns_from_config
+                else False
+            ),
         )
 
 
@@ -341,6 +357,10 @@ class DirectIngestRawFileDefaultConfig:
     default_line_terminator: Optional[str] = attr.ib(
         default=None,
         validator=attr_validators.is_opt_str,
+    )
+    # The default setting of inferring columns from headers
+    default_infer_columns_from_config: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
     )
 
 
@@ -369,6 +389,9 @@ class DirectIngestRegionRawFileConfig:
             "default_line_terminator", str
         )
         default_ignore_quotes = default_contents.pop("default_ignore_quotes", bool)
+        default_infer_columns_from_config = default_contents.pop_optional(
+            "default_infer_columns_from_config", bool
+        )
 
         return DirectIngestRawFileDefaultConfig(
             filename=default_filename,
@@ -376,6 +399,7 @@ class DirectIngestRegionRawFileConfig:
             default_separator=default_separator,
             default_line_terminator=default_line_terminator,
             default_ignore_quotes=default_ignore_quotes,
+            default_infer_columns_from_config=default_infer_columns_from_config,
         )
 
     def _region_ingest_dir(self) -> str:
@@ -431,6 +455,7 @@ class DirectIngestRegionRawFileConfig:
                     default_config.default_separator,
                     default_config.default_line_terminator,
                     default_config.default_ignore_quotes,
+                    default_config.default_infer_columns_from_config,
                     yaml_contents,
                     filename,
                 )
@@ -479,8 +504,8 @@ def get_unprocessed_raw_files_in_bucket(
 
 
 class DirectIngestRawFileImportManager:
-    """Class that stores raw data import configs for a region, with functionality for executing an import of a specific
-    file.
+    """Class that stores raw data import configs for a region, with functionality for
+    executing an import of a specific file.
     """
 
     def __init__(
@@ -493,6 +518,7 @@ class DirectIngestRawFileImportManager:
         big_query_client: BigQueryClient,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
         sandbox_dataset_prefix: Optional[str] = None,
+        allow_incomplete_configs: bool = False,
     ):
 
         self.region = region
@@ -508,6 +534,7 @@ class DirectIngestRawFileImportManager:
                 region_module=self.region.region_module,
             )
         )
+        self.allow_incomplete_configs = allow_incomplete_configs
         self.csv_reader = GcsfsCsvReader(fs)
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region.region_code,
@@ -590,7 +617,7 @@ class DirectIngestRawFileImportManager:
             chunk_size=file_config.import_chunk_size_rows,
             encodings_to_try=file_config.encodings_to_try(),
             index_col=False,
-            header=0,
+            header=0 if not file_config.infer_columns_from_config else None,
             names=columns,
             keep_default_na=False,
             **self._common_read_csv_kwargs(file_config),
@@ -682,10 +709,6 @@ class DirectIngestRawFileImportManager:
         self, path: GcsfsFilePath, file_config: DirectIngestRawFileConfig
     ) -> List[str]:
         """Returns a list of normalized column names for the raw data file at the given path."""
-        # TODO(#3807): We should not derive the columns from what we get in the uploaded raw data CSV - we should
-        # instead define the set of columns we expect to see in each input CSV (with mandatory documentation) and update
-        # this function to make sure that the columns in the CSV is a strict subset of expected columns. This will allow
-        # to gracefully any raw data re-imports where a new column gets introduced in a later file.
 
         delegate = ReadOneGcsfsCsvReaderDelegate()
         self.csv_reader.streaming_read(
@@ -701,12 +724,29 @@ class DirectIngestRawFileImportManager:
         if not isinstance(df, pd.DataFrame):
             raise ValueError(f"Unexpected type for DataFrame: [{type(df)}]")
 
-        columns = [
+        columns_from_file_config = [
+            normalize_column_name_for_bq(column.name) for column in file_config.columns
+        ]
+
+        csv_columns = [
             normalize_column_name_for_bq(column_name) for column_name in df.columns
         ]
 
-        normalized_columns = set()
-        for i, column_name in enumerate(columns):
+        if file_config.infer_columns_from_config:
+            if len(columns_from_file_config) != len(df.columns):
+                raise ValueError(
+                    f"Found {len(columns_from_file_config)} columns defined in {file_config.file_tag} "
+                    f"but found {len(df.columns)} in the DataFrame from the CSV. Make sure "
+                    f"all expected columns are defined in the raw data configuration."
+                )
+            if set(csv_columns).intersection(set(columns_from_file_config)):
+                raise ValueError(
+                    "Found an unexpected header in the CSV. Please remove the header row from the CSV."
+                )
+            return columns_from_file_config
+
+        normalized_csv_columns = set()
+        for i, column_name in enumerate(csv_columns):
             if not column_name:
                 raise ValueError(f"Found empty column name in [{file_config.file_tag}]")
 
@@ -717,17 +757,17 @@ class DirectIngestRawFileImportManager:
                 if caps_normalized_col:
                     column_name = caps_normalized_col
 
-            if column_name in normalized_columns:
+            if column_name in normalized_csv_columns:
                 raise ValueError(
                     f"Multiple columns with name [{column_name}] after normalization."
                 )
-            normalized_columns.add(column_name)
-            columns[i] = column_name
+            normalized_csv_columns.add(column_name)
+            csv_columns[i] = column_name
 
-        if len(normalized_columns) == 1:
+        if len(normalized_csv_columns) == 1:
             # A single-column file is almost always indicative of a parsing error. If
             # this column name is not registered in the file config, we throw.
-            column = one(normalized_columns)
+            column = one(normalized_csv_columns)
             if column not in file_config.columns:
                 raise ValueError(
                     f"Found only one column: [{column}]. Columns likely did not "
@@ -737,7 +777,23 @@ class DirectIngestRawFileImportManager:
                     f"upload."
                 )
 
-        return columns
+        # Check that all of the columns that are in the raw data config are also in the
+        # columns found in the CSV. If there are columns that are not in the raw data
+        # configuration but found in the CSV, then we throw an error to have both match
+        # (unless we are in a state where we allow incomplete configurations, like testing).
+        if not self.allow_incomplete_configs and not normalized_csv_columns.issubset(
+            set(columns_from_file_config)
+        ):
+            extra_columns = normalized_csv_columns.difference(
+                set(columns_from_file_config)
+            )
+            raise ValueError(
+                f"Found columns in raw file {sorted(extra_columns)} that are not defined in "
+                "the raw data configuration. Make sure that all columns from CSV are defined in "
+                "the raw data configuration."
+            )
+
+        return csv_columns
 
     @staticmethod
     def _create_raw_table_schema_from_columns(

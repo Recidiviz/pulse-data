@@ -2,3 +2,4 @@ default_encoding: WINDOWS-1252
 default_separator: '|'
 default_ignore_quotes: True
 default_line_terminator: "\n"
+default_infer_columns_from_config: True

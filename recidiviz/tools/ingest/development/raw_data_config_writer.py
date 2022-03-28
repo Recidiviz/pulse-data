@@ -101,6 +101,8 @@ class RawDataConfigWriter:
             config += "supplemental_order_by_clause: True\n"
         if raw_file_config.always_historical_export:
             config += "always_historical_export: True\n"
+        if raw_file_config.infer_columns_from_config:
+            config += "infer_columns_from_config: True\n"
 
         # If an encoding is not the default, we need to include it in the config
         if raw_file_config.encoding != default_encoding:

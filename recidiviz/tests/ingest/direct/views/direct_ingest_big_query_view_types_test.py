@@ -87,6 +87,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 ignore_quotes=False,
                 always_historical_export=False,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
             dataset_overrides=None,
         )
@@ -136,6 +137,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 ignore_quotes=False,
                 always_historical_export=True,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
             dataset_overrides=None,
         )
@@ -189,6 +191,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 ignore_quotes=False,
                 always_historical_export=False,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
         )
 
@@ -255,6 +258,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 ignore_quotes=False,
                 always_historical_export=True,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
         )
 

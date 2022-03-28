@@ -7,3 +7,6 @@ columns:
   - name: COL_1
     description: |-
       COL_1 description
+  - name: _COL2
+  - name: _3COL
+  - name: _4_COL
