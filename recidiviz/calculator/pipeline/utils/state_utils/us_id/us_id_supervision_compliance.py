@@ -226,10 +226,11 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             StateSupervisionPeriodSupervisionType.PROBATION,
             StateSupervisionPeriodSupervisionType.PAROLE,
         ]
+        # TODO(#8860): Simplify following US_ID BENCH_WARRANT ingest mapping
         is_bench_warrant = (
             supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
             and self.supervision_period.supervision_type_raw_text == "BW"
-        )
+        ) or (supervision_type == StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
         # TODO(#9440): Build support for calculating compliance for bench warrant cases
         #  if necessary
         if supervision_type not in allowed_supervision_types or is_bench_warrant:
