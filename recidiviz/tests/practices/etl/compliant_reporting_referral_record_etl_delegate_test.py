@@ -16,7 +16,6 @@
 #  =============================================================================
 """Tests the ability for CompliantReportingReferralRecordEtlDelegate to parse json rows."""
 import os
-from datetime import datetime
 from unittest import TestCase
 
 from recidiviz.practices.etl.compliant_reporting_referral_record_etl_delegate import (
@@ -51,15 +50,15 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "poLastName": "Joe",
                     "clientFirstName": "Matilda",
                     "clientLastName": "Mouse",
-                    "dateToday": datetime(2022, 3, 25),
+                    "dateToday": "2022-03-25",
                     "tdocId": "200",
                     "physicalAddress": "123 fake st.",
                     "convictionCounty": "123ABC",
                     "currentOffenses": ["BURGLARY", "AGGRAVATED BURGLARY"],
                     "supervisionType": "TN PROBATIONER",
-                    "sentenceStartDate": datetime(2020, 1, 1),
+                    "sentenceStartDate": "2020-01-01",
                     "sentenceLengthDays": "1000",
-                    "expirationDate": datetime(2024, 1, 1),
+                    "expirationDate": "2024-01-01",
                     "supervisionFeeAssessed": "1000.0",
                     "supervisionFeeArrearaged": True,
                     "supervisionFeeArrearagedAmount": "1138.0",
@@ -69,7 +68,7 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "restitutionMonthlyPayment": "0.0",
                     "restitutionMonthlyPaymentTo": ["SEE ORDER IN FILE"],
                     "specialConditionsAlcDrugScreen": False,
-                    "specialConditionsAlcDrugScreenDate": datetime(2022, 2, 18),
+                    "specialConditionsAlcDrugScreenDate": "2022-02-18",
                     "specialConditionsAlcDrugAssessmentComplete": False,
                     "specialConditionsAlcDrugTreatment": False,
                     "specialConditionsAlcDrugTreatmentCurrent": False,
@@ -99,7 +98,7 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "poLastName": "Slithers",
                     "clientFirstName": "Harry",
                     "clientLastName": "",
-                    "dateToday": datetime(2022, 3, 25),
+                    "dateToday": "2022-03-25",
                     "tdocId": "201",
                     "currentEmployer": "WAIVER",
                     "driversLicense": "12345",

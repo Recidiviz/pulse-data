@@ -17,7 +17,6 @@
 """Delegate class to ETL compliant reporting referral records for practices into Firestore."""
 import json
 import logging
-from datetime import datetime
 from typing import Tuple
 
 from recidiviz.practices.etl.practices_etl_delegate import PracticesFirestoreETLDelegate
@@ -42,7 +41,7 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
             "clientLastName": data.get(
                 "client_last_name", ""
             ),  # this has few enough null entries in the data that we shouldn't really treat it as optional
-            "dateToday": datetime.fromisoformat(data["date_today"]),
+            "dateToday": data["date_today"],
             "tdocId": data["tdoc_id"],
             "currentOffenses": json.loads(data["current_offenses"]),
             "supervisionType": data["supervision_type"],
@@ -128,17 +127,13 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
             new_document["allDockets"] = data["all_dockets"]
 
         if "sentence_start_date" in data:
-            new_document["sentenceStartDate"] = datetime.fromisoformat(
-                data["sentence_start_date"]
-            )
+            new_document["sentenceStartDate"] = data["sentence_start_date"]
 
         if "sentence_length_days" in data:
             new_document["sentenceLengthDays"] = data["sentence_length_days"]
 
         if "expiration_date" in data:
-            new_document["expirationDate"] = datetime.fromisoformat(
-                data["expiration_date"]
-            )
+            new_document["expirationDate"] = data["expiration_date"]
 
         if "supervision_fee_exemption_expir_date" in data:
             new_document["supervisionFeeExemptionExpirDate"] = data[
@@ -168,9 +163,9 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
             )
 
         if "special_conditions_alc_drug_screen_date" in data:
-            new_document["specialConditionsAlcDrugScreenDate"] = datetime.fromisoformat(
-                data["special_conditions_alc_drug_screen_date"]
-            )
+            new_document["specialConditionsAlcDrugScreenDate"] = data[
+                "special_conditions_alc_drug_screen_date"
+            ]
 
         if "special_conditions_alc_drug_assessment" in data:
             new_document["specialConditionsAlcDrugAssessment"] = data[
