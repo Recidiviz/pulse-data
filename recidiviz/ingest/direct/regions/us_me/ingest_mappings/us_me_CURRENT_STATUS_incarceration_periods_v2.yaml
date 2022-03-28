@@ -91,19 +91,19 @@ output:
               $custom_parser: us_me_custom_enum_parsers.parse_admission_reason
           release_reason:
             $conditional:
-                - $if:
-                    $not_null: end_date
-                  $then:
-                    $enum_mapping:
-                      $raw_text:
-                        $concat:
-                          $separator: "@@"
-                          $values:
-                            - current_status
-                            - next_status
-                            - next_movement_type
-                            - transfer_reason
-                            - location_type
-                            - next_location_type
-                          $include_nulls: True
-                      $custom_parser: us_me_custom_enum_parsers.parse_release_reason
+              - $if:
+                  $not_null: end_date
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - current_status
+                          - next_status
+                          - next_movement_type
+                          - transfer_reason
+                          - location_type
+                          - next_location_type
+                        $include_nulls: True
+                    $custom_parser: us_me_custom_enum_parsers.parse_release_reason

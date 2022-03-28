@@ -52,6 +52,7 @@ class UsMeController(BaseDirectIngestController):
                 else ["CURRENT_STATUS_incarceration_periods"]
             )
             + [
+                "supervision_periods",
                 "assessments",
                 "supervision_violations",
                 "incarceration_sentences",
