@@ -47,13 +47,16 @@ class ClientRecordEtlDelegateTest(TestCase):
                 {
                     "address": "123 fake st.",
                     "compliantReportingEligible": {
-                        "judicialDistrict": "7",
-                        "lastDrugNegative": [
-                            datetime(2021, 2, 3, 0, 0),
-                            datetime(2021, 4, 20, 0, 0),
+                        "currentOffenses": None,
+                        "drugScreensPastYear": [
+                            {"date": datetime(2021, 2, 3, 0, 0), "result": "DRUN"},
+                            {"date": datetime(2021, 4, 20, 0, 0), "result": "DRUN"},
                         ],
-                        "lastSanction": "OPRD",
-                        "offenseType": ["FORGERY"],
+                        "eligibleLevelStart": datetime(2021, 3, 17, 0, 0),
+                        "judicialDistrict": "7",
+                        "lifetimeOffensesExpired": None,
+                        "mostRecentArrestCheck": datetime(2021, 11, 15, 0, 0),
+                        "sanctionsPastYear": ["OPRD"],
                     },
                     "currentBalance": 45.1,
                     "eligible": True,
