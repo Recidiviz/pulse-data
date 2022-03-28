@@ -10,6 +10,7 @@ assignees: ''
 - [ ] I have added the corresponding `REGION: US_XX` label associated with my request.
 - [ ] `Internal State Data Ask` and `External State Data Ask` labels are both added by default. I have removed the one that doesn't apply.
 
+_For questions on how to use the State Data Ask versus other data requests (Schema Change Request, DSCI Infra Request), please refer to [Data Request Instructions](https://docs.google.com/document/d/1WhBI9Sb5P9dFu8iTpqbca-hjJP31kM-XAQXwc3lQeDU/edit#)._
 
 ### Request Information				
 #### Summary of data ask:
@@ -31,13 +32,13 @@ Deadline of the request. Ex: XX-YY-20ZZ, Within X week(s)/month(s), By End of 20
 ### Purpose & Needs
 Please locate the state's [Ingest Catalog](https://app.gitbook.com/@recidiviz/s/recidiviz/) to see what state data is currently available and/or ingested.
 - The _Schema Mappings_ tab indicates which state data has been ingested by Recidiviz.
-- The _Raw Data Description_ tab lists all tables the state has provided, as well as descriptions for each. 
+- The _Raw Data Description_ tab lists all tables the state has provided, as well as descriptions for each.
     - In the `Table of Contents`, the `Referencing Views` column indicates that the table is ingested.
 
 #### Based on the information you've seen above, do new files need to be requested and uploaded to GCS?
 - [ ] Yes, the data I'm looking for seems to not be currently included in raw data provided by the state.
 - [ ] No, new files don't seem to need to be requested.
-- [ ] Maybe, there needs to be an investigation. 
+- [ ] Maybe, there needs to be an investigation.
 
 #### If new files don't need to be requested, which table(s) seem to contain the information you're looking for?
 
@@ -55,7 +56,7 @@ Any other context needed to understand the data ask?
 
 *If other, then state the where it is needed below:*
 
-#### Does the data need to be mapped to our [internal entity schema](https://app.gitbook.com/o/-MS0FZPVqDyJ1aem018G/s/-MRvK9sMirb5JcYHAkjo-887967055/schema-catalog/entities) and ingested? If so, then which entities will need to be hydrated?	
+#### Does the data need to be mapped to our [internal entity schema](https://app.gitbook.com/o/-MS0FZPVqDyJ1aem018G/s/-MRvK9sMirb5JcYHAkjo-887967055/schema-catalog/entities) and ingested? If so, then which entities will need to be hydrated?
 List entities that will  need to be hydrated, if applicable.
 
 #### Will there need to be calculation changes for Dataflow metrics (ex: new enums, custom logic)?
