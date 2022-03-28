@@ -42,7 +42,7 @@ WHERE state_code = 'US_TN';
 """
 
 INCARCERATION_PERIOD_TABLE_NAME = "state_incarceration_period"
-INCARCERATION_PERIOD_HISTORY_TABLE_NAME = "state_incarceration_period"
+INCARCERATION_PERIOD_HISTORY_TABLE_NAME = "state_incarceration_period_history"
 
 
 def upgrade() -> None:
