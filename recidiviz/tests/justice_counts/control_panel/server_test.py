@@ -50,7 +50,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
     def test_hello(self) -> None:
         response = self.client.get("/api/hello")
-        self.assertEqual(response.data, b"Hello, World!")
+        response_json = response.json or {}
+        self.assertEqual(response_json["response"], "Hello, World!")
 
     def test_logout(self) -> None:
         # TODO(#11550): Test logout endpoint
