@@ -1,8 +1,12 @@
-# Getting Started
+# Justice Counts Control Panel: Frontend
 
-Welcome to the Justice Counts Control Panel - a tool that allows agencies to report Justice Counts metrics. This application was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), written in [TypeScript](https://www.typescriptlang.org/docs), and authenticated via [Auth0](https://auth0.com/).
+Welcome to the Justice Counts Control Panel - a tool that allows agencies to report Justice Counts metrics.
 
-## Installation
+The frontend of this application, which lives in this directory, was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), written in [TypeScript](https://www.typescriptlang.org/docs), and authenticated via [Auth0](https://auth0.com/). The backend of the application lives in [pulse-data/justice_counts/control_panel](https://github.com/Recidiviz/pulse-data/tree/main/recidiviz/justice_counts/control_panel).
+
+To run the app locally, you need to spin up both the backend and frontend simultaneously. Instructions for spinning up the frontend are below; instructions for spinning up the backend can be found in its directory's README.
+
+## Running the app frontend
 
 1. Install dependencies
 
