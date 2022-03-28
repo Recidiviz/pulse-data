@@ -142,16 +142,11 @@ resource "google_cloud_run_service" "justice-counts" {
       containers {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
-        args    = ["run", "flask", "run", "-h", "0.0.0.0", "-p", "$PORT"]
+        args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.justice_counts.control_panel.server:create_app()"]
 
         env {
           name  = "RECIDIVIZ_ENV"
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
-        }
-        
-        env {
-          name  = "FLASK_APP"
-          value = "/app/recidiviz/justice_counts/control_panel/server.py"
         }
       }
       
