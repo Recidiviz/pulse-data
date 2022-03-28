@@ -287,6 +287,8 @@ class BaseDirectIngestController:
             materializer_delegate = FileBasedMaterializerDelegate(
                 ingest_file_metadata_manager=self.ingest_file_metadata_manager,
                 big_query_client=big_query_client,
+                region_code=self.region_code(),
+                ingest_instance=self.ingest_instance,
             )
         else:
             self.view_materialization_metadata_manager = (

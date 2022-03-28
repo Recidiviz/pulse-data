@@ -36,12 +36,12 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
     IngestViewMaterializerDelegate,
-    ingest_view_materialization_temp_dataset,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestIngestFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import GcsfsIngestViewExportArgs
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
 )
@@ -58,9 +58,19 @@ class FileBasedMaterializerDelegate(
         self,
         ingest_file_metadata_manager: DirectIngestIngestFileMetadataManager,
         big_query_client: BigQueryClient,
+        region_code: str,
+        ingest_instance: DirectIngestInstance,
     ):
         self.ingest_file_metadata_manager = ingest_file_metadata_manager
         self.big_query_client = big_query_client
+        date_ts = datetime.datetime.utcnow().strftime("%Y%m%d")
+        self._temp_dataset_id = (
+            f"{region_code.lower()}_ingest_views_{date_ts}_"
+            f"{ingest_instance.value.lower()}"
+        )
+
+    def temp_dataset_id(self) -> str:
+        return self._temp_dataset_id
 
     def get_job_completion_time_for_args(
         self, args: GcsfsIngestViewExportArgs
@@ -110,9 +120,7 @@ class FileBasedMaterializerDelegate(
             ExportQueryConfig(
                 query=query,
                 query_parameters=[],
-                intermediate_dataset_id=ingest_view_materialization_temp_dataset(
-                    ingest_view, args.ingest_instance
-                ),
+                intermediate_dataset_id=self.temp_dataset_id(),
                 intermediate_table_name=f"{args.ingest_view_name}_latest_export",
                 output_uri=self.generate_output_path(args).uri(),
                 output_format=bigquery.DestinationFormat.CSV,
