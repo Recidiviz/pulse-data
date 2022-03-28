@@ -14,19 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements API routes for the Justice Counts Control Panel backend API."""
-from typing import Callable
+"""Contains the list of custom exceptions used by Justice Counts."""
 
-from flask import Blueprint, Response, jsonify
+from http import HTTPStatus
+
+from recidiviz.utils.flask_exception import FlaskException
 
 
-# TODO(#11504): Replace dummy endpoint
-def get_api_blueprint(auth_decorator: Callable) -> Blueprint:
-    api_blueprint = Blueprint("api", __name__)
+class JusticeCountsAuthorizationError(FlaskException):
+    """Exception for when the a user has signed into a valid account, but has not yet been allowed access."""
 
-    @api_blueprint.route("/hello")
-    @auth_decorator
-    def hello() -> Response:
-        return jsonify({"response": "Hello, World!"})
-
-    return api_blueprint
+    def __init__(self, code: str, description: str) -> None:
+        super().__init__(code, description, HTTPStatus.UNAUTHORIZED)

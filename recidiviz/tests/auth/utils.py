@@ -14,19 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements API routes for the Justice Counts Control Panel backend API."""
-from typing import Callable
+"""Shared utilities to test authentication flows"""
 
-from flask import Blueprint, Response, jsonify
+from jwt import PyJWKSet
+
+from recidiviz.tests.utils.auth.auth0_test import generate_keypair, get_public_jwk
+from recidiviz.utils.auth.auth0 import Auth0Config
 
 
-# TODO(#11504): Replace dummy endpoint
-def get_api_blueprint(auth_decorator: Callable) -> Blueprint:
-    api_blueprint = Blueprint("api", __name__)
-
-    @api_blueprint.route("/hello")
-    @auth_decorator
-    def hello() -> Response:
-        return jsonify({"response": "Hello, World!"})
-
-    return api_blueprint
+def get_test_auth0_config() -> Auth0Config:
+    _private_key, public_key = generate_keypair()
+    jwks = PyJWKSet.from_dict({"keys": [get_public_jwk(public_key, "keyid")]})
+    return Auth0Config(
+        {
+            "algorithms": ["RS256"],
+            "domain": "auth0.localhost",
+            "clientId": "test_client_id",
+            "audience": "http://localhost",
+        },
+        jwks=jwks,
+    )

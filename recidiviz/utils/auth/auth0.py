@@ -25,13 +25,15 @@ from urllib.request import urlopen
 import jwt
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from flask import request
+from flask.sessions import SessionMixin
 from jwt.api_jwk import PyJWKSet
+from jwt.exceptions import MissingRequiredClaimError
 
 from recidiviz.utils.flask_exception import FlaskException
 
-EMAIL_ADDRESS_CLAIM = "https://dashboard.recidiviz.org/email_address"
-
 TokenClaims = Dict[str, Union[str, int]]
+
+EMAIL_ADDRESS_CLAIM = "https://dashboard.recidiviz.org/email_address"
 
 
 def get_jwt_claim(claim: str, claims: TokenClaims) -> Union[str, int]:
@@ -199,3 +201,52 @@ def get_userinfo(claims: TokenClaims) -> Dict[str, str]:
     """Retrieve the user's information from Auth0 access token"""
     email = str(get_jwt_claim(EMAIL_ADDRESS_CLAIM, claims))
     return {"email": email}
+
+
+def get_userinfo_from_token(claims: TokenClaims) -> Dict[str, str]:
+    try:
+        return get_userinfo(claims)
+    except MissingRequiredClaimError as e:
+        raise AuthorizationError(
+            code="invalid_claims", description="claims must include email address"
+        ) from e
+
+
+def passthrough_authorization_decorator() -> Callable:
+    def decorated(route: Callable) -> Callable:
+        @wraps(route)
+        def inner(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+            return route(*args, **kwargs)
+
+        return inner
+
+    return decorated
+
+
+def update_session_with_user_info(
+    session: SessionMixin,
+    jwt_claims: TokenClaims,
+    auth_error: FlaskException,
+    impersonated_key: Optional[str] = None,
+) -> None:
+    """
+    Memoize the user's info (email_address, picture, etc) into our session
+    """
+    # Populate the session with user information; This could have changed since the last request
+    if session.get("jwt_sub", None) != jwt_claims["sub"]:
+        session["jwt_sub"] = jwt_claims["sub"]
+        session["user_info"] = get_userinfo_from_token(jwt_claims)
+        # Also pop the impersonated email key if it exists, since the request could've been an impersonation request prior.
+        if impersonated_key and impersonated_key in session:
+            session.pop(impersonated_key)
+    if "email" not in session["user_info"]:
+        # This happens when API routes are hit with well-formed but
+        # invalid authorization tokens, or if a previous error in populating user_info
+        # was stored on the session.
+
+        # to recover from errors, try refreshing user info
+        session["user_info"] = get_userinfo_from_token(jwt_claims)
+
+    # if that didn't work, deny access
+    if "email" not in session["user_info"]:
+        raise auth_error
