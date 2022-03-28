@@ -39,15 +39,11 @@ MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES = [
     StateSupervisionPeriodSupervisionType.PAROLE,
     StateSupervisionPeriodSupervisionType.PROBATION,
     StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+    StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
     StateSpecializedPurposeForIncarceration.GENERAL,
     StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
     StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
     StateSupervisionPeriodAdmissionReason.ABSCONSION,
-]
-
-# TODO(#8860): Add supervision type enum for `BENCH_WARRANT`
-MICROSIM_PROJECTION_VIEW_INCLUDED_STRING_TYPES = [
-    "BENCH_WARRANT",
 ]
 
 MICROSIM_PROJECTION_QUERY_TEMPLATE = """
@@ -171,7 +167,6 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
     included_types="', '".join(
         [status.name for status in MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES]
-        + MICROSIM_PROJECTION_VIEW_INCLUDED_STRING_TYPES
     ),
     should_materialize=False,
 )
