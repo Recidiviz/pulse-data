@@ -23,7 +23,6 @@ columns:
     description: The name suffix (Jr., Sr. III) of the justice-involved individual
   - name: birth_date
     description: The birthdate of the justice-involved individual
-    is_datetime: True
   - name: birth_city
   - name: birth_state_id
   - name: birth_country_id

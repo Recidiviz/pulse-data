@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_number
+  - last_name
+  - first_name
+  - middle_name
+  - name_suffix
+  - birth_date
+  - sex_id
+  - cultural_affiliation_id
+  - multiracial_flag
+  - caucasian_racial_flag
+  - native_american_racial_flag
+  - black_racial_flag
+  - asian_racial_flag
+  - hispanic_flag
+  - racial_identification_code_id
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_number
+          id_type: $literal("US_MI_DOC")
+    birthdate: birth_date
+    full_name:
+      $person_name:
+        $given_names: first_name
+        $middle_names: middle_name
+        $surname: last_name
+        $name_suffix: name_suffix
+    gender:
+      $enum_mapping:
+        $raw_text: sex_id
+        $mappings:
+          Gender.MALE: '435'
+          Gender.FEMALE: '434'
+          Gender.EXTERNAL_UNKNOWN: '7403'
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: racial_identification_code_id
+              $mappings:
+                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: '373'
+                Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '9875'
+                Race.WHITE: '685'
+                Race.BLACK: '371'
+                Race.ASIAN: '372'
+                Race.EXTERNAL_UNKNOWN: '7404'
+      - $conditional:
+          - $if:
+              $equal: 
+                - multiracial_flag
+                - $literal("1")
+            $then:
+              StatePersonRace:
+                race: $literal_enum(Race.OTHER)
+      - $conditional:
+          - $if:
+              $equal: 
+                - caucasian_racial_flag
+                - $literal("1")
+            $then:
+              StatePersonRace:
+                race: $literal_enum(Race.WHITE)
+      - $conditional:
+          - $if:
+              $equal: 
+                - native_american_racial_flag
+                - $literal("1")
+            $then:
+              StatePersonRace:
+                race: $literal_enum(Race.AMERICAN_INDIAN_ALASKAN_NATIVE)
+      - $conditional:
+          - $if:
+              $equal: 
+                - black_racial_flag
+                - $literal("1")
+            $then:
+              StatePersonRace:
+                race: $literal_enum(Race.BLACK)
+      - $conditional:
+          - $if:
+              $equal: 
+                - asian_racial_flag
+                - $literal("1")
+            $then:
+              StatePersonRace:
+                race: $literal_enum(Race.ASIAN)
+    ethnicities:
+      - $conditional:
+          - $if:
+              $equal: 
+                - hispanic_flag
+                - $literal("1")
+            $then:
+              StatePersonEthnicity:
+                ethnicity: $literal_enum(Ethnicity.HISPANIC)
+          - $else_if:
+              $not_null: cultural_affiliation_id
+            $then:
+              StatePersonEthnicity:
+                ethnicity:
+                  $enum_mapping:
+                    $raw_text: cultural_affiliation_id
+                    $mappings:
+                      Ethnicity.HISPANIC:
+                        - '608' # Mexican
+                        - '602' # Hispanic
+                    $ignore:
+                        - '603'
+                        - '624'
+                        - '606'
+                        - '621'
+                        - '1172'
+                        - '1171'
+                        - '1170'
+                        - '622'
+                        - '607'
+                        - '625'
+                        - '605'
+                        - '604'
+                        - '601'
+
+    

@@ -354,6 +354,8 @@ class BigQueryQueryRewriter:
         "%H": "HH24",
         "%M": "MI",
         "%S": "SS",
+        "%b": "Mon",
+        "%e": "DD",
     }
 
     def _rewrite_timestamp_formats(self, query: str) -> str:

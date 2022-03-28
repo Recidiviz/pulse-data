@@ -10,7 +10,6 @@ columns:
     description: The OMNI-database generated ID for a person's jurisdiction in MDOC.
   - name: profile_date
     description: The date that a given profile for a given offender_booking_id is updated.
-    is_datetime: True
   - name: living_unit_id
   - name: eye_color_id
   - name: hair_color_id

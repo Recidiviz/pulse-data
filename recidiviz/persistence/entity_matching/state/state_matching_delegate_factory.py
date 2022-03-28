@@ -26,6 +26,9 @@ from recidiviz.persistence.entity_matching.state.us_id.us_id_matching_delegate i
 from recidiviz.persistence.entity_matching.state.us_me.us_me_matching_delegate import (
     UsMeMatchingDelegate,
 )
+from recidiviz.persistence.entity_matching.state.us_mi.us_mi_matching_delegate import (
+    UsMiMatchingDelegate,
+)
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_delegate import (
     UsMoMatchingDelegate,
 )
@@ -57,4 +60,6 @@ class StateMatchingDelegateFactory:
             return UsTnMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_ME":
             return UsMeMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_MI":
+            return UsMiMatchingDelegate(ingest_metadata)
         raise ValueError(f"Unexpected region_code provided: {region_code}.")
