@@ -129,12 +129,6 @@ from recidiviz.calculator.query.state.views.sessions.us_id.us_id_positive_urine_
 from recidiviz.calculator.query.state.views.sessions.us_id.us_id_raw_lsir_assessments import (
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_id.us_id_supervision_out_of_state_population_metrics_preprocessed import (
-    US_ID_SUPERVISION_OUT_OF_STATE_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_id.us_id_supervision_population_metrics_preprocessed import (
-    US_ID_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_supervision_population_metrics_preprocessed import (
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -204,8 +198,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
-    US_ID_SUPERVISION_OUT_OF_STATE_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-    US_ID_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_TN_COMPARTMENT_SENTENCES_VIEW_BUILDER,

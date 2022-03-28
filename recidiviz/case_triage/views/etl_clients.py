@@ -36,8 +36,7 @@ WITH supervision_start_dates_from_sessions AS (
   SELECT
     person_id,
     state_code,
-    -- TODO(#8860): Remove once BENCH_WARRANT is ingested
-    IF(compartment_level_2 = "BENCH_WARRANT", "INTERNAL_UNKNOWN", compartment_level_2) AS supervision_type,
+    compartment_level_2 AS supervision_type,
     start_date AS sessions_start_date
   FROM
     `{project_id}.{analyst_views_dataset}.compartment_sessions_materialized`

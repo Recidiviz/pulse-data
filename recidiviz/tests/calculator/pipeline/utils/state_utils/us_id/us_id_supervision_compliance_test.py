@@ -1654,7 +1654,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+            supervision_type=StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
             supervision_type_raw_text="BW",
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
