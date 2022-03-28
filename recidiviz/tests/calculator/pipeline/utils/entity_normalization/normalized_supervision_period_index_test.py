@@ -22,6 +22,9 @@ from datetime import date
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    _transfer_from_supervision_type_is_official_admission,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -654,3 +657,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
                 supervision_period
             )
         )
+
+    def test_transfer_from_supervision_type_is_official_admission_all_supervision_types(
+        self,
+    ):
+        for supervision_type in StateSupervisionPeriodSupervisionType:
+            _transfer_from_supervision_type_is_official_admission(supervision_type)
