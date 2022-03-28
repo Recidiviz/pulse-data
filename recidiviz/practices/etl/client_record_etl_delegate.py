@@ -34,21 +34,58 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
     def transform_row(self, row: str) -> Tuple[str, dict]:
         data = json.loads(row)
 
+        # First fill the non-nullable fields
         new_document = {
             "personExternalId": data["person_external_id"],
             "stateCode": data["state_code"],
             "personName": json.loads(data["person_name"]),
             "officerId": data["officer_id"],
             "supervisionType": data["supervision_type"],
-            "supervisionLevel": data.get("supervision_level"),
+            "eligible": data["eligible"],
+            "eligibleWithDiscretion": data["eligible_with_discretion"],
+            "currentBalance": data["current_balance"],
+            "specialConditions": data["special_conditions"],
         }
 
+        # add nullable fields
+        if "fee_exemptions" in data:
+            new_document["feeExemptions"] = data["fee_exemptions"]
+
+        if "phone_number" in data:
+            new_document["phoneNumber"] = data["phone_number"]
+
+        if "address" in data:
+            new_document["address"] = data["address"]
+
+        if "last_payment_amount" in data:
+            new_document["lastPaymentAmount"] = data["last_payment_amount"]
+
+        if "supervision_level" in data:
+            new_document["supervisionLevel"] = data["supervision_level"]
+
+        # add nullable dates
         if "supervision_level_start" in data:
             new_document["supervisionLevelStart"] = datetime.fromisoformat(
                 data["supervision_level_start"]
             )
 
-        if data["all_eligible_and_discretion"]:
+        if "next_special_conditions_check" in data:
+            new_document["nextSpecialConditionsCheck"] = datetime.fromisoformat(
+                data["next_special_conditions_check"]
+            )
+
+        if "last_payment_date" in data:
+            new_document["lastPaymentDate"] = datetime.fromisoformat(
+                data["last_payment_date"]
+            )
+
+        if "expiration_date" in data:
+            new_document["expirationDate"] = datetime.fromisoformat(
+                data["expiration_date"]
+            )
+
+        # add nullable objects
+        if data["eligible_with_discretion"]:
             new_document["compliantReportingEligible"] = {
                 "offenseType": data.get("offense_type"),
                 "judicialDistrict": data.get("judicial_district"),
