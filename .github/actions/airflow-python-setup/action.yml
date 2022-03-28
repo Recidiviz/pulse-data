@@ -1,0 +1,32 @@
+name: "Airflow Python Setup"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v2
+      with:
+        python-version: "3.8.8"
+    - name: Install pipenv
+      run: pip install pipenv
+      shell: bash
+    - name: Pipenv caching
+      uses: actions/cache@v2
+      id: pipenv-caching
+      with:
+        path: ~/.local/share/virtualenvs/
+        key: pipenv-cache-v4-${{ hashFiles('**/pulse-data/recidiviz/airflow/Pipfile.lock') }}
+        # If we haven't cached a pipenv for the new version of the lock file this will
+        # restore the cache for the most recent version. Since most of the time our
+        # lock file updates only change a small number of packages, this speeds up
+        # the sync step significantly.
+        restore-keys: |
+          pipenv-cache-v4-
+    - name: Sync pipenv
+      if: steps.pipenv-caching.outputs.cache-hit != 'true'
+      # If we didn't find an exact pipenv match, we have to `sync.` Because we may have
+      # restored a prior pipenv, we need to also run `clean` to remove any packages that
+      # are no longer in our lock file.
+      working-directory: ./recidiviz/airflow
+      run: |
+        pipenv sync --dev
+        pipenv clean
+      shell: bash

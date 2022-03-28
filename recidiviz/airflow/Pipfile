@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+pytest="*"
+pylint="*"
+mypy="*"
+black = "*"
+
+[packages]
+apache-airflow = "==2.2.3"
+google-auth = "*"
+markupsafe = "==2.0.1"
+apache-airflow-providers-google = "==6.4.0"
+apache-airflow-providers-apache-beam = "==3.1.0"
+click = "==8.0.3"
+flask = "==1.1.2"
+
+[requires]
+python_version = "3.8"
