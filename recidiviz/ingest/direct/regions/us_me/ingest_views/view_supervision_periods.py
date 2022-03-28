@@ -49,7 +49,6 @@ STATUS_FILTER_CONDITION = """
         '32'  -- No Further Action
     )
 """
-
 VIEW_QUERY_TEMPLATE = f"""
     WITH {statuses_cte(status_filter_condition=STATUS_FILTER_CONDITION)},
     supervision_officer_assignments AS (
@@ -121,8 +120,12 @@ VIEW_QUERY_TEMPLATE = f"""
             statuses.current_status,
             statuses.transfer_id,
             statuses.transfer_type,
-            statuses.transfer_reason,       
+            statuses.transfer_reason,
+            statuses.transfer_from_jur_location_type,
+            statuses.transfer_from_jur_location,       
             statuses.current_status_location,
+            statuses.current_jurisdiction_location,
+            statuses.location_type AS current_physical_location_type,
             statuses.location_type AS status_location_type,
             officers.supervising_officer_id AS officer_external_id,
             officers.supervision_location_type,
@@ -135,9 +138,9 @@ VIEW_QUERY_TEMPLATE = f"""
             GREATEST(IFNULL(officers.supervision_start_date, (DATE('1000-12-31'))), statuses.effective_date) AS start_date,
             LEAST(IFNULL(officers.supervision_end_datetime, TIMESTAMP('9999-12-31')), statuses.end_datetime) AS end_datetime,
             LEAST(IFNULL(officers.supervision_end_date, (DATE('9999-12-31'))), statuses.end_date) AS end_date,
-        FROM supervision_officer_assignments_dates officers
+        FROM statuses
             
-        LEFT JOIN statuses
+        LEFT JOIN supervision_officer_assignments_dates officers
         ON statuses.client_id = officers.client_id
         AND ((
             -- Capture all overlapping time periods between statuses and officer assignments
@@ -153,7 +156,13 @@ VIEW_QUERY_TEMPLATE = f"""
         SELECT
             client_id,
             start_date,
-            IF(end_date > @{UPDATE_DATETIME_PARAM_NAME}, NULL, end_date) AS end_date,
+            -- Set the next start_date as the end_date if it exists, otherwise use the end_date as is
+            -- and transform 9999-12-31 to null.
+            CASE 
+                WHEN (end_date > @{UPDATE_DATETIME_PARAM_NAME} OR end_date IS NULL) AND LEAD(start_date) OVER status_seq IS NOT NULL
+                THEN LEAD(start_date) OVER status_seq
+                ELSE IF(end_date > @{UPDATE_DATETIME_PARAM_NAME}, NULL, end_date)
+            END AS end_date,
             current_status,
             IF(
                 DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
@@ -166,6 +175,11 @@ VIEW_QUERY_TEMPLATE = f"""
                 NULL
             ) AS previous_jurisdiction_location_type,
             IF(
+                DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                LAG(current_jurisdiction_location) OVER status_seq, 
+                NULL
+            ) AS previous_jurisdiction_location,
+            IF(
                 DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
                 LEAD(current_status) OVER status_seq, 
                 NULL
@@ -176,21 +190,21 @@ VIEW_QUERY_TEMPLATE = f"""
                 NULL
             ) AS next_jurisdiction_location_type,
             IF(
-                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer) AND LEAD(transfer_id) OVER status_seq != transfer_id, 
-                LEAD(transfer_reason) OVER status_seq, 
+                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                LEAD(current_jurisdiction_location) OVER status_seq, 
                 NULL
-            ) AS next_transfer_reason,
-            IF(
-                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer) AND LEAD(transfer_id) OVER status_seq != transfer_id, 
-                LEAD(transfer_type) OVER status_seq, 
-                NULL
-            ) AS next_transfer_type,
+            ) AS next_jurisdiction_location,
             current_jurisdiction_location_type,
-            -- Supervision officer location is more accurate than status location
-            COALESCE(supervision_location, current_status_location) AS supervision_location,
-            COALESCE(supervision_location_type, status_location_type) AS supervision_location_type,
-            transfer_type,
-            transfer_reason,
+            current_physical_location_type,
+            -- Very few cases have "Central Office,IT" as the supervision location, in these cases we want to use
+            -- the jurisdiction location.
+            IF(supervision_location_type = '16', current_jurisdiction_location, supervision_location) AS supervision_location,
+            IF(supervision_location_type = '16', current_jurisdiction_location_type, supervision_location_type) AS supervision_location_type,
+             -- If the previous status has the same transfer_id, do not carry over transfer info to the next status
+            IF(LAG(transfer_id) OVER status_seq = transfer_id, NULL, transfer_type) AS transfer_type,
+            IF(LAG(transfer_id) OVER status_seq = transfer_id, NULL, transfer_reason) AS transfer_reason,
+            IF(LAG(transfer_id) OVER status_seq = transfer_id, NULL, transfer_from_jur_location_type) AS transfer_from_jur_location_type,
+            IF(LAG(transfer_id) OVER status_seq = transfer_id, NULL, transfer_from_jur_location) AS transfer_from_jur_location,
             officer_external_id,
             officer_status,
             officer_first_name,
@@ -200,7 +214,7 @@ VIEW_QUERY_TEMPLATE = f"""
     
         WINDOW status_seq AS (
             PARTITION BY client_id 
-            ORDER BY start_datetime, end_datetime, 
+            ORDER BY start_date, end_date, 
             {CURRENT_STATUS_ORDER_BY},
             transfer_type,
             transfer_reason
@@ -220,13 +234,23 @@ VIEW_QUERY_TEMPLATE = f"""
             previous_status,
             current_status,
             next_status,
-            previous_jurisdiction_location_type,
+            CASE 
+                -- Previously not in ME jurisdiction
+                WHEN previous_status = 'Inactive' OR previous_status IS NULL
+                THEN COALESCE(transfer_from_jur_location_type, previous_jurisdiction_location_type)
+                ELSE previous_jurisdiction_location_type 
+            END AS previous_jurisdiction_location_type,
+            CASE 
+                -- Previously not in the ME jurisdiction
+                WHEN previous_status = 'Inactive' or previous_status is null
+                THEN COALESCE(transfer_from_jur_location, previous_jurisdiction_location)
+                ELSE previous_jurisdiction_location 
+            END AS previous_jurisdiction_location,
             current_jurisdiction_location_type,
             next_jurisdiction_location_type,
+            next_jurisdiction_location,
             transfer_type,
             transfer_reason,
-            next_transfer_type,
-            next_transfer_reason,
         FROM statuses_and_officers_with_prev_and_next
             
         WHERE (
@@ -240,16 +264,31 @@ VIEW_QUERY_TEMPLATE = f"""
                 'Pending Violation - Incarcerated',
                 'Partial Revocation - County Jail',
                 'Interstate Compact In',
+                'Interstate Compact Out',
                 'Interstate Active Detainer'
             )
-                -- Remove periods where both locations are a DOC Facility
-                AND NOT (supervision_location_type IN ('2', '7') AND current_jurisdiction_location_type IN ('2', '7'))
+                -- Remove periods where the supervision site, jurisdiction location, and physical location
+                -- are all either DOC Facility, County Jail, one of Maine's counties, one of the US States, 
+                -- or a Federal facility.
+                AND NOT (
+                    supervision_location_type IN ('2', '7', '9', '8', '19', '13') 
+                    AND current_jurisdiction_location_type IN ('2', '7', '9', '8', '19', '13')
+                    AND current_physical_location_type IN ('2', '7', '9', '8', '19', '13')
+                )
             )
-            
+            # Look into County Jail, Incarcerated, with supervision_location_type = 2
             -- This will result in supervision periods with non-supervision statuses. Based on the current validation
             -- data this seems to be expected
             OR current_jurisdiction_location_type = '4' -- Adult Supervision Locations
         )
+        -- Filter out periods after death
+        AND (previous_jurisdiction_location_type IS NULL OR previous_jurisdiction_location_type NOT IN ('14'))
+
+        -- Filter out periods where location is in a DOC Facility or County Jail
+        AND current_physical_location_type NOT IN ('2', '7', '9')
+
+        -- Filter out periods where no officer is assigned
+        AND officer_external_id IS NOT NULL
     )
     SELECT
         client_id,
@@ -259,13 +298,13 @@ VIEW_QUERY_TEMPLATE = f"""
         current_status,
         next_status,
         supervision_location,
+        previous_jurisdiction_location,
         previous_jurisdiction_location_type,
         current_jurisdiction_location_type,
         next_jurisdiction_location_type,
+        next_jurisdiction_location,
         transfer_type,
         transfer_reason,
-        next_transfer_type,
-        next_transfer_reason,
         officer_external_id,
         officer_status,
         officer_first_name,
@@ -274,6 +313,7 @@ VIEW_QUERY_TEMPLATE = f"""
         CAST(ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date, end_date NULLS LAST) AS STRING) AS supervision_period_id
     FROM supervision_periods
 """
+
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_me",

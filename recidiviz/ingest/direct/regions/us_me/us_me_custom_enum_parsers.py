@@ -30,65 +30,100 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
 
-FURLOUGH_MOVEMENT_TYPES = ["Furlough", "Furlough Hospital"]
+# Movement and Transfer type and reasons
+FURLOUGH_MOVEMENT_TYPES = ["FURLOUGH", "FURLOUGH HOSPITAL"]
 
 OTHER_JURISDICTION_TRANSFER_TYPES = [
-    "Non-DOC In",
-    "Non-DOC County Jail In",
-    "DOC County Jail Return From",
-    "DOC Interstate Compact Return From/In",
-    "DOC Interstate Active Detainer Return",
+    "NON-DOC IN",
+    "NON-DOC COUNTY JAIL IN",
+    "DOC COUNTY JAIL RETURN FROM",
+    "DOC INTERSTATE COMPACT RETURN FROM/IN",
+    "DOC INTERSTATE ACTIVE DETAINER RETURN",
 ]
 
 SUPERVISION_VIOLATION_TRANSFER_REASONS = [
-    "Violation of Probation",
-    "Violation of Probation - Prob. to Terminate(J)",
-    "Violation of Parole",
-    "Violation of SCCP",
+    "VIOLATION OF PROBATION",
+    "VIOLATION OF PROBATION - PROB. TO TERMINATE(J)",
+    "VIOLATION OF PAROLE",
+    "VIOLATION OF SCCP",
+]
+DISCHARGE_MOVEMENT_TYPE = "DISCHARGE"
+RELEASE_MOVEMENT_TYPE = "RELEASE"
+TRANSFER_MOVEMENT_TYPE = "TRANSFER"
+SOCIETY_IN_TRANSFER_TYPE = "SOCIETY IN"
+SENTENCE_DISPOSITION = "SENTENCE/DISPOSITION"
+OTHER_JURISDICTION_TRANSFER_REASON = "OTHER JURISDICTION"
+SCCP_PLACEMENT_TRANSFER_REASON = "SCCP PLACEMENT"
+ESCAPE = "ESCAPE"
+TEMPORARY_CUSTODY_TRANSFER_REASONS = ["SAFE KEEPERS", "FEDERAL HOLD", "FEDERAL BOP"]
+
+SUPERVISION_COURT_SENTENCE_TRANSFER_REASONS = [
+    "RELEASE TO PROBATION/JCCO",
+    SENTENCE_DISPOSITION,
+    "SUPERVISION ACCEPTED",
 ]
 
-TEMPORARY_CUSTODY_TRANSFER_REASONS = ["Safe Keepers", "Federal Hold", "Federal BOP"]
-
+# Statuses
+COUNTY_JAIL_STATUS = "COUNTY JAIL"
 INCARCERATED_STATUSES = [
-    "Incarcerated",
-    "County Jail",
-    "Interstate Compact In",
-    "Partial Revocation - incarcerated",
+    "INCARCERATED",
+    COUNTY_JAIL_STATUS,
+    "INTERSTATE COMPACT IN",
+    "PARTIAL REVOCATION - INCARCERATED",
 ]
-
 OTHER_JURISDICTION_STATUSES = [
-    "Interstate Compact Out",
-    "Interstate Active Detainer",
+    "INTERSTATE COMPACT OUT",
+    "INTERSTATE ACTIVE DETAINER",
 ]
-
 COMMUNITY_CONFINEMENT_STATUS = "SCCP"
-
+PAROLE_STATUS = "PAROLE"
+PROBATION_STATUS = "PROBATION"
 SUPERVISION_PRECEDING_INCARCERATION_STATUSES = [
-    "Pending Violation",
-    "Pending Violation - Incarcerated",
-    "Warrant Absconded",
-    "Partial Revocation - County Jail",
+    "PENDING VIOLATION",
+    "PENDING VIOLATION - INCARCERATED",
+    "WARRANT ABSCONDED",
+    "PARTIAL REVOCATION - COUNTY JAIL",
 ]
-
+ABSCONSION_STATUSES = ["WARRANT ABSCONDED", ESCAPE]
 SUPERVISION_STATUSES = [
     COMMUNITY_CONFINEMENT_STATUS,
-    "Probation",
-    "Parole",
+    PAROLE_STATUS,
+    PROBATION_STATUS,
 ]
+ALL_SUPERVISION_STATUSES = (
+    SUPERVISION_STATUSES
+    + SUPERVISION_PRECEDING_INCARCERATION_STATUSES
+    + [
+        "REFERRAL",
+        "ACTIVE",
+    ]
+)
+CONDITIONAL_RELEASE_STATUSES = [COMMUNITY_CONFINEMENT_STATUS, PAROLE_STATUS]
+INACTIVE_STATUS = "INACTIVE"
 
 # Location types are from the CIS_908_CCS_LOCATION.Cis_9080_Ccs_Location_Type_Cd column
 DOC_FACILITY_LOCATION_TYPES = [
     "2",  # Adult DOC Facilities
     "7",  # Pre-Release Centers
 ]
-SUPERVISION_LOCATION_TYPES = ["4"]  # Adult Supervision Offices
+SUPERVISION_LOCATION_TYPES = ["4", "1"]  # Adult Supervision Offices
 COUNTY_JAIL_LOCATION_TYPES = ["9"]  # County Jails
+SOCIETY_OUT_LOCATION_TYPES = ["8", "13"]  # Maine's counties and all US states
+OTHER_JURISDICTION_LOCATION_TYPES = ["8", "19"]  # All US States and Federal
+DECEASED_LOCATION_TYPE = "14"
+
+MAINE_STATE = "MAINE"
 
 
 def _in_temporary_custody(
@@ -98,7 +133,7 @@ def _in_temporary_custody(
 ) -> bool:
     return (
         (
-            current_status == "County Jail"
+            current_status == COUNTY_JAIL_STATUS
             and location_type in DOC_FACILITY_LOCATION_TYPES
         )
         or transfer_reason in TEMPORARY_CUSTODY_TRANSFER_REASONS
@@ -107,16 +142,26 @@ def _in_temporary_custody(
 
 
 def _is_new_admission(transfer_reason: str, movement_type: str) -> bool:
+    return SENTENCE_DISPOSITION in [movement_type, transfer_reason]
+
+
+def _previously_not_on_supervision(
+    previous_jurisdiction_location_type: str, previous_status: str
+) -> bool:
     return (
-        movement_type == "Sentence/Disposition"
-        or transfer_reason == "Sentence/Disposition"
-    )
+        previous_jurisdiction_location_type == "NONE"
+        or previous_jurisdiction_location_type
+        in DOC_FACILITY_LOCATION_TYPES
+        + COUNTY_JAIL_LOCATION_TYPES
+        + SOCIETY_OUT_LOCATION_TYPES
+    ) and previous_status not in ALL_SUPERVISION_STATUSES
 
 
 def parse_incarceration_type(raw_text: str) -> StateIncarcerationType:
-    if raw_text in COUNTY_JAIL_LOCATION_TYPES:
+    normalized_raw_text = raw_text.upper()
+    if normalized_raw_text in COUNTY_JAIL_LOCATION_TYPES:
         return StateIncarcerationType.COUNTY_JAIL
-    if raw_text in DOC_FACILITY_LOCATION_TYPES:
+    if normalized_raw_text in DOC_FACILITY_LOCATION_TYPES:
         return StateIncarcerationType.STATE_PRISON
     return StateIncarcerationType.EXTERNAL_UNKNOWN
 
@@ -128,7 +173,7 @@ def parse_specialized_purpose_for_incarceration(
         current_status,
         transfer_reason,
         location_type,
-    ) = raw_text.split("@@")
+    ) = raw_text.upper().split("@@")
     if _in_temporary_custody(current_status, location_type, transfer_reason):
         return StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
     return StateSpecializedPurposeForIncarceration.GENERAL
@@ -144,7 +189,7 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
         transfer_type,
         transfer_reason,
         location_type,
-    ) = raw_text.split("@@")
+    ) = raw_text.upper().split("@@")
 
     if (
         previous_status
@@ -163,7 +208,7 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
 
     # Check for escapes before temporary custody since many escape movements flow through
     # County Jail beforehand.
-    if previous_status == "Escape" or movement_type == "Escape":
+    if ESCAPE in [previous_status, movement_type]:
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
 
     if _in_temporary_custody(current_status, location_type, transfer_reason):
@@ -171,7 +216,7 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
 
     if (
         transfer_type in OTHER_JURISDICTION_TRANSFER_TYPES
-        or transfer_reason == "Other Jurisdiction"
+        or transfer_reason == OTHER_JURISDICTION_TRANSFER_REASON
         or previous_status in OTHER_JURISDICTION_STATUSES
     ):
         return StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
@@ -196,7 +241,7 @@ def parse_admission_reason_v1(raw_text: str) -> StateIncarcerationPeriodAdmissio
         transfer_type,
         transfer_reason,
         location_type,
-    ) = raw_text.split("@@")
+    ) = raw_text.upper().split("@@")
 
     if (
         previous_status
@@ -218,7 +263,7 @@ def parse_admission_reason_v1(raw_text: str) -> StateIncarcerationPeriodAdmissio
 
     if (
         transfer_type in OTHER_JURISDICTION_TRANSFER_TYPES
-        or transfer_reason == "Other Jurisdiction"
+        or transfer_reason == OTHER_JURISDICTION_TRANSFER_REASON
         or previous_status in OTHER_JURISDICTION_STATUSES
     ):
         return StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
@@ -230,7 +275,7 @@ def parse_admission_reason_v1(raw_text: str) -> StateIncarcerationPeriodAdmissio
         # supervision period occurred before the year 2000.
         return StateIncarcerationPeriodAdmissionReason.REVOCATION
 
-    if previous_status == "Escape" or movement_type == "Escape":
+    if ESCAPE in [previous_status, movement_type]:
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
 
     return StateIncarcerationPeriodAdmissionReason.TRANSFER
@@ -247,22 +292,22 @@ def parse_release_reason(
         transfer_reason,
         location_type,
         next_location_type,
-    ) = raw_text.split("@@")
-    if next_movement_type == "Discharge":
+    ) = raw_text.upper().split("@@")
+    if next_movement_type == DISCHARGE_MOVEMENT_TYPE:
         return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
 
-    if next_location_type == "14":
+    if next_location_type == DECEASED_LOCATION_TYPE:
         return StateIncarcerationPeriodReleaseReason.DEATH
 
     if next_movement_type in FURLOUGH_MOVEMENT_TYPES:
         return StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE
 
-    if next_status == "Escape" or next_movement_type == "Escape":
+    if ESCAPE in [next_status, next_movement_type]:
         return StateIncarcerationPeriodReleaseReason.ESCAPE
 
     if (
         next_status in SUPERVISION_STATUSES
-        or next_movement_type == "Release"
+        or next_movement_type == RELEASE_MOVEMENT_TYPE
         or next_location_type in SUPERVISION_LOCATION_TYPES
     ):
         return StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION
@@ -276,7 +321,7 @@ def parse_release_reason(
     ):
         return StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION
 
-    if next_movement_type == "Transfer" or (
+    if next_movement_type == TRANSFER_MOVEMENT_TYPE or (
         next_status in INCARCERATED_STATUSES
         and next_location_type in DOC_FACILITY_LOCATION_TYPES
     ):
@@ -297,24 +342,21 @@ def parse_supervision_violation_response_decision(
     (
         violation_finding_description,
         disposition_description,
-    ) = raw_text.split("@@")
+    ) = raw_text.upper().split("@@")
 
-    normalized_violation_finding = violation_finding_description.upper()
-    normalized_disposition = disposition_description.upper()
-
-    if "REVOCATION" in normalized_disposition:
+    if "REVOCATION" in disposition_description:
         return StateSupervisionViolationResponseDecision.REVOCATION
 
-    if normalized_disposition == "VIOLATION FOUND - CONDITIONS AMENDED":
+    if disposition_description == "VIOLATION FOUND - CONDITIONS AMENDED":
         return StateSupervisionViolationResponseDecision.NEW_CONDITIONS
 
-    if normalized_disposition == "VIOLATION FOUND - NO SANCTION":
+    if disposition_description == "VIOLATION FOUND - NO SANCTION":
         return StateSupervisionViolationResponseDecision.NO_SANCTION
 
-    if normalized_violation_finding == "WARNING BY OFFICER":
+    if violation_finding_description == "WARNING BY OFFICER":
         return StateSupervisionViolationResponseDecision.WARNING
 
-    if normalized_violation_finding in (
+    if violation_finding_description in (
         "DISMISSED BY COURT",
         "NOT APPROVED BY PROSECUTING ATTORNEY",
         "VIOLATION NOT FOUND",
@@ -323,17 +365,17 @@ def parse_supervision_violation_response_decision(
         # In each case, there was no official/formal/final violation response provided
         return StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED
 
-    if normalized_violation_finding == "GRADUATED SANCTION BY OFFICER":
+    if violation_finding_description == "GRADUATED SANCTION BY OFFICER":
         return StateSupervisionViolationResponseDecision.OTHER
 
-    if normalized_violation_finding in (
+    if violation_finding_description in (
         "RETURN TO FACILITY BY OFFICER",
         "ABSCONDED - FACILITY NOTIFIED",
     ):
         # Each case leads to a return to a DOC facility, hence the mapping to REVOCATION. Both codes are fairly rare
         return StateSupervisionViolationResponseDecision.REVOCATION
 
-    if normalized_violation_finding == "VIOLATION FOUND":
+    if violation_finding_description == "VIOLATION FOUND":
         # At this point, it's acknowledged that a violation was found but no disposition is available
         return StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN
 
@@ -352,24 +394,21 @@ def parse_supervision_violation_response_type(
     (
         violation_finding_description,
         disposition_description,
-    ) = raw_text.split("@@")
+    ) = raw_text.upper().split("@@")
 
-    normalized_violation_finding = violation_finding_description.upper()
-    normalized_disposition = disposition_description.upper()
-
-    if "REVOCATION" in normalized_disposition:
+    if "REVOCATION" in disposition_description:
         return StateSupervisionViolationResponseType.PERMANENT_DECISION
 
-    if normalized_disposition == "VIOLATION FOUND - CONDITIONS AMENDED":
+    if disposition_description == "VIOLATION FOUND - CONDITIONS AMENDED":
         return StateSupervisionViolationResponseType.PERMANENT_DECISION
 
-    if normalized_disposition == "VIOLATION FOUND - NO SANCTION":
+    if disposition_description == "VIOLATION FOUND - NO SANCTION":
         return StateSupervisionViolationResponseType.VIOLATION_REPORT
 
-    if normalized_violation_finding == "WARNING BY OFFICER":
+    if violation_finding_description == "WARNING BY OFFICER":
         return StateSupervisionViolationResponseType.CITATION
 
-    if normalized_violation_finding in (
+    if violation_finding_description in (
         "DISMISSED BY COURT",
         "NOT APPROVED BY PROSECUTING ATTORNEY",
         "VIOLATION NOT FOUND",
@@ -379,16 +418,16 @@ def parse_supervision_violation_response_type(
         # but we leave this here to throw a loud error in the case that some derivation on this ends up in the raw data
         return None
 
-    if normalized_violation_finding == "GRADUATED SANCTION BY OFFICER":
+    if violation_finding_description == "GRADUATED SANCTION BY OFFICER":
         return StateSupervisionViolationResponseType.PERMANENT_DECISION
 
-    if normalized_violation_finding in (
+    if violation_finding_description in (
         "RETURN TO FACILITY BY OFFICER",
         "ABSCONDED - FACILITY NOTIFIED",
     ):
         return StateSupervisionViolationResponseType.PERMANENT_DECISION
 
-    if normalized_violation_finding == "VIOLATION FOUND":
+    if violation_finding_description == "VIOLATION FOUND":
         # At this point, it's acknowledged that a violation was found but no disposition is available
         return StateSupervisionViolationResponseType.VIOLATION_REPORT
 
@@ -404,13 +443,10 @@ def parse_deciding_body_type(
     (
         violation_finding_description,
         disposition_description,
-    ) = raw_text.split("@@")
-
-    normalized_violation_finding = violation_finding_description.upper()
-    normalized_disposition = disposition_description.upper()
+    ) = raw_text.upper().split("@@")
 
     # By default, the court has final say. So unless this is a direct officer action, it's the court
-    if normalized_violation_finding in (
+    if violation_finding_description in (
         "ABSCONDED - FACILITY NOTIFIED",
         "DISMISSED BY COURT",
         "NOT APPROVED BY PROSECUTING ATTORNEY",
@@ -420,7 +456,7 @@ def parse_deciding_body_type(
         return StateSupervisionViolationResponseDecidingBodyType.COURT
 
     # These indicate a final finding/action taken directly by the officer without court involvement
-    if normalized_violation_finding in (
+    if violation_finding_description in (
         "GRADUATED SANCTION BY OFFICER",
         "RETURN TO FACILITY BY OFFICER",
         "WARNING BY OFFICER",
@@ -429,7 +465,7 @@ def parse_deciding_body_type(
         return StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER
 
     # Capture cases where the violation finding is NONE but there was a disposition
-    if normalized_disposition != "NONE":
+    if disposition_description != "NONE":
         return StateSupervisionViolationResponseDecidingBodyType.COURT
 
     # This is unreachable since we are filtering out NONE@@NONE in the enum_mapping conditional, and we should
@@ -447,28 +483,156 @@ def parse_supervision_sentence_status(
     (
         community_override_reason,
         court_order_status_description,
-    ) = raw_text.split("@@")
+    ) = raw_text.upper().split("@@")
 
-    normalized_community_override_reason = community_override_reason.upper()
-    normalized_court_order_status = court_order_status_description.upper()
-
-    if "REVOCATION" in normalized_community_override_reason:
+    if "REVOCATION" in community_override_reason:
         return StateSentenceStatus.REVOKED
 
-    if normalized_community_override_reason in ["EARLY TERMINATION"]:
+    if community_override_reason in ["EARLY TERMINATION"]:
         return StateSentenceStatus.COMPLETED
-    if normalized_community_override_reason in ["VACATED SENTENCE"]:
+    if community_override_reason in ["VACATED SENTENCE"]:
         return StateSentenceStatus.VACATED
-    if normalized_community_override_reason in ["COMMUTATION/PARDON"]:
+    if community_override_reason in ["COMMUTATION/PARDON"]:
         return StateSentenceStatus.COMMUTED
 
-    if normalized_court_order_status in ["COMPLETE"]:
+    if court_order_status_description in ["COMPLETE"]:
         return StateSentenceStatus.COMPLETED
-    if normalized_court_order_status in ["PENDING", "PREDISPOSITION"]:
+    if court_order_status_description in ["PENDING", "PREDISPOSITION"]:
         return StateSentenceStatus.PENDING
-    if normalized_court_order_status in ["COURT SANCTION"]:
+    if court_order_status_description in ["COURT SANCTION"]:
         return StateSentenceStatus.SANCTIONED
-    if normalized_court_order_status in ["COMMITTED", "PROBATION", "TOLLED"]:
+    if court_order_status_description in ["COMMITTED", "PROBATION", "TOLLED"]:
         return StateSentenceStatus.SERVING
 
     return StateSentenceStatus.PRESENT_WITHOUT_INFO
+
+
+def parse_supervision_type(
+    raw_text: str,
+) -> StateSupervisionPeriodSupervisionType:
+    """Parses the supervision type from the current status and jurisdiction location type."""
+    (
+        current_jurisdiction_location_type,
+        current_status,
+        _officer_status,
+    ) = raw_text.upper().split("@@")
+
+    if current_status == PAROLE_STATUS:
+        return StateSupervisionPeriodSupervisionType.PAROLE
+    if (
+        current_status == COMMUNITY_CONFINEMENT_STATUS
+        or current_jurisdiction_location_type in DOC_FACILITY_LOCATION_TYPES
+    ):
+        return StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
+
+    return StateSupervisionPeriodSupervisionType.PROBATION
+
+
+def parse_supervision_admission_reason(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodAdmissionReason]:
+    """Parses the supervision admission reason."""
+    (
+        previous_status,
+        current_status,
+        previous_jurisdiction_location,
+        previous_jurisdiction_location_type,
+        current_jurisdiction_location_type,
+        transfer_type,
+        transfer_reason,
+    ) = raw_text.upper().split("@@")
+    # This could be a change in supervision site or assigned officer
+    if current_status in ABSCONSION_STATUSES and previous_status in ABSCONSION_STATUSES:
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+
+    if current_status in ABSCONSION_STATUSES:
+        return StateSupervisionPeriodAdmissionReason.ABSCONSION
+
+    # Must check RETURN_FROM_ABSCONSION after ABSCONSION
+    if previous_status in ABSCONSION_STATUSES:
+        return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
+
+    if (
+        current_jurisdiction_location_type in DOC_FACILITY_LOCATION_TYPES
+        or current_status in CONDITIONAL_RELEASE_STATUSES
+    ) and _previously_not_on_supervision(
+        previous_jurisdiction_location_type, previous_status
+    ):
+        # Released early from incarceration to a community confinement program
+        return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+
+    if (
+        previous_jurisdiction_location_type in OTHER_JURISDICTION_LOCATION_TYPES
+        and previous_jurisdiction_location != MAINE_STATE
+    ):
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
+
+    if (
+        transfer_type == SOCIETY_IN_TRANSFER_TYPE
+        or transfer_reason in SUPERVISION_COURT_SENTENCE_TRANSFER_REASONS
+        or _previously_not_on_supervision(
+            previous_jurisdiction_location_type, previous_status
+        )
+    ):
+        # These could include scenarios where a person on supervision has returned to incarceration
+        # as a violation response, and then must complete the previous supervision sentence. There are
+        # two types of revocations, Partial Revocation - Probation to Terminate and
+        # Partial Revocation - Probation to Continue. For "Probation to Terminate", the sentence ends
+        # with the incarceration period. For "Probation to Continue", the probation period continues
+        # after the incarceration period ends. These cases will be handled in the entity normalization step
+        # and will reference the associated sentences.
+        return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+
+    # Assume everything else is a transfer between supervision locations, officers, or status changes
+    return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+
+
+def parse_supervision_termination_reason(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodTerminationReason]:
+    """Parses the supervision termination reason."""
+    (
+        next_status,
+        next_jurisdiction_location,
+        next_jurisdiction_location_type,
+        current_status,
+    ) = raw_text.upper().split("@@")
+    if next_jurisdiction_location_type == DECEASED_LOCATION_TYPE:
+        return StateSupervisionPeriodTerminationReason.DEATH
+
+    if (
+        current_status in ABSCONSION_STATUSES
+        and next_status != "NONE"
+        and next_status not in ABSCONSION_STATUSES
+        and next_jurisdiction_location_type
+        not in DOC_FACILITY_LOCATION_TYPES + COUNTY_JAIL_LOCATION_TYPES
+    ):
+        return StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION
+
+    if current_status not in ABSCONSION_STATUSES and next_status in ABSCONSION_STATUSES:
+        return StateSupervisionPeriodTerminationReason.ABSCONSION
+
+    if (
+        next_jurisdiction_location_type in OTHER_JURISDICTION_LOCATION_TYPES
+        and next_jurisdiction_location != MAINE_STATE
+    ):
+        return StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION
+
+    if next_status == INACTIVE_STATUS or (
+        next_status == "NONE" and current_status not in ABSCONSION_STATUSES
+    ):
+        return StateSupervisionPeriodTerminationReason.EXPIRATION
+
+    if next_jurisdiction_location_type in COUNTY_JAIL_LOCATION_TYPES:
+        # These could be in a County Jail pending charges or investigation for a supervision violation.
+        return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+
+    if (
+        next_jurisdiction_location_type in DOC_FACILITY_LOCATION_TYPES
+        and next_status in INCARCERATED_STATUSES
+    ):
+        # These could be directly to a DOC Facility if in a Community Confinement program, or a revocation
+        # which will be updated to REVOCATION reason in the entity normalization step.
+        return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
+
+    return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE

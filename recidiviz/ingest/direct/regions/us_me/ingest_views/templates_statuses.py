@@ -55,6 +55,8 @@ def statuses_cte(
             Transfer_Id AS transfer_id,
             type.E_Trans_Type_Desc AS transfer_type,
             reason.E_Transfer_Reason_Desc AS transfer_reason,
+            jur_from.Cis_9080_Ccs_Location_Type_Cd AS transfer_from_jur_location_type,
+            jur_from.Location_Name as transfer_from_jur_location,
             IF(Cancelled_Ind = 'Y', TRUE, NULL) AS cancelled,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Transfer_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS transfer_datetime,
         FROM {{CIS_314_TRANSFER}}
@@ -64,6 +66,9 @@ def statuses_cte(
 
         LEFT JOIN {{CIS_3141_TRANSFER_REASON}} reason
         ON Cis_3141_Transfer_Reason_Cd = reason.Transfer_Reason_Cd
+        
+        LEFT JOIN {{CIS_908_CCS_LOCATION}}  jur_from
+        on jur_from.Ccs_Location_Id = Cis_908_Ccs_Loc_Jur_From_Id
     ),
     statuses_and_transfers_with_parsed_dates AS (
         SELECT
@@ -73,11 +78,14 @@ def statuses_cte(
             l.Location_Name AS current_status_location,
             l.Cis_9080_Ccs_Location_Type_Cd AS location_type,
             juris_loc.Cis_9080_Ccs_Location_Type_Cd AS jurisdiction_location_type,
+            juris_loc.Location_Name AS current_jurisdiction_location,
             unit.Name_Tx AS housing_unit,
             Cis_314_Transfer_Id AS transfer_id,
             t.transfer_datetime,
             t.transfer_type,
             t.transfer_reason,
+            t.transfer_from_jur_location_type,
+            t.transfer_from_jur_location,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Effct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS effective_datetime,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Ineffct_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS ineffective_datetime
         FROM {{CIS_125_CURRENT_STATUS_HIST}} status
@@ -171,10 +179,13 @@ def statuses_cte(
             s2.current_status_location,
             s2.location_type,
             s2.jurisdiction_location_type,
+            s2.current_jurisdiction_location,
             s2.housing_unit,
             s2.transfer_id,
             s2.transfer_type,
             s2.transfer_reason,
+            s2.transfer_from_jur_location_type,
+            s2.transfer_from_jur_location,
             s1.transfer_datetime,
             s1.effective_datetime,
             s1.end_datetime,         

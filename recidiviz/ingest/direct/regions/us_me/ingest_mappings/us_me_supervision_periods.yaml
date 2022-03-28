@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_periods` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - client_id
+  - start_date
+  - end_date
+  - previous_status
+  - current_status
+  - next_status
+  - supervision_location
+  - previous_jurisdiction_location
+  - previous_jurisdiction_location_type
+  - current_jurisdiction_location_type
+  - next_jurisdiction_location_type
+  - next_jurisdiction_location
+  - transfer_type
+  - transfer_reason
+  - officer_external_id
+  - officer_status
+  - officer_first_name
+  - officer_middle_name
+  - officer_last_name
+  - supervision_period_id
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: client_id
+          id_type: $literal("US_ME_DOC")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - client_id
+                - supervision_period_id
+          supervision_type:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: '@@'
+                  $values:
+                    - current_jurisdiction_location_type
+                    - current_status
+                    # Office status is not used to determine supervision type, but it provides
+                    # metadata on the type of supervision period this is and whether the officer
+                    # assigned is Primary, Secondary or Temporary.
+                    - officer_status
+                  $include_nulls: True
+              $custom_parser: us_me_custom_enum_parsers.parse_supervision_type
+          start_date: start_date
+          termination_date: end_date
+          supervision_site: supervision_location
+          admission_reason:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: '@@'
+                  $values:
+                    - previous_status
+                    - current_status
+                    - previous_jurisdiction_location
+                    - previous_jurisdiction_location_type
+                    - current_jurisdiction_location_type
+                    - transfer_type
+                    - transfer_reason
+                  $include_nulls: True
+              $custom_parser: us_me_custom_enum_parsers.parse_supervision_admission_reason
+          termination_reason:
+            $conditional:
+              - $if:
+                  $not_null: end_date
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: '@@'
+                        $values:
+                          - next_status
+                          - next_jurisdiction_location
+                          - next_jurisdiction_location_type
+                          - current_status
+                        $include_nulls: True
+                    $custom_parser: us_me_custom_enum_parsers.parse_supervision_termination_reason
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: current_jurisdiction_location_type
+              $mappings:
+                StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                  - "1" # Central Office Administration
+                  - "4" # Supervision office site
+                StateCustodialAuthority.STATE_PRISON:
+                  - "2" # Adult DOC Facilities
+                  - "7" # Pre-Release Centers
+          supervising_officer:
+            StateAgent:
+              external_id: officer_external_id
+              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+              full_name:
+                $person_name:
+                  $given_names: officer_first_name
+                  $middle_names: officer_middle_name
+                  $surname: officer_last_name
+

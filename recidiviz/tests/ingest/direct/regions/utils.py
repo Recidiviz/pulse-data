@@ -222,6 +222,8 @@ def add_supervision_period_to_person(
     admission_reason_raw_text: str,
     termination_reason: Optional[StateSupervisionPeriodTerminationReason],
     termination_reason_raw_text: Optional[str],
+    custodial_authority_raw_text: Optional[str] = None,
+    custodial_authority: Optional[StateCustodialAuthority] = None,
     supervision_level: Optional[StateSupervisionLevel] = None,
     supervision_level_raw_text: Optional[str] = None,
 ) -> None:
@@ -244,6 +246,8 @@ def add_supervision_period_to_person(
         person=person,
         supervision_level=supervision_level,
         supervision_level_raw_text=supervision_level_raw_text,
+        custodial_authority_raw_text=custodial_authority_raw_text,
+        custodial_authority=custodial_authority,
     )
 
     person.supervision_periods.append(supervision_period)
