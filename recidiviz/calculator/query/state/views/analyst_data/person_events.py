@@ -18,6 +18,7 @@
 format."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -406,6 +407,20 @@ SELECT
     outflow_to_level_1 AS attribute_2,
 FROM `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized`
 WHERE end_date IS NOT NULL
+
+UNION ALL
+
+-- add experiment assignments as cohort start events
+SELECT
+    state_code,
+    person_id,
+    "ASSIGNED_VARIANT" AS event,
+    variant_date AS event_date,
+    experiment_id AS attribute_1,
+    variant_id AS attribute_2,
+FROM
+`{project_id}.{experiments_dataset}.person_assignments_materialized`
+
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -420,6 +435,7 @@ PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     us_id_raw_dataset=US_ID_RAW_DATASET,
+    experiments_dataset=EXPERIMENTS_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )
