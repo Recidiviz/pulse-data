@@ -160,10 +160,15 @@ if environment.in_development():
     # and initialize an engine that way. Currently we only connect to the Justice Counts
     # database, which we need for its section of the admin panel, but we can add
     # other connections in the future in the same way.
-    engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
-        database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-        db_url=os.environ.get("JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL"),
-    )
+    #
+    # If we fail to connect a message will be logged but we won't raise an error.
+    try:
+        engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
+            db_url=os.environ.get("JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL"),
+        )
+    except BaseException:
+        pass
 elif environment.in_gcp():
     # This attempts to connect to all of our databases. Any connections that fail will
     # be logged and not raise an error, so that a single database outage doesn't take
