@@ -45,6 +45,7 @@ class ClientRecordEtlDelegateTest(TestCase):
             self.assertEqual(
                 row,
                 {
+                    "address": "123 fake st.",
                     "compliantReportingEligible": {
                         "judicialDistrict": "7",
                         "lastDrugNegative": [
@@ -54,6 +55,14 @@ class ClientRecordEtlDelegateTest(TestCase):
                         "lastSanction": "OPRD",
                         "offenseType": ["FORGERY"],
                     },
+                    "currentBalance": 45.1,
+                    "eligible": True,
+                    "eligibleWithDiscretion": True,
+                    "expirationDate": datetime(2022, 2, 28, 0, 0),
+                    "feeExemptions": "Exemption 1, Exemption2",
+                    "lastPaymentAmount": 10.25,
+                    "lastPaymentDate": datetime(2021, 12, 20, 0, 0),
+                    "nextSpecialConditionsCheck": datetime(2021, 12, 2, 0, 0),
                     "officerId": "100",
                     "personExternalId": "200",
                     "personName": {
@@ -62,6 +71,8 @@ class ClientRecordEtlDelegateTest(TestCase):
                         "name_suffix": "",
                         "surname": "Mouse",
                     },
+                    "phoneNumber": "8889997777",
+                    "specialConditions": "SPECIAL",
                     "stateCode": "US_XX",
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": datetime(2020, 3, 10, 0, 0),
@@ -75,6 +86,9 @@ class ClientRecordEtlDelegateTest(TestCase):
             self.assertEqual(
                 row,
                 {
+                    "currentBalance": 282,
+                    "eligible": False,
+                    "eligibleWithDiscretion": False,
                     "officerId": "102",
                     "personExternalId": "201",
                     "personName": {
@@ -83,8 +97,8 @@ class ClientRecordEtlDelegateTest(TestCase):
                         "name_suffix": "",
                         "surname": "Houdini",
                     },
+                    "specialConditions": "NONE",
                     "stateCode": "US_XX",
-                    "supervisionLevel": "EXTRA_HIGH",
                     "supervisionLevelStart": datetime(1900, 3, 10, 0, 0),
                     "supervisionType": "PAROLE",
                 },

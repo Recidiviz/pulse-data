@@ -37,7 +37,7 @@ class StaffRecordETLDelegate(PracticesFirestoreETLDelegate):
             "id": data["id"],
             "stateCode": data["state_code"],
             "name": data["name"],
-            "email": data["email"],
+            "email": data.get("email"),
             "hasCaseload": data["has_caseload"],
         }
 

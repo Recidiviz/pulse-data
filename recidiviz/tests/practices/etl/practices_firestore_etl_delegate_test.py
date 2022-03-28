@@ -89,7 +89,5 @@ class PracticesFirestoreEtlDelegateTest(TestCase):
             delegate = TestETLDelegate()
             delegate.run_etl()
 
-        # mock_firestore_client.delete_collection.assert_called_once_with("test_collection")
-        # mock_firestore_client.get_collection.assert_called_once_with("test_collection")
         mock_delete_collection.assert_called_once_with("test_collection")
         mock_get_collection.assert_called_once_with("test_collection")

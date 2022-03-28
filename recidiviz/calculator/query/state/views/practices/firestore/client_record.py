@@ -36,13 +36,22 @@ CLIENT_RECORD_QUERY_TEMPLATE = """
         supervision_type,
         supervision_level,
         supervision_level_start,
-        all_eligible = 1 AS all_eligible,
-        all_eligible_and_discretion = 1 AS all_eligible_and_discretion,
-        IF(all_eligible_and_discretion = 1, offense_type, null) AS offense_type,
-        IF(all_eligible_and_discretion = 1, judicial_district, null) AS judicial_district,
-        IF(all_eligible_and_discretion = 1, last_DRUN, null) AS last_drug_negative,
-        IF(all_eligible_and_discretion = 1, last_sanction, null) AS last_sanction,
-    FROM `{project_id}.{reference_views_dataset}.us_tn_compliant_reporting_logic`
+        address,
+        phone_number,
+        expiration_date,
+        current_balance,
+        last_payment_amount,
+        last_payment_date,
+        exemption_notes AS fee_exemptions,
+        special_conditions_on_current_sentences AS special_conditions,
+        SPE_note_due AS next_special_conditions_check,
+        compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible = 'c1' AS eligible,
+        compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible IN ('c1', 'c2', 'c3') AS eligible_with_discretion,
+        current_offenses AS offense_type,
+        judicial_district,
+        ARRAY(SELECT DRUN.contact_date FROM UNNEST(last_DRUN) AS DRUN) AS last_drug_negative,
+        last_sanction,
+    FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
 """
 
 CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -50,7 +59,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CLIENT_RECORD_VIEW_NAME,
     view_query_template=CLIENT_RECORD_QUERY_TEMPLATE,
     description=CLIENT_RECORD_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
