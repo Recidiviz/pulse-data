@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Justice Counts Control Panel backend API."""
-from flask import Blueprint
+from flask import Blueprint, Response, jsonify
 
 api_blueprint = Blueprint("api", __name__)
 
 # TODO(#11504): Replace dummy endpoint
 @api_blueprint.route("/hello")
-def hello() -> str:
-    return "Hello, World!"
+def hello() -> Response:
+    return jsonify({"response": "Hello, World!"})
