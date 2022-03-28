@@ -7,6 +7,7 @@ primary_key_cols:
 columns:
   - name: offender_booking_id
     description: The OMNI-database generated ID for the booking row.
+  - name: offender_booking_number
   - name: offender_id
     description: The ID of the justice-involved individual to which this booking applies.
   - name: offender_name_seq_no

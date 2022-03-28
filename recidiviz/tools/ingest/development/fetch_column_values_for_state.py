@@ -132,6 +132,7 @@ def _update_enum_known_values(
         supplemental_order_by_clause=original_config.supplemental_order_by_clause,
         always_historical_export=original_config.always_historical_export,
         import_chunk_size_rows=original_config.import_chunk_size_rows,
+        infer_columns_from_config=original_config.infer_columns_from_config,
     )
 
 

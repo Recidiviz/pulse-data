@@ -121,6 +121,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 ignore_quotes=False,
                 always_historical_export=False,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
             "tagB": DirectIngestRawFileConfig(
                 file_tag="tagB",
@@ -141,6 +142,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 ignore_quotes=False,
                 always_historical_export=False,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
             "tagC": DirectIngestRawFileConfig(
                 file_tag="tagC",
@@ -161,6 +163,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 ignore_quotes=False,
                 always_historical_export=False,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
                 file_tag="tagWeDoNotIngest",
@@ -175,6 +178,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 ignore_quotes=False,
                 always_historical_export=False,
                 import_chunk_size_rows=10,
+                infer_columns_from_config=False,
             ),
         }
 

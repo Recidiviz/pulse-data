@@ -100,6 +100,7 @@ def import_raw_files_to_bq_sandbox(
             ),
             big_query_client=BigQueryClientImpl(),
             sandbox_dataset_prefix=sandbox_dataset_prefix,
+            allow_incomplete_configs=True,
         )
 
         bq_client = BigQueryClientImpl()

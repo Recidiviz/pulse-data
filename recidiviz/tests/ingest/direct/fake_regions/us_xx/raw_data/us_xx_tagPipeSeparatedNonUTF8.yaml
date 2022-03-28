@@ -7,6 +7,9 @@ columns:
   - name: PRIMARY_COL1
     description: |-
       PRIMARY_COL1 description
+  - name: COL2
+  - name: COL3
+  - name: COL4
 encoding: ISO-8859-1
 separator: '|'
 ignore_quotes: True
