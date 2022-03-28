@@ -31,6 +31,13 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
     """Enum that denotes what type of supervision someone is serving at a moment in
     time."""
 
+    # A judge can issue a bench warrant when an individual violates the rules of the
+    # court, most often when they fail to show up to court. The police can treat this
+    # similar to an open arrest warrant and use it to bring an individual back in front
+    # of the judge.
+    BENCH_WARRANT = (
+        state_enum_strings.state_supervision_period_supervision_type_bench_warrant
+    )
     # TODO(#9421): The way that this information is stored may be updated when we
     #  standardize the representation of community centers
     # A type of supervision where the person is being monitored while they are confined
@@ -251,6 +258,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
 
 
 _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
+    "BENCH WARRANT": StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
     "COMMUNITY CONFINEMENT": StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     "DUAL": StateSupervisionPeriodSupervisionType.DUAL,
     "EXTERNAL UNKNOWN": StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
@@ -331,6 +339,7 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
 def get_most_relevant_supervision_type(
     supervision_types: Set[StateSupervisionPeriodSupervisionType],
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Return the prioritized supervision type from a list of types"""
     if not supervision_types:
         return None
 
@@ -352,6 +361,8 @@ def get_most_relevant_supervision_type(
         return StateSupervisionPeriodSupervisionType.INVESTIGATION
     if StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION in supervision_types:
         return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+    if StateSupervisionPeriodSupervisionType.BENCH_WARRANT in supervision_types:
+        return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
     if StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
         return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
     if StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN in supervision_types:

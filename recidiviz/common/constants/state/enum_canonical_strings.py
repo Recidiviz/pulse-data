@@ -213,6 +213,7 @@ state_supervision_period_supervision_type_dual = "DUAL"
 state_supervision_period_supervision_type_community_confinement = (
     "COMMUNITY_CONFINEMENT"
 )
+state_supervision_period_supervision_type_bench_warrant = "BENCH_WARRANT"
 
 state_supervision_period_admission_reason_absconsion = "ABSCONSION"
 state_supervision_period_admission_reason_conditional_release = "CONDITIONAL_RELEASE"
