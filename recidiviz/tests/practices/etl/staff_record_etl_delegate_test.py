@@ -65,3 +65,18 @@ class StaffRecordEtlDelegateTest(TestCase):
                     "hasCaseload": False,
                 },
             )
+
+            fixture = fp.readline()
+
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "102")
+            self.assertEqual(
+                row,
+                {
+                    "id": "102",
+                    "stateCode": "US_XX",
+                    "name": "Foghorn Leghorn",
+                    "email": None,
+                    "hasCaseload": True,
+                },
+            )
