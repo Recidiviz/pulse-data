@@ -246,7 +246,7 @@ def supervision_period_supervision_type_mapper(
     if "CR" in statuses:  # Rider (no longer used).
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     if "BW" in statuses:  # Bench Warrant
-        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+        return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
     if "CP" in statuses:  # Court Probation
         return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
 
