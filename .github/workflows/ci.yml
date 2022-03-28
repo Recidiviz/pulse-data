@@ -183,6 +183,20 @@ jobs:
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
             --durations=25
+  
+  # These unit tests need to be run separately because they depend on a different Python
+  # environment defined in the Pipfile in the recidiviz/airflow package.
+  airflow-tests:
+    name: Airflow unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Airflow Python Setup
+        uses: ./.github/actions/airflow-python-setup
+      - name: Run airflow tests in parallel
+        working-directory: ./recidiviz/airflow
+        run: |
+          pipenv run pytest tests
 
   db-tests:
     name: Database tests

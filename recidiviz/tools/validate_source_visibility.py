@@ -263,6 +263,11 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
+        "recidiviz/airflow/tests/calculation_pipeline_dag_test.py",
+        valid_module_prefixes=make_module_matcher(set()),
+    )
+
+    success &= check_dependencies_for_entrypoint(
         "recidiviz/cloud_functions/main.py",
         valid_module_prefixes=make_module_matcher(set()),
     )
