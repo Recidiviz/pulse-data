@@ -47,10 +47,13 @@ CLIENT_RECORD_QUERY_TEMPLATE = """
         SPE_note_due AS next_special_conditions_check,
         compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible = 'c1' AS eligible,
         compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible IN ('c1', 'c2', 'c3') AS eligible_with_discretion,
-        current_offenses AS offense_type,
+        eligible_level_start,
+        current_offenses,
+        lifetime_offenses_expired,
         judicial_district,
-        ARRAY(SELECT DRUN.contact_date FROM UNNEST(last_DRUN) AS DRUN) AS last_drug_negative,
-        last_sanction,
+        last_DRUN AS drug_screens_past_year,
+        sanctions_in_last_year AS sanctions_past_year,
+        last_ARR_Note AS most_recent_arrest_check,
     FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
 """
 

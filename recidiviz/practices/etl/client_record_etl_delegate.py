@@ -87,13 +87,28 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
         # add nullable objects
         if data["eligible_with_discretion"]:
             new_document["compliantReportingEligible"] = {
-                "offenseType": data.get("offense_type"),
+                "currentOffenses": data.get("current_offenses"),
+                "lifetimeOffensesExpired": data.get("lifetime_offenses_expired"),
                 "judicialDistrict": data.get("judicial_district"),
-                "lastDrugNegative": [
-                    datetime.fromisoformat(date) for date in data["last_drug_negative"]
+                "drugScreensPastYear": [
+                    {
+                        "result": screen["ContactNoteType"],
+                        "date": datetime.fromisoformat(screen["contact_date"]),
+                    }
+                    for screen in data["drug_screens_past_year"]
                 ],
-                "lastSanction": data.get("last_sanction"),
+                "sanctionsPastYear": data.get("sanctions_past_year"),
             }
+
+            if "eligible_level_start" in data:
+                new_document["compliantReportingEligible"][
+                    "eligibleLevelStart"
+                ] = datetime.fromisoformat(data["eligible_level_start"])
+
+            if "most_recent_arrest_check" in data:
+                new_document["compliantReportingEligible"][
+                    "mostRecentArrestCheck"
+                ] = datetime.fromisoformat(data["most_recent_arrest_check"])
 
         return data["person_external_id"], new_document
 
