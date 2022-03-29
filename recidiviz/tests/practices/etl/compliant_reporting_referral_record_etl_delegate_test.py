@@ -129,3 +129,42 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingFswCurrent": False,
                 },
             )
+
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "202")
+            self.assertEqual(
+                row,
+                {
+                    "poFirstName": "TEST",
+                    "poLastName": "OFFICER1",
+                    "clientFirstName": "TONYE",
+                    "clientLastName": "THOMPSON",
+                    "dateToday": "2022-03-25",
+                    "tdocId": "202",
+                    "currentOffenses": ["FAILURE TO APPEAR (FELONY)"],
+                    "supervisionType": "TN PROBATIONER",
+                    "supervisionFeeAssessed": "0.0",
+                    "supervisionFeeArrearaged": False,
+                    "supervisionFeeArrearagedAmount": "0.0",
+                    "supervisionFeeExemptionType": ["SSDB", "SSDB"],
+                    "courtCostsPaid": False,
+                    "specialConditionsAlcDrugScreen": False,
+                    "specialConditionsAlcDrugAssessmentComplete": False,
+                    "specialConditionsAlcDrugTreatment": False,
+                    "specialConditionsAlcDrugTreatmentCurrent": False,
+                    "specialConditionsCounseling": False,
+                    "specialConditionsCounselingAngerManagementCurrent": False,
+                    "specialConditionsCommunityService": False,
+                    "specialConditionsCommunityServiceCurrent": False,
+                    "specialConditionsProgramming": False,
+                    "specialConditionsProgrammingCognitiveBehavior": False,
+                    "specialConditionsProgrammingCognitiveBehaviorCurrent": False,
+                    "specialConditionsProgrammingSafe": False,
+                    "specialConditionsProgrammingSafeCurrent": False,
+                    "specialConditionsProgrammingVictimImpact": False,
+                    "specialConditionsProgrammingVictimImpactCurrent": False,
+                    "specialConditionsProgrammingFsw": False,
+                    "specialConditionsProgrammingFswCurrent": False,
+                },
+            )

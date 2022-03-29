@@ -129,11 +129,18 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
         if "sentence_start_date" in data:
             new_document["sentenceStartDate"] = data["sentence_start_date"]
 
-        if "sentence_length_days" in data:
-            new_document["sentenceLengthDays"] = data["sentence_length_days"]
-
         if "expiration_date" in data:
             new_document["expirationDate"] = data["expiration_date"]
+
+        if "sentence_length_days" in data:
+            sentence_length_days = data["sentence_length_days"]
+            if int(sentence_length_days) >= 0:
+                new_document["sentenceLengthDays"] = sentence_length_days
+            else:
+                # If the sentence length is negative, assume something has gone wrong and clear out
+                # the start/expiration dates as well
+                new_document.pop("sentenceStartDate", None)
+                new_document.pop("expirationDate", None)
 
         if "supervision_fee_exemption_expir_date" in data:
             new_document["supervisionFeeExemptionExpirDate"] = data[
