@@ -17,12 +17,24 @@
 """Delegate class to ETL client records for practices into Firestore."""
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Tuple
 
+from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
 from recidiviz.practices.etl.practices_etl_delegate import PracticesFirestoreETLDelegate
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+SUPERVISION_TYPE_MAPPING = {
+    "DIVERSION": "Diversion",
+    "TN PROBATIONER": "Probation",
+    "TN PAROLEE": "Parole",
+    "ISC FROM OTHER JURISDICTION": "ISC",
+    "DETERMINATE RLSE PROBATIONER": "Determinate Release Probation",
+    "SPCL ALT INCARCERATION UNIT": "SAIU",
+    "MISDEMEANOR PROBATIONER": "Misdemeanor Probation",
+}
 
 
 class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
@@ -38,14 +50,20 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
         new_document = {
             "personExternalId": data["person_external_id"],
             "stateCode": data["state_code"],
-            "personName": json.loads(data["person_name"]),
+            "personName": {
+                snake_to_camel(k): person_name_case(v)
+                for k, v in json.loads(data["person_name"]).items()
+            },
             "officerId": data["officer_id"],
-            "supervisionType": data["supervision_type"],
             "eligible": data["eligible"],
             "eligibleWithDiscretion": data["eligible_with_discretion"],
             "currentBalance": data["current_balance"],
             "specialConditions": data["special_conditions"],
         }
+        supervision_type = data["supervision_type"]
+        new_document["supervisionType"] = SUPERVISION_TYPE_MAPPING.get(
+            supervision_type, supervision_type
+        )
 
         # add nullable fields
         if "fee_exemptions" in data:
@@ -55,7 +73,10 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
             new_document["phoneNumber"] = data["phone_number"]
 
         if "address" in data:
-            new_document["address"] = data["address"]
+            # incoming strings may have cased state abbreviation wrong
+            new_document["address"] = re.sub(
+                r"\bTn\b", lambda m: m[0].upper(), data["address"]
+            )
 
         if "last_payment_amount" in data:
             new_document["lastPaymentAmount"] = data["last_payment_amount"]

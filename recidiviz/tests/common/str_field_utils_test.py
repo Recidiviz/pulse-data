@@ -29,6 +29,7 @@ from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
     parse_dollars,
     parse_int,
+    roman_numeral_uppercase,
     safe_parse_date_from_date_pieces,
     safe_parse_days_from_duration_str,
 )
@@ -266,3 +267,11 @@ class TestStrFieldUtils(TestCase):
             normalize_flat_json("")
         with self.assertRaises(JSONDecodeError):
             normalize_flat_json("{")
+
+    def test_roman_numeral_uppercase(self) -> None:
+        self.assertEqual(roman_numeral_uppercase("iii"), "III")
+        self.assertEqual(roman_numeral_uppercase("Iv"), "IV")
+
+        self.assertEqual(roman_numeral_uppercase("Jackson Iii"), "Jackson III")
+        self.assertEqual(roman_numeral_uppercase("Tocqueville Vi"), "Tocqueville VI")
+        self.assertEqual(roman_numeral_uppercase("circus ci"), "circus CI")

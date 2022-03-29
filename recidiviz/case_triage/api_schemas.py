@@ -29,12 +29,8 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.utils.types import assert_type
-
-
-def camelcase(s: str) -> str:
-    parts = iter(s.split("_"))
-    return next(parts) + "".join(i.title() for i in parts)
 
 
 def non_empty_string(data: str) -> None:
@@ -48,7 +44,7 @@ class CamelCaseSchema(Schema):
     """
 
     def on_bind_field(self, field_name: str, field_obj: Field) -> None:
-        field_obj.data_key = camelcase(field_obj.data_key or field_name)
+        field_obj.data_key = snake_to_camel(field_obj.data_key or field_name)
 
 
 class PolicyRequirementsSchema(CamelCaseSchema):
