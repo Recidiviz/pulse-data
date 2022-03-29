@@ -69,6 +69,7 @@ special_conditions_aggregation AS (
             ARRAY_AGG(STRUCT<note_update_date DATETIME, conditions_on_date string>(NoteUpdateDate,ConditionsOnDate) ORDER BY NoteUpdateDate)
         ) as Conditions
     FROM special_conditions_date_grouping 
+    WHERE ConditionsOnDate is not NULL
     GROUP BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber
 )
 SELECT
