@@ -66,7 +66,6 @@ US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_ELIGIBLE_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    project_id=GCP_PROJECT_STAGING,
     should_materialize=True,
 )
 

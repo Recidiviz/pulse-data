@@ -44,7 +44,6 @@ US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_TN_OVERDUE_FOR_DISCHARGE_VIEW_NAME,
     description=US_TN_OVERDUE_FOR_DISCHARGE_VIEW_DESCRIPTION,
     view_query_template=US_TN_OVERDUE_FOR_DISCHARGE_QUERY_TEMPLATE,
-    project_id=GCP_PROJECT_STAGING,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=True,
 )

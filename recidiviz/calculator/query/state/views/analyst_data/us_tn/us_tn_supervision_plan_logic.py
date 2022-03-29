@@ -53,7 +53,6 @@ US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_TN_SUPERVISION_PLAN_LOGIC_VIEW_NAME,
     description=US_TN_SUPERVISION_PLAN_LOGIC_VIEW_DESCRIPTION,
     view_query_template=US_TN_SUPERVISION_PLAN_LOGIC_QUERY_TEMPLATE,
-    project_id=GCP_PROJECT_STAGING,
     should_materialize=True,
 )
 
