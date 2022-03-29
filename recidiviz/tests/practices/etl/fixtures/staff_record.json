@@ -1,3 +1,3 @@
-{"id": "100", "state_code":  "US_XX", "name":  "JOEY JOE-JOE JR. III", "email":  "jjjj3@xx.gov", "has_caseload": true}
-{"id": "101", "state_code":  "US_XX", "name":  "SALLY S. SLITHERS", "email":  "sal.sli@xx.gov", "has_caseload": false}
-{"id": "102", "state_code":  "US_XX", "name":  "FOGHORN LEGHORN", "has_caseload": true}
+{"id": "100", "state_code":  "US_XX", "name":  "JOEY JOE-JOE JR. III", "email":  "jjjj3@xx.gov", "has_caseload": true, "district":  "District 1"}
+{"id": "101", "state_code":  "US_XX", "name":  "SALLY S. SLITHERS", "email":  "sal.sli@xx.gov", "has_caseload": false, "district":  "District 2"}
+{"id": "102", "state_code":  "US_XX", "name":  "FOGHORN LEGHORN", "has_caseload": true, "district":  "District 3"}

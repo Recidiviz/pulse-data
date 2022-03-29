@@ -48,6 +48,7 @@ class StaffRecordEtlDelegateTest(TestCase):
                     "name": "Joey Joe-Joe Jr. III",
                     "email": "jjjj3@xx.gov",
                     "hasCaseload": True,
+                    "district": "District 1",
                 },
             )
 
@@ -63,6 +64,7 @@ class StaffRecordEtlDelegateTest(TestCase):
                     "name": "Sally S. Slithers",
                     "email": "sal.sli@xx.gov",
                     "hasCaseload": False,
+                    "district": "District 2",
                 },
             )
 
@@ -78,5 +80,6 @@ class StaffRecordEtlDelegateTest(TestCase):
                     "name": "Foghorn Leghorn",
                     "email": None,
                     "hasCaseload": True,
+                    "district": "District 3",
                 },
             )
