@@ -385,6 +385,30 @@ def to_snake_case(capital_case_name: str) -> str:
     return _ALL_CAP_REGEX.sub(r"\1_\2", s1).lower()
 
 
+def snake_to_camel(s: str) -> str:
+    """Converts a snake case string (e.g. "given_names") to a camel case string
+    (e.g. "givenNames")."""
+    parts = iter(s.split("_"))
+    return next(parts) + "".join(i.title() for i in parts)
+
+
+# https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch06s09.html
+_ROMAN_NUMERAL_REGEX = re.compile(
+    r"\b(?=[MDCLXVI])M*(C[MD]|D?C*)(X[CL]|L?X*)(I[XV]|V?I*)\b", re.IGNORECASE
+)
+
+
+def roman_numeral_uppercase(s: str) -> str:
+    """Converts any roman numerals found in a string to uppercase."""
+    return _ROMAN_NUMERAL_REGEX.sub(lambda m: m[0].upper(), s)
+
+
+def person_name_case(name: str) -> str:
+    """Converts a string to title case with special handling for exceptions
+    specific to people's names (e.g. a III suffix)"""
+    return roman_numeral_uppercase(name.title().strip())
+
+
 def sorted_list_from_str(value: str, delimiter: str = ",") -> List[str]:
     """Converts a string with delimiter-separated values into a sorted list containing those values as separate
     entries.

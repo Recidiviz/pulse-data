@@ -19,6 +19,7 @@ import json
 import logging
 from typing import Tuple
 
+from recidiviz.common.str_field_utils import person_name_case
 from recidiviz.practices.etl.practices_etl_delegate import PracticesFirestoreETLDelegate
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,7 +37,7 @@ class StaffRecordETLDelegate(PracticesFirestoreETLDelegate):
         new_document = {
             "id": data["id"],
             "stateCode": data["state_code"],
-            "name": data["name"],
+            "name": person_name_case(data["name"]),
             "email": data.get("email"),
             "hasCaseload": data["has_caseload"],
         }

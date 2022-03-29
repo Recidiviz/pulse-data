@@ -45,7 +45,7 @@ class StaffRecordEtlDelegateTest(TestCase):
                 {
                     "id": "100",
                     "stateCode": "US_XX",
-                    "name": "Joey Joe Joe Jr. III",
+                    "name": "Joey Joe-Joe Jr. III",
                     "email": "jjjj3@xx.gov",
                     "hasCaseload": True,
                 },
@@ -60,7 +60,7 @@ class StaffRecordEtlDelegateTest(TestCase):
                 {
                     "id": "101",
                     "stateCode": "US_XX",
-                    "name": "Sally Slithers",
+                    "name": "Sally S. Slithers",
                     "email": "sal.sli@xx.gov",
                     "hasCaseload": False,
                 },

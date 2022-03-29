@@ -45,7 +45,7 @@ class ClientRecordEtlDelegateTest(TestCase):
             self.assertEqual(
                 row,
                 {
-                    "address": "123 fake st.",
+                    "address": "123 Etna st., Faketown, TN 12345",
                     "compliantReportingEligible": {
                         "currentOffenses": None,
                         "drugScreensPastYear": [
@@ -69,17 +69,17 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "officerId": "100",
                     "personExternalId": "200",
                     "personName": {
-                        "given_names": "Matilda",
-                        "middle_names": "",
-                        "name_suffix": "",
-                        "surname": "Mouse",
+                        "givenNames": "Matilda",
+                        "middleNames": "",
+                        "nameSuffix": "",
+                        "surname": "Mouse-House",
                     },
                     "phoneNumber": "8889997777",
                     "specialConditions": "SPECIAL",
                     "stateCode": "US_XX",
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": datetime(2020, 3, 10, 0, 0),
-                    "supervisionType": "PROBATION",
+                    "supervisionType": "Probation",
                 },
             )
 
@@ -95,14 +95,14 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "officerId": "102",
                     "personExternalId": "201",
                     "personName": {
-                        "given_names": "Harry",
-                        "middle_names": "Henry",
-                        "name_suffix": "",
-                        "surname": "Houdini",
+                        "givenNames": "Harry",
+                        "middleNames": "Henry",
+                        "nameSuffix": "",
+                        "surname": "Houdini IV",
                     },
                     "specialConditions": "NONE",
                     "stateCode": "US_XX",
                     "supervisionLevelStart": datetime(1900, 3, 10, 0, 0),
-                    "supervisionType": "PAROLE",
+                    "supervisionType": "ISC",
                 },
             )
