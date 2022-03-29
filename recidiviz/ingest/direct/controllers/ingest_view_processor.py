@@ -22,6 +22,9 @@ import abc
 import csv
 from typing import Dict, Iterator, List, cast
 
+from recidiviz.big_query.big_query_results_contents_handle import (
+    BigQueryResultsContentsHandle,
+)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
@@ -65,8 +68,8 @@ class IngestViewProcessorImpl(IngestViewProcessor):
     def _row_iterator(contents_handle: ContentsHandle) -> Iterator[Dict[str, str]]:
         if isinstance(contents_handle, LocalFileContentsHandle):
             return csv.DictReader(contents_handle.get_contents_iterator())
-        # TODO(#9717): Add support for reading from a contents handle that pulls results
-        #  from BigQuery.
+        if isinstance(contents_handle, BigQueryResultsContentsHandle):
+            return contents_handle.get_contents_iterator()
         raise ValueError(
             f"Unsupported contents handle type: [{type(contents_handle)}]."
         )
