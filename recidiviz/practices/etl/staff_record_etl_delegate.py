@@ -40,6 +40,7 @@ class StaffRecordETLDelegate(PracticesFirestoreETLDelegate):
             "name": person_name_case(data["name"]),
             "email": data.get("email"),
             "hasCaseload": data["has_caseload"],
+            "district": data["district"],
         }
 
         return data["id"], new_document
