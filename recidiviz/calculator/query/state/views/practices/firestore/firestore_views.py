@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.practices.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.practices.firestore.compliant_reporting_referral_record import (
+    COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.practices.firestore.staff_record import (
     STAFF_RECORD_VIEW_BUILDER,
 )
@@ -28,4 +31,5 @@ from recidiviz.calculator.query.state.views.practices.firestore.staff_record imp
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENT_RECORD_VIEW_BUILDER,
     STAFF_RECORD_VIEW_BUILDER,
+    COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
 ]
