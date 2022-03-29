@@ -24,6 +24,7 @@ import pandas as pd
 import sqlalchemy
 from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery
+from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import (
     DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
@@ -31,20 +32,63 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.big_query.fakes.fake_big_query_database import FakeBigQueryDatabase
+
+
+class _ResultsIter:
+    def __init__(self, results_df: DataFrame) -> None:
+        field_to_index = {col_name: i for i, col_name in enumerate(results_df.columns)}
+
+        self.results: List[bigquery.table.Row] = [
+            bigquery.table.Row(row_values, field_to_index)
+            for row_values in results_df.values
+        ]
+
+    def __iter__(self) -> Iterator[bigquery.table.Row]:
+        return self
+
+    def __next__(self) -> bigquery.table.Row:
+        if not self.results:
+            raise StopIteration
+        return self.results.pop(0)
 
 
 class FakeQueryJob:
-    """A fake implementation of bigquery.QueryJob for use in direct ingest tests."""
+    """A fake implementation of bigquery.QueryJob for use in tests."""
+
+    def __init__(self, run_query_fn: Callable[[], DataFrame]) -> None:
+        self.run_query_fn = run_query_fn
+
+    def __iter__(self) -> Iterator[bigquery.table.Row]:
+        return self.result()
 
     def result(
         self,
-        _page_size: int = None,
-        _max_results: int = None,
-        _retry: int = None,
-        _timeou: int = None,
-    ) -> None:
-        return
+        page_size: int = None,
+        max_results: int = None,
+        retry: int = None,
+        timeout: int = None,
+    ) -> Iterator[bigquery.table.Row]:
+        if page_size is not None:
+            raise NotImplementedError(
+                f"No test support for paging fake results. Found page_size "
+                f"[{page_size}]."
+            )
+        if max_results is not None:
+            raise NotImplementedError(
+                f"No test support for limiting result size. Found max_results "
+                f"[{max_results}]."
+            )
+        if retry is not None:
+            raise NotImplementedError(
+                f"No test support for retrying queries. Found retry [{retry}]."
+            )
+        if timeout is not None:
+            raise NotImplementedError(
+                f"No test support for timeouts in test queries. Found timeout "
+                f"[{timeout}]."
+            )
+        return _ResultsIter(self.run_query_fn())
 
 
 class FakeBigQueryClient(BigQueryClient):
@@ -53,9 +97,13 @@ class FakeBigQueryClient(BigQueryClient):
       FakeBigQueryDatabase that talks to Postgres.
     """
 
-    def __init__(self, project_id: str, fs: FakeGCSFileSystem):
+    def __init__(
+        self,
+        project_id: str,
+        database: FakeBigQueryDatabase,
+    ):
         self._project_id = project_id
-        self.fs = fs
+        self.database = database
 
     @property
     def project_id(self) -> str:
@@ -156,7 +204,12 @@ class FakeBigQueryClient(BigQueryClient):
         query_str: str,
         query_parameters: List[bigquery.ScalarQueryParameter] = None,
     ) -> bigquery.QueryJob:
-        raise ValueError("Must be implemented for use in tests.")
+        def run_query_fn() -> DataFrame:
+            return self.database.run_query(
+                query_str=query_str, data_types=None, dimensions=None
+            )
+
+        return FakeQueryJob(run_query_fn=run_query_fn)
 
     def paged_read_and_process(
         self,
