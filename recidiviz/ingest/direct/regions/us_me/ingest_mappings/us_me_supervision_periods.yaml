@@ -92,6 +92,7 @@ output:
                 StateCustodialAuthority.SUPERVISION_AUTHORITY:
                   - "1" # Central Office Administration
                   - "4" # Supervision office site
+                  - "13" # Maine Counties
                 StateCustodialAuthority.STATE_PRISON:
                   - "2" # Adult DOC Facilities
                   - "7" # Pre-Release Centers
