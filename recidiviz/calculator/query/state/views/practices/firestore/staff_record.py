@@ -31,22 +31,45 @@ STAFF_RECORD_QUERY_TEMPLATE = """
     WITH staff_from_report AS (
         SELECT DISTINCT officer_id AS logic_staff
         FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
+    ), leadership_users AS (
+        SELECT
+            COALESCE(staff.StaffID, external_id, email_address) AS id,
+            "US_TN" AS state_code,
+            first_name || " " || last_name AS name,
+            CAST(null AS STRING) AS district,
+            LOWER(email_address) AS email,
+        FROM `{project_id}.{static_reference_tables_dataset}.us_tn_leadership_users` leadership
+        LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.Staff_latest` staff
+        ON UPPER(leadership.first_name) = staff.FirstName
+            AND UPPER(leadership.last_name) = staff.LastName
+            AND staff.Status = 'A'
+    ), staff_users AS (
+        SELECT
+            StaffID as id,
+            "US_TN" AS state_code,
+            FirstName || " " || LastName AS name,
+            SiteID AS district,
+            LOWER(roster.email_address) AS email,
+            logic_staff IS NOT NULL AS has_caseload,
+        FROM `{project_id}.us_tn_raw_data_up_to_date_views.Staff_latest` staff
+        LEFT JOIN staff_from_report
+        ON logic_staff = StaffID
+        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_tn_roster` roster
+        ON roster.external_id = staff.UserID
+        WHERE Status = 'A'
+            AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM')
     )
 
-    SELECT 
-        StaffID as id,
-        "US_TN" AS state_code,
-        FirstName || " " || LastName AS name,
-        SiteID AS district,
+    SELECT * FROM staff_users WHERE id NOT IN (SELECT id FROM leadership_users)
+
+    UNION ALL
+
+    SELECT
+        leadership_users.*,
         logic_staff IS NOT NULL AS has_caseload,
-        roster.email_address AS email,
-    FROM `{project_id}.us_tn_raw_data_up_to_date_views.Staff_latest` staff
+    FROM leadership_users
     LEFT JOIN staff_from_report
-    ON logic_staff = StaffID
-    LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_tn_roster` roster
-    ON roster.external_id = staff.UserID
-    WHERE Status = 'A'
-        AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM')
+    ON leadership_users.id = staff_from_report.logic_staff
 """
 
 STAFF_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
