@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 from airflow.models import DagBag
 
-dag_folder = "dag"
+dag_folder = "dags"
 
 
 @patch(
@@ -31,10 +31,6 @@ dag_folder = "dag"
         "GCP_PROJECT_ID": "recidiviz-testing",
         "CONFIG_FILE": "../calculator/pipeline/calculation_pipeline_templates.yaml",
     },
-)
-@patch(
-    "recidiviz.cloud_functions.cloud_function_utils.IAP_CLIENT_ID",
-    {"recidiviz-testing": "xx.apps.googleusercontent.com"},
 )
 class TestDagIntegrity(unittest.TestCase):
     def test_dagbag_import(self) -> None:
