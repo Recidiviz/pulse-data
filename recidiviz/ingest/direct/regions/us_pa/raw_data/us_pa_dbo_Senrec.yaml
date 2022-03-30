@@ -224,6 +224,23 @@ columns:
   - name: type_of_sent
     description: |-
       Type of incarceration sentenced to.
+    known_values:
+      - value: E
+        description: SIP Evaluation
+      - value: C
+        description: Unknown
+      - value: F
+        description: Unknown
+      - value: I
+        description: Unknown
+      - value: O
+        description: Unknown
+      - value: P
+        description: SIP Program
+      - value: S
+        description: Unknown
+      - value: T
+        description: Unknown
   - name: crime_facts_ind
   - name: megans_law_ind
     description: |-
