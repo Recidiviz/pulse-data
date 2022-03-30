@@ -122,18 +122,15 @@ class PolicyStore {
   findContactFrequencyForClient(
     client: Client
   ): SupervisionContactFrequency | undefined {
-    const contactFrequencies =
-      this.policies?.supervisionContactFrequencies[client.caseType];
-
-    return contactFrequencies
-      ? contactFrequencies[client.supervisionLevel]
-      : undefined;
+    return this.policies?.supervisionContactFrequencies[client.caseType]?.[
+      client.supervisionLevel
+    ];
   }
 
   findHomeVisitFrequencyForClient(
     client: Client
   ): SupervisionContactFrequency | undefined {
-    return this.policies?.supervisionHomeVisitFrequencies[
+    return this.policies?.supervisionHomeVisitFrequencies[client.caseType]?.[
       client.supervisionLevel
     ];
   }

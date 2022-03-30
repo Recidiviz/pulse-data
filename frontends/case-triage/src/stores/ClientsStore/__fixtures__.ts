@@ -127,9 +127,16 @@ export const statePolicy: Policy = {
     },
   },
   supervisionHomeVisitFrequencies: {
-    HIGH: [2, 365],
-    MEDIUM: [1, 365],
-    MINIMUM: [1, 365],
+    GENERAL: {
+      HIGH: [2, 365],
+      MEDIUM: [1, 365],
+      MINIMUM: [1, 365],
+    },
+    SEX_OFFENDER: {
+      HIGH: [1, 30],
+      MEDIUM: [1, 60],
+      MINIMUM: [1, 90],
+    },
   },
   supervisionLevelNames: {
     HIGH: "High",

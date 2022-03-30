@@ -122,14 +122,21 @@ SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
         StateSupervisionLevel.HIGH: (2, 30),
     },
 }
-# Dictionary from supervision level -> tuple of number of times they must be contacted per time period.
+# Dictionary from case type -> supervision level -> tuple of number of times they must be contacted per time period.
 # A tuple (x, y) should be interpreted as x home visits every y days.
 US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
-    StateSupervisionLevel, Tuple[int, int]
+    StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
 ] = {
-    StateSupervisionLevel.MINIMUM: (1, 365),
-    StateSupervisionLevel.MEDIUM: (1, 365),
-    StateSupervisionLevel.HIGH: (1, 180),
+    StateSupervisionCaseType.GENERAL: {
+        StateSupervisionLevel.MINIMUM: (1, 365),
+        StateSupervisionLevel.MEDIUM: (1, 365),
+        StateSupervisionLevel.HIGH: (1, 180),
+    },
+    StateSupervisionCaseType.SEX_OFFENSE: {
+        StateSupervisionLevel.MINIMUM: (1, 90),
+        StateSupervisionLevel.MEDIUM: (1, 60),
+        StateSupervisionLevel.HIGH: (1, 30),
+    },
 }
 
 US_ID_SUPERVISION_TREATMENT_COLLATERAL_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
@@ -340,10 +347,11 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             StateSupervisionCaseType.SEX_OFFENSE,
         ):
             raise ValueError(
-                "Standard supervision compliance guidelines not applicable for cases with a supervision"
-                f" level of {supervision_level}. Should not be calculating compliance for this"
+                "Standard supervision compliance guidelines not applicable for cases with a case"
+                f" type of {self.case_type}. Should not be calculating compliance for this"
                 f" supervision case."
             )
+
         if supervision_level is None:
             raise ValueError(
                 "Supervision level not provided and so cannot calculate required face to face contact frequency."
@@ -414,16 +422,22 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 "home visit."
             )
 
+        if self.case_type not in (
+            StateSupervisionCaseType.GENERAL,
+            StateSupervisionCaseType.SEX_OFFENSE,
+        ):
+            return None
+
         if (
             self.supervision_period.supervision_level
-            not in US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS
+            not in US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[self.case_type]
         ):
             return None
 
         (
             required_contacts,
             period_days,
-        ) = US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[
+        ) = US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[self.case_type][
             self.supervision_period.supervision_level
         ]
 
