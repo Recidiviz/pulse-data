@@ -29,15 +29,19 @@ from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_s
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 from recidiviz.utils.secrets import get_local_secret
 
+os.environ.setdefault("APP_URL", "http://localhost:3000")
+
 
 def get_blueprints_for_justice_counts_documentation() -> List[Tuple[Blueprint, str]]:
-
     return [
         (
-            get_api_blueprint(passthrough_authorization_decorator()),
+            get_api_blueprint(auth_decorator=passthrough_authorization_decorator()),
             "/justice_counts/api",
         ),
-        (get_auth_blueprint(), "/justice_counts/auth"),
+        (
+            get_auth_blueprint(auth_decorator=passthrough_authorization_decorator()),
+            "/justice_counts/auth",
+        ),
     ]
 
 
@@ -65,15 +69,24 @@ def create_app(config: Optional[Config] = None) -> Flask:
         os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
     )
     app = Flask(__name__, static_folder=static_folder)
-
     config = config or Config()
     app.config.from_object(config)
     app.secret_key = get_local_secret(local_path, "justice_counts_secret_key")
     setup_scoped_sessions(
         app=app, database_key=config.DATABASE_KEY, db_url=config.DB_URL
     )
-    app.register_blueprint(get_api_blueprint(config.AUTH_DECORATOR), url_prefix="/api")
-    app.register_blueprint(get_auth_blueprint(), url_prefix="/auth")
+    app.register_blueprint(
+        get_api_blueprint(
+            auth_decorator=config.AUTH_DECORATOR, secret_key=app.secret_key
+        ),
+        url_prefix="/api",
+    )
+    app.register_blueprint(
+        get_auth_blueprint(
+            auth_decorator=config.AUTH_DECORATOR,
+        ),
+        url_prefix="/auth",
+    )
 
     CSRFProtect(app)
 
