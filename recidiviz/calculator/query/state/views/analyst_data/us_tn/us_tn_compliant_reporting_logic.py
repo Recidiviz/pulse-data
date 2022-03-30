@@ -133,6 +133,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
               CASE WHEN DiversionStatus = 'C' THEN 'IN' ELSE 'AC' END AS sentence_status,
               CAST(CAST(DiversionGrantedDate AS DATETIME) AS DATE) AS offense_date,
               CAST(ConvictionCounty AS STRING) AS conviction_county,
+              CaseNumber AS docket_number,
               'DIVERSION' AS sentence_source,
         FROM `{project_id}.us_tn_raw_data_up_to_date_views.Diversion_latest` d
         LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.OffenderStatute_latest`
@@ -147,6 +148,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
               sentence_status,
               offense_date,
               CAST(conviction_county AS STRING) as conviction_county,
+              case_number AS docket_number,
               'SENTENCE' AS sentence_source,
         FROM `{project_id}.sessions.us_tn_sentences_preprocessed_materialized`
     ),
@@ -159,6 +161,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 'Prior' AS sentence_status,
                 CAST(CAST(OffenseDate AS DATETIME) AS DATE) AS offense_date,
                 CourtName AS conviction_county,
+                DocketNumber AS docket_number,
                 'PriorRecord' AS sentence_source,
         FROM `{project_id}.us_tn_raw_data_up_to_date_views.PriorRecord_latest` pr
         LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.OffenderStatute_latest` ofs
@@ -173,6 +176,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 CASE WHEN CAST(CAST(ExpirationDate AS DATETIME) AS DATE) < current_date('US/Eastern') THEN 'IN' ELSE 'AC' END AS sentence_status,
                 CAST(CAST(OffenseDate AS DATETIME) AS DATE) AS offense_date,
                 Jurisdiction AS conviction_county,
+                CaseNumber AS docket_number,
                 'ISC' AS sentence_source,
                 CASE WHEN SAFE_CAST(ConvictedOffense AS INT) IS NULL THEN 0 ELSE 1 END AS missing_offense,
                 CASE WHEN (ConvictedOffense LIKE '%DRUG%' AND ConvictedOffense NOT LIKE '%ADULTERATION%')
@@ -306,6 +310,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             max(case when unknown_offense_flag = 1 and expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) AS all_unknown_offenses_expired,
             max(case when domestic_flag = 1 OR sex_offense_flag = 1 OR assaultive_offense_flag = 1 OR young_victim_flag = 1 OR dui_last_5_years = 1 OR maybe_assaultive_flag = 1 then expiration_date END) AS latest_expiration_date_for_excluded_offenses,
             ARRAY_AGG(offense_description IGNORE NULLS) AS lifetime_offenses,
+            ARRAY_AGG(docket_number IGNORE NULLS) AS docket_numbers,
         FROM sent_union_isc
         WHERE sentence_source != 'PriorRecord'
         GROUP BY 1
@@ -402,8 +407,15 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         LEFT JOIN (
             SELECT 
                 Offender_ID,
-                conviction_county,
-            FROM sentence_flags
+                CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode) 
+                     ELSE conviction_county END AS conviction_county,
+            FROM sent_union_isc
+            LEFT JOIN (
+                SELECT *
+                FROM `{project_id}.us_tn_raw_data_up_to_date_views.CodesDescription_latest`
+                WHERE CodesTableID = 'TDPD130'
+            ) codes 
+                ON conviction_county = codes.Code
             WHERE TRUE
             QUALIFY ROW_NUMBER() OVER(partition by Offender_ID ORDER BY sentence_effective_date DESC) = 1 
         )
@@ -877,8 +889,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 OR unknown_offense_flag_eligibility in ('Eligible - Expired')
                 OR missing_offense_flag_eligibility in ('Eligible - Expired')
                 OR young_victim_flag_eligibility in ('Eligible - Expired')
-            THEN lifetime_offenses
-            END AS lifetime_offenses_expired,
+                THEN lifetime_offenses
+                END AS lifetime_offenses_expired,
+            docket_numbers,
             prior_offenses,
             has_active_sentence,
             DRUN_array AS last_DRUN,
