@@ -60,12 +60,15 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 ELSE Location_Name 
             END AS level_1_incarceration_location_name,
             facility_code AS level_1_incarceration_location_alias
-        -- TODO(#10636): Replace this with CIS_908_CCS_LOCATION_latest once US_ME raw data is available in production.
-        FROM `{project_id}.{static_reference_tables_dataset}.us_me_cis_908_ccs_location` raw
+        FROM `{project_id}.us_me_raw_data_up_to_date_views.CIS_908_CCS_LOCATION_latest` raw
         LEFT JOIN `{project_id}.{external_reference_dataset}.us_me_incarceration_facility_names` map
             ON raw.Location_Name = map.facility_name
         -- Filter to adult facilities and re-entry centers
-        WHERE Cis_9080_Ccs_Location_Type_Cd IN ('2', '7', '16')
+        WHERE Cis_9080_Ccs_Location_Type_Cd IN (
+            '2', -- Adult DOC Facilities
+            '7', -- Adult Pre-Release Centers
+            '16' -- Re-Entry Centers
+        )
     ), nd_location_names AS (
         SELECT
             'US_ND' AS state_code,
@@ -124,7 +127,6 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
     view_query_template=INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=INCARCERATION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
-    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
 )
 
