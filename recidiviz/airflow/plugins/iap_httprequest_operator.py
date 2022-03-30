@@ -24,13 +24,10 @@ from typing import Any, Dict
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.decorators import apply_defaults
 
-try:
-    from cloud_function_utils import make_iap_request, IAP_CLIENT_ID
-except ImportError:
-    from recidiviz.cloud_functions.cloud_function_utils import (
-        make_iap_request,
-        IAP_CLIENT_ID,
-    )
+from recidiviz.cloud_functions.cloud_function_utils import (
+    IAP_CLIENT_ID,
+    make_iap_request,
+)
 
 
 def make_iap_export_request(url: str) -> Dict[str, Any]:

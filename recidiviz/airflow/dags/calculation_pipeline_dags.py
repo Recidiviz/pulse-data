@@ -20,25 +20,26 @@ This file is uploaded to GCS on deploy.
 """
 import datetime
 import os
-from base64 import b64encode
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from airflow import models
-from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
+from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 
-GCP_PROJECT_STAGING = "recidiviz-staging"
+from recidiviz.utils.yaml_dict import YAMLDict
 
+# Custom Airflow plugins in the recidiviz.airflow.plugins package are imported into the
+# Cloud Composer environment at the top-level. Therefore, the try-catch with the import
+# is still necessary in order to satisfy both the DAG's execution and our local tests.
 try:
     from recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
     )
-    from yaml_dict import YAMLDict  # type: ignore
 except ImportError:
-    from recidiviz.airflow.dag.recidiviz_dataflow_operator import (
+    from recidiviz.airflow.plugins.recidiviz_dataflow_operator import (  # pylint: disable=ungrouped-imports
         RecidivizDataflowTemplateOperator,
     )
-    from recidiviz.utils.yaml_dict import YAMLDict
 
+GCP_PROJECT_STAGING = "recidiviz-staging"
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -62,13 +63,13 @@ CASE_TRIAGE_STATES = [
 ]
 
 
-def trigger_export_operator(export_name: str) -> PubSubPublishOperator:
+def trigger_export_operator(export_name: str) -> PubSubPublishMessageOperator:
     # TODO(#4593) Migrate to IAPHTTPOperator
-    return PubSubPublishOperator(
+    return PubSubPublishMessageOperator(
         task_id=f"trigger_{export_name.lower()}_bq_metric_export",
         project=project_id,
         topic="v1.export.view.data",
-        messages=[{"data": b64encode(bytes(export_name, "utf-8")).decode()}],
+        messages=[{"data": bytes(export_name, "utf-8")}],
     )
 
 

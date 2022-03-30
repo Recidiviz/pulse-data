@@ -18,19 +18,22 @@
 A subclass of DataflowTemplateOperator to ensure that the operator does not add a hash or
 unique id to the task_id name on Dataflow
 """
-from typing import Dict, Any
+from typing import Any, Dict
 
-from airflow.contrib.hooks.gcp_dataflow_hook import DataFlowHook
-from airflow.contrib.operators.dataflow_operator import DataflowTemplateOperator
+from airflow.providers.google.cloud.hooks.dataflow import DataflowHook
+from airflow.providers.google.cloud.operators.dataflow import (
+    DataflowTemplatedJobStartOperator,
+)
+from airflow.utils.context import Context
 
 
-class RecidivizDataflowTemplateOperator(DataflowTemplateOperator):
+class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
     def execute(
         self,
         # Some context about the context: https://bcb.github.io/airflow/execute-context
-        context: Dict[str, Any],  # pylint: disable=unused-argument
-    ) -> None:
-        hook = DataFlowHook(
+        context: Context,  # pylint: disable=unused-argument
+    ) -> Dict[Any, Any]:
+        hook = DataflowHook(
             gcp_conn_id=self.gcp_conn_id,
             delegate_to=self.delegate_to,
             poll_sleep=self.poll_sleep,
@@ -38,10 +41,11 @@ class RecidivizDataflowTemplateOperator(DataflowTemplateOperator):
 
         # In DataflowTemplateOperator,  start_template_dataflow has the default append_job_name set to True
         # so it adds a unique-id to the end of the job name. This overwrites that default argument.
-        hook.start_template_dataflow(
+        return hook.start_template_dataflow(
             self.task_id,
             self.dataflow_default_options,
             self.parameters,
             self.template,
+            self.project_id,
             append_job_name=False,
         )
