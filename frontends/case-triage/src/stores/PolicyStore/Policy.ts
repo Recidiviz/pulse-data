@@ -62,9 +62,14 @@ export type SupervisionContactFrequencies = Record<
   ContactFrequencyByRisk
 >;
 
-export type SupervisionHomeVisitFrequencies = Record<
+export type HomeVisitFrequencyByRisk = Record<
   SupervisionLevel,
   SupervisionContactFrequency
+>;
+
+export type SupervisionHomeVisitFrequencies = Record<
+  CaseType,
+  HomeVisitFrequencyByRisk
 >;
 
 export type SupervisionLevelNames = Record<SupervisionLevel, string>;

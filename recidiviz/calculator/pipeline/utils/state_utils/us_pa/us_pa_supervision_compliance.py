@@ -63,11 +63,13 @@ SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
 # Dictionary from supervision level -> tuple of number of times they must be contacted per time period.
 # A tuple (x, y) should be interpreted as x home visits every y days.
 SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
-    StateSupervisionLevel, Tuple[int, int]
+    StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
 ] = {
-    StateSupervisionLevel.MEDIUM: (1, 60),
-    StateSupervisionLevel.MAXIMUM: (1, 30),
-    StateSupervisionLevel.HIGH: (1, 30),
+    StateSupervisionCaseType.GENERAL: {
+        StateSupervisionLevel.MEDIUM: (1, 60),
+        StateSupervisionLevel.MAXIMUM: (1, 30),
+        StateSupervisionLevel.HIGH: (1, 30),
+    }
 }
 
 SUPERVISION_COLLATERAL_VISIT_FREQUENCY_REQUIREMENTS: Dict[
@@ -285,14 +287,14 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             )
             or self._can_skip_direct_contact(compliance_evaluation_date)
             or self.supervision_period.supervision_level
-            not in SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS
+            not in SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[self.case_type]
         ):
             return None
 
         (
             required_contacts,
             period_days,
-        ) = SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[
+        ) = SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[self.case_type][
             self.supervision_period.supervision_level
         ]
 

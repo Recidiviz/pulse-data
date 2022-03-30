@@ -51,8 +51,10 @@ class PolicyRequirements:
         StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
     ]
 
-    # Mapping from state supervision level -> home visit contact frequencies
-    supervision_home_visit_frequencies: Dict[StateSupervisionLevel, Tuple[int, int]]
+    # Mapping from case type -> state supervision level -> home visit contact frequencies
+    supervision_home_visit_frequencies: Dict[
+        StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
+    ]
 
     # Mapping from state supervision level -> how they are named by the state
     supervision_level_names: Dict[StateSupervisionLevel, str]
@@ -90,8 +92,8 @@ class PolicyRequirements:
         }
 
         supervision_home_visit_dict = {
-            level.value: period
-            for level, period in self.supervision_home_visit_frequencies.items()
+            case_type.value: {level.value: period for level, period in sub_dict.items()}
+            for case_type, sub_dict in self.supervision_home_visit_frequencies.items()
         }
 
         return {

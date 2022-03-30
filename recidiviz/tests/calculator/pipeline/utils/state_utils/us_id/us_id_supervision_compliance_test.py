@@ -994,24 +994,46 @@ class TestNextRecommendedContactDate(unittest.TestCase):
     @parameterized.expand(
         [
             (
+                StateSupervisionCaseType.GENERAL,
                 StateSupervisionLevel.MINIMUM,
                 date(2018, 4, 1),
                 date(2019, 4, 1),
             ),  # 1 year
             (
+                StateSupervisionCaseType.GENERAL,
                 StateSupervisionLevel.MEDIUM,
                 date(2018, 4, 1),
                 date(2019, 4, 1),
             ),  # 1 year
             (
+                StateSupervisionCaseType.GENERAL,
                 StateSupervisionLevel.HIGH,
                 date(2018, 4, 1),
                 date(2018, 9, 28),
             ),  # 180 days
+            (
+                StateSupervisionCaseType.SEX_OFFENSE,
+                StateSupervisionLevel.MINIMUM,
+                date(2018, 4, 1),
+                date(2018, 6, 30),
+            ),  # 90 days
+            (
+                StateSupervisionCaseType.SEX_OFFENSE,
+                StateSupervisionLevel.MEDIUM,
+                date(2018, 4, 1),
+                date(2018, 5, 31),
+            ),  # 60 days
+            (
+                StateSupervisionCaseType.SEX_OFFENSE,
+                StateSupervisionLevel.HIGH,
+                date(2018, 4, 1),
+                date(2018, 5, 1),
+            ),  # 30 days
         ]
     )
     def test_next_recommended_home_visit_has_previous_contacts(
         self,
+        case_type: StateSupervisionCaseType,
         supervision_level: StateSupervisionLevel,
         previous_contact_date: date,
         expected_next_contact: date,
@@ -1046,7 +1068,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             self.person,
             supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
+            case_type=case_type,
             start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
