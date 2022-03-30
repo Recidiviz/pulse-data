@@ -45,7 +45,7 @@ def get_urls_to_download() -> Set[str]:
             # This report is missing and the page gives a 404
             if link.endswith("09-12-19.pdf"):
                 continue
-            # Fix typo in link for ​​October 17, 2019
+            # Fix typo in link for October 17, 2019
             if link.endswith("12-17-19.pdf"):
                 link = link.replace("12-17-19", "10-17-19")
             elif link.endswith("09-26-19.pdf"):

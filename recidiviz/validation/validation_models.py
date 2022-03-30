@@ -221,9 +221,10 @@ class DataValidationJobResult:
 class ValidationChecker(Generic[DataValidationType]):
     """Defines the interface for performing a particular kind of check."""
 
+    @classmethod
     @abc.abstractmethod
     def run_check(
-        self, validation_job: DataValidationJob[DataValidationType]
+        cls, validation_job: DataValidationJob[DataValidationType]
     ) -> DataValidationJobResult:
         pass
 

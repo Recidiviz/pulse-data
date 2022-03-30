@@ -26,8 +26,8 @@ def get_all_files_recursive(directory_path: str) -> Set[str]:
     file and not a directory.
     """
     return set(
-        os.path.join(directory_path, file_name)
-        for directory_path, _directory_names, file_names in os.walk(directory_path)
+        os.path.join(path, file_name)
+        for path, _directory_names, file_names in os.walk(directory_path)
         for file_name in file_names
     )
 

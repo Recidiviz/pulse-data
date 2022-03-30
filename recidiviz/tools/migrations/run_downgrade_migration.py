@@ -114,12 +114,12 @@ def main(
 
     for key in db_keys:
         # Run downgrade
+        overridden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+            database_key=key,
+            ssl_cert_path=ssl_cert_path,
+            migration_user=True,
+        )
         try:
-            overridden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-                database_key=key,
-                ssl_cert_path=ssl_cert_path,
-                migration_user=True,
-            )
             config = alembic.config.Config(key.alembic_file)
             alembic.command.downgrade(config, target_revision)
         except Exception as e:

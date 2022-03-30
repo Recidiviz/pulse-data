@@ -48,9 +48,8 @@ class TestPopulationSimulation(unittest.TestCase):
     macro_population_simulation = Optional[PopulationSimulation]
     macro_projection = pd.DataFrame()
 
-    @classmethod
-    def setUp(cls) -> None:
-        cls.test_outflows_data = pd.DataFrame(
+    def setUp(self) -> None:
+        self.test_outflows_data = pd.DataFrame(
             {
                 "total_population": [4, 2, 2, 4, 3] * 2,
                 "crime": ["NAR"] * 5 + ["BUR"] * 5,
@@ -74,7 +73,7 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        cls.test_transitions_data = pd.DataFrame(
+        self.test_transitions_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2] * 2,
                 "total_population": [4, 2, 2] * 2,
@@ -85,7 +84,7 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        cls.test_total_population_data = pd.DataFrame(
+        self.test_total_population_data = pd.DataFrame(
             {
                 "total_population": [10] * 10,
                 "compartment": ["prison"] * 10,
@@ -94,22 +93,22 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        cls.user_inputs = UserInputs(
+        self.user_inputs = UserInputs(
             projection_time_steps=10,
             start_time_step=0,
             constant_admissions=True,
             speed_run=False,
         )
-        cls.simulation_architecture = {
+        self.simulation_architecture = {
             "pretrial": "shell",
             "prison": "full",
             "supervision": "full",
         }
         test_data_inputs = SimulationInputData(
-            outflows_data=cls.test_outflows_data,
-            transitions_data=cls.test_transitions_data,
-            total_population_data=cls.test_total_population_data,
-            compartments_architecture=cls.simulation_architecture,
+            outflows_data=self.test_outflows_data,
+            transitions_data=self.test_transitions_data,
+            total_population_data=self.test_total_population_data,
+            compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
             microsim_data=pd.DataFrame(),
@@ -117,12 +116,12 @@ class TestPopulationSimulation(unittest.TestCase):
             should_scale_populations_after_step=True,
             override_cross_flow_function=None,
         )
-        cls.macro_population_simulation = (
+        self.macro_population_simulation = (
             PopulationSimulationFactory.build_population_simulation(
-                cls.user_inputs, [], -5, test_data_inputs
+                self.user_inputs, [], -5, test_data_inputs
             )
         )
-        cls.macro_projection = cls.macro_population_simulation.simulate_policies()
+        self.macro_projection = self.macro_population_simulation.simulate_policies()
 
     def test_disaggregation_axes_must_be_in_data_dfs(self) -> None:
         test_outflows_data = self.test_outflows_data.drop("crime", axis=1)

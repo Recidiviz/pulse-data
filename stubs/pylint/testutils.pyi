@@ -26,10 +26,13 @@ class MessageTest:
     def __init__(
         self,
         msg_id: str,
-        line: Optional[Any] = None,
+        line: Optional[int] = None,
         node: Optional[nodes.NodeNG] = None,
         args: Optional[Any] = None,
         confidence: Optional[Any] = None,
+        col_offset: Optional[int] = None,
+        end_line: Optional[int] = None,
+        end_col_offset: Optional[int] = None,
     ): ...
 
 class CheckerTestCase:
