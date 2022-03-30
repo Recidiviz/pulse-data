@@ -26,13 +26,13 @@ from recidiviz.big_query.big_query_view import (
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.calculator.query.justice_counts.views import metric_calculator
+from recidiviz.justice_counts.dimensions import corrections, location
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _STATE_CODE_AGGREGATION = metric_calculator.Aggregation(
-    dimension=manual_upload.State, comprehensive=False
+    dimension=location.State, comprehensive=False
 )
 
 METRICS = [
@@ -47,7 +47,7 @@ METRICS = [
     metric_calculator.CalculatedMetric(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
-        filtered_dimensions=[manual_upload.AdmissionType.NEW_COMMITMENT],
+        filtered_dimensions=[corrections.AdmissionType.NEW_COMMITMENT],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_NEW_COMMITMENTS",
     ),
@@ -55,8 +55,8 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionType.PAROLE,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionType.PAROLE,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_PAROLE",
@@ -65,9 +65,9 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionType.PAROLE,
-            manual_upload.SupervisionViolationType.NEW_CRIME,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionType.PAROLE,
+            corrections.SupervisionViolationType.NEW_CRIME,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_PAROLE_NEW_CRIME",
@@ -76,9 +76,9 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionType.PAROLE,
-            manual_upload.SupervisionViolationType.TECHNICAL,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionType.PAROLE,
+            corrections.SupervisionViolationType.TECHNICAL,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_PAROLE_TECHNICAL",
@@ -87,8 +87,8 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionType.PROBATION,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionType.PROBATION,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_PROBATION",
@@ -97,9 +97,9 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionType.PROBATION,
-            manual_upload.SupervisionViolationType.NEW_CRIME,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionType.PROBATION,
+            corrections.SupervisionViolationType.NEW_CRIME,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_PROBATION_NEW_CRIME",
@@ -108,9 +108,9 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionType.PROBATION,
-            manual_upload.SupervisionViolationType.TECHNICAL,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionType.PROBATION,
+            corrections.SupervisionViolationType.TECHNICAL,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_PROBATION_TECHNICAL",
@@ -119,8 +119,8 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionViolationType.NEW_CRIME,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionViolationType.NEW_CRIME,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_ALL_SUPERVISION_NEW_CRIME",
@@ -129,8 +129,8 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.ADMISSIONS,
         filtered_dimensions=[
-            manual_upload.AdmissionType.FROM_SUPERVISION,
-            manual_upload.SupervisionViolationType.TECHNICAL,
+            corrections.AdmissionType.FROM_SUPERVISION,
+            corrections.SupervisionViolationType.TECHNICAL,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_ALL_SUPERVISION_TECHNICAL",
@@ -139,7 +139,7 @@ METRICS = [
     metric_calculator.CalculatedMetric(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.SUPERVISION_STARTS,
-        filtered_dimensions=[manual_upload.SupervisionType.PROBATION],
+        filtered_dimensions=[corrections.SupervisionType.PROBATION],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="SUPERVISION_STARTS_PROBATION",
     ),
@@ -148,8 +148,8 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.POPULATION,
         filtered_dimensions=[
-            manual_upload.PopulationType.SUPERVISION,
-            manual_upload.SupervisionType.PAROLE,
+            corrections.PopulationType.SUPERVISION,
+            corrections.SupervisionType.PAROLE,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="POPULATION_PAROLE",
@@ -157,7 +157,7 @@ METRICS = [
     metric_calculator.CalculatedMetric(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.POPULATION,
-        filtered_dimensions=[manual_upload.PopulationType.PRISON],
+        filtered_dimensions=[corrections.PopulationType.PRISON],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="POPULATION_PRISON",
     ),
@@ -165,8 +165,8 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.POPULATION,
         filtered_dimensions=[
-            manual_upload.PopulationType.SUPERVISION,
-            manual_upload.SupervisionType.PROBATION,
+            corrections.PopulationType.SUPERVISION,
+            corrections.SupervisionType.PROBATION,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="POPULATION_PROBATION",
@@ -182,7 +182,7 @@ METRICS = [
     metric_calculator.CalculatedMetric(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.RELEASES,
-        filtered_dimensions=[manual_upload.ReleaseType.TO_SUPERVISION],
+        filtered_dimensions=[corrections.ReleaseType.TO_SUPERVISION],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="RELEASES_TO_ALL_SUPERVISION",
     ),
@@ -190,8 +190,8 @@ METRICS = [
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.RELEASES,
         filtered_dimensions=[
-            manual_upload.ReleaseType.TO_SUPERVISION,
-            manual_upload.SupervisionType.PAROLE,
+            corrections.ReleaseType.TO_SUPERVISION,
+            corrections.SupervisionType.PAROLE,
         ],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="RELEASES_TO_PAROLE",
@@ -199,7 +199,7 @@ METRICS = [
     metric_calculator.CalculatedMetric(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.RELEASES,
-        filtered_dimensions=[manual_upload.ReleaseType.COMPLETED],
+        filtered_dimensions=[corrections.ReleaseType.COMPLETED],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="RELEASES_COMPLETED",
     ),

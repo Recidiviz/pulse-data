@@ -27,19 +27,19 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.calculator.query.justice_counts.views import metric_calculator
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.justice_counts.dimensions import corrections, location
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _STATE_CODE_AGGREGATION = metric_calculator.Aggregation(
-    dimension=manual_upload.State, comprehensive=False
+    dimension=location.State, comprehensive=False
 )
 _COUNTY_CODE_AGGREGATION = metric_calculator.Aggregation(
-    dimension=manual_upload.County, comprehensive=False
+    dimension=location.County, comprehensive=False
 )
 _COUNTY_FIPS_AGGREGATION = metric_calculator.Aggregation(
-    dimension=manual_upload.CountyFIPS, comprehensive=False
+    dimension=location.CountyFIPS, comprehensive=False
 )
 
 POPULATION_METRIC_NAME = "POPULATION_JAIL"
@@ -90,7 +90,7 @@ class AddResidentPopulationViewBuilder(SimpleBigQueryViewBuilder):
             input_table=input_view.view_id,
             reference_dataset=EXTERNAL_REFERENCE_DATASET,
             reference_table="county_resident_populations",
-            dimension_identifier=manual_upload.CountyFIPS.dimension_identifier(),
+            dimension_identifier=location.CountyFIPS.dimension_identifier(),
         )
 
 
@@ -326,7 +326,7 @@ def get_jail_population_with_resident_chain() -> List[SimpleBigQueryViewBuilder]
         metric_to_calculate=metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.JAIL],
+            filtered_dimensions=[corrections.PopulationType.JAIL],
             aggregated_dimensions={
                 "state_code": _STATE_CODE_AGGREGATION,
                 "county_code": _COUNTY_CODE_AGGREGATION,
@@ -364,7 +364,7 @@ def _get_filtered_state_jail_population(
         metric_name=POPULATION_METRIC_NAME + "_FILTERED",
         input_view=filtered_for_comparison_builder,
         partition_columns={"date_partition", "row_type"},
-        partition_dimensions={manual_upload.State},
+        partition_dimensions={location.State},
         context_columns={
             "source_id": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
             "report_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
@@ -376,7 +376,7 @@ def _get_filtered_state_jail_population(
             "measurement_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ANY,
         },
         value_columns={"resident_population", "value"},
-        collapse_dimensions_filter=f"dimension in ('{manual_upload.County.dimension_identifier()}')",
+        collapse_dimensions_filter=f"dimension in ('{location.County.dimension_identifier()}')",
     )
 
     aggregated_to_state_input = SimpleBigQueryViewBuilder(
@@ -455,7 +455,7 @@ def get_jail_population_with_state_chain(
         metric_name=POPULATION_METRIC_NAME + "_UNFILTERED",
         input_view=jail_pop_with_resident_view_builder,
         partition_columns={"date_partition"},
-        partition_dimensions={manual_upload.State},
+        partition_dimensions={location.State},
         context_columns={
             "source_id": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
             "report_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
@@ -467,7 +467,7 @@ def get_jail_population_with_state_chain(
             "measurement_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ANY,
         },
         value_columns={"resident_population", "value"},
-        collapse_dimensions_filter=f"dimension in ('{manual_upload.County.dimension_identifier()}')",
+        collapse_dimensions_filter=f"dimension in ('{location.County.dimension_identifier()}')",
         keep_original=True,
     )
 
@@ -487,7 +487,7 @@ def get_jail_population_with_state_chain(
         description=f"{POPULATION_METRIC_NAME} aggregated, filtered back to county",
         input_dataset=unfiltered_aggregated_to_state.dataset_id,
         input_table=unfiltered_aggregated_to_state.view_id,
-        county_dimension_identifier=manual_upload.County.dimension_identifier(),
+        county_dimension_identifier=location.County.dimension_identifier(),
     )
     county_compared = metric_calculator.CompareToPriorYearViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
@@ -518,7 +518,7 @@ def get_jail_population_with_state_chain(
         description=f"{POPULATION_METRIC_NAME} aggregated, filtered to state",
         input_dataset=unfiltered_aggregated_to_state.dataset_id,
         input_table=unfiltered_aggregated_to_state.view_id,
-        state_dimension_identifier=manual_upload.State.dimension_identifier(),
+        state_dimension_identifier=location.State.dimension_identifier(),
     )
 
     # Union the county populations, filtered statewide populations, and fill in with the
@@ -564,7 +564,7 @@ def get_jail_incarceration_rate_chain(
         metric_name=RATE_METRIC_NAME,
         input_view=jail_pop_with_resident_view_builder,
         partition_columns={"date_partition"},
-        partition_dimensions={manual_upload.State},
+        partition_dimensions={location.State},
         context_columns={
             "source_id": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
             "report_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY,
@@ -576,7 +576,7 @@ def get_jail_incarceration_rate_chain(
             "measurement_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ANY,
         },
         value_columns={"resident_population", "value"},
-        collapse_dimensions_filter=f"dimension in ('{manual_upload.County.dimension_identifier()}')",
+        collapse_dimensions_filter=f"dimension in ('{location.County.dimension_identifier()}')",
         keep_original=True,
     )
     rate_builder = IncarcerationRateViewBuilder(

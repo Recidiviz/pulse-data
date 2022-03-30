@@ -27,6 +27,7 @@ from recidiviz.calculator.query.justice_counts.views import (
     corrections_metrics,
     metric_calculator,
 )
+from recidiviz.justice_counts.dimensions import corrections, location
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
@@ -35,7 +36,6 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_tes
     FakeState,
     row,
 )
-from recidiviz.tools.justice_counts import manual_upload
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
@@ -187,10 +187,10 @@ class CorrectionsOutputViewTest(BaseViewTest):
         prison_population_metric = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.PRISON],
+            filtered_dimensions=[corrections.PopulationType.PRISON],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -389,7 +389,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",
@@ -658,10 +658,10 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
         prison_population_metric = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.PRISON],
+            filtered_dimensions=[corrections.PopulationType.PRISON],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",

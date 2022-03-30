@@ -32,16 +32,17 @@ from recidiviz.big_query.big_query_view import (
 )
 from recidiviz.calculator.query.justice_counts.views import metric_calculator
 from recidiviz.common import date
+from recidiviz.justice_counts.dimensions import corrections, location, person
+from recidiviz.justice_counts.dimensions.base import Dimension
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
-from recidiviz.tools.justice_counts import manual_upload
 
 _npd = np.datetime64
 
 
 @attr.s(frozen=True)
-class FakeState(manual_upload.State):
+class FakeState(location.State):
     # Change the type to str so that is supports any value.
     state_code: str = attr.ib()  # type: ignore[assignment]
 
@@ -54,7 +55,7 @@ def row(
     source_and_report_id: int,
     publish_date_str: str,
     start_date_str: str,
-    dimensions: Tuple[manual_upload.Dimension, ...],
+    dimensions: Tuple[Dimension, ...],
     raw_source_categories: List[str],
     value: int,
     end_date_str: Optional[str] = None,
@@ -293,10 +294,10 @@ class MonthlyMetricViewTest(BaseViewTest):
         prison_population_metric = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.PRISON],
+            filtered_dimensions=[corrections.PopulationType.PRISON],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -540,12 +541,12 @@ class MonthlyMetricViewTest(BaseViewTest):
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
             filtered_dimensions=[
-                manual_upload.PopulationType.SUPERVISION,
-                manual_upload.SupervisionType.PAROLE,
+                corrections.PopulationType.SUPERVISION,
+                corrections.SupervisionType.PAROLE,
             ],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -867,13 +868,13 @@ class MonthlyMetricViewTest(BaseViewTest):
         parole_population = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.PRISON],
+            filtered_dimensions=[corrections.PopulationType.PRISON],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 ),
                 "gender": metric_calculator.Aggregation(
-                    dimension=manual_upload.Gender, comprehensive=True
+                    dimension=person.Gender, comprehensive=True
                 ),
             },
             output_name="POP",
@@ -900,7 +901,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     4,
                     "2021-01-02",
                     "2020-11-30",
-                    (FakeState("US_XA"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XA"), person.Gender("FEMALE")),
                     ["Female", "Offsite", "Female", "Onsite"],
                     110,
                 ),
@@ -908,7 +909,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     4,
                     "2021-01-02",
                     "2020-12-31",
-                    (FakeState("US_XA"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XA"), person.Gender("FEMALE")),
                     ["Female", "Offsite", "Female", "Onsite"],
                     220,
                 ),
@@ -916,7 +917,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-11-30",
-                    (FakeState("US_XB"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XB"), person.Gender("FEMALE")),
                     ["Female"],
                     2,
                 ),
@@ -924,7 +925,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-12-31",
-                    (FakeState("US_XB"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XB"), person.Gender("FEMALE")),
                     ["Female"],
                     6,
                 ),
@@ -932,7 +933,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-11-30",
-                    (FakeState("US_XC"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XC"), person.Gender("FEMALE")),
                     ["Female"],
                     4,
                 ),
@@ -940,7 +941,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-12-31",
-                    (FakeState("US_XC"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XC"), person.Gender("FEMALE")),
                     ["Female"],
                     8,
                 ),
@@ -948,7 +949,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     1,
                     "2021-01-01",
                     "2020-11-30",
-                    (FakeState("US_XX"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XX"), person.Gender("FEMALE")),
                     ["Female"],
                     1000,
                 ),
@@ -956,7 +957,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     1,
                     "2021-01-01",
                     "2020-12-31",
-                    (FakeState("US_XX"), manual_upload.Gender("FEMALE")),
+                    (FakeState("US_XX"), person.Gender("FEMALE")),
                     ["Female"],
                     1500,
                 ),
@@ -964,7 +965,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     4,
                     "2021-01-02",
                     "2020-11-30",
-                    (FakeState("US_XA"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XA"), person.Gender("MALE")),
                     ["Male", "Offsite", "Male", "Onsite"],
                     220,
                 ),
@@ -972,7 +973,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     4,
                     "2021-01-02",
                     "2020-12-31",
-                    (FakeState("US_XA"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XA"), person.Gender("MALE")),
                     ["Male", "Offsite", "Male", "Onsite"],
                     330,
                 ),
@@ -980,7 +981,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-11-30",
-                    (FakeState("US_XB"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XB"), person.Gender("MALE")),
                     ["Male"],
                     1,
                 ),
@@ -988,7 +989,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-12-31",
-                    (FakeState("US_XB"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XB"), person.Gender("MALE")),
                     ["Male"],
                     5,
                 ),
@@ -996,7 +997,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-11-30",
-                    (FakeState("US_XC"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XC"), person.Gender("MALE")),
                     ["Male"],
                     3,
                 ),
@@ -1004,7 +1005,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     5,
                     "2021-01-02",
                     "2020-12-31",
-                    (FakeState("US_XC"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XC"), person.Gender("MALE")),
                     ["Male"],
                     7,
                 ),
@@ -1012,7 +1013,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     1,
                     "2021-01-01",
                     "2020-11-30",
-                    (FakeState("US_XX"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XX"), person.Gender("MALE")),
                     ["Male"],
                     3000,
                 ),
@@ -1020,7 +1021,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     1,
                     "2021-01-01",
                     "2020-12-31",
-                    (FakeState("US_XX"), manual_upload.Gender("MALE")),
+                    (FakeState("US_XX"), person.Gender("MALE")),
                     ["Male"],
                     4000,
                 ),
@@ -1163,10 +1164,10 @@ class MonthlyMetricViewTest(BaseViewTest):
         parole_population = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.SUPERVISION],
+            filtered_dimensions=[corrections.PopulationType.SUPERVISION],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -1327,10 +1328,10 @@ class MonthlyMetricViewTest(BaseViewTest):
         parole_population = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.SUPERVISION],
+            filtered_dimensions=[corrections.PopulationType.SUPERVISION],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -1485,10 +1486,10 @@ class MonthlyMetricViewTest(BaseViewTest):
         parole_population = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.SUPERVISION],
+            filtered_dimensions=[corrections.PopulationType.SUPERVISION],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -1628,13 +1629,13 @@ class MonthlyMetricViewTest(BaseViewTest):
         parole_population = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.PRISON],
+            filtered_dimensions=[corrections.PopulationType.PRISON],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 ),
                 "race": metric_calculator.Aggregation(
-                    dimension=manual_upload.Race, comprehensive=True
+                    dimension=person.Race, comprehensive=True
                 ),
             },
             output_name="POP",
@@ -1661,7 +1662,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     1,
                     "2021-01-01",
                     "2020-11-30",
-                    (FakeState("US_XX"), manual_upload.Race("")),
+                    (FakeState("US_XX"), person.Race("")),
                     [],
                     103,
                 ),
@@ -1669,7 +1670,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     1,
                     "2021-01-01",
                     "2020-11-30",
-                    (FakeState("US_XX"), manual_upload.Race("BLACK")),
+                    (FakeState("US_XX"), person.Race("BLACK")),
                     [],
                     101,
                 ),
@@ -1677,7 +1678,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     1,
                     "2021-01-01",
                     "2020-11-30",
-                    (FakeState("US_XX"), manual_upload.Race("WHITE")),
+                    (FakeState("US_XX"), person.Race("WHITE")),
                     [],
                     102,
                 ),
@@ -1834,7 +1835,7 @@ class MonthlyMetricViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",
@@ -1994,7 +1995,7 @@ class MonthlyMetricViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",
@@ -2151,7 +2152,7 @@ class MonthlyMetricViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -2313,7 +2314,7 @@ class MonthlyMetricViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -2449,10 +2450,10 @@ class MonthlyMetricViewTest(BaseViewTest):
         new_commitments = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.ADMISSIONS,
-            filtered_dimensions=[manual_upload.AdmissionType.NEW_COMMITMENT],
+            filtered_dimensions=[corrections.AdmissionType.NEW_COMMITMENT],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",
@@ -2784,7 +2785,7 @@ class AnnualMetricViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",
@@ -2946,7 +2947,7 @@ class AnnualMetricViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",
@@ -3145,10 +3146,10 @@ class AnnualMetricViewTest(BaseViewTest):
         prison_population_metric = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.POPULATION,
-            filtered_dimensions=[manual_upload.PopulationType.PRISON],
+            filtered_dimensions=[corrections.PopulationType.PRISON],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="POP",
@@ -3357,7 +3358,7 @@ class AnnualMetricViewTest(BaseViewTest):
             filtered_dimensions=[],
             aggregated_dimensions={
                 "state_code": metric_calculator.Aggregation(
-                    dimension=manual_upload.State, comprehensive=False
+                    dimension=location.State, comprehensive=False
                 )
             },
             output_name="ADMISSIONS",

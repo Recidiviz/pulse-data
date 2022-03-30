@@ -28,6 +28,7 @@ from recidiviz.calculator.query.justice_counts.views import (
     jails_metrics,
     metric_calculator,
 )
+from recidiviz.justice_counts.dimensions import location
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
@@ -36,7 +37,6 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_tes
     FakeState,
     row,
 )
-from recidiviz.tools.justice_counts import manual_upload
 
 
 @patch("recidiviz.common.fips.validate_county_code", Mock(return_value=None))
@@ -68,7 +68,7 @@ class JailsOutputViewTest(BaseViewTest):
                         1,
                         "2021-01-01",
                         "2020-11-30",
-                        (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
+                        (FakeState("US_XX"), location.County("US_XX_ALPHA")),
                         [],
                         3000,
                         measurement_type="INSTANT",
@@ -78,7 +78,7 @@ class JailsOutputViewTest(BaseViewTest):
                         1,
                         "2021-01-01",
                         "2020-11-30",
-                        (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
+                        (FakeState("US_XX"), location.County("US_XX_BETA")),
                         [],
                         1000,
                         measurement_type="INSTANT",
@@ -88,7 +88,7 @@ class JailsOutputViewTest(BaseViewTest):
                         1,
                         "2021-01-01",
                         "2020-12-31",
-                        (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
+                        (FakeState("US_XX"), location.County("US_XX_ALPHA")),
                         [],
                         4000,
                         measurement_type="INSTANT",
@@ -98,7 +98,7 @@ class JailsOutputViewTest(BaseViewTest):
                         1,
                         "2021-01-01",
                         "2020-12-31",
-                        (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
+                        (FakeState("US_XX"), location.County("US_XX_BETA")),
                         [],
                         1500,
                         measurement_type="INSTANT",
@@ -137,10 +137,10 @@ class JailsOutputViewTest(BaseViewTest):
                 metric_name="POP",
                 aggregations={
                     "state_code": metric_calculator.Aggregation(
-                        dimension=manual_upload.State, comprehensive=False
+                        dimension=location.State, comprehensive=False
                     ),
                     "county_code": metric_calculator.Aggregation(
-                        dimension=manual_upload.County, comprehensive=False
+                        dimension=location.County, comprehensive=False
                     ),
                 },
                 value_column="value",
