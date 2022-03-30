@@ -23,22 +23,22 @@ from recidiviz.utils.metadata import local_project_id_override
 
 LATEST_INGESTED_UPPER_BOUNDS_QUERY_TEMPLATE = """
 WITH
-ingest_file_dates AS (
+primary_ingest_file_dates AS (
     SELECT
         DISTINCT
             region_code AS state_code,
             EXTRACT(DATE FROM datetimes_contained_upper_bound_inclusive) AS ingest_file_date,
             processed_time IS NOT NULL AS is_processed
     FROM `{project_id}.operations.direct_ingest_ingest_file_metadata`
-    WHERE NOT is_invalidated
+    WHERE NOT is_invalidated AND ingest_database_name LIKE '%primary%'
 ),
 min_unprocessed_dates AS (
     SELECT state_code, COALESCE(ingest_file_date, DATE(3000, 01, 01)) AS ingest_file_date
-    FROM (SELECT DISTINCT state_code FROM ingest_file_dates)
+    FROM (SELECT DISTINCT state_code FROM primary_ingest_file_dates)
     LEFT OUTER JOIN
     (
         SELECT state_code, MIN(ingest_file_date) AS ingest_file_date
-        FROM ingest_file_dates
+        FROM primary_ingest_file_dates
         WHERE NOT is_processed
         GROUP BY state_code
     )
@@ -46,7 +46,7 @@ min_unprocessed_dates AS (
 ),
 processed_dates AS (
     SELECT state_code, ingest_file_date
-    FROM ingest_file_dates
+    FROM primary_ingest_file_dates
     WHERE is_processed
 ),
 max_processed_dates AS (
@@ -65,14 +65,15 @@ max_processed_dates AS (
 SELECT
     state_code,
     processed_date
-FROM (SELECT DISTINCT state_code FROM ingest_file_dates)
+FROM (SELECT DISTINCT state_code FROM primary_ingest_file_dates)
 LEFT OUTER JOIN max_processed_dates
 USING (state_code)
+ORDER BY state_code
 """
 
 LATEST_INGESTED_UPPER_BOUNDS_DESCRIPTION = """A view that reports back on the ingest
  'high water mark', i.e. the latest date where all files on or before that date are
-  processed for a given state."""
+  processed for a given state in the PRIMARY ingest instance."""
 
 
 LATEST_INGESTED_UPPER_BOUNDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
