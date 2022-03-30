@@ -85,24 +85,5 @@ class ClientRecordEtlDelegateTest(TestCase):
 
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
-            self.assertEqual(doc_id, "201")
-            self.assertEqual(
-                row,
-                {
-                    "currentBalance": 282,
-                    "eligible": False,
-                    "eligibleWithDiscretion": False,
-                    "officerId": "102",
-                    "personExternalId": "201",
-                    "personName": {
-                        "givenNames": "Harry",
-                        "middleNames": "Henry",
-                        "nameSuffix": "",
-                        "surname": "Houdini IV",
-                    },
-                    "specialConditions": "NONE",
-                    "stateCode": "US_XX",
-                    "supervisionLevelStart": datetime(1900, 3, 10, 0, 0),
-                    "supervisionType": "ISC",
-                },
-            )
+            self.assertIsNone(doc_id)
+            self.assertIsNone(row)

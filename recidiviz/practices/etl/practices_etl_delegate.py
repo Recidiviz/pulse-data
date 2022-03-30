@@ -19,7 +19,7 @@ practices frontend database(s)."""
 import abc
 import logging
 import os
-from typing import Iterator, TextIO, Tuple
+from typing import Iterator, Optional, TextIO, Tuple
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -83,7 +83,7 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
         """Name of the Firestore collection this delegate will ETL into."""
 
     @abc.abstractmethod
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         """Prepares a row of the exported file for Firestore ingestion.
         Returns a tuple of the document ID and the document contents."""
 
@@ -103,6 +103,8 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
         for file_stream in self.get_file_stream():
             while line := file_stream.readline():
                 row_id, new_document = self.transform_row(line)
+                if row_id is None:
+                    continue
                 batch.set(firestore_collection.document(row_id), new_document)
                 num_records_to_write += 1
                 total_records_written += 1
