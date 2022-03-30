@@ -46,6 +46,10 @@ class RecidivizCheckerTest(unittest.TestCase):
             testutils.MessageTest(
                 msg_id="strict-string-format",
                 node=str_node,
+                line=1,
+                col_offset=0,
+                end_line=1,
+                end_col_offset=10,
             ),
         ):
             cast(
@@ -60,6 +64,10 @@ class RecidivizCheckerTest(unittest.TestCase):
             testutils.MessageTest(
                 msg_id="strict-string-format",
                 node=str_node,
+                line=1,
+                col_offset=0,
+                end_line=1,
+                end_col_offset=10,
             ),
         ):
             cast(
