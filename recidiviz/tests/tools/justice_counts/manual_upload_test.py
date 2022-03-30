@@ -33,6 +33,8 @@ from recidiviz.common.constants.entity_enum import (
     EnumParsingError,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.justice_counts.dimensions import corrections, helpers, location, person
+from recidiviz.justice_counts.dimensions.base import Dimension
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -40,11 +42,6 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
-from recidiviz.tools.justice_counts.manual_upload import (
-    County,
-    Dimension,
-    raw_for_dimension_cls,
-)
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -58,7 +55,7 @@ def manifest_filepath(report_id: str, manifest_name: Optional[str] = None) -> st
     )
 
 
-class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
+class FakeType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """
     Fake dimension used for testing
     """
@@ -71,9 +68,7 @@ class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
     def get(
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> "FakeType":
-        return manual_upload.parse_entity_enum(
-            cls, dimension_cell_value, enum_overrides
-        )
+        return helpers.parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
     def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
@@ -96,13 +91,13 @@ class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
+        return [helpers.raw_for_dimension_cls(cls)]
 
     @classmethod
     def generate_dimension_classes(
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+        return [helpers.raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -117,7 +112,7 @@ class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
         }
 
 
-class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
+class FakeSubtype(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """
     Fake dimension used for testing
     """
@@ -129,9 +124,7 @@ class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta)
     def get(
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> "FakeSubtype":
-        return manual_upload.parse_entity_enum(
-            cls, dimension_cell_value, enum_overrides
-        )
+        return helpers.parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
     def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
@@ -154,13 +147,13 @@ class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta)
 
     @classmethod
     def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
+        return [helpers.raw_for_dimension_cls(cls)]
 
     @classmethod
     def generate_dimension_classes(
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+        return [helpers.raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -1560,10 +1553,10 @@ class ManualUploadTest(TestCase):
                 "MSP Population by Race",
                 "Unknown",
                 "test table",
-                manual_upload.State("US_CO"),
-                [manual_upload.Facility("MSP")],
-                dimensions=[manual_upload.Race, manual_upload.PopulationType],
-                data_points=[((manual_upload.Race("Black"),), decimal.Decimal(0))],
+                location.State("US_CO"),
+                [location.Facility("MSP")],
+                dimensions=[person.Race, corrections.PopulationType],
+                data_points=[((person.Race("Black"),), decimal.Decimal(0))],
             )
 
     def test_jailPopulationAndFIPS_arePersisted(self) -> None:
@@ -1689,7 +1682,7 @@ class ManualUploadTest(TestCase):
 
     def testCountyIncorrectFormatRaisesError(self) -> None:
         with self.assertRaisesRegex(ValueError, "Invalid county code"):
-            County.get("New York")
+            location.County.get("New York")
 
     def test_reingestReport(self) -> None:
         # Act
@@ -1787,9 +1780,7 @@ class TestTableConverter(TestCase):
                 manual_upload.DimensionGenerator(
                     column_name="Age",
                     dimension_mappings=[
-                        manual_upload.ColumnDimensionMapping(
-                            manual_upload.Age, overrides=None
-                        )
+                        manual_upload.ColumnDimensionMapping(person.Age, overrides=None)
                     ],
                 )
             ],
@@ -1808,16 +1799,14 @@ class TestTableConverter(TestCase):
                 manual_upload.DimensionGenerator(
                     column_name="Age",
                     dimension_mappings=[
-                        manual_upload.ColumnDimensionMapping(
-                            manual_upload.Age, overrides=None
-                        )
+                        manual_upload.ColumnDimensionMapping(person.Age, overrides=None)
                     ],
                 ),
                 manual_upload.DimensionGenerator(
                     column_name="Race",
                     dimension_mappings=[
                         manual_upload.ColumnDimensionMapping(
-                            manual_upload.Race, overrides=None
+                            person.Race, overrides=None
                         )
                     ],
                 ),

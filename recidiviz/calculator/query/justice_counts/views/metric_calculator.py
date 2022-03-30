@@ -27,8 +27,9 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.justice_counts import dataset_config
+from recidiviz.justice_counts.dimensions import location
+from recidiviz.justice_counts.dimensions.base import Dimension
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.tools.justice_counts import manual_upload
 
 FETCH_AND_FILTER_METRIC_VIEW_TEMPLATE = """
 /*{description}*/
@@ -228,7 +229,7 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
     Arguments:
     * partition_columns={"date"}
     * context_columns={}
-    * dimensions_to_keep={manual_upload.State}
+    * dimensions_to_keep={location.State}
     * value_columns={"value"}
 
     Input Table:
@@ -253,7 +254,7 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
     Arguments:
     * partition_columns={"date"}
     * context_columns={"source_id": ContextAggregation.ARRAY}
-    * dimensions_to_keep={manual_upload.State}
+    * dimensions_to_keep={location.State}
     * value_columns={"value"}
     * collapse_dimensions_filter="dimension = 'global/gender'"
     * keep_original=True
@@ -296,7 +297,7 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
         metric_name: str,
         input_view: BigQueryViewBuilder,
         partition_columns: Set[str],
-        partition_dimensions: Set[Type[manual_upload.Dimension]],
+        partition_dimensions: Set[Type[Dimension]],
         context_columns: Dict[str, ContextAggregation],
         value_columns: Set[str],
         collapse_dimensions_filter: str = "FALSE",
@@ -986,7 +987,7 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
 
 @attr.s(frozen=True)
 class Aggregation:
-    dimension: Type[manual_upload.Dimension] = attr.ib()
+    dimension: Type[location.Dimension] = attr.ib()
 
     # Whether the data for this dimension must be comprehensive to be included in the output. Here comprehensive means
     # that adding up all the values for this dimension would give us the correct total.
@@ -1017,7 +1018,7 @@ class CalculatedMetric:
     metric: schema.MetricType = attr.ib()
 
     # Only include data that matches these filters.
-    filtered_dimensions: List[manual_upload.Dimension] = attr.ib()
+    filtered_dimensions: List[Dimension] = attr.ib()
 
     # Aggregate the data, keeping these dimensions. The key is used as the name of the column in the output.
     aggregated_dimensions: Dict[str, Aggregation] = attr.ib()
@@ -1029,7 +1030,7 @@ class CalculatedMetric:
         return view_prefix_for_metric_name(self.output_name)
 
     @property
-    def _comprehensive_aggregations(self) -> List[Type[manual_upload.Dimension]]:
+    def _comprehensive_aggregations(self) -> List[Type[Dimension]]:
         return [
             aggregation.dimension
             for aggregation in self.aggregated_dimensions.values()
@@ -1037,7 +1038,7 @@ class CalculatedMetric:
         ]
 
     @property
-    def _noncomprehensive_aggregations(self) -> List[Type[manual_upload.Dimension]]:
+    def _noncomprehensive_aggregations(self) -> List[Type[Dimension]]:
         return [
             aggregation.dimension
             for aggregation in self.aggregated_dimensions.values()
@@ -1045,7 +1046,7 @@ class CalculatedMetric:
         ]
 
     @property
-    def input_allowed_filters(self) -> List[Type[manual_upload.Dimension]]:
+    def input_allowed_filters(self) -> List[Type[Dimension]]:
         """Filters that a table definition can have and still be used as input for this calculation."""
         return [
             type(filtered_dimension) for filtered_dimension in self.filtered_dimensions
