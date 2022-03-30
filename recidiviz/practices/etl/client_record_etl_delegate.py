@@ -19,7 +19,7 @@ import json
 import logging
 import re
 from datetime import datetime
-from typing import Tuple
+from typing import Optional, Tuple
 
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
 from recidiviz.practices.etl.practices_etl_delegate import PracticesFirestoreETLDelegate
@@ -43,8 +43,11 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
     EXPORT_FILENAME = "client_record.json"
     COLLECTION_NAME = "clients"
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
+
+        if not data["eligible"]:
+            return None, None
 
         # First fill the non-nullable fields
         new_document = {
@@ -106,7 +109,7 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
             )
 
         # add nullable objects
-        if data["eligible_with_discretion"]:
+        if data["eligible"]:
             new_document["compliantReportingEligible"] = {
                 "currentOffenses": data.get("current_offenses"),
                 "lifetimeOffensesExpired": data.get("lifetime_offenses_expired"),
