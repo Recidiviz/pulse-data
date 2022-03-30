@@ -15,18 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Justice Counts Control Panel backend API."""
-from typing import Callable
+from typing import Callable, Optional
 
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, make_response
+from flask_wtf.csrf import generate_csrf
 
 
 # TODO(#11504): Replace dummy endpoint
-def get_api_blueprint(auth_decorator: Callable) -> Blueprint:
+def get_api_blueprint(
+    auth_decorator: Callable, secret_key: Optional[str] = None
+) -> Blueprint:
     api_blueprint = Blueprint("api", __name__)
 
     @api_blueprint.route("/hello")
     @auth_decorator
     def hello() -> Response:
         return jsonify({"response": "Hello, World!"})
+
+    @api_blueprint.route("/init")
+    @auth_decorator
+    def init() -> Response:
+        if not secret_key:
+            return make_response("Unable to find secret key", 500)
+
+        return jsonify({"csrf": generate_csrf(secret_key)})
 
     return api_blueprint

@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
-from http import HTTPStatus
-
 import pytest
+from flask import session
 from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.control_panel.config import Config
@@ -42,10 +41,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.app = create_app(config=test_config)
         self.client = self.app.test_client()
+        self.app.secret_key = "NOT A SECRET"
         # `flask_sqlalchemy_session` sets the `scoped_session` attribute on the app,
         # even though this is not specified in the types for `app`.
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
-
         super().setUp()
 
     def get_engine(self) -> Engine:
@@ -57,9 +56,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["response"], "Hello, World!")
 
     def test_logout(self) -> None:
-        # TODO(#11550): Test logout endpoint
-        response = self.client.post("/auth/logout")
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["session_data"] = {"foo": "bar"}
+
+            response = client.post("/auth/logout")
+            self.assertEqual(response.status_code, 200)
+            with self.app.test_request_context():
+                self.assertEqual(0, len(session.keys()))
 
     def test_session(self) -> None:
         # Add data

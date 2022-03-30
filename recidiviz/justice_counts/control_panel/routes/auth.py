@@ -15,19 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements authentication routes for the Justice Counts Control Panel backend API."""
-
 from http import HTTPStatus
+from typing import Callable
 
-from flask import Blueprint, Response
+from flask import Blueprint, Response, session
 
 
-def get_auth_blueprint() -> Blueprint:
+def get_auth_blueprint(
+    auth_decorator: Callable,
+) -> Blueprint:
     auth_blueprint = Blueprint("auth", __name__)
 
     @auth_blueprint.route("/logout", methods=["POST"])
+    @auth_decorator
     def logout() -> Response:
-        # Deletes the session cookie and corresponding data
-        # TODO(#11550): Implement logout endpoint
+        """Logging out requires 1) clearing the session 2) logging out of Auth0.
+        This endpoint clears the session, but the user will be logged out of
+        Auth0 in the FE.
+        """
+        session.clear()
         return Response(status=HTTPStatus.OK)
 
     return auth_blueprint
