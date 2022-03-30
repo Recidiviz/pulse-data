@@ -68,7 +68,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     config = config or Config()
     app.config.from_object(config)
-    app.secret_key = get_local_secret(local_path, "justice_counts_secret")
+    app.secret_key = get_local_secret(local_path, "justice_counts_secret_key")
     setup_scoped_sessions(
         app=app, database_key=config.DATABASE_KEY, db_url=config.DB_URL
     )

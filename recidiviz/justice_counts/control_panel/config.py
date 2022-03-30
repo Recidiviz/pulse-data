@@ -18,7 +18,7 @@
 
 import json
 import os
-from typing import Callable
+from typing import Callable, Optional
 
 import attr
 
@@ -29,8 +29,12 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.utils.auth.auth0 import Auth0Config, build_auth0_authorization_decorator
-from recidiviz.utils.environment import in_development
+from recidiviz.utils.auth.auth0 import (
+    Auth0Config,
+    build_auth0_authorization_decorator,
+    passthrough_authorization_decorator,
+)
+from recidiviz.utils.environment import in_ci, in_development
 from recidiviz.utils.secrets import get_local_secret
 
 JUSTICE_COUNTS_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(
@@ -61,12 +65,21 @@ class Config:
 
     @AUTH_DECORATOR.default
     def _auth_decorator_factory(self) -> Callable:
+        if in_ci():
+            return passthrough_authorization_decorator()
+
         return build_auth0_authorization_decorator(
             self.AUTH0_CONFIGURATION, on_successful_authorization
         )
 
     @AUTH0_CONFIGURATION.default
-    def _auth_configuration_factory(self) -> Auth0Config:
+    def _auth_configuration_factory(self) -> Optional[Auth0Config]:
+        if in_ci():
+            # In our GH Actions CI test workflow, there's no easy way to get
+            # access to a working Auth0 secret, and we don't need one to
+            # prove that the server is working, so just return None
+            return None
+
         local_path = os.path.join(
             os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
         )
