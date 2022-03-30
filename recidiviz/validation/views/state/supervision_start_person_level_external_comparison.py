@@ -35,36 +35,53 @@ Comparison of internal and external lists of supervision starts.
 
 SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 /*{description}*/
-    WITH external_data AS (
-      -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
-      -- generate data to insert into the `supervision_start_person_level` table.
-      SELECT region_code, person_external_id, start_date
-      FROM `{project_id}.{external_accuracy_dataset}.supervision_start_person_level`
-    ), internal_data AS (
-      SELECT state_code as region_code, person_external_id, start_date,
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_start_metrics_materialized`
-      -- TODO(#5422): Remove admission_reason filter once we have removed transfers from events
-      WHERE admission_reason NOT IN ('TRANSFER_WITHIN_STATE', 'TRANSFER_OUT_OF_STATE')
-        AND supervision_type IN ('PROBATION', 'PAROLE', 'DUAL')
-    ), internal_metrics_for_valid_regions_and_dates AS (
-      SELECT * FROM
-      -- Only compare regions and months for which we have external validation data
-      (SELECT DISTINCT region_code, start_date FROM external_data)
-      LEFT JOIN
-        internal_data
-      USING (region_code, start_date)
-    )
+WITH external_data AS (
+  -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
+  -- generate data to insert into the `supervision_start_person_level` table.
+  SELECT region_code, person_external_id, start_date
+  FROM `{project_id}.{external_accuracy_dataset}.supervision_start_person_level`
+), external_data_with_ids AS (
+  SELECT
+    region_code,
+    start_date,
+    external_data.person_external_id,
+    COALESCE(CAST(person_id AS STRING), 'UNKNOWN_PERSON') as person_id 
+  FROM external_data
+  LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` all_state_person_ids
+  ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
+  -- Limit to supervision IDs in states that have multiple
+  AND (region_code != 'US_ND' OR id_type = 'US_ND_SID')
+  AND (region_code != 'US_PA' OR id_type = 'US_PA_PBPP')
+), internal_data AS (
+  SELECT
+    state_code as region_code,
+    start_date,
+    person_external_id,
+    CAST(person_id AS STRING) AS person_id
+  FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_start_metrics_materialized`
+  WHERE is_official_supervision_admission
+    AND supervision_type IN ('PROBATION', 'PAROLE', 'DUAL', 'INFORMAL_PROBATION')
+), internal_metrics_for_valid_regions_and_dates AS (
+  SELECT * FROM
+  -- Only compare regions and months for which we have external validation data
+  (SELECT DISTINCT region_code, start_date FROM external_data)
+  LEFT JOIN
+    internal_data
+  USING (region_code, start_date)
+)
 
-    SELECT
-      region_code,
-      start_date,
-      external_data.person_external_id AS external_person_external_id,
-      internal_data.person_external_id AS internal_person_external_id,
-    FROM
-      external_data
-    FULL OUTER JOIN
-      internal_metrics_for_valid_regions_and_dates internal_data
-    USING(region_code, start_date, person_external_id)
+SELECT
+  region_code,
+  start_date,
+  external_data.person_id AS external_person_id,
+  internal_data.person_id AS internal_person_id,
+  external_data.person_external_id AS external_person_external_id,
+  internal_data.person_external_id AS internal_person_external_id,
+FROM
+  external_data_with_ids external_data
+FULL OUTER JOIN
+  internal_metrics_for_valid_regions_and_dates internal_data
+USING(region_code, start_date, person_id)
 """
 
 SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -74,6 +91,7 @@ SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQuery
     description=SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    state_base_dataset=state_dataset_config.STATE_BASE_DATASET,
     should_materialize=True,
 )
 
