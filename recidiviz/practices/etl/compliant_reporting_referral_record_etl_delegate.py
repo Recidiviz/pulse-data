@@ -45,9 +45,11 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
             "tdocId": data["tdoc_id"],
             "currentOffenses": json.loads(data["current_offenses"]),
             "supervisionType": data["supervision_type"],
-            "supervisionFeeAssessed": data["supervision_fee_assessed"],
+            "supervisionFeeAssessed": data.get("supervision_fee_assessed", ""),
             "supervisionFeeArrearaged": data["supervision_fee_arrearaged"],
-            "supervisionFeeArrearagedAmount": data["supervision_fee_arrearaged_amount"],
+            "supervisionFeeArrearagedAmount": data.get(
+                "supervision_fee_arrearaged_amount", ""
+            ),
             "supervisionFeeExemptionType": json.loads(
                 data["supervision_fee_exemption_type"]
             ),
