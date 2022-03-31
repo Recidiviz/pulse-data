@@ -18,7 +18,6 @@
 import json
 import logging
 import re
-from datetime import datetime
 from typing import Optional, Tuple
 
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
@@ -87,26 +86,21 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
         if "supervision_level" in data:
             new_document["supervisionLevel"] = data["supervision_level"]
 
-        # add nullable dates
+        # Note that date fields such as these are preserved as ISO strings (i.e., "YYYY-MM-DD")
+        # rather than datetimes to avoid time-zone discrepancies
         if "supervision_level_start" in data:
-            new_document["supervisionLevelStart"] = datetime.fromisoformat(
-                data["supervision_level_start"]
-            )
+            new_document["supervisionLevelStart"] = data["supervision_level_start"]
 
         if "next_special_conditions_check" in data:
-            new_document["nextSpecialConditionsCheck"] = datetime.fromisoformat(
-                data["next_special_conditions_check"]
-            )
+            new_document["nextSpecialConditionsCheck"] = data[
+                "next_special_conditions_check"
+            ]
 
         if "last_payment_date" in data:
-            new_document["lastPaymentDate"] = datetime.fromisoformat(
-                data["last_payment_date"]
-            )
+            new_document["lastPaymentDate"] = data["last_payment_date"]
 
         if "expiration_date" in data:
-            new_document["expirationDate"] = datetime.fromisoformat(
-                data["expiration_date"]
-            )
+            new_document["expirationDate"] = data["expiration_date"]
 
         # add nullable objects
         if data["eligible"]:
@@ -117,7 +111,7 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
                 "drugScreensPastYear": [
                     {
                         "result": screen["ContactNoteType"],
-                        "date": datetime.fromisoformat(screen["contact_date"]),
+                        "date": screen["contact_date"],
                     }
                     for screen in data["drug_screens_past_year"]
                 ],
@@ -125,14 +119,14 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
             }
 
             if "eligible_level_start" in data:
-                new_document["compliantReportingEligible"][
-                    "eligibleLevelStart"
-                ] = datetime.fromisoformat(data["eligible_level_start"])
+                new_document["compliantReportingEligible"]["eligibleLevelStart"] = data[
+                    "eligible_level_start"
+                ]
 
             if "most_recent_arrest_check" in data:
                 new_document["compliantReportingEligible"][
                     "mostRecentArrestCheck"
-                ] = datetime.fromisoformat(data["most_recent_arrest_check"])
+                ] = data["most_recent_arrest_check"]
 
         return data["person_external_id"], new_document
 
