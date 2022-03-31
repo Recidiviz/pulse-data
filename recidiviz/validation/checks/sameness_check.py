@@ -160,7 +160,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
 
         view_id = self.view_builder.view_id
         if self.validation_name_suffix is not None:
-            view_id += self.validation_name_suffix
+            view_id += f"_{self.validation_name_suffix}"
 
         return SimpleBigQueryViewBuilder(
             dataset_id=self.view_builder.dataset_id,
