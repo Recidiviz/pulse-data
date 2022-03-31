@@ -39,6 +39,7 @@ SUPERVISION_TYPE_MAPPING = {
 class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
     """Delegate class to ETL the client_record.json file into Firestore."""
 
+    STATE_CODE = "US_TN"
     EXPORT_FILENAME = "client_record.json"
     COLLECTION_NAME = "clients"
 

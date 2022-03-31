@@ -31,6 +31,7 @@ from recidiviz.utils.metadata import local_project_id_override
 class TestETLDelegate(PracticesFirestoreETLDelegate):
     EXPORT_FILENAME = "test_export.json"
     COLLECTION_NAME = "test_collection"
+    STATE_CODE = "US_XX"
 
     def transform_row(self, row: str) -> Tuple[str, dict]:
         return row, {"data": row}
