@@ -36,14 +36,14 @@ OFFENSE_TYPE_MAPPING_QUERY_TEMPLATE = """
                 offense_type,
                 description,
                 CASE
-                    WHEN description LIKE '%ROBBERY%' THEN 'PROPERTY'
+                    WHEN description LIKE '%ROBBERY%' AND offense_type!='ASSAULT' THEN 'PROPERTY'
                     WHEN offense_type LIKE '%MURDER%' THEN 'MURDER_HOMICIDE'
                     WHEN offense_type LIKE '%MISC%' THEN 'OTHER'
                     WHEN offense_type = 'SEX' THEN 'SEX'
                     WHEN offense_type = 'DRUG' THEN 'ALCOHOL_DRUG'
                     -- This is placed here because there are some instances of "obtaining controlled substance through fraud" that should get labeled
                     -- "DRUG" with the previous line
-                    WHEN description LIKE '%FORGERY%' OR description LIKE '%FRAUD%' THEN 'FRAUD'
+                    WHEN (description LIKE '%FORGERY%' OR description LIKE '%FRAUD%') AND offense_type != 'PROPERTY' THEN 'FRAUD'
                     WHEN offense_type = 'ALCOHOL' THEN 'ALCOHOL_DRUG'
                     WHEN offense_type = 'ASSAULT' THEN 'ASSAULT'
                     WHEN offense_type = 'PROPERTY' THEN 'PROPERTY'
