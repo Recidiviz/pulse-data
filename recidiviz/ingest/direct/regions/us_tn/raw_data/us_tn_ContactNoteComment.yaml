@@ -1,4 +1,4 @@
-file_tag: ContactNoteComment16
+file_tag: ContactNoteComment
 file_description: |-
   This table contains for all comments (collected together) associated with a contact. Because of the size of the origin table, it has been split into ~20 separate files when exported.
 primary_key_cols:
