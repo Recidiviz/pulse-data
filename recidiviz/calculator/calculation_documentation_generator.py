@@ -31,6 +31,7 @@ import attr
 from google.cloud import bigquery
 from pytablewriter import MarkdownTableWriter
 
+import recidiviz
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNodeFamily,
@@ -92,7 +93,9 @@ from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 ESCAPED_DOUBLE_UNDERSCORE = r"\__"
 DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS
-CALC_DOCS_PATH = "docs/calculation"
+CALC_DOCS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(recidiviz.__file__)), "docs/calculation"
+)
 
 MAX_DEPENDENCY_TREE_LENGTH = 250
 
