@@ -47,10 +47,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
     default_normalized_sp_index_for_tests,
@@ -645,18 +642,16 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 
     def _test_get_commitment_from_supervision_supervision_type(
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
         previous_supervision_period: Optional[NormalizedStateSupervisionPeriod] = None,
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         return self.delegate.get_commitment_from_supervision_supervision_type(
-            incarceration_sentences=[],
-            supervision_sentences=[],
             incarceration_period=incarceration_period,
             previous_supervision_period=previous_supervision_period,
         )
 
     def test_us_nd_get_pre_commitment_supervision_type_default(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

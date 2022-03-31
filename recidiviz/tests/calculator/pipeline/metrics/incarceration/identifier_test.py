@@ -87,10 +87,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_delegate import (
     UsMoIncarcerationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    SupervisionTypeSpan,
-    UsMoSentenceStatus,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
 )
@@ -117,12 +113,8 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -132,22 +124,13 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
-    StateIncarcerationSentence,
-    StatePerson,
-    StateSupervisionSentence,
-)
+from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
     default_normalized_sp_index_for_tests,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
-)
-from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
-    FakeUsMoIncarcerationSentence,
-    FakeUsMoSupervisionSentence,
 )
 
 _STATE_CODE = "US_XX"
@@ -195,8 +178,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_periods: Optional[
             List[NormalizedStateIncarcerationPeriod]
         ] = None,
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
-        supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         assessments: Optional[List[StateAssessment]] = None,
         violation_responses: Optional[
@@ -231,8 +212,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             **required_delegates,
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods
             or [],
-            StateIncarcerationSentence.__name__: incarceration_sentences or [],
-            StateSupervisionSentence.__name__: supervision_sentences or [],
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods
             or [],
             StateAssessment.__name__: assessments or [],
@@ -261,15 +240,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2008, 10, 11),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         incarceration_events = self._run_find_incarceration_events(
             incarceration_periods=[incarceration_period],
-            incarceration_sentences=[incarceration_sentence],
         )
 
         assert incarceration_period.admission_date is not None
@@ -333,15 +305,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2008, 1, 11),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         incarceration_events = self._run_find_incarceration_events(
             incarceration_periods=[incarceration_period_1, incarceration_period_2],
-            incarceration_sentences=[incarceration_sentence],
         )
 
         assert incarceration_period_1.admission_date is not None
@@ -507,22 +472,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2008, 10, 11),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            start_date=date(2008, 10, 11),
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         incarceration_events = self._run_find_incarceration_events(
             incarceration_periods=[incarceration_period],
-            incarceration_sentences=[incarceration_sentence],
-            supervision_sentences=[supervision_sentence],
         )
 
         assert incarceration_period.admission_date is not None
@@ -563,7 +514,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.IncarcerationIdentifier()
 
-    def _run_find_incarceration_stays_with_no_sentences(
+    def _run_find_incarceration_stays(
         self,
         incarceration_period: NormalizedStateIncarcerationPeriod,
         county_of_residence: Optional[str] = _COUNTY_OF_RESIDENCE,
@@ -572,11 +523,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         ] = None,
         incarceration_delegate: Optional[StateSpecificIncarcerationDelegate] = None,
     ) -> List[IncarcerationStayEvent]:
-        """Runs `find_incarceration_stays` without providing sentence information.
-        Sentence information is only used in `US_MO` to inform information about
-        supervision types prior to admission. All tests using this method should not
-        require that state specific logic.
-        """
+        """Helper for testing `_find_incarceration_stays`."""
         incarceration_period_judicial_district_association = incarceration_period_judicial_district_association or {
             _DEFAULT_IP_ID: _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION[
                 0
@@ -620,7 +567,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             }
         }
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period,
             incarceration_period_judicial_district_association=incarceration_period_judicial_district_association,
         )
@@ -653,7 +600,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -675,7 +622,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -695,7 +642,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            _ = self._run_find_incarceration_stays_with_no_sentences(
+            _ = self._run_find_incarceration_stays(
                 incarceration_period, _COUNTY_OF_RESIDENCE
             )
 
@@ -712,7 +659,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -735,7 +682,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -757,7 +704,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -780,7 +727,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -815,10 +762,8 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events_period_1 = (
-            self._run_find_incarceration_stays_with_no_sentences(
-                incarceration_period, _COUNTY_OF_RESIDENCE
-            )
+        incarceration_events_period_1 = self._run_find_incarceration_stays(
+            incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
         expected_incarceration_events = expected_incarceration_stay_events(
@@ -827,10 +772,8 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events_period_1)
 
-        incarceration_events_period_2 = (
-            self._run_find_incarceration_stays_with_no_sentences(
-                incarceration_period_2, _COUNTY_OF_RESIDENCE
-            )
+        incarceration_events_period_2 = self._run_find_incarceration_stays(
+            incarceration_period_2, _COUNTY_OF_RESIDENCE
         )
 
         expected_incarceration_events = expected_incarceration_stay_events(
@@ -852,7 +795,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -875,7 +818,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -902,7 +845,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        incarceration_events = self._run_find_incarceration_stays_with_no_sentences(
+        incarceration_events = self._run_find_incarceration_stays(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -1041,8 +984,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         self,
         incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
-        supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         assessments: Optional[List[StateAssessment]] = None,
         violation_responses: Optional[
@@ -1051,13 +992,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         state_specific_override: Optional[str] = None,
         county_of_residence: Optional[str] = _COUNTY_OF_RESIDENCE,
     ) -> Optional[IncarcerationAdmissionEvent]:
-        """Runs `admission_event_for_period` without providing sentence information.
-        Sentence information is only used in `US_MO` to inform information about
-        supervision types prior to admission. All tests using this method should not
-        require that state specific logic.
-        """
-        incarceration_sentences = incarceration_sentences or []
-        supervision_sentences = supervision_sentences or []
+        """Runs `_admission_event_for_period`."""
         state_specific_delegates = (
             get_all_state_specific_delegates(state_code=state_specific_override)
             if state_specific_override
@@ -1086,8 +1021,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             commitment_from_supervision_delegate=state_specific_delegates.commitment_from_supervision_delegate,
             violation_delegate=state_specific_delegates.violation_delegate,
             supervision_delegate=state_specific_delegates.supervision_delegate,
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
@@ -1115,47 +1048,10 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 2, 15),
         )
-        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
-            StateSupervisionSentence.new_with_defaults(
-                supervision_sentence_id=1111,
-                state_code="US_MO",
-                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                start_date=date(2010, 1, 1),
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            ),
-            supervision_type_spans=[
-                SupervisionTypeSpan(
-                    start_date=date(2010, 1, 1),
-                    end_date=None,
-                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                    start_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-1",
-                            status_date=date(2010, 1, 1),
-                            status_code="40I2000",
-                            status_description="Prob Rev-Technical",
-                            person_external_id="1",
-                            is_supervision_type_critical_status=False,
-                            is_supervision_out_status=False,
-                            is_supervision_in_status=False,
-                            is_incarceration_in_status=False,
-                            is_incarceration_out_status=False,
-                            is_lifetime_supervision_start_status=False,
-                            is_sentence_termination_status_candidate=False,
-                            is_investigation_status=False,
-                            is_sentence_termimination_status=False,
-                        )
-                    ],
-                    end_critical_statuses=[],
-                )
-            ],
-        )
 
         admission_event = self._run_admission_event_for_period(
             incarceration_period=incarceration_period,
             supervision_periods=[supervision_period],
-            supervision_sentences=[supervision_sentence],
         )
 
         assert incarceration_period.admission_date is not None
@@ -1320,8 +1216,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         violation_delegate: StateSpecificViolationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
-        supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
         violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
@@ -1336,8 +1230,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
     ) -> IncarcerationCommitmentFromSupervisionAdmissionEvent:
         """Helper function for testing the
         _commitment_from_supervision_event_for_period function."""
-        supervision_sentences = supervision_sentences or []
-        incarceration_sentences = incarceration_sentences or []
         assessments = assessments or []
         sorted_violation_responses = (
             sorted(violation_responses, key=lambda b: b.response_date or date.min)
@@ -1364,8 +1256,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         # pylint: disable=protected-access
         return self.identifier._commitment_from_supervision_event_for_period(
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
@@ -1746,73 +1636,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         assert supervision_period.start_date is not None
         assert supervision_period.termination_date is not None
-        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
-            StateSupervisionSentence.new_with_defaults(
-                state_code="US_MO",
-                supervision_sentence_id=111,
-                start_date=date(2008, 3, 5),
-                external_id="ss1",
-                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                status=StateSentenceStatus.REVOKED,
-                completion_date=date(2018, 5, 19),
-            ),
-            supervision_type_spans=[
-                SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
-                    end_date=supervision_period.termination_date,
-                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                    start_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-1",
-                            status_date=date(2010, 1, 1),
-                            status_code="40I2000",
-                            status_description="Prob Rev-Technical",
-                            person_external_id="1",
-                            is_supervision_type_critical_status=False,
-                            is_supervision_out_status=False,
-                            is_supervision_in_status=False,
-                            is_incarceration_in_status=False,
-                            is_incarceration_out_status=False,
-                            is_lifetime_supervision_start_status=False,
-                            is_sentence_termination_status_candidate=False,
-                            is_investigation_status=False,
-                            is_sentence_termimination_status=False,
-                        )
-                    ],
-                    end_critical_statuses=[],
-                ),
-                SupervisionTypeSpan(
-                    start_date=supervision_period.termination_date,
-                    end_date=None,
-                    supervision_type=None,
-                    start_critical_statuses=[],
-                    end_critical_statuses=None,
-                ),
-            ],
-        )
-
         assert incarceration_period.admission_date is not None
-        incarceration_sentence = (
-            FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
-                StateIncarcerationSentence.new_with_defaults(
-                    state_code="US_MO",
-                    incarceration_sentence_id=123,
-                    external_id="is1",
-                    start_date=date(2018, 5, 25),
-                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                ),
-                supervision_type_spans=[
-                    SupervisionTypeSpan(
-                        start_date=incarceration_period.admission_date,
-                        end_date=None,
-                        supervision_type=None,
-                        start_critical_statuses=[],
-                        end_critical_statuses=None,
-                    )
-                ],
-            )
-        )
 
         violation_responses = [
             supervision_violation_response,
@@ -1824,8 +1648,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 pre_commitment_supervision_period=supervision_period,
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
-                supervision_sentences=[supervision_sentence],
-                incarceration_sentences=[incarceration_sentence],
                 violation_delegate=UsMoViolationDelegate(),
                 supervision_delegate=UsMoSupervisionDelegate(),
                 supervision_period_to_agent_associations={
@@ -1912,21 +1734,10 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_ND",
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-        )
-
         commitment_from_supervision_event = self._run_commitment_from_supervision_event_for_period(
             pre_commitment_supervision_period=supervision_period,
             incarceration_period=incarceration_period,
             violation_responses=[ssvr],
-            supervision_sentences=[supervision_sentence],
-            incarceration_sentences=[],
             commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
             violation_delegate=UsNdViolationDelegate(),
             supervision_delegate=UsNdSupervisionDelegate(),
@@ -1966,17 +1777,14 @@ class TestReleaseEventForPeriod(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.IncarcerationIdentifier()
 
-    def _run_release_for_period_with_no_sentences(
+    def _run_release_for_period(
         self,
         incarceration_period: NormalizedStateIncarcerationPeriod,
         county_of_residence: Optional[str],
         incarceration_delegate: Optional[StateSpecificIncarcerationDelegate] = None,
         supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
     ) -> Optional[IncarcerationReleaseEvent]:
-        """Runs `release_event_for_period` without providing sentence information. Sentence information
-        is only used to inform supervision_type_at_release for US_MO and US_ID. All tests using this method should
-        not require that state specific logic.
-        """
+        """Helper for testing `_release_event_for_period`."""
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
         incarceration_period_index = default_normalized_ip_index_for_tests(
@@ -2013,7 +1821,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_reason_raw_text="SS",
         )
 
-        release_event = self._run_release_for_period_with_no_sentences(
+        release_event = self._run_release_for_period(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
@@ -2057,7 +1865,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
             incarceration_period.release_reason = release_reason
 
-            release_event = self._run_release_for_period_with_no_sentences(
+            release_event = self._run_release_for_period(
                 incarceration_period, _COUNTY_OF_RESIDENCE
             )
 
@@ -2076,7 +1884,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        release_event = self._run_release_for_period_with_no_sentences(
+        release_event = self._run_release_for_period(
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 

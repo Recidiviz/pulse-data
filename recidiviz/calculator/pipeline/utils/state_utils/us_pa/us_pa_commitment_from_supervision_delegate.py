@@ -16,9 +16,10 @@
 # =============================================================================
 """Utils for state-specific logic related to incarceration commitments from
  supervision in US_PA."""
-from typing import List, Optional
+from typing import Optional
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
@@ -29,11 +30,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
 )
 
 
@@ -46,9 +42,7 @@ class UsPaCommitmentFromSupervisionDelegate(
     #  actually identify what kind of supervision a person is coming from
     def get_commitment_from_supervision_supervision_type(
         self,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
         previous_supervision_period: Optional[NormalizedStateSupervisionPeriod],
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         """Determines the supervision type associated with the commitment from
