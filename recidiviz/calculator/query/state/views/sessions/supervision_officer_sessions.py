@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Sessionized view of each individual on supervision. Session defined as continuous time on caseload of a given supervising officer"""
+"""Sessionized view of each individual on supervision. Session defined as continuous
+time on caseload of a given supervising officer.
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -23,7 +25,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_OFFICER_SESSIONS_VIEW_NAME = "supervision_officer_sessions"
 
-SUPERVISION_OFFICER_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual. Session defined as continuous stay on supervision associated with a given officer. Officer sessions may be overlapping."""
+SUPERVISION_OFFICER_SESSIONS_VIEW_DESCRIPTION = """
+Sessionized view of each individual. Session defined as continuous stay on supervision 
+associated with a given officer. Officer sessions may be overlapping.
+"""
 
 SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
