@@ -79,6 +79,15 @@ export const fetchValidationDescription = async (
   );
 };
 
+export const fetchValidationErrorTable = async (
+  validationName: string,
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/validation_metadata/error_table/${validationName}/${stateCode}`
+  );
+};
+
 export {
   createDiscovery,
   fetchDiscoveryStatus,

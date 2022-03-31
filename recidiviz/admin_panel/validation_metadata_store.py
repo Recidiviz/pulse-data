@@ -52,12 +52,14 @@ from recidiviz.validation.checks.sameness_check import (
     SamenessPerRowValidationResultDetails,
     SamenessPerViewValidationResultDetails,
 )
+from recidiviz.validation.configured_validations import get_all_validations
 from recidiviz.validation.validation_models import DataValidationJobResultDetails
 from recidiviz.validation.validation_result_storage import (
     VALIDATION_RESULTS_BIGQUERY_ADDRESS,
 )
 
 # TODO(#8687): Remove the extra case statements with the old result detail class names.
+from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 
 
 class ResultDetailsTypes(Enum):
@@ -158,6 +160,30 @@ AND region_code = "{region_code}"
 AND run_datetime >= DATETIME_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {days_to_include} DAY)
 ORDER BY run_datetime desc 
 """
+
+
+def validation_error_table_query(
+    project_id: str,
+    validation_address: BigQueryAddress,
+    region_code: str,
+    limit: int,
+) -> str:
+    return f"""
+SELECT * FROM {project_id}.{validation_address.dataset_id}.{validation_address.table_id}
+WHERE region_code = "{region_code}"
+LIMIT {limit}
+"""
+
+
+def validation_error_table_count_query(
+    project_id: str,
+    validation_address: BigQueryAddress,
+    region_code: str,
+) -> str:
+    return f"""
+    SELECT COUNT(*) as count FROM {project_id}.{validation_address.dataset_id}.{validation_address.table_id}
+    WHERE region_code = "{region_code}"
+    """
 
 
 T = TypeVar("T")
@@ -425,3 +451,53 @@ class ValidationStatusStore(AdminPanelStore):
             records.append(_validation_status_record_from_row(row))
 
         return ValidationStatusRecords_pb2(records=records)
+
+    def get_error_table_for_validation(
+        self, validation_name: str, state_code: str
+    ) -> Optional[str]:
+        """Returns rows in the error view of a given validation"""
+        validations = get_all_validations()
+        limit = 500
+
+        for validation in validations:
+            if validation.validation_name == validation_name:
+                query_str = validation_error_table_query(
+                    self.project_id,
+                    BigQueryAddress(
+                        dataset_id=VIEWS_DATASET,
+                        table_id=validation.error_view_builder.view_id,
+                    ),
+                    state_code,
+                    limit,
+                )
+                count_query_str = validation_error_table_count_query(
+                    self.project_id,
+                    BigQueryAddress(
+                        dataset_id=VIEWS_DATASET,
+                        table_id=validation.error_view_builder.view_id,
+                    ),
+                    state_code,
+                )
+
+                query_job = self.bq_client.run_query_async(
+                    query_str,
+                    [],
+                )
+                count_query_job = self.bq_client.run_query_async(
+                    count_query_str,
+                    [],
+                )
+
+                records = [dict(row) for row in query_job]
+                total_rows = list(count_query_job)[0]["count"]
+                data = {
+                    "metadata": {
+                        "query": query_str,
+                        "limitedRowsShown": total_rows > limit,
+                        "totalRows": total_rows,
+                    },
+                    "rows": records[0 : min(limit, total_rows)],
+                }
+
+                return json.dumps(data, default=str)
+        return None

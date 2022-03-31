@@ -173,6 +173,21 @@ def fetch_validation_metadata_status_for_validation(
 
 
 @admin_panel.route(
+    "api/validation_metadata/error_table/<validation_name>/<state_code>",
+    methods=["POST"],
+)
+@requires_gae_auth
+def fetch_validation_metadata_error_table_for_validation(
+    validation_name: str, state_code: str
+) -> Tuple[Optional[str], HTTPStatus]:
+    records = admin_stores.validation_status_store.get_error_table_for_validation(
+        validation_name, state_code
+    )
+
+    return (records, HTTPStatus.OK if records else HTTPStatus.BAD_REQUEST)
+
+
+@admin_panel.route(
     "/api/validation_metadata/description/<validation_name>", methods=["POST"]
 )
 @requires_gae_auth
