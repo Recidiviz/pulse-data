@@ -17,6 +17,7 @@
 """View to prepare staff records regarding compliant reporting for export to the frontend."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -48,7 +49,7 @@ STAFF_RECORD_QUERY_TEMPLATE = """
             StaffID as id,
             "US_TN" AS state_code,
             FirstName || " " || LastName AS name,
-            SiteID AS district,
+            facilities.district AS district,
             LOWER(roster.email_address) AS email,
             logic_staff IS NOT NULL AS has_caseload,
         FROM `{project_id}.us_tn_raw_data_up_to_date_views.Staff_latest` staff
@@ -56,6 +57,8 @@ STAFF_RECORD_QUERY_TEMPLATE = """
         ON logic_staff = StaffID
         LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_tn_roster` roster
         ON roster.external_id = staff.UserID
+        LEFT JOIN `{project_id}.{external_reference_dataset}.us_tn_supervision_facility_names` facilities
+        ON staff.SiteID=facilities.facility_code
         WHERE Status = 'A'
             AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM')
     )
@@ -79,6 +82,7 @@ STAFF_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=STAFF_RECORD_DESCRIPTION,
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
 )
 
 if __name__ == "__main__":
