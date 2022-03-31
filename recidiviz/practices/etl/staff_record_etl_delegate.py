@@ -28,6 +28,7 @@ from recidiviz.utils.metadata import local_project_id_override
 class StaffRecordETLDelegate(PracticesFirestoreETLDelegate):
     """Delegate class to ETL the staff_record.json file into Firestore."""
 
+    STATE_CODE = "US_TN"
     EXPORT_FILENAME = "staff_record.json"
     COLLECTION_NAME = "staff"
 

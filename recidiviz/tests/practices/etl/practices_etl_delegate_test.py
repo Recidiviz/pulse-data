@@ -23,6 +23,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 class TestDelegate(PracticesETLDelegate):
+    STATE_CODE = "US_XX"
     EXPORT_FILENAME = "export_filename.json"
 
     def run_etl(self) -> None:
@@ -51,7 +52,7 @@ class TestPracticesETLDelegate(TestCase):
             self.assertEqual(
                 GcsfsFilePath(
                     bucket_name="test-project-practices-etl-data",
-                    blob_name="export_filename.json",
+                    blob_name="US_XX/export_filename.json",
                 ),
                 delegate.get_filepath(),
             )

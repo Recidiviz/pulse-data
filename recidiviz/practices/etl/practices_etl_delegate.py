@@ -40,6 +40,11 @@ class PracticesETLDelegate(abc.ABC):
     def EXPORT_FILENAME(self) -> str:
         """Name of the file this delegate is watching for."""
 
+    @property
+    @abc.abstractmethod
+    def STATE_CODE(self) -> str:
+        """State code of the data this delegate watches for."""
+
     @abc.abstractmethod
     def run_etl(self) -> None:
         """Runs the ETL logic for the view."""
@@ -55,6 +60,7 @@ class PracticesETLDelegate(abc.ABC):
                     PRACTICES_VIEWS_OUTPUT_DIRECTORY_URI,
                     project_id=metadata.project_id(),
                 ),
+                self.STATE_CODE,
                 self.EXPORT_FILENAME,
             )
         )

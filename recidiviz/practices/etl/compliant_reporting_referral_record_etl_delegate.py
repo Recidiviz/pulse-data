@@ -27,6 +27,7 @@ from recidiviz.utils.metadata import local_project_id_override
 class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate):
     """Delegate class to ETL the compliant_reporting_referral_record.json file into Firestore."""
 
+    STATE_CODE = "US_TN"
     EXPORT_FILENAME = "compliant_reporting_referral_record.json"
     COLLECTION_NAME = "compliantReportingReferrals"
 
