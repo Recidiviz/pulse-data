@@ -21,15 +21,15 @@ To run the app locally, you need to spin up both the backend and frontend simult
    Expected variables:
 
    ```js
-   REACT_APP_AUTH0_DOMAIN = ``;
-   REACT_APP_AUTH0_CLIENT_ID = ``;
-   REACT_APP_AUTH0_AUDIENCE = ``;
+   REACT_APP_AUTH0_DOMAIN=
+   REACT_APP_AUTH0_CLIENT_ID=
+   REACT_APP_AUTH0_AUDIENCE=
    ```
 
    Optional variables (currently for testing calls to public and protected API endpoints):
 
    ```js
-   REACT_APP_SERVER_URL = ``;
+   REACT_APP_SERVER_URL=
    ```
 
 3. Run the local development server

@@ -15,11 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction, when } from "mobx";
 
 import { AuthStore } from "../components/Auth";
 
-interface RequestProps {
+export interface RequestProps {
   path: string;
   method: "GET" | "POST";
   body?: Record<string, unknown>;
@@ -28,13 +28,46 @@ interface RequestProps {
 class API {
   authStore: AuthStore;
 
+  isSessionInitialized: boolean;
+
+  csrfToken: string;
+
   constructor(authStore: AuthStore) {
     makeAutoObservable(this);
 
     this.authStore = authStore;
+    this.isSessionInitialized = false;
+    this.csrfToken = "";
+
+    when(
+      () => authStore.isAuthorized,
+      () => this.initSession()
+    );
   }
 
-  async request({ path, method, body }: RequestProps): Promise<void | Error> {
+  async initSession(): Promise<void | string> {
+    try {
+      const response = (await this.request({
+        path: "/api/init",
+        method: "GET",
+      })) as Response;
+      const { csrf } = await response.json();
+
+      runInAction(() => {
+        if (csrf !== "") this.csrfToken = csrf;
+        this.isSessionInitialized = true;
+      });
+    } catch (error) {
+      if (error instanceof Error) return error.message;
+      return String(error);
+    }
+  }
+
+  async request({
+    path,
+    method,
+    body,
+  }: RequestProps): Promise<Body | Response | string> {
     try {
       if (!this.authStore.getToken) {
         return Promise.reject();
@@ -48,14 +81,37 @@ class API {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "X-CSRF-Token": this.csrfToken,
         },
       });
 
-      return response.json();
+      return response;
     } catch (error) {
-      if (error instanceof Error) {
-        return error;
+      if (error instanceof Error) return error.message;
+      return String(error);
+    }
+  }
+
+  // Note: consider where this should live - I don't think this is the best place for it.
+  async logout(): Promise<void | string> {
+    try {
+      const response = (await this.request({
+        path: "/auth/logout",
+        method: "POST",
+      })) as Response;
+
+      if (response.status === 200 && this.authStore) {
+        return this.authStore.logoutUser();
       }
+
+      return Promise.reject(
+        new Error(
+          "Something went wrong with clearing auth session or authStore is not initialized."
+        )
+      );
+    } catch (error) {
+      if (error instanceof Error) return error.message;
+      return String(error);
     }
   }
 }

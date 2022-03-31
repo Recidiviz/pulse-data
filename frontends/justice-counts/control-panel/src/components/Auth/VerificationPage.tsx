@@ -40,8 +40,9 @@ const VerificationPage = () => {
         .
       </p>
 
-      <Button onClick={() => authStore.logoutUser()} style={{ marginTop: 20 }}>
-        Back
+      {/* Optional: takes user back to login screen */}
+      <Button onClick={authStore.logoutUser} style={{ marginTop: 20 }}>
+        Logout
       </Button>
     </ErrorPage>
   );

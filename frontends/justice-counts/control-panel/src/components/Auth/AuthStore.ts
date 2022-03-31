@@ -15,24 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { GetTokenSilentlyOptions } from "@auth0/auth0-react";
 import createAuth0Client, {
   Auth0Client,
   Auth0ClientOptions,
+  GetTokenSilentlyOptions,
   User,
 } from "@auth0/auth0-spa-js";
 import { makeAutoObservable, runInAction } from "mobx";
 import qs from "qs";
 
-import type { RootStore } from "../../stores/RootStore";
-
 interface AuthStoreProps {
   authSettings: Auth0ClientOptions;
-  rootStore: RootStore; // TODO(#11628): Consider removing this dependency from the AuthStore and only passing in functions we need from the API store (i.e. API request methods). This was originally here to access methods on the API store.
 }
 export class AuthStore {
-  readonly rootStore: RootStore;
-
   readonly authSettings: Auth0ClientOptions;
 
   private authClient: Auth0Client | undefined;
@@ -45,15 +40,13 @@ export class AuthStore {
 
   user?: User;
 
-  constructor({ authSettings, rootStore }: AuthStoreProps) {
+  constructor({ authSettings }: AuthStoreProps) {
     makeAutoObservable(this);
 
     this.authSettings = authSettings;
     this.authClient = undefined;
     this.isAuthorized = false;
     this.isLoading = true;
-
-    this.rootStore = rootStore;
   }
 
   private get auth0Client(): Promise<Auth0Client> {
@@ -100,14 +93,8 @@ export class AuthStore {
       runInAction(() => {
         this.isLoading = false;
         this.user = user;
-
-        if (user?.email_verified) {
-          this.isAuthorized = true;
-          this.emailVerified = true;
-        } else {
-          this.isAuthorized = true;
-          this.emailVerified = false;
-        }
+        this.isAuthorized = true;
+        this.emailVerified = Boolean(user?.email_verified);
       });
     } else {
       await auth0.loginWithRedirect({
@@ -117,14 +104,12 @@ export class AuthStore {
   }
 
   async logoutUser() {
-    const auth0 = await this.auth0Client;
-
     runInAction(() => {
       this.isAuthorized = false;
       this.isLoading = true;
     });
 
-    return auth0.logout({ returnTo: window.location.origin });
+    return this.authClient?.logout({ returnTo: window.location.origin });
   }
 
   async getToken(options?: GetTokenSilentlyOptions): Promise<string | Error> {
@@ -132,10 +117,9 @@ export class AuthStore {
       if (this.authClient) {
         return this.authClient.getTokenSilently(options);
       }
-
       return Promise.reject(new Error("No auth client initialized."));
     } catch (error) {
-      throw new Error(`Unable to retrieve token -  + ${error}`);
+      throw new Error(`Unable to retrieve token - ${error}`);
     }
   }
 }

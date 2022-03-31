@@ -4,6 +4,7 @@ import ReactDOM from "react-dom";
 import { createGlobalStyle } from "styled-components/macro";
 
 import App from "./App";
+import AuthWall from "./components/Auth";
 import { StoreProvider } from "./stores";
 
 const GlobalStyle = createGlobalStyle`
@@ -29,7 +30,9 @@ ReactDOM.render(
   <React.StrictMode>
     <StoreProvider>
       <GlobalStyle />
-      <App />
+      <AuthWall>
+        <App />
+      </AuthWall>
     </StoreProvider>
   </React.StrictMode>,
   document.getElementById("root")

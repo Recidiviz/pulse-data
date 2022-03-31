@@ -17,7 +17,6 @@
 
 import createAuth0Client from "@auth0/auth0-spa-js";
 
-import { rootStore } from "../../stores";
 import { AuthStore } from "./AuthStore";
 
 jest.mock("@auth0/auth0-spa-js");
@@ -26,12 +25,6 @@ const mockCreateAuth0Client = createAuth0Client as jest.Mock;
 const mockGetUser = jest.fn();
 const mockIsAuthenticated = jest.fn();
 const mockLoginWithRedirect = jest.fn();
-
-const testAuthSettings = {
-  domain: "test.auth0.com",
-  client_id: "testclientid",
-  redirect_url: window.location.href,
-};
 
 beforeEach(() => {
   mockCreateAuth0Client.mockResolvedValue({
@@ -45,7 +38,13 @@ afterEach(() => {
   jest.resetAllMocks();
 });
 
-const store = new AuthStore({ authSettings: testAuthSettings, rootStore });
+const testAuthSettings = {
+  domain: "test.auth0.com",
+  client_id: "testclientid",
+  redirect_url: window.location.href,
+};
+
+const store = new AuthStore({ authSettings: testAuthSettings });
 
 test("authorization pending when required", async () => {
   expect(store.isAuthorized).toBe(false);
