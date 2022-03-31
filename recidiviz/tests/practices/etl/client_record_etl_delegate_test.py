@@ -16,7 +16,6 @@
 #  =============================================================================
 """Tests the ability for ClientRecordEtlDelegate to parse json rows."""
 import os
-from datetime import datetime
 from unittest import TestCase
 
 from recidiviz.practices.etl.client_record_etl_delegate import ClientRecordETLDelegate
@@ -49,23 +48,23 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "compliantReportingEligible": {
                         "currentOffenses": None,
                         "drugScreensPastYear": [
-                            {"date": datetime(2021, 2, 3, 0, 0), "result": "DRUN"},
-                            {"date": datetime(2021, 4, 20, 0, 0), "result": "DRUN"},
+                            {"date": "2021-02-03", "result": "DRUN"},
+                            {"date": "2021-04-20", "result": "DRUN"},
                         ],
-                        "eligibleLevelStart": datetime(2021, 3, 17, 0, 0),
+                        "eligibleLevelStart": "2021-03-17",
                         "judicialDistrict": "7",
                         "lifetimeOffensesExpired": None,
-                        "mostRecentArrestCheck": datetime(2021, 11, 15, 0, 0),
+                        "mostRecentArrestCheck": "2021-11-15",
                         "sanctionsPastYear": ["OPRD"],
                     },
                     "currentBalance": 45.1,
                     "eligible": True,
                     "eligibleWithDiscretion": True,
-                    "expirationDate": datetime(2022, 2, 28, 0, 0),
+                    "expirationDate": "2022-02-28",
                     "feeExemptions": "Exemption 1, Exemption2",
                     "lastPaymentAmount": 10.25,
-                    "lastPaymentDate": datetime(2021, 12, 20, 0, 0),
-                    "nextSpecialConditionsCheck": datetime(2021, 12, 2, 0, 0),
+                    "lastPaymentDate": "2021-12-20",
+                    "nextSpecialConditionsCheck": "2021-12-02",
                     "officerId": "100",
                     "personExternalId": "200",
                     "personName": {
@@ -78,7 +77,7 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "specialConditions": "SPECIAL",
                     "stateCode": "US_XX",
                     "supervisionLevel": "MEDIUM",
-                    "supervisionLevelStart": datetime(2020, 3, 10, 0, 0),
+                    "supervisionLevelStart": "2020-03-10",
                     "supervisionType": "Probation",
                 },
             )
