@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,12 +21,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions import (
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_district import (
-    EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.event_based_metrics_by_supervision_officer import (
-    EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.offense_type_mapping import (
     OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
 )
@@ -42,8 +36,11 @@ from recidiviz.calculator.query.state.views.analyst_data.person_statuses import 
 from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
     PROJECTED_DISCHARGES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_caseload_health_metrics import (
-    SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_office_and_district_metrics import (
+    SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_office_metrics import (
+    SUPERVISION_OFFICER_OFFICE_METRICS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_by_district_by_month import (
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
@@ -108,14 +105,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_supervision
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
-    EVENT_BASED_METRICS_BY_DISTRICT_VIEW_BUILDER,
-    EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_VIEW_BUILDER,
     OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
     OFFICER_EVENTS_VIEW_BUILDER,
     PERSON_EVENTS_VIEW_BUILDER,
     PERSON_STATUSES_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
-    SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER,
+    SUPERVISION_OFFICER_OFFICE_METRICS_VIEW_BUILDER,
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
@@ -136,4 +131,4 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
     US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER,
-]
+] + SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS
