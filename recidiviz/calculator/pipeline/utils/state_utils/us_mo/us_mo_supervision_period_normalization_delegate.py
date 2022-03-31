@@ -294,11 +294,13 @@ class UsMoSupervisionNormalizationDelegate(
         """Obtain the ingest-style raw text with the critical statuses to populate the
         admission/termination reason raw text fields."""
         critical_statuses = sorted(
-            critical_day_status.status_code
-            for critical_day_status in critical_statuses_by_date[status_date]
+            set(
+                critical_day_status.status_code
+                for critical_day_status in critical_statuses_by_date[status_date]
+            )
         )
         return (
-            "-".join(critical_statuses)
+            ",".join(critical_statuses)
             if critical_statuses
             else StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE.value
         )
