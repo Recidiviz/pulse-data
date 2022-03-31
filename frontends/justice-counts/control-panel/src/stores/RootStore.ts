@@ -15,12 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Auth0ClientOptions } from "@auth0/auth0-spa-js";
-import { makeAutoObservable } from "mobx";
 
 import { AuthStore } from "../components/Auth";
 import API from "./API";
 
-// TODO(#11628): Handle error if no .env variables exist.
 const getAuthSettings = (): Auth0ClientOptions => {
   return {
     client_id: process.env.REACT_APP_AUTH0_CLIENT_ID as string,
@@ -36,11 +34,8 @@ class RootStore {
   api: API;
 
   constructor() {
-    makeAutoObservable(this);
-
     this.authStore = new AuthStore({
       authSettings: getAuthSettings(),
-      rootStore: this,
     });
     this.api = new API(this.authStore);
   }

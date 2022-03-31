@@ -20,7 +20,8 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 
 import App from "./App";
-import { StoreProvider } from "./stores/StoreProvider";
+import AuthWall from "./components/Auth";
+import { StoreProvider } from "./stores";
 
 jest.mock("@auth0/auth0-spa-js");
 
@@ -42,9 +43,13 @@ afterEach(() => {
 test("renders loading on load", () => {
   render(
     <StoreProvider>
-      <App />
+      <AuthWall>
+        <App />
+      </AuthWall>
     </StoreProvider>
   );
   const loadingText = screen.getByText(/Loading data.../i);
   expect(loadingText).toBeInTheDocument();
+
+  expect.hasAssertions();
 });
