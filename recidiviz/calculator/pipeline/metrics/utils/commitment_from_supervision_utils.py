@@ -65,10 +65,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
-)
 
 CommitmentDetails = NamedTuple(
     "CommitmentDetails",
@@ -93,8 +89,6 @@ def get_commitment_from_supervision_details(
     incarceration_period: NormalizedStateIncarcerationPeriod,
     incarceration_period_index: NormalizedIncarcerationPeriodIndex,
     supervision_period_index: NormalizedSupervisionPeriodIndex,
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
     supervision_delegate: StateSpecificSupervisionDelegate,
     supervision_period_to_agent_associations: Optional[Dict[int, Dict[Any, Any]]],
@@ -155,8 +149,6 @@ def get_commitment_from_supervision_details(
 
     supervision_type = (
         commitment_from_supervision_delegate.get_commitment_from_supervision_supervision_type(
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
             previous_supervision_period=pre_commitment_supervision_period,
         )

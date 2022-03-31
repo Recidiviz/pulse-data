@@ -143,9 +143,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
-            # No state-agnostic tests require the sentences
-            incarceration_sentences=[],
-            supervision_sentences=[],
             commitment_from_supervision_delegate=UsXxCommitmentFromSupervisionDelegate(),
             supervision_delegate=supervision_delegate,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,

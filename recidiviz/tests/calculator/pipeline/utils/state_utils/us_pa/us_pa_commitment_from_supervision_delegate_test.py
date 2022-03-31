@@ -63,7 +63,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
 )
@@ -102,12 +101,10 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 
     def _test_get_commitment_from_supervision_supervision_type(
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
         previous_supervision_period: Optional[NormalizedStateSupervisionPeriod] = None,
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         return self.delegate.get_commitment_from_supervision_supervision_type(
-            incarceration_sentences=[],
-            supervision_sentences=[],
             incarceration_period=incarceration_period,
             previous_supervision_period=previous_supervision_period,
         )
@@ -225,9 +222,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
-            # No state-agnostic tests require the sentences
-            incarceration_sentences=[],
-            supervision_sentences=[],
             commitment_from_supervision_delegate=UsPaCommitmentFromSupervisionDelegate(),
             supervision_delegate=UsPaSupervisionDelegate(),
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
