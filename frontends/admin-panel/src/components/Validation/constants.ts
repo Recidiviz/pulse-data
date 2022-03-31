@@ -50,3 +50,22 @@ export interface SamenessPerRowDetailsProps {
 export interface SamenessPerViewDetailsProps {
   samenessPerView: SamenessPerViewValidationResultDetails | undefined;
 }
+
+export interface ValidationErrorTableData {
+  metadata: ValidationErrorTableMetadata;
+  rows: ValidationErrorTableRows[];
+}
+
+export interface ValidationErrorTableMetadata {
+  query: string;
+  limitedRowsShown: boolean;
+  totalRows: number;
+}
+
+export interface ValidationErrorTableRows {
+  [column: string]: string | number | Date;
+}
+
+export interface ValidationErrorTableProps {
+  tableData: ValidationErrorTableData;
+}

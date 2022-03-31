@@ -50,6 +50,18 @@ tr.validation-table-row > td.ant-table-cell > div {
   padding: 16px;
 }
 
+.validation-error-table {
+  overflow: auto;
+  background: white;
+  margin-top: 16px;
+}
+
+.ant-alert-description code {
+  background-color: #eee;
+  display: block;
+  padding: 5px;
+}
+
 .validation-graph .axis.x > .axis-label > text {
   text-anchor: end;
   transform: translate(6px, -14px) rotate(-45deg);

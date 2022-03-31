@@ -29,13 +29,18 @@ import React from "react";
 import {
   fetchValidationDetails,
   fetchValidationDescription,
+  fetchValidationErrorTable,
 } from "../../AdminPanelAPI";
-import { useFetchedDataProtobuf } from "../../hooks";
+import { useFetchedDataJSON, useFetchedDataProtobuf } from "../../hooks";
 import {
   ValidationStatusRecord,
   ValidationStatusRecords,
 } from "../../recidiviz/admin_panel/models/validation_pb";
-import { RecordStatus, ValidationDetailsProps } from "./constants";
+import {
+  RecordStatus,
+  ValidationDetailsProps,
+  ValidationErrorTableData,
+} from "./constants";
 import SamenessPerRowDetails from "./SamenessPerRowDetails";
 import SamenessPerViewDetails from "./SamenessPerViewDetails";
 import {
@@ -49,6 +54,7 @@ import {
   replaceInfinity,
 } from "./utils";
 import ValidationDetailsGraph from "./ValidationDetailsGraph";
+import ValidationErrorTable from "./ValidationErrorTable";
 
 const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   validationName,
@@ -56,6 +62,13 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
 }) => {
   const [validationDescription, setValidationDescription] =
     React.useState<string | undefined>(undefined);
+
+  const fetchErrorTable = React.useCallback(() => {
+    return fetchValidationErrorTable(validationName, stateInfo.code);
+  }, [validationName, stateInfo]);
+
+  const { loading: errorTableLoading, data: errorTable } =
+    useFetchedDataJSON<ValidationErrorTableData>(fetchErrorTable);
 
   // TODO(#9480): Allow user to see more than last 14 days.
   const fetchResults = React.useCallback(async () => {
@@ -67,8 +80,10 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
       setValidationDescription(text);
     }
 
+    fetchErrorTable();
+
     return fetchValidationDetails(validationName, stateInfo.code);
-  }, [validationName, stateInfo]);
+  }, [validationName, stateInfo, fetchErrorTable]);
 
   const validationFetched = useFetchedDataProtobuf<ValidationStatusRecords>(
     fetchResults,
@@ -234,6 +249,24 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
               )
             }
           </>
+        )}
+      </div>
+      <Divider orientation="left">Failing Rows</Divider>
+      <div className="site-card-wrapper">
+        {errorTableLoading && (
+          <Spin
+            style={{
+              marginLeft: "49.5%",
+            }}
+          />
+        )}
+        {errorTable && !errorTableLoading && (
+          <>
+            <ValidationErrorTable tableData={errorTable} />
+          </>
+        )}
+        {!errorTable && !errorTableLoading && (
+          <span>Unable to load any rows.</span>
         )}
       </div>
     </>
