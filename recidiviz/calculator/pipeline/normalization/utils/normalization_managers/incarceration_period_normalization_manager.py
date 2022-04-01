@@ -61,7 +61,10 @@ from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
     is_placeholder,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+)
 
 ATTRIBUTES_TRIGGERING_STATUS_CHANGE = [
     "custodial_authority",
@@ -82,6 +85,7 @@ class PurposeForIncarcerationInfo:
     purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
 
 
+# pylint: disable=unused-argument
 class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalizing
     incarceration periods for calculations."""
@@ -100,6 +104,16 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         By default, returns the original period unchanged.
         """
         return sorted_incarceration_periods[incarceration_period_list_index]
+
+    def incarceration_admission_reason_override(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """States may have specific logic that determines the admission reason for an
+        incarceration period.
+        By default, uses the one on the incarceration period as ingested."""
+        return incarceration_period.admission_reason
 
     def get_pfi_info_for_period_if_commitment_from_supervision(  # pylint: disable=unused-argument
         self,
@@ -211,6 +225,15 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         """
         return False
 
+    def normalization_relies_on_incarceration_sentences(self) -> bool:
+        """State-specific implementations of this class should return whether the IP
+        normalization logic for the state relies on information in
+        StateIncarcerationSentence entities.
+
+        Default is False.
+        """
+        return False
+
     def normalization_relies_on_violation_responses(self) -> bool:
         """State-specific implementations of this class should return whether the IP
         normalization logic for the state relies on information in
@@ -240,6 +263,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         normalized_violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
         ],
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
         field_index: CoreEntityFieldIndex,
         earliest_death_date: Optional[date] = None,
     ):
@@ -267,6 +291,12 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         ] = (
             normalized_violation_responses
             if self.normalization_delegate.normalization_relies_on_violation_responses()
+            else None
+        )
+
+        self._incarceration_sentences: Optional[List[StateIncarcerationSentence]] = (
+            incarceration_sentences
+            if self.normalization_delegate.normalization_relies_on_incarceration_sentences()
             else None
         )
 
@@ -370,6 +400,13 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             # what we expect
             mid_processing_periods = self._standardize_purpose_for_incarceration_values(
                 mid_processing_periods
+            )
+
+            # Process fields on final incarceration period set
+            mid_processing_periods = (
+                self._process_fields_on_final_incarceration_period_set(
+                    mid_processing_periods, self._incarceration_sentences
+                )
             )
 
             # Validate IPs
@@ -1128,3 +1165,23 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             for ip in mid_processing_periods
             if ip.external_id and "FUZZY_MATCHED" not in ip.external_id
         ]
+
+    def _process_fields_on_final_incarceration_period_set(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+    ) -> List[StateIncarcerationPeriod]:
+        """After all incarceration periods are processed, continue to update fields of remaining
+        incarceration periods prior to adding to the index by:
+               - Updating any admission reasons based on state-specific logic.
+        """
+        updated_periods: List[StateIncarcerationPeriod] = []
+
+        for ip in incarceration_periods:
+            ip.admission_reason = (
+                self.normalization_delegate.incarceration_admission_reason_override(
+                    ip, incarceration_sentences
+                )
+            )
+            updated_periods.append(ip)
+        return updated_periods

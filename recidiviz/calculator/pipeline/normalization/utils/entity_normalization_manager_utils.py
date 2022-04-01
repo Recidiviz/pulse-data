@@ -112,6 +112,13 @@ def normalized_periods_for_calculations(
                 "provide violation_responses to be run on this state."
             )
 
+    if incarceration_periods is not None and incarceration_sentences is None:
+        if ip_normalization_delegate.normalization_relies_on_incarceration_sentences():
+            raise ValueError(
+                "IP normalization for this state relies on StateIncarcerationSentence entities."
+                "This pipeline must provide incarceration sentences to be run on this state."
+            )
+
     if supervision_periods is not None and (
         incarceration_sentences is None or supervision_sentences is None
     ):
@@ -185,6 +192,7 @@ def normalized_periods_for_calculations(
                 normalization_delegate=ip_normalization_delegate,
                 normalized_supervision_period_index=supervision_period_index,
                 normalized_violation_responses=normalized_violation_responses,
+                incarceration_sentences=incarceration_sentences,
                 field_index=field_index,
                 earliest_death_date=earliest_death_date,
             )

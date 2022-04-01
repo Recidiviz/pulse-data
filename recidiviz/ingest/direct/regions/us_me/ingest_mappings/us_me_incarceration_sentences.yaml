@@ -154,6 +154,7 @@ output:
               term_early_custody_release_date: Term_Early_Cust_Rel_Date
               term_max_custody_release_date: Term_Max_Cust_Rel_Date
               term_community_release_date: Term_Comm_Rel_Date
+              is_revocation_sentence: Probation_Term_Ind
           conditions: conditions
           charges:
             - StateCharge:
