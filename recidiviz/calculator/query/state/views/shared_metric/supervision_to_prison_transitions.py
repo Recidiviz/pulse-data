@@ -17,7 +17,7 @@
 """People who have transitioned from supervision to prison by date of reincarceration."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import add_age_groups
+from recidiviz.calculator.query.bq_utils import add_age_groups, first_known_location
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -43,7 +43,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         sessions.gender,
         sessions.prioritized_race_or_ethnicity,
         sessions.supervising_officer_external_id_end AS supervising_officer,
-        SPLIT(sessions.compartment_location_end, "|")[OFFSET(0)] AS level_1_location_external_id,
+        {first_known_location} AS level_1_location_external_id,
         super_sessions.start_date AS supervision_start_date,
     FROM
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
@@ -69,6 +69,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_TO_PRISON_TRANSITIONS_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     age_group=add_age_groups("sessions.age_end"),
+    first_known_location=first_known_location("compartment_location_end"),
     enabled_states=str(tuple(ENABLED_STATES)),
 )
 
