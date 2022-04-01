@@ -37,8 +37,8 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
-class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
-    """Tests the normalized_supervision_periods_for_calculations function."""
+class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
+    """Tests the supervision_period_normalization_manager.py."""
 
     @staticmethod
     def _normalized_supervision_periods_for_calculations(
@@ -53,6 +53,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
             incarceration_sentences=None,
             supervision_sentences=None,
             incarceration_periods=None,
+            assessments=None,
         )
 
         (
@@ -419,6 +420,7 @@ class TestNormalizedSupervisionPeriodsForCalculations(unittest.TestCase):
             incarceration_sentences=None,
             supervision_sentences=None,
             incarceration_periods=None,
+            assessments=None,
         )
 
         (

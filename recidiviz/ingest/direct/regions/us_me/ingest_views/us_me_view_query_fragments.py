@@ -129,8 +129,8 @@ CURRENT_STATUS_ORDER_BY = """
         WHEN 'Interstate Compact Out' THEN 30
         WHEN 'Interstate Compact In' THEN 40
         WHEN 'Interstate Active Detainer' THEN 50
-        WHEN 'Probation' THEN 60
-        WHEN 'SCCP' THEN 70
+        WHEN 'SCCP' THEN 60
+        WHEN 'Probation' THEN 70
         WHEN 'Escape' THEN 80
         WHEN 'Parole' THEN 90
         WHEN 'Partial Revocation - County Jail' THEN 100

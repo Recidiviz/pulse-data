@@ -52,6 +52,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
+    StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateProgramAssignment,
@@ -99,6 +100,7 @@ class TestNormalizeEntities(unittest.TestCase):
         program_assignments: Optional[List[StateProgramAssignment]] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
+        assessments: Optional[List[StateAssessment]] = None,
         state_code_override: Optional[str] = None,
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the
@@ -128,6 +130,7 @@ class TestNormalizeEntities(unittest.TestCase):
             StateProgramAssignment.__name__: program_assignments or [],
             StateIncarcerationSentence.__name__: incarceration_sentences or [],
             StateSupervisionSentence.__name__: supervision_sentences or [],
+            StateAssessment.__name__: assessments or [],
         }
 
         assert self.full_graph_person.person_id is not None
@@ -222,7 +225,7 @@ class TestNormalizeEntities(unittest.TestCase):
 
     def test_normalize_entities_missing_entities(self) -> None:
         """Tests that calling normalize_entities will still work even when a person
-        doesn't have instances of all of the entities that get normalized."""
+        doesn't have instances of all the entities that get normalized."""
 
         _ = self._run_normalize_entities(
             incarceration_periods=self.full_graph_person.incarceration_periods,
@@ -267,6 +270,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         program_assignments: Optional[List[StateProgramAssignment]] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
+        assessments: Optional[List[StateAssessment]] = None,
         state_code_override: Optional[str] = None,
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
@@ -295,6 +299,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateProgramAssignment.__name__: program_assignments or [],
             StateIncarcerationSentence.__name__: incarceration_sentences or [],
             StateSupervisionSentence.__name__: supervision_sentences or [],
+            StateAssessment.__name__: assessments or [],
         }
 
         assert self.full_graph_person.person_id is not None
