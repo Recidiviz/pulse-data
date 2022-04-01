@@ -63,12 +63,15 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         sp_index = None
         # None of the state-agnostic tests rely on violation responses
         violation_responses = None
+        # None of the state-agnostic tests rely on violation responses
+        incarceration_sentences = None
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
+            incarceration_sentences=incarceration_sentences,
             field_index=self.field_index,
             earliest_death_date=earliest_death_date,
         )
@@ -1275,6 +1278,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=None,
             normalized_violation_responses=[],
+            incarceration_sentences=None,
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )
@@ -1315,6 +1319,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
+            incarceration_sentences=None,
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )

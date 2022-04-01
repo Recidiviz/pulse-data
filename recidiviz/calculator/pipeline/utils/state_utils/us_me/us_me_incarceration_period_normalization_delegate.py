@@ -17,12 +17,65 @@
 """Contains state-specific logic for certain aspects of pre-processing US_ME
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
+import json
+from typing import List, Optional
+
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.date import safe_strptime
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+)
+
+INCARCERATION_SENTENCE_PERIOD_LOOKBACK = 7
 
 
 class UsMeIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_ME implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+
+    def normalization_relies_on_incarceration_sentences(self) -> bool:
+        return True
+
+    def incarceration_admission_reason_override(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """If there is a revocation sentence with an intake date within a week of the same start date of this
+        period, then we assume the period's admission reason was a revocation."""
+        if not incarceration_sentences:
+            return incarceration_period.admission_reason
+
+        for incarceration_sentence in incarceration_sentences:
+            sentence_metadata = (
+                json.loads(incarceration_sentence.sentence_metadata)
+                if incarceration_sentence.sentence_metadata
+                else None
+            )
+            term_intake_date = safe_strptime(
+                sentence_metadata["TERM_INTAKE_DATE"], "%Y-%m-%d %I:%M:%S"
+            )
+            is_revocation_sentence = sentence_metadata["IS_REVOCATION_SENTENCE"] == "Y"
+
+            if (
+                term_intake_date
+                and incarceration_period.start_date_inclusive
+                and (
+                    abs(
+                        term_intake_date.date()
+                        - incarceration_period.start_date_inclusive
+                    ).days
+                    <= INCARCERATION_SENTENCE_PERIOD_LOOKBACK
+                )
+                and is_revocation_sentence
+            ):
+                return StateIncarcerationPeriodAdmissionReason.REVOCATION
+
+        return incarceration_period.admission_reason
