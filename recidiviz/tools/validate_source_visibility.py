@@ -257,9 +257,7 @@ def main() -> int:
                 "recidiviz.utils.yaml_dict",
             }
         ),
-        allowed_missing_module_prefixes=make_module_matcher(
-            {"recidiviz_dataflow_operator"}
-        ),
+        allowed_missing_module_prefixes=make_module_matcher(set()),
     )
 
     success &= check_dependencies_for_entrypoint(

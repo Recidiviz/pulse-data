@@ -46,7 +46,7 @@ resource "google_composer_environment" "default" {
         "webserver-web_server_name" = "orchestration"
       }
       env_variables = {
-        "CONFIG_FILE" = "/home/airflow/gcs/plugins/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
+        "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
         # TODO(#4900): I think we get 'GCP_PROJECT' by default, so we can probably clean this up.
         "GCP_PROJECT_ID" = var.project_id
       }
@@ -79,12 +79,6 @@ data "archive_file" "dags" {
   source_dir  = "${local.recidiviz_root}/airflow/dags"
 }
 
-data "archive_file" "plugins" {
-  type        = "zip"
-  output_path = "${local.temporary_directory}/plugins.zip"
-  source_dir  = "${local.recidiviz_root}/airflow/plugins"
-}
-
 # We zip the files mostly because it isn't totally clear how to copy a directory to GCS. Airflow will unzip it on its
 # own, so this works just fine.
 resource "google_storage_bucket_object" "dags_archive" {
@@ -93,20 +87,14 @@ resource "google_storage_bucket_object" "dags_archive" {
   source = data.archive_file.dags.output_path
 }
 
-resource "google_storage_bucket_object" "plugins_archive" {
-  name   = "plugins/plugins.zip"
-  bucket = local.composer_dag_bucket
-  source = data.archive_file.plugins.output_path
-}
-
 resource "google_storage_bucket_object" "pipeline_templates" {
-  name   = "plugins/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
+  name   = "dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
   bucket = local.composer_dag_bucket
   source = "${local.recidiviz_root}/calculator/pipeline/calculation_pipeline_templates.yaml"
 }
 
 resource "google_storage_bucket_object" "cloud_function_utils" {
-  name   = "plugins/recidiviz/cloud_functions/cloud_function_utils.py"
+  name   = "dags/recidiviz/cloud_functions/cloud_function_utils.py"
   bucket = local.composer_dag_bucket
   source = "${local.recidiviz_root}/cloud_functions/cloud_function_utils.py"
 }
@@ -118,7 +106,7 @@ resource "google_storage_bucket_object" "airflow_cfg" {
 }
 
 resource "google_storage_bucket_object" "yaml_dict" {
-  name   = "plugins/recidiviz/utils/yaml_dict.py"
+  name   = "dags/recidiviz/utils/yaml_dict.py"
   bucket = local.composer_dag_bucket
   source = "${local.recidiviz_root}/utils/yaml_dict.py"
 }

@@ -25,19 +25,19 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from airflow import models
 from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 
-from recidiviz.utils.yaml_dict import YAMLDict
-
-# Custom Airflow plugins in the recidiviz.airflow.plugins package are imported into the
-# Cloud Composer environment at the top-level. Therefore, the try-catch with the import
-# is still necessary in order to satisfy both the DAG's execution and our local tests.
+# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
+# Cloud Composer environment at the top-level. However, for unit tests, we still need to
+# import the recidiviz-top-level.
 try:
-    from recidiviz_dataflow_operator import (  # type: ignore
+    from operators.recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
     )
 except ImportError:
-    from recidiviz.airflow.plugins.recidiviz_dataflow_operator import (  # pylint: disable=ungrouped-imports
+    from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
         RecidivizDataflowTemplateOperator,
     )
+
+from recidiviz.utils.yaml_dict import YAMLDict
 
 GCP_PROJECT_STAGING = "recidiviz-staging"
 
