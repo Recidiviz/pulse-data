@@ -27,7 +27,6 @@ import AgencyProvisioningView from "./AgencyProvisioningView";
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
 import ColumnView from "./ColumnView";
-import DataDiscoveryView from "./DataDiscoveryView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./DatasetView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
@@ -69,11 +68,6 @@ const App = (): JSX.Element => {
             <Menu.Item key={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
               <Link to={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
                 Data Freshness
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={DatasetMetadata.DATA_DISCOVERY_ROUTE}>
-              <Link to={DatasetMetadata.DATA_DISCOVERY_ROUTE}>
-                Data Discovery
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
@@ -168,11 +162,6 @@ const App = (): JSX.Element => {
           <Route
             path={DatasetMetadata.DATA_FRESHNESS_ROUTE}
             component={DataFreshnessView}
-          />
-          <Route
-            exact
-            path={DatasetMetadata.DATA_DISCOVERY_ROUTE}
-            component={DataDiscoveryView}
           />
           <Route
             path={DatasetMetadata.VALIDATION_DETAIL_ROUTE_TEMPLATE}
@@ -272,9 +261,6 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(LineStaffTools.EMAIL_REPORTS_ROUTE)) {
     return [LineStaffTools.EMAIL_REPORTS_ROUTE];
-  }
-  if (pathname.startsWith(DatasetMetadata.DATA_DISCOVERY_ROUTE)) {
-    return [DatasetMetadata.DATA_DISCOVERY_ROUTE];
   }
   return [];
 }

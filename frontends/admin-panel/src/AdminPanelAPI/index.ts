@@ -89,13 +89,6 @@ export const fetchValidationErrorTable = async (
 };
 
 export {
-  createDiscovery,
-  fetchDiscoveryStatus,
-  fetchRegionCodeFiles,
-  pollDiscoveryStatus,
-} from "./DataDiscovery";
-export type { Message } from "./DataDiscovery";
-export {
   acquireBQExportLock,
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,

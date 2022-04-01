@@ -281,7 +281,6 @@ def main() -> int:
                 "recidiviz.calculator",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_functions",
-                "recidiviz.cloud_memorystore",
                 "recidiviz.cloud_sql",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",

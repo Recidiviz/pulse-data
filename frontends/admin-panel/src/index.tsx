@@ -21,13 +21,10 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./components/App";
 
 import "./style/index.css";
-import StoreProvider from "./stores";
 
 ReactDOM.render(
   <BrowserRouter>
-    <StoreProvider>
-      <App />
-    </StoreProvider>
+    <App />
   </BrowserRouter>,
   document.getElementById("root")
 );
