@@ -1,0 +1,36 @@
+file_tag: ADH_OFFENDER_CHARGE
+file_description: |-
+  TODO(#11282) fill out 
+primary_key_cols: []
+columns:
+  - name: offender_charge_id
+  - name: offender_booking_id
+  - name: legal_order_id
+  - name: charge_number
+  - name: offense_id
+  - name: charge_status_id
+  - name: court_file_no
+  - name: offense_date
+  - name: conviction_date
+  - name: conviction_type_id
+  - name: convict_investigation_type_id
+  - name: firearms_involved_flag
+  - name: attempted_id
+  - name: charge_bond_bail_amount
+  - name: bond_bail_type_id
+  - name: bond_bail_status_id
+  - name: bond_bail_date
+  - name: criminal_tracking_number
+  - name: date_of_arrest
+  - name: guilty_but_mentally_ill_flag
+  - name: jail_credit_days
+  - name: habitual_override_flag
+  - name: enhanced_offense_id
+  - name: docket_number_lookup
+  - name: closing_reason_code
+  - name: closing_autohrity_id
+  - name: closing_date
+  - name: closing_notes
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

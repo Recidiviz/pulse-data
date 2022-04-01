@@ -1,0 +1,24 @@
+file_tag: ADH_FACILITY_COUNT_SHEET
+file_description: |-
+  TODO(#11282) fill out 
+primary_key_cols: []
+columns:
+  - name: facility_count_sheet_id
+  - name: facility_count_unit_id
+  - name: cell
+  - name: bunk
+  - name: offender_number
+  - name: offender_last_name
+  - name: out_flag
+  - name: empty_flag
+  - name: sequence_number
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
+  - name: unit_lock_id
+  - name: in_flg
+  - name: employee_id
+  - name: submit_date
+  - name: temperature
+  - name: perm_temp_flg
+  - name: visitor_flag

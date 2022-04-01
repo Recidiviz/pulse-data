@@ -728,10 +728,6 @@ class DirectIngestRawFileImportManager:
             normalize_column_name_for_bq(column.name) for column in file_config.columns
         ]
 
-        csv_columns = [
-            normalize_column_name_for_bq(column_name) for column_name in df.columns
-        ]
-
         if file_config.infer_columns_from_config:
             if len(columns_from_file_config) != len(df.columns):
                 raise ValueError(
@@ -739,12 +735,25 @@ class DirectIngestRawFileImportManager:
                     f"but found {len(df.columns)} in the DataFrame from the CSV. Make sure "
                     f"all expected columns are defined in the raw data configuration."
                 )
+            try:
+                csv_columns = [
+                    normalize_column_name_for_bq(column_name)
+                    for column_name in df.columns
+                ]
+            except IndexError:
+                # This indicates that there are empty column values in the DF, which highly
+                # suggests that we are working with a file that does not have header rows.
+                return columns_from_file_config
+
             if set(csv_columns).intersection(set(columns_from_file_config)):
                 raise ValueError(
                     "Found an unexpected header in the CSV. Please remove the header row from the CSV."
                 )
             return columns_from_file_config
 
+        csv_columns = [
+            normalize_column_name_for_bq(column_name) for column_name in df.columns
+        ]
         normalized_csv_columns = set()
         for i, column_name in enumerate(csv_columns):
             if not column_name:
