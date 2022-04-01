@@ -45,10 +45,13 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
 )
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 
-RAW_TABLE_DATASETS = {
-    raw_tables_dataset_for_region(state_code.value.lower(), sandbox_dataset_prefix=None)
+RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    raw_tables_dataset_for_region(
+        state_code.value.lower(), sandbox_dataset_prefix=None
+    ): f"Raw data tables from {StateCode.get_state(state_code)}"
     for state_code in StateCode
 }
+RAW_TABLE_DATASETS = set(RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS.keys())
 
 LATEST_VIEW_DATASETS = {
     raw_latest_views_dataset_for_region(
@@ -57,54 +60,19 @@ LATEST_VIEW_DATASETS = {
     for state_code in StateCode
 }
 
-SUPPLEMENTAL_DATASETS = {
-    f"{state_code.value.lower()}_supplemental" for state_code in StateCode
-}
-
-NORMALIZED_DATASETS = {
-    normalized_state_dataset_for_state_code(state_code) for state_code in StateCode
-}
-
-OTHER_SOURCE_TABLE_DATASETS = {
-    CASE_TRIAGE_FEDERATED_DATASET,
-    CASE_TRIAGE_SEGMENT_DATASET,
-    COUNTY_BASE_DATASET,
-    COVID_DASHBOARD_REFERENCE_DATASET,
-    DATAFLOW_METRICS_DATASET,
-    EXTERNAL_ACCURACY_DATASET,
-    EXTERNAL_REFERENCE_DATASET,
-    OPERATIONS_BASE_DATASET,
-    POPULATION_PROJECTION_OUTPUT_DATASET,
-    ANALYST_DATA_SCRATCH_SPACE_DATASET,
-    SENDGRID_EMAIL_DATA_DATASET,
-    STATE_BASE_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-    VERA_DATASET,
-    SUPPLEMENTAL_DATA_DATASET,
-}
-
-# These datasets should only contain tables that provide the source data for our view graph.
-VIEW_SOURCE_TABLE_DATASETS = (
-    OTHER_SOURCE_TABLE_DATASETS
-    | RAW_TABLE_DATASETS
-    | SUPPLEMENTAL_DATASETS
-    | NORMALIZED_DATASETS
-)
-
-RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
-    f"{state_code.value.lower()}_raw_data": f"Raw data tables from {StateCode.get_state(state_code)}"
-    for state_code in StateCode
-}
-
 SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
     f"{state_code.value.lower()}_supplemental": f"Contains data provided directly by {StateCode.get_state(state_code)} that is not run through direct ingest, e.g. validation data."
     for state_code in StateCode
 }
+SUPPLEMENTAL_DATASETS = set(SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS.keys())
 
 NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
-    dataset: "Contains normalized versions of the entities in the state dataset produced by the normalization pipeline for the state."
-    for dataset in NORMALIZED_DATASETS
+    normalized_state_dataset_for_state_code(
+        state_code
+    ): "Contains normalized versions of the entities in the state dataset produced by the normalization pipeline for the state."
+    for state_code in StateCode
 }
+NORMALIZED_DATASETS = set(NORMALIZED_DATASETS_TO_DESCRIPTIONS.keys())
 
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     ANALYST_DATA_SCRATCH_SPACE_DATASET: "Analyst data scratch space. Contains views for scrappy impact",
@@ -132,10 +100,13 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     SUPPLEMENTAL_DATA_DATASET: "Stores datasets generated not by traditional ingest or calc pipelines in BigQuery.",
     VERA_DATASET: "Stores data calculated outside of our codebase by Vera. Used only by Vera.",
 }
+OTHER_SOURCE_TABLE_DATASETS = set(OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS.keys())
 
+# These datasets should only contain tables that provide the source data for our view graph.
 VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     **RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS,
     **SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS,
     **OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
     **NORMALIZED_DATASETS_TO_DESCRIPTIONS,
 }
+VIEW_SOURCE_TABLE_DATASETS = set(VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS.keys())

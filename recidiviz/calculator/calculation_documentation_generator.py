@@ -84,7 +84,6 @@ from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.view_registry.datasets import (
     LATEST_VIEW_DATASETS,
-    OTHER_SOURCE_TABLE_DATASETS,
     RAW_TABLE_DATASETS,
     VIEW_SOURCE_TABLE_DATASETS,
     VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
@@ -152,18 +151,6 @@ If you are interested in what views rely on this metric, please run the followin
 
 {dependency_scripts_information_text}
 """
-
-RAW_DATA_LINKS_TEMPLATE = (
-    " ([Raw Data Doc](../../../ingest/{region}/raw_data/{raw_data_table}.md))"
-    " ([BQ Staging]({staging_link}))"
-    " ([BQ Prod]({prod_link}))"
-)
-
-SOURCE_TABLE_LINKS_TEMPLATE = " ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
-
-METRIC_LINKS_TEMPLATE = (
-    " ([Metric Doc](../../metrics/{generic_type}/{metric_table}.md))"
-)
 
 
 @attr.s
@@ -689,8 +676,7 @@ class CalculationDocumentationGenerator:
             key
             for key in all_parent_keys
             # Metric info will be included in the metric-specific section
-            if key.dataset_id
-            in OTHER_SOURCE_TABLE_DATASETS - {DATAFLOW_METRICS_DATASET}
+            if key.dataset_id in VIEW_SOURCE_TABLE_DATASETS - {DATAFLOW_METRICS_DATASET}
         }
 
         metric_keys = {
@@ -874,13 +860,12 @@ class CalculationDocumentationGenerator:
         products_section: bool = False,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
-        is_source_table = dag_key.dataset_id in OTHER_SOURCE_TABLE_DATASETS - {
-            DATAFLOW_METRICS_DATASET
-        }
-        is_raw_data_table = dag_key.dataset_id in LATEST_VIEW_DATASETS
+        is_source_table = dag_key.dataset_id in VIEW_SOURCE_TABLE_DATASETS
+        is_raw_data_table = dag_key.dataset_id in RAW_TABLE_DATASETS
+        is_raw_data_view = dag_key.dataset_id in LATEST_VIEW_DATASETS
         is_metric = dag_key.dataset_id in DATAFLOW_METRICS_DATASET
-        is_documented_view = not (is_source_table or is_raw_data_table or is_metric)
-        if is_raw_data_table and (
+        is_documented_view = not (is_source_table or is_raw_data_view or is_metric)
+        if is_raw_data_view and (
             not dag_key.dataset_id.endswith("_raw_data_up_to_date_views")
             or not dag_key.table_id.endswith("_latest")
         ):
@@ -910,22 +895,23 @@ class CalculationDocumentationGenerator:
             + f"{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
         )
 
-        if is_source_table:
+        if is_raw_data_table or is_raw_data_view:
+            if is_raw_data_view:
+                region = dag_key.dataset_id[: -len("_raw_data_up_to_date_views")]
+                raw_data_table = dag_key.table_id[: -len("_latest")]
+            else:
+                region = dag_key.dataset_id[: -len("_raw_data")]
+                raw_data_table = dag_key.table_id
+            table_name_str += f" ([Raw Data Doc](../../../ingest/{region}/raw_data/{raw_data_table}.md))"
+
+        if is_metric:
+            table_name_str += f"(../../metrics/{self.generic_types_by_metric_name[dag_key.table_id].lower()}/{dag_key.table_id}.md)"
+        elif is_documented_view:
+            table_name_str += f"(../{'../views/' if products_section else ''}{dag_key.dataset_id}/{dag_key.table_id}.md)"
+        else:
             table_name_str += (
                 f" ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
             )
-        elif is_metric:
-            table_name_str += f"(../../metrics/{self.generic_types_by_metric_name[dag_key.table_id].lower()}/{dag_key.table_id}.md)"
-        elif is_raw_data_table:
-            table_name_str += StrictStringFormatter().format(
-                RAW_DATA_LINKS_TEMPLATE,
-                region=dag_key.dataset_id[:-26],
-                raw_data_table=dag_key.table_id[:-7],
-                staging_link=staging_link,
-                prod_link=prod_link,
-            )
-        else:
-            table_name_str += f"(../{'../views/' if products_section else ''}{dag_key.dataset_id}/{dag_key.table_id}.md)"
 
         return table_name_str + " <br/>"
 
