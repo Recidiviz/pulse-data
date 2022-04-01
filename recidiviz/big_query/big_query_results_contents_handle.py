@@ -45,8 +45,6 @@ class BigQueryResultsContentsHandle(ContentsHandle[Dict[FieldName, T]]):
     def __init__(
         self,
         query_job: QueryJob,
-        # TODO(#9717): Pass a converter function here that converts all field values to
-        #  strings for backwards compatibility reasons.
         value_converter: Callable[[FieldName, FieldValue], T] = no_op_value_converter,
     ):
         self.value_converter = value_converter

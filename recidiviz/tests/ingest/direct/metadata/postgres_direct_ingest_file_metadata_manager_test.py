@@ -444,8 +444,6 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             self.raw_metadata_manager_secondary.get_num_unprocessed_raw_files()
 
 
-# TODO(#9717): Write tests for the new BQ-materialization version of this metadata
-#  table.
 class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
     """Tests for PostgresDirectIngestIngestFileMetadataManagerTest."""
 
