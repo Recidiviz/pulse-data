@@ -18,7 +18,6 @@
 import MetadataDataset from "../models/MetadataDatasets";
 
 export const DATA_FRESHNESS_ROUTE = "/admin/ingest_metadata/data_freshness";
-export const DATA_DISCOVERY_ROUTE = "/admin/ingest_metadata/data_discovery";
 
 export const VALIDATION_STATUS_ROUTE = `/admin/${MetadataDataset.VALIDATION}/status`;
 export const VALIDATION_DETAIL_ROUTE_TEMPLATE = `${VALIDATION_STATUS_ROUTE}/:validationName`;

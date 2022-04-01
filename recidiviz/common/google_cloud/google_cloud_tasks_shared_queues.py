@@ -16,7 +16,6 @@
 # =============================================================================
 """Queue names for shared Google Cloud Task queues."""
 
-ADMIN_PANEL_DATA_DISCOVERY_QUEUE = "admin-panel-data-discovery"
 
 # TODO(#6455) - This queue should ideally be renamed to "direct-ingest-jpp-scheduler"
 DIRECT_INGEST_JAILS_SCHEDULER_QUEUE_V2 = "direct-ingest-scheduler-v2"
