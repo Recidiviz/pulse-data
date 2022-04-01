@@ -42,10 +42,10 @@ class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
         # In DataflowTemplateOperator,  start_template_dataflow has the default append_job_name set to True
         # so it adds a unique-id to the end of the job name. This overwrites that default argument.
         return hook.start_template_dataflow(
-            self.task_id,
-            self.dataflow_default_options,
-            self.parameters,
-            self.template,
-            self.project_id,
+            job_name=self.task_id,
+            variables=self.dataflow_default_options,
+            parameters=self.parameters,
+            dataflow_template=self.template,
+            project_id=self.project_id,
             append_job_name=False,
         )
