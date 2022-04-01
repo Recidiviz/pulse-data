@@ -15,30 +15,28 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { observer } from "mobx-react-lite";
-import React, { ReactElement } from "react";
-import { Route, Routes } from "react-router-dom";
 import styled from "styled-components/macro";
 
-import Header from "./components/Header";
-import Reports from "./pages/Reports";
-
-const PageWrapper = styled.div`
-  padding: 40px 22px;
+export const HeaderWrapper = styled.header`
+  width: 100%;
+  height: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 22px;
 `;
 
-const App: React.FC = (): ReactElement => {
-  return (
-    <>
-      <Header />
-
-      <PageWrapper>
-        <Routes>
-          <Route path="/" element={<Reports />} />
-        </Routes>
-      </PageWrapper>
-    </>
-  );
+type HeaderItemProps = {
+  textAlign?: "right" | "left";
 };
 
-export default observer(App);
+export const HeaderItem = styled.div<HeaderItemProps>`
+  width: calc(100% / 3);
+  display: flex;
+  justify-content: ${({ textAlign }) => {
+    if (!textAlign) {
+      return "flex-start";
+    }
+    return textAlign === "right" ? "flex-end" : "flex-start";
+  }};
+`;

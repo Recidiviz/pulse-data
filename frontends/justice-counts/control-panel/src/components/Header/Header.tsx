@@ -16,44 +16,20 @@
 // =============================================================================
 
 import React from "react";
-import ReactDOM from "react-dom";
-import { BrowserRouter } from "react-router-dom";
-import { createGlobalStyle } from "styled-components/macro";
 
-import App from "./App";
-import AuthWall from "./components/Auth";
-import { StoreProvider } from "./stores";
+import Menu from "../Menu";
+import { HeaderItem, HeaderWrapper } from ".";
 
-const GlobalStyle = createGlobalStyle`
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+const Header = () => {
+  return (
+    <HeaderWrapper>
+      <HeaderItem>Justice Counts Data Publisher</HeaderItem>
+      <HeaderItem>State Department of Corrections</HeaderItem>
+      <HeaderItem textAlign="right">
+        <Menu />
+      </HeaderItem>
+    </HeaderWrapper>
+  );
+};
 
-  html, body, #root {
-    height: 100%;
-  }
-
-  body {
-    width: 100%;
-    font-family: "Inter", sans-serif;
-    font-weight: 500;
-    background-color: #FFFFFF;
-    color: #171C2B;
-  }
-`;
-
-ReactDOM.render(
-  <React.StrictMode>
-    <StoreProvider>
-      <GlobalStyle />
-      <AuthWall>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </AuthWall>
-    </StoreProvider>
-  </React.StrictMode>,
-  document.getElementById("root")
-);
+export default Header;

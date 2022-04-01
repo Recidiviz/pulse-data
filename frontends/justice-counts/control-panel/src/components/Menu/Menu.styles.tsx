@@ -14,46 +14,36 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { DropdownMenuItem, DropdownToggle } from "@recidiviz/design-system";
+import styled from "styled-components/macro";
 
-import React from "react";
-import ReactDOM from "react-dom";
-import { BrowserRouter } from "react-router-dom";
-import { createGlobalStyle } from "styled-components/macro";
+export const ExtendedDropdownToggle = styled(DropdownToggle)`
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 
-import App from "./App";
-import AuthWall from "./components/Auth";
-import { StoreProvider } from "./stores";
-
-const GlobalStyle = createGlobalStyle`
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  &[aria-expanded="true"] {
+    color: #0073e5;
   }
 
-  html, body, #root {
-    height: 100%;
+  &:hover {
+    color: #0073e5;
   }
 
-  body {
-    width: 100%;
-    font-family: "Inter", sans-serif;
-    font-weight: 500;
-    background-color: #FFFFFF;
-    color: #171C2B;
+  &:focus {
+    color: inherit;
   }
 `;
 
-ReactDOM.render(
-  <React.StrictMode>
-    <StoreProvider>
-      <GlobalStyle />
-      <AuthWall>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </AuthWall>
-    </StoreProvider>
-  </React.StrictMode>,
-  document.getElementById("root")
-);
+export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)`
+  &:focus {
+    background-color: transparent;
+    color: inherit;
+  }
+
+  &:hover {
+    color: #0073e5;
+    background-color: rgba(0, 115, 229, 0.1);
+  }
+`;
