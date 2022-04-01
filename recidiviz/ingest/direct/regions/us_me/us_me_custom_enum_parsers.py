@@ -95,7 +95,8 @@ SUPERVISION_PRECEDING_INCARCERATION_STATUSES = [
     "WARRANT ABSCONDED",
     "PARTIAL REVOCATION - COUNTY JAIL",
 ]
-ABSCONSION_STATUSES = ["WARRANT ABSCONDED", ESCAPE]
+WARRANT_ABSCONDED_STATUS = "WARRANT ABSCONDED"
+ABSCONSION_STATUSES = [WARRANT_ABSCONDED_STATUS, ESCAPE]
 SUPERVISION_STATUSES = [
     COMMUNITY_CONFINEMENT_STATUS,
     PAROLE_STATUS,
@@ -516,6 +517,9 @@ def parse_supervision_type(
         current_status,
         _officer_status,
     ) = raw_text.upper().split("@@")
+    # TODO(#11875): Add Absconsion Type or Status depending on schema change request
+    if current_status == WARRANT_ABSCONDED_STATUS:
+        return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
 
     if current_status == PAROLE_STATUS:
         return StateSupervisionPeriodSupervisionType.PAROLE
