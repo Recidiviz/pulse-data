@@ -15,30 +15,5 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { observer } from "mobx-react-lite";
-import React, { ReactElement } from "react";
-import { Route, Routes } from "react-router-dom";
-import styled from "styled-components/macro";
-
-import Header from "./components/Header";
-import Reports from "./pages/Reports";
-
-const PageWrapper = styled.div`
-  padding: 40px 22px;
-`;
-
-const App: React.FC = (): ReactElement => {
-  return (
-    <>
-      <Header />
-
-      <PageWrapper>
-        <Routes>
-          <Route path="/" element={<Reports />} />
-        </Routes>
-      </PageWrapper>
-    </>
-  );
-};
-
-export default observer(App);
+export { default } from "./Header";
+export * from "./Header.styles";

@@ -91,29 +91,6 @@ class API {
       return String(error);
     }
   }
-
-  // Note: consider where this should live - I don't think this is the best place for it.
-  async logout(): Promise<void | string> {
-    try {
-      const response = (await this.request({
-        path: "/auth/logout",
-        method: "POST",
-      })) as Response;
-
-      if (response.status === 200 && this.authStore) {
-        return this.authStore.logoutUser();
-      }
-
-      return Promise.reject(
-        new Error(
-          "Something went wrong with clearing auth session or authStore is not initialized."
-        )
-      );
-    } catch (error) {
-      if (error instanceof Error) return error.message;
-      return String(error);
-    }
-  }
 }
 
 export default API;
