@@ -1,0 +1,15 @@
+file_tag: ADH_BUILDING
+file_description: |-
+  TODO(#11282) fill out 
+primary_key_cols: []
+columns:
+  - name: building_id
+  - name: location_id
+  - name: name
+  - name: notes
+  - name: active_flag
+  - name: begin_date
+  - name: end_date
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

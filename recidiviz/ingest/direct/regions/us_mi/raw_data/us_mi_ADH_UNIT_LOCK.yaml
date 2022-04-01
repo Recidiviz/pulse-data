@@ -1,0 +1,21 @@
+file_tag: ADH_UNIT_LOCK
+file_description: |-
+  TODO(#11282) fill out
+primary_key_cols: []
+columns:
+  - name: unit_lock_id
+  - name: security_level_id
+  - name: reporting_station_id
+  - name: cell_type_id
+  - name: cell_status_id
+  - name: location_wing_id
+  - name: cell_lock
+  - name: bunk
+  - name: date_placed_in_service
+  - name: date_removed_from_service
+  - name: occupied_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
+  - name: cell
+  - name: active_flag

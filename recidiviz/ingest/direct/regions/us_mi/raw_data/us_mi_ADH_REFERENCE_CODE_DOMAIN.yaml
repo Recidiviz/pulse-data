@@ -1,0 +1,13 @@
+file_tag: ADH_REFERENCE_CODE_DOMAIN
+file_description: |-
+  TODO(#11282) fill out
+primary_key_cols: []
+columns:
+  - name: reference_code_domain_id
+  - name: name
+  - name: description
+  - name: parent_ref_code_domain_id
+  - name: update_allowed_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

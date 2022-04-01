@@ -1,0 +1,24 @@
+file_tag: ADH_SPECIAL_CONDITION
+file_description: |-
+  TODO(#11282) fill out
+primary_key_cols: []
+columns:
+  - name: special_condition_id
+  - name: condition_code
+  - name: condition_type_id
+  - name: special_condition_group_id
+  - name: short_description
+  - name: description
+  - name: list_seq
+  - name: active_flag
+  - name: effective_date
+  - name: expiration_date
+  - name: notes
+  - name: notes2
+  - name: notes3
+  - name: concatenate_flag
+  - name: std_probation_cond_flag
+  - name: std_parole_cond_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

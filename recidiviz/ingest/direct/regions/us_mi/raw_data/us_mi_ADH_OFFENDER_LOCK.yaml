@@ -1,0 +1,15 @@
+file_tag: ADH_OFFENDER_LOCK
+file_description: |-
+  TODO(#11282) fill out 
+primary_key_cols: []
+columns:
+  - name: offender_lock_id
+  - name: offender_id
+  - name: unit_lock_id
+  - name: location_id
+  - name: date_in
+  - name: date_out
+  - name: permanent_temporary_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

@@ -1,0 +1,19 @@
+file_tag: ADH_OFFENDER_SUPERVISION
+file_description: |-
+  TODO(#11282) fill out 
+primary_key_cols: []
+columns:
+  - name: offender_supervision_id
+  - name: offender_booking_id
+  - name: supervision_level_id
+  - name: description
+  - name: effective_date
+  - name: expiration_date
+  - name: active_flag
+  - name: next_review_date
+  - name: begin_date
+  - name: jail_treatment_release_date
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
+  - name: mdoc_paid_phone_rpt
