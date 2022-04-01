@@ -84,6 +84,7 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 entities.StateSupervisionViolationResponse,
                 entities.StateSupervisionViolationResponseDecisionEntry,
                 entities.StateProgramAssignment,
+                entities.StateAssessment,
             ],
             required_reference_tables=[],
             state_specific_required_delegates=[

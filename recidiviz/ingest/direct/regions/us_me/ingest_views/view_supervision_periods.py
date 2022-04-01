@@ -53,6 +53,7 @@ VIEW_QUERY_TEMPLATE = f"""
     WITH {statuses_cte(status_filter_condition=STATUS_FILTER_CONDITION)},
     supervision_officer_assignments AS (
         SELECT
+            Supervision_History_Id AS supervision_history_id,
             Cis_100_Client_Id AS client_id,
             PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE(Assignment_Date, r'{REGEX_TIMESTAMP_NANOS_FORMAT}', '')) AS supervision_start_datetime,
             IFNULL(
@@ -93,6 +94,7 @@ VIEW_QUERY_TEMPLATE = f"""
     ),
     supervision_officer_assignments_dates AS (
         SELECT 
+            supervision_history_id,
             client_id,
             supervision_start_datetime,
             EXTRACT(DATE FROM supervision_start_datetime) AS supervision_start_date,
@@ -119,6 +121,7 @@ VIEW_QUERY_TEMPLATE = f"""
             statuses.jurisdiction_location_type AS current_jurisdiction_location_type,
             statuses.current_status,
             statuses.transfer_id,
+            statuses.transfer_datetime,
             statuses.transfer_type,
             statuses.transfer_reason,
             statuses.transfer_from_jur_location_type,
@@ -127,6 +130,7 @@ VIEW_QUERY_TEMPLATE = f"""
             statuses.current_jurisdiction_location,
             statuses.location_type AS current_physical_location_type,
             statuses.location_type AS status_location_type,
+            officers.supervision_history_id,
             officers.supervising_officer_id AS officer_external_id,
             officers.supervision_location_type,
             officers.supervision_location,
@@ -214,10 +218,18 @@ VIEW_QUERY_TEMPLATE = f"""
     
         WINDOW status_seq AS (
             PARTITION BY client_id 
-            ORDER BY start_date, end_date, 
-            {CURRENT_STATUS_ORDER_BY},
-            transfer_type,
-            transfer_reason
+            ORDER BY start_date, 
+                end_date, 
+                start_datetime, 
+                end_datetime,
+                {CURRENT_STATUS_ORDER_BY},
+                transfer_datetime,
+                supervision_history_id,
+                transfer_id,
+                officer_status,
+                officer_external_id,
+                transfer_type,
+                transfer_reason
         )
     ),
     supervision_periods AS (

@@ -122,6 +122,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            assessments=None,
         )
 
         self.assertEqual([incarceration_period], processed_ips)
@@ -150,6 +151,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            assessments=None,
         )
 
         self.assertEqual([incarceration_period], processed_ips)
@@ -182,6 +184,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
+                assessments=None,
             )
 
     def test_normalized_periods_for_calculations_no_violation_responses_state_requires(
@@ -211,6 +214,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
+                assessments=None,
             )
 
     def test_normalized_periods_for_calculations_no_sentences_state_requires(
@@ -240,6 +244,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
+                assessments=None,
             )
 
     def test_normalized_periods_for_calculations_no_ips(self) -> None:
@@ -263,6 +268,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            assessments=None,
         )
 
         self.assertEqual([], processed_ips)
@@ -280,6 +286,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            assessments=None,
         )
 
         self.assertEqual([], processed_ips)
