@@ -73,18 +73,18 @@ data "external" "composer_iap_client_id" {
   # Outputs a result that contains 'iap_client_id' to be consumed by any resources that need to call into Airflow.
 }
 
-data "archive_file" "dags" {
-  type        = "zip"
-  output_path = "${local.temporary_directory}/dags.zip"
-  source_dir  = "${local.recidiviz_root}/airflow/dags"
+resource "google_storage_bucket_object" "dags_file" {
+  for_each = fileset("${local.recidiviz_root}/airflow/dags", "*dag*.py")
+  name     = "dags/${each.key}"
+  bucket   = local.composer_dag_bucket
+  source   = "${local.recidiviz_root}/airflow/dags/${each.key}"
 }
 
-# We zip the files mostly because it isn't totally clear how to copy a directory to GCS. Airflow will unzip it on its
-# own, so this works just fine.
-resource "google_storage_bucket_object" "dags_archive" {
-  name   = "dags/dags.zip"
-  bucket = local.composer_dag_bucket
-  source = data.archive_file.dags.output_path
+resource "google_storage_bucket_object" "operators_file" {
+  for_each = fileset("${local.recidiviz_root}/airflow/dags/operators", "*.py")
+  name     = "dags/operators/${each.key}"
+  bucket   = local.composer_dag_bucket
+  source   = "${local.recidiviz_root}/airflow/dags/operators/${each.key}"
 }
 
 resource "google_storage_bucket_object" "pipeline_templates" {
