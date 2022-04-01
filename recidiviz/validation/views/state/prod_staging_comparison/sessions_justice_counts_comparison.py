@@ -34,37 +34,58 @@ SESSIONS_JUSTICE_COUNTS_COMPARISON_DESCRIPTION = """
 Comparison of justice counts and sessions data on prison, parole, and probation populations (project agnostic)
 """
 
+JUSTICE_COUNTS_ANNUAL_ONLY_STATES = ["US_ID"]
+
 SESSIONS_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLATE = """
 /* Inner joins sessions and justice counts population for prison, parole, and probation compartments. */
 
     SELECT
-      a.state_code,
-      a.metric,
-      a.date_reported,
-      MAX(a.value) AS justice_counts_value, --all rows when grouped should have same justice counts value, so can take whatever aggregation
-      COUNT(*) AS sessions_value, 
-    FROM `{project_id}.{justice_counts_dataset}.unified_corrections_metrics_monthly` a 
-    
+      state_code,
+      metric,
+      jc.date_reported,
+      MAX(jc.value) AS justice_counts_value, --all rows when grouped should have same justice counts value, so can take whatever aggregation
+      COUNT(*) AS sessions_value,
+    FROM (
+      SELECT
+        state_code,
+        metric,
+        date_reported,
+        value
+      FROM `{project_id}.{justice_counts_dataset}.unified_corrections_metrics_monthly`
+      UNION ALL
+      SELECT
+        state_code,
+        metric,
+        date_reported,
+        value
+      FROM `{project_id}.{justice_counts_dataset}.unified_corrections_metrics_annual`
+      WHERE state_code IN ('{annual_only_states}')
+    ) jc
+
     INNER JOIN (
       -- one to many join for all observations that have Justice Counts dates between their start and end sessions dates
-      
-      SELECT 
+
+      SELECT
         state_code,
         start_date,
         end_date,
         CASE
+            -- Only include the in-state correctional compartments
             WHEN compartment_level_1 = "INCARCERATION" THEN "POPULATION_PRISON"
-            WHEN compartment_level_2 IN ("PAROLE", "DUAL") THEN "POPULATION_PAROLE"
-            WHEN compartment_level_2 = "PROBATION"
-                -- Justice Counts probation data collection process in TN includes
-                -- Community Confinement unlike other states
-                OR (state_code = "US_TN" AND compartment_level_2 = "COMMUNITY_CONFINEMENT")
-                THEN "POPULATION_PROBATION"
+            WHEN compartment_level_1 = "SUPERVISION" THEN
+              CASE
+                WHEN compartment_level_2 IN ("PAROLE", "DUAL") THEN "POPULATION_PAROLE"
+                WHEN compartment_level_2 = "PROBATION"
+                    -- Justice Counts probation data collection process in TN includes
+                    -- Community Confinement unlike other states
+                    OR (state_code = "US_TN" AND compartment_level_2 = "COMMUNITY_CONFINEMENT")
+                    THEN "POPULATION_PROBATION"
+              END
             END AS metric
       FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-      ) b
+      ) sessions
     USING (state_code, metric)
-    WHERE a.date_reported BETWEEN b.start_date AND COALESCE(b.end_date,'9999-01-01')
+    WHERE jc.date_reported BETWEEN sessions.start_date AND COALESCE(sessions.end_date,'9999-01-01')
     GROUP BY 1, 2, 3
 
 """
@@ -76,6 +97,7 @@ SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SESSIONS_JUSTICE_COUNTS_COMPARISON_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     justice_counts_dataset=JUSTICE_COUNTS_DASHBOARD_DATASET,
+    annual_only_states="', '".join(JUSTICE_COUNTS_ANNUAL_ONLY_STATES),
     should_materialize=True,
 )
 
