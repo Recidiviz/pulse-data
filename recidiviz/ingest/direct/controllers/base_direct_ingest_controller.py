@@ -112,6 +112,9 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
     IngestViewMaterializerDelegate,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    InstanceIngestViewContents,
+)
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
     LegacyIngestViewProcessorDelegate,
@@ -303,7 +306,12 @@ class BaseDirectIngestController:
             )
             materializer_delegate = BQBasedMaterializerDelegate(
                 metadata_manager=self.view_materialization_metadata_manager,
-                big_query_client=big_query_client,
+                ingest_view_contents=InstanceIngestViewContents(
+                    big_query_client=big_query_client,
+                    region_code=self.region_code(),
+                    ingest_instance=self.ingest_instance,
+                    dataset_prefix=None,
+                ),
             )
             materialization_args_generator_delegate = (
                 BQBasedMaterializationArgsGeneratorDelegate(

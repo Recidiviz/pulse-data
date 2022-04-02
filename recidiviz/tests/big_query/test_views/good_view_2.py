@@ -36,7 +36,7 @@ with local_project_id_override("my-project-id"):
             yaml_config_file_dir="/a/path/to/a/dir",
             raw_file_configs={},
         ),
-        order_by_cols=None,
+        order_by_cols="some_col, another_col",
         is_detect_row_deletion_view=False,
         primary_key_tables_for_entity_deletion=[],
     )

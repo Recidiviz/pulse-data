@@ -483,7 +483,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         ingest_view_name: str,
         view_query_template: str,
         region_raw_table_config: DirectIngestRegionRawFileConfig,
-        order_by_cols: Optional[str],
+        order_by_cols: str,
         is_detect_row_deletion_view: bool,
         primary_key_tables_for_entity_deletion: List[str],
         materialize_raw_data_table_views: bool = False,
@@ -496,7 +496,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             view_query_template: (str) The template for the query, formatted for hydration of raw table views.
             region_raw_table_config: (DirectIngestRegionRawFileConfig) Raw table configurations for the region this
                 view corresponds to.
-            order_by_cols: (str) An optional, comma-separated string of columns to sort the final results by.
+            order_by_cols: (str) A comma-separated string of columns to sort the final results by.
             is_detect_row_deletion_view: (bool) When true, this view will be built to detect that rows have been deleted
                 since the previous raw data update for this view.
             primary_key_tables_for_entity_deletion: (str) A list of table names that are used to build the primary keys
@@ -590,7 +590,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return self._is_detect_row_deletion_view
 
     @property
-    def order_by_cols(self) -> Optional[str]:
+    def order_by_cols(self) -> str:
         """String containing any columns used to order the ingest view query results. This string will be appended to
         ingest view queries in the format `ORDER BY {order_by_cols}, and therefore |order_by_cols| must create valid
         SQL when appended in that fashion.
@@ -634,11 +634,9 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return f"{prefix}{raw_table_config.file_tag}_generated_view"
 
     @staticmethod
-    def add_order_by_suffix(query: str, order_by_cols: Optional[str]) -> str:
-        if order_by_cols:
-            query = query.rstrip().rstrip(";")
-            query = f"{query}\nORDER BY {order_by_cols};"
-        return query
+    def add_order_by_suffix(query: str, order_by_cols: str) -> str:
+        query = query.rstrip().rstrip(";")
+        return f"{query}\nORDER BY {order_by_cols};"
 
     @classmethod
     def _raw_table_subquery_clause(
@@ -704,7 +702,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         region_code: str,
         raw_table_dependency_configs: List[DirectIngestRawFileConfig],
         view_query_template: str,
-        order_by_cols: Optional[str],
+        order_by_cols: str,
         materialize_raw_data_table_views: bool,
         config: "DirectIngestPreProcessedIngestView.QueryStructureConfig",
     ) -> str:
@@ -744,7 +742,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         region_code: str,
         raw_table_dependency_configs: List[DirectIngestRawFileConfig],
         view_query_template: str,
-        order_by_cols: Optional[str],
+        order_by_cols: str,
         materialize_raw_data_table_views: bool,
         config: "DirectIngestPreProcessedIngestView.QueryStructureConfig",
     ) -> str:
@@ -796,7 +794,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         region_code: str,
         raw_table_dependency_configs: List[DirectIngestRawFileConfig],
         view_query_template: str,
-        order_by_cols: Optional[str],
+        order_by_cols: str,
         materialize_raw_data_table_views: bool,
         config: "DirectIngestPreProcessedIngestView.QueryStructureConfig",
     ) -> str:
@@ -989,7 +987,7 @@ class DirectIngestPreProcessedIngestViewBuilder(
         region: str,
         ingest_view_name: str,
         view_query_template: str,
-        order_by_cols: Optional[str],
+        order_by_cols: str,
         is_detect_row_deletion_view: bool = False,
         primary_key_tables_for_entity_deletion: Optional[List[str]] = None,
         materialize_raw_data_table_views: bool = False,

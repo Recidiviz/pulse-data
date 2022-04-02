@@ -21,9 +21,11 @@ states using BQ-based ingest view materialization.
 import datetime
 from typing import Optional
 
-from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
     IngestViewMaterializerDelegate,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    InstanceIngestViewContents,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
@@ -34,8 +36,6 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 )
 
 
-# TODO(#9717): Write tests for the IngestViewMaterializer that use this version of the
-#  delegate once materialize_query_results is implemented.
 class BQBasedMaterializerDelegate(
     IngestViewMaterializerDelegate[IngestViewMaterializationArgs]
 ):
@@ -46,17 +46,13 @@ class BQBasedMaterializerDelegate(
     def __init__(
         self,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
-        big_query_client: BigQueryClient,
+        ingest_view_contents: InstanceIngestViewContents,
     ):
         self.metadata_manager = metadata_manager
-        self.big_query_client = big_query_client
+        self.ingest_view_contents = ingest_view_contents
 
     def temp_dataset_id(self) -> str:
-        # TODO(#9717): Return a dataset prefixed with "temp" or something to
-        #  more clearly indicate that it's meant for ephemeral storage.
-        raise NotImplementedError(
-            "TODO(#9717): BQ-based materialization not yet implemented."
-        )
+        return self.ingest_view_contents.temp_results_dataset
 
     def get_job_completion_time_for_args(
         self, args: IngestViewMaterializationArgs
@@ -73,8 +69,12 @@ class BQBasedMaterializerDelegate(
         ingest_view: DirectIngestPreProcessedIngestView,
         query: str,
     ) -> None:
-        raise NotImplementedError(
-            "TODO(#9717): BQ-based materialization not yet implemented."
+        self.ingest_view_contents.save_query_results(
+            ingest_view_name=args.ingest_view_name,
+            upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
+            lower_bound_datetime_exclusive=args.lower_bound_datetime_exclusive,
+            query_str=query,
+            order_by_cols_str=ingest_view.order_by_cols,
         )
 
     def mark_job_complete(self, args: IngestViewMaterializationArgs) -> None:

@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
     IngestViewMaterializerDelegate,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    GcsfsIngestViewExportArgs,
+    BQIngestViewMaterializationArgs,
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -223,11 +223,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 upper_bound_prev_query=upper_bound_prev_query,
                 do_reverse_date_diff=ingest_view.do_reverse_date_diff,
             )
-
-        if not isinstance(ingest_view_export_args, GcsfsIngestViewExportArgs):
-            # TODO(#9717): Augment query logic here to add appropriate metadata columns
-            #  (should probably do that inside a new delegate method?)
-            raise ValueError(f"Unexpected args type [{type(ingest_view_export_args)}]")
 
         return DirectIngestPreProcessedIngestView.add_order_by_suffix(
             query=export_query, order_by_cols=ingest_view.order_by_cols
@@ -491,13 +486,11 @@ if __name__ == "__main__":
 
         debug_query = IngestViewMaterializerImpl.debug_query_for_args(
             views_by_name_,
-            # TODO(#9717): Migrate to new BQ-based implementation of
-            #  IngestViewMaterializationArgs.
-            GcsfsIngestViewExportArgs(
+            BQIngestViewMaterializationArgs(
                 ingest_view_name=ingest_view_name_,
+                ingest_instance_=DirectIngestInstance.PRIMARY,
                 lower_bound_datetime_exclusive=lower_bound_datetime_exclusive_,
                 upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
-                output_bucket_name="any_bucket",
             ),
         )
         print(debug_query)
