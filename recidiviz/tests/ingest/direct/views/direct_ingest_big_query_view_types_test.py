@@ -443,7 +443,7 @@ USING (col1);"""
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
-                order_by_cols=None,
+                order_by_cols="any_col",
                 is_detect_row_deletion_view=False,
                 primary_key_tables_for_entity_deletion=[],
             )
@@ -873,12 +873,14 @@ ORDER BY col1, col2;"""
 LEFT OUTER JOIN {file_tag_not_in_config}
 USING (col1);"""
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError, r"Found unexpected raw table tag \[file_tag_not_in_config\]"
+        ):
             DirectIngestPreProcessedIngestView(
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
-                order_by_cols=None,
+                order_by_cols="any_col",
                 is_detect_row_deletion_view=False,
                 primary_key_tables_for_entity_deletion=[],
             )
