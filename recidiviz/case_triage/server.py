@@ -163,7 +163,7 @@ if not in_test():
 
 
 # Security headers
-@app.after_request
+@app.after_request  # type: ignore
 def set_headers(response: Response) -> Response:
     if not in_development():
         response.headers[

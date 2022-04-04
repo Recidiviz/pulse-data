@@ -19,7 +19,7 @@
 import datetime
 import unittest
 
-from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.timestamp_pb2 import Timestamp  # pylint: disable=no-name-in-module
 from mock import MagicMock, patch
 from werkzeug.exceptions import ServiceUnavailable
 

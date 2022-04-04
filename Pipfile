@@ -33,7 +33,7 @@ gspread = "*"
 pytablewriter = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
-black = {extras = ["jupyter"],version = "==22.1.0"}
+black = {extras = ["jupyter"],version = "==22.3.0"}
 pre-commit = "*"
 # TODO(#4287): Unpin/remove explicit dependency once the latest version of
 #  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
@@ -122,10 +122,10 @@ google-api-core = "*"
 protobuf = "*"
 "psycopg2" = "*"
 cryptography = "*"
-google-cloud-bigquery = "*"
 # TODO(#4287): Versions >= 3.0.0 create namespace conflicts with other cloud libraries
 #  (and resulting mypy errors). We should revisit upgrade when we've updated all
 #  google-cloud* libraries to >= 2.0.0.
+google-cloud-bigquery = "<3.0.0"
 google-cloud-bigquery-datatransfer = "<3.0.0"
 google-api-python-client = "*"
 google-auth = "*"
@@ -178,6 +178,9 @@ nltk = "*"
 thefuzz = "*"
 ratelimit = "*"
 ratelimit-stubs = "*"
+# TODO(flask-sqlalchemy-session#14): Unpin/remove explicit dependency once the latest
+# version of Flask-SQLAlchemy-Session stops relying on __ident_func__ from Locals
+werkzeug = "<2.1.0"
 
 [requires]
 python_version = "3.8"

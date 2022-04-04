@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Contains functionality for persisting sessions to Redis """
+import datetime
 import logging
 import pickle
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from flask import Flask, Request, Response
-from flask.helpers import total_seconds
 from flask.sessions import SessionInterface, SessionMixin
 from itsdangerous import BadSignature, TimestampSigner
 from redis import Redis
@@ -181,7 +181,7 @@ class RedisSessionInterface(SessionInterface):
         self.redis.setex(
             name=RedisSessionFactory.build_session_cache_key(session.session_id),
             value=pickle.dumps(dict(session)),
-            time=total_seconds(app.permanent_session_lifetime),
+            time=int(datetime.timedelta.total_seconds(app.permanent_session_lifetime)),
         )
 
         # Send the session id to the client
