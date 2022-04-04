@@ -16,33 +16,54 @@
 # =============================================================================
 """Interface for working with the User model."""
 
+from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
+from recidiviz.reporting.email_reporting_utils import validate_email_address
 
 
 class UserAccountInterface:
     """Contains methods for setting and getting User info."""
 
     @staticmethod
-    def create_user(session: Session, auth0_user_id: str) -> None:
-        session.add(UserAccount(auth0_user_id=auth0_user_id))
+    def create_user(
+        session: Session,
+        email_address: str,
+        name: Optional[str] = None,
+        auth0_user_id: Optional[str] = None,
+    ) -> None:
+        validate_email_address(email_address)
+        session.add(
+            UserAccount(
+                email_address=email_address, name=name, auth0_user_id=auth0_user_id
+            )
+        )
+
+    @staticmethod
+    def get_user_by_email_address(session: Session, email_address: str) -> UserAccount:
+        return (
+            session.query(UserAccount)
+            .filter(UserAccount.email_address == email_address)
+            .one()
+        )
 
     @staticmethod
     def get_user_by_auth0_user_id(session: Session, auth0_user_id: str) -> UserAccount:
         return (
             session.query(UserAccount)
             .filter(UserAccount.auth0_user_id == auth0_user_id)
-            .one_or_none()
+            .one()
         )
 
     @staticmethod
     def add_agency_to_user(
-        session: Session, auth0_user_id: str, agency_name: str
+        session: Session, email_address: str, agency_name: str
     ) -> None:
-        user = UserAccountInterface.get_user_by_auth0_user_id(
-            session=session, auth0_user_id=auth0_user_id
+        user = UserAccountInterface.get_user_by_email_address(
+            session=session, email_address=email_address
         )
         agency = AgencyInterface.get_agency_by_name(session=session, name=agency_name)
         user.agencies.append(agency)

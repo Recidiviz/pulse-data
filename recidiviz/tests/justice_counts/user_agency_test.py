@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for the Justice Counts UserInterface."""
 
+from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -29,14 +30,35 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
     def test_create_and_get_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             AgencyInterface.create_agency(session=session, name="Agency Alpha")
-            UserAccountInterface.create_user(session=session, auth0_user_id="id0")
+            UserAccountInterface.create_user(
+                session=session,
+                email_address="user@gmail.com",
+                name="User",
+                auth0_user_id="id0",
+            )
             UserAccountInterface.add_agency_to_user(
-                session=session, auth0_user_id="id0", agency_name="Agency Alpha"
+                session=session,
+                email_address="user@gmail.com",
+                agency_name="Agency Alpha",
             )
 
+            # Cannot create user with invalid email address
+            with self.assertRaisesRegex(ValueError, "Invalid email address"):
+                UserAccountInterface.create_user(
+                    session=session,
+                    email_address="xyz",
+                )
+
         with SessionFactory.using_database(self.database_key) as session:
-            user = UserAccountInterface.get_user_by_auth0_user_id(
-                session=session, auth0_user_id="id0"
+            user = UserAccountInterface.get_user_by_email_address(
+                session=session, email_address="user@gmail.com"
             )
             self.assertEqual(user.auth0_user_id, "id0")
+            self.assertEqual(user.name, "User")
             self.assertEqual({a.name for a in user.agencies}, {"Agency Alpha"})
+
+            # Raise error if no user found
+            with self.assertRaises(NoResultFound):
+                UserAccountInterface.get_user_by_email_address(
+                    session=session, email_address="abc"
+                )
