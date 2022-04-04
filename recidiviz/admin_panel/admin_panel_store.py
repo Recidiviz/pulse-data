@@ -16,19 +16,9 @@
 # =============================================================================
 """An interface for data stores used to hold some sort of state for the Admin Panel."""
 from abc import abstractmethod
-from typing import Optional
-
-from recidiviz.utils import metadata
 
 
 class AdminPanelStore:
-    def __init__(self, override_project_id: Optional[str] = None) -> None:
-        self.project_id = (
-            metadata.project_id()
-            if override_project_id is None
-            else override_project_id
-        )
-
     @abstractmethod
     def recalculate_store(self) -> None:
         """Recalculates the state of the internal store. This is called every 15 min

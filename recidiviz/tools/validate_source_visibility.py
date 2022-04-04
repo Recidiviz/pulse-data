@@ -290,6 +290,7 @@ def main() -> int:
                 "recidiviz.metrics",
                 "recidiviz.persistence",
                 "recidiviz.reporting",
+                "recidiviz.server_blueprint_registry",
                 "recidiviz.server_config",
                 # TODO(#6795): Get rid of this dependency
                 "recidiviz.tests.ingest.fixtures",

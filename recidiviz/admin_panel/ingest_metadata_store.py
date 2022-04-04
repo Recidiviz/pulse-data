@@ -18,7 +18,7 @@
 specifically."""
 
 import json
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -27,6 +27,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.utils import metadata
 
 
 class IngestDataFreshnessStore(AdminPanelStore):
@@ -34,8 +35,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
     states.
     """
 
-    def __init__(self, override_project_id: Optional[str] = None) -> None:
-        super().__init__(override_project_id)
+    def __init__(self) -> None:
         self.data_freshness_results: List[Dict[str, Union[str, bool]]] = []
         self.gcs_fs = GcsfsFactory.build()
 
@@ -48,7 +48,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
         bq_export_config = CloudSqlToBQConfig.for_schema_type(
             SchemaType.STATE,
             yaml_path=GcsfsFilePath.from_absolute_path(
-                f"gs://{self.project_id}-configs/cloud_sql_to_bq_config.yaml"
+                f"gs://{metadata.project_id()}-configs/cloud_sql_to_bq_config.yaml"
             ),
         )
         if bq_export_config is None:
@@ -57,7 +57,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
         regions_paused = bq_export_config.region_codes_to_exclude
 
         latest_upper_bounds_path = GcsfsFilePath.from_absolute_path(
-            f"gs://{self.project_id}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"
+            f"gs://{metadata.project_id()}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"
         )
         latest_upper_bounds_json = self.gcs_fs.download_as_string(
             latest_upper_bounds_path

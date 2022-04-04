@@ -53,6 +53,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.regions import get_region
 
@@ -68,8 +69,7 @@ class IngestOperationsStore(AdminPanelStore):
     A store for tracking the current state of direct ingest.
     """
 
-    def __init__(self, override_project_id: Optional[str] = None) -> None:
-        super().__init__(override_project_id=override_project_id)
+    def __init__(self) -> None:
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
@@ -118,7 +118,7 @@ class IngestOperationsStore(AdminPanelStore):
             region_code=formatted_state_code,
             system_level=SystemLevel.for_region(region),
             ingest_instance=instance,
-            project_id=self.project_id,
+            project_id=metadata.project_id(),
         )
 
         logging.info(
@@ -169,7 +169,7 @@ class IngestOperationsStore(AdminPanelStore):
 
         for queue in queues_to_update:
             queue_path = self.cloud_tasks_client.queue_path(
-                self.project_id, _TASK_LOCATION, queue
+                metadata.project_id(), _TASK_LOCATION, queue
             )
 
             if new_queue_state == QUEUE_STATE_ENUM.PAUSED.name:
@@ -186,7 +186,7 @@ class IngestOperationsStore(AdminPanelStore):
 
         for queue_name in queues_to_update:
             queue_path = self.cloud_tasks_client.queue_path(
-                self.project_id, _TASK_LOCATION, queue_name
+                metadata.project_id(), _TASK_LOCATION, queue_name
             )
             queue = self.cloud_tasks_client.get_queue(name=queue_path)
             queue_state = {
@@ -263,7 +263,7 @@ class IngestOperationsStore(AdminPanelStore):
                 region_code=formatted_state_code,
                 system_level=SystemLevel.STATE,
                 ingest_instance=instance,
-                project_id=self.project_id,
+                project_id=metadata.project_id(),
             )
             # Get an object containing information about the ingest bucket
             ingest_bucket_metadata = self._get_bucket_metadata(ingest_bucket_path)
@@ -273,7 +273,7 @@ class IngestOperationsStore(AdminPanelStore):
                 region_code=formatted_state_code,
                 system_level=SystemLevel.STATE,
                 ingest_instance=instance,
-                project_id=self.project_id,
+                project_id=metadata.project_id(),
             )
 
             # Get the database name corresponding to this instance

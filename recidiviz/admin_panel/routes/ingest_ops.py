@@ -22,7 +22,10 @@ from typing import List, Optional, Tuple, Union
 from flask import Blueprint, Response, jsonify, request
 from google.cloud import storage
 
-from recidiviz.admin_panel.admin_stores import AdminStores, fetch_state_codes
+from recidiviz.admin_panel.admin_stores import (
+    fetch_state_codes,
+    get_ingest_operations_store,
+)
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     check_is_valid_sandbox_bucket,
     import_raw_files_to_bq_sandbox,
@@ -33,10 +36,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockDoesNotExist,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
-    GcsfsFilePath,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
@@ -59,7 +59,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
 from recidiviz.utils.regions import get_region
 from recidiviz.utils.types import assert_type
 
-
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
 
 
@@ -80,7 +79,7 @@ def _sql_export_path(
     )
 
 
-def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
+def add_ingest_ops_routes(bp: Blueprint) -> None:
     """Adds routes for ingest operations."""
 
     project_id = GCP_PROJECT_STAGING if not in_gcp() else metadata.project_id()
@@ -88,9 +87,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @bp.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
     @requires_gae_auth
     def _fetch_ingest_state_codes() -> Tuple[Response, HTTPStatus]:
-        all_state_codes = (
-            admin_stores.ingest_operations_store.state_codes_launched_in_env
-        )
+        all_state_codes = get_ingest_operations_store().state_codes_launched_in_env
         state_code_info = fetch_state_codes(all_state_codes)
         return jsonify(state_code_info), HTTPStatus.OK
 
@@ -103,7 +100,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
         instance = request_json["instance"]
-        admin_stores.ingest_operations_store.start_ingest_run(state_code, instance)
+        get_ingest_operations_store().start_ingest_run(state_code, instance)
         return "", HTTPStatus.OK
 
     # Update ingest queues
@@ -116,7 +113,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
         new_queue_state = request_json["new_queue_state"]
-        admin_stores.ingest_operations_store.update_ingest_queues_state(
+        get_ingest_operations_store().update_ingest_queues_state(
             state_code, new_queue_state
         )
         return "", HTTPStatus.OK
@@ -126,8 +123,8 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     @requires_gae_auth
     def _get_ingest_queue_states(state_code_str: str) -> Tuple[Response, HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
-        ingest_queue_states = (
-            admin_stores.ingest_operations_store.get_ingest_queue_states(state_code)
+        ingest_queue_states = get_ingest_operations_store().get_ingest_queue_states(
+            state_code
         )
         return jsonify(ingest_queue_states), HTTPStatus.OK
 
@@ -139,9 +136,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     ) -> Tuple[Response, HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
         ingest_instance_summaries = (
-            admin_stores.ingest_operations_store.get_ingest_instance_summaries(
-                state_code
-            )
+            get_ingest_operations_store().get_ingest_instance_summaries(state_code)
         )
         return jsonify(ingest_instance_summaries), HTTPStatus.OK
 
@@ -382,7 +377,6 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         if not file_tags:
             file_tags = None
 
-        # To run/develope locally need to use with local_project_id_override(project_id)
         try:
             import_status = import_raw_files_to_bq_sandbox(
                 state_code=state_code,
@@ -441,7 +435,6 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             return "invalid source bucket", HTTPStatus.BAD_REQUEST
 
         try:
-            # To run/develope locally need to use with local_project_id_override(project_id)
             region_code = state_code.value.lower()
             region = get_region(region_code, is_direct_ingest=True)
             raw_files_to_import = get_unprocessed_raw_files_in_bucket(

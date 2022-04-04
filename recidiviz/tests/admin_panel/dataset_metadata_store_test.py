@@ -19,6 +19,7 @@ import os
 from collections import defaultdict
 from typing import Dict, List
 from unittest import TestCase, mock
+from unittest.mock import patch
 
 from parameterized import parameterized
 
@@ -35,6 +36,10 @@ class TestDatasetMetadataStore(TestCase):
     """TestCase for DatasetMetadataStore."""
 
     def setUp(self) -> None:
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.project_id_patcher.start()
+        self.mock_project_id_fn.return_value = "recidiviz-456"
+
         self.gcs_factory_patcher = mock.patch(
             "recidiviz.admin_panel.dataset_metadata_store.GcsfsFactory.build"
         )
@@ -86,11 +91,11 @@ county_columns_to_exclude:
         self.store = DatasetMetadataCountsStore(
             dataset_nickname="ingest",
             metadata_file_prefix="ingest_state_metadata",
-            override_project_id="recidiviz-456",
         )
         self.store.recalculate_store()
 
     def tearDown(self) -> None:
+        self.project_id_patcher.stop()
         self.gcs_factory_patcher.stop()
 
     def test_object_counts_match(self) -> None:

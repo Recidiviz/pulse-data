@@ -31,8 +31,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
-from recidiviz.utils.metadata import local_project_id_override
 
 _EXPECTED_ROSTER_KEYS = [
     "employee_name",
@@ -52,12 +50,7 @@ class RosterManager:
     def __init__(self, state_code: StateCode, rows: Roster) -> None:
         self.state_code = state_code
         self.rows = rows
-
-        if in_development():
-            with local_project_id_override(GCP_PROJECT_STAGING):
-                self.bq = BigQueryClientImpl()
-        else:
-            self.bq = BigQueryClientImpl()
+        self.bq = BigQueryClientImpl()
 
     def validate_roster_upload(self) -> None:
         """Raises a ValueError if any validation tests fail, indicating the upload should be rejected."""
