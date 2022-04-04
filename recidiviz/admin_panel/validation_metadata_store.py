@@ -23,7 +23,7 @@ from typing import List, Optional, Type, TypeVar, Union, cast
 import attr
 import cattr
 from google.cloud.bigquery.table import Row
-from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.timestamp_pb2 import Timestamp  # pylint: disable=no-name-in-module
 from werkzeug.exceptions import ServiceUnavailable
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
