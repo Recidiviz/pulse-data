@@ -33,6 +33,9 @@ from recidiviz.calculator.query.state.views.analyst_data.person_events import (
 from recidiviz.calculator.query.state.views.analyst_data.person_statuses import (
     PERSON_STATUSES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
+    POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
     PROJECTED_DISCHARGES_VIEW_BUILDER,
 )
@@ -44,6 +47,9 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_off
 )
 from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_by_district_by_month import (
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_by_supervision_office_by_month import (
+    SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.supervision_population_by_officer_daily_windows import (
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
@@ -99,6 +105,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_overdue_for_discharge import (
     US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_supervision_geographies import (
+    US_TN_SUPERVISION_GEOGRAPHIES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_supervision_plan_logic import (
     US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER,
 )
@@ -109,9 +118,11 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     OFFICER_EVENTS_VIEW_BUILDER,
     PERSON_EVENTS_VIEW_BUILDER,
     PERSON_STATUSES_VIEW_BUILDER,
+    POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
     SUPERVISION_OFFICER_OFFICE_METRICS_VIEW_BUILDER,
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
+    SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
@@ -131,4 +142,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
     US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER,
+    US_TN_SUPERVISION_GEOGRAPHIES_VIEW_BUILDER,
 ] + SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS
