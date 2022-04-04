@@ -57,7 +57,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
     WHERE
         state_code IN {enabled_states}
         AND compartment_level_1 = 'SUPERVISION'
-        AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'INFORMAL_PROBATION', 'BENCH_WARRANT', 'DUAL', 'ABSCONSION')
+        AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN"
         AND outflow_to_level_1 = 'RELEASE'
         AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
         -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
