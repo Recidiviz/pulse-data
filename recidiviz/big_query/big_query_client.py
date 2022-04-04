@@ -188,11 +188,16 @@ class BigQueryClient:
         """Returns a list of tables (skipping views) in the dataset with the given dataset id."""
 
     @abc.abstractmethod
-    def create_table(self, table: bigquery.Table) -> bigquery.Table:
-        """Creates a new table in big query if it does not already exist, otherwise raises an AlreadyExists error.
+    def create_table(
+        self, table: bigquery.Table, overwrite: bool = False
+    ) -> bigquery.Table:
+        """Creates a new table in big query. If |overwrite| is False and th tabl
+        already exists, raises an AlreadyExists error.
 
         Args:
             table: The Table to create.
+            overwrite: Whether to overwrite a table if one already exists where the
+                table is to be created.
 
         Returns:
             The Table that was just created.
@@ -679,13 +684,34 @@ class BigQueryClient:
         source_dataset_id: str,
         destination_dataset_id: str,
         schema_only: bool = False,
+        overwrite_destination_tables: bool = False,
     ) -> None:
-        """Copies all tables (but NOT views) in the source dataset to the destination
-        dataset, which must be empty if it exists. If the destination dataset does not
-        exist, we will create one.
+        """Copies all tables in the source dataset to the destination dataset,
+        which must be empty if it exists. If the destination dataset does not exist,
+        we will create one.
 
         If `schema_only` is provided, creates a matching set of tables with the same
-        schema in the destination dataset but does not copy contents of each table.
+        schema in the destination dataset but does not copy contents of each table. If
+        `schema_only` is provided, copies the schema of tables *and* views.
+
+        If `schema_only` is False, *DOES NOT COPY VIEWS*.
+        """
+
+    @abc.abstractmethod
+    def copy_table(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        schema_only: bool = False,
+        overwrite: bool = False,
+    ) -> Optional[bigquery.job.CopyJob]:
+        """Copies the table in the source dataset to the destination dataset,
+        which must be empty if it exists. If the destination dataset does not
+        exist, we will create one.
+
+        If `schema_only` is provided, creates a matching table with the same schema
+        in the destination dataset but does not copy contents of the table.
         """
 
     @abc.abstractmethod
@@ -716,6 +742,12 @@ class BigQueryClient:
         the BQ client returns, e.g. QueryJob, CopyJob, LoadJob, etc.
 
         If any job throws this function will throw with the first encountered exception.
+        """
+
+    @abc.abstractmethod
+    def add_timestamp_suffix_to_dataset_id(self, dataset_id: str) -> str:
+        """Adds a timestamp to the end of the dataset name with the following format:
+        'dataset_id_YYYY_MM_DD_HH_MM_SS_mmmmmm'
         """
 
 
@@ -822,8 +854,10 @@ class BigQueryClientImpl(BigQueryClient):
         table_ref = dataset_ref.table(table_id)
         return self.client.get_table(table_ref)
 
-    def create_table(self, table: bigquery.Table) -> bigquery.Table:
-        return self.client.create_table(table, exists_ok=False)
+    def create_table(
+        self, table: bigquery.Table, overwrite: bool = False
+    ) -> bigquery.Table:
+        return self.client.create_table(table, exists_ok=overwrite)
 
     def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
         bq_view = bigquery.Table(view)
@@ -1605,66 +1639,108 @@ class BigQueryClientImpl(BigQueryClient):
 
         self.add_missing_fields_to_schema(dataset_id, table_id, desired_schema_fields)
 
+    def copy_table(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        schema_only: bool = False,
+        overwrite: bool = False,
+    ) -> Optional[bigquery.job.CopyJob]:
+        source_dataset_ref = self.dataset_ref_for_id(source_dataset_id)
+        source_table = self.get_table(source_dataset_ref, source_table_id)
+
+        # If we are copying the contents then we can only copy actual tables.
+        if not schema_only and source_table.table_type != "TABLE":
+            logging.warning(
+                "Skipping copy of item with type [%s]: [%s]",
+                source_table.table_type,
+                source_table.table_id,
+            )
+
+            return None
+
+        source_table_ref = bigquery.TableReference(
+            self.dataset_ref_for_id(source_dataset_id), source_table.table_id
+        )
+        destination_table_ref = bigquery.TableReference(
+            self.dataset_ref_for_id(destination_dataset_id), source_table.table_id
+        )
+
+        if schema_only:
+            source_table = self.client.get_table(source_table_ref)
+            self.create_table(
+                bigquery.Table(destination_table_ref, source_table.schema),
+                overwrite=overwrite,
+            )
+        else:
+            job_config = bigquery.CopyJobConfig()
+            job_config.write_disposition = (
+                bigquery.job.WriteDisposition.WRITE_TRUNCATE
+                if overwrite
+                else bigquery.job.WriteDisposition.WRITE_EMPTY
+            )
+
+            return self.client.copy_table(
+                source_table_ref, destination_table_ref, job_config=job_config
+            )
+
+        return None
+
     def copy_dataset_tables(
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
         schema_only: bool = False,
+        overwrite_destination_tables: bool = False,
     ) -> None:
-        if self.dataset_exists(self.dataset_ref_for_id(destination_dataset_id)):
-            if any(self.list_tables(destination_dataset_id)):
+        # Get source tables
+        source_table_ids = [
+            table.table_id for table in self.list_tables(source_dataset_id)
+        ]
+
+        # Check existing destination tables
+        initial_destination_table_ids = [
+            table.table_id for table in self.list_tables(destination_dataset_id)
+        ]
+
+        if overwrite_destination_tables:
+            for table_id in initial_destination_table_ids:
+                if table_id not in source_table_ids:
+                    self.delete_table(destination_dataset_id, table_id)
+        else:
+            if initial_destination_table_ids:
                 raise ValueError(
                     f"Destination dataset [{destination_dataset_id}] for copy is not empty."
                 )
 
         logging.info(
-            "Copying tables in dataset [%s] to empty dataset [%s]",
+            "Copying tables in dataset [%s] to dataset [%s]",
             source_dataset_id,
             destination_dataset_id,
         )
-        copy_jobs = []
-        for table in self.list_tables(source_dataset_id):
-            # If we are copying the contents then we can only copy actual tables.
-            if not schema_only and table.table_type != "TABLE":
-                logging.warning(
-                    "Skipping copy of item with type [%s]: [%s]",
-                    table.table_type,
-                    table.table_id,
-                )
-                continue
-
-            source_table_ref = bigquery.TableReference(
-                self.dataset_ref_for_id(source_dataset_id), table.table_id
-            )
-            destination_table_ref = bigquery.TableReference(
-                self.dataset_ref_for_id(destination_dataset_id), table.table_id
+        copy_jobs: List[bigquery.job.CopyJob] = []
+        for table_id in source_table_ids:
+            copy_job = self.copy_table(
+                source_dataset_id=source_dataset_id,
+                source_table_id=table_id,
+                destination_dataset_id=destination_dataset_id,
+                schema_only=schema_only,
+                overwrite=overwrite_destination_tables,
             )
 
-            if schema_only:
-                source_table = self.client.get_table(source_table_ref)
-                self.create_table(
-                    bigquery.Table(destination_table_ref, source_table.schema)
-                )
-            else:
-                copy_jobs.append(
-                    self.client.copy_table(source_table_ref, destination_table_ref)
-                )
+            if copy_job:
+                copy_jobs.append(copy_job)
+
         if copy_jobs:
             self.wait_for_big_query_jobs(jobs=copy_jobs)
 
     def backup_dataset_tables_if_dataset_exists(
         self, dataset_id: str
     ) -> Optional[bigquery.DatasetReference]:
-        timestamp = (
-            datetime.datetime.now()
-            .isoformat()
-            .replace("T", "_")
-            .replace("-", "_")
-            .replace(":", "_")
-            .replace(".", "_")
+        backup_dataset_id = self.add_timestamp_suffix_to_dataset_id(
+            f"{dataset_id}_backup"
         )
-
-        backup_dataset_id = f"{dataset_id}_backup_{timestamp}"
 
         if not self.dataset_exists(self.dataset_ref_for_id(dataset_id)):
             return None
@@ -1875,3 +1951,15 @@ class BigQueryClientImpl(BigQueryClient):
                     table_id,
                     desired_schema_fields=reference_table_schemas[table_id],
                 )
+
+    def add_timestamp_suffix_to_dataset_id(self, dataset_id: str) -> str:
+        timestamp = (
+            datetime.datetime.now()
+            .isoformat()
+            .replace("T", "_")
+            .replace("-", "_")
+            .replace(":", "_")
+            .replace(".", "_")
+        )
+
+        return f"{dataset_id}_{timestamp}"

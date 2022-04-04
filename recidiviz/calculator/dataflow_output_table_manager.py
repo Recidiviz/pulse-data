@@ -129,6 +129,7 @@ def get_state_specific_normalized_state_dataset_for_state(
     return normalized_state_dataset_id
 
 
+# TODO(#10732): Update this to also update the schema in normalized_state
 def update_normalized_state_schema(
     state_code: StateCode,
     normalized_dataset_prefix: Optional[str] = None,
