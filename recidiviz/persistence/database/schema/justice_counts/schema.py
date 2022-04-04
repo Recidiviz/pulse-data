@@ -169,10 +169,20 @@ class UserAccount(JusticeCountsBase):
 
     id = Column(Integer, autoincrement=True)
 
+    # Name that will be displayed in the Control Panel
+    # If null, we can show email address instead
+    name = Column(String(255), nullable=True)
+
     # Auth0 is an authentication and authorization platform we use for users of the Control Panel.
     # This field refers to the Auth0 `user_id` property:
     # https://auth0.com/docs/manage-users/user-accounts/identify-users
-    auth0_user_id = Column(String(255), nullable=False)
+    # Nullable so that we can create users manually first, and fill in their Auth0 id
+    # after they sign in for the first time
+    auth0_user_id = Column(String(255), nullable=True)
+
+    # Should be the same email address that the user signed with in via Auth0
+    # Used to match up users added manually with users who later sign in via Auth0
+    email_address = Column(String(255), nullable=False)
 
     agencies = relationship(
         "Agency",
@@ -180,7 +190,13 @@ class UserAccount(JusticeCountsBase):
         back_populates="user_accounts",
     )
 
-    __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(auth0_user_id)])
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(auth0_user_id),
+            UniqueConstraint(email_address, name="unique_email_address"),
+        ]
+    )
 
 
 class Report(JusticeCountsBase):
