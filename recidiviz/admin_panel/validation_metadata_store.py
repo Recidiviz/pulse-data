@@ -47,6 +47,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientI
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common import serialization
 from recidiviz.common.constants.states import StateCode
+from recidiviz.utils import metadata
 from recidiviz.validation.checks.existence_check import ExistenceValidationResultDetails
 from recidiviz.validation.checks.sameness_check import (
     SamenessPerRowValidationResultDetails,
@@ -381,9 +382,8 @@ def _result_details_from_row(row: Row) -> Optional[DataValidationJobResultDetail
 class ValidationStatusStore(AdminPanelStore):
     """Stores the status of validations to serve to the admin panel"""
 
-    def __init__(self, override_project_id: Optional[str] = None) -> None:
-        super().__init__(override_project_id)
-        self.bq_client: BigQueryClient = BigQueryClientImpl(project_id=self.project_id)
+    def __init__(self) -> None:
+        self.bq_client: BigQueryClient = BigQueryClientImpl()
 
         self.records: Optional[ValidationStatusRecords_pb2] = None
 
@@ -400,7 +400,7 @@ class ValidationStatusStore(AdminPanelStore):
         """Recalculates validation data by querying the validation data store"""
         query_job = self.bq_client.run_query_async(
             recent_run_results_query(
-                self.project_id, VALIDATION_RESULTS_BIGQUERY_ADDRESS
+                metadata.project_id(), VALIDATION_RESULTS_BIGQUERY_ADDRESS
             ),
             [],
         )
@@ -435,7 +435,7 @@ class ValidationStatusStore(AdminPanelStore):
     ) -> ValidationStatusRecords_pb2:
         query_job = self.bq_client.run_query_async(
             validation_history_results_query(
-                self.project_id,
+                metadata.project_id(),
                 VALIDATION_RESULTS_BIGQUERY_ADDRESS,
                 validation_name,
                 state_code,
@@ -462,7 +462,7 @@ class ValidationStatusStore(AdminPanelStore):
         for validation in validations:
             if validation.validation_name == validation_name:
                 query_str = validation_error_table_query(
-                    self.project_id,
+                    metadata.project_id(),
                     BigQueryAddress(
                         dataset_id=VIEWS_DATASET,
                         table_id=validation.error_view_builder.view_id,
@@ -471,7 +471,7 @@ class ValidationStatusStore(AdminPanelStore):
                     limit,
                 )
                 count_query_str = validation_error_table_count_query(
-                    self.project_id,
+                    metadata.project_id(),
                     BigQueryAddress(
                         dataset_id=VIEWS_DATASET,
                         table_id=validation.error_view_builder.view_id,

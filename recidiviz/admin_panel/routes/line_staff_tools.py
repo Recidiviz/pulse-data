@@ -21,7 +21,7 @@ import os
 from datetime import date
 from http import HTTPStatus
 from json import JSONDecodeError
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
 import pandas as pd
 from flask import Blueprint, Response, g, jsonify, request
@@ -85,8 +85,6 @@ from recidiviz.reporting.email_reporting_utils import (
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 
@@ -106,15 +104,10 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @bp.route("/api/line_staff_tools/fetch_etl_view_ids", methods=["POST"])
     @requires_gae_auth
     def _fetch_etl_view_ids() -> Tuple[Response, HTTPStatus]:
-        override_project_id: Optional[str] = None
-        if in_development():
-            override_project_id = GCP_PROJECT_STAGING
         return (
             jsonify(
                 [builder.view_id for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS]
-                + list(
-                    get_importable_csvs(override_project_id=override_project_id).keys()
-                )
+                + list(get_importable_csvs().keys())
             ),
             HTTPStatus.OK,
         )
@@ -312,23 +305,13 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                 report_type=report_type,
             )
 
-            if in_development():
-                with local_project_id_override(GCP_PROJECT_STAGING):
-                    result: MultiRequestResult[str, str] = data_retrieval.start(
-                        batch=batch,
-                        test_address=test_address,
-                        region_code=region_code,
-                        email_allowlist=email_allowlist,
-                        message_body_override=message_body_override,
-                    )
-            else:
-                result = data_retrieval.start(
-                    batch=batch,
-                    test_address=test_address,
-                    region_code=region_code,
-                    email_allowlist=email_allowlist,
-                    message_body_override=message_body_override,
-                )
+            result: MultiRequestResult[str, str] = data_retrieval.start(
+                batch=batch,
+                test_address=test_address,
+                region_code=region_code,
+                email_allowlist=email_allowlist,
+                message_body_override=message_body_override,
+            )
         except InvalidRegionCodeException:
             return "Invalid region code provided", HTTPStatus.BAD_REQUEST
 
@@ -559,11 +542,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             df, convert_datetime_to_date=True, bool_map={"Y": True, "N": False}
         )
 
-        if in_development():
-            with local_project_id_override(GCP_PROJECT_STAGING):
-                bq = BigQueryClientImpl()
-        else:
-            bq = BigQueryClientImpl()
+        bq = BigQueryClientImpl()
         insert_job = bq.load_into_table_from_dataframe_async(
             df, bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET), table_name
         )

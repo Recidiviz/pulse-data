@@ -28,6 +28,7 @@ from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.utils import metadata
 
 
 @attr.s
@@ -70,13 +71,7 @@ InternalMetadataBackingStore = Dict[
 class DatasetMetadataCountsStore(AdminPanelStore):
     """Creates a store for fetching counts of different column values among tables in some dataset from GCS."""
 
-    def __init__(
-        self,
-        dataset_nickname: str,
-        metadata_file_prefix: str,
-        override_project_id: Optional[str] = None,
-    ) -> None:
-        super().__init__(override_project_id)
+    def __init__(self, dataset_nickname: str, metadata_file_prefix: str) -> None:
         self.gcs_fs = GcsfsFactory.build()
         self.dataset_nickname = dataset_nickname
         self.metadata_file_prefix = metadata_file_prefix
@@ -91,7 +86,7 @@ class DatasetMetadataCountsStore(AdminPanelStore):
         file_paths = [
             f
             for f in self.gcs_fs.ls_with_blob_prefix(
-                f"{self.project_id}-{self.dataset_nickname}-metadata", ""
+                f"{metadata.project_id()}-{self.dataset_nickname}-metadata", ""
             )
             if isinstance(f, GcsfsFilePath)
         ]

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert, Card, Table } from "antd";
+import { Alert, Table } from "antd";
 import { ColumnsType, ColumnType } from "antd/lib/table";
 import * as React from "react";
 import { Link } from "react-router-dom";

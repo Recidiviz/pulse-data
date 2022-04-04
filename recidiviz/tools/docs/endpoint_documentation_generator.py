@@ -189,7 +189,9 @@ def app_rules() -> List[Rule]:
             from recidiviz.justice_counts.control_panel.server import (
                 get_blueprints_for_justice_counts_documentation,
             )
-            from recidiviz.server import get_blueprints_for_documentation
+            from recidiviz.server_blueprint_registry import (
+                get_blueprints_for_documentation,
+            )
 
             temp_app = Flask(__name__)
             all_blueprints_with_url_prefixes = (

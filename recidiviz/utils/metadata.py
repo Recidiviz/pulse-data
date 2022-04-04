@@ -18,7 +18,7 @@
 """Utility methods for fetching app engine related metadata."""
 import logging
 import os
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -66,6 +66,30 @@ _PROJECT_ID_URL = "project/project-id"
 _override_set = False
 
 
+def set_development_project_id_override(project_id_override: str) -> None:
+    """Can be used when running the server for development (e.g. via docker-compose) to
+    set the project id globally for all code running on that server.
+    """
+    if not environment.in_development():
+        raise ValueError("Cannot call this outside of development.")
+
+    _set_project_id_override(project_id_override)
+
+
+def _set_project_id_override(project_id_override: str) -> Optional[str]:
+    """Sets a project id override and returns the project id that was set before the
+    override.
+    """
+    global _override_set
+    if _override_set:
+        raise ValueError(f"Project id override already set to {project_id()}")
+    _override_set = True
+
+    original_project_id = _metadata_cache.get(_PROJECT_ID_URL, None)
+    _metadata_cache[_PROJECT_ID_URL] = project_id_override
+    return original_project_id
+
+
 class local_project_id_override:
     """Allows us to set a local project override for scripts running locally.
 
@@ -88,14 +112,7 @@ class local_project_id_override:
 
     @environment.local_only
     def __enter__(self) -> None:
-        global _override_set
-        if _override_set:
-            raise ValueError(f"Project id override already set to {project_id()}")
-        _override_set = True
-
-        if _PROJECT_ID_URL in _metadata_cache:
-            self.original_project_id = _metadata_cache[_PROJECT_ID_URL]
-        _metadata_cache[_PROJECT_ID_URL] = self.project_id_override
+        self.original_project_id = _set_project_id_override(self.project_id_override)
 
     def __exit__(self, _type: Any, _value: Any, _traceback: Any) -> None:
         del _metadata_cache[_PROJECT_ID_URL]

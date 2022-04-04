@@ -23,7 +23,6 @@ from unittest.mock import patch
 
 import attr
 
-from recidiviz.admin_panel.admin_stores import AdminStores
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import (
@@ -52,7 +51,6 @@ class TestEmailSentMetadata(TestCase):
         fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = fake_gcs
         self.fs = fake_gcs
-        self.admin_store = AdminStores()
 
         self.email_sent_metadata = EmailSentMetadata(
             batch_id=self.BATCH_ID, send_results=[]

@@ -21,10 +21,10 @@ import gc
 import logging
 import os
 from http import HTTPStatus
-from typing import List, Tuple
+from typing import Tuple
 
 import zope.event.classhandler
-from flask import Blueprint, Flask, request
+from flask import Flask, request
 from gevent import events
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
@@ -32,38 +32,18 @@ from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
 from opencensus.trace import base_exporter, config_integration, file_exporter, samplers
 from opencensus.trace.propagation import google_cloud_format
 
-from recidiviz.admin_panel.all_routes import admin_panel
-from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
-from recidiviz.backup.backup_manager import backup_manager_blueprint
-from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
-from recidiviz.calculator.calculation_data_storage_manager import (
-    calculation_data_storage_manager_blueprint,
-)
-from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
-from recidiviz.ingest.aggregate.parse import aggregate_parse_blueprint
-from recidiviz.ingest.aggregate.scrape_aggregate_reports import (
-    scrape_aggregate_reports_blueprint,
-)
-from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
-from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
-from recidiviz.ingest.justice_counts.control import justice_counts_control
-from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
-from recidiviz.ingest.scrape.scraper_control import scraper_control
-from recidiviz.ingest.scrape.scraper_status import scraper_status
-from recidiviz.ingest.scrape.worker import worker
-from recidiviz.metrics.export.view_export_manager import export_blueprint
-from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
-    cloud_sql_to_bq_blueprint,
-)
+from recidiviz.admin_panel.admin_stores import initialize_admin_stores
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.server_blueprint_registry import (
+    default_blueprints_with_url_prefixes,
+    scraper_blueprints_with_url_prefixes,
+)
 from recidiviz.server_config import database_keys_for_schema_type
 from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
-from recidiviz.validation.validation_manager import validation_manager_blueprint
 
 structured_logging.setup()
 
@@ -72,40 +52,6 @@ logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 app = Flask(__name__)
 
 service_type = environment.get_service_type()
-
-scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (batch_blueprint, "/batch"),
-    (aggregate_parse_blueprint, "/aggregate"),
-    (infer_release_blueprint, "/infer_release"),
-    (scraper_control, "/scraper"),
-    (scraper_status, "/scraper"),
-    (worker, "/scraper"),
-    (scrape_aggregate_reports_blueprint, "/scrape_aggregate_reports"),
-    (store_single_count_blueprint, "/single_count"),
-]
-
-default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (admin_panel, "/admin"),
-    (auth_endpoint_blueprint, "/auth"),
-    (backup_manager_blueprint, "/backup_manager"),
-    (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
-    (case_triage_ops_blueprint, "/case_triage_ops"),
-    (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
-    (direct_ingest_control, "/direct"),
-    (export_blueprint, "/export"),
-    (justice_counts_control, "/justice_counts"),
-    (validation_manager_blueprint, "/validation_manager"),
-    (view_update_manager_blueprint, "/view_update"),
-]
-
-
-def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
-    all_blueprints_with_url_prefixes = (
-        scraper_blueprints_with_url_prefixes + default_blueprints_with_url_prefixes
-    )
-
-    return all_blueprints_with_url_prefixes
-
 
 if service_type is environment.ServiceType.SCRAPERS:
     for blueprint, url_prefix in scraper_blueprints_with_url_prefixes:
@@ -169,6 +115,9 @@ if environment.in_development():
         )
     except BaseException:
         pass
+
+    # We also set the project to recidiviz-staging
+    metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)
 elif environment.in_gcp():
     # This attempts to connect to all of our databases. Any connections that fail will
     # be logged and not raise an error, so that a single database outage doesn't take
@@ -185,6 +134,9 @@ elif environment.in_gcp():
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(
             database_keys_for_schema_type(schema_type)
         )
+
+# Initialize datastores for the admin panel and trigger a data refresh
+initialize_admin_stores()
 
 
 @app.route("/health")

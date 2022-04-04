@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Store used to maintain all admin panel related stores"""
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
@@ -23,8 +23,7 @@ from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development, in_gcp
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.environment import in_development, in_gcp
 from recidiviz.utils.timer import RepeatedTimer
 
 _INGEST_METADATA_NICKNAME = "ingest"
@@ -33,17 +32,13 @@ _VALIDATION_METADATA_NICKNAME = "validation"
 _VALIDATION_METADATA_PREFIX = "validation_metadata"
 
 
-class AdminStores:
+class _AdminStores:
     """
     A wrapper around all stores needed for the admin panel.
     """
 
     def __init__(self) -> None:
-        if in_development():
-            with local_project_id_override(GCP_PROJECT_STAGING):
-                self.all_stores = self._initialize_stores()
-        elif in_gcp():
-            self.all_stores = self._initialize_stores()
+        self.all_stores = self._initialize_stores()
 
     def _initialize_stores(self) -> List[AdminPanelStore]:
         admin_panel_stores: List[AdminPanelStore] = []
@@ -77,6 +72,55 @@ class AdminStores:
                 RepeatedTimer(
                     15 * 60, store.recalculate_store, run_immediately=True
                 ).start()
+
+
+_admin_stores: Optional[_AdminStores] = None
+
+
+def initialize_admin_stores() -> None:
+    global _admin_stores
+    _admin_stores = _AdminStores()
+    _admin_stores.start_timers()  # Start store refresh timers
+
+
+def get_ingest_operations_store() -> IngestOperationsStore:
+    if _admin_stores is None:
+        raise ValueError(
+            "Admin stores not initialized, must first call initialize_admin_stores()."
+        )
+    return _admin_stores.ingest_operations_store
+
+
+def get_ingest_metadata_store() -> DatasetMetadataCountsStore:
+    if _admin_stores is None:
+        raise ValueError(
+            "Admin stores not initialized, must first call initialize_admin_stores()."
+        )
+    return _admin_stores.ingest_metadata_store
+
+
+def get_ingest_data_freshness_store() -> IngestDataFreshnessStore:
+    if _admin_stores is None:
+        raise ValueError(
+            "Admin stores not initialized, must first call initialize_admin_stores()."
+        )
+    return _admin_stores.ingest_data_freshness_store
+
+
+def get_validation_metadata_store() -> DatasetMetadataCountsStore:
+    if _admin_stores is None:
+        raise ValueError(
+            "Admin stores not initialized, must first call initialize_admin_stores()."
+        )
+    return _admin_stores.validation_metadata_store
+
+
+def get_validation_status_store() -> ValidationStatusStore:
+    if _admin_stores is None:
+        raise ValueError(
+            "Admin stores not initialized, must first call initialize_admin_stores()."
+        )
+    return _admin_stores.validation_status_store
 
 
 def fetch_state_codes(state_codes: Iterable[StateCode]) -> List[Dict[str, str]]:

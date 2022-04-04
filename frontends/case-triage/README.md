@@ -1,7 +1,7 @@
 # Running the app
 
 ## Backend
-
+Make sure the `Docker` app is launched, then run:
 ```bash
 docker-compose -f docker-compose.yaml -f docker-compose.case-triage.yaml up
 ```
