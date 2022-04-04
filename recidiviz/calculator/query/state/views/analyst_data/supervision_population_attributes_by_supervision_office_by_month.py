@@ -23,27 +23,40 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_NAME = (
-    "supervision_population_attributes_by_district_by_month"
+SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_NAME = (
+    "supervision_population_attributes_by_supervision_office_by_month"
 )
 
-GROUPING_VAR = "supervision_district"
+SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_DESCRIPTION = "Captures demographic composition of supervision population for a given month by supervision office"
 
-SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_DESCRIPTION = "Captures demographic composition of supervision population for a given month by district"
-
-SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_QUERY_TEMPLATE = (
-    supervision_population_attributes_template(GROUPING_VAR)
+SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_QUERY_TEMPLATE = (
+    f"""
+    SELECT
+        s.*,
+        population_density
+    FROM
+    (
+        {supervision_population_attributes_template("supervision_office")}
+    ) AS s
+    """
+    + """
+    LEFT JOIN
+        `{project_id}.{analyst_dataset}.population_density_by_supervision_office` p
+    USING
+        (supervision_office)
+    """
 )
 
-SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
-    view_id=SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_NAME,
-    view_query_template=SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_QUERY_TEMPLATE,
-    description=SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_DESCRIPTION,
+    view_id=SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_NAME,
+    view_query_template=SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_QUERY_TEMPLATE,
+    description=SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
+    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER.build_and_print()
+        SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER.build_and_print()
