@@ -84,10 +84,14 @@ products:
     exports:
       - PUBLIC_DASHBOARD
     states:
-      - state_code: US_PA
-        environment: production
+      - state_code: US_ID
+        environment: staging
       - state_code: US_ND
         environment: production
+      - state_code: US_PA
+        environment: production
+      - state_code: US_TN
+        environment: staging
   - name: Vitals
     description: Vitals provides a snapshot of agency performance on a set of key operational metrics, which can be drilled down by geographic region and officer. This helps community supervision leadership and supervisors proactively identify resource constraints as well as opportunities for improvement in both compliance and policy.
     exports:
