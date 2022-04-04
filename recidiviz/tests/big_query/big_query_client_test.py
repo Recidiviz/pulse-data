@@ -71,6 +71,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Reset client caching
         big_query_client._clients_by_project_id_by_region.clear()
 
+        self.job_config_patcher = mock.patch(
+            "recidiviz.big_query.big_query_client.bigquery.CopyJobConfig"
+        )
+        self.mock_job_config = self.job_config_patcher.start()
+        self.job_config = bigquery.CopyJobConfig()
+        self.mock_job_config.return_value = self.job_config
+
         self.mock_view = BigQueryView(
             dataset_id=self.mock_dataset_id,
             view_id="test_view",
@@ -1515,43 +1522,29 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Important that we still delete the config
         mock_transfer_client.delete_transfer_config.assert_called_once()
 
-    def test_copy_dataset(self) -> None:
+    def test_copy_table(self) -> None:
         source_dataset_id = "my_source"
         destination_dataset_id = "my_destination"
 
         mock_table = create_autospec(bigquery.Table)
         mock_table.table_type = "TABLE"
         mock_table.table_id = "my_table"
-        mock_table_2 = create_autospec(bigquery.Table)
-        mock_table_2.table_type = "TABLE"
-        mock_table_2.table_id = "my_table_2"
-        mock_view = create_autospec(bigquery.Table)
-        mock_view.table_type = "VIEW"
 
-        # Destintation already exists
+        # Destination already exists
         self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_table.return_value = mock_table
 
-        def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
-            if dataset_id == destination_dataset_id:
-                tables = []
-            elif dataset_id == source_dataset_id:
-                tables = [mock_table, mock_view, mock_table_2]
-            else:
-                raise ValueError(f"Unexpected dataset [{dataset_id}]")
-
-            return iter(tables)
-
-        self.mock_client.list_tables.side_effect = mock_list_tables
         copy_jobs: List[futures.Future] = [futures.Future(), futures.Future()]
         for job in copy_jobs:
             job.set_result(None)
         self.mock_client.copy_table.side_effect = copy_jobs
 
-        self.bq_client.copy_dataset_tables(source_dataset_id, destination_dataset_id)
-
-        self.mock_client.list_tables.assert_has_calls(
-            [call("my_destination"), call("my_source")]
+        self.bq_client.copy_table(
+            source_dataset_id=source_dataset_id,
+            source_table_id=mock_table.table_id,
+            destination_dataset_id=destination_dataset_id,
         )
+
         source_dataset_ref = bigquery.DatasetReference(
             "fake-recidiviz-project", source_dataset_id
         )
@@ -1569,6 +1562,118 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table",
                     ),
+                    job_config=self.job_config,
+                ),
+            ]
+        )
+
+    def test_copy_table_schema_only(self) -> None:
+        source_dataset_id = "my_source"
+        destination_dataset_id = "my_destination"
+
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.table_type = "TABLE"
+        mock_table.table_id = "my_table"
+
+        # Destination already exists
+        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        schema1 = [bigquery.schema.SchemaField("foo", "STRING")]
+
+        def mock_get_table(table_ref: bigquery.TableReference) -> bigquery.Table:
+            if table_ref.table_id == mock_table.table_id:
+                return bigquery.Table(table_ref, schema1)
+            raise ValueError("Unexpected table")
+
+        self.mock_client.get_table.side_effect = mock_get_table
+
+        self.bq_client.copy_table(
+            source_dataset_id=source_dataset_id,
+            source_table_id=mock_table.table_id,
+            destination_dataset_id=destination_dataset_id,
+            schema_only=True,
+        )
+
+        destination_dataset_ref = bigquery.DatasetReference(
+            "fake-recidiviz-project", destination_dataset_id
+        )
+        self.mock_client.copy_table.assert_not_called()
+        self.mock_client.create_table.assert_has_calls(
+            [
+                call(
+                    bigquery.Table(
+                        bigquery.TableReference(
+                            destination_dataset_ref,
+                            "my_table",
+                        ),
+                        schema1,
+                    ),
+                    exists_ok=False,
+                ),
+            ]
+        )
+
+    def test_copy_dataset(self) -> None:
+        source_dataset_id = "my_source"
+        destination_dataset_id = "my_destination"
+
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.table_type = "TABLE"
+        mock_table.table_id = "my_table"
+        mock_table_2 = create_autospec(bigquery.Table)
+        mock_table_2.table_type = "TABLE"
+        mock_table_2.table_id = "my_table_2"
+        mock_view = create_autospec(bigquery.Table)
+        mock_view.table_type = "VIEW"
+
+        dataset_tables = [mock_table, mock_view, mock_table_2]
+
+        # Destination already exists
+        self.mock_client.get_dataset.return_value = mock.MagicMock()
+
+        def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
+            if dataset_id == destination_dataset_id:
+                tables = []
+            elif dataset_id == source_dataset_id:
+                tables = dataset_tables
+            else:
+                raise ValueError(f"Unexpected dataset [{dataset_id}]")
+
+            return iter(tables)
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+        self.mock_client.get_table.side_effect = dataset_tables
+        copy_jobs: List[futures.Future] = [futures.Future(), futures.Future()]
+        for job in copy_jobs:
+            job.set_result(None)
+        self.mock_client.copy_table.side_effect = copy_jobs
+
+        self.bq_client.copy_dataset_tables(source_dataset_id, destination_dataset_id)
+
+        self.assertEqual(
+            bigquery.job.WriteDisposition.WRITE_EMPTY, self.job_config.write_disposition
+        )
+        self.mock_client.list_tables.assert_has_calls(
+            [call("my_source"), call("my_destination")]
+        )
+        source_dataset_ref = bigquery.DatasetReference(
+            "fake-recidiviz-project", source_dataset_id
+        )
+        destination_dataset_ref = bigquery.DatasetReference(
+            "fake-recidiviz-project", destination_dataset_id
+        )
+
+        self.mock_client.copy_table.assert_has_calls(
+            [
+                call(
+                    bigquery.TableReference(
+                        source_dataset_ref,
+                        "my_table",
+                    ),
+                    bigquery.TableReference(
+                        destination_dataset_ref,
+                        "my_table",
+                    ),
+                    job_config=self.job_config,
                 ),
                 call(
                     bigquery.TableReference(
@@ -1579,11 +1684,12 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table_2",
                     ),
+                    job_config=self.job_config,
                 ),
             ]
         )
 
-    def test_copy_dataset_schema_only(self) -> None:
+    def test_copy_dataset_tables_schema_only(self) -> None:
         source_dataset_id = "my_source"
         destination_dataset_id = "my_destination"
 
@@ -1597,7 +1703,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_view.table_type = "VIEW"
         mock_view.table_id = "my_view"
 
-        # Destintation already exists
+        # Destination already exists
         self.mock_client.get_dataset.return_value = mock.MagicMock()
 
         def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
@@ -1632,7 +1738,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
 
         self.mock_client.list_tables.assert_has_calls(
-            [call("my_destination"), call("my_source")]
+            [call("my_source"), call("my_destination")]
         )
         destination_dataset_ref = bigquery.DatasetReference(
             "fake-recidiviz-project", destination_dataset_id
@@ -1673,6 +1779,91 @@ class BigQueryClientImplTest(unittest.TestCase):
             ]
         )
 
+    def test_copy_dataset_tables_overwrite(self) -> None:
+        source_dataset_id = "my_source"
+        destination_dataset_id = "my_destination"
+
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.table_type = "TABLE"
+        mock_table.table_id = "my_table"
+        mock_table_2 = create_autospec(bigquery.Table)
+        mock_table_2.table_type = "TABLE"
+        mock_table_2.table_id = "my_table_2"
+        mock_view = create_autospec(bigquery.Table)
+        mock_view.table_type = "VIEW"
+
+        extra_table_in_destination = create_autospec(bigquery.Table)
+        extra_table_in_destination.table_type = "TABLE"
+        extra_table_in_destination.table_id = "my_extra_table"
+
+        dataset_tables = [mock_table, mock_view, mock_table_2]
+
+        # Destination already exists
+        self.mock_client.get_dataset.return_value = mock.MagicMock()
+
+        def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
+            if dataset_id == destination_dataset_id:
+                tables = [mock_table, extra_table_in_destination]
+            elif dataset_id == source_dataset_id:
+                tables = dataset_tables
+            else:
+                raise ValueError(f"Unexpected dataset [{dataset_id}]")
+
+            return iter(tables)
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+        self.mock_client.get_table.side_effect = dataset_tables
+        copy_jobs: List[futures.Future] = [futures.Future(), futures.Future()]
+        for job in copy_jobs:
+            job.set_result(None)
+        self.mock_client.copy_table.side_effect = copy_jobs
+
+        self.bq_client.copy_dataset_tables(
+            source_dataset_id, destination_dataset_id, overwrite_destination_tables=True
+        )
+
+        self.mock_client.list_tables.assert_has_calls(
+            [call("my_source"), call("my_destination")]
+        )
+        source_dataset_ref = bigquery.DatasetReference(
+            "fake-recidiviz-project", source_dataset_id
+        )
+        destination_dataset_ref = bigquery.DatasetReference(
+            "fake-recidiviz-project", destination_dataset_id
+        )
+        self.mock_client.delete_table.assert_called_with(
+            bigquery.TableReference(destination_dataset_ref, "my_extra_table")
+        )
+        self.assertEqual(
+            bigquery.WriteDisposition.WRITE_TRUNCATE, self.job_config.write_disposition
+        )
+        self.mock_client.copy_table.assert_has_calls(
+            [
+                call(
+                    bigquery.TableReference(
+                        source_dataset_ref,
+                        "my_table",
+                    ),
+                    bigquery.TableReference(
+                        destination_dataset_ref,
+                        "my_table",
+                    ),
+                    job_config=self.job_config,
+                ),
+                call(
+                    bigquery.TableReference(
+                        source_dataset_ref,
+                        "my_table_2",
+                    ),
+                    bigquery.TableReference(
+                        destination_dataset_ref,
+                        "my_table_2",
+                    ),
+                    job_config=self.job_config,
+                ),
+            ]
+        )
+
     @freeze_time("2021-04-14 03:14:23.5678")
     def test_backup_dataset_if_exists(self) -> None:
         dataset_to_backup_id = "my_dataset"
@@ -1684,9 +1875,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_view = create_autospec(bigquery.Table)
         mock_view.table_type = "VIEW"
 
+        dataset_tables = [mock_table, mock_view]
+
         backup_dataset_calls: List[bool] = []
 
-        # Destintation already exists
+        # Destination already exists
         def mock_get_dataset(
             dataset_ref: bigquery.DatasetReference,
         ) -> bigquery.Dataset:
@@ -1705,13 +1898,14 @@ class BigQueryClientImplTest(unittest.TestCase):
             if dataset_id == expected_backup_dataset_id:
                 tables = []
             elif dataset_id == dataset_to_backup_id:
-                tables = [mock_table, mock_view]
+                tables = dataset_tables
             else:
                 raise ValueError(f"Unexpected dataset [{dataset_id}]")
 
             return iter(tables)
 
         self.mock_client.list_tables.side_effect = mock_list_tables
+        self.mock_client.get_table.side_effect = dataset_tables
         copy_jobs: List[futures.Future] = [futures.Future()]
         for job in copy_jobs:
             job.set_result(None)
@@ -1722,7 +1916,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_called_once()
 
         self.mock_client.list_tables.assert_has_calls(
-            [call(expected_backup_dataset_id), call(dataset_to_backup_id)]
+            [call(dataset_to_backup_id), call(expected_backup_dataset_id)]
         )
 
         source_dataset_ref = bigquery.DatasetReference(
@@ -1742,6 +1936,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table",
                     ),
+                    job_config=self.job_config,
                 ),
             ]
         )
@@ -1785,6 +1980,16 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Shouldn't hang
         results = self.bq_client.wait_for_big_query_jobs([])
         self.assertEqual([], results)
+
+    @freeze_time("2021-04-14 03:14:23.5678")
+    def test_add_timestamp_suffix_to_dataset_id(self) -> None:
+        dataset_id_with_timestamp = self.bq_client.add_timestamp_suffix_to_dataset_id(
+            dataset_id="dataset_id"
+        )
+
+        self.assertEqual(
+            "dataset_id_2021_04_14_03_14_23_567800", dataset_id_with_timestamp
+        )
 
 
 class MaterializeTableJobConfigMatcher:

@@ -159,7 +159,9 @@ class FakeBigQueryClient(BigQueryClient):
     ) -> Iterator[bigquery.table.TableListItem]:
         raise ValueError("Must be implemented for use in tests.")
 
-    def create_table(self, table: bigquery.Table) -> bigquery.Table:
+    def create_table(
+        self, table: bigquery.Table, overwrite: bool = False
+    ) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
     def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
@@ -360,10 +362,24 @@ class FakeBigQueryClient(BigQueryClient):
     def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
         raise ValueError("Must be implemented for use in tests.")
 
+    def copy_table(
+        self,
+        source_dataset_id: str,
+        source_table_id: str,
+        destination_dataset_id: str,
+        schema_only: bool = False,
+        overwrite: bool = False,
+    ) -> Optional[bigquery.job.CopyJob]:
+        raise ValueError("Must be implemented for use in tests.")
+
     def copy_dataset_tables(
         self,
         source_dataset_id: str,
         destination_dataset_id: str,
         schema_only: bool = False,
+        overwrite_destination_tables: bool = False,
     ) -> None:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def add_timestamp_suffix_to_dataset_id(self, dataset_id: str) -> str:
         raise ValueError("Must be implemented for use in tests.")

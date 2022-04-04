@@ -17,24 +17,45 @@
 """Manages the storage of data produced by calculations."""
 import datetime
 import logging
+import uuid
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import flask
+from google.api_core.future.polling import PollingFuture
 from google.cloud.bigquery import WriteDisposition
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import one, peekable
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
 from recidiviz.calculator import dataflow_config
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.calculator.dataflow_orchestration_utils import (
+    get_metric_pipeline_enabled_states,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    NORMALIZED_ENTITY_CLASSES,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    bq_schema_for_normalized_state_entity,
+)
+from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_DATASET,
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     make_most_recent_metric_view_builders,
 )
+from recidiviz.persistence.database import schema_utils
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
+    CloudSqlToBQLockManager,
+)
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -62,6 +83,16 @@ def prune_old_dataflow_data() -> Tuple[str, HTTPStatus]:
 def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
     """Calls the _delete_empty_datasets function."""
     _delete_empty_datasets()
+
+    return "", HTTPStatus.OK
+
+
+# TODO(#10732): Build the mechanism that triggers this endpoint
+@calculation_data_storage_manager_blueprint.route("/update_normalized_state_dataset")
+@requires_gae_auth
+def update_normalized_state_dataset() -> Tuple[str, HTTPStatus]:
+    """Calls the _update_normalized_state_dataset function."""
+    _update_normalized_state_dataset()
 
     return "", HTTPStatus.OK
 
@@ -360,6 +391,151 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
             replace_job.result()
 
 
+def _load_normalized_state_dataset_into_empty_temp_dataset(
+    bq_client: BigQueryClient, dataset_id: str
+) -> None:
+    """Builds a full normalized_state dataset in the specified empty dataset location.
+    If the temp dataset does not exist, creates the dataset first with a table
+    expiration."""
+    dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
+
+    # Create temp dataset that unified tables will be staged in.
+    bq_client.create_dataset_if_necessary(
+        dataset_ref,
+        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+    )
+
+    state_specific_normalized_dataset_ids: List[str] = [
+        normalized_state_dataset_for_state_code(
+            state_code,
+        )
+        for state_code in get_metric_pipeline_enabled_states()
+    ]
+
+    non_normalized_dataset_id = dataset_config.STATE_BASE_DATASET
+
+    jobs: List[PollingFuture] = []
+
+    # Build a map of normalized entity table_id to the schema for that table.
+    normalized_table_id_to_schema = {
+        # We store normalized entities in tables with the same names as the tables of
+        # their underlying base entity classes.
+        schema_utils.get_state_database_entity_with_name(
+            entity_cls.base_class_name()
+        ).__tablename__: bq_schema_for_normalized_state_entity(entity_cls)
+        for entity_cls in NORMALIZED_ENTITY_CLASSES
+    }
+
+    for table in bq_client.list_tables(non_normalized_dataset_id):
+        table_id = table.table_id
+
+        if table_id not in normalized_table_id_to_schema:
+            # This is not a normalized entity. Copy the entire table from state into
+            # the temporary dataset.
+            job = bq_client.copy_table(
+                source_dataset_id=non_normalized_dataset_id,
+                source_table_id=table_id,
+                destination_dataset_id=dataset_id,
+            )
+
+            if job:
+                jobs.append(job)
+        else:
+            schema_for_entity_class = normalized_table_id_to_schema[table_id]
+
+            bq_client.create_table_with_schema(
+                dataset_id,
+                table_id,
+                schema_for_entity_class,
+            )
+
+            # This is a normalized entity. Insert the contents of this table from
+            # each of the state's us_xx_normalized_state datasets into the
+            # corresponding table in the temporary dataset
+            for (
+                state_specific_normalized_dataset_id
+            ) in state_specific_normalized_dataset_ids:
+                job = bq_client.insert_into_table_from_table_async(
+                    source_dataset_id=state_specific_normalized_dataset_id,
+                    source_table_id=table_id,
+                    destination_dataset_id=dataset_id,
+                    destination_table_id=table_id,
+                )
+
+                jobs.append(job)
+
+    for job in jobs:
+        job.result()  # Wait for the job to complete.
+
+
+def _update_normalized_state_dataset() -> None:
+    """Updates the normalized_state dataset with fresh data.
+
+    First, builds a temporary dataset called `temp_normalized_state_TIMESTAMP` with
+    data from each state's `us_xx_normalized_state` dataset (for each entity that is
+    normalized) and the `state` dataset (for each entity that is not normalized). Then,
+    replaces the `normalized_state` dataset with the contents of the temporary dataset.
+    """
+    lock_id = str(uuid.uuid4())
+    logging.info("Request lock id: %s", lock_id)
+    schema_type = SchemaType.STATE
+
+    logging.info(
+        "Acquiring lock on CloudSQL to BQ state refresh to prevent the "
+        "`state` dataset from being updated during this process..."
+    )
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.acquire_lock(schema_type=schema_type, lock_id=lock_id)
+
+    if not lock_manager.can_proceed(schema_type):
+        raise AssertionError(
+            "Unable to acquire lock on CloudSQL to BQ state refresh. "
+            "Due to the sequencing of our orchestration, this should not happen. "
+            "Endpoint will need to be manually re-triggered once there are no "
+            "CloudSQL to BQ refreshes in-progress for the state database."
+        )
+
+    bq_client = BigQueryClientImpl()
+
+    temp_normalized_state_dataset_id = bq_client.add_timestamp_suffix_to_dataset_id(
+        f"temp_{dataset_config.NORMALIZED_STATE_DATASET}"
+    )
+
+    _load_normalized_state_dataset_into_empty_temp_dataset(
+        bq_client, temp_normalized_state_dataset_id
+    )
+
+    normalized_state_dataset_id = dataset_config.NORMALIZED_STATE_DATASET
+    normalized_state_dataset_ref = bq_client.dataset_ref_for_id(
+        normalized_state_dataset_id
+    )
+    bq_client.create_dataset_if_necessary(normalized_state_dataset_ref)
+
+    # Copy the temporary dataset into normalized_state, overwriting the contents.
+    # The `copy_dataset_tables` call will delete all extra tables that don't exist in
+    # the source dataset because |overwrite_destination_tables| is set to True.
+    bq_client.copy_dataset_tables(
+        source_dataset_id=temp_normalized_state_dataset_id,
+        destination_dataset_id=normalized_state_dataset_id,
+        overwrite_destination_tables=True,
+    )
+
+    logging.info(
+        "Process of building [%s] dataset complete.",
+        dataset_config.NORMALIZED_STATE_DATASET,
+    )
+
+    logging.info("Deleting temporary [%s] dataset.", temp_normalized_state_dataset_id)
+    bq_client.delete_dataset(
+        bq_client.dataset_ref_for_id(temp_normalized_state_dataset_id),
+        delete_contents=True,
+    )
+
+    logging.info("Releasing lock on CloudSQL to BQ state refresh.")
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.release_lock(SchemaType.STATE)
+
+
 def _decommission_dataflow_metric_table(
     bq_client: BigQueryClientImpl, table_ref: TableListItem, dry_run: bool = False
 ) -> None:
@@ -392,9 +568,3 @@ def _decommission_dataflow_metric_table(
         insert_job.result()
 
         bq_client.delete_table(dataset_id=dataflow_metrics_dataset, table_id=table_id)
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        move_old_dataflow_metrics_to_cold_storage(dry_run=True)

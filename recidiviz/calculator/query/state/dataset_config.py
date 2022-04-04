@@ -48,6 +48,12 @@ STATE_BASE_REGIONAL_DATASET: str = "state_regional"
 # state CloudSQL instance, refreshed daily via the CloudSQL -> BQ federated export.
 STATE_BASE_DATASET: str = "state"
 
+# Where the normalized state tables live, with data from all states. For each entity
+# that is not normalized, these are a copy of the corresponding table in the `state`
+# dataset. For each entity that is normalized, the entity table contains the normalized
+# output for that entity in each state.
+NORMALIZED_STATE_DATASET: str = "normalized_state"
+
 # Where the views for the COVID dashboard live
 COVID_DASHBOARD_DATASET: str = "covid_public_data"
 
@@ -95,4 +101,4 @@ PRACTICES_VIEWS_DATASET: str = "practices_views"
 
 def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
     """Where the output of state-specific entity normalization pipelines is stored."""
-    return f"{state_code.value.lower()}_normalized_state"
+    return f"{state_code.value.lower()}_{NORMALIZED_STATE_DATASET}"
