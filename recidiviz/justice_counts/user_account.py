@@ -38,7 +38,9 @@ class UserAccountInterface:
         validate_email_address(email_address)
         session.add(
             UserAccount(
-                email_address=email_address, name=name, auth0_user_id=auth0_user_id
+                email_address=email_address,
+                name=name,
+                auth0_user_id=auth0_user_id,
             )
         )
 

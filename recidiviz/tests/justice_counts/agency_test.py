@@ -25,11 +25,13 @@ from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
     """Implements tests for the JusticeCountsQuerier."""
 
-    def test_create_and_get_agencies(self) -> None:
+    def setUp(self) -> None:
+        super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
             AgencyInterface.create_agency(session=session, name="Agency Alpha")
             AgencyInterface.create_agency(session=session, name="Beta Initiative")
 
+    def test_get_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             agency_1 = AgencyInterface.get_agency_by_name(
                 session=session, name="Agency Alpha"
@@ -40,3 +42,18 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 {a.name for a in agencies}, {"Agency Alpha", "Beta Initiative"}
             )
+
+            agencies = AgencyInterface.get_agencies_by_name(
+                session=session, names=["Agency Alpha", "Beta Initiative"]
+            )
+            self.assertEqual(
+                {a.name for a in agencies}, {"Agency Alpha", "Beta Initiative"}
+            )
+
+            # Raise error if one of the agencies not found
+            with self.assertRaisesRegex(
+                ValueError, "Could not find the following agencies: {'Agency Beta'}"
+            ):
+                AgencyInterface.get_agencies_by_name(
+                    session=session, names=["Agency Alpha", "Agency Beta"]
+                )

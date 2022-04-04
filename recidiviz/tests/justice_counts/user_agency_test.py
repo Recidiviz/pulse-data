@@ -27,19 +27,31 @@ from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 class TestUserInterface(JusticeCountsDatabaseTestCase):
     """Implements tests for the UserAccountInterface."""
 
-    def test_create_and_get_user(self) -> None:
+    def setUp(self) -> None:
+        super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            AgencyInterface.create_agency(session=session, name="Agency Alpha")
+            for agency_name in ["Agency Alpha", "Agency Beta", "Agency Gamma"]:
+                AgencyInterface.create_agency(session=session, name=agency_name)
+
             UserAccountInterface.create_user(
                 session=session,
                 email_address="user@gmail.com",
                 name="User",
                 auth0_user_id="id0",
             )
-            UserAccountInterface.add_agency_to_user(
+            for agency_name in ["Agency Alpha", "Agency Beta"]:
+                UserAccountInterface.add_agency_to_user(
+                    session=session,
+                    email_address="user@gmail.com",
+                    agency_name=agency_name,
+                )
+
+    def test_create_user(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            # Can create user with just email address
+            UserAccountInterface.create_user(
                 session=session,
-                email_address="user@gmail.com",
-                agency_name="Agency Alpha",
+                email_address="user2@gmail.com",
             )
 
             # Cannot create user with invalid email address
@@ -49,16 +61,39 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
                     email_address="xyz",
                 )
 
+    def test_get_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = UserAccountInterface.get_user_by_email_address(
                 session=session, email_address="user@gmail.com"
             )
             self.assertEqual(user.auth0_user_id, "id0")
             self.assertEqual(user.name, "User")
-            self.assertEqual({a.name for a in user.agencies}, {"Agency Alpha"})
+            self.assertEqual(
+                {a.name for a in user.agencies}, {"Agency Alpha", "Agency Beta"}
+            )
 
             # Raise error if no user found
             with self.assertRaises(NoResultFound):
                 UserAccountInterface.get_user_by_email_address(
                     session=session, email_address="abc"
+                )
+
+    def test_add_agency_to_user(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            UserAccountInterface.add_agency_to_user(
+                session=session,
+                email_address="user@gmail.com",
+                agency_name="Agency Gamma",
+            )
+            user = UserAccountInterface.get_user_by_email_address(
+                session=session, email_address="user@gmail.com"
+            )
+            self.assertIn("Agency Gamma", {a.name for a in user.agencies})
+
+            # Raise error if agency does not exist
+            with self.assertRaises(NoResultFound):
+                UserAccountInterface.add_agency_to_user(
+                    session=session,
+                    email_address="user@gmail.com",
+                    agency_name="Agency Delta",
                 )
