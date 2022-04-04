@@ -25,6 +25,7 @@ import logging
 import os
 import subprocess
 import sys
+from math import ceil
 from typing import List, Tuple
 
 import recidiviz
@@ -42,6 +43,8 @@ DEPLOY_LOG_DIRECTORY = os.path.join(DEPLOY_ROOT, "log")
 DEPLOY_PIPELINE_TEMPLATES_LOG = (
     f"{DEPLOY_LOG_DIRECTORY}/deploy_all_pipeline_templates.log"
 )
+
+PARALLEL_TEMPLATE_DEPLOY_MAX_WORKERS = 8
 
 
 def build_process_log(process: subprocess.CompletedProcess) -> str:
@@ -117,14 +120,20 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
         if project_id == GCP_PROJECT_STAGING or not pipeline.get("staging_only")
     ]
 
+    num_pipelines = len(deploy_pipeline_kwargs)
+    # The number of full rounds where each worker uploads a single pipeline
+    num_upload_rounds = ceil(num_pipelines / PARALLEL_TEMPLATE_DEPLOY_MAX_WORKERS)
     try:
         with FutureExecutor.build(
             find_and_deploy_single_pipeline_template,
             deploy_pipeline_kwargs,
-            max_workers=8,
+            max_workers=PARALLEL_TEMPLATE_DEPLOY_MAX_WORKERS,
         ) as execution:
+
             execution.wait_with_progress_bar(
-                "Deploying pipeline templates...", timeout=20 * 60
+                "Deploying pipeline templates...",
+                # Scale timeout as number of pipelines increases
+                timeout=(num_upload_rounds * (10 * 60)),
             )
     except DeployPipelineFailedError:
         sys.exit(1)
