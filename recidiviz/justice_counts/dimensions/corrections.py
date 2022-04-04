@@ -33,6 +33,7 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     Dimension that represents the type of populations
     """
 
+    RESIDENTS = "RESIDENTS"
     PRISON = "PRISON"
     SUPERVISION = "SUPERVISION"
     JAIL = "JAIL"

@@ -17,13 +17,15 @@
 """Dimension subclasses used for global person characteristic filters."""
 
 
+import enum
 from typing import Dict, List, Optional, Type
 
 import attr
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.shared_enums import person_characteristics
-from recidiviz.justice_counts.dimensions.base import Dimension
+from recidiviz.justice_counts.dimensions.base import Dimension, DimensionBase
 from recidiviz.justice_counts.dimensions.helpers import (
     assert_no_overrides,
     build_entity_overrides,
@@ -116,6 +118,25 @@ class Ethnicity(Dimension):
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> List[Dimension]:
         return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+
+class RaceAndEthnicity(DimensionBase, enum.Enum):
+    AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
+    ASIAN = enum_strings.race_asian
+    BLACK = enum_strings.race_black
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    HISPANIC = enum_strings.ethnicity_hispanic
+    NATIVE_HAWAIIAN_PACIFIC_ISLANDER = enum_strings.race_hawaiian
+    OTHER = enum_strings.race_other
+    WHITE = enum_strings.race_white
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "global/race_and_ethnicity"
 
     @property
     def dimension_value(self) -> str:
