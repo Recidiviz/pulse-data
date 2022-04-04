@@ -26,7 +26,46 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 DimensionT = TypeVar("DimensionT", bound="Dimension")
 
 
-class Dimension:
+class DimensionBase:
+    """Base class to unify dimensions defined as part of Phase 0 State Data Scan and
+    dimensions later defined for the official Justice Counts metrics. Both sets of
+    dimension classes should extend from both Enum and DimensionBase (and therefore
+    define a `dimension_identifier`).
+    """
+
+    @classmethod
+    @abstractmethod
+    def dimension_identifier(cls) -> str:
+        """The globally unique dimension_identifier of this dimension, used when storing it in the database.
+        Currently, there are a few categories of dimensions:
+            - Global, raw dimensions: these apply across many metrics, sources, and locations,
+                but the same set of values is not necessarily shared across them.
+                Example: race
+                Naming convention: global/<dimension name>/raw`, e.g. `global/facility/raw`.
+            - Global, normalized dimensions: these are like global raw dimensions, but are normalized
+                to a set of values.
+                Example: race, but normalized
+                Naming convention: 'global/<dimension name>`.
+            - Metric-specific dimensions: these have a pre-defined set of values and are crucial for
+                the understanding of the data reported to a metric.
+                Example: population type.
+                Naming convention: 'metric/<metric name>/<dimension name>', e.g. 'metric/population/type'.
+                    If the metric is specific to a system, use 'metric/<system name>/<metric name>/<dimension name>'
+            - Location or source-specific dimensions: these may or may not have a pre-defined set of values,
+                but are created to understand something unique to a source location.
+                Example: facilities specific to a particular state
+        """
+
+    @property
+    @abstractmethod
+    def dimension_value(self) -> str:
+        """The value of this dimension instance.
+
+        E.g. 'FEMALE' is a potential value for an instance of the 'global/raw/gender' dimension.
+        """
+
+
+class Dimension(DimensionBase):
     """Each dimension is represented as a class that is used to hold the values for that dimension and perform any
     necessary validation. All dimensions are categorical. Those with a pre-defined set of values are implemented as
     enums. Others are classes with a single text field to hold any value, and are potentially normalized to a
@@ -65,14 +104,6 @@ class Dimension:
 
     @classmethod
     @abstractmethod
-    def dimension_identifier(cls) -> str:
-        """The globally unique dimension_identifier of this dimension, used when storing it in the database.
-
-        E.g. 'metric/population/type' or 'global/facility/raw'.
-        """
-
-    @classmethod
-    @abstractmethod
     def get_generated_dimension_classes(cls) -> List[Type["Dimension"]]:
         """Returns a list of Dimensions that the current dimension will generate"""
 
@@ -82,14 +113,6 @@ class Dimension:
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> List["Dimension"]:
         """Generates Dimensions based on the dimension cell value provided"""
-
-    @property
-    @abstractmethod
-    def dimension_value(self) -> str:
-        """The value of this dimension instance.
-
-        E.g. 'FEMALE' is a potential value for an instance of the 'global/raw/gender' dimension.
-        """
 
 
 @attr.s(frozen=True)
