@@ -21,7 +21,7 @@ names.
 import logging
 from typing import Dict, Iterable
 
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_address import BigQueryAddress
 
 MAX_POSTGRES_TABLE_NAME_LENGTH = 63
 

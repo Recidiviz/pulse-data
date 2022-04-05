@@ -20,8 +20,8 @@ import unittest
 
 import mock
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,

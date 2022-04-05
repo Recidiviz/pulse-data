@@ -19,8 +19,8 @@
 import unittest
 from typing import List, Set
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )

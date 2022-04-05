@@ -43,8 +43,8 @@ from recidiviz.admin_panel.models.validation_pb2 import (
 from recidiviz.admin_panel.models.validation_pb2 import (
     ValidationStatusRecords as ValidationStatusRecords_pb2,
 )
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common import serialization
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils import metadata

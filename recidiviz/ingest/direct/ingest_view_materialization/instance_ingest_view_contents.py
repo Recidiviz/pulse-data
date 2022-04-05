@@ -24,11 +24,11 @@ from typing import Any, Optional
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
-from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )

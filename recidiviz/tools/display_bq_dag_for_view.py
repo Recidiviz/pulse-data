@@ -23,7 +23,7 @@ python -m recidiviz.tools.display_bq_dag_for_view --project_id recidiviz-staging
 import argparse
 import logging
 
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING

@@ -226,6 +226,7 @@ def main() -> int:
         if pipeline.__file__ is None:
             raise ValueError(f"No file associated with {pipeline}.")
         valid_prefixes = {
+            "recidiviz.big_query.big_query_address",
             "recidiviz.big_query.big_query_utils",
             "recidiviz.big_query.big_query_view",
             "recidiviz.calculator",

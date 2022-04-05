@@ -18,28 +18,15 @@
 import abc
 from typing import Any, Callable, Dict, Generic, List, Optional, Set, TypeVar
 
-import attr
 from google.cloud import bigquery
 
-from recidiviz.common import attr_validators
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.string import StrictStringFormatter
 
 PROJECT_ID_KEY = "project_id"
 _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
-
-
-@attr.s(frozen=True, kw_only=True)
-class BigQueryAddress:
-    """Represents the (dataset_id, table_id) address of a view or table."""
-
-    dataset_id: str = attr.ib(validator=attr_validators.is_str)
-    table_id: str = attr.ib(validator=attr_validators.is_str)
-
-    @classmethod
-    def from_list_item(cls, table: bigquery.table.TableListItem) -> "BigQueryAddress":
-        return cls(dataset_id=table.dataset_id, table_id=table.table_id)
 
 
 class BigQueryView(bigquery.TableReference):

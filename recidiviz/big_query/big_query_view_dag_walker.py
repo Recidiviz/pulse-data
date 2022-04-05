@@ -23,7 +23,8 @@ from typing import Callable, Dict, List, Optional, Set, Tuple, TypeVar
 
 import attr
 
-from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.utils import structured_logging
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and

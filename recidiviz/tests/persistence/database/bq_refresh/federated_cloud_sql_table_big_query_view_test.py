@@ -21,11 +21,9 @@ from unittest import mock
 
 from more_itertools import one
 
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view import (
     FederatedCloudSQLTableBigQueryView,

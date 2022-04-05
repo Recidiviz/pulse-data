@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Reincarceration recidivism rates by release cohort and follow-up period years, with demographic breakdowns."""
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import (
     dataset_config,
