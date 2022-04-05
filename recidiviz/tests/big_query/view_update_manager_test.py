@@ -28,12 +28,9 @@ from flask import Flask
 from google.cloud import bigquery
 
 from recidiviz.big_query import view_update_manager
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    BigQueryView,
-    SimpleBigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     view_builder_sub_graph_for_view_builders_to_load,
     view_update_manager_blueprint,

@@ -22,11 +22,8 @@ from typing import Dict, Optional
 
 from sqlalchemy import Table
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    BigQueryView,
-    BigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.string import StrictStringFormatter

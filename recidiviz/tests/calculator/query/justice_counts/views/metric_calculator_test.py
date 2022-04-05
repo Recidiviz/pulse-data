@@ -26,10 +26,8 @@ from mock import Mock, patch
 from pandas.testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    SimpleBigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.justice_counts.views import metric_calculator
 from recidiviz.common import date
 from recidiviz.justice_counts.dimensions import corrections, location, person

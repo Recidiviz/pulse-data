@@ -24,11 +24,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import close_all_sessions
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    BigQueryView,
-    BigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.persistence.database.session import Session
 from recidiviz.tests.big_query.fakes.big_query_query_rewriter import (
     BigQueryQueryRewriter,

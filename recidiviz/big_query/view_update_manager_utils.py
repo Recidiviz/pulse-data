@@ -19,8 +19,8 @@
 import logging
 from typing import Dict, List, Set
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 
 

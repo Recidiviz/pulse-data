@@ -17,11 +17,8 @@
 """Defines a BigQueryView that enforces that the output has the required columns."""
 from typing import Dict, List, Optional, Set
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    BigQueryView,
-    BigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 
 
 class SelectedColumnsBigQueryView(BigQueryView):

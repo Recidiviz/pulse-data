@@ -40,8 +40,9 @@ from google.cloud.bigquery_datatransfer import (
 from mock import call, create_autospec
 
 from recidiviz.big_query import big_query_client
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
 

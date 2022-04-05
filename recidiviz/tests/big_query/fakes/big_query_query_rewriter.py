@@ -21,7 +21,7 @@ run in Postgres.
 import re
 from typing import Iterator, List
 
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.tests.big_query.fakes.fake_big_query_address_registry import (
     FakeBigQueryAddressRegistry,
 )

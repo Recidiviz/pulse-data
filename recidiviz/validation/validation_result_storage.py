@@ -23,8 +23,8 @@ from typing import Any, Dict, List, Optional, cast
 import attr
 import cattr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common import serialization
 from recidiviz.utils import environment
 from recidiviz.validation.validation_models import (

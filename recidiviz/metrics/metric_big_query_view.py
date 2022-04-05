@@ -19,11 +19,8 @@
 
 from typing import Dict, List, Optional, Tuple
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    BigQueryView,
-    BigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 
 PROJECT_ID_KEY = "project_id"
 

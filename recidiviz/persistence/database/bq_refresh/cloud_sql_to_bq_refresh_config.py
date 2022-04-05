@@ -37,7 +37,7 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 from sqlalchemy import Table
 
-from recidiviz.big_query.big_query_view import BigQueryAddress
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.county.dataset_config import (
     COUNTY_BASE_DATASET,
     COUNTY_BASE_REGIONAL_DATASET,

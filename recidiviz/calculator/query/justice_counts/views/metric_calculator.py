@@ -21,8 +21,8 @@ from typing import Dict, Iterable, List, Optional, Set, Type
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )

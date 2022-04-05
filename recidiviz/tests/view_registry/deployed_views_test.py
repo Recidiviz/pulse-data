@@ -20,8 +20,8 @@ import unittest
 from typing import Set
 from unittest.mock import MagicMock, patch
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,

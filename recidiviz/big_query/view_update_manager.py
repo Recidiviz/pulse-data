@@ -25,9 +25,9 @@ from google.cloud import exceptions
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,

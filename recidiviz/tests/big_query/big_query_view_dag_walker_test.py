@@ -25,12 +25,9 @@ import unittest
 from typing import Dict, List, Set, Tuple
 from unittest.mock import patch
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    BigQueryView,
-    BigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,

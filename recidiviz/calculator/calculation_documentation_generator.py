@@ -32,7 +32,8 @@ from google.cloud import bigquery
 from pytablewriter import MarkdownTableWriter
 
 import recidiviz
-from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNodeFamily,
     BigQueryViewDagWalker,

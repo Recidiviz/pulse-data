@@ -18,10 +18,8 @@
 
 from typing import List, Tuple
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    SimpleBigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.externally_shared_views.dataset_config import (
     CSG_CONFIG,
     EXTERNALLY_SHARED_VIEWS_DATASET,
