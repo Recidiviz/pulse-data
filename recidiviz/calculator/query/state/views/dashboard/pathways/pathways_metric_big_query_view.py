@@ -51,7 +51,7 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
     @property
     def _has_all_dimensions_clause(self) -> str:
         clauses = [
-            f"COALESCE(CAST({dimension} AS STRING), 'EXTERNAL_UNKNOWN') NOT IN ('UNKNOWN', 'EXTERNAL_UNKNOWN', 'INTERNAL_UNKNOWN')"
+            f"COALESCE(UPPER(CAST({dimension} AS STRING)), 'EXTERNAL_UNKNOWN') NOT IN ('UNKNOWN', 'EXTERNAL_UNKNOWN', 'INTERNAL_UNKNOWN')"
             for dimension in self.dimensions
         ]
 
