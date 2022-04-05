@@ -29,10 +29,16 @@ from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessage
 # Cloud Composer environment at the top-level. However, for unit tests, we still need to
 # import the recidiviz-top-level.
 try:
+    from operators.iap_httprequest_operator import (  # type: ignore
+        IAPHTTPRequestOperator,
+    )
     from operators.recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
     )
 except ImportError:
+    from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
+        IAPHTTPRequestOperator,
+    )
     from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
         RecidivizDataflowTemplateOperator,
     )
@@ -151,6 +157,11 @@ with models.DAG(
         "supplemental_dataset_pipelines"
     )
 
+    update_normalized_state_incremental = IAPHTTPRequestOperator(
+        task_id="update_normalized_state",
+        url=f"https://{project_id}.appspot.com/calculation_data_storage_manager/update_normalized_state_dataset",
+    )
+
     case_triage_export = trigger_export_operator("CASE_TRIAGE")
 
     states_to_trigger = {
@@ -195,6 +206,8 @@ with models.DAG(
                 pipeline_config_args, normalization_pipeline
             )
 
+            normalization_calculation_pipeline >> update_normalized_state_incremental
+
             for incremental_metric_pipeline in incremental_metric_pipelines_by_state[
                 pipeline_config_args.state_code
             ]:
@@ -233,6 +246,11 @@ with models.DAG(
     if config_file is None:
         raise Exception("Configuration file not specified")
 
+    update_normalized_state_historical = IAPHTTPRequestOperator(
+        task_id="update_normalized_state",
+        url=f"https://{project_id}.appspot.com/calculation_data_storage_manager/update_normalized_state_dataset",
+    )
+
     historical_metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "historical_metric_pipelines"
     )
@@ -260,6 +278,8 @@ with models.DAG(
             normalization_calculation_pipeline = dataflow_operator_for_pipeline(
                 pipeline_config_args, normalization_pipeline
             )
+
+            normalization_calculation_pipeline >> update_normalized_state_historical
 
             for historical_metric_pipeline in historical_metric_pipelines_by_state[
                 pipeline_config_args.state_code

@@ -87,7 +87,6 @@ def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-# TODO(#10732): Build the mechanism that triggers this endpoint
 @calculation_data_storage_manager_blueprint.route("/update_normalized_state_dataset")
 @requires_gae_auth
 def update_normalized_state_dataset() -> Tuple[str, HTTPStatus]:

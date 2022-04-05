@@ -30,6 +30,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_DATA_SCRATCH_SPACE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
+    NORMALIZED_STATE_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
     STATE_BASE_DATASET,
@@ -67,10 +68,17 @@ SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
 SUPPLEMENTAL_DATASETS = set(SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS.keys())
 
 NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
-    normalized_state_dataset_for_state_code(
-        state_code
-    ): "Contains normalized versions of the entities in the state dataset produced by the normalization pipeline for the state."
-    for state_code in StateCode
+    **{
+        normalized_state_dataset_for_state_code(
+            state_code
+        ): "Contains normalized versions of the entities in the state dataset produced by the normalization pipeline for the state."
+        for state_code in StateCode
+    },
+    **{
+        NORMALIZED_STATE_DATASET: "Contains normalized versions of the entities in the "
+        "state dataset produced by the normalization pipeline, and copies of non-normalized entities "
+        "from the state dataset."
+    },
 }
 NORMALIZED_DATASETS = set(NORMALIZED_DATASETS_TO_DESCRIPTIONS.keys())
 

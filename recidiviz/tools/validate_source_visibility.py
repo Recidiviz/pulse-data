@@ -255,6 +255,7 @@ def main() -> int:
             {
                 "recidiviz.airflow",
                 "recidiviz.utils.yaml_dict",
+                "recidiviz.cloud_functions.cloud_function_utils",
             }
         ),
         allowed_missing_module_prefixes=make_module_matcher(set()),

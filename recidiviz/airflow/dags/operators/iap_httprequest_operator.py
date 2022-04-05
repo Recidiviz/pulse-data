@@ -1,4 +1,3 @@
-# type: ignore
 # Recidiviz - a data platform for criminal justice reform
 # Copyright (C) 2020 Recidiviz, Inc.
 #
@@ -31,7 +30,7 @@ from recidiviz.cloud_functions.cloud_function_utils import (
 
 
 def make_iap_export_request(url: str) -> Dict[str, Any]:
-    client_id = IAP_CLIENT_ID[os.environ.get("GCP_PROJECT_ID")]
+    client_id = IAP_CLIENT_ID[os.environ["GCP_PROJECT_ID"]]
     # make_iap_request raises an exception if the returned status code is not 200
     response = make_iap_request(url, client_id)
 
@@ -42,7 +41,7 @@ def make_iap_export_request(url: str) -> Dict[str, Any]:
 
 class IAPHTTPRequestOperator(PythonOperator):
     @apply_defaults
-    def __init__(self, task_id: str, url: str, *args, **kwargs) -> None:
+    def __init__(self, task_id: str, url: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(
             task_id=task_id,
             python_callable=make_iap_export_request,
