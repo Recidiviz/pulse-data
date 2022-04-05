@@ -23,7 +23,7 @@ locally to create sandbox Dataflow datasets.
 import argparse
 import logging
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import attr
 
@@ -47,12 +47,19 @@ from recidiviz.calculator.pipeline.supplemental.dataset_config import (
 from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
     collect_all_pipeline_run_delegate_classes,
 )
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
+from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
+    update_bq_schema_for_sqlalchemy_table,
+)
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
+    CloudSqlToBQConfig,
+)
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -107,42 +114,15 @@ def update_dataflow_metric_tables_schemas(
             )
 
 
-def get_state_specific_normalized_state_dataset_for_state(
-    state_code: StateCode,
-    normalized_dataset_prefix: Optional[str] = None,
-) -> str:
-    """Returns the dataset_id for each normalized_state dataset that needs to
-    exist in BigQuery; one for each pipeline-enabled state.
+def update_normalized_table_schemas_in_dataset(
+    normalized_state_dataset_id: str,
+) -> List[str]:
+    """For each table in the dataset, ensures that all expected attributes on the
+    corresponding normalized state entity are present in the table in BigQuery.
 
-    All state-specific normalized_state datasets have the format:
-        us_xx_normalized_state.
-
-    Prefixes each dataset with the |normalized_dataset_prefix| if provided.
+    Returns the list of table_id values that were updated.
     """
-    normalized_state_dataset_id = normalized_state_dataset_for_state_code(state_code)
-
-    if normalized_dataset_prefix:
-        normalized_state_dataset_id = (
-            f"{normalized_dataset_prefix}_{normalized_state_dataset_id}"
-        )
-
-    return normalized_state_dataset_id
-
-
-# TODO(#10732): Update this to also update the schema in normalized_state
-def update_normalized_state_schema(
-    state_code: StateCode,
-    normalized_dataset_prefix: Optional[str] = None,
-) -> None:
-    """For each table in each dataset that stores Dataflow normalized state entity
-    output, ensures that all attributes on the corresponding normalized state entity
-    are present in the table in BigQuery."""
     bq_client = BigQueryClientImpl()
-
-    normalized_state_dataset_id = get_state_specific_normalized_state_dataset_for_state(
-        state_code, normalized_dataset_prefix=normalized_dataset_prefix
-    )
-
     normalized_state_dataset_ref = bq_client.dataset_ref_for_id(
         normalized_state_dataset_id
     )
@@ -151,6 +131,8 @@ def update_normalized_state_schema(
         normalized_state_dataset_ref,
     )
 
+    normalized_table_ids: List[str] = []
+
     for entity_cls in NORMALIZED_ENTITY_CLASSES:
         schema_for_entity_class = bq_schema_for_normalized_state_entity(entity_cls)
         # We store normalized entities in tables with the same names as the tables of
@@ -158,6 +140,8 @@ def update_normalized_state_schema(
         table_id = schema_utils.get_state_database_entity_with_name(
             entity_cls.base_class_name()
         ).__tablename__
+
+        normalized_table_ids.append(table_id)
 
         if bq_client.table_exists(normalized_state_dataset_ref, table_id):
             bq_client.update_schema(
@@ -170,6 +154,52 @@ def update_normalized_state_schema(
                 normalized_state_dataset_id,
                 table_id,
                 schema_for_entity_class,
+            )
+
+    return normalized_table_ids
+
+
+def update_state_specific_normalized_state_schemas() -> None:
+    """Updates the tables for each state-specific dataset that stores Dataflow
+    normalized state entity output to match expected schemas."""
+    for state_code in get_metric_pipeline_enabled_states():
+        normalized_state_dataset_id = normalized_state_dataset_for_state_code(
+            state_code
+        )
+
+        update_normalized_table_schemas_in_dataset(normalized_state_dataset_id)
+
+
+def update_normalized_state_schema() -> None:
+    """Updates each table in the normalized_state dataset to match expected schemas."""
+    bq_client = BigQueryClientImpl()
+
+    normalized_state_dataset_id = dataset_config.NORMALIZED_STATE_DATASET
+    normalized_state_dataset_ref = bq_client.dataset_ref_for_id(
+        normalized_state_dataset_id
+    )
+
+    bq_client.create_dataset_if_necessary(normalized_state_dataset_ref)
+
+    # Update the tables in the normalized_state dataset for all entities that are
+    # normalized, and get a list back of all tables updated
+    normalized_table_ids = update_normalized_table_schemas_in_dataset(
+        normalized_state_dataset_id
+    )
+
+    export_config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+
+    for table in export_config.get_tables_to_export():
+        table_id = table.name
+
+        if table_id not in normalized_table_ids:
+            # Update the schema of the non-normalized entity to have all columns
+            # expected for the table
+            update_bq_schema_for_sqlalchemy_table(
+                bq_client=bq_client,
+                schema_type=SchemaType.STATE,
+                dataset_id=normalized_state_dataset_id,
+                table=table,
             )
 
 
@@ -230,5 +260,5 @@ if __name__ == "__main__":
     with local_project_id_override(known_args.project_id):
         update_dataflow_metric_tables_schemas()
         update_supplemental_dataset_schemas()
-        for state in get_metric_pipeline_enabled_states():
-            update_normalized_state_schema(state)
+        update_state_specific_normalized_state_schemas()
+        update_normalized_state_schema()

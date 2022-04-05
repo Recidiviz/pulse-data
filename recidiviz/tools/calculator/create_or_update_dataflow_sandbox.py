@@ -39,15 +39,17 @@ from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
 from recidiviz.calculator.dataflow_output_table_manager import (
-    get_state_specific_normalized_state_dataset_for_state,
     update_dataflow_metric_tables_schemas,
-    update_normalized_state_schema,
+    update_normalized_table_schemas_in_dataset,
     update_supplemental_dataset_schemas,
 )
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
 )
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_DATASET,
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -133,9 +135,7 @@ def create_or_update_normalized_state_sandbox(
     calculation pipelines regularly scheduled."""
 
     # First create the sandbox dataset with the default table expiration
-    sandbox_dataset_id = get_state_specific_normalized_state_dataset_for_state(
-        state_code=state_code, normalized_dataset_prefix=sandbox_dataset_prefix
-    )
+    sandbox_dataset_id = f"{sandbox_dataset_prefix}_{normalized_state_dataset_for_state_code(state_code)}"
 
     sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
     if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
@@ -156,8 +156,9 @@ def create_or_update_normalized_state_sandbox(
         "after 72 hours.",
         sandbox_dataset_prefix,
     )
-    update_normalized_state_schema(
-        state_code=state_code, normalized_dataset_prefix=sandbox_dataset_prefix
+
+    update_normalized_table_schemas_in_dataset(
+        normalized_state_dataset_id=sandbox_dataset_id
     )
 
 

@@ -37,7 +37,11 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
-from recidiviz.common.constants.states import StateCode
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view_collector_test import (
+    NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
+)
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -176,16 +180,6 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
             self.project_id, self.mock_view_dataset_name
         )
 
-        self.dataflow_config_patcher = mock.patch(
-            "recidiviz.calculator.dataflow_output_table_manager.dataflow_config"
-        )
-        self.mock_dataflow_config = self.dataflow_config_patcher.start()
-
-        self.mock_pipeline_template_path = FAKE_PIPELINE_CONFIG_YAML_PATH
-        self.mock_dataflow_config.PIPELINE_CONFIG_YAML_PATH = (
-            self.mock_pipeline_template_path
-        )
-
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
         self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
@@ -196,36 +190,75 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         )
         self.mock_client = self.bq_client_patcher.start().return_value
 
-        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.project_id.return_value = self.project_id
+
+        self.gcs_factory_patcher = mock.patch(
+            "recidiviz.admin_panel.dataset_metadata_store.GcsfsFactory.build"
+        )
+        self.fake_fs = FakeGCSFileSystem()
+        self.gcs_factory_patcher.start().return_value = self.fake_fs
+
+        self.fake_config_path = GcsfsFilePath.from_absolute_path(
+            "gs://fake-recidiviz-project-configs/cloud_sql_to_bq_config.yaml"
+        )
 
     def tearDown(self) -> None:
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
-        self.dataflow_config_patcher.stop()
+        self.gcs_factory_patcher.stop()
 
-    def test_update_normalized_state_schemas_create_table(self) -> None:
-        """Test that update_normalized_state_schema calls the client to create a
-        new table when the table does not yet exist."""
+    @mock.patch(
+        "recidiviz.calculator.dataflow_orchestration_utils"
+        ".PIPELINE_CONFIG_YAML_PATH",
+        FAKE_PIPELINE_CONFIG_YAML_PATH,
+    )
+    def test_update_state_specific_normalized_state_schemas(self) -> None:
+        def mock_dataset_ref_for_id(
+            dataset_id: str,
+        ) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
+
+        dataflow_output_table_manager.update_state_specific_normalized_state_schemas()
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_xx_normalized_state"
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_yy_normalized_state"
+                    )
+                ),
+            ],
+            any_order=True,
+        )
+
+    def test_update_normalized_table_schemas_in_dataset_create_table(self) -> None:
+        """Test that update_normalized_table_schemas_in_dataset calls the client to
+        create a new table when the table does not yet exist."""
         self.mock_client.table_exists.return_value = False
 
-        dataflow_output_table_manager.update_normalized_state_schema(
-            state_code=StateCode.US_XX
+        dataflow_output_table_manager.update_normalized_table_schemas_in_dataset(
+            "us_xx_normalized_state"
         )
 
         self.mock_client.create_table_with_schema.assert_called()
         self.mock_client.update_schema.assert_not_called()
 
-    def test_update_normalized_state_schemas_update_table(self) -> None:
-        """Test that update_normalized_state_schema calls the client to update a
-        table when the table already exists."""
+    def test_update_normalized_table_schemas_in_dataset_update_table(self) -> None:
+        """Test that update_normalized_table_schemas_in_dataset calls the client to
+        update a table when the table already exists."""
         self.mock_client.table_exists.return_value = True
 
-        dataflow_output_table_manager.update_normalized_state_schema(
-            state_code=StateCode.US_XX
+        dataflow_output_table_manager.update_normalized_table_schemas_in_dataset(
+            "us_xx_normalized_state"
         )
-
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
 
@@ -237,7 +270,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         dataset_ids: List[str] = []
         for state_code in get_metric_pipeline_enabled_states():
             dataset_ids.append(
-                dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
+                dataflow_output_table_manager.normalized_state_dataset_for_state_code(
                     state_code
                 )
             )
@@ -247,24 +280,24 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.assertCountEqual(expected_dataset_ids, dataset_ids)
 
     @mock.patch(
-        "recidiviz.calculator.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
-        FAKE_PIPELINE_CONFIG_YAML_PATH,
+        "recidiviz.calculator.dataflow_output_table_manager"
+        ".update_normalized_table_schemas_in_dataset"
     )
-    def test_get_all_state_specific_normalized_state_datasets_with_prefix(self) -> None:
-        dataset_ids: List[str] = []
-        for state_code in get_metric_pipeline_enabled_states():
-            dataset_ids.append(
-                dataflow_output_table_manager.get_state_specific_normalized_state_dataset_for_state(
-                    state_code, normalized_dataset_prefix="test_prefix"
-                )
-            )
+    def test_update_normalized_state_schema(
+        self, mock_update_norm_schemas: mock.MagicMock
+    ) -> None:
+        self.fake_fs.upload_from_string(
+            path=self.fake_config_path,
+            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
+            content_type="text/yaml",
+        )
 
-        expected_dataset_ids = [
-            "test_prefix_us_xx_normalized_state",
-            "test_prefix_us_yy_normalized_state",
+        mock_update_norm_schemas.return_value = [
+            "state_incarceration_period",
+            "state_supervision_period",
         ]
 
-        self.assertCountEqual(expected_dataset_ids, dataset_ids)
+        dataflow_output_table_manager.update_normalized_state_schema()
 
 
 class SupplementalDatasetTableManagerTest(unittest.TestCase):
