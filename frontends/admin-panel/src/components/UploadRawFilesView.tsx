@@ -31,16 +31,13 @@ import * as React from "react";
 import moment, { Moment } from "moment";
 import StateSelector from "./Utilities/StateSelector";
 import { fetchRawFilesStateCodes } from "../AdminPanelAPI";
+import { formLayout } from "./constants";
 
 const UploadRawFilesView = (): JSX.Element => {
   const [uploadResult, setUploadResult] = React.useState<AlertProps | void>();
   const [showSpinner, setShowSpinner] = React.useState(false);
   const [form] = Form.useForm();
 
-  const layout = {
-    labelCol: { span: 4 },
-    wrapperCol: { span: 20 },
-  };
   interface UploadRawFilesFormData {
     state: string;
     date: Moment;
@@ -83,7 +80,12 @@ const UploadRawFilesView = (): JSX.Element => {
         subTitle="Form to upload raw excel files directly into BigQuery. Currently accepts TN standards data only."
       />
 
-      <Form {...layout} form={form} onFinish={onFinish} requiredMark={false}>
+      <Form
+        {...formLayout}
+        form={form}
+        onFinish={onFinish}
+        requiredMark={false}
+      >
         <Form.Item label="State" name="state" rules={[{ required: true }]}>
           <StateSelector
             fetchStateList={fetchRawFilesStateCodes}

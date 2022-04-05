@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+export const getResource = async (url: string): Promise<Response> => {
+  return fetch(`/admin${url}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
 export const postWithURLAndBody = async (
   url: string,
   body: Record<string, unknown> = {}

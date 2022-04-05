@@ -14,21 +14,42 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { PageHeader, Table } from "antd";
+import {
+  PageHeader,
+  Table,
+  Form,
+  Input,
+  Button,
+  Spin,
+  Typography,
+  message,
+} from "antd";
 import * as React from "react";
-import { getAgencies } from "../AdminPanelAPI";
+import { getAgencies, createAgency } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
+import { formLayout, formTailLayout } from "./constants";
 
 type Agency = {
+  id: number;
   name: string;
 };
 
-type AgencyResponse = {
+export type AgencyRequest = {
+  name: string;
+};
+
+type AgenciesResponse = {
   agencies: Agency[];
 };
 
+type CreateAgencyResponse = {
+  agency: Agency;
+};
+
 const AgencyProvisioningView = (): JSX.Element => {
-  const { loading, data } = useFetchedDataJSON<AgencyResponse>(getAgencies);
+  const [showSpinner, setShowSpinner] = React.useState(false);
+  const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
+  const [form] = Form.useForm();
   const columns = [
     {
       title: "Name",
@@ -36,6 +57,31 @@ const AgencyProvisioningView = (): JSX.Element => {
       key: "name",
     },
   ];
+  const onFinish = async ({ name }: AgencyRequest) => {
+    const nameTrimmed = name.trim();
+    setShowSpinner(true);
+    try {
+      const response = await createAgency(nameTrimmed);
+      const text = await response.text();
+      try {
+        const { agency } = JSON.parse(text) as CreateAgencyResponse; // Try to parse it as JSON
+        if (data?.agencies) {
+          setData({ agencies: [...data.agencies, agency] });
+        } else {
+          setData({ agencies: [agency] });
+        }
+        form.resetFields();
+        setShowSpinner(false);
+        message.success(`"${nameTrimmed}" added!`);
+      } catch (err) {
+        setShowSpinner(false);
+        message.error(`An error occured: ${text}`);
+      }
+    } catch (err) {
+      setShowSpinner(false);
+      message.error(`An error occured: ${err}`);
+    }
+  };
 
   return (
     <>
@@ -48,8 +94,30 @@ const AgencyProvisioningView = (): JSX.Element => {
           showSizeChanger: true,
           size: "small",
         }}
-        rowKey="state"
+        rowKey={(agency) => agency.id}
       />
+      <Form
+        {...formLayout}
+        form={form}
+        onFinish={onFinish}
+        requiredMark={false}
+      >
+        <Typography.Title
+          level={4}
+          style={{ paddingTop: 16, paddingBottom: 8 }}
+        >
+          Add Agency
+        </Typography.Title>
+        <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+          <Input disabled={showSpinner} />
+        </Form.Item>
+        <Form.Item {...formTailLayout}>
+          <Button type="primary" htmlType="submit" disabled={showSpinner}>
+            Submit
+          </Button>
+          {showSpinner && <Spin style={{ marginLeft: 16 }} />}
+        </Form.Item>
+      </Form>
     </>
   );
 };

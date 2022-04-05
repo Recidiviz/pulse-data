@@ -111,4 +111,4 @@ export {
   getPOFeedback,
   runCloudSQLImport,
 } from "./LineStaffTools";
-export { getAgencies } from "./JusticeCountsTools";
+export { getAgencies, createAgency } from "./JusticeCountsTools";
