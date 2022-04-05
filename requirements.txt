@@ -46,7 +46,7 @@ slacker==0.9.65
 tornado==5.0.2
 urllib3==1.22
 virtualenv==15.2.0
-waitress==1.1.0
+waitress==2.1.1
 webapp2==2.5.2
 WebTest==2.0.29
 WebOb==1.8.1
