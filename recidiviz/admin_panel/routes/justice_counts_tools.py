@@ -19,25 +19,36 @@
 from http import HTTPStatus
 from typing import Tuple
 
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.types import assert_type
 
 
 def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Justice Counts Admin Panel API routes to an input Blueprint."""
 
-    @bp.route("/api/justice_counts_tools/agencies")
+    @bp.route("/api/justice_counts_tools/agencies", methods=["GET", "POST"])
     @requires_gae_auth
-    def get_agencies() -> Tuple[Response, HTTPStatus]:
-        """Returns all Agency records."""
+    def agencies() -> Tuple[Response, HTTPStatus]:
+        """On GET request: Returns all Agency records.
+        On POST request: Takes in a 'name', creates an Agency with that name and returns the created Agency.
+        """
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
+            if request.method == "POST":
+                request_json = assert_type(request.json, dict)
+                name = request_json["name"]
+                agency = AgencyInterface.create_agency(session=session, name=name)
+                return (
+                    jsonify({"agency": agency.to_json()}),
+                    HTTPStatus.OK,
+                )
             return (
                 jsonify(
                     {

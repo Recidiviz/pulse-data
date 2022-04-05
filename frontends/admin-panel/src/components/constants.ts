@@ -15,13 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { getResource, postWithURLAndBody } from "./utils";
-
-// Agency Provisioning
-export const getAgencies = async (): Promise<Response> => {
-  return getResource(`/api/justice_counts_tools/agencies`);
+export const formLayout = {
+  labelCol: { span: 4 },
+  wrapperCol: { span: 20 },
 };
-
-export const createAgency = async (name: string): Promise<Response> => {
-  return postWithURLAndBody(`/api/justice_counts_tools/agencies`, { name });
+export const formTailLayout = {
+  wrapperCol: { offset: 4, span: 20 },
 };

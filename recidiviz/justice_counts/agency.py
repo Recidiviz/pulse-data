@@ -27,8 +27,12 @@ class AgencyInterface:
     """Contains methods for setting and getting Agency info."""
 
     @staticmethod
-    def create_agency(session: Session, name: str) -> None:
-        session.add(Agency(name=name))
+    def create_agency(session: Session, name: str) -> Agency:
+        agency = Agency(name=name)
+        session.add(agency)
+        session.flush()
+        session.refresh(agency)
+        return agency
 
     @staticmethod
     def get_agency_by_name(session: Session, name: str) -> Agency:

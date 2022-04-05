@@ -20,6 +20,7 @@ import * as React from "react";
 interface FetchedDataResponse<T> {
   loading: boolean;
   data?: T;
+  setData: React.Dispatch<React.SetStateAction<T | undefined>>;
 }
 
 function useFetchedData<T>(
@@ -44,7 +45,7 @@ function useFetchedData<T>(
     fetchData(fetchReq);
   }, [fetchReq]);
 
-  return { loading, data };
+  return { loading, data, setData };
 }
 
 export const useFetchedDataJSON = <T>(

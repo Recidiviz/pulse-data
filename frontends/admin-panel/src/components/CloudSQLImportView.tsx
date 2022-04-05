@@ -18,6 +18,7 @@ import { Alert, Button, Form, PageHeader, Result, Select, Spin } from "antd";
 import * as React from "react";
 import { fetchETLViewIds, runCloudSQLImport } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
+import { formLayout, formTailLayout } from "./constants";
 
 const CloudSQLImportView = (): JSX.Element => {
   const [importStatus, setImportStatus] =
@@ -58,14 +59,6 @@ const CloudSQLImportView = (): JSX.Element => {
     );
   }
 
-  const layout = {
-    labelCol: { span: 4 },
-    wrapperCol: { span: 20 },
-  };
-  const tailLayout = {
-    wrapperCol: { offset: 4, span: 20 },
-  };
-
   const onFinish = async (values: { [key: string]: string }) => {
     // This is a hack needed to get typescript to realize that the provided value is
     // a string[] and not just a string. See
@@ -90,7 +83,7 @@ const CloudSQLImportView = (): JSX.Element => {
         type="warning"
         showIcon
       />
-      <Form {...layout} className="buffer" onFinish={onFinish}>
+      <Form {...formLayout} className="buffer" onFinish={onFinish}>
         <Form.Item
           label="Views to Import"
           name="viewIds"
@@ -107,7 +100,7 @@ const CloudSQLImportView = (): JSX.Element => {
           </Select>
         </Form.Item>
 
-        <Form.Item {...tailLayout}>
+        <Form.Item {...formTailLayout}>
           <Button type="primary" htmlType="submit">
             Start Import
           </Button>
