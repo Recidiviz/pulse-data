@@ -22,6 +22,9 @@ columns:
   - name: state_id_num
     description: |-
       Pennsylvania state identifier - always null.
+  - name: state_id_num_hashed
+    description: |-
+      Hashed Pennsylvania state identifier - always null.
   - name: location_in_transi
     description: |-
       Unused.
