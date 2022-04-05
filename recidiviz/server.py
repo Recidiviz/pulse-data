@@ -134,9 +134,11 @@ elif environment.in_gcp():
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(
             database_keys_for_schema_type(schema_type)
         )
-
-# Initialize datastores for the admin panel and trigger a data refresh
-initialize_admin_stores()
+if environment.in_development() or environment.in_gcp():
+    # Initialize datastores for the admin panel and trigger a data refresh. This call
+    # will crash unless the project_id is set globally, which is not the case when
+    # running in CI.
+    initialize_admin_stores()
 
 
 @app.route("/health")
