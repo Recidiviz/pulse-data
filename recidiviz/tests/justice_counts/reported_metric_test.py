@@ -18,7 +18,10 @@
 
 from unittest import TestCase
 
-from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
+from recidiviz.justice_counts.dimensions.law_enforcement import (
+    CallType,
+    SheriffBudgetType,
+)
 from recidiviz.justice_counts.dimensions.person import Gender
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
@@ -50,12 +53,31 @@ class TestJusticeCountsMetricDefinition(TestCase):
                 )
             ],
         )
+        self.reported_calls_for_service = ReportedMetric(
+            key=law_enforcement.calls_for_service.key,
+            value=100,
+            contexts=[
+                ReportedContext(
+                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
+                )
+            ],
+            aggregated_dimensions=[
+                ReportedAggregatedDimension(
+                    dimension_to_value={
+                        CallType.EMERGENCY: 20,
+                        CallType.NON_EMERGENCY: 60,
+                        CallType.UNKNOWN: 20,
+                    }
+                )
+            ],
+        )
 
     def test_init(self) -> None:
         self.assertEqual(
             self.reported_budget.metric_definition.display_name, "Annual Budget"
         )
 
+    def test_value_validation(self) -> None:
         with self.assertRaisesRegex(
             ValueError, "Not all dimension instances belong to the same class"
         ):
@@ -103,4 +125,32 @@ class TestJusticeCountsMetricDefinition(TestCase):
                         }
                     )
                 ],
+            )
+
+    def test_context_validation(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "The following required contexts are missing: {<ContextKey.ALL_CALLS_OR_CALLS_RESPONDED",
+        ):
+            ReportedMetric(
+                key=law_enforcement.calls_for_service.key,
+                value=100000,
+                contexts=[],
+                aggregated_dimensions=[],
+            )
+
+    def test_aggregated_dimensions_validation(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "The following required dimensions are missing: {'metric/law_enforcement/calls_for_service/type'}",
+        ):
+            ReportedMetric(
+                key=law_enforcement.calls_for_service.key,
+                value=100000,
+                contexts=[
+                    ReportedContext(
+                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
+                    )
+                ],
+                aggregated_dimensions=[],
             )
