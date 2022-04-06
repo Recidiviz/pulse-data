@@ -19,18 +19,19 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from recidiviz.calculator.normalized_state_update_lock_manager import (
+    NormalizedStateUpdateLockManager,
+)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     CloudSqlToBQLockManager,
 )
@@ -60,6 +61,9 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 region_code="US_XX_YYYYY",
                 blocking_locks=[],
                 ingest_instance=DirectIngestInstance.PRIMARY,
+            )
+            self.normalized_state_update_lock_manager = (
+                NormalizedStateUpdateLockManager()
             )
 
     def tearDown(self) -> None:
@@ -125,6 +129,17 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
         # Now that the ingest lock has been released, all export jobs can proceed
         for schema_type in SchemaType:
             self.assertTrue(self.lock_manager.can_proceed(schema_type))
+
+    def test_acquire_state_cannot_proceed_normalized_state_refresh(self) -> None:
+        self.normalized_state_update_lock_manager.acquire_lock(lock_id="lock1")
+        for schema_type in SchemaType:
+            self.lock_manager.acquire_lock(lock_id="lock1", schema_type=schema_type)
+
+        self.assertFalse(self.lock_manager.can_proceed(SchemaType.STATE))
+        # normalized_state update only blocks the STATE CloudSQL export
+        self.assertTrue(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
+        self.assertTrue(self.lock_manager.can_proceed(SchemaType.JAILS))
+        self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
 
     def test_acquire_county_cannot_proceed(self) -> None:
         with self.county_ingest_lock_manager.using_region_lock(

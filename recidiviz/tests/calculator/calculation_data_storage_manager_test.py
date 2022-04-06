@@ -35,6 +35,9 @@ from recidiviz.calculator import calculation_data_storage_manager
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
+from recidiviz.calculator.normalized_state_update_lock_manager import (
+    NormalizedStateUpdateLockManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
@@ -44,10 +47,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_convers
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
-    CloudSqlToBQLockManager,
-)
-from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
@@ -158,7 +157,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         # The FS on this lock manager is mocked but it otherwise operates like a normal
         # lock manager.
-        self.mock_lock_manager = CloudSqlToBQLockManager()
+        self.mock_lock_manager = NormalizedStateUpdateLockManager()
 
         app = Flask(__name__)
         app.register_blueprint(calculation_data_storage_manager_blueprint)
@@ -578,9 +577,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         )
 
     def test_update_normalized_state_dataset_locked(self) -> None:
-        self.mock_lock_manager.acquire_lock(
-            lock_id="any_lock_id", schema_type=SchemaType.STATE
-        )
+        self.mock_lock_manager.acquire_lock(lock_id="any_lock_id")
 
         with self.assertRaises(GCSPseudoLockAlreadyExists):
             calculation_data_storage_manager._update_normalized_state_dataset()

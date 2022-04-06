@@ -17,6 +17,9 @@
 """Manages acquiring and releasing the lock for the Cloud SQL -> BQ refresh."""
 import logging
 
+from recidiviz.calculator.normalized_state_update_lock_manager import (
+    NORMALIZED_STATE_UPDATE_LOCK_NAME,
+)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
@@ -84,19 +87,30 @@ class CloudSqlToBQLockManager:
             return True
 
         if schema_type == SchemaType.STATE:
-            blocking_lock_prefix = STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            no_blocking_normalized_state_locks = not self.lock_manager.is_locked(
+                NORMALIZED_STATE_UPDATE_LOCK_NAME
+            )
+
+            if not no_blocking_normalized_state_locks:
+                return False
+
+            blocking_ingest_lock_prefix = (
+                STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            )
         elif schema_type == SchemaType.JAILS:
-            blocking_lock_prefix = JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            blocking_ingest_lock_prefix = (
+                JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            )
         elif schema_type == SchemaType.OPERATIONS:
             # The operations export yields for all types of ingest
-            blocking_lock_prefix = GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            blocking_ingest_lock_prefix = GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
         else:
             raise ValueError(f"Unexpected schema type [{schema_type}]")
 
-        no_blocking_locks = self.lock_manager.no_active_locks_with_prefix(
-            blocking_lock_prefix
+        no_blocking_ingest_locks = self.lock_manager.no_active_locks_with_prefix(
+            blocking_ingest_lock_prefix
         )
-        return no_blocking_locks
+        return no_blocking_ingest_locks
 
     def release_lock(self, schema_type: SchemaType) -> None:
         """Releases the CloudSQL -> BQ refresh lock for a given schema."""
