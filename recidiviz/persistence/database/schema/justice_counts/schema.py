@@ -277,6 +277,7 @@ class ReportTableDefinition(JusticeCountsBase):
         [
             PrimaryKeyConstraint(id),
             UniqueConstraint(
+                system,
                 metric_type,
                 measurement_type,
                 filtered_dimensions,

@@ -60,9 +60,7 @@ from urllib import parse
 import attr
 import pandas
 from more_itertools import peekable
-from sqlalchemy import cast
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql.schema import UniqueConstraint
 
 from recidiviz.cloud_functions.cloud_function_utils import (
     IAP_CLIENT_ID,
@@ -98,7 +96,10 @@ from recidiviz.justice_counts.dimensions.location import (
     Location,
     State,
 )
-from recidiviz.persistence.database.base_schema import JusticeCountsBase
+from recidiviz.justice_counts.utils.persistence_utils import (
+    delete_existing_and_create,
+    update_existing_or_create,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -1468,70 +1469,12 @@ class Metadata:
     acquired_by: str = attr.ib()
 
 
-def _get_existing_entity(
-    ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session
-) -> Optional[JusticeCountsBase]:
-    table = ingested_entity.__table__
-    [unique_constraint] = [
-        constraint
-        for constraint in table.constraints
-        if isinstance(constraint, UniqueConstraint)
-    ]
-    query = session.query(table)
-    for column in unique_constraint:
-        # TODO(#4477): Instead of making an assumption about how the property name is formed from the column name, use
-        # an Entity method here to follow the foreign key relationship.
-        if column.name.endswith("_id"):
-            value = getattr(ingested_entity, column.name[: -len("_id")]).id
-        else:
-            value = getattr(ingested_entity, column.name)
-        # Cast to the type because array types aren't deduced properly.
-        query = query.filter(column == cast(value, column.type))
-    table_entity: Optional[JusticeCountsBase] = query.first()
-    return table_entity
-
-
-def _update_existing_or_create(
-    ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session
-) -> schema.JusticeCountsDatabaseEntity:
-    # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
-    # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
-    # (e.g. table instance) so we can clear child entities, so we probably wouldn't win much if anything.
-    table_entity = _get_existing_entity(ingested_entity, session)
-    if table_entity is not None:
-        # TODO(#4477): Instead of assuming the primary key field is named `id`, use an Entity method.
-        ingested_entity.id = table_entity.id
-        # TODO(#4477): Merging here doesn't seem perfect, although it should work so long as the given entity always has
-        # all the properties set explicitly. To avoid the merge, the method could instead take in the entity class as
-        # one parameter and the parameters to construct it separately and then query based on those parameters. However
-        # this would likely make mypy less useful.
-        merged_entity = session.merge(ingested_entity)
-        return merged_entity
-    session.add(ingested_entity)
-    return ingested_entity
-
-
-def _delete_existing_and_create(
-    session: Session,
-    ingested_entity: schema.JusticeCountsDatabaseEntity,
-    entity_cls: Type[schema.JusticeCountsDatabaseEntity],
-) -> schema.JusticeCountsDatabaseEntity:
-    table_entity = _get_existing_entity(ingested_entity, session)
-    if table_entity is not None:
-        table = ingested_entity.__table__
-        # TODO(#4477): need to have a better way to identify id since below method doesn't guarantee id is a valid attr
-        delete_q = table.delete().where(entity_cls.id == table_entity.id)  # type: ignore[attr-defined]
-        session.execute(delete_q)
-    session.add(ingested_entity)
-    return ingested_entity
-
-
 def _convert_entities(
     session: Session, ingested_report: Report, report_metadata: Metadata
 ) -> None:
     """Convert the ingested report into SQLAlchemy models"""
     report = schema.Report(
-        source=_update_existing_or_create(
+        source=update_existing_or_create(
             schema.Source(name=ingested_report.source_name), session
         ),
         type=ingested_report.report_type,
@@ -1544,10 +1487,10 @@ def _convert_entities(
     )
     # Does not delete associated report_table_definitions of report_table_instances,
     # which may in certain cases leave orphaned report_table_definition_rows
-    _delete_existing_and_create(session, report, schema.Report)
+    delete_existing_and_create(session, report, schema.Report)
 
     for table in ingested_report.tables:
-        table_definition = _update_existing_or_create(
+        table_definition = update_existing_or_create(
             schema.ReportTableDefinition(
                 system=table.system,
                 metric_type=table.metric.get_metric_type(),
