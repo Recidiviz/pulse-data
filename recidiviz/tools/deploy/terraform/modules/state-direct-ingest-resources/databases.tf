@@ -84,7 +84,7 @@ resource "google_bigquery_connection" "state_v2_primary_bq_connection" {
 
   cloud_sql {
     instance_id = var.v2_cloudsql_instance_id
-    database    = google_sql_database.state_primary.name
+    database    = google_sql_database.state_v2_primary.name
     type        = "POSTGRES"
     credential {
       username = var.v2_cloudsql_instance_user_name
@@ -103,7 +103,7 @@ resource "google_bigquery_connection" "state_v2_secondary_bq_connection" {
 
   cloud_sql {
     instance_id = var.v2_cloudsql_instance_id
-    database    = google_sql_database.state_secondary.name
+    database    = google_sql_database.state_v2_secondary.name
     type        = "POSTGRES"
     credential {
       username = var.v2_cloudsql_instance_user_name
