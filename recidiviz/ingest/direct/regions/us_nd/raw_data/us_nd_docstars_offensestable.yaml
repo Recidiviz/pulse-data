@@ -1,6 +1,7 @@
 file_tag: docstars_offensestable
 file_description: |-
   Each row represents a particular offense that a person is being charged with, leading to a sentence to supervision.
+data_classification: source
 primary_key_cols:
   - RecID
 columns:

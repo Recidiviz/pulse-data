@@ -6,6 +6,7 @@ file_description: |-
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Control_Number
 #      - Inmate_Number
+data_classification: source
 primary_key_cols: []
 columns:
   - name: Control_Number

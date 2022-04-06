@@ -2,6 +2,7 @@ file_tag: CIS_9080_CCS_LOCATION_TYPE
 file_description: |-
   This is a code table with one row per code and description. The Ccs_Location_Type_Cd is used in the
   Cis_9080_Ccs_Location_Type_Cd field on the CIS_908_CCS_LOCATION table.
+data_classification: source
 primary_key_cols:
   - Ccs_Location_Type_Cd
 columns:

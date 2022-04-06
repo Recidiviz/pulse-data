@@ -1,6 +1,7 @@
 file_tag: LBAKRDTA_TAK042
 file_description: |-
   Conditions. Column prefix: CF.
+data_classification: source
 primary_key_cols:
   - CF_DOC
   - CF_CYC

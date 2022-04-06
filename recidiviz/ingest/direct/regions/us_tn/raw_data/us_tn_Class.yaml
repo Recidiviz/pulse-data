@@ -1,6 +1,7 @@
 file_tag: Class
 file_description: |-
   This table contains all the information about a vocational class at any institution. This table can be considered the "class catalog" listing all classes available across the state.
+data_classification: source
 primary_key_cols:
   - ClassID
 columns:

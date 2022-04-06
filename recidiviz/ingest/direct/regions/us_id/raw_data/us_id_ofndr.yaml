@@ -3,6 +3,7 @@ file_description: |-
   Contains information on all people who have every been tracked by IDOC.
 
   Rows in this table get created via a trigger from the original `offender` table.
+data_classification: source
 primary_key_cols:
   - ofndr_num
 columns:

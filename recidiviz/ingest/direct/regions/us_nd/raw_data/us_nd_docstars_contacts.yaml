@@ -2,6 +2,7 @@ file_tag: docstars_contacts
 file_description: |-
   Each row represents a contact between a supervision officer and person under supervision. This includes the kinds of
   contacts that occurred and where/when they took place.
+data_classification: source
 primary_key_cols:
   - RecID
 columns:

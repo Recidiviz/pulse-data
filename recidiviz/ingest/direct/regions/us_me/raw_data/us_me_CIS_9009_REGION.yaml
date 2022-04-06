@@ -1,6 +1,7 @@
 file_tag: CIS_9009_REGION
 file_description: |-
   This table has all of the region codes and their names.
+data_classification: source
 primary_key_cols:
   - Region_Cd
 columns:

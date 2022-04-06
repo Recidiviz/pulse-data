@@ -23,6 +23,7 @@ from mock import patch
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    RawDataClassification,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -71,6 +72,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag="table_name",
                 file_path="path/to/file.yaml",
                 file_description="file description",
+                data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["col1", "col2"],
                 columns=[
                     RawTableColumnInfo(
@@ -121,6 +123,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag="table_name",
                 file_path="path/to/file.yaml",
                 file_description="file description",
+                data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["col1", "col2"],
                 columns=[
                     RawTableColumnInfo(
@@ -172,6 +175,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag="table_name",
                 file_path="path/to/file.yaml",
                 file_description="file description",
+                data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["col1"],
                 columns=[
                     RawTableColumnInfo(
@@ -242,6 +246,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag="table_name",
                 file_path="path/to/file.yaml",
                 file_description="file description",
+                data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["col1"],
                 columns=[
                     RawTableColumnInfo(

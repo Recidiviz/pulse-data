@@ -1,6 +1,7 @@
 file_tag: cls
 file_description: |-
   List of aftercare courses provided by IDOC.
+data_classification: source
 primary_key_cols:
   - Cls_ID
 columns:

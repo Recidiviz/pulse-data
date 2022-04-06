@@ -1,6 +1,7 @@
 file_tag: prgrm
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - prgrm_id
 columns:

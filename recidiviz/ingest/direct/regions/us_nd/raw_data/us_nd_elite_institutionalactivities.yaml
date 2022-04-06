@@ -8,6 +8,7 @@ file_description: |-
   ground for a lot of only loosely affiliated kinds of data and as it is not commonly kept up-to-date, i.e. many rows
   indicating that programs or activities from many, many years ago are still ongoing.
 # Using these primary keys, there's a few dupes, only differing by end_date and offender_end_reason.
+data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - PROGRAM_ID

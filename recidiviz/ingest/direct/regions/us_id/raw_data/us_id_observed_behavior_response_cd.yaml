@@ -1,6 +1,7 @@
 file_tag: observed_behavior_response_cd
 file_description: |-
   Code table describing the types of responses POs have to specific behaviors. Cooresponds to Response Chart of Idaho response matrix.
+data_classification: source
 primary_key_cols:
   - observed_behavior_response_cd
 columns:

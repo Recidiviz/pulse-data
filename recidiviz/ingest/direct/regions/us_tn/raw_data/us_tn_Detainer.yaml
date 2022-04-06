@@ -1,6 +1,7 @@
 file_tag: Detainer
 file_description: |-
   This table contains one occurrence for each detainer held against a person.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - DetainerType

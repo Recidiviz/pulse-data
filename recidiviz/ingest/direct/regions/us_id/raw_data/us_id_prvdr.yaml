@@ -1,6 +1,7 @@
 file_tag: prvdr
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - prvdr_id
 columns:

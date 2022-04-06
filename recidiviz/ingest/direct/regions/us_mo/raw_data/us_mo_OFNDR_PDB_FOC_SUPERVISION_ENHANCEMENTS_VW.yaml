@@ -1,6 +1,7 @@
 file_tag: OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW
 file_description: |-
   Supervision Enhancements.
+data_classification: source
 primary_key_cols:
   - SUPERVSN_ENH_REF_ID
 columns:

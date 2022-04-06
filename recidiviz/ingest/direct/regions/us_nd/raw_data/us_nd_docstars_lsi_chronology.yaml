@@ -1,6 +1,7 @@
 file_tag: docstars_lsi_chronology
 file_description: |-
   Each row represents a particular LSIR assessment taken by a particular person under supervision.
+data_classification: source
 primary_key_cols:
   - RecID
 columns:

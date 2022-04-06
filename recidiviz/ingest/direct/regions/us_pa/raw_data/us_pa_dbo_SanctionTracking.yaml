@@ -2,6 +2,7 @@ file_tag: dbo_SanctionTracking
 file_description: |-
   A table describing violations of supervision conditions committed during specific periods of supervision, as well as
   the official responses to those violations.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

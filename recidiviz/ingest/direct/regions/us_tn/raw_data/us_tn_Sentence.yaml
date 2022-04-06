@@ -1,6 +1,7 @@
 file_tag: Sentence
 file_description: |-
   This entity stores information about each sentence which applies to a certain offense.  This includes suspendedsentences, probation, SAIU, etc.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - ConvictionCounty

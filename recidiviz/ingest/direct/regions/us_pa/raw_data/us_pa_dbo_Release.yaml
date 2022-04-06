@@ -6,6 +6,7 @@ file_description: |-
 
   This includes when the period of supervision began and the type of supervision is being served. This table is
   typically joined with several other "Release" related tables that round out the picture of a period of supervision.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

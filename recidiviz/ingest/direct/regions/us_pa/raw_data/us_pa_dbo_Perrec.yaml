@@ -8,6 +8,7 @@ file_description: |-
 
   A large majority of the fields in this table are unused by Recidiviz, particularly those which delve into highly
   sensitive information about a person.
+data_classification: source
 primary_key_cols:
   - control_number
 columns:

@@ -3,6 +3,7 @@ file_description: |-
   A table describing conduct events that have taken place in a carceral setting involving an incarcerated person. This
   includes details about the event itself, as well as information about the outcome of that event, e.g. hearings held,
   reports drafted, and consequences handed down.
+data_classification: source
 primary_key_cols:
   - misconduct_number
 columns:

@@ -2,6 +2,7 @@ file_tag: cntc_title_cd
 file_description: |-
   A code table that details the “title” of a supervision contact. Titles are broader categories than types and include
   information such as whether the contact was an initial contact, general contact, critical contact, etc.
+data_classification: source
 primary_key_cols:
   - cntc_title_cd
 columns:

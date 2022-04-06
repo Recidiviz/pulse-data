@@ -1,6 +1,7 @@
 file_tag: PhotoIDRequest
 file_description: |-
   This table contains one occurrence for each photo id eligibility that is sent to the TN Dept. of Safety.  The response code and date and subsequent staff action are stored.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - RequestDate

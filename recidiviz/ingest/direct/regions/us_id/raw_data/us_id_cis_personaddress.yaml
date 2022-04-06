@@ -10,6 +10,7 @@ file_description: |-
 
   - When an address is no longer in use, the column `codeaddresstypeid` is set to `HISTORY`. This means that we only
   have valid address types for currently used addresses.
+data_classification: source
 primary_key_cols:
   - id
 columns:

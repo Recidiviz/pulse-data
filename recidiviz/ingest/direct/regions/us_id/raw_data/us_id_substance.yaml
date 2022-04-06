@@ -1,6 +1,7 @@
 file_tag: substance
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - sbstnc_cd
 columns:

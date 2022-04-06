@@ -1,6 +1,7 @@
 file_tag: ofnse_cat
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - ofnse_cat_cd
 columns:

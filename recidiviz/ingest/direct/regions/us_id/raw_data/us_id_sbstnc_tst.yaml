@@ -3,6 +3,7 @@ file_description: |-
   Contains a row for every substance test requested.
 
   Not in use
+data_classification: source
 primary_key_cols:
   - tst_id
 columns:

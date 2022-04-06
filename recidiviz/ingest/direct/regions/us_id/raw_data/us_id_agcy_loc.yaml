@@ -1,6 +1,7 @@
 file_tag: agcy_loc
 file_description: |-
-    Not in use
+  Not in use
+data_classification: source
 primary_key_cols:
   - agcy_id
 columns:

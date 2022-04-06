@@ -1,6 +1,7 @@
 file_tag: elite_bedassignmenthistory
 file_description: |-
   Each row represents a particular stay of a particular person in a particular bed in a particular incarceration facility.
+data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - BED_ASSIGN_SEQ

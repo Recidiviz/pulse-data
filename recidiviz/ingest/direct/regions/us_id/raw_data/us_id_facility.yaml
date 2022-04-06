@@ -1,6 +1,7 @@
 file_tag: facility
 file_description: |-
   A code table that gives extra details about a given facility.
+data_classification: source
 primary_key_cols:
   - fac_cd
 columns:

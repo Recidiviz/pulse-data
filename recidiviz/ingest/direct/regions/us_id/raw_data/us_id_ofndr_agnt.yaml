@@ -20,6 +20,7 @@ file_description: |-
   copy of `casemgr` that was being sent to us, but in the event of future discrepancies, it is worth re-confirming with
   IDOC whether our data is correct.
 
+data_classification: source
 primary_key_cols:
   - ofndr_num
 columns:

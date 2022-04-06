@@ -1,6 +1,7 @@
 file_tag: InterestedPartyComment
 file_description: |-
   This table contains one occurrence for each set of comments made by an interested party regarding a person  before his parole hearing.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - PartyID

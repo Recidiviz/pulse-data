@@ -1,6 +1,7 @@
 file_tag: Hearing
 file_description: |-
   This table contains one occurrence for each hearing that is conducted for the person.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - HearingDate

@@ -1,6 +1,7 @@
 file_tag: tagMissingColumnsDefined
 file_description: |-
   tagMissingColumnsDefined file description
+data_classification: source
 primary_key_cols:
   - COL1
 columns:

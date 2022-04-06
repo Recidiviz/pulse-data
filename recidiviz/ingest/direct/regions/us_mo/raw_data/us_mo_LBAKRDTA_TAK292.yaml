@@ -1,6 +1,7 @@
 file_tag: LBAKRDTA_TAK292
 file_description: |-
   Citations. Column prefix: JT.
+data_classification: source
 primary_key_cols:
   - JT_DOC
   - JT_CYC

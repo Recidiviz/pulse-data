@@ -2,6 +2,7 @@ file_tag: elite_livingunits
 file_description: |-
   Each row represents a particular living unit which is available for people to be incarcerated in within a particular
   facility.
+data_classification: source
 primary_key_cols:
   - LIVING_UNIT_ID
 columns:

@@ -7,6 +7,7 @@ file_description: |-
   This includes a wide variety of kinds of metadata, including the supervision officer and field office, the offenses
   that this period of supervision was sentenced for, and more. This table is typically joined with several other
   "Release" related tables that round out the picture of a period of supervision.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

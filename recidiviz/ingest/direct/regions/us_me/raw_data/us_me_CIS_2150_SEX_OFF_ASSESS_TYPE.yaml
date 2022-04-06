@@ -2,6 +2,7 @@ file_tag: CIS_2150_SEX_OFF_ASSESS_TYPE
 file_description: |-
   The code table mapping the type of assessment for non-LSI assessments. See the description for
   CIS_215_SEX_OFFENDER_ASSESS to learn more.
+data_classification: source
 primary_key_cols:
   - Sex_Off_Assess_Type_Cd
 columns:

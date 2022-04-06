@@ -17,6 +17,7 @@ file_description: |-
   | 11  | PREGNANCY       | T      | P
   | 12  | LAID OFF        | T      | L
   | 13  | SEASONAL        | T      | G
+data_classification: source
 primary_key_cols:
   - id
 columns:

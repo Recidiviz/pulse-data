@@ -5,6 +5,7 @@ file_description: |-
   - Every supervision contact between a PO and their supervisee
   - Every supervision contact that PO has about a supervisee (i.e. contact with employer or family member)
   - Certain administrative (mostly funding) actions that are taken for a supervisee.
+data_classification: source
 primary_key_cols:
   - sprvsn_cntc_id
 columns:

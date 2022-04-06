@@ -2,6 +2,7 @@ file_tag: docstars_lsi_plan_of_action
 file_description: |-
   Each row represents a plan of action for a person on supervision. This is more granular than an overall LSI supervision plan because each plan can have multiple needs
   and each need can have multiple program referrals to address the need. Each plan of action may not correspond to a program referral.
+data_classification: source
 primary_key_cols: [PLAN_ID]
 columns:
  - name : PLAN_ID

@@ -4,6 +4,7 @@ file_description: |-
   more than one status to be in use at a given time, although it is uncommon. From these legal statuses we get both
   supervision type information (probation, parole, investigation) and information around why the person is incarcerated
   (general incarceration, parole violation, rider)
+data_classification: source
 primary_key_cols:
   - docno
   - incrno

@@ -1,6 +1,7 @@
 file_tag: VantagePointPathways
 file_description: |-
   This table is used to store STRONG-R Treatment Pathways from Vant4gePoint.
+data_classification: source
 primary_key_cols:
   - Recommendation
   - Pathway

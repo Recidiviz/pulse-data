@@ -1,6 +1,7 @@
 file_tag: Staff
 file_description: |-
   This entity contains descriptive information about each employee in the Tennessee Department of Corrections or other agency utilizing the TOMIS system.
+data_classification: source
 primary_key_cols:
   - StaffID
 columns:

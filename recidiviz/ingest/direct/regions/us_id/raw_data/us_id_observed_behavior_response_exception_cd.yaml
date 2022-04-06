@@ -1,6 +1,7 @@
 file_tag: observed_behavior_response_exception_cd
 file_description: |-
   Code table describing types of exceptions that can be applied to the response (reward/sanction) indicated by the Idaho Response Matrix.
+data_classification: source
 primary_key_cols:
   - observed_behavior_response_exception_cd
 columns:

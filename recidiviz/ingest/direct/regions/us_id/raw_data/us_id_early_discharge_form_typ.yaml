@@ -1,6 +1,7 @@
 file_tag: early_discharge_form_typ
 file_description: |-
   A code table that details the different early discharge form types.
+data_classification: source
 primary_key_cols:
   - early_discharge_form_typ_id
 columns:

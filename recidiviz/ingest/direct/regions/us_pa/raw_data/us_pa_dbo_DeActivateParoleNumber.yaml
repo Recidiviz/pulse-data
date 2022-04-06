@@ -2,6 +2,7 @@ file_tag: dbo_DeActivateParoleNumber
 file_description: |-
   A table containing information about supervision identifiers that have been
   deactivated by PBPP along with the new idtentifierthat should be used instead.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
 columns:

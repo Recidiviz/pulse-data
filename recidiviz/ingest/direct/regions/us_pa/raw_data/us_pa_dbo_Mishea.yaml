@@ -6,6 +6,7 @@ file_description: |-
 #      - Inmate_Cnt_Num
 #      - Miscndct_Number
 #      - Sequence_Number
+data_classification: source
 primary_key_cols: []
 columns:
   - name: Inmate_Cnt_Num

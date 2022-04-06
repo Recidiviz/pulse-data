@@ -1,6 +1,7 @@
 file_tag: tagInvalidFileConfigHeaders
 file_description: |-
   tagInvalidFileConfigHeaders file description
+data_classification: source
 primary_key_cols:
   - COL1
 columns:

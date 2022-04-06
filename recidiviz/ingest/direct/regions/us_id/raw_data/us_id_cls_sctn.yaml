@@ -1,6 +1,7 @@
 file_tag: cls_sctn
 file_description: |-
   List of sections for each aftercare course provided by IDOC.
+data_classification: source
 primary_key_cols:
   - cls_sctn_id
 columns:

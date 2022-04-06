@@ -1,6 +1,7 @@
 file_tag: assess_tst
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - assess_tst_id
 columns:

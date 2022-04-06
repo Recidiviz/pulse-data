@@ -1,6 +1,7 @@
 file_tag: Contact
 file_description: |-
   This table contains one occurrence for each person/contact combination.
+data_classification: source
 primary_key_cols:
   - ContactID
 columns:

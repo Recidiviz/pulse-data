@@ -1,6 +1,7 @@
 file_tag: Classification
 file_description: |-
   This entity stores information about the initial and all subsequent classifications of a person. This includes appeals and overrides and results of decisions related to the classification.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - CAFDate

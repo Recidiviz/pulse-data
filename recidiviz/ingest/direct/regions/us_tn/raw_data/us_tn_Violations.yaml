@@ -1,6 +1,7 @@
 file_tag: Violations
 file_description: |-
   TODO(#11323): fill out description once received.
+data_classification: source
 primary_key_cols:
   - TriggerNumber
 columns:

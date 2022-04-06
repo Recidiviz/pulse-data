@@ -2,6 +2,7 @@ file_tag: ADH_OFFENDER_PROFILE_SUMMARY_WRK
 file_description: |-
   This table holds profile information about a person involved in MDOC that is linked
   to a given booking.
+data_classification: source
 primary_key_cols:
   - offender_id
   - offender_number

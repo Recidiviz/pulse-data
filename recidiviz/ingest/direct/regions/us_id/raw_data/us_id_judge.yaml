@@ -1,6 +1,7 @@
 file_tag: judge
 file_description: |-
   A code table that details extra information about all judges in Idaho.
+data_classification: source
 primary_key_cols:
   - judge_cd
 columns:

@@ -1,6 +1,7 @@
 file_tag: VantagePointAssessments
 file_description: |-
   This table contains the results of assessments given to people in the jurisdiction of TDOC.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - AssessmentID

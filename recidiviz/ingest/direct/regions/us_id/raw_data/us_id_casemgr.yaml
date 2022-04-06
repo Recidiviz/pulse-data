@@ -11,6 +11,7 @@ file_description: |-
 
   2. From Michele at IDOC, there are some cases where `ofndr_agnt` and `casemgr` disagree. In those cases,
   we should trust `casemgr` as the source of truth.
+data_classification: source
 primary_key_cols:
   - move_srl
   - case_dtd

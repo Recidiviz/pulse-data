@@ -1,6 +1,7 @@
 file_tag: agdtyp
 file_description: |-
-    Code table that provides descriptions for parole hearing agenda types.
+  Code table that provides descriptions for parole hearing agenda types.
+data_classification: source
 primary_key_cols:
   - par_agenda_typ
 columns:

@@ -2,6 +2,7 @@ file_tag: offender
 file_description: |-
   Contains a single row for everyone who has ever been tracked by IDOC (usually means under investigation, on
   supervision, or incarcerated).
+data_classification: source
 primary_key_cols:
   - docno
 columns:

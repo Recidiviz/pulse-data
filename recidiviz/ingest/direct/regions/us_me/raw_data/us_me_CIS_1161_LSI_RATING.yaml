@@ -2,6 +2,7 @@ file_tag: CIS_1161_LSI_RATING
 file_description: |-
   This is a code table that maps the LSI rating result description to a code used in other raw tables. It also includes
   the LSI rating upper and lower value ranges used to determine the LSI rating.
+data_classification: source
 primary_key_cols:
   - Lsi_Rating_Cd
 columns:

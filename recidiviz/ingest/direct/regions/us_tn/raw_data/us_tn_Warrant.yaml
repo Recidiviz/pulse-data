@@ -1,6 +1,7 @@
 file_tag: Warrant
 file_description: |-
   This table contains one occurrance of each warrant served on the person.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - IssueDate

@@ -2,6 +2,7 @@ file_tag: CIS_9904_PROFESSIONAL
 file_description: |-
   This table contains a list of known "professional" agents referenced in other tables. At present, this appears to
   include only judges and justices.
+data_classification: source
 primary_key_cols:
   - Professional_Id
 columns:

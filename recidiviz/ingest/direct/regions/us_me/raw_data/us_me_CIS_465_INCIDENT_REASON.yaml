@@ -1,6 +1,7 @@
 file_tag: CIS_465_INCIDENT_REASON
 file_description: |-
   This table lists the type of incident for incidents in the CIS_460_INCIDENTS table.
+data_classification: source
 primary_key_cols:
   - Inc_Cd_Rsn_Id
 columns:

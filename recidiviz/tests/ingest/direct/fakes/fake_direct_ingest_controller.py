@@ -57,6 +57,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileConfig,
     DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
+    RawDataClassification,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
@@ -106,6 +107,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 file_tag="tagA",
                 file_path="path/to/tagA.yaml",
                 file_description="file description",
+                data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["mockKey"],
                 columns=[
                     RawTableColumnInfo(
@@ -127,6 +129,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 file_tag="tagB",
                 file_path="path/to/tagB.yaml",
                 file_description="file description",
+                data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["mockKey"],
                 columns=[
                     RawTableColumnInfo(
@@ -148,6 +151,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 file_tag="tagC",
                 file_path="path/to/tagC.yaml",
                 file_description="file description",
+                data_classification=RawDataClassification.VALIDATION,
                 primary_key_cols=["mockKey"],
                 columns=[
                     RawTableColumnInfo(
@@ -168,6 +172,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
                 file_tag="tagWeDoNotIngest",
                 file_path="path/to/tagWeDoNotIngest.yaml",
+                data_classification=RawDataClassification.SOURCE,
                 file_description="file description",
                 primary_key_cols=[],
                 columns=[],

@@ -4,6 +4,7 @@ file_description: |-
   made, it will be updated in this table. It’s important to note that decisions are made on a sentence level, and not
   necessarily on an early discharge request level (i.e. if 1 early discharge request was filled out for 2 sentences,
   one of the sentences could be discharged early and the other might not).
+data_classification: source
 primary_key_cols:
   - early_discharge_sent_id
 columns:

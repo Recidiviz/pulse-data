@@ -7,6 +7,7 @@ file_description: |-
 #      - ParoleCountID
 #      - GuidelineID
 #      - DocketID
+data_classification: source
 primary_key_cols: []
 columns:
   - name: Hist_ID

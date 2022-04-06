@@ -1,6 +1,7 @@
 file_tag: tagRowExtraColumns
 file_description: |-
   tagRowExtraColumns file description
+data_classification: source
 primary_key_cols:
   - id_column
 columns:

@@ -40,6 +40,9 @@ from pandas import read_csv
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    RawDataClassification,
+)
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 
 
@@ -81,6 +84,7 @@ def write_skeleton_config(
     raw_table_path: str,
     state_code: str,
     delimiter: str,
+    data_classification: RawDataClassification,
     allow_overwrite: bool,
     add_description_placeholders: bool,
 ) -> None:
@@ -114,6 +118,7 @@ def write_skeleton_config(
         f"file_tag: {table_name}",
         "file_description: |-",
         f"  {PLACEHOLDER_TO_DO_STRING}(): Fill in the file description",
+        f"data_classification: {data_classification.value}",
         "primary_key_cols: []",
         "columns:",
     ]
@@ -135,6 +140,7 @@ def create_ingest_config_skeleton(
     raw_table_paths: List[str],
     state_code: str,
     delimiter: str,
+    data_classification: RawDataClassification,
     allow_overwrite: bool,
     initialize_state: bool,
     add_description_placeholders: bool,
@@ -152,7 +158,12 @@ def create_ingest_config_skeleton(
 
     for path in raw_table_paths:
         write_skeleton_config(
-            path, state_code, delimiter, allow_overwrite, add_description_placeholders
+            path,
+            state_code,
+            delimiter,
+            data_classification,
+            allow_overwrite,
+            add_description_placeholders,
         )
 
 
@@ -165,6 +176,13 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         dest="delimiter",
         help="String used to separate fields.",
         type=str,
+        required=True,
+    )
+
+    parser.add_argument(
+        "--classification",
+        help="Whether this file has 'source' or 'validation' data",
+        type=RawDataClassification,
         required=True,
     )
 
@@ -234,6 +252,7 @@ if __name__ == "__main__":
             [args.file_path],
             args.state_code,
             args.delimiter,
+            args.classification,
             args.allow_overwrite,
             args.initialize_state,
             args.add_description_placeholders,
@@ -247,6 +266,7 @@ if __name__ == "__main__":
             ],
             args.state_code,
             args.delimiter,
+            args.classification,
             args.allow_overwrite,
             args.initialize_state,
             args.add_description_placeholders,

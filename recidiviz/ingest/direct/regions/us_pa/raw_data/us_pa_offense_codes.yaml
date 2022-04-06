@@ -7,6 +7,7 @@ file_description: |-
 
   This file was initially provided one time as a static transfer in November 2020. If it
   is transferred again, it should be manually updated in us_pa_raw_data.
+data_classification: source
 primary_key_cols:
   - Code
 columns:

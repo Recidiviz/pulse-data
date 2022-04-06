@@ -3,6 +3,7 @@ file_description: |-
   Contains a single row for current legal status as it exists in the Idaho CIS system.
   In cases where a person has multiple statuses (in offstat), this table lists only
   the "most restrictive" custody type.
+data_classification: source
 primary_key_cols:
   - ofndr_num
   - stat_beg_dt

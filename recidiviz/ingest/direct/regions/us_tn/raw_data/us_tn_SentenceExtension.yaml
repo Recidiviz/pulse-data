@@ -1,6 +1,7 @@
 file_tag: SentenceExtension
 file_description: |- 
   This table contains one occurrence for each extension posted for the person's sentence.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - ConvictionCounty

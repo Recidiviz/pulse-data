@@ -1,6 +1,7 @@
 file_tag: CIS_4035_ASSESS_PROG_TYPE
 file_description: |-
   The code table mapping the code to the description of type of program the assessment is for.
+data_classification: source
 primary_key_cols:
   - Assess_Prog_Type_Cd
 columns:

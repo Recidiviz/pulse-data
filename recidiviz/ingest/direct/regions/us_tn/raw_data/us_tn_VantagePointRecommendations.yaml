@@ -1,6 +1,7 @@
 file_tag: VantagePointRecommendations
 file_description: |-
   This table is used to store STRONG-R Case Plan recommendations from Vant4gePoint.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - AssessmentID

@@ -1,6 +1,7 @@
 file_tag: CIS_4000_CHARGE_STATUS
 file_description: |-
   This is a code table that has charge outcome values that are referenced from CIS_400_CHARGE.
+data_classification: source
 primary_key_cols:
   - Charge_Outcome_Cd
 columns:

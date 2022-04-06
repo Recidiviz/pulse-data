@@ -2,6 +2,7 @@ file_tag: dbo_BoardAction
 file_description: |-
   A table describing actions taken by the Pennsylvania Board of Parole and Probation in response to some action taken by
   or charge levied against a person under supervision, e.g. responses to supervision violations.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

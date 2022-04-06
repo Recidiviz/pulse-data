@@ -1,6 +1,7 @@
 file_tag: CIS_9001_EMPLOYEE_TYPE
 file_description: |-
   This table maps the type of employee to the code used in the CIS_900_EMPLOYEE table.
+data_classification: source
 primary_key_cols:
   - Employee_Type_Cd
 columns:

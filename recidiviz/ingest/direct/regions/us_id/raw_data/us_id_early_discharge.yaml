@@ -4,6 +4,7 @@ file_description: |-
   being supervised themselves. The columns in this table are filled out / updated manually when there are updates.
   Each early discharge form can be applied to multiple sentences, but to get that information you must join with
   `early_discharge_sent`
+data_classification: source
 primary_key_cols:
   - early_discharge_id
 columns:

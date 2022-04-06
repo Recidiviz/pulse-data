@@ -1,6 +1,7 @@
 file_tag: PriorRecord
 file_description: |-
   TODO(#11721): Update with definition.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - OffenseDate
@@ -16,49 +17,49 @@ columns:
   - name: SequenceNumber
     description: |-
       TODO(#11721): Update with definition.
-  - name:   ArrestDate
+  - name: ArrestDate
     is_datetime: True
     description: |-
       TODO(#11721): Update with definition.
-  - name:   DispositionDate
+  - name: DispositionDate
     is_datetime: True
     description: |-
       TODO(#11721): Update with definition.
-  - name:   ChargeOffense
+  - name: ChargeOffense
     description: |-
       TODO(#11721): Update with definition.
-  - name:  ConvictionOffense
+  - name: ConvictionOffense
     description: |-
       TODO(#11721): Update with definition.
-  - name:  CourtName
+  - name: CourtName
     description: |-
       TODO(#11721): Update with definition.
-  - name:   Disposition
+  - name: Disposition
     description: |-
       TODO(#11721): Update with definition.
-  - name:   DispositionText
+  - name: DispositionText
     description: |-
       TODO(#11721): Update with definition.
-  - name:   DocketNumber
+  - name: DocketNumber
     description: |-
       TODO(#11721): Update with definition.
-  - name:   ParoleProbationRevocation
+  - name: ParoleProbationRevocation
     description: |-
       TODO(#11721): Update with definition.
-  - name:   CrimeType
+  - name: CrimeType
     description: |-
       TODO(#11721): Update with definition..
-  - name:   DomesticViolation
+  - name: DomesticViolation
     description: |-
       TODO(#11721): Update with definition.
-  - name:   PostedByStaffID
+  - name: PostedByStaffID
     description: |-
       TODO(#11721): Update with definition.
-  - name:   PostedDate
+  - name: PostedDate
     is_datetime: True
     description: |-
       TODO(#11721): Update with definition.
-  - name:   LastUpdateStaffID
+  - name: LastUpdateStaffID
     description: |-
       TODO(#11721): Update with definition.
   - name: LastUpdateUserID

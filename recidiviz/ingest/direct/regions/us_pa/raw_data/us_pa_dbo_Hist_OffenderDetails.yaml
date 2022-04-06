@@ -6,6 +6,7 @@ file_description: |-
 #      - ParoleNumber
 #      - ParoleCountID
 #      - HOffenderDetailsID
+data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber

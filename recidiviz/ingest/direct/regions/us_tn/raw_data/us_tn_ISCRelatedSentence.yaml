@@ -1,6 +1,7 @@
 file_tag: ISCRelatedSentence
 file_description: |-
   This table contains one occurrence for each sentence that is related to an ISC sentence. An ISC related sentence can be either consecutive to or concurrent with the "parent" ISC sentence.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - Jurisdication

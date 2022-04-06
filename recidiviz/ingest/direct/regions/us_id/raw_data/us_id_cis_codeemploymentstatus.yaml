@@ -11,6 +11,7 @@ file_description: |-
   | 3   | U    | Unknown         | T      |
   | 4   | P    | Proposed        | T      |
   | 5   | R    | Rejected        | T      |
+data_classification: source
 primary_key_cols:
   - id
 columns:

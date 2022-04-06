@@ -1,6 +1,7 @@
 file_tag: LBAKRDTA_VAK003
 file_description: |-
   DOB View.
+data_classification: source
 primary_key_cols:
   - DOC_ID_DOB
 columns:

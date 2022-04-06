@@ -1,6 +1,7 @@
 file_tag: offense_crime_grp
 file_description: |-
   A code table that matches offenses to crime categories
+data_classification: source
 primary_key_cols:
   - ofnse_crm_grp_id
 columns:

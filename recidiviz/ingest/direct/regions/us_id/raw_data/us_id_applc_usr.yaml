@@ -3,6 +3,7 @@ file_description: |-
   Code table that has a single row for all past and present IDOC employees. This table does NOT include
   job role however, and because of that we often use the `employee` table instead to find up-to-date
   information about IDOC employees.
+data_classification: source
 primary_key_cols:
   - usr_id
 columns:

@@ -2,6 +2,7 @@ file_tag: RECIDIVIZ_REFERENCE_control_number_linking_ids
 file_description: |-
   A table containing a Recidiviz-generated pseudo-id that links PADOC control numbers
   that have been used for the same person.
+data_classification: source
 primary_key_cols:
   - control_number
   - pseudo_linking_id

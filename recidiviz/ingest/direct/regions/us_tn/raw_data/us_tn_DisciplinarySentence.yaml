@@ -1,6 +1,7 @@
 file_tag: DisciplinarySentence
 file_description: |-
   This table contains information about the sentences which result from a disciplinary.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - IncidentID

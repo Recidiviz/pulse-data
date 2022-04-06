@@ -1,6 +1,7 @@
 file_tag: ofndr_sctn_eval
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - ofndr_tst_id
   - tst_sctn_num

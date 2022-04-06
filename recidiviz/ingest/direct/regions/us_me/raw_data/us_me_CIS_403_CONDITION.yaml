@@ -1,6 +1,7 @@
 file_tag: CIS_403_CONDITION
 file_description: |-
   This table includes information about types of conditions imposed on supervision sentences.
+data_classification: source
 primary_key_cols:
   - Condition_Id
 columns:

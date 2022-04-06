@@ -2,6 +2,7 @@ file_tag: dbo_DOB
 file_description: |-
   A table containing information about dates of birth for people ever supervised by PADOC.
   NOT REFRESHED REGULARLY.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - DOBID

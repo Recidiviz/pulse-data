@@ -1,6 +1,7 @@
 file_tag: CIS_1163_LSI_OVERRIDE_TYPE
 file_description: |-
   This is a code table for the reasons associated with overriding an LSI rating for a client's supervision level.
+data_classification: source
 primary_key_cols:
   - Override_Type_Cd
 columns:

@@ -1,6 +1,7 @@
 file_tag: lawcd
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - law_cd
 columns:

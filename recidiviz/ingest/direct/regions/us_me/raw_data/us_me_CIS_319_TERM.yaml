@@ -7,6 +7,7 @@ file_description: |-
   though their status will be listed as incarcerated. Juveniles also may not have an associated term.
   A new "Society In" transfer record would generate a new Term record. This table is updated daily to reflect
   new early and current release dates that are affected by good time earned, lost, and restored.
+data_classification: source
 primary_key_cols:
   - Term_Id
 columns:

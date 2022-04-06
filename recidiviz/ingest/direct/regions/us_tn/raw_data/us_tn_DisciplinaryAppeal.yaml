@@ -1,6 +1,7 @@
 file_tag: DisciplinaryAppeal
 file_description: |-
   This table contains one occurrence for each appeal made by a person for a disciplinary. Unlimited appeals may be filed.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - IncidentID

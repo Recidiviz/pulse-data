@@ -2,6 +2,7 @@ file_tag: dbo_Hist_Treatment
 file_description: |-
   A table with information on referred treatments for people under supervision in the
   past. Rows are moved to this table from dbo_Treatment when a person exits supervision.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - TrtHistoryID

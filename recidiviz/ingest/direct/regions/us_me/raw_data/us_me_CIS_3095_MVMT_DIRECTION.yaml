@@ -2,19 +2,20 @@ file_tag: CIS_3095_MVMT_DIRECTION
 file_description: |-
   This is a code table with one row per code and description. The movement type code is used in the
     Cis_3095_Mvmt_Direction_Cd field on the CIS_309_MOVEMENT table.
+data_classification: source
 primary_key_cols:
   - Mvmt_Direction_Cd
 columns:
-  - name : Created_By_Tx
-  - name : Created_On_Date
-  - name : E_Mvmt_Direction_Desc
+  - name: Created_By_Tx
+  - name: Created_On_Date
+  - name: E_Mvmt_Direction_Desc
     description: |-
       The value for the Cis_3095_Mvmt_Direction_Cd code. See CIS_309_MOVEMENT config for all possible values.
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
-  - name : Modified_On_Date
-  - name : System_Ref_Comments_Tx
-  - name : System_Ref_Tx
-  - name : Mvmt_Direction_Cd
-    description : |-
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
+  - name: Modified_On_Date
+  - name: System_Ref_Comments_Tx
+  - name: System_Ref_Tx
+  - name: Mvmt_Direction_Cd
+    description: |-
       Primary key field and movement direction code used in CIS_309_MOVEMENT table

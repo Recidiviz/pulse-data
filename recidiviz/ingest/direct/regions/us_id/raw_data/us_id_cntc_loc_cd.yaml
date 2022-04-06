@@ -1,6 +1,7 @@
 file_tag: cntc_loc_cd
 file_description: |-
   A code table that gives details about locations where supervision contacts occur.
+data_classification: source
 primary_key_cols:
   - cntc_loc_cd
 columns:

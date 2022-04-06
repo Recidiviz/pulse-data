@@ -1,6 +1,7 @@
 file_tag: CIS_4002_PLEA_TYPE
 file_description: |-
   This table lists all of the plea types that are applicable within MDOC.
+data_classification: source
 primary_key_cols:
   - Plea_Type_Cd
 columns:

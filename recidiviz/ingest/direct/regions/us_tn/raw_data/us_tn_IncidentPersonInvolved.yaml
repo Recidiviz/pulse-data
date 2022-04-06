@@ -1,6 +1,7 @@
 file_tag: IncidentPersonInvolved
 file_description: |-
   This table contains all information about those people associated with an incident. These may be offenders, staff,outside contacts, relatives, visitors, etc.
+data_classification: source
 primary_key_cols:
   - IncidentID
   - PersonID

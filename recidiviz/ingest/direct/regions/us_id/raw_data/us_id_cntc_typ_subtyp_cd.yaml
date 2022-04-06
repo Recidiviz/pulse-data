@@ -1,6 +1,7 @@
 file_tag: cntc_typ_subtyp_cd
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - cntc_typ_cd
   - cnt_subtyp_cd

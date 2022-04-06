@@ -2,6 +2,7 @@ file_tag: docstars_REF_PROVIDER_LOCATION
 file_description: |-
   Each row represents a Free Through Recovery (FTR) provider location. These are actual
   office locations that provide the service.
+data_classification: source
 primary_key_cols:
   - LOCATION_ID
 columns:

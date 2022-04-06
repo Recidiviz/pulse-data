@@ -2,6 +2,7 @@ file_tag: CIS_1241_SUPERVISION_STATUS
 file_description: |-
   The code table that lists the values used for the Cis_1241_Super_Status_Cd field in the
   CIS_124_SUPERVISION_HISTORY_TABLE.
+data_classification: source
 primary_key_cols:
   - Supervision_Status_Cd
 columns:

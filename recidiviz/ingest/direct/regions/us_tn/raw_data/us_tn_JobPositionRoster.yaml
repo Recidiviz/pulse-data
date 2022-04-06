@@ -1,6 +1,7 @@
 file_tag: JobPositionRoster
 file_description: |-
   This table contains one occurrence for every position available within a job code at the specified site.
+data_classification: source
 primary_key_cols:
   - SiteID
   - JobID

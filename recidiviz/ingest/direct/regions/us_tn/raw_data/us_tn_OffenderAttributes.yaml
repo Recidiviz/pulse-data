@@ -1,6 +1,7 @@
 file_tag: OffenderAttributes
 file_description: |-
   This table contains miscellaneous information about a person, such as height, weight, hair color, etc.
+data_classification: source
 primary_key_cols:
   - OffenderID
 columns:

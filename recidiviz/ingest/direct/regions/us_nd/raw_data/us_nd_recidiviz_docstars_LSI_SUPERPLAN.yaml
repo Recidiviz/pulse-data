@@ -2,6 +2,7 @@ file_tag: recidiviz_docstars_LSI_SUPERPLAN
 file_description: |-
   Each row represents an LSI supervision plan. Each plan can be addressing multiple needs and each need may have
   multiple program referrals for addressing the need.
+data_classification: source
 primary_key_cols: [LSI_SUPERPLAN_ID]
 columns:
  - name : LSI_SUPERPLAN_ID

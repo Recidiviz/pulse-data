@@ -1,6 +1,7 @@
 file_tag: statrls
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - stat_rls_typ
   - stat_cd

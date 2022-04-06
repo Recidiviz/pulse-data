@@ -4,6 +4,7 @@ file_description: |-
   location.
 
   We use this table over `applc_usr` because this table has job roles.
+data_classification: source
 primary_key_cols:
   - empl_cd
 columns:

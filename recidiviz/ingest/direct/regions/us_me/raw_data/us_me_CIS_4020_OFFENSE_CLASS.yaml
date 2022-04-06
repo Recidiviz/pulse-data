@@ -1,6 +1,7 @@
 file_tag: CIS_4020_OFFENSE_CLASS
 file_description: |-
   This table lists the offense classes that are referenced in the sentencing table.
+data_classification: source
 primary_key_cols:
   - Offense_Class_Cd
 columns:

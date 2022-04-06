@@ -1,6 +1,7 @@
 file_tag: tagNormalizationConflict
 file_description: |-
   tagNormalizationConflict file description
+data_classification: source
 primary_key_cols:
   - COL_1
 columns:

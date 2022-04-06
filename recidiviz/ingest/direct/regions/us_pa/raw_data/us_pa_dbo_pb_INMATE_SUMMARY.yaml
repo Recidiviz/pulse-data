@@ -6,6 +6,7 @@ file_description: |-
 #      - sid
 #      - inmate_number
 #      - control_number
+data_classification: source
 primary_key_cols: []
 columns:
   - name: sid

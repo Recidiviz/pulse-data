@@ -11,6 +11,7 @@ file_description: |-
   | 3   | Week               | WW              | T      |
   | 4   | Month              | MM              | T      |
   | 5   | Year               | YY              | T      |
+data_classification: source
 primary_key_cols:
   - id
 columns:

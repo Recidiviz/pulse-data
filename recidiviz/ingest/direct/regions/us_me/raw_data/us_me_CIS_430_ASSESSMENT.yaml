@@ -1,6 +1,7 @@
 file_tag: CIS_430_ASSESSMENT
 file_description: |-
   This table includes all of the assessments that a client has completed.
+data_classification: source
 primary_key_cols:
   - Assess_Id
   - Cis_100_Client_Id

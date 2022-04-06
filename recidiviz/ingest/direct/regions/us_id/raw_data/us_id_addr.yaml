@@ -1,6 +1,7 @@
 file_tag: addr
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - addr_id
 columns:

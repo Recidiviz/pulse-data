@@ -2,6 +2,7 @@ file_tag: dbo_ConditionCodeDescription
 file_description: |-
   An addendum to dbo_ConditionCode which adds free text descriptions of what exactly the supervision condition entails
   and why it was imposed.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

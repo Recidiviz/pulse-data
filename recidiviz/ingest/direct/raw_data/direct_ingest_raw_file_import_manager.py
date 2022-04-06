@@ -19,6 +19,7 @@ import csv
 import datetime
 import logging
 import os
+from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -64,6 +65,20 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
+
+
+class RawDataClassification(Enum):
+    """Defines whether this is source or validation data.
+
+    Used to keep the two sets of data separate. This prevents validation data from being
+    ingested, or source data from being used to validate our metrics.
+    """
+
+    # Data to be ingested and used as the basis of our entities and calcs.
+    SOURCE = "source"
+
+    # Used to validate our entities and calcs.
+    VALIDATION = "validation"
 
 
 @attr.s
@@ -124,6 +139,9 @@ class DirectIngestRawFileConfig:
 
     # Description of the raw data file contents
     file_description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+    # Data classification of this raw file
+    data_classification: RawDataClassification = attr.ib()
 
     # A list of columns that constitute the primary key for this file. If empty, this table cannot be used in an ingest
     # view query and a '*_latest' view will not be generated for this table. May be left empty for the purposes of
@@ -258,6 +276,7 @@ class DirectIngestRawFileConfig:
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop("primary_key_cols", list)
         file_description = file_config_dict.pop("file_description", str)
+        data_class = file_config_dict.pop("data_classification", str)
         columns = file_config_dict.pop("columns", list)
 
         column_names = [column["name"] for column in columns]
@@ -299,6 +318,7 @@ class DirectIngestRawFileConfig:
             file_tag=file_tag,
             file_path=file_path,
             file_description=file_description,
+            data_classification=RawDataClassification(data_class),
             primary_key_cols=primary_key_cols,
             columns=[
                 RawTableColumnInfo(

@@ -2,6 +2,7 @@ file_tag: ADH_OFFENDER_BOOKING_PROFILE
 file_description: |-
   This table indicates the profile associated with a person and their booking within MDOC,
   which represents a jurisdiction or stint of being involved within MDOC.
+data_classification: source
 primary_key_cols:
   - offender_booking_id
   - profile_date

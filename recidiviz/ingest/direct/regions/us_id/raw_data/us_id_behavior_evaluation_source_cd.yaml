@@ -1,6 +1,7 @@
 file_tag: behavior_evaluation_source_cd
 file_description: |-
   Code table describing which form was used to document the behavior evaluation. According to IDOC IT, this form was originally designed to be linked to both case updates and supervision contacts. However, the functionality in CIS was only implemented for `sprvsn_cntc`.
+data_classification: source
 primary_key_cols:
   - behavior_evaluation_source_cd
 columns:

@@ -1,6 +1,7 @@
 file_tag: LBAKRDTA_TAK076
 file_description: |-
   Sentence / Violation Xref. Column prefix: CZ.
+data_classification: source
 primary_key_cols:
   - CZ_DOC
   - CZ_CYC

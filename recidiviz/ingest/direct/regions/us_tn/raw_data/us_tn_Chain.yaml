@@ -1,6 +1,7 @@
 file_tag: Chain
 file_description: |-
   This table contains one occurrence for each chain item scheduled for the person. A chain item is a reserved location on a vehicle for the person's verified travel.
+data_classification: source
 primary_key_cols:
   - AppointmentDate
   - SiteID

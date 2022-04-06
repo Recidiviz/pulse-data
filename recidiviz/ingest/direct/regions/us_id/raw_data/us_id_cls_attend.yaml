@@ -1,6 +1,7 @@
 file_tag: cls_attend
 file_description: |-
   A record of attendance for class meetings
+data_classification: source
 primary_key_cols:
   - cls_attnd_id
 columns:

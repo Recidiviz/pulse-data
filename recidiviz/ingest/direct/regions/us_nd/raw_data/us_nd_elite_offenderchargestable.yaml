@@ -9,6 +9,7 @@ file_description: |-
   state charge object. ND says this should happen rarely, so we use a raw data migration to remove the offending rows.
   See https://github.com/Recidiviz/pulse-data/pull/8230 and https://github.com/Recidiviz/pulse-data/issues/5313
   for additional details.
+data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - CHARGE_SEQ
