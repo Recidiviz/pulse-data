@@ -36,6 +36,9 @@ from recidiviz.calculator import dataflow_config
 from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
+from recidiviz.calculator.normalized_state_update_lock_manager import (
+    NormalizedStateUpdateLockManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
 )
@@ -51,10 +54,6 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
     make_most_recent_metric_view_builders,
 )
 from recidiviz.persistence.database import schema_utils
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
-    CloudSqlToBQLockManager,
-)
-from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -477,16 +476,15 @@ def _update_normalized_state_dataset() -> None:
     """
     lock_id = str(uuid.uuid4())
     logging.info("Request lock id: %s", lock_id)
-    schema_type = SchemaType.STATE
 
     logging.info(
         "Acquiring lock on CloudSQL to BQ state refresh to prevent the "
         "`state` dataset from being updated during this process..."
     )
-    lock_manager = CloudSqlToBQLockManager()
-    lock_manager.acquire_lock(schema_type=schema_type, lock_id=lock_id)
+    lock_manager = NormalizedStateUpdateLockManager()
+    lock_manager.acquire_lock(lock_id=lock_id)
 
-    if not lock_manager.can_proceed(schema_type):
+    if not lock_manager.can_proceed():
         raise AssertionError(
             "Unable to acquire lock on CloudSQL to BQ state refresh. "
             "Due to the sequencing of our orchestration, this should not happen. "
@@ -531,8 +529,7 @@ def _update_normalized_state_dataset() -> None:
     )
 
     logging.info("Releasing lock on CloudSQL to BQ state refresh.")
-    lock_manager = CloudSqlToBQLockManager()
-    lock_manager.release_lock(SchemaType.STATE)
+    lock_manager.release_lock()
 
 
 def _decommission_dataflow_metric_table(
