@@ -67,6 +67,7 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "nextSpecialConditionsCheck": "2021-12-02",
                     "officerId": "100",
                     "personExternalId": "200",
+                    "pseudonymizedId": "p200",
                     "personName": {
                         "givenNames": "Matilda",
                         "middleNames": "",
