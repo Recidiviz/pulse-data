@@ -18,6 +18,7 @@
 
 from typing import Optional
 
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -29,20 +30,24 @@ class UserAccountInterface:
     """Contains methods for setting and getting User info."""
 
     @staticmethod
-    def create_user(
+    def create_or_update_user(
         session: Session,
         email_address: str,
         name: Optional[str] = None,
         auth0_user_id: Optional[str] = None,
-    ) -> None:
+    ) -> UserAccount:
         validate_email_address(email_address)
-        session.add(
-            UserAccount(
-                email_address=email_address,
-                name=name,
-                auth0_user_id=auth0_user_id,
+        insert_statement = (
+            insert(UserAccount)
+            .values(email_address=email_address, name=name, auth0_user_id=auth0_user_id)
+            .on_conflict_do_update(
+                constraint="unique_email_address",
+                set_=dict(auth0_user_id=auth0_user_id),
             )
         )
+        result = session.execute(insert_statement)
+        session.commit()
+        return session.query(UserAccount).get(result.inserted_primary_key)
 
     @staticmethod
     def get_user_by_email_address(session: Session, email_address: str) -> UserAccount:
