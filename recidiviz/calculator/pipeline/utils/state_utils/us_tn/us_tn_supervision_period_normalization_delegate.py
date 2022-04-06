@@ -15,12 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_TN implementation of the StateSpecificSupervisionNormalizationDelegate."""
+import datetime
+from typing import List
+
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 class UsTnSupervisionNormalizationDelegate(
     StateSpecificSupervisionNormalizationDelegate
 ):
     """US_TN implementation of the StateSpecificSupervisionNormalizationDelegate."""
+
+    # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
+    #  periods with dates of 9999-12-31.
+    def drop_bad_unmodified_periods(
+        self, supervision_periods: List[StateSupervisionPeriod]
+    ) -> List[StateSupervisionPeriod]:
+        return [
+            sp
+            for sp in supervision_periods
+            if sp.termination_date != datetime.date(9999, 12, 31)
+        ]
