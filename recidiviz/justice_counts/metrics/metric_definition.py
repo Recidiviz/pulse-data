@@ -72,6 +72,9 @@ class AggregatedDimension:
     # Whether the disaggregated values should sum to the total metric value
     should_sum_to_total: bool = False
 
+    def dimension_identifier(self) -> str:
+        return self.dimension.dimension_identifier()
+
 
 @attr.define(frozen=True)
 class MetricDefinition:

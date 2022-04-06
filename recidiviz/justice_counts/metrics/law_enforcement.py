@@ -17,7 +17,10 @@
 """Defines all Justice Counts metrics for the Law Enforcement system."""
 
 from recidiviz.justice_counts.dimensions.corrections import PopulationType
-from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
+from recidiviz.justice_counts.dimensions.law_enforcement import (
+    CallType,
+    SheriffBudgetType,
+)
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_definition import (
@@ -71,6 +74,29 @@ residents = MetricDefinition(
     ],
     filtered_dimensions=[FilteredDimension(dimension=PopulationType.RESIDENTS)],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False)
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True)
     ],
+)
+
+calls_for_service = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.CALLS_FOR_SERVICE,
+    display_name="Calls for Service",
+    description="Measures the number of calls for service routed to the agency, by call type.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    reporting_note="Do not include calls that are officer-initiated.",
+    contexts=[
+        Context(
+            key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
+            label="Whether number includes all calls or just calls responded to.",
+            required=True,
+        ),
+        Context(
+            key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,
+            label="All agencies available for response.",
+            required=False,
+        ),
+    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=CallType, required=True)],
 )

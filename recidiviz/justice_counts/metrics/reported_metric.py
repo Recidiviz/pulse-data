@@ -81,12 +81,14 @@ class ReportedMetric:
     value: float = attr.field()
 
     # Additional context that the agency reported on this metric
-    contexts: Optional[List[ReportedContext]] = None
+    contexts: Optional[List[ReportedContext]] = attr.field(default=None)
     # Values for aggregated dimensions
-    aggregated_dimensions: Optional[List[ReportedAggregatedDimension]] = None
+    aggregated_dimensions: Optional[List[ReportedAggregatedDimension]] = attr.field(
+        default=None
+    )
 
     @value.validator
-    def validate(self, _attribute: attr.Attribute, value: Any) -> None:
+    def validate_value(self, _attribute: attr.Attribute, value: Any) -> None:
         # Validate that, for each reported aggregate dimension for which sum_to_total = True,
         # the reported values for this aggregate dimension sum to the total value metric
         dimension_identifier_to_reported_dimension = {
@@ -97,7 +99,7 @@ class ReportedMetric:
             if not dimension_definition.should_sum_to_total:
                 continue
 
-            dimension_identifier = dimension_definition.dimension.dimension_identifier()
+            dimension_identifier = dimension_definition.dimension_identifier()
             reported_dimension_values = dimension_identifier_to_reported_dimension[
                 dimension_identifier
             ].dimension_to_value.values()
@@ -107,6 +109,38 @@ class ReportedMetric:
                     f"Sums across dimension {dimension_identifier} do not equal "
                     "the total metric value."
                 )
+
+    @contexts.validator
+    def validate_contexts(self, _attribute: attr.Attribute, value: Any) -> None:
+        # Validate that all required contexts have been reported
+        required_context_keys = {
+            context.key
+            for context in self.metric_definition.contexts or []
+            if context.required is True
+        }
+        reported_context_keys = {context.key for context in value}
+        missing_context_keys = required_context_keys.difference(reported_context_keys)
+        if len(missing_context_keys) > 0:
+            raise ValueError(
+                f"The following required contexts are missing: {missing_context_keys}"
+            )
+
+    @aggregated_dimensions.validator
+    def validate_aggregate_dimensions(
+        self, _attribute: attr.Attribute, value: Any
+    ) -> None:
+        # Validate that all required aggregated dimensions have been reported
+        required_dimensions = {
+            dimension.dimension_identifier()
+            for dimension in self.metric_definition.aggregated_dimensions or []
+            if dimension.required is True
+        }
+        reported_dimensions = {dimension.dimension_identifier() for dimension in value}
+        missing_dimensions = required_dimensions.difference(reported_dimensions)
+        if len(missing_dimensions) > 0:
+            raise ValueError(
+                f"The following required dimensions are missing: {missing_dimensions}"
+            )
 
     @property
     def metric_definition(self) -> MetricDefinition:

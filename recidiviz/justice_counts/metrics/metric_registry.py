@@ -24,6 +24,7 @@ from recidiviz.justice_counts.metrics import law_enforcement
 METRICS = [
     law_enforcement.annual_budget,
     law_enforcement.residents,
+    law_enforcement.calls_for_service,
 ]
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key
