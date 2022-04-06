@@ -551,12 +551,7 @@ class ClassifyEvents(beam.DoFn):
 
         events = identifier.find_events(person, all_kwargs)
 
-        if not events:
-            logging.info(
-                "No valid events for person with id: %d. Excluding them from the calculations.",
-                person.person_id,
-            )
-        else:
+        if events:
             yield person.person_id, (person, events)
 
     def to_runner_api_parameter(
