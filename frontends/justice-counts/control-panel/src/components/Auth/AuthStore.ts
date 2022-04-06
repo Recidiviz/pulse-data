@@ -25,10 +25,10 @@ import { makeAutoObservable, runInAction } from "mobx";
 import qs from "qs";
 
 interface AuthStoreProps {
-  authSettings: Auth0ClientOptions;
+  authSettings: Auth0ClientOptions | undefined;
 }
 export class AuthStore {
-  readonly authSettings: Auth0ClientOptions;
+  readonly authSettings: Auth0ClientOptions | undefined;
 
   private authClient: Auth0Client | undefined;
 
@@ -50,7 +50,7 @@ export class AuthStore {
   }
 
   private get auth0Client(): Promise<Auth0Client> {
-    return createAuth0Client(this.authSettings);
+    return createAuth0Client(this.authSettings as Auth0ClientOptions);
   }
 
   async authenticate(): Promise<void> {

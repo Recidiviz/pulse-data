@@ -15,34 +15,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { useContext } from "react";
+import React from "react";
+import styled from "styled-components/macro";
 
-import NoAuthConfigErrorPage from "../components/Error/NoAuthConfigErrorPage";
-import rootStore from "./RootStore";
+const NoAuthConfigError = styled.div`
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
 
-const StoreContext = React.createContext<typeof rootStore | undefined>(
-  undefined
-);
-
-export const StoreProvider: React.FC<React.ReactNode> = ({
-  children,
-}): React.ReactElement => {
-  if (window.AUTH0_CONFIG) {
-    return (
-      <StoreContext.Provider value={rootStore}>
-        {children}
-      </StoreContext.Provider>
-    );
-  }
-  return <NoAuthConfigErrorPage />;
+const NoAuthConfigErrorPage = () => {
+  return (
+    <NoAuthConfigError>
+      No authentication configuration detected. Please refresh the page or try
+      again later.
+    </NoAuthConfigError>
+  );
 };
 
-export function useStore(): typeof rootStore {
-  const context = useContext(StoreContext);
-
-  if (context === undefined) {
-    throw new Error("useStore must be used within a StoreProvider");
-  }
-
-  return context;
-}
+export default NoAuthConfigErrorPage;
