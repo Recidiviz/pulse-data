@@ -106,4 +106,10 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
         return send_from_directory(static_folder, "index.html")
 
+    @app.route("/auth0_public_config.js")
+    def auth0_public_config() -> str:
+        # Expose ONLY the necessary variables to configure our Auth0 frontend
+        auth0_config = app.config["AUTH0_CONFIGURATION"]
+        return f"window.AUTH0_CONFIG = {auth0_config.as_public_config()};"
+
     return app
