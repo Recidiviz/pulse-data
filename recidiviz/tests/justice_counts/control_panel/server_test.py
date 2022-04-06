@@ -21,7 +21,11 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
-from recidiviz.persistence.database.schema.justice_counts.schema import Source
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    Agency,
+    Source,
+    UserAccount,
+)
 from recidiviz.tests.auth.utils import get_test_auth0_config
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -72,6 +76,61 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response.data,
             b"window.AUTH0_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'};",
         )
+
+    def test_create_user(self) -> None:
+        email_address = "user@gmail.com"
+        agency_name = "Agency Alpha"
+        name = "John Doe"
+        self.session.add(Agency(name=agency_name, id=1))
+        admin_response = self.client.post(
+            "/api/users",
+            json={
+                "email_address": email_address,
+                "agency_names": [agency_name],
+                "name": name,
+            },
+        )
+        self.assertEqual(admin_response.status_code, 200)
+        self.assertEqual(
+            admin_response.json,
+            {
+                "agencies": [{"id": 1, "name": agency_name}],
+                "auth0_user_id": None,
+                "email_address": email_address,
+                "id": 1,
+                "name": name,
+            },
+        )
+        db_item = self.session.query(UserAccount).one_or_none()
+        self.assertEqual(db_item.to_json(), admin_response.json)
+
+    def test_update_user(self) -> None:
+        agency_name = "Agency Alpha"
+        email_address = "user@gmail.com"
+        agency = Agency(name=agency_name, id=1)
+        user_account = UserAccount(
+            id=1, name="Jane Doe", agencies=[agency], email_address=email_address
+        )
+        self.session.add_all([agency, user_account])
+        self.session.commit()
+        auth0_user_id = "12345abc"
+        user_response = self.client.post(
+            "/api/users",
+            json={"email_address": email_address, "auth0_user_id": auth0_user_id},
+        )
+        self.assertEqual(user_response.status_code, 200)
+        self.assertEqual(
+            user_response.json,
+            {
+                "agencies": [{"id": 1, "name": agency_name}],
+                "auth0_user_id": auth0_user_id,
+                "email_address": email_address,
+                "id": 1,
+                "name": "Jane Doe",
+            },
+        )
+        db_items = self.session.query(UserAccount).all()
+        self.assertEqual(len(db_items), 1)
 
     def test_session(self) -> None:
         # Add data

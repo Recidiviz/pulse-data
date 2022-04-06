@@ -33,7 +33,7 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
             for agency_name in ["Agency Alpha", "Agency Beta", "Agency Gamma"]:
                 AgencyInterface.create_agency(session=session, name=agency_name)
 
-            UserAccountInterface.create_user(
+            UserAccountInterface.create_or_update_user(
                 session=session,
                 email_address="user@gmail.com",
                 name="User",
@@ -46,17 +46,29 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
                     agency_name=agency_name,
                 )
 
-    def test_create_user(self) -> None:
+    def test_create_or_update_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             # Can create user with just email address
-            UserAccountInterface.create_user(
+            UserAccountInterface.create_or_update_user(
                 session=session,
                 email_address="user2@gmail.com",
             )
 
+            UserAccountInterface.create_or_update_user(
+                session=session,
+                email_address="user2@gmail.com",
+                auth0_user_id="auth0_id",
+            )
+            user = UserAccountInterface.get_user_by_email_address(
+                session=session, email_address="user2@gmail.com"
+            )
+            self.assertEqual(user.auth0_user_id, "auth0_id")
+
+            # Raise error if agency does not exist
+
             # Cannot create user with invalid email address
             with self.assertRaisesRegex(ValueError, "Invalid email address"):
-                UserAccountInterface.create_user(
+                UserAccountInterface.create_or_update_user(
                     session=session,
                     email_address="xyz",
                 )
