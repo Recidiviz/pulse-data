@@ -34,6 +34,7 @@ SELECT
     COUNT(DISTINCT({id_column})) as distinct_id_count
 FROM
     `{{project_id}}.{dataset_id}.{table_id}`
+GROUP BY 1
 """
 
 
