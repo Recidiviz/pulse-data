@@ -176,6 +176,8 @@ jsonschema = "*"
 proto-plus = "==1.19.6"
 nltk = "*"
 thefuzz = "*"
+# Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
+python-Levenshtein = "*"
 ratelimit = "*"
 ratelimit-stubs = "*"
 # TODO(flask-sqlalchemy-session#14): Unpin/remove explicit dependency once the latest
