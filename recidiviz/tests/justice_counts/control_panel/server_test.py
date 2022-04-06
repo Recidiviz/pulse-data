@@ -65,6 +65,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             with self.app.test_request_context():
                 self.assertEqual(0, len(session.keys()))
 
+    def test_auth0_config(self) -> None:
+        response = self.client.get("/auth0_public_config.js")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data,
+            b"window.AUTH0_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'};",
+        )
+
     def test_session(self) -> None:
         # Add data
         name = "Agency Alpha"
