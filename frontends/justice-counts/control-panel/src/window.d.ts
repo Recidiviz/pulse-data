@@ -15,34 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { useContext } from "react";
+// According to https://github.com/microsoft/TypeScript/issues/33128#issuecomment-748937504,
+// this line is needed in order to turn this from a script into a module in order
+// to allow the interface definition to be extended.
+export {};
 
-import NoAuthConfigErrorPage from "../components/Error/NoAuthConfigErrorPage";
-import rootStore from "./RootStore";
-
-const StoreContext = React.createContext<typeof rootStore | undefined>(
-  undefined
-);
-
-export const StoreProvider: React.FC<React.ReactNode> = ({
-  children,
-}): React.ReactElement => {
-  if (window.AUTH0_CONFIG) {
-    return (
-      <StoreContext.Provider value={rootStore}>
-        {children}
-      </StoreContext.Provider>
-    );
+declare global {
+  interface Window {
+    AUTH0_CONFIG: Record<string, string>; // values added from `auth0_public_config.js`
   }
-  return <NoAuthConfigErrorPage />;
-};
-
-export function useStore(): typeof rootStore {
-  const context = useContext(StoreContext);
-
-  if (context === undefined) {
-    throw new Error("useStore must be used within a StoreProvider");
-  }
-
-  return context;
 }

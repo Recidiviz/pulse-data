@@ -20,13 +20,17 @@ import { AuthStore } from "../components/Auth";
 import API from "./API";
 import UserStore from "./UserStore";
 
-const getAuthSettings = (): Auth0ClientOptions => {
-  return {
-    client_id: process.env.REACT_APP_AUTH0_CLIENT_ID as string,
-    domain: process.env.REACT_APP_AUTH0_DOMAIN as string,
-    audience: process.env.REACT_APP_AUTH0_AUDIENCE as string,
-    redirect_uri: `${window.location.origin}`,
-  };
+const getAuthSettings = (): Auth0ClientOptions | undefined => {
+  if (window.AUTH0_CONFIG) {
+    return {
+      domain: window.AUTH0_CONFIG.domain,
+      client_id: window.AUTH0_CONFIG.clientId,
+      redirect_uri: window.location.origin,
+      audience: window.AUTH0_CONFIG.audience,
+      useRefreshTokens: true,
+    };
+  }
+  return undefined;
 };
 
 class RootStore {

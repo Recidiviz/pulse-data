@@ -7,3 +7,9 @@ import "@testing-library/jest-dom";
 import { enableFetchMocks } from "jest-fetch-mock";
 
 enableFetchMocks();
+
+window.AUTH0_CONFIG = {
+  domain: "",
+  client_id: "",
+  audience: "",
+};
