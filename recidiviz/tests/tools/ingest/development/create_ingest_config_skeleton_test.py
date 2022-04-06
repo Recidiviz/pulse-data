@@ -46,6 +46,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
         )
         self.state_code = FAKE_STATE
         self.delimiter = "|"
+        self.encoding = "utf-8"
         self.allow_overwrite = False
         self.initialize_state = True
         self.add_description_placeholders = False
@@ -59,6 +60,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             [self.input_path],
             self.state_code,
             self.delimiter,
+            self.encoding,
             RawDataClassification.SOURCE,
             self.allow_overwrite,
             self.initialize_state,
@@ -87,6 +89,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             [self.input_path],
             self.state_code,
             self.delimiter,
+            self.encoding,
             RawDataClassification.SOURCE,
             self.allow_overwrite,
             self.initialize_state,

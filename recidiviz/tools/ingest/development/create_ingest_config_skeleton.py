@@ -84,6 +84,7 @@ def write_skeleton_config(
     raw_table_path: str,
     state_code: str,
     delimiter: str,
+    encoding: str,
     data_classification: RawDataClassification,
     allow_overwrite: bool,
     add_description_placeholders: bool,
@@ -92,7 +93,11 @@ def write_skeleton_config(
     table_name = os.path.basename(raw_table_path)
     table_name = os.path.splitext(table_name)[0]
 
-    df = read_csv(raw_table_path, delimiter=delimiter)
+    df = read_csv(
+        raw_table_path,
+        delimiter=delimiter,
+        encoding=encoding,
+    )
 
     fields = [
         normalize_column_name_for_bq(column_name) for column_name in list(df.columns)
@@ -140,6 +145,7 @@ def create_ingest_config_skeleton(
     raw_table_paths: List[str],
     state_code: str,
     delimiter: str,
+    encoding: str,
     data_classification: RawDataClassification,
     allow_overwrite: bool,
     initialize_state: bool,
@@ -161,6 +167,7 @@ def create_ingest_config_skeleton(
             path,
             state_code,
             delimiter,
+            encoding,
             data_classification,
             allow_overwrite,
             add_description_placeholders,
@@ -177,6 +184,15 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         help="String used to separate fields.",
         type=str,
         required=True,
+    )
+
+    parser.add_argument(
+        "--encoding",
+        dest="encoding",
+        help="Encoding to use, possible options include: utf-8, utf-16, windows-1252.",
+        type=str,
+        required=False,
+        default="utf-8",
     )
 
     parser.add_argument(
@@ -252,6 +268,7 @@ if __name__ == "__main__":
             [args.file_path],
             args.state_code,
             args.delimiter,
+            args.encoding,
             args.classification,
             args.allow_overwrite,
             args.initialize_state,
@@ -266,6 +283,7 @@ if __name__ == "__main__":
             ],
             args.state_code,
             args.delimiter,
+            args.encoding,
             args.classification,
             args.allow_overwrite,
             args.initialize_state,
