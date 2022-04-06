@@ -291,6 +291,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT 
             Offender_ID,
             COALESCE(MAX(expiration_date),MAX(full_expiration_date)) AS sentence_expiration_date_internal, 
+            MAX(CASE WHEN sentence_source IN ('SENTENCE','DIVERSION') AND sentence_status != 'IN' THEN 1 ELSE 0 END) AS has_TN_sentence,
             MAX(CASE WHEN expiration_date IS NULL AND full_expiration_date IS NULL THEN 1 ELSE 0 END) AS missing_at_least_1_exp_date,
             max(missing_offense) AS missing_offense_ever,
             max(case when missing_offense = 1 and expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) AS all_missing_offenses_expired,
@@ -483,7 +484,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     life_sentence_ISC AS (
         SELECT DISTINCT OffenderID AS Offender_ID,
         FROM `{project_id}.us_tn_raw_data_up_to_date_views.ISCSentence_latest`
-        WHERE sentence = 'LIFE'
+        WHERE sentence LIKE '%LIFE%'
     ),
     -- This CTE excludes people who have been rejected from CR because of criminal record or court order
     CR_rejection_codes AS (
@@ -754,8 +755,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         -- Counties in JD 17 don't allow CR for probation cases
         CASE WHEN judicial_district = '17' AND Case_Type LIKE '%PROBATION%' THEN 0 ELSE 1 END AS eligible_counties,
         -- Exclude anyone on lifetime supervision or with a life sentence
-        CASE WHEN COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' THEN 1 
-             WHEN life_sentence_ISC.Offender_ID IS NULL THEN 1            
+        CASE WHEN COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL THEN 1 
             ELSE 0 END AS no_lifetime_flag,
         -- Exclude anyone from CR who was previous rejected
         CASE WHEN 
@@ -827,6 +827,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             SPE_Note_Due AS  SPE_note_due,
             EXP_Date AS sentence_expiration_date,
             missing_at_least_1_exp_date,
+            COALESCE(has_TN_sentence,0) AS has_TN_sentence,
             sentence_expiration_date_internal,
             COALESCE(sentence_expiration_date_internal,EXP_Date) AS expiration_date,
             DATE_DIFF(COALESCE(sentence_expiration_date_internal,EXP_Date), current_date('US/Eastern'), DAY) AS time_to_expiration_days,
@@ -1127,6 +1128,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         CASE WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c1'
              WHEN all_eligible_and_offense_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c2'
              WHEN all_eligible_and_offense_and_zt_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c3'
+             -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting
+             WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 'c4'
              END AS compliant_reporting_eligible
     FROM add_more_flags_2
 """
