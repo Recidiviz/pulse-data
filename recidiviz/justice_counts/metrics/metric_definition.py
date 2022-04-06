@@ -23,6 +23,7 @@ from typing import List, Optional, Type
 import attr
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -42,7 +43,7 @@ class Context:
     explanation; and `required` indicates if this context is required or requested.
     """
 
-    key: str
+    key: ContextKey
     label: str
     required: bool
 
@@ -63,12 +64,13 @@ class AggregatedDimension:
     """Dimension that this metric should be disaggregated by. For instance, if OffenseType
     is an AggegregatedDimension, then agencies should report a separate datapoint for
     each possible OffenseType.
-
-    If `required=False`, this disaggregation is requested but not required.
     """
 
     dimension: Type[DimensionBase]
+    # Whether this disaggregation is requested but not required.
     required: bool
+    # Whether the disaggregated values should sum to the total metric value
+    should_sum_to_total: bool = False
 
 
 @attr.define(frozen=True)

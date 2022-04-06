@@ -19,6 +19,7 @@
 from recidiviz.justice_counts.dimensions.corrections import PopulationType
 from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
+from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
@@ -42,13 +43,15 @@ annual_budget = MetricDefinition(
     reporting_note="Sheriff offices report on budget for patrol and detention separately",
     contexts=[
         Context(
-            key="primary-funding-source",
+            key=ContextKey.PRIMARY_FUNDING_SOURCE,
             label="Primary funding source.",
             required=False,
         )
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SheriffBudgetType, required=True)
+        AggregatedDimension(
+            dimension=SheriffBudgetType, required=True, should_sum_to_total=True
+        )
     ],
 )
 
@@ -61,7 +64,7 @@ residents = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUALLY],
     contexts=[
         Context(
-            key="jurisdiction-area",
+            key=ContextKey.JURISDICTION_AREA,
             label="The land size (area) of the jurisdiction",
             required=False,
         )
