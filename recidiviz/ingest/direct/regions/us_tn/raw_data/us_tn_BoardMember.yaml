@@ -1,6 +1,7 @@
 file_tag: BoardMember
 file_description: |-
   This table contains information about each board member on grievance or disciplinary boards.
+data_classification: source
 primary_key_cols:
   - PersonID
   - BoardCommitteeType

@@ -1,6 +1,7 @@
 file_tag: CIS_100_CLIENT
 file_description: |-
   This table contains general details about each client in Maine's offender management system.
+data_classification: source
 primary_key_cols:
   - Client_Id
 columns:

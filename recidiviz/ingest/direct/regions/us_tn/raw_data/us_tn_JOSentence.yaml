@@ -1,6 +1,7 @@
 file_tag: JOSentence
 file_description: |-
   TODO(#7424) - Update once received from TN.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - ConvictionCounty

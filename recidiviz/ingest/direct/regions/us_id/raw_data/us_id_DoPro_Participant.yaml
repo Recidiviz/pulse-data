@@ -1,6 +1,7 @@
 file_tag: DoPro_Participant
 file_description: |-
   A list of all participants in the dosage probation pilot program, including their start date and treatment group. Contains one row for each participant.
+data_classification: source
 primary_key_cols:
   - ofndr_num
 columns:

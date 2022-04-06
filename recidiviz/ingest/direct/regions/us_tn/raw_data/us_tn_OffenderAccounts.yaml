@@ -1,6 +1,7 @@
 file_tag: OffenderAccounts
 file_description: |-
-   TODO(#11524) - Add in descriptions.
+  TODO(#11524) - Add in descriptions.
+data_classification: source
 primary_key_cols:
   - AccountSAK
 columns:

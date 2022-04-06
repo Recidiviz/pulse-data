@@ -5,6 +5,7 @@ file_description: |-
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - PBPP30ID
+data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber

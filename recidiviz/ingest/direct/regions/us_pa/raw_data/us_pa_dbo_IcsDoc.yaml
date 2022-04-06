@@ -2,6 +2,7 @@ file_tag: dbo_IcsDoc
 file_description: |-
   A table containing detailed identifying information for people who have been
   incarcerated. NOT REFRESHED REGULARLY.
+data_classification: source
 primary_key_cols:
   - Cont_Num
   - Doc_Id

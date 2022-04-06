@@ -1,6 +1,7 @@
 file_tag: CIS_1800_DISCIPLINARY_DECISION
 file_description: |-
   This lists the descriptions for disciplinary decisions related to violations or incidents.
+data_classification: source
 primary_key_cols:
   - Disciplinary_Decision_Cd
 columns:

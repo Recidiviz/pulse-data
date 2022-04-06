@@ -1,6 +1,7 @@
 file_tag: CIS_2040_CONTACT_MODE
 file_description: |-
   TODO(#10734): Add raw data descriptions
+data_classification: source
 primary_key_cols: []
 columns:
   - name : Adult_Ind

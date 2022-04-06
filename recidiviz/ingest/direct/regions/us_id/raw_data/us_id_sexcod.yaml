@@ -1,6 +1,7 @@
 file_tag: sexcod
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - sex_cd
 columns:

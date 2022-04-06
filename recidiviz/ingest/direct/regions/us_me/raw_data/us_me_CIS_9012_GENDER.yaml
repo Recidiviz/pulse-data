@@ -1,6 +1,7 @@
 file_tag: CIS_9012_GENDER
 file_description: |-
   This table maps the gender code to the description.
+data_classification: source
 primary_key_cols:
   - Gender_Cd
 columns:

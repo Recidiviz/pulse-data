@@ -1,6 +1,7 @@
 file_tag: dbo_Treatment
 file_description: |-
   A table with information on referred treatments for people under supervision.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - TreatmentID

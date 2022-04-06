@@ -3,6 +3,7 @@ file_description: |-
   A validation view containing one record for all incarcerated and supervised
   persons in Idaho. The view is executed once daily and provides the current
   status of each person as of that moment.
+data_classification: validation
 primary_key_cols:
   - ofndr_num
   - popdate

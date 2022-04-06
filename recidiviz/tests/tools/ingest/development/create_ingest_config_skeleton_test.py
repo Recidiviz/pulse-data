@@ -22,6 +22,7 @@ import unittest
 
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
+    RawDataClassification,
 )
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
@@ -58,6 +59,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             [self.input_path],
             self.state_code,
             self.delimiter,
+            RawDataClassification.SOURCE,
             self.allow_overwrite,
             self.initialize_state,
             self.add_description_placeholders,
@@ -69,6 +71,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
 
         table_config = config.raw_file_configs[INPUT_TABLE]
         self.assertEqual(table_config.file_tag, INPUT_TABLE)
+        self.assertEqual(table_config.data_classification, RawDataClassification.SOURCE)
         self.assertEqual(
             [field.name for field in table_config.columns],
             ["field1", "field2", "field3", "field_4"],
@@ -84,6 +87,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             [self.input_path],
             self.state_code,
             self.delimiter,
+            RawDataClassification.SOURCE,
             self.allow_overwrite,
             self.initialize_state,
             add_description_placeholders=True,

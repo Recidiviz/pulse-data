@@ -3,6 +3,7 @@ file_description: |-
   This table includes codes that are referenced in other raw tables in the system. The Cis_1015_Client_Sub_Type_Cd can
   be helpful in determining which table the code is found in. Codes in other raw tables that reference these codes will
   have a column name starting with "CIS_1016".
+data_classification: source
 primary_key_cols:
   - Client_Cd
 columns:

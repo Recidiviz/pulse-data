@@ -1,6 +1,7 @@
 file_tag: Job
 file_description: |-
   This table contains one ocurrence for each job code available in the TOMIS system.
+data_classification: source
 primary_key_cols:
   - JobID
 columns:

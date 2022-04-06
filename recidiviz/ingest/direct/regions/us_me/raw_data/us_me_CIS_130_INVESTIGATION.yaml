@@ -1,6 +1,7 @@
 file_tag: CIS_130_INVESTIGATION
 file_description: |-
   This table lists details about investigations, each row is unique to a client and investigation ID.
+data_classification: source
 primary_key_cols:
   - Investigation_Id
 columns:

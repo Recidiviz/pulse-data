@@ -1,6 +1,7 @@
 file_tag: dbo_Offender
 file_description: |-
   A table containing demographic and identifier information for people who have been supervised by PADOC.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
 columns:

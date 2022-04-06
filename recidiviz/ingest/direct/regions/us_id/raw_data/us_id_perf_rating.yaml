@@ -1,6 +1,7 @@
 file_tag: perf_rating
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - rating_factor
 columns:

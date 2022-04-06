@@ -1,6 +1,7 @@
 file_tag: CIS_9907_CODES
 file_description: |-
   This is a code table that includes codes found in other raw tables.
+data_classification: source
 primary_key_cols:
   - Code_Cd
 columns:

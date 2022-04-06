@@ -7,6 +7,7 @@ file_description: |-
   Because Recidiviz ingests the underlying tables directly, Recidiviz uses this table specifically to tie together
   identifiers that otherwise are difficult to tie together, using it as a reference table. This permits the ability to
   reliably match people records which are located in DOC tables with people records which are located in PBPP tables.
+data_classification: source
 primary_key_cols:
   - inmate_number
   - control_number

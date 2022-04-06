@@ -1,6 +1,7 @@
 file_tag: agnt_case_updt
 file_description: |-
   Contains notes entered manually by POs about their clients.
+data_classification: source
 primary_key_cols:
   - agnt_case_updt_id
 columns:

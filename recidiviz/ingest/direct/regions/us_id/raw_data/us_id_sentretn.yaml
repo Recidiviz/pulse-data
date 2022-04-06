@@ -11,6 +11,7 @@ file_description: |-
   as a rider, and the dates in the sentence table represent how long the person would be sentenced if their programming
   is not successfully completed. In Idaho terms, the dates in the `sentence` table are a part of the “underlying
   sentence”.
+data_classification: source
 primary_key_cols:
   - mitt_srl
   - sent_no

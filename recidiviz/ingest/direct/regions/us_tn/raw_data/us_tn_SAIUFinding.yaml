@@ -1,6 +1,7 @@
 file_tag: SAIUFinding
 file_description: |-
   This table contains one occurrence for the results of an SAIU (Sentence Alternative Incarceration Unit) findings request for a specified TOMIS ID.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - PostedDate

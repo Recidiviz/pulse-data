@@ -2,6 +2,7 @@ file_tag: dbo_LSIR
 file_description: |-
   A table containing LSIR assessments which have been conducted for people under
   supervision by PADOC. NOT REFRESHED REGULARLY.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

@@ -5,6 +5,7 @@ file_description: |-
   by time spent at the county jail awaiting sentencing, which then affects the early and current expected release dates
   on the term. This table also joins to the CIS_409_CRT_ORDER_CNDTION_HDR table and links a client to the conditions 
   imposed on their supervision sentence. The conditions are found in the CIS_403_CONDITION table.
+data_classification: source
 primary_key_cols:
   - Court_Order_Id
 columns:

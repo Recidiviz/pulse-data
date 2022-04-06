@@ -1,6 +1,7 @@
 file_tag: CIS_916_ASSIGN_BED
 file_description: |-
   This table lists a client's assignment to a bed in a DOC facility with a start and end date for that assignment.
+data_classification: source
 primary_key_cols:
   - Assign_Id
 columns:

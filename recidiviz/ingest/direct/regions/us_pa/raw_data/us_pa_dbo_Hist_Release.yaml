@@ -8,6 +8,7 @@ file_description: |-
   `dbo_RelEmployment`. When a period of supervision is terminated and the person is now at liberty or has been convicted
   of an entirely new offense with entirely new and separate sentences, the records from the aforementioned tables are
   consolidated together into a row in this table.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

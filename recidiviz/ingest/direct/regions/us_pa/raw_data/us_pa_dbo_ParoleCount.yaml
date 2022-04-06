@@ -2,6 +2,7 @@ file_tag: dbo_ParoleCount
 file_description: |-
   A table containing information that links Pennsylvania Board of Probation and Parole
   (PBPP) identification numbers to PA DOC inmate numbers.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleInstNumber

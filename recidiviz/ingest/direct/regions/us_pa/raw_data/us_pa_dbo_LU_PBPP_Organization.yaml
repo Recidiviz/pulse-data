@@ -1,6 +1,7 @@
 file_tag: dbo_LU_PBPP_Organization
 file_description: |-
   A lookup table mapping organization unit codes to the context of that organizational unit within the broader PBPP.
+data_classification: source
 primary_key_cols:
   - Org_cd
 columns:

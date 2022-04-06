@@ -1,6 +1,7 @@
 file_tag: docstars_ref_lsi_category
 file_description: |-
   Reference file where each row refers to a category of program referrals
+data_classification: source
 primary_key_cols: [CATEGORY_ID]
 columns:
  - name : CATEGORY_ID

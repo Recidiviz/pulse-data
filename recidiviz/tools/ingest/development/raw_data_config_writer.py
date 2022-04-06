@@ -92,6 +92,7 @@ class RawDataConfigWriter:
             f"file_tag: {raw_file_config.file_tag}\n"
             "file_description: |-\n"
             f"  {file_description_string}\n"
+            f"data_classification: {raw_file_config.data_classification.value}\n"
             "primary_key_cols:"
             f"{self._get_primary_key_config_string(raw_file_config)}\n"
             f"{self._generate_columns_string(raw_file_config.columns)}\n"

@@ -1,6 +1,7 @@
 file_tag: ISCSentence
 file_description: |-
   This table contains one occurrence for each out of Tennessee jurisdiction sentence tracked for the person.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - Jurisdiction

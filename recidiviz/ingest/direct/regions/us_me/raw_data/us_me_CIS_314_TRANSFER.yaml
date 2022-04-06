@@ -3,6 +3,7 @@ file_description: |-
   This table records transfers in and out of of DOC facilities and supervision locations. Transfers related to DOC Facilities
   will also have a corresponding record in the CIS_309_MOVEMENT table.
 
+data_classification: source
 primary_key_cols:
   - Transfer_Id
 columns:

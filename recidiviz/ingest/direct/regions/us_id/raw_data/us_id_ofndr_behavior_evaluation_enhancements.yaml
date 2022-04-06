@@ -1,6 +1,7 @@
 file_tag: ofndr_behavior_evaluation_enhancements
 file_description: |-
   Contains a record for each Idaho Respone Matrix entry that had an enhancement applied by the PO.
+data_classification: source
 primary_key_cols:
   - ofndr_behavior_evaluation_id
 columns:

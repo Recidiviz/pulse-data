@@ -1,6 +1,7 @@
 file_tag: elite_alias
 file_description: |-
   Each row represents some alias that has been recorded for a particular person who has been incarcerated.
+data_classification: source
 primary_key_cols:
   - OFFENDER_ID
 columns:

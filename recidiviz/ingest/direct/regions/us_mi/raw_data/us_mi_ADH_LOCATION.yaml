@@ -2,6 +2,7 @@ file_tag: ADH_LOCATION
 file_description: |-
   This table contains all of the locations that accompany a person's movement while they
   are under jurisdiction in MIDOC.
+data_classification: source
 primary_key_cols:
   - location_id
 columns: 

@@ -1,6 +1,7 @@
 file_tag: AssignedStaff
 file_description: |-
   This table contains at least one occurrence of each staff member assigned to a person, whether in custody, on parole or on probation.
+data_classification: source
 primary_key_cols:
   - StaffID
   - OffenderID

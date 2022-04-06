@@ -1,6 +1,7 @@
 file_tag: cis_personphonenumber
 file_description: |-
   Relates people on supervision to their phone numbers
+data_classification: source
 primary_key_cols:
   - id
 columns:

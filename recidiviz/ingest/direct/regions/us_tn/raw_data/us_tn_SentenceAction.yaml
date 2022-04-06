@@ -1,6 +1,7 @@
 file_tag: SentenceAction
 file_description: |-
   This table contains one occurrence for sentence action that is posted for the specified sentence.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - ConvictionCounty

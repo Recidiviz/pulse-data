@@ -5,6 +5,7 @@ file_description: |-
   parole, the majority of sentences in this table are sentences to incarceration that in turn led to releases to parole.
   Consequently, much of this information is redundant of the information directly from the DOC side of PADOC via
   `dbo_Senrec` and may not be as reliable/consistent.
+data_classification: source
 primary_key_cols:
   - ParoleNumber
   - ParoleCountID

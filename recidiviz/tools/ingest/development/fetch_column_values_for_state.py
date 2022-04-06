@@ -123,6 +123,7 @@ def _update_enum_known_values(
         file_tag=original_config.file_tag,
         file_path=original_config.file_path,
         file_description=original_config.file_description,
+        data_classification=original_config.data_classification,
         primary_key_cols=original_config.primary_key_cols,
         columns=new_columns,
         encoding=original_config.encoding,

@@ -1,6 +1,7 @@
 file_tag: behavior_evaluation_action_dates
 file_description: |-
   Date associated with review/modification of evaluation form.
+data_classification: source
 primary_key_cols:
   - ofndr_behavior_evaluation_id
   - behavior_evaluation_action_id

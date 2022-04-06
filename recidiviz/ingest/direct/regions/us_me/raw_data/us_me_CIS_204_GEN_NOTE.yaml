@@ -1,6 +1,7 @@
 file_tag: CIS_204_GEN_NOTE
 file_description: |-
   This table lists contact notes and details recorded for supervision clients by supervising officers.
+data_classification: source
 primary_key_cols:
   - Note_Id
 columns:

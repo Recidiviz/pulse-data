@@ -1,6 +1,7 @@
 file_tag: Address
 file_description: |-
   This table contains the address information for any person in the TOMIS system.
+data_classification: source
 primary_key_cols:
   - PersonID
 columns:

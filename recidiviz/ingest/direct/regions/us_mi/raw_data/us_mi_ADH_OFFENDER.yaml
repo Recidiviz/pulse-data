@@ -2,6 +2,7 @@ file_tag: ADH_OFFENDER
 file_description: |-
   This is the main table that contains all of the identifiers used for all other tables
   for all persons currently involved in MIDOC (parole, probation, incarceration).
+data_classification: source
 primary_key_cols:
   - offender_id
   - offender_number

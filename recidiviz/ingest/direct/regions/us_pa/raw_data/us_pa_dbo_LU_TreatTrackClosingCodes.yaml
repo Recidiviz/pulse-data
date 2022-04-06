@@ -2,6 +2,7 @@ file_tag: dbo_LU_TreatTrackClosingCodes
 file_description: |-
   A lookup table with codes describing possible reasons treatments may have been terminated.
   NOT REFRESHED REGULARLY.
+data_classification: source
 primary_key_cols:
   - TreatTrackCloseCasesCode
 columns:

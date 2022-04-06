@@ -1,6 +1,7 @@
 file_tag: ofndr_behavior_evaluation_item
 file_description: |-
   Contains a record for each behavior identified by a PO on the behavior response matrix form
+data_classification: source
 primary_key_cols:
   - ofndr_behavior_evaluation_item_id
 columns:

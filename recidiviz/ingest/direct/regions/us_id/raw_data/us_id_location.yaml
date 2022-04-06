@@ -1,6 +1,7 @@
 file_tag: location
 file_description: |-
   A code table that gives extra details about a given location code.
+data_classification: source
 primary_key_cols:
   - loc_cd
 columns:

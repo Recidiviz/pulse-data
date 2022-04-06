@@ -1,6 +1,7 @@
 file_tag: county
 file_description: |-
   A code table that has details for every county in Idaho.
+data_classification: source
 primary_key_cols:
   - cnty_cd
 columns:

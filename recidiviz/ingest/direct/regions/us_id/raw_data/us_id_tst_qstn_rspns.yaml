@@ -3,6 +3,7 @@ file_description: |-
   Has a single row for every actual answer recorded for all “tests” administered by IDOC. Here a “test” is a broad term
   used in the IDOC data to represent a form, violation response, assessment, etc (really anything that is filled out by
   an IDOC employee about someone in custody).
+data_classification: source
 primary_key_cols:
   - tst_qstn_rspns_id
 columns:

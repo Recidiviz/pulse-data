@@ -2,6 +2,7 @@ file_tag: CIS_3093_MVMT_STATUS
 file_description: |-
   This is a code table with one row per code and description. The movement status code is used in the
   Cis_3093_Mvmt_Status_Cd field on the CIS_309_MOVEMENT table.
+data_classification: source
 primary_key_cols:
   - Mvmt_Status_Cd
 columns:

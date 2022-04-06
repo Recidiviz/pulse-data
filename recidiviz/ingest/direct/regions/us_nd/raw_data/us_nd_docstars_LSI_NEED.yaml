@@ -1,6 +1,7 @@
 file_tag: docstars_LSI_NEED
 file_description: |-
   Each row is a need that is being addressed by an LSI supervision plan
+data_classification: source
 primary_key_cols: [NEED_ID]
 columns:
  - name : NEED_ID

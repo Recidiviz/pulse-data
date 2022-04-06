@@ -1,6 +1,7 @@
 file_tag: ofndr_behavior_evaluation_response_dates
 file_description: |-
   Contains a record that shows the duration of the reward/sanction applied by a PO to an observed behavior. This table only contains records for rewards/sanctions where a start date and end date are explicitly set.
+data_classification: source
 primary_key_cols:
   - ofndr_behavior_evaluation_response_date_id
 columns:

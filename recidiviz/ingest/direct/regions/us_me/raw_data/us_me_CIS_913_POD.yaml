@@ -1,6 +1,7 @@
 file_tag: CIS_913_POD
 file_description: |-
   This is the housing pod code table that has a relationship to the CIS_912_UNIT table and lists a pod's custody level.
+data_classification: source
 primary_key_cols:
   - Pod_Id
 columns:

@@ -2,6 +2,7 @@ file_tag: body_loc_cd
 file_description: |-
   A code table that gives extra information about specific locations. These locations often refer to employee
   locations, rather than locations of folks under IDOC custody.
+data_classification: source
 primary_key_cols:
   - body_loc_cd
 columns:

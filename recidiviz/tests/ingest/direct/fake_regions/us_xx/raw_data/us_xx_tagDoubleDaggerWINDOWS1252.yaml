@@ -1,6 +1,7 @@
 file_tag: tagDoubleDaggerWINDOWS1252
 file_description: |-
   tagDoubleDaggerWINDOWS1252 file description
+data_classification: source
 primary_key_cols:
   - PRIMARY_COL1
 columns:

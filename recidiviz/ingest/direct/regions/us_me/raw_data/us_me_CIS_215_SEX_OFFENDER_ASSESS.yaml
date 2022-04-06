@@ -6,6 +6,7 @@ file_description: |-
   appear to correspond to some sort of proxy rating for whatever assessment a given row in the file refers to, i.e.
   the results of these assessments are mapped to an LSI rating for normalized comparison against LSI assessments per
   MEDOC business logic.
+data_classification: source
 primary_key_cols:
   - Sex_Offender_Assess_Id
 columns:

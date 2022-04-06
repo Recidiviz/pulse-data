@@ -3,6 +3,7 @@ file_description: |-
   Contains a new row for every supervision level span that a person on IDOC supervision has ever had.
 
   Contains a single row for every legal status span that a person under IDOC authority has ever had.
+data_classification: source
 primary_key_cols:
   - ofndr_wrkld_id
 columns:

@@ -1,6 +1,7 @@
 file_tag: CIS_4302_REQUESTED_TYPE
 file_description: |-
   The code table mapping the person or entity that requested an assessment to the code used in other raw tables.
+data_classification: source
 primary_key_cols:
   - Request_Type_Cd
 columns:

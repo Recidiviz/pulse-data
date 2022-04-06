@@ -1,6 +1,7 @@
 file_tag: CIS_106_ADDRESS
 file_description: |-
   This table lists each client's location and address within the Start_Date period.
+data_classification: source
 primary_key_cols:
   - Address_Id
 columns:

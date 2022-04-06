@@ -1,6 +1,7 @@
 file_tag: Referral
 file_description: |-
   This table contains one occurrence for each Referral for each person.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - OrderDate

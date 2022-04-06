@@ -1,6 +1,7 @@
 file_tag: x_body_loc_cd
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - fac_cd
   - lu_cd

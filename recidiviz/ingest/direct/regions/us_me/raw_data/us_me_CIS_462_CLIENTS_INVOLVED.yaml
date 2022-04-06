@@ -1,6 +1,7 @@
 file_tag: CIS_462_CLIENTS_INVOLVED
 file_description: |-
   This table lists the clients involved in an incident and has additional notes about the incident and the client.
+data_classification: source
 primary_key_cols:
   - Clients_Involved_Id
 columns:

@@ -1,6 +1,7 @@
 file_tag: ClassRoster
 file_description: |-
   This table contains one occurrence per class and is a list of all offenders who have been approved for the class.
+data_classification: source
 primary_key_cols:
   - SiteID
   - ClassID

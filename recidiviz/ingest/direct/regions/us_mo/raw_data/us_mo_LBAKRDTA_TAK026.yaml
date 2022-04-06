@@ -1,6 +1,7 @@
 file_tag: LBAKRDTA_TAK026
 file_description: |-
   Status. Column prefix: BW.
+data_classification: source
 primary_key_cols:
   - BW_DOC
   - BW_CYC

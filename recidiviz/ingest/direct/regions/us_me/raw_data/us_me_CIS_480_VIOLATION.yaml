@@ -3,6 +3,7 @@ file_description: |-
   This table lists violations that occurred while someone was on community supervision. If a client was on SCCP
   (Supervised Community Confinement Program), the supervising officer might enter the violation info in either
   this table or in CIS_460_INCIDENTS, since they are still considered to be part of the incarcerated population.
+data_classification: source
 primary_key_cols:
   - Violation_Id
 columns:

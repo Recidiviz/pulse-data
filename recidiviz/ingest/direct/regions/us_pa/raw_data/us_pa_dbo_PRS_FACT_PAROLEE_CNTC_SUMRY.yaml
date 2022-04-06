@@ -13,6 +13,7 @@ file_description: |-
   - CREATED_DATE may indicate a date later than START_DATE or END_DATE due to manual input by parole agents, but is hardly changed due 
   to every other adjustment after is a retroactive update to other fields. CONTACT_TYPE and DURATION_MINS, in this case, also hardly change, 
   but DURATION_MINS is included because there may be multiple of the same CONTACT_TYPE contacts created but for slightly different purposes.
+data_classification: source
 primary_key_cols:
   - PAROLE_NUMBER
   - CREATED_DATE

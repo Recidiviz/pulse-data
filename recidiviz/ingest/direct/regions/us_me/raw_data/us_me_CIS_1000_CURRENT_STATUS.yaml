@@ -2,6 +2,7 @@ file_tag: CIS_1000_CURRENT_STATUS
 file_description: |-
   This is a code table with one row per status code and description. The status code is used in the
   CIS_1000_CURRENT_STATUS_CD field on the CIS_125_CURRENT_STATUS_HIST table.
+data_classification: source
 primary_key_cols:
   - Current_Status_Cd
 columns:

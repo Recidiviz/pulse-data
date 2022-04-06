@@ -1,6 +1,7 @@
 file_tag: lvgunit
 file_description: |-
   A code table that describes living units within given facilities.
+data_classification: source
 primary_key_cols:
   - fac_cd
   - lu_cd

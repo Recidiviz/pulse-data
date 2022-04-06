@@ -1,6 +1,7 @@
 file_tag: cis_phonenumber
 file_description: |-
   Actual phone numbers for people tracked by Idaho
+data_classification: source
 primary_key_cols:
   - id
 columns:

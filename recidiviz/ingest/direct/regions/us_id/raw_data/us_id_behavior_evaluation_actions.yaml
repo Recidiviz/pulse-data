@@ -1,6 +1,7 @@
 file_tag: behavior_evaluation_actions
 file_description: |-
   Code table describing actions taken by POs and supervisors on behavior evaluation form
+data_classification: source
 primary_key_cols:
   - behavior_evaluation_action_id
 columns:

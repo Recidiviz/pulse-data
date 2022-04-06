@@ -1,6 +1,7 @@
 file_tag: CIS_4010_CRT_ORDER_STATUS
 file_description: |-
   This is a code table containing the values for the Cis_4010_Crt_Order_Status_Cd column in the CIS_401_CRT_ORDER_HDR table.
+data_classification: source
 primary_key_cols:
   - Crt_Order_Status_Cd
 columns:

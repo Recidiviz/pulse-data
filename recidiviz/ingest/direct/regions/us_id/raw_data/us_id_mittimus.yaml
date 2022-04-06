@@ -1,4 +1,5 @@
 file_tag: mittimus
+data_classification: source
 primary_key_cols:
   - mitt_srl
 file_description: |-

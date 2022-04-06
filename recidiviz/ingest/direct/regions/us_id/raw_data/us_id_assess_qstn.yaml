@@ -1,6 +1,7 @@
 file_tag: assess_qstn
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - assess_qstn_num
   - tst_sctn_num

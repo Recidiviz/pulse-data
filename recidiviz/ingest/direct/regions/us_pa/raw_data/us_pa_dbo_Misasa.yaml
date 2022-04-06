@@ -6,6 +6,7 @@ file_description: |-
 #      - status_ind
 #      - control_number
 #      - misconduct_number
+data_classification: source
 primary_key_cols: []
 columns:
   - name: status_ind

@@ -4,6 +4,7 @@ file_description: |-
   different kinds of offenses that one can be charged and sentenced with in the DOCR correctional system. These codes
   tend to apply only to charges that come from the Elite system and not the supervision-focused Docstars system, which
   is standardized around NCIC codes.
+data_classification: source
 primary_key_cols:
   - OFFENCE_CODE
 columns:

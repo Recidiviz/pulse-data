@@ -1,6 +1,7 @@
 file_tag: observed_behavior_cd
 file_description: |-
   Code table to describe the behavior observed by POs. Corresponds to items listed in the "Desired Behaviors" (for rewards) and "Event" (for sanctions) columns of the Idaho Response Matrix.
+data_classification: source
 primary_key_cols:
   - observed_behavior_cd
 columns:

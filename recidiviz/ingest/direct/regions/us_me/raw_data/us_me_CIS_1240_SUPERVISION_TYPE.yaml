@@ -2,6 +2,7 @@ file_tag: CIS_1240_SUPERVISION_TYPE
 file_description: |-
   The code table that lists the values used for the Cis_1240_Supervision_Type_Cd field in the
   CIS_124_SUPERVISION_HISTORY_TABLE.
+data_classification: source
 primary_key_cols:
   - Supervision_Type_Cd
 columns:

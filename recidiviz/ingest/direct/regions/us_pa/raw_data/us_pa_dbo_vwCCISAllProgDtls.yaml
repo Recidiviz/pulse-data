@@ -7,6 +7,7 @@ file_description: |-
   Center (PVC) and short-term incarceration sanction stays mandated by the
   parole board.
 
+data_classification: source
 primary_key_cols:
   - CCISMvmt_Id
   - Program_Id

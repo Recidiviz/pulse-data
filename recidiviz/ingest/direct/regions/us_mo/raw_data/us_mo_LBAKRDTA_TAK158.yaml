@@ -1,6 +1,7 @@
 file_tag: LBAKRDTA_TAK158
 file_description: |-
   Body Status. Column prefix: F1.
+data_classification: source
 primary_key_cols:
   - F1_DOC
   - F1_CYC

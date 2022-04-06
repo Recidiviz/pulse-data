@@ -1,6 +1,7 @@
 file_tag: CIS_915_BED
 file_description: |-
   This is a bed code table that has a relationship to the CIS_914_CELL table and lists a bed and the cell it is located in.
+data_classification: source
 primary_key_cols:
   - Bed_Id
 columns:

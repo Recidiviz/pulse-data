@@ -2,6 +2,7 @@ file_tag: elite_offender_trust_details
 file_description: |-
   Each row represents a financial transaction into an incarcerated person's trust account. This includes metadata about
   the transaction itself and detailed information about the reason for the transaction.
+data_classification: source
 primary_key_cols: []
 columns:
   - name: TXN_ID

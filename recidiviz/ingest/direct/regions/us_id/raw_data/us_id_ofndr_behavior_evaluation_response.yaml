@@ -1,6 +1,7 @@
 file_tag: ofndr_behavior_evaluation_response
 file_description: |-
   Contains a record for each PO response (reward/sanction) to observed behavior during Idaho response matrix evaluation.
+data_classification: source
 primary_key_cols:
   - ofndr_behavior_evaluation_response_id
 columns:

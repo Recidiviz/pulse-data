@@ -1,6 +1,7 @@
 file_tag: CIS_4800_VIOLATION_FINDING
 file_description: |-
   This lists the violation finding codes and their descriptions.
+data_classification: source
 primary_key_cols:
   - Violation_Finding_Cd
 columns:

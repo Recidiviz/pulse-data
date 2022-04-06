@@ -1,6 +1,7 @@
 file_tag: srvce_typ_cd
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - srvce_typ_cd
 columns:

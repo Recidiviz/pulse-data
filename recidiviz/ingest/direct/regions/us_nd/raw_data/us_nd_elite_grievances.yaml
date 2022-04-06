@@ -3,6 +3,7 @@ file_description: |-
   Each row represents a grievance filed by an incarcerated person within the facility they are incarcerated, e.g. a
   conflict with another incarcerated person or a staff member. This includes metadata about the grievance itself as well
   as the facility's investigation and response thereof.
+data_classification: source
 primary_key_cols: []
 columns:
   - name: G_GRIEVANCE_ID

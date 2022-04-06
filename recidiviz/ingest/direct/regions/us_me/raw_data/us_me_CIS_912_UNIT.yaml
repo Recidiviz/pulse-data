@@ -2,6 +2,7 @@ file_tag: CIS_912_UNIT
 file_description: |-
   This is the housing unit code table that has the plain text description of the housing Unit_Id used in column Cis_912_Unit_Id
   in the table CIS_125_CURRENT_STATUS_HIST.
+data_classification: source
 primary_key_cols:
   - Unit_Id
 columns:

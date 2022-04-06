@@ -2,6 +2,7 @@ file_tag: elite_offendersentenceterms
 file_description: |-
   Each row represents the terms of a single sentence of incarceration handed down to a particular person. This includes
   additional information about the terms of the sentence.
+data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - SENTENCE_SEQ

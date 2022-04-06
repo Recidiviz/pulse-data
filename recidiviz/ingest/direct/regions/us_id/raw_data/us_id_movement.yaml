@@ -2,6 +2,7 @@ file_tag: movement
 file_description: |-
   Contains a new row for every movement that happens for a person under IDOC authority (either on supervision or
   incarcerated).
+data_classification: source
 primary_key_cols:
   - move_srl
 columns:

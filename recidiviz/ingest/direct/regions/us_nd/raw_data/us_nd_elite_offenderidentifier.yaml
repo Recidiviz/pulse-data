@@ -2,6 +2,7 @@ file_tag: elite_offenderidentifier
 file_description: |-
   Each row represents some unique external identifier provided by DOCR data systems for a particular person. In effect,
   this is a DOCR-provided join table to bring together "Elite offender ids" with "Docstars state ids".
+data_classification: source
 primary_key_cols:
   - ROOT_OFFENDER_ID
   - IDENTIFIER

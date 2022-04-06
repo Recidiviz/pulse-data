@@ -1,6 +1,7 @@
 file_tag: region
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - region_id
 columns:

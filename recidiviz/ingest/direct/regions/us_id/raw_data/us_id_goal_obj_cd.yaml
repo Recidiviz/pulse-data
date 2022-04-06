@@ -1,6 +1,7 @@
 file_tag: goal_obj_cd
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - goal_obj_cd
 columns:

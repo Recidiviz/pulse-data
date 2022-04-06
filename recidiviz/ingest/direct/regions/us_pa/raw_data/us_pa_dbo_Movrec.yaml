@@ -5,6 +5,7 @@ file_description: |-
 
   Rows in this table can be used to model "edges" of continuous periods of incarceration, and multiple such rows can be
   used to model a continuous period of incarceration.
+data_classification: source
 primary_key_cols:
   - mov_cur_inmt_num
   - mov_seq_num

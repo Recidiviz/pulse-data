@@ -1,6 +1,7 @@
 file_tag: RECIDIVIZ_REFERENCE_supervision_district_id_to_name
 file_description: |-
   Recidiviz-generated mapping of ND supervision district ids to their human-readable name.
+data_classification: source
 primary_key_cols:
   - supervising_district_external_id
 columns:

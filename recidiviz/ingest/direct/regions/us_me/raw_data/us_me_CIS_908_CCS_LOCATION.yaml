@@ -3,6 +3,7 @@ file_description: |-
   This table maps a location ID (Ccs_Location_Id) to details about that location. The location types include
   DOC Facilities, county jails, juvenile centers, supervision offices, group homes, courts, Maine government offices,
   Maine counties, US States, and Department of Corrections offices. It also includes the value of "Deceased".
+data_classification: source
 primary_key_cols:
   - Ccs_Location_Id
 columns:

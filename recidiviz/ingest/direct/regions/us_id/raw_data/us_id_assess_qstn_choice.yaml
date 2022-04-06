@@ -3,6 +3,7 @@ file_description: |-
   Contains a single row for all potential responses to questions for a specific IDOC “test”, section, and question
   number. Here a “test” is a broad term used in the IDOC data to represent a form, survey, assessment (really anything
   that is filled out by an IDOC employee about someone in custody).
+data_classification: source
 primary_key_cols:
   - qstn_choice_num
   - assess_qstn_num

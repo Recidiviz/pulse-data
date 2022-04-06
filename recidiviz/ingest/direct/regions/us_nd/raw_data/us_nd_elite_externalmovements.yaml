@@ -3,6 +3,7 @@ file_description: |-
   Each row represents a single movement of an incarcerated person from one incarceration facility to another, or in some
   cases to a different institution or to the outside world in the case of release. Sequences of rows in this table, for
   a given person and ordered by the MOVEMENT_SEQ, can be used to identify periods of incarceration.
+data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - MOVEMENT_SEQ

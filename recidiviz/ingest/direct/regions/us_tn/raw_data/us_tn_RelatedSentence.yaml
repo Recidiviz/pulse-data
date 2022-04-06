@@ -1,6 +1,7 @@
 file_tag: RelatedSentence
 file_description: |-
   This table contains one occurrence for any sentence that is related to the sentence identified in the primary key. This serves to identify those sentences running consecutive to or concurrent with the "parent" sentence.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - ConvictionCounty

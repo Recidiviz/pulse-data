@@ -1,6 +1,7 @@
 file_tag: DetainerActivity
 file_description: |-
   This table contains one occurrence for each receipt or disbursement of any form or letter pertaining to a person's detainer(s).
+data_classification: source
 primary_key_cols:
   - OffenderID
   - DetainerType

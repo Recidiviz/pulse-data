@@ -6,6 +6,7 @@ file_description: |-
   latest assessment results, whether they are being revoked, whether they are absconding, supervision level, and more.
 
   Note: this table does not include historical record of this aforementioned data.
+data_classification: source
 primary_key_cols:
   - SID
 columns:
@@ -47,25 +48,25 @@ columns:
     description: |-
       Current supervision level for the person.
     known_values:
-      - value: '0'
+      - value: "0"
         description: No calculated level
-      - value: '1'
+      - value: "1"
         description: Minimum - General *only* (Sex offense has a minimum of 2)
-      - value: '2'
+      - value: "2"
         description: Medium
-      - value: '3'
+      - value: "3"
         description: Maximum
-      - value: '4'
+      - value: "4"
         description: (DEPRECATED. NO LONGER USE THIS)
-      - value: '5'
+      - value: "5"
         description: NC - Not Classified (e.g. haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)
-      - value: '6'
+      - value: "6"
         description: Drug Court - Supervised the same as maximum (if not more) - Drug Court officers work with these people
-      - value: '7'
+      - value: "7"
         description: Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)
-      - value: '8'
+      - value: "8"
         description: (DEPRECATED. DOESN’T SEEM TO BE USED)
-      - value: '9'
+      - value: "9"
         description: IC Out - Interstate Compact Out - the person is going elsewhere
   - name: SUPER_OVERRIDE
     description: |-

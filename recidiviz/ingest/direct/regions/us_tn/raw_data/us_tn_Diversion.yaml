@@ -1,6 +1,7 @@
 file_tag: Diversion
 file_description: |-
   This table contains one occurrence for each diversion that applies to the specified case. These diversions apply to people who have not yet been sentenced.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - ConvictionCounty

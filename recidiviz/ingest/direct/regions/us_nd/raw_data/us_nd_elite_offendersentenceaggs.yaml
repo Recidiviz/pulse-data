@@ -3,6 +3,7 @@ file_description: |-
   Each row represents aggregated ("rolled up") information about the collection of sentences associated with a single
   booking. This includes the expected eventual release date based on all of the aggregated sentence information, when
   the person is expected to receive parole, and so on.
+data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID
 columns:

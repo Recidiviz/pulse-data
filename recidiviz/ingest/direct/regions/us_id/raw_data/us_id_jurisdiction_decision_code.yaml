@@ -1,6 +1,7 @@
 file_tag: jurisdiction_decision_code
 file_description: |-
   A code table that gives more information about the ultimate decisions for an early discharge request.
+data_classification: source
 primary_key_cols:
   - jurisdiction_decision_code_id
 columns:

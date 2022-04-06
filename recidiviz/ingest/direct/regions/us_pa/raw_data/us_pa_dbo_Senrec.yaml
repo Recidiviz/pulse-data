@@ -3,6 +3,7 @@ file_description: |-
   A table containing sentences to incarceration to be served under the authority of PADOC. This includes information
   about the terms of the sentence, as well as a small amount of information about the offenses and court case that led
   to the sentence.
+data_classification: source
 primary_key_cols:
   - curr_inmate_num
   - type_number

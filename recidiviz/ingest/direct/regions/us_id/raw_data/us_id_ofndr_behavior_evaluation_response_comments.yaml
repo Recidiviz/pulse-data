@@ -1,6 +1,7 @@
 file_tag: ofndr_behavior_evaluation_response_comments
 file_description: |-
   Contains a record for any comment associated with a PO behavior evaluation response.
+data_classification: source
 primary_key_cols:
   - ofndr_behavior_evaluation_response_comment_id
 columns:

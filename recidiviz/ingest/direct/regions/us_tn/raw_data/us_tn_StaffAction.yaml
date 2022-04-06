@@ -1,6 +1,7 @@
 file_tag: StaffAction
 file_description: |-
   This table contains one occurrence for every staff action logged within the parole subsystem.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - StaffID

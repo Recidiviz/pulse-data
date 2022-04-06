@@ -2,6 +2,7 @@ file_tag: cntc_rslt_cd
 file_description: |-
   A code table that gives details about what the end result of a supervision contact was (success, failure, arrest,
   etc).
+data_classification: source
 primary_key_cols:
   - cntc_rslt_cd
 columns:

@@ -2,6 +2,7 @@ file_tag: CIS_3090_MOVEMENT_TYPE
 file_description: |-
   This is a code table with one row per code and description. The movement type code is used in the
   Cis_3090_Movement_Type_Cd field on the CIS_309_MOVEMENT table.
+data_classification: source
 primary_key_cols:
   - Movement_Type_Cd
 columns:

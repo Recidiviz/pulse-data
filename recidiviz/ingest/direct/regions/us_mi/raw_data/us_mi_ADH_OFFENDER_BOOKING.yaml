@@ -2,6 +2,7 @@ file_tag: ADH_OFFENDER_BOOKING
 file_description: |-
   This table stores information about jurisdictions - periods of time when a justice-involved
   individual spends time within the MDOC.
+data_classification: source
 primary_key_cols:
   - offender_booking_id
 columns:

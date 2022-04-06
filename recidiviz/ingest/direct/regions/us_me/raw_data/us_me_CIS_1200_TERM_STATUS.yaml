@@ -1,6 +1,7 @@
 file_tag: CIS_1200_TERM_STATUS
 file_description: |-
   This is a code table for the status of a term. The values are used in the CIS_319_TERM raw table.
+data_classification: source
 primary_key_cols:
   - Term_Status_Cd
 columns:

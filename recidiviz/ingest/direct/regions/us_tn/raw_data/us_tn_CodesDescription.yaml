@@ -1,6 +1,7 @@
 file_tag: CodesDescription
 file_description: |-
   This table contains definitions for codes present in the tables sent by STS.
+data_classification: source
 primary_key_cols:
   - CodesTableID
   - Code

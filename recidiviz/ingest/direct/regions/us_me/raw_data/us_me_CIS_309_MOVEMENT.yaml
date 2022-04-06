@@ -10,6 +10,7 @@ file_description: |-
   for the day either for work or medical reasons. When a movement is related to transfers or intakes
   (Sentence/Disposition, Transfer), a related record is generated in the CIS_314_TRANSFER table.
   Movement types of Furlough, Escape, Transport, Discharge, and Release do not generate transfer records.
+data_classification: source
 primary_key_cols:
   - Movement_Id
 columns:

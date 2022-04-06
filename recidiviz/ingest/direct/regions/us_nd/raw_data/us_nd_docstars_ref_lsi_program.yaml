@@ -1,6 +1,7 @@
 file_tag: docstars_ref_lsi_program
 file_description: |-
   Reference file where each row refers to a specific program provider
+data_classification: source
 primary_key_cols: [PROGRAM_ID]
 columns:
  - name : PROGRAM_ID

@@ -7,6 +7,7 @@ file_description: |-
 #      - ParoleNumber
 #      - DocketID
 #      - InterviewID
+data_classification: source
 primary_key_cols: []
 columns:
   - name: InstitutionNumber

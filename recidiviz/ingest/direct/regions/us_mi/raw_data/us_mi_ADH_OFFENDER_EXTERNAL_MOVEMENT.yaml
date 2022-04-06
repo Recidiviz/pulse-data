@@ -2,6 +2,7 @@ file_tag: ADH_OFFENDER_EXTERNAL_MOVEMENT
 file_description: |-
   This table records every single movement that a justice-involved individual makes within
   MDOC, such as transfers between facilities, transfers to parole, readmissions, etc.
+data_classification: source
 primary_key_cols:
   - offender_external_movement_id
 columns:

@@ -1,6 +1,7 @@
 file_tag: docstars_officers
 file_description: |-
   Each row represents a unique supervision officer, which field office they work from, and who their supervisor is.
+data_classification: source
 primary_key_cols:
   - OFFICER
 columns:

@@ -1,6 +1,7 @@
 file_tag: incarcer2wk
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - docno
   - incrno

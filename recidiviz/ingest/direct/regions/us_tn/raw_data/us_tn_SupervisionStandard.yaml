@@ -1,6 +1,7 @@
 file_tag: SupervisionStandard
 file_description: |-
   This table contains one occurrance for each Supervision Standard.
+data_classification: source
 primary_key_cols:
   - PlanType
   - SupervisionLevel

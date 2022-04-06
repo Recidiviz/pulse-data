@@ -1,6 +1,7 @@
 file_tag: Incident
 file_description: |-
   This table contains all information about incidents which occur at institutions, or any other TOMIS defined site.
+data_classification: source
 primary_key_cols:
   - IncidentID
 columns:

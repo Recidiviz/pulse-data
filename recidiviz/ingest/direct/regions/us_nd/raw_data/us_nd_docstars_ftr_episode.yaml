@@ -2,6 +2,7 @@ file_tag: docstars_ftr_episode
 file_description: |-
   Each row represents a particular instance of a referral of a particular person to a particular program within
   FTR (Free Through Recovery). This includes metadata about the referral as well as the program interaction itself.
+data_classification: source
 primary_key_cols:
   - EPISODE_ID
 columns:

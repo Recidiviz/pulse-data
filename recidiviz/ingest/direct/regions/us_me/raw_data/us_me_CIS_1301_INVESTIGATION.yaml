@@ -1,6 +1,7 @@
 file_tag: CIS_1301_INVESTIGATION
 file_description: |-
   This table lists the types of investigations that may be related to pre or post sentencing events.
+data_classification: source
 primary_key_cols:
   - Investigation_Cd
 columns:

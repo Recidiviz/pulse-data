@@ -1,6 +1,7 @@
 file_tag: CIS_9003_COUNTY
 file_description: |-
   This table lists all of the counties in Maine and the codes associated with them.
+data_classification: source
 primary_key_cols:
   - County_Cd
 columns:

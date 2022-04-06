@@ -1,6 +1,7 @@
 file_tag: CIS_4305_RECOMMENDATION_ACTION
 file_description: |-
   The code table that maps to the recommended actions for assessment results.
+data_classification: source
 primary_key_cols:
   - Recommendation_Action_Cd
 columns:

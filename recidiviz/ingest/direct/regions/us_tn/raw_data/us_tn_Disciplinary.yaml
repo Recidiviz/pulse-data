@@ -1,6 +1,7 @@
 file_tag: Disciplinary
 file_description: |-
   This table contains all information relating to disciplinaries. Disciplinaries may result from an incident, or a job/class related action.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - IncidentID

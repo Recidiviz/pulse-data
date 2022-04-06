@@ -1,6 +1,7 @@
 file_tag: behavior_evaluation_statuses
 file_description: |-
   #TODO(#9180)
+data_classification: source
 primary_key_cols:
   - behavior_evaluation_status_id
 columns:

@@ -1,6 +1,7 @@
 file_tag: CIS_460_INCIDENTS
 file_description: |-
   This table has incidents reported for a client that is either incarcerated or on Supervised Community Confinement.
+data_classification: source
 primary_key_cols:
   - Incident_Id
 columns:

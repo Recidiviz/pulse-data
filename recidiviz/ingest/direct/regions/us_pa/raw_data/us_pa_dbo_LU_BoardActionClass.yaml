@@ -4,6 +4,7 @@ file_description: |-
   NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ActionClassCode
+data_classification: source
 primary_key_cols: []
 columns:
   - name: ActionClassCode

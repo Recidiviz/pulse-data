@@ -2,6 +2,7 @@ file_tag: dbo_tblCCISAllCCC
 file_description: |-
   A table from the Community Corrections Information System (CCIS) which maps facility
   codes to facility names for all Community Corrections Centers and Community Contract Facilities.
+data_classification: source
 primary_key_cols:
   - computer_code
 columns:

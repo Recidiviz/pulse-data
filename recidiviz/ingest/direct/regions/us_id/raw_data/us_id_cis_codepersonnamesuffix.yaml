@@ -1,6 +1,7 @@
 file_tag: cis_codepersonnamesuffix
 file_description: |-
   Not in use
+data_classification: source
 primary_key_cols:
   - id
 columns:

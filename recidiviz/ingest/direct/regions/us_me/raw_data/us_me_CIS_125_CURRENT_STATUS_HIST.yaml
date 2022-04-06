@@ -2,6 +2,7 @@ file_tag: CIS_125_CURRENT_STATUS_HIST
 file_description: |-
   This table contains all of the statuses from incarceration and supervision that any client has ever had.
   It is an append-only table that is updated when new records are created in the CIS_314_TRANSFER table.
+data_classification: source
 primary_key_cols:
   - Current_Status_Hist_Id
 columns:

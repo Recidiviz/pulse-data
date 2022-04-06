@@ -3,6 +3,7 @@ file_description: |-
   This table has LSI assessments results for a client and includes information about when the LSI assessment was 
   taken, whether the LSI rating was overridden, the reason it was overridden, the reassessment date, 
   and the date the score is effective from.
+data_classification: source
 primary_key_cols:
   - Lsi_History_Id
 columns:

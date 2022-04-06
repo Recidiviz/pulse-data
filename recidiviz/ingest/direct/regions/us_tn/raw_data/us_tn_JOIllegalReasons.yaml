@@ -1,6 +1,7 @@
 file_tag: JOIllegalReasons
 file_description: |-
   This table contains one occurrence of a reason why a judgment order is illegal or incomplete. Multiple reasons can be present for a particular judgment order.
+data_classification: source
 primary_key_cols:
   - OffenderID
   - ConvictionCounty
