@@ -52,6 +52,7 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
         # First fill the non-nullable fields
         new_document = {
             "personExternalId": data["person_external_id"],
+            "pseudonymizedId": data["pseudonymized_id"],
             "stateCode": data["state_code"],
             "personName": {
                 snake_to_camel(k): person_name_case(v)

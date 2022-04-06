@@ -28,33 +28,55 @@ CLIENT_RECORD_DESCRIPTION = """
 
 CLIENT_RECORD_QUERY_TEMPLATE = """
     /*{description}*/
-    SELECT 
-        person_external_id,
-        "US_TN" AS state_code,
-        person_name,
-        officer_id,
-        supervision_type,
-        supervision_level,
-        supervision_level_start,
-        address,
-        phone_number,
-        expiration_date,
-        current_balance,
-        last_payment_amount,
-        last_payment_date,
-        exemption_notes AS fee_exemptions,
-        special_conditions_on_current_sentences AS special_conditions,
-        SPE_note_due AS next_special_conditions_check,
-        compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible = 'c1' AS eligible,
-        compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible IN ('c1', 'c2', 'c3') AS eligible_with_discretion,
-        eligible_level_start,
-        current_offenses,
-        lifetime_offenses_expired,
-        judicial_district,
-        last_DRUN AS drug_screens_past_year,
-        sanctions_in_last_year AS sanctions_past_year,
-        last_ARR_Note AS most_recent_arrest_check,
-    FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
+    WITH 
+    tn_clients AS (
+        SELECT 
+            person_external_id,
+            "US_TN" AS state_code,
+            person_name,
+            officer_id,
+            supervision_type,
+            supervision_level,
+            supervision_level_start,
+            address,
+            phone_number,
+            expiration_date,
+            current_balance,
+            last_payment_amount,
+            last_payment_date,
+            exemption_notes AS fee_exemptions,
+            special_conditions_on_current_sentences AS special_conditions,
+            SPE_note_due AS next_special_conditions_check,
+            compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible = 'c1' AS eligible,
+            compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible IN ('c1', 'c2', 'c3') AS eligible_with_discretion,
+            eligible_level_start,
+            current_offenses,
+            lifetime_offenses_expired,
+            judicial_district,
+            last_DRUN AS drug_screens_past_year,
+            sanctions_in_last_year AS sanctions_past_year,
+            last_ARR_Note AS most_recent_arrest_check,
+        FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
+    )
+
+    SELECT
+        *,
+        # truncating hash string
+        SUBSTRING(
+            # hashing external ID to base64url
+            REPLACE(
+                REPLACE(
+                    TO_BASE64(SHA256(state_code || person_external_id)), 
+                    '+', 
+                    '-'
+                ), 
+                '/', 
+                '_'
+            ), 
+            1, 
+            16
+        ) AS pseudonymized_id,
+    FROM tn_clients
 """
 
 CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
