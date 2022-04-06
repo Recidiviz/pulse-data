@@ -44,7 +44,7 @@ To add new dependencies to the Pipfile
 
 * Edit `recidiviz/airflow/Pipfile` to include the new package (if needed only for tests, add to [dev-packages]).
 * Push the branch.
-* Trigger the "Re-lock Pipenv" Github action for the branch.
+* Trigger the "Re-lock Airflow Pipenv" Github action for the branch.
 * Pull changes that are added once it succeeds.
 * Run the following:
 
