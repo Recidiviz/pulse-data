@@ -44,7 +44,12 @@ PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
             WHEN "US_ID" THEN level_2_supervision_location_name
             WHEN "US_ME" THEN INITCAP(level_1_supervision_location_name)
             WHEN "US_ND" THEN INITCAP(level_1_supervision_location_name)
-            WHEN "US_TN" THEN INITCAP(level_2_supervision_location_name)
+            WHEN "US_TN" THEN 
+                CASE
+                    WHEN level_2_supervision_location_name = "NOT_APPLICABLE" THEN "OTHER"
+                    WHEN level_2_supervision_location_name = "INTERNAL_UNKNOWN" THEN "INTERNAL_UNKNOWN"
+                    ELSE INITCAP(level_2_supervision_location_name)
+                END
             ELSE INITCAP(level_1_supervision_location_name)
         END AS location_name,
     FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names`

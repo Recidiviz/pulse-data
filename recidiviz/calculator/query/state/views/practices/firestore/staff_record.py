@@ -57,8 +57,8 @@ STAFF_RECORD_QUERY_TEMPLATE = """
         ON logic_staff = StaffID
         LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_tn_roster` roster
         ON roster.external_id = staff.UserID
-        LEFT JOIN `{project_id}.{external_reference_dataset}.us_tn_supervision_facility_names` facilities
-        ON staff.SiteID=facilities.facility_code
+        LEFT JOIN `{project_id}.{external_reference_dataset}.us_tn_supervision_locations` facilities
+        ON staff.SiteID=facilities.site_code
         WHERE Status = 'A'
             AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM')
     )

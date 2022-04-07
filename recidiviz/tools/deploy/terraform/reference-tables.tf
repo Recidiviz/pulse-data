@@ -173,7 +173,7 @@ module "us_me_incarceration_facility_names_table" {
 EOF
 }
 
-module "us_tn_supervision_facility_names_table" {
+module "us_tn_supervision_locations_table" {
   source = "./modules/reference-table"
 
   project_id     = var.project_id
@@ -181,16 +181,16 @@ module "us_tn_supervision_facility_names_table" {
   dataset_id     = module.external_reference_dataset.dataset_id
   recidiviz_root = local.recidiviz_root
 
-  table_name = "us_tn_supervision_facility_names"
+  table_name = "us_tn_supervision_locations"
   schema     = <<EOF
 [
   {
-    "name": "facility_code",
+    "name": "site_code",
     "type": "STRING",
     "mode": "REQUIRED"
   },
   {
-    "name": "facility_name",
+    "name": "site_name",
     "type": "STRING",
     "mode": "REQUIRED"
   },
