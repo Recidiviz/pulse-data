@@ -515,6 +515,11 @@ class DashboardUserRestrictions(CaseTriageBase):
         default=False,
         comment="User has permission to view Leadership Dashboard beta charts",
     )
+    user_hash = Column(
+        String(255),
+        nullable=False,
+        comment="Pseudonymous identifier for logging user activity without exposing PII",
+    )
 
 
 class OfficerMetadata(CaseTriageBase):

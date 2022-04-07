@@ -185,6 +185,7 @@ def dashboard_user_restrictions_by_email() -> Tuple[
                 DashboardUserRestrictions.can_access_case_triage,
                 DashboardUserRestrictions.should_see_beta_charts,
                 DashboardUserRestrictions.routes,
+                DashboardUserRestrictions.user_hash,
             )
             .filter(
                 DashboardUserRestrictions.state_code == region_code.upper(),
@@ -265,6 +266,7 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
                     DashboardUserRestrictions.can_access_case_triage,
                     DashboardUserRestrictions.should_see_beta_charts,
                     DashboardUserRestrictions.routes,
+                    DashboardUserRestrictions.user_hash,
                 )
                 .filter(DashboardUserRestrictions.state_code == region_code.upper())
                 .order_by(DashboardUserRestrictions.restricted_user_email)
@@ -330,6 +332,7 @@ def _format_db_results(
         "can_access_case_triage": user_restrictions["can_access_case_triage"],
         "should_see_beta_charts": user_restrictions["should_see_beta_charts"],
         "routes": user_restrictions["routes"],
+        "user_hash": user_restrictions["user_hash"],
     }
 
 
@@ -353,6 +356,7 @@ def _normalize_current_restrictions(
             "should_see_beta_charts", False
         ),
         "routes": current_app_metadata.get("routes", {}),
+        "user_hash": current_app_metadata.get("user_hash"),
     }
 
 

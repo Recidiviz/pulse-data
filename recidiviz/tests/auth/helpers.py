@@ -45,6 +45,7 @@ def generate_fake_user_restrictions(
         can_access_case_triage=can_access_case_triage,
         should_see_beta_charts=should_see_beta_charts,
         routes=routes,
+        user_hash=f"{email}::hashed",
     )
 
 
