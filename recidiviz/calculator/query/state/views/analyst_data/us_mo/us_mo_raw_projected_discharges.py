@@ -46,7 +46,7 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         ), 
         us_mo_lifetime_sentences AS (
             SELECT DISTINCT BW_DOC AS external_id
-            FROM `{project_id}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK026_latest`
+            FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBAKRDTA_TAK026_latest`
             -- Lifetime supervision status codes as listed in us_mo_sentence_classification
             -- TODO(#9848) Remove special case logic when Dataflow IP/SP normalization results are output to BQ
             WHERE BW_SCD IN ('35I6010', '35I6020', '40O6010', '40O6020', '90O1070', '95O1020', '95O2060')
@@ -66,7 +66,7 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
                 GREATEST(COALESCE(parole_max_completion_date,probation_max_completion_date), COALESCE(probation_max_completion_date,parole_max_completion_date)) as projected_end_date,
                 NULL AS active_revocation,
             FROM us_mo_max_dates max_dates 
-            LEFT JOIN `{project_id}.reference_views.supervision_location_ids_to_names` ref
+            LEFT JOIN `{project_id}.{reference_dataset}.supervision_location_ids_to_names` ref
                 ON max_dates.supervising_district_external_id = ref.level_1_supervision_location_external_id
                 AND max_dates.state_code = ref.state_code
             LEFT JOIN us_mo_lifetime_sentences ls

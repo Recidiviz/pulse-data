@@ -23,9 +23,12 @@ To generate the view, run:
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SESSIONS_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.case_triage.client_event.types import ClientEventType
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
 )
@@ -44,7 +47,8 @@ with clients AS (
         person_external_id,
         etl_clients.projected_end_date
     FROM `{{project_id}}.{{case_triage_dataset}}.etl_clients_materialized` etl_clients
-    JOIN `{{project_id}}.state.state_person_external_id` state_person_external_id
+    JOIN `{{project_id}}.{{base_dataset}}.state_person_external_id` 
+    state_person_external_id
         ON state_person_external_id.state_code = etl_clients.state_code
            AND state_person_external_id.external_id = etl_clients.person_external_id
 ),
@@ -83,7 +87,8 @@ contacts AS (
             )
         ) AS event_metadata
     FROM clients
-    JOIN `{{project_id}}.state.state_supervision_contact` state_supervision_contact
+    JOIN `{{project_id}}.{{base_dataset}}.state_supervision_contact` 
+    state_supervision_contact
         USING (state_code, person_id)
     WHERE
         state_supervision_contact.status = "{StateSupervisionContactStatus.COMPLETED.value}"
@@ -102,7 +107,7 @@ FULL OUTER JOIN export_time ON TRUE
 """
 
 CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    dataset_id=VIEWS_DATASET,
+    dataset_id=CASE_TRIAGE_DATASET,
     view_id="etl_client_events",
     view_query_template=CLIENT_EVENTS_QUERY_TEMPLATE,
     should_materialize=True,
@@ -116,7 +121,8 @@ CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "exported_at",
     ],
     analyst_views_dataset=SESSIONS_DATASET,
-    case_triage_dataset=VIEWS_DATASET,
+    case_triage_dataset=CASE_TRIAGE_DATASET,
+    base_dataset=STATE_BASE_DATASET,
 )
 
 if __name__ == "__main__":

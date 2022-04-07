@@ -80,17 +80,6 @@ class BigQueryViewTest(unittest.TestCase):
             "SELECT * FROM `other-project.view_dataset.my_view`", view.select_query
         )
 
-    @patch("recidiviz.big_query.big_query_view.GCP_PROJECTS", [PROJECT_ID])
-    def test_simple_view_invalid_raw_project_id(self) -> None:
-        with self.assertRaises(ValueError):
-            _ = BigQueryView(
-                project_id="other-project",
-                dataset_id="view_dataset",
-                view_id="my_view",
-                description="my_view description",
-                view_query_template=f"SELECT * FROM `{self.PROJECT_ID}.some_dataset.table`",
-            )
-
     def test_extra_format_args(self) -> None:
         view = BigQueryView(
             dataset_id="view_dataset",

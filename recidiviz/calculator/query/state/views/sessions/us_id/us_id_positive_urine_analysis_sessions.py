@@ -21,6 +21,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -39,8 +42,8 @@ US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_QUERY_TEMPLATE = """
         person_id,
         SAFE_CAST(smpl_rqst_dt AS DATE) urine_analysis_date,
         LOGICAL_OR(sbstnc_found_flg = 'Y') AS is_positive_result,
-      FROM `{project_id}.us_id_raw_data_up_to_date_views.sbstnc_tst_latest` s
-      LEFT JOIN `{project_id}.us_id_raw_data_up_to_date_views.sbstnc_rslt_latest`
+      FROM `{project_id}.{us_id_raw_data_up_to_date_dataset}.sbstnc_tst_latest` s
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.sbstnc_rslt_latest`
       USING (tst_id)
       LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` p
       ON s.ofndr_num = p.external_id
@@ -77,6 +80,7 @@ US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_DESCRIPTION,
     view_query_template=US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_QUERY_TEMPLATE,
     should_materialize=True,
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
 )
 
 if __name__ == "__main__":

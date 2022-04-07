@@ -22,7 +22,6 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.string import StrictStringFormatter
 
 PROJECT_ID_KEY = "project_id"
@@ -94,8 +93,6 @@ class BigQueryView(bigquery.TableReference):
                     f"Found no project_id set instantiating view [{view_id}]"
                 )
 
-        _validate_view_query_template(dataset_id, view_id, view_query_template)
-
         dataset_ref = bigquery.DatasetReference.from_string(
             dataset_id, default_project=project_id
         )
@@ -107,6 +104,7 @@ class BigQueryView(bigquery.TableReference):
         }
         self._view_id = view_id
         self._description = description
+        self._view_query_template = view_query_template
         self._view_query = self._format_view_query(
             view_query_template, inject_project_id=True, **self.query_format_kwargs
         )
@@ -200,6 +198,10 @@ class BigQueryView(bigquery.TableReference):
         return self._view_query
 
     @property
+    def view_query_template(self) -> str:
+        return self._view_query_template
+
+    @property
     def direct_select_query(self) -> str:
         """Returns a SELECT * query that queries the view directly. Should be used only
         when we need 100% live data from this view. In most cases, you should use
@@ -261,19 +263,6 @@ class BigQueryView(bigquery.TableReference):
     @property
     def clustering_fields(self) -> Optional[List[str]]:
         return self._clustering_fields
-
-
-def _validate_view_query_template(
-    dataset_id: str, view_id: str, view_query_template: str
-) -> None:
-    """Validates that the view_query_template does not contain any raw GCP project_id values. Note that this prevents
-    views from referencing project IDs directly in any comments or view descriptions."""
-    for project_id in GCP_PROJECTS:
-        if project_id in view_query_template:
-            raise ValueError(
-                f"view_query_template for view {dataset_id}.{view_id} cannot contain raw"
-                f" value: {project_id}."
-            )
 
 
 BigQueryViewType = TypeVar("BigQueryViewType", bound=BigQueryView)

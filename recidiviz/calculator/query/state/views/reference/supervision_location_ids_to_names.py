@@ -18,6 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -117,7 +118,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             END AS level_2_supervision_location_name,
             site_code AS level_1_supervision_location_external_id,
             site_name AS level_1_supervision_location_name
-        FROM `{project_id}.external_reference.us_tn_supervision_locations`
+        FROM `{project_id}.{external_reference_dataset}.us_tn_supervision_locations`
     ),
     id_location_names AS (
         SELECT
@@ -129,9 +130,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 level_2_supervision_location_name,
                 level_1_supervision_location_external_id,
                 INITCAP(level_1_supervision_location_external_id) AS level_1_supervision_location_name,
-        FROM `{project_id}.external_reference.us_id_supervision_unit_to_district_map`
+        FROM `{project_id}.{external_reference_dataset}.us_id_supervision_unit_to_district_map`
         LEFT OUTER JOIN
-            `{project_id}.external_reference.us_id_supervision_district_names`
+            `{project_id}.{external_reference_dataset}.us_id_supervision_district_names`
         USING (level_2_supervision_location_external_id)
     )
     SELECT * FROM me_location_names
@@ -152,6 +153,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
     view_query_template=SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
+    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
 )
 
 if __name__ == "__main__":

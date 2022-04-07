@@ -245,6 +245,8 @@ def main() -> int:
                     "recidiviz.ingest.models",
                 }
             )
+        if "us_id_case_note" in pipeline.__name__:
+            valid_prefixes = valid_prefixes.union({"recidiviz.ingest.direct.raw_data"})
         success &= check_dependencies_for_entrypoint(
             pipeline.__file__,
             valid_module_prefixes=make_module_matcher(valid_prefixes),

@@ -26,8 +26,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
+    STATE_BASE_DATASET,
 )
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -116,7 +117,7 @@ latest_periods AS (
     state_code,
     start_date
   FROM
-    `{project_id}.state.state_supervision_period`
+    `{project_id}.{base_dataset}.state_supervision_period`
   WHERE
     termination_date IS NULL
     AND admission_reason != 'ABSCONSION'
@@ -139,7 +140,7 @@ supervision_start_dates AS (
   FROM
     `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
   LEFT JOIN
-    `{project_id}.state.state_person`
+    `{project_id}.{base_dataset}.state_person`
   USING (person_id, gender, state_code)
   INNER JOIN
     latest_periods
@@ -189,11 +190,12 @@ WHERE
 """
 
 CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    dataset_id=VIEWS_DATASET,
+    dataset_id=CASE_TRIAGE_DATASET,
     view_id="etl_clients",
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
     analyst_views_dataset=SESSIONS_DATASET,
-    case_triage_dataset=VIEWS_DATASET,
+    base_dataset=STATE_BASE_DATASET,
+    case_triage_dataset=CASE_TRIAGE_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     columns=[
         "state_code",

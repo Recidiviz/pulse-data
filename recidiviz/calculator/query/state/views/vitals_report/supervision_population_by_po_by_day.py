@@ -130,6 +130,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
+    state_base_dataset=dataset_config.STATE_BASE_DATASET,
     should_materialize=True,
 )
 

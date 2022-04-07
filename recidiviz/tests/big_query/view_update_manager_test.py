@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Tests for view_update_manager.py."""
-
+import re
 import unittest
 from http import HTTPStatus
 from typing import Any, Dict, Set, Tuple
@@ -35,7 +35,12 @@ from recidiviz.big_query.view_update_manager import (
     view_builder_sub_graph_for_view_builders_to_load,
     view_update_manager_blueprint,
 )
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCP_PROJECTS,
+)
+from recidiviz.validation.views import dataset_config as validations_dataset_config
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
 )
@@ -49,6 +54,8 @@ _PROJECT_ID = "fake-recidiviz-project"
 _DATASET_NAME = "my_views_dataset"
 _DATASET_NAME_2 = "my_views_dataset_2"
 _DATASET_NAME_3 = "my_views_dataset_3"
+
+RAW_DATASET_ID_QUERY_REGEX = re.compile(r"`[a-z_{}]+\.([a-z_]+)\.[a-z_]+`")
 
 
 class ViewManagerTest(unittest.TestCase):
@@ -987,6 +994,51 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.assertCountEqual([table_4, table_5, table_3], sub_graph)
+
+    def test_valid_view_query_templates(self) -> None:
+        """Validates that the view_query_template does not contain any raw GCP
+        project_id values. Note that this prevents views from referencing project IDs
+        directly in any comments or view descriptions.
+
+        Also validates that all dataset_ids are passed in as arguments to the view,
+        and are not in the raw query template.
+        """
+        with patch.object(
+            BigQueryTableChecker, "_table_has_column"
+        ) as mock_table_has_column, patch.object(
+            BigQueryTableChecker, "_table_exists"
+        ) as mock_table_exists:
+            mock_table_has_column.return_value = True
+            mock_table_exists.return_value = True
+            all_views = [
+                view_builder.build() for view_builder in all_deployed_view_builders()
+            ]
+
+        for view in all_views:
+            for project_id in GCP_PROJECTS:
+                self.assertNotIn(
+                    project_id,
+                    view.view_query_template,
+                    msg=f"view_query_template for view [{view.dataset_id}."
+                    f"{view.view_id}] cannot contain raw"
+                    f" value: {project_id}.",
+                )
+
+            if (
+                view.dataset_id == validations_dataset_config.VIEWS_DATASET
+                and "freshness" in view.view_id
+            ):
+                # Due to the way freshness validation queries are constructed we have
+                # to allow for raw dataset_id strings in the view query template
+                continue
+
+            match = re.search(RAW_DATASET_ID_QUERY_REGEX, view.view_query_template)
+
+            if match:
+                raise ValueError(
+                    f"Found raw dataset_id [{match.group(1)}] in view query template for "
+                    f"view: [{view.dataset_id}.{view.view_id}]. Must replace with query argument."
+                )
 
 
 @mock.patch(

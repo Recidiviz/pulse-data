@@ -27,7 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.case_triage.opportunities.types import OpportunityType
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -141,10 +141,10 @@ ON TRUE
 
 
 TOP_OPPORTUNITIES_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    dataset_id=VIEWS_DATASET,
+    dataset_id=CASE_TRIAGE_DATASET,
     view_id="etl_opportunities",
     view_query_template=TOP_OPPORTUNITIES_QUERY_VIEW,
-    case_triage_dataset=VIEWS_DATASET,
+    case_triage_dataset=CASE_TRIAGE_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     columns=[
         "state_code",

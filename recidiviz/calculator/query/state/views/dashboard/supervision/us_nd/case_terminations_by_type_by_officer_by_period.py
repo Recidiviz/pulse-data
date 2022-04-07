@@ -36,7 +36,7 @@ and metric period months (1, 3, 6, 12, 36).
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = f"""
     /*{{description}}*/
-    {_get_query_prep_statement(reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET)}
+    {_get_query_prep_statement()}
     SELECT
       state_code,
       COUNT(DISTINCT absconsion) AS absconsion,
@@ -88,6 +88,8 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER = MetricBigQueryView
     description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
+    base_dataset=dataset_config.STATE_BASE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

@@ -59,7 +59,7 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
             max_parole_to_date AS projected_end_date,
             active_revocation,
         FROM us_nd_max_dates max_dates
-        LEFT JOIN `{project_id}.reference_views.supervision_location_ids_to_names` ref
+        LEFT JOIN `{project_id}.{reference_dataset}.supervision_location_ids_to_names` ref
             ON max_dates.supervising_district_external_id = ref.level_1_supervision_location_external_id
             AND max_dates.state_code = ref.state_code
         -- This subquery identifies individuals in "active revocation" where TA_TYPE = 13
@@ -68,7 +68,7 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
                 SELECT DATE(PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', PAROLE_TO)) AS PAROLE_TO, 
                         1 AS active_revocation ,
                         pei.person_id
-                FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_offendercasestable_latest`
+                FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest`
                 LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
                     ON SID = pei.external_id
                     AND pei.state_code = "US_ND"

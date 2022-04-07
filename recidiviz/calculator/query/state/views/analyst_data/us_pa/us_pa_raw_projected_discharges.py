@@ -48,7 +48,7 @@ US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
       SELECT
         person_id,
         MAX(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y%m%d', max_expir_date) AS DATE)) AS max_release_date,
-      FROM `{project_id}.us_pa_raw_data_up_to_date_views.dbo_Senrec_latest` senrec
+      FROM `{project_id}.{us_pa_raw_data_up_to_date_dataset}.dbo_Senrec_latest` senrec
       INNER JOIN external_ids
         ON senrec.curr_inmate_num = external_ids.external_id
       GROUP BY person_id 
@@ -70,7 +70,7 @@ US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         FROM us_pa_caseload caseload
         LEFT JOIN sentences
             USING(person_id)
-        LEFT JOIN `{project_id}.reference_views.supervision_location_ids_to_names` ref
+        LEFT JOIN `{project_id}.{reference_dataset}.supervision_location_ids_to_names` ref
           ON caseload.supervising_district_external_id = ref.level_2_supervision_location_external_id
           AND caseload.state_code = ref.state_code
         WHERE COALESCE(is_life, false) = false 

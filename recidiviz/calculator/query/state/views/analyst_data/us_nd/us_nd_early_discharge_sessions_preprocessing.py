@@ -28,6 +28,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,7 +52,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
                 offendercases.*,
                 EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', term_date)) AS term_date_clean,
                 projected_completion_date
-            FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_offendercasestable_latest` offendercases
+            FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest` offendercases
             LEFT JOIN `{project_id}.{state_dataset}.state_supervision_sentence` supervision_sentence
                 ON offendercases.CASE_NUMBER = supervision_sentence.external_id
             WHERE TA_type = '1'
@@ -61,7 +64,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
             *,
             EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', term_date)) AS term_date_clean,
             'SUSPENDED' AS sentence_type,
-        FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_offendercasestable_latest` offendercases
+        FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest` offendercases
         -- To identify early discharges from probation in US_ND, we were told to look for TA_TYPE = '5'
         -- (term type = 5) corresponds to a "positive termination" reason. However, this designation is
         -- only available for SUSPENDED sentence types. There are a smaller number of deferred sentences,
@@ -132,6 +135,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     state_dataset=STATE_BASE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
 )
 
 if __name__ == "__main__":

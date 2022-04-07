@@ -17,7 +17,10 @@
 """Creates a view to help autofill compliant reporting referral form"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -37,7 +40,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
             COALESCE(CAST(vic.TotalRestitution AS FLOAT64),0) AS TotalRestitution,
             COALESCE(CAST(vic.MonthlyRestitution AS FLOAT64 ),0) AS MonthlyRestitution,
             vic.VictimName,
-            FROM `{project_id}.sessions.us_tn_sentences_preprocessed_materialized` pp
+            FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` pp
             LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.JOVictim_latest` vic
                 ON CAST(pp.external_id AS STRING) = CONCAT(vic.OffenderID, vic.ConvictionCounty, vic.CaseYear, vic.CaseNumber, FORMAT('%03d', CAST(vic.CountNumber AS INT64)))
             WHERE pp.sentence_status !='IN'
@@ -169,6 +172,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

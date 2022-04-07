@@ -20,6 +20,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,10 +45,10 @@ US_ID_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE = """
                 ELSE SAFE_CAST(LEFT(NULLIF(qstn_choice_desc, 'LEFT UNANSWERED'), 1) AS INT64) END
             AS assessment_response, 
             SAFE.PARSE_DATE("%F", SPLIT(ofndr_tst.updt_dt, ' ')[OFFSET(0)]) as assessment_date,
-        FROM `{project_id}.us_id_raw_data_up_to_date_views.tst_qstn_rspns_latest`
-        INNER JOIN `{project_id}.us_id_raw_data_up_to_date_views.assess_qstn_choice_latest`
+        FROM `{project_id}.{us_id_raw_data_up_to_date_dataset}.tst_qstn_rspns_latest`
+        INNER JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.assess_qstn_choice_latest`
             USING (qstn_choice_num, assess_qstn_num, assess_tst_id)
-        INNER JOIN `{project_id}.us_id_raw_data_up_to_date_views.ofndr_tst_latest` ofndr_tst
+        INNER JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.ofndr_tst_latest` ofndr_tst
             USING (ofndr_tst_id, assess_tst_id)
         INNER JOIN `{project_id}.{base_dataset}.state_person_external_id` person
             ON person.external_id = ofndr_num
@@ -107,6 +110,7 @@ US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     lsir_question_array=",".join([str(x) for x in range(1, 55)]),
     should_materialize=False,
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
 )
 
 if __name__ == "__main__":

@@ -122,7 +122,7 @@ def hack_us_id_absconsions(dataflow_metric_table: str) -> str:
             person_id,
             state_code
           FROM
-            `{{project_id}}.state.state_supervision_period`
+            `{{project_id}}.{{state_base_dataset}}.state_supervision_period`
           WHERE
             termination_date IS NULL
             AND (state_code != 'US_ID' OR admission_reason != 'ABSCONSION')

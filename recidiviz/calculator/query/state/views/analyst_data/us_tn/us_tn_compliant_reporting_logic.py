@@ -17,7 +17,12 @@
 """Creates a view to identify individuals eligible for Compliant Reporting"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+    STATE_BASE_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,10 +47,10 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 CASE WHEN Supervision_Level LIKE "%MINIMUM%" THEN DATE_ADD(Plan_Start_Date, INTERVAL 12 MONTH)
                      WHEN Supervision_Level LIKE "%MEDIUM%" THEN DATE_ADD(Plan_Start_Date, INTERVAL 18 MONTH)
                     ELSE '9999-01-01' END AS date_sup_level_eligible,
-            FROM `{project_id}.static_reference_tables.us_tn_standards_due`
+            FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due`
             WHERE date_of_standards = (
                 SELECT MAX(date_of_standards)
-                FROM `{project_id}.static_reference_tables.us_tn_standards_due`
+                FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due`
             )
     ), 
     -- This CTE pulls past supervision plan information to catch edge cases where if someone moved from minimum -> medium less than 18 months ago,
@@ -354,7 +359,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     ),
     special_conditions AS (
         SELECT person_id, ARRAY_AGG(conditions IGNORE NULLS) AS special_conditions_on_current_sentences
-        FROM `{project_id}.state.state_supervision_sentence`
+        FROM `{project_id}.{base_dataset}.state_supervision_sentence`
         WHERE state_code ='US_TN'
         AND completion_date >= CURRENT_DATE('US/Eastern')
         GROUP BY 1
@@ -780,19 +785,19 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             USING(Offender_ID)
         LEFT JOIN rejection_codes_max_date
             USING(Offender_ID)
-        LEFT JOIN `{project_id}.state.state_person_external_id` pei
+        LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
             ON pei.external_id = Offender_ID
         -- Use compartment level 0 to get most recent supervision start date
         LEFT JOIN (
             SELECT *
-            FROM `{project_id}.sessions.compartment_level_0_super_sessions_materialized`
+            FROM `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized`
             WHERE compartment_level_0 = 'SUPERVISION' 
             QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY session_id_end DESC) = 1 
             ) sessions_supervision
             ON pei.person_id = sessions_supervision.person_id
         LEFT JOIN special_conditions
             ON pei.person_id = special_conditions.person_id
-        LEFT JOIN `{project_id}.state.state_person` sp
+        LEFT JOIN `{project_id}.{base_dataset}.state_person` sp
             ON sp.person_id = pei.person_id
         LEFT JOIN person_status_cte
             USING(Offender_ID)
@@ -829,6 +834,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
+    base_dataset=STATE_BASE_DATASET,
+    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

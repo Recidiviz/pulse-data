@@ -19,6 +19,7 @@ duplicate ID values.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -40,6 +41,7 @@ NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_NAME,
     view_query_template=NORMALIZED_ENTITIES_UNIQUE_IDS_QUERY_TEMPLATE,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     description=NORMALIZED_ENTITIES_UNIQUE_IDS_DESCRIPTION,
 )
 

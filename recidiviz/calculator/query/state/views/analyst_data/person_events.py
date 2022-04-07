@@ -26,9 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SHARED_METRIC_VIEWS_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.case_triage.views.dataset_config import (
-    VIEWS_DATASET as CASE_TRIAGE_DATASET,
-)
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

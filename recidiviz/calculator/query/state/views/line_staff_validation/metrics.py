@@ -57,9 +57,9 @@ WITH revocations AS (
         compartment_location_end AS district_id,
         supervising_officer_external_id_end AS supervising_officer_external_id
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-    LEFT JOIN `{project_id}.state.state_person`
+    LEFT JOIN `{project_id}.{base_dataset}.state_person`
         USING (person_id, state_code)
-    LEFT JOIN `{project_id}.state.state_person_external_id`
+    LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id`
         USING (person_id, state_code)
     WHERE
         (
@@ -81,7 +81,7 @@ SELECT
     JSON_VALUE(full_name, '$.given_names') as given_names,
     JSON_VALUE(full_name, '$.surname') as surname,
 FROM all_events
-LEFT JOIN `{project_id}.state.state_person`
+LEFT JOIN `{project_id}.{base_dataset}.state_person`
     USING (person_id, state_code)
 ORDER BY state_code, event_date
     """
@@ -94,6 +94,7 @@ METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=METRICS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == "__main__":

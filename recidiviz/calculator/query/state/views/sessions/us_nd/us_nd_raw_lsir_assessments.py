@@ -23,6 +23,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key import (
     ASSESSMENT_LSIR_PROTECTIVE_QUESTION_LIST,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -51,7 +54,7 @@ US_ND_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE = """
         SAFE_CAST(AOTotal AS INT64) as attitudes_orientation_total,
         -- Sum all responses indicating protective factors
         {lsir_protective_question_sum} as protective_factors_score_total,
-    FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_lsi_chronology_latest` a
+    FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_lsi_chronology_latest` a
     LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` p
         ON a.SID = p.external_id
         AND p.state_code = 'US_ND'
@@ -64,6 +67,7 @@ US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ND_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE,
     description=US_ND_RAW_LSIR_ASSESSMENTS_VIEW_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
     lsir_question_columns=",\n\t\t".join(
         [
             (

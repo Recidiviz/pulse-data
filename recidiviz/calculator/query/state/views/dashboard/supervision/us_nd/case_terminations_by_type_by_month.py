@@ -30,7 +30,7 @@ Supervision period termination count split by termination reason, month, distric
 
 
 # TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
-def _get_query_prep_statement(reference_views_dataset: str) -> str:
+def _get_query_prep_statement() -> str:
     """Return the Common Table Expression used to gather the termination case data"""
     return f"""
         -- Gather supervision period case termination data
@@ -44,8 +44,9 @@ def _get_query_prep_statement(reference_views_dataset: str) -> str:
             supervision_type,
             IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
             IFNULL(agent.agent_external_id, 'EXTERNAL_UNKNOWN') AS officer_external_id
-          FROM `{{project_id}}.state.state_supervision_period` supervision_period
-          LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
+          FROM `{{project_id}}.{{base_dataset}}.state_supervision_period` 
+          supervision_period
+          LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.supervision_period_to_agent_association` agent
             USING (supervision_period_id),
           {bq_utils.unnest_district(district_column="supervision_site")},
           {bq_utils.unnest_supervision_type(supervision_type_column="supervision_period.supervision_type")}
@@ -57,7 +58,7 @@ def _get_query_prep_statement(reference_views_dataset: str) -> str:
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = f"""
     /*{{description}}*/
-    {_get_query_prep_statement(reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET)}
+    {_get_query_prep_statement()}
     SELECT
       state_code, year, month,
       COUNT(DISTINCT absconsion) AS absconsion,
@@ -95,6 +96,8 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
     dimensions=("state_code", "year", "month", "supervision_type", "district"),
     description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 

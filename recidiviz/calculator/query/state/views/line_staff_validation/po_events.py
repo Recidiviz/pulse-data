@@ -145,7 +145,7 @@ PO_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PO_EVENTS_DESCRIPTION,
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    case_triage_dataset=case_triage_dataset_config.VIEWS_DATASET,
+    case_triage_dataset=case_triage_dataset_config.CASE_TRIAGE_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
 )
 

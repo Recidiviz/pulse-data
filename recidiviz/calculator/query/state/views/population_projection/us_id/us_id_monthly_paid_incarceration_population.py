@@ -17,6 +17,9 @@
 """Historical incarceration population for ID by month only counting the commitments that are paid by the IDOC"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,8 +45,8 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
             COALESCE(ofndr_loc.assgn_rsn_cd, 'INTERNAL_UNKNOWN') AS assgn_rsn_cd,
             CAST(SUBSTR(move_dtd, 1, 10) AS DATE) AS movement_start_date,
         # TODO(#5142): use the paid logic from a more ingested source
-        FROM `{project_id}.us_id_raw_data_up_to_date_views.movement_latest` move
-        LEFT JOIN `{project_id}.us_id_raw_data_up_to_date_views.ofndr_loc_hist_latest` ofndr_loc
+        FROM `{project_id}.{us_id_raw_data_up_to_date_dataset}.movement_latest` move
+        LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.ofndr_loc_hist_latest` ofndr_loc
             ON move.docno = ofndr_loc.ofndr_num
             AND SUBSTR(move.move_dtd, 1, 10) = SUBSTR(ofndr_loc.assgn_dt, 1, 10)
         LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
@@ -154,6 +157,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBui
     disaggregated_county_jails="', '".join(
         US_ID_INCARCERATION_DISAGGREGATED_COUNTY_JAILS
     ),
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
     should_materialize=False,
 )
 

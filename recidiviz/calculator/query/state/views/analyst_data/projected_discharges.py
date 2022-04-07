@@ -19,6 +19,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
@@ -33,6 +34,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_raw_project
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_projected_discharges import (
     US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE,
+)
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -77,7 +81,7 @@ PROJECTED_DISCHARGES_QUERY_TEMPLATE = (
         ON unioned.person_id = ss.person_id
         AND unioned.date_of_supervision BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
     LEFT JOIN 
-        ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.reference_views.augmented_agent_info`) agent
+        ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.{reference_dataset}.augmented_agent_info`) agent
         ON unioned.supervising_officer_external_id = agent.external_id
         AND unioned.state_code = agent.state_code
     INNER JOIN `{project_id}.{base_dataset}.state_person` person
@@ -96,6 +100,10 @@ PROJECTED_DISCHARGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     base_dataset=STATE_BASE_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_dataset=REFERENCE_VIEWS_DATASET,
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
+    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_pa"),
+    us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_mo"),
     should_materialize=True,
 )
 

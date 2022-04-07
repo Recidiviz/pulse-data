@@ -18,6 +18,9 @@
 in a month via a granted early discharge"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
+    VERA_DATASET,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -44,7 +47,7 @@ POPULATION_DENSITY_BY_SUPERVISION_OFFICE_QUERY_TEMPLATE = """
     FROM
         state_geographies g
     LEFT JOIN 
-        `{project_id}.vera_data.incarceration_trends` v
+        `{project_id}.{vera_dataset}.incarceration_trends` v
     ON 
         CAST(g.fips AS INT64) = v.fips
     GROUP BY 1,2,3,4,5
@@ -60,6 +63,7 @@ POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER = SimpleBigQueryViewBuilde
     description=POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     should_materialize=False,
+    vera_dataset=VERA_DATASET,
 )
 
 if __name__ == "__main__":

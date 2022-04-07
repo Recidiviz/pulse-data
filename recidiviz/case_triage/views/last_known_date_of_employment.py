@@ -21,7 +21,7 @@ a calc pipeline that outputs this information.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -46,11 +46,11 @@ View for fetching the last known date of employment
 """
 
 LAST_KNOWN_DATE_OF_EMPLOYMENT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=VIEWS_DATASET,
+    dataset_id=CASE_TRIAGE_DATASET,
     view_id="last_known_date_of_employment",
     description=LAST_KNOWN_DATE_OF_EMPLOYMENT_DESCRIPTION,
     view_query_template=LAST_KNOWN_DATE_OF_EMPLOYMENT_QUERY_TEMPLATE,
-    case_triage_dataset=VIEWS_DATASET,
+    case_triage_dataset=CASE_TRIAGE_DATASET,
     should_materialize=True,
 )
 
