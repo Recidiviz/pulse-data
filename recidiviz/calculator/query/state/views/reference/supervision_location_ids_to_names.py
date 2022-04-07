@@ -115,9 +115,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                         SUBSTR(district, STRPOS(district, ',') + 1)),
                     CONCAT('District ', district))
             END AS level_2_supervision_location_name,
-            facility_code AS level_1_supervision_location_external_id,
-            facility_name AS level_1_supervision_location_name
-        FROM `{project_id}.external_reference.us_tn_supervision_facility_names`
+            site_code AS level_1_supervision_location_external_id,
+            site_name AS level_1_supervision_location_name
+        FROM `{project_id}.external_reference.us_tn_supervision_locations`
     ),
     id_location_names AS (
         SELECT
