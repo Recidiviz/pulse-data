@@ -127,8 +127,8 @@ resource "google_cloudfunctions_function" "trigger_incremental_calculation_pipel
   environment_variables = {
     # This is an output variable from the composer environment, relevant docs:
     # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI" = google_composer_environment.default.config.0.airflow_uri
-    "GCP_PROJECT" = var.project_id
+    "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
+    "GCP_PROJECT"       = var.project_id
     "PIPELINE_DAG_TYPE" = "incremental"
     # Gets the IAP client id to use when talking to airflow from our custom python source.
     "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
@@ -156,8 +156,8 @@ resource "google_cloudfunctions_function" "trigger_historical_calculation_pipeli
   environment_variables = {
     # This is an output variable from the composer environment, relevant docs:
     # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI" = google_composer_environment.default.config.0.airflow_uri
-    "GCP_PROJECT" = var.project_id
+    "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
+    "GCP_PROJECT"       = var.project_id
     "PIPELINE_DAG_TYPE" = "historical"
     # Gets the IAP client id to use when talking to airflow from our custom python source.
     "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
@@ -230,7 +230,7 @@ resource "google_cloudfunctions_function" "trigger_post_deploy_cloudsql_to_bq_re
   entry_point = "trigger_post_deploy_cloudsql_to_bq_refresh"
   environment_variables = {
     "GCP_PROJECT" = var.project_id
-    "SCHEMA" = "state"
+    "SCHEMA"      = "state"
   }
 
   source_repository {
