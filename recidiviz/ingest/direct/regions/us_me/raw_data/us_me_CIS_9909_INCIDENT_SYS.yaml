@@ -1,0 +1,26 @@
+file_tag: CIS_9909_INCIDENT_SYS
+file_description: |-
+  This is a code table for codes associated with incident reports.
+data_classification: source
+primary_key_cols:
+  - INCIDENT_SYS_CD
+columns:
+  - name : INCIDENT_SYS_CD
+    description: The primary key of the table.
+  - name : INCIDENT_SYS_DESC
+    description: A plain-text description of the associated code. These codes are used in various different tables related to incidents.
+  - name : ADULT_IND
+    description: Indicates whether the value is used for adult clients.
+  - name : JUVENILE_IND
+    description: Indicates whether the value is used for juvenile clients.
+  - name : PBS_IND
+  - name : SYSTEM_REF_TX
+  - name : SYSTEM_REF_COMMENTS_TX
+  - name : LOGICAL_DELETE_IND
+  - name : CIS_9906_INCIDENT_SUB_CD
+    description: A sub-type code that could be useful in determining which table the code is used for.
+  - name : CREATED_BY_TX
+  - name : CREATED_ON_DATE
+  - name : MODIFIED_BY_TX
+  - name : MODIFIED_ON_DATE
+  - name : PBS_FACILITY_IND

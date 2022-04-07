@@ -1,0 +1,42 @@
+file_tag: CIS_324_AWOL
+file_description: |-
+  This table lists all escapes from DOC Facilities. It also includes escapes from community confinement (SCCP) and Parole.
+data_classification: source
+primary_key_cols:
+  - AWOL_ID
+columns:
+  - name : AWOL_ID
+    description: The primary key for the table.
+  - name : CIS_100_CLIENT_ID
+    description: The MDOC associated with this row.
+  - name : CIS_319_TERM_ID
+    description: The Term associated with this instance of escape.
+  - name : CIS_3240_AWOL_TYPE_CD
+    description: A code for the type of escape this was
+  - name : CIS_908_ESCAPED_FROM_ID
+    description: The escape from CIS_908_CCS_LOCATION ID
+  - name : CIS_908_RETURNED_TO_ID
+    description: The return-to CIS_908_CCS_LOCATION ID
+  - name : AWOL_DATE
+    description: The date the escape was recorded. All times in this field are midnight, look at AWOL_TIME for the time of escape.
+    is_datetime: True
+  - name : AWOL_TIME
+    description: The time of escape. All dates in this field are 1/1/1900, look at AWOL_DATE for the date.
+    is_datetime: True
+  - name : INEFFCT_DATE
+    description: The date the escape status became ineffective.
+    is_datetime: True
+  - name : RETURN_DATE
+    description: The date of return. All times in this field are midnight, look at RETURN_TIME for the time of return.
+    is_datetime: True
+  - name : RETURN_TIME
+    description: The time of return. All dates in this field are 1/1/1900, look at RETURN_DATE for the date.
+    is_datetime: True
+  - name : DAYS_UAL_NUM
+  - name : NOTES_TX
+  - name : CLOTHING_TX
+  - name : CONTACTS_TX
+  - name : CREATED_BY_TX
+  - name : CREATED_ON_DATE
+  - name : MODIFIED_BY_TX
+  - name : MODIFIED_ON_DATE

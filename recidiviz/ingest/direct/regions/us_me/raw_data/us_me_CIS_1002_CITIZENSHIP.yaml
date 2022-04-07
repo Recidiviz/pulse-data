@@ -1,0 +1,19 @@
+file_tag: CIS_1002_CITIZENSHIP
+file_description: |-
+  This is a code table for the types of citizenships that can be associated with a client.
+data_classification: source
+primary_key_cols:
+  - CITIZENSHIP_CD
+columns:
+  - name : CITIZENSHIP_CD
+    description: This is the primary key of the table.
+  - name : E_CITIZENSHIP_DESC
+    description: The plain-text description of the citizenship associated with the code.
+  - name : SYS_ROW_IND
+  - name : SYSTEM_REF_TX
+  - name : SYSTEM_REF_COMMENTS_TX
+  - name : LOGICAL_DELETE_IND
+  - name : CREATED_BY_TX
+  - name : CREATED_ON_DATE
+  - name : MODIFIED_BY_TX
+  - name : MODIFIED_ON_DATE

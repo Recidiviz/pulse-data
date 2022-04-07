@@ -1,0 +1,18 @@
+file_tag: CIS_9013_LANGUAGE
+file_description: |-
+  This is a code table that lists the languages that could be associated with a client's profile.
+data_classification: source
+primary_key_cols:
+  - LANGUAGE_CD
+columns:
+  - name : LANGUAGE_CD
+    description: The primary key of the table.
+  - name : E_LANGUAGE_DESC
+    description: The name of the language.
+  - name : SYSTEM_REF_TX
+  - name : SYSTEM_REF_COMMENTS_TX
+  - name : LOGICAL_DELETE_IND
+  - name : CREATED_BY_TX
+  - name : CREATED_ON_DATE
+  - name : MODIFIED_BY_TX
+  - name : MODIFIED_ON_DATE

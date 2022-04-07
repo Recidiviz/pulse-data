@@ -1,15 +1,19 @@
 file_tag: CIS_2041_NOTE_TYPE
 file_description: |-
-  TODO(#10734): Add raw data descriptions
+  This is a code table that describes the type of note that was recorded.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - Note_Type_Cd
 columns:
   - name : Adult_Ind
+    description: Indicates whether the value is used for adult clients.
   - name : Adult_Medicaid_Ind
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : E_Note_Type_Desc
+    description: The plain-text description associated with the code.
   - name : Juvenile_Ind
+    description: Indicates whether the value is used for juvenile clients.
   - name : Juvenile_Medicaid_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
@@ -17,3 +21,47 @@ columns:
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Note_Type_Cd
+    description: The primary key for the table.
+    known_values:
+      - value: '1'
+        description: 'Administrative Notes'
+      - value: '2'
+        description: 'Case Plan/Management'
+      - value: '3'
+        description: 'Classification Notes'
+      - value: '4'
+        description: 'Education Notes'
+      - value: '5'
+        description: 'General Note'
+      - value: '6'
+        description: 'Housing Area Notes'
+      - value: '7'
+        description: 'Medical Notes'
+      - value: '8'
+        description: 'Mental Health (Confidential)'
+      - value: '9'
+        description: 'Probation (Confidential)'
+      - value: '10'
+        description: 'Program Supervisor Notes'
+      - value: '11'
+        description: 'Reminder Note'
+      - value: '12'
+        description: 'Security Notes'
+      - value: '13'
+        description: 'Social Services Notes'
+      - value: '14'
+        description: 'Work Supervisor Notes'
+      - value: '15'
+        description: 'UTT'
+      - value: '16'
+        description: 'Mental Health (General)'
+      - value: '17'
+        description: 'Probation (General)'
+      - value: '18'
+        description: 'Investigation (Confidential)'
+      - value: '19'
+        description: 'OOS Travel Permit'
+      - value: '20'
+        description: 'ICOTS Transfer Application'
+      - value: '21'
+        description: 'Program Non-Compliance'

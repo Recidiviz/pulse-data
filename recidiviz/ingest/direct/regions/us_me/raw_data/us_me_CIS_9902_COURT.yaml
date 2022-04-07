@@ -1,8 +1,9 @@
 file_tag: CIS_9902_COURT
 file_description: |-
-  TODO(#10734): Add raw data descriptions
+  This table lists all of the courts and their associated IDs.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - Court_Cd
 columns:
   - name: Building_Name_Tx
   - name: Cis_9911_Court_Place_Cd
@@ -22,6 +23,7 @@ columns:
   - name: District_Num
   - name: Division_Name_Tx
   - name: E_Court_Desc
+    description: The name of the court
   - name: Fax_Num
   - name: Legal_Add1_Tx
   - name: Legal_Add2_Tx
@@ -40,3 +42,4 @@ columns:
   - name: System_Ref_Comments_Tx
   - name: System_Ref_Tx
   - name: Court_Cd
+    description: The primary key for the table.

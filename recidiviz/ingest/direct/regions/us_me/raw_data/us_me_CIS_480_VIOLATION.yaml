@@ -57,7 +57,7 @@ columns:
       - value: 113
         description: Parole
   - name : Cis_4009_Toll_Violation_Cd
-    description: "TODO(#10734): Fill this in"
+    description: The status of the violation toll, indicates whether the client has been arrested, summonsed, or if a warrant has been requested.
     known_values:
       - value: 60
         description: Arrested

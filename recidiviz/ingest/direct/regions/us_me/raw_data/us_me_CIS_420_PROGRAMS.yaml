@@ -1,0 +1,32 @@
+file_tag: CIS_420_PROGRAMS
+file_description: |-
+  This table is a list of programs available.
+data_classification: source
+primary_key_cols:
+  - PROGRAM_ID
+columns:
+  - name : PROGRAM_ID
+    description: The primary key for the table.
+  - name : NAME_TX
+    description: A plain-text name of the program
+  - name : CAPACITY_NUM
+    description: The number of people that can participate in the program.
+  - name : DESCRIPTION_TX
+    description: A plain-text description of the program.
+  - name : ADDRESS_TX
+  - name : APPROVED_IND
+  - name : CANCELLED_IND
+    description: An indicator of whether the program has been cancelled.
+  - name : CONTINUOUS_IND
+  - name : COMMWERC_ELIG_IND
+  - name : CIS_4035_ASSESS_PROG_CD
+    description: A code that maps to the program type in CIS_4035_ASSESS_PROG_TYPE.
+  - name : CIS_4201_PARTICIPATION_CD
+  - name : CIS_450_AGENCY_ID
+    description: An ID of the agency providing the program.
+  - name : CIS_451_CONTACT_ID
+  - name : CIS_451_FACILITATOR_ID
+  - name : CREATED_BY_TX
+  - name : CREATED_ON_DATE
+  - name : MODIFIED_BY_TX
+  - name : MODIFIED_ON_DATE

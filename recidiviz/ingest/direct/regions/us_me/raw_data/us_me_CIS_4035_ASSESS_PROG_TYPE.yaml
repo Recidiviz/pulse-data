@@ -1,19 +1,43 @@
 file_tag: CIS_4035_ASSESS_PROG_TYPE
 file_description: |-
-  The code table mapping the code to the description of type of program the assessment is for.
+  The code table mapping the code to the description of the type of program it is.
 data_classification: source
 primary_key_cols:
   - Assess_Prog_Type_Cd
 columns:
   - name : Adult_Comm_Ind
+    description: An indicator of whether the program is for adult clients on community supervision.
+    known_values:
+      - value: 'Y'
+        description: 'Yes'
+      - value: 'N'
+        description: 'No'
   - name : Adult_Cust_Ind
+    description: An indicator of whether the program is for adult clients in custody at a DOC facility.
+    known_values:
+      - value: 'Y'
+        description: 'Yes'
+      - value: 'N'
+        description: 'No'
   - name : Assess_Prog_Desc
-    description: The type of program that the assessment is for.
+    description: A description of the program.
   - name : Assessment_Ind
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Juvenile_Comm_Ind
+    description: An indicator of whether the program is for juvenile clients on community supervision.
+    known_values:
+      - value: 'Y'
+        description: 'Yes'
+      - value: 'N'
+        description: 'No'
   - name : Juvenile_Cust_Ind
+    description: An indicator of whether the program is for juvenile clients in custody at a DOC facility.
+    known_values:
+      - value: 'Y'
+        description: 'Yes'
+      - value: 'N'
+        description: 'No'
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date

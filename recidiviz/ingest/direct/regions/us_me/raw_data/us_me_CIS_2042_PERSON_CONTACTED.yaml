@@ -1,19 +1,101 @@
 file_tag: CIS_2042_PERSON_CONTACTED
 file_description: |-
-  TODO(#10734): Add raw data descriptions
+  This code table lists the type of person that was contacted for the contact note.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - Person_Contacted_Cd
 columns:
   - name : Adult_Ind
+    description: Indicates whether the value is used for adult clients.
   - name : Adult_Medicaid_Ind
   - name : Created_By_Tx
   - name : Created_On_Date
   - name : Juvenile_Ind
+    description: Indicates whether the value is used for juvenile clients.
   - name : Juvenile_Medicaid_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
   - name : Modified_On_Date
   - name : Person_Contacted_Desc
+    description: The plain-text description associated with the code.
   - name : System_Ref_Comments_Tx
   - name : System_Ref_Tx
   - name : Person_Contacted_Cd
+    description: The primary key for the table.
+    known_values:
+      - value: '1'
+        description: "Client"
+      - value: '2'
+        description: "Parent/Guardian"
+      - value: '3'
+        description: "DHHS Guardian"
+      - value: '4'
+        description: "Collateral"
+      - value: '5'
+        description: "Supervisor"
+      - value: '6'
+        description: "Co-worker"
+      - value: '7'
+        description: "Migration"
+      - value: '0'
+        description: "Other"
+      - value: '8'
+        description: "Self"
+      - value: '9'
+        description: "Counselor"
+      - value: '10'
+        description: "Lawyer"
+      - value: '11'
+        description: "Defense Attorney"
+      - value: '12'
+        description: "Social Worker"
+      - value: '13'
+        description: "Relative"
+      - value: '14'
+        description: "Victim"
+      - value: '15'
+        description: "Case Manager"
+      - value: '16'
+        description: "Police"
+      - value: '17'
+        description: "Teacher"
+      - value: '18'
+        description: "Employer"
+      - value: '19'
+        description: "DHHS"
+      - value: '20'
+        description: "Mentor"
+      - value: '21'
+        description: "Tracker"
+      - value: '22'
+        description: "Prosecutor"
+      - value: '23'
+        description: "District Attorney's Office"
+      - value: '24'
+        description: "Office of Attorney General"
+      - value: '25'
+        description: "Court"
+      - value: '26'
+        description: "Probation Officer"
+      - value: '27'
+        description: "Jail"
+      - value: '28'
+        description: "OOS PPO/Interstate Compact"
+      - value: '29'
+        description: "Outside Agency"
+      - value: '30'
+        description: "US Marshall Service"
+      - value: '31'
+        description: "Immigration and Customs Enforcement"
+      - value: '32'
+        description: "Spouse"
+      - value: '33'
+        description: "Ex-Spouse"
+      - value: '34'
+        description: "Boyfriend"
+      - value: '35'
+        description: "Girlfriend"
+      - value: '36'
+        description: "Anonymous"
+      - value: '37'
+        description: "School"
