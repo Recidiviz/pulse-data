@@ -1,4 +1,4 @@
-US_ID,dan@recidiviz.org,"",,case_triage_user,FALSE,TRUE,"{""community_projections"":true}",FALSE
-US_ID,emily@recidiviz.org,"",,case_triage_user,FALSE,TRUE,null,FALSE
-US_ID,ian@recidiviz.org,"",,case_triage_user,FALSE,TRUE,"{""community_projections"":false}",FALSE
-US_ID,nikhil@recidiviz.org,"",,case_triage_user,FALSE,TRUE,null,FALSE
+US_ID,dan@recidiviz.org,"",,case_triage_user,FALSE,TRUE,"{""community_projections"":true}",FALSE,dan@recidiviz.org::hashed
+US_ID,emily@recidiviz.org,"",,case_triage_user,FALSE,TRUE,null,FALSE,emily@recidiviz.org::hashed
+US_ID,ian@recidiviz.org,"",,case_triage_user,FALSE,TRUE,"{""community_projections"":false}",FALSE,ian@recidiviz.org::hashed
+US_ID,nikhil@recidiviz.org,"",,case_triage_user,FALSE,TRUE,null,FALSE,nikhil@recidiviz.org::hashed
