@@ -1,0 +1,23 @@
+file_tag: CIS_3142_TRAN_TYP_RSN
+file_description: |-
+  This table lists transfer type reasons. These values are not required by the form and not often selected.
+data_classification: source
+primary_key_cols:
+  - RECOMMEND_CD
+columns:
+  - name : RECOMMEND_CD
+    description: The primary key for the table.
+  - name : RECOMMEND_FOR_DESC
+    description: The plain-text description associated with the code.
+  - name : ADULT_IND
+    description: Indicates whether the value is used for adult clients.
+  - name : JUVENILE_IND
+    description: Indicates whether the value is used for juvenile clients.
+  - name : SYS_ROW_IND
+  - name : SYSTEM_REF_TX
+  - name : SYSTEM_REF_COMMENTS_TX
+  - name : LOGICAL_DELETE_IND
+  - name : CREATED_BY_TX
+  - name : CREATED_ON_DATE
+  - name : MODIFIED_BY_TX
+  - name : MODIFIED_ON_DATE

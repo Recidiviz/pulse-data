@@ -1,17 +1,47 @@
 file_tag: CIS_3091_MVMT_REASON
 file_description: |-
-  TODO(#10734): Add raw data descriptions
+  This table lists movement reasons. These values are not required by the form and not often selected.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - Mvmt_Reason_Cd
 columns:
   - name: Adult_Ind
+    description: Indicates whether the value is used for adult clients.
   - name: Created_By_Tx
   - name: Created_On_Date
   - name: Juvenile_Ind
+    description: Indicates whether the value is used for juvenile clients.
   - name: Logical_Delete_Ind
   - name: Modified_By_Tx
   - name: Modified_On_Date
   - name: Mvmt_Reason_Desc
+    description: The plain-text description associated with the code.
   - name: System_Ref_Comments_Tx
   - name: System_Ref_Tx
   - name: Mvmt_Reason_Cd
+    description: The primary key for the table.
+    known_values:
+      - value: '1'
+        description: 'Furlough -- Medical'
+      - value: '2'
+        description: 'Furlough -- All Other'
+      - value: '3'
+        description: 'Transport -- Hospital'
+      - value: '4'
+        description: 'Transport -- All Other'
+      - value: '5'
+        description: 'Transport -- Court'
+      - value: '6'
+        description: 'Escape'
+      - value: '7'
+        description: 'Transfer -- County Jail'
+      - value: '8'
+        description: 'Transfer -- All Other'
+      - value: '9'
+        description: 'Transfer -- SCCP'
+      - value: '10'
+        description: 'Transfer -- ISC'
+      - value: '11'
+        description: 'Transfer -- IAD'
+      - value: '12'
+        description: 'Community Reintegration'
