@@ -19,17 +19,18 @@
 from contextlib import contextmanager
 from typing import Iterator
 
-from paramiko import SFTPClient, SFTPFile
+from paramiko import SFTPFile
 
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
+from recidiviz.common.sftp_connection import RecidivizSftpConnection
 
 
 class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
     """A class that can be used to access contents of a file on an SFTP server."""
 
-    def __init__(self, sftp_file_path: str, sftp_client: SFTPClient):
+    def __init__(self, sftp_file_path: str, sftp_connection: RecidivizSftpConnection):
         self.sftp_file_path = sftp_file_path
-        self.sftp_client = sftp_client
+        self.sftp_connection = sftp_connection
 
     def get_contents_iterator(self) -> Iterator[bytes]:
         with self.open() as f:
@@ -38,5 +39,5 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
 
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[SFTPFile]:  # type: ignore
-        with self.sftp_client.open(filename=self.sftp_file_path, mode=mode) as f:
+        with self.sftp_connection.open(remote_file=self.sftp_file_path, mode=mode) as f:
             yield f

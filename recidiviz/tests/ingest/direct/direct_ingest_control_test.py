@@ -24,7 +24,6 @@ from http import HTTPStatus
 from typing import Any, Tuple
 from unittest import mock
 
-import paramiko
 from flask import Flask
 from mock import Mock, call, create_autospec, patch
 from paramiko.hostkeys import HostKeyEntry
@@ -38,6 +37,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResultWithSkipped
+from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -1076,11 +1076,9 @@ class TestDirectIngestControl(unittest.TestCase):
                 controller.kick_scheduler.assert_called_once()
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1149,7 +1147,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         response = self.client.post(
@@ -1159,11 +1162,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_task_manager.create_direct_ingest_handle_new_files_task.assert_called_once()
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1217,7 +1218,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         response = self.client.post(
@@ -1226,11 +1232,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1285,7 +1289,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         response = self.client.post(
@@ -1294,11 +1303,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1352,7 +1359,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         response = self.client.post(
@@ -1361,11 +1373,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1408,7 +1418,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         mock_download_controller.return_value = create_autospec(
@@ -1425,11 +1440,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1483,7 +1496,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         mock_download_controller.return_value = create_autospec(
@@ -1499,11 +1517,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1546,7 +1562,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         mock_download_controller.return_value = create_autospec(
@@ -1563,11 +1584,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1610,7 +1629,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         mock_download_controller.return_value = create_autospec(
@@ -1627,11 +1651,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-        ),
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
@@ -1685,7 +1707,12 @@ class TestDirectIngestControl(unittest.TestCase):
             post_process_downloads=lambda _, download_directory_path: None,
         )
         mock_sftp_auth.return_value = SftpAuth(
-            "host", HostKeyEntry(["host"], None), "username", "password", None
+            "host",
+            "host ssh-rsa some-key",
+            HostKeyEntry(["host"], None),
+            "username",
+            "password",
+            None,
         )
 
         mock_download_controller.return_value = create_autospec(

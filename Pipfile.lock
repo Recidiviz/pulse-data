@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "b3d91a41e3e8b7e21c41d557bfb4f9ca80beb64fc3731d493cc7ccd239ee6b08"
+            "sha256": "ab6aac75500387640c123347baa2e014be2b276d14e1aaacf4527dba930b121a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -744,7 +744,7 @@
                 "sha256:5b77935f3d9573e27007749a3b522f08d764c5b5930ff1527b2ab2743e9f0c15",
                 "sha256:b1030aadcbb2aeb4ee51475426351af83c1072456b918fb8fdb80666c4bb63b5"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
+            "markers": "python_version == '2.7' and python_version >= '3.6'",
             "version": "==1.7.2"
         },
         "google-cloud-datastore": {
@@ -942,7 +942,7 @@
                 "sha256:fa877ca7f6b48054f847b61d6fa7bed5cebb663ebc55e018fda12db09dcc664c",
                 "sha256:fdcec0b8399108577ec290f55551d926d9a1fa6cad45882093a7a07ac5ec147b"
             ],
-            "markers": "python_version >= '3' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))",
+            "markers": "platform_python_implementation == 'CPython'",
             "version": "==1.1.2"
         },
         "grpc-google-iam-v1": {
@@ -2178,6 +2178,13 @@
             "markers": "python_version >= '3.7'",
             "version": "==0.18.1"
         },
+        "pysftp": {
+            "hashes": [
+                "sha256:fbf55a802e74d663673400acd92d5373c1c7ee94d765b428d9f977567ac4854a"
+            ],
+            "index": "pypi",
+            "version": "==0.2.9"
+        },
         "python-dateutil": {
             "hashes": [
                 "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86",
@@ -3009,10 +3016,10 @@
         },
         "zope.configuration": {
             "hashes": [
-                "sha256:9f3f4b4c95cbde5a4bfc3c4ae557e527766e0bfe54d57976bac15726d78ae5ad",
-                "sha256:e9f02bac44405ad1526399d6574b91d792f9694f9c67df8b64e91fe10fcddb3c"
+                "sha256:26cee125746b4381c711c62af74a4ccc3a5bbf2ebdcc7b22fd65b8b581032162",
+                "sha256:8223ea4af539866ce7a9c730ac7eb18e51d17eb51593aa7773b3593c8d6d7608"
             ],
-            "version": "==4.4.0"
+            "version": "==4.4.1"
         },
         "zope.container": {
             "hashes": [
@@ -3785,7 +3792,6 @@
             "version": "==2.0.0"
         },
         "coverage": {
-            "extras": [],
             "hashes": [
                 "sha256:03e2a7826086b91ef345ff18742ee9fc47a6839ccd517061ef8fa1976e652ce9",
                 "sha256:07e6db90cd9686c767dcc593dff16c8c09f9814f5e9c51034066cad3373b914d",
@@ -4143,7 +4149,7 @@
                 "sha256:5b77935f3d9573e27007749a3b522f08d764c5b5930ff1527b2ab2743e9f0c15",
                 "sha256:b1030aadcbb2aeb4ee51475426351af83c1072456b918fb8fdb80666c4bb63b5"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
+            "markers": "python_version == '2.7' and python_version >= '3.6'",
             "version": "==1.7.2"
         },
         "google-cloud-datastore": {
@@ -4199,10 +4205,10 @@
         },
         "google-cloud-videointelligence": {
             "hashes": [
-                "sha256:98a5d043d4824ad0529f8c2a3108bc4e1ed530e76314ea2c0e39f3d81cdf378e",
-                "sha256:bbde4a5bb479f60466dabad67d5debb30448bb2451b67bba3bfd9b67281a230a"
+                "sha256:129dd8109d5e4e53fa6f2fd6f065b09b78168922cec74e50f3ac56b639c25f92",
+                "sha256:cf88ce17dc7c3cc1aed3be754efbcaff16286a71a35bd3992f1f26e2f686f80e"
             ],
-            "version": "==1.16.1"
+            "version": "==1.16.2"
         },
         "google-cloud-vision": {
             "hashes": [
@@ -4334,7 +4340,7 @@
                 "sha256:fa877ca7f6b48054f847b61d6fa7bed5cebb663ebc55e018fda12db09dcc664c",
                 "sha256:fdcec0b8399108577ec290f55551d926d9a1fa6cad45882093a7a07ac5ec147b"
             ],
-            "markers": "python_version >= '3' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))",
+            "markers": "platform_python_implementation == 'CPython'",
             "version": "==1.1.2"
         },
         "grpc-google-iam-v1": {
@@ -4505,7 +4511,7 @@
                 "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7",
                 "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"
             ],
-            "markers": "python_version < '4.0' and python_full_version >= '3.6.1'",
+            "markers": "python_version < '4' and python_full_version >= '3.6.1'",
             "version": "==5.10.1"
         },
         "jedi": {
@@ -4543,11 +4549,11 @@
         },
         "jupyter-client": {
             "hashes": [
-                "sha256:aa177279e93205d0681ec0e2e210da01b22c5a1464a56abd455adcac64f0de91",
-                "sha256:d10e31ac4b8364d1cb30ebcee9e5cc7b7eb5d23b76912be9ef3d4c75167fbc68"
+                "sha256:44045448eadc12493d819d965eb1dc9d10d1927698adbb9b14eb9a3a4a45ba53",
+                "sha256:8fdbad344a8baa6a413d86d25bbf87ce21cb2b4aa5a8e0413863b9754eb8eb8a"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==7.2.1"
+            "version": "==7.2.2"
         },
         "jupyter-console": {
             "hashes": [
@@ -6168,6 +6174,14 @@
             ],
             "index": "pypi",
             "version": "==2.9.9"
+        },
+        "types-pysftp": {
+            "hashes": [
+                "sha256:05c2e40addd6f0072afde3d30395e2935e0482023b601ba487a7f30a8c692406",
+                "sha256:a1f443fc33632aaf78adbbe535d2b8554c373749bae9849f89728586def823e8"
+            ],
+            "index": "pypi",
+            "version": "==0.2.12"
         },
         "types-python-dateutil": {
             "hashes": [
