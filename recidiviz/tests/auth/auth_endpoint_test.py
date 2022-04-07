@@ -258,7 +258,6 @@ class AuthEndpointTests(TestCase):
                 "can_access_leadership_dashboard": True,
                 "should_see_beta_charts": False,
                 "routes": None,
-                "user_hash": "user-1@test.gov::hashed",
             }
             response = self.client.get(
                 self.dashboard_user_restrictions_by_email_url,
@@ -342,7 +341,6 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": True,
                         "should_see_beta_charts": False,
                         "routes": None,
-                        "user_hash": "test-user+0@test.org::hashed",
                     },
                 },
                 {
@@ -355,7 +353,6 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": False,
                         "should_see_beta_charts": False,
                         "routes": None,
-                        "user_hash": "test-user+1@test.org::hashed",
                     },
                 },
             ]
@@ -376,7 +373,6 @@ class AuthEndpointTests(TestCase):
                             "can_access_leadership_dashboard": True,
                             "should_see_beta_charts": False,
                             "routes": None,
-                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
@@ -407,7 +403,6 @@ class AuthEndpointTests(TestCase):
                     "app_metadata": {
                         "allowed_supervision_location_ids": ["11", "EP"],
                         "allowed_supervision_location_level": "level_1_supervision_location",
-                        "user_hash": "test-user+0@test.org::hashed",
                     },
                 },
                 {
@@ -416,7 +411,6 @@ class AuthEndpointTests(TestCase):
                     "app_metadata": {
                         "allowed_supervision_location_ids": ["44", "23"],
                         "allowed_supervision_location_level": "level_1_supervision_location",
-                        "user_hash": "test-user+1@test.org::hashed",
                     },
                 },
                 {
@@ -429,7 +423,6 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": False,
                         "should_see_beta_charts": False,
                         "routes": None,
-                        "user_hash": "test-user+2@test.org::hashed",
                     },
                 },
             ]
@@ -450,7 +443,6 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
-                            "user_hash": "test-user+0@test.org::hashed",
                         },
                     ),
                     call(
@@ -462,7 +454,6 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
-                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
@@ -497,7 +488,6 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": True,
                         "should_see_beta_charts": False,
                         "routes": {"facilities_projections": False},
-                        "user_hash": "test-user+0@test.org::hashed",
                     },
                 },
                 {
@@ -510,7 +500,6 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": False,
                         "should_see_beta_charts": False,
                         "routes": None,
-                        "user_hash": "test-user+1@test.org::hashed",
                     },
                 },
             ]
@@ -531,7 +520,6 @@ class AuthEndpointTests(TestCase):
                             "can_access_leadership_dashboard": True,
                             "should_see_beta_charts": False,
                             "routes": {"community_practices": True},
-                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
@@ -636,7 +624,6 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
-                            "user_hash": "test-user+0@test.org::hashed",
                         },
                     ),
                     call(
@@ -648,7 +635,6 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
-                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
