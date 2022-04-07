@@ -36,7 +36,6 @@ Auth0AppMetadata = TypedDict(
         "can_access_case_triage": bool,
         "should_see_beta_charts": bool,
         "routes": Optional[dict],
-        "user_hash": str,
     },
 )
 

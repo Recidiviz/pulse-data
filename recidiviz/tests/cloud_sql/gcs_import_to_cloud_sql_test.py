@@ -125,7 +125,7 @@ class TestGCSImportToCloudSQL(TestCase):
     ) -> str:
         with SessionFactory.using_database(self.database_key) as session:
             csv_values = [
-                f"('US_MO', '{self.user_1_email}', '{{1}}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', false, '{self.user_1_email}::hashed')",
+                f"('US_MO', '{self.user_1_email}', '{{1}}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', false)",
             ]
             if values:
                 csv_values = csv_values + values
@@ -182,8 +182,8 @@ class TestGCSImportToCloudSQL(TestCase):
         def _mock_side_effect(**_kwargs: Any) -> str:
             return self._mock_load_data_from_csv(
                 values=[
-                    "('US_MO', 'user-2@test.gov', '{2}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', true, 'user-2@test.gov::hashed')",
-                    "('US_MO', 'user-3@test.gov', '{3}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', false, 'user-3@test.gov::hashed')",
+                    "('US_MO', 'user-2@test.gov', '{2}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', true)",
+                    "('US_MO', 'user-3@test.gov', '{3}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', false)",
                 ]
             )
 

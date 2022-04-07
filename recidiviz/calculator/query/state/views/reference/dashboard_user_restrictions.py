@@ -191,28 +191,18 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             TO_JSON_STRING(NULL) as routes
         FROM `{project_id}.{static_reference_dataset_id}.recidiviz_unified_product_test_users`
     )
-    , all_users AS (
-        SELECT * FROM mo_restricted_access
-        UNION ALL
-        SELECT * FROM id_restricted_access
-        UNION ALL
-        SELECT * FROM nd_restricted_access
-        UNION ALL
-        SELECT * FROM me_restricted_access
-        UNION ALL
-        SELECT * FROM tn_restricted_access
-        UNION ALL
-        SELECT * FROM recidiviz_test_users
-    )
-    , all_users_hashed_emails AS (
-        SELECT
-            *,
-            TO_BASE64(SHA256(LOWER(restricted_user_email))) AS user_hash,
-        FROM all_users
-    )
 
-    SELECT {columns} FROM all_users_hashed_emails
-
+    SELECT {columns} FROM mo_restricted_access
+    UNION ALL
+    SELECT {columns} FROM id_restricted_access
+    UNION ALL
+    SELECT {columns} FROM nd_restricted_access
+    UNION ALL
+    SELECT {columns} FROM me_restricted_access
+    UNION ALL
+    SELECT {columns} FROM tn_restricted_access
+    UNION ALL
+    SELECT {columns} FROM recidiviz_test_users;
     """
 
 DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -231,7 +221,6 @@ DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "can_access_case_triage",
         "routes",
         "should_see_beta_charts",
-        "user_hash",
     ],
 )
 
