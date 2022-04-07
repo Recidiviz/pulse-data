@@ -65,15 +65,6 @@ resource "google_composer_environment" "default_v2" {
   name   = "orchestration-v2"
   region = var.region
   config {
-    node_count = 5
-
-    node_config {
-      zone = var.zone
-      ip_allocation_policy {
-        # Ensure that we use a VPC-native cluster
-        use_ip_aliases = true
-      }
-    }
 
     software_config {
       # TODO(#4900): Not sure if we actually need these, given that they are specified in airflow.cfg, but leaving them
