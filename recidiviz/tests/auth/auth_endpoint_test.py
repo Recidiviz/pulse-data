@@ -258,6 +258,42 @@ class AuthEndpointTests(TestCase):
                 "can_access_leadership_dashboard": True,
                 "should_see_beta_charts": False,
                 "routes": None,
+                "user_hash": "user-1@test.gov::hashed",
+            }
+            response = self.client.get(
+                self.dashboard_user_restrictions_by_email_url,
+                headers=self.headers,
+                query_string={
+                    "region_code": "US_MO",
+                    "email_address": "user-1@test.gov",
+                },
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(
+                expected_restrictions,
+                json.loads(response.data),
+            )
+
+    def test_dashboard_user_restrictions_by_email_hash_missing(self) -> None:
+        user_1 = generate_fake_user_restrictions(
+            self.region_code,
+            "user-1@test.gov",
+            allowed_supervision_location_ids="1,2",
+            include_hash=False,
+        )
+
+        add_users_to_database_session(self.database_key, [user_1])
+
+        with self.app.test_request_context():
+            expected_restrictions = {
+                "allowed_supervision_location_ids": ["1", "2"],
+                "allowed_supervision_location_level": "level_1_supervision_location",
+                "can_access_case_triage": False,
+                "can_access_leadership_dashboard": True,
+                "should_see_beta_charts": False,
+                "routes": None,
+                "user_hash": None,
             }
             response = self.client.get(
                 self.dashboard_user_restrictions_by_email_url,
@@ -341,6 +377,7 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": True,
                         "should_see_beta_charts": False,
                         "routes": None,
+                        "user_hash": "test-user+0@test.org::hashed",
                     },
                 },
                 {
@@ -353,6 +390,7 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": False,
                         "should_see_beta_charts": False,
                         "routes": None,
+                        "user_hash": "test-user+1@test.org::hashed",
                     },
                 },
             ]
@@ -373,6 +411,7 @@ class AuthEndpointTests(TestCase):
                             "can_access_leadership_dashboard": True,
                             "should_see_beta_charts": False,
                             "routes": None,
+                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
@@ -403,6 +442,7 @@ class AuthEndpointTests(TestCase):
                     "app_metadata": {
                         "allowed_supervision_location_ids": ["11", "EP"],
                         "allowed_supervision_location_level": "level_1_supervision_location",
+                        "user_hash": "test-user+0@test.org::hashed",
                     },
                 },
                 {
@@ -411,6 +451,7 @@ class AuthEndpointTests(TestCase):
                     "app_metadata": {
                         "allowed_supervision_location_ids": ["44", "23"],
                         "allowed_supervision_location_level": "level_1_supervision_location",
+                        "user_hash": "test-user+1@test.org::hashed",
                     },
                 },
                 {
@@ -423,6 +464,7 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": False,
                         "should_see_beta_charts": False,
                         "routes": None,
+                        "user_hash": "test-user+2@test.org::hashed",
                     },
                 },
             ]
@@ -443,6 +485,7 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
+                            "user_hash": "test-user+0@test.org::hashed",
                         },
                     ),
                     call(
@@ -454,6 +497,7 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
+                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
@@ -488,6 +532,7 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": True,
                         "should_see_beta_charts": False,
                         "routes": {"facilities_projections": False},
+                        "user_hash": "test-user+0@test.org::hashed",
                     },
                 },
                 {
@@ -500,6 +545,7 @@ class AuthEndpointTests(TestCase):
                         "can_access_leadership_dashboard": False,
                         "should_see_beta_charts": False,
                         "routes": None,
+                        "user_hash": "test-user+1@test.org::hashed",
                     },
                 },
             ]
@@ -520,6 +566,7 @@ class AuthEndpointTests(TestCase):
                             "can_access_leadership_dashboard": True,
                             "should_see_beta_charts": False,
                             "routes": {"community_practices": True},
+                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
@@ -527,6 +574,88 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(
                 b"Finished updating 1 auth0 users with restrictions for region US_MO",
+                response.data,
+            )
+
+    def test_update_auth0_user_metadata_should_update_hash(self) -> None:
+        with self.app.test_request_context():
+            user_1 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+1@test.org",
+                routes={"community_practices": True},
+            )
+            user_0 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+0@test.org",
+                routes={"facilities_projections": False},
+                include_hash=False,
+            )
+            add_users_to_database_session(self.database_key, [user_1, user_0])
+            self.mock_auth0_client.get_all_users_by_email_addresses.return_value = [
+                {
+                    "email": "test-user+0@test.org",
+                    "user_id": "0",
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": [],
+                        "allowed_supervision_location_level": "level_1_supervision_location",
+                        "can_access_case_triage": False,
+                        "can_access_leadership_dashboard": True,
+                        "should_see_beta_charts": False,
+                        "routes": {"facilities_projections": False},
+                        "user_hash": "test-user+0@test.org::hashed",
+                    },
+                },
+                {
+                    "email": "test-user+1@test.org",
+                    "user_id": "1",
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": [],
+                        "allowed_supervision_location_level": "level_2_supervision_location",
+                        "can_access_case_triage": False,
+                        "can_access_leadership_dashboard": False,
+                        "should_see_beta_charts": False,
+                        "routes": None,
+                        "user_hash": None,
+                    },
+                },
+            ]
+
+            response = self.client.get(
+                self.update_auth0_user_metadata_url,
+                headers=self.headers,
+                query_string={"region_code": self.region_code},
+            )
+            self.mock_auth0_client.update_user_app_metadata.assert_has_calls(
+                [
+                    call(
+                        user_id="0",
+                        app_metadata={
+                            "allowed_supervision_location_ids": [],
+                            "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_case_triage": False,
+                            "can_access_leadership_dashboard": True,
+                            "should_see_beta_charts": False,
+                            "routes": {"facilities_projections": False},
+                            "user_hash": None,
+                        },
+                    ),
+                    call(
+                        user_id="1",
+                        app_metadata={
+                            "allowed_supervision_location_ids": [],
+                            "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_case_triage": False,
+                            "can_access_leadership_dashboard": True,
+                            "should_see_beta_charts": False,
+                            "routes": {"community_practices": True},
+                            "user_hash": "test-user+1@test.org::hashed",
+                        },
+                    ),
+                ]
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(
+                b"Finished updating 2 auth0 users with restrictions for region US_MO",
                 response.data,
             )
 
@@ -624,6 +753,7 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
+                            "user_hash": "test-user+0@test.org::hashed",
                         },
                     ),
                     call(
@@ -635,6 +765,7 @@ class AuthEndpointTests(TestCase):
                             "can_access_case_triage": False,
                             "should_see_beta_charts": False,
                             "routes": None,
+                            "user_hash": "test-user+1@test.org::hashed",
                         },
                     ),
                 ]
