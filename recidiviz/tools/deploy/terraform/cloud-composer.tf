@@ -47,10 +47,8 @@ resource "google_composer_environment" "default" {
       }
       env_variables = {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
-        # TODO(#4900): I think we get 'GCP_PROJECT' by default, so we can probably clean this up.
-        "GCP_PROJECT_ID" = var.project_id
       }
-      image_version  = "composer-1.17.0-airflow-1.10.15"
+      image_version  = "composer-2.0.8-airflow-2.2.3"
       python_version = "3"
     }
 
