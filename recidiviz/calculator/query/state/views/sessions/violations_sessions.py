@@ -19,12 +19,13 @@ to allow analysis of violations that are associated with a given compartment"""
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIOLATIONS_SESSIONS_VIEW_NAME = "violations_sessions"
-
-us_nd_raw_data_up_to_date_views = "us_nd_raw_data_up_to_date_views"
 
 VIOLATIONS_SESSIONS_VIEW_DESCRIPTION = """
 
@@ -123,7 +124,7 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
             'US_ND' AS state_code,
             EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p',CONTACT_DATE) ) AS response_date_ND
         FROM
-            `{project_id}.us_nd_raw_data_up_to_date_views.docstars_contacts_latest`
+            `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_contacts_latest`
         LEFT JOIN
             `{project_id}.{state_dataset}.state_person_external_id`
             ON
@@ -192,6 +193,7 @@ VIOLATIONS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_dataset=dataset_config.STATE_BASE_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
 )
 
 if __name__ == "__main__":

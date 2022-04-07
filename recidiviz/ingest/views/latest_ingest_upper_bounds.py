@@ -17,6 +17,7 @@
 """A view that reports back on the ingest "high water mark", i.e. the latest date
 where all files on or before that date are processed for a given state."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -29,7 +30,7 @@ primary_ingest_file_dates AS (
             region_code AS state_code,
             EXTRACT(DATE FROM datetimes_contained_upper_bound_inclusive) AS ingest_file_date,
             processed_time IS NOT NULL AS is_processed
-    FROM `{project_id}.operations.direct_ingest_ingest_file_metadata`
+    FROM `{project_id}.{operations_dataset}.direct_ingest_ingest_file_metadata`
     WHERE NOT is_invalidated AND ingest_database_name LIKE '%primary%'
 ),
 min_unprocessed_dates AS (
@@ -81,6 +82,7 @@ LATEST_INGESTED_UPPER_BOUNDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id="ingest_metadata_latest_ingested_upper_bounds",
     description=LATEST_INGESTED_UPPER_BOUNDS_DESCRIPTION,
     view_query_template=LATEST_INGESTED_UPPER_BOUNDS_QUERY_TEMPLATE,
+    operations_dataset=OPERATIONS_BASE_DATASET,
 )
 
 

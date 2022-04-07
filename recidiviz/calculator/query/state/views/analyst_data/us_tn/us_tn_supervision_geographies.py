@@ -19,6 +19,10 @@ in a month via a granted early discharge"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -36,13 +40,13 @@ US_TN_SUPERVISION_GEOGRAPHIES_QUERY_TEMPLATE = """
         c.county_name,
         fips,
     FROM 
-        `{project_id}.us_tn_raw_data_up_to_date_views.Site_latest` r
+        `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Site_latest` r
     LEFT JOIN 
         `{project_id}.{static_reference_dataset}.supervision_district_office_to_county` o
     ON 
         r.SiteName = o.office
     LEFT JOIN
-        `{project_id}.external_reference.county_fips` c
+        `{project_id}.{external_reference_dataset}.county_fips` c
     ON
         o.county = c.county_name
     WHERE 
@@ -55,6 +59,8 @@ US_TN_SUPERVISION_GEOGRAPHIES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_TN_SUPERVISION_GEOGRAPHIES_QUERY_TEMPLATE,
     description=US_TN_SUPERVISION_GEOGRAPHIES_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_tn"),
+    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     should_materialize=False,
 )
 

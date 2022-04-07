@@ -37,7 +37,7 @@ WITH districts as (
         officer_external_id as supervising_officer_external_id,
         ARRAY_AGG(distinct district) as district,
     FROM
-    `{project_id}.po_report_views.officer_supervision_district_association_materialized`
+    `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
     group by 1,2
 ),
 officers as (
@@ -45,7 +45,7 @@ officers as (
         state_code,
         external_id as supervising_officer_external_id,
         full_name as officer_name,
-    from `{project_id}.reference_views.augmented_agent_info`
+    from `{project_id}.{reference_dataset}.augmented_agent_info`
     group by 1,2,3
 ), caseload as (
     SELECT
@@ -72,8 +72,8 @@ officers as (
         full_name,
         current_address,
         external_id AS person_external_id,
-    from `{project_id}.state.state_person` state_person
-    JOIN `{project_id}.state.state_person_external_id` state_person_external_id
+    from `{project_id}.{base_dataset}.state_person` state_person
+    JOIN `{project_id}.{base_dataset}.state_person_external_id` state_person_external_id
         ON state_person_external_id.state_code = state_person.state_code
         AND state_person_external_id.person_id = state_person.person_id
         AND IF(state_person_external_id.state_code = 'US_PA', state_person_external_id.id_type = 'US_PA_PBPP', TRUE)
@@ -115,6 +115,9 @@ CASELOAD_AND_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=CASELOAD_AND_DISTRICT_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    po_report_dataset=dataset_config.PO_REPORT_DATASET,
+    reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == "__main__":

@@ -20,7 +20,10 @@ TODO(#7564): In the long-term this info should be ingested into the state schema
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -35,13 +38,13 @@ WITH phone_numbers AS (
       phonenumber,
       ROW_NUMBER() OVER (PARTITION BY offender.offendernumber ORDER BY numbers.insdate DESC) AS rn
     FROM
-      `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offender
+      `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_offender_latest` offender
     INNER JOIN
-      `{project_id}.us_id_raw_data_up_to_date_views.cis_personphonenumber_latest` person_number
+      `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_personphonenumber_latest` person_number
     ON
       (offender.id = person_number.personid)
     INNER JOIN
-      `{project_id}.us_id_raw_data_up_to_date_views.cis_phonenumber_latest` numbers
+      `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_phonenumber_latest` numbers
     ON
       (numbers.id = person_number.phonenumberid) )
   WHERE
@@ -56,9 +59,9 @@ FROM (
     SELECT offenders.offendernumber AS person_external_id,
     email AS email_address,
     ROW_NUMBER() OVER (PARTITION BY offenders.offendernumber ORDER BY emails.insdate DESC) AS rn
-    FROM `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
+    FROM `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_offender_latest` offenders
     LEFT JOIN
-    `{project_id}.us_id_raw_data_up_to_date_views.cis_personemailaddress_latest` emails
+    `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_personemailaddress_latest` emails
     ON (emails.personid = offenders.id)
     WHERE emails.iscurrent = 'T'
     QUALIFY rn = 1
@@ -74,11 +77,12 @@ Provides an association between people on supervision and their contact info.
 Currently only generates data for Idaho and only contains email addresses."""
 
 CLIENT_CONTACT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=VIEWS_DATASET,
+    dataset_id=CASE_TRIAGE_DATASET,
     view_id="client_contact_info",
     description=CLIENT_CONTACT_INFO_DESCRIPTION,
     view_query_template=CLIENT_CONTACT_INFO_QUERY_TEMPLATE,
     should_materialize=True,
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
 )
 
 if __name__ == "__main__":

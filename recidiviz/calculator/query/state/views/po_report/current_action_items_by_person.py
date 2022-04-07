@@ -22,7 +22,7 @@ To generate the BQ view, run:
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -69,7 +69,7 @@ CURRENT_ACTION_ITEMS_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CURRENT_ACTION_ITEMS_BY_PERSON_QUERY_TEMPLATE,
     description=CURRENT_ACTION_ITEMS_BY_PERSON_DESCRIPTION,
     state_dataset=dataset_config.STATE_BASE_DATASET,
-    case_triage_dataset=VIEWS_DATASET,
+    case_triage_dataset=CASE_TRIAGE_DATASET,
 )
 
 if __name__ == "__main__":

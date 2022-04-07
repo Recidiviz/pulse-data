@@ -20,7 +20,7 @@ the state table vs. the etl_clients tables"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -93,7 +93,7 @@ MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER
     view_query_template=MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_QUERY_TEMPLATE,
     description=MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_DESCRIPTION,
     state_dataset=STATE_BASE_DATASET,
-    case_triage_dataset=VIEWS_DATASET,
+    case_triage_dataset=CASE_TRIAGE_DATASET,
 )
 
 

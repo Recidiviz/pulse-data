@@ -17,7 +17,13 @@
 """Creates a view for collapsing raw ID employment data into contiguous periods of employment or unemployment overlapping with a supervision super session"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SESSIONS_DATASET,
+    STATE_BASE_DATASET,
+)
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -47,16 +53,16 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
         'CIS' AS metric_source,
         -- Infer if an employment entry indicates unemployment
         REGEXP_CONTAINS(LOWER(jobtitle), 'unempl') OR REGEXP_CONTAINS(LOWER(name), 'unempl') AS is_unemployed,
-      FROM `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` o
-      LEFT JOIN `{project_id}.us_id_raw_data_up_to_date_views.cis_employment_latest` e
+      FROM `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_offender_latest` o
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_employment_latest` e
       ON e.personemploymentid = o.id
-      FULL JOIN `{project_id}.us_id_raw_data_up_to_date_views.cis_personemployment_latest` p
+      FULL JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_personemployment_latest` p
       ON e.personemploymentid = p.id
-      LEFT JOIN `{project_id}.us_id_raw_data_up_to_date_views.cis_employer_latest` AS emp
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_employer_latest` AS emp
       ON e.employerid = emp.id
-      LEFT JOIN `{project_id}.us_id_raw_data_up_to_date_views.cis_codeemploymentreasonleft_latest` AS l
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_codeemploymentreasonleft_latest` AS l
       ON e.codeemploymentreasonleftid = l.id
-      LEFT JOIN `{project_id}.state.state_person_external_id` person
+      LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` person
       ON o.offendernumber = person.external_id ),
       employment_daily AS (
       /* Unnests employment periods into daily employment data per person and employment */
@@ -179,7 +185,9 @@ US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ID_EMPLOYMENT_SESSIONS_VIEW_DESCRIPTION,
     view_query_template=US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
+    state_base_dataset=STATE_BASE_DATASET,
     should_materialize=True,
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
 )
 
 if __name__ == "__main__":

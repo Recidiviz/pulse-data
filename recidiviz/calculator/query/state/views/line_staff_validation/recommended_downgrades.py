@@ -46,7 +46,7 @@ RECOMMENDED_DOWNGRADES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=RECOMMENDED_DOWNGRADES_QUERY_TEMPLATE,
     description=RECOMMENDED_DOWNGRADES_VIEW_NAME_DESCRIPTION,
-    case_triage_dataset=case_triage_dataset_config.VIEWS_DATASET,
+    case_triage_dataset=case_triage_dataset_config.CASE_TRIAGE_DATASET,
 )
 
 if __name__ == "__main__":

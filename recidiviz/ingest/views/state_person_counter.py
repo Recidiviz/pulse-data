@@ -24,6 +24,7 @@ from typing import List
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.ingest.views.metadata_helpers import (
     METADATA_EXCLUDED_PROPERTIES,
@@ -42,7 +43,7 @@ WITH person_ids AS (
   SELECT
     DISTINCT person_id AS matching_id
   FROM
-    `{project_id}.state.state_person_external_id`
+    `{project_id}.{base_dataset}.state_person_external_id`
 )
 SELECT
   state_code,
@@ -50,9 +51,9 @@ SELECT
   COUNT(*) AS total_count,
   IFNULL(SUM(CASE WHEN matching_id IS NULL THEN 1 END), 0) AS placeholder_count
 FROM
-  `{project_id}.state.state_person`
+  `{project_id}.{base_dataset}.state_person`
 LEFT OUTER JOIN person_ids ON
-  `{project_id}.state.state_person`.person_id = person_ids.matching_id
+  `{project_id}.{base_dataset}.state_person`.person_id = person_ids.matching_id
 GROUP BY state_code, `{column_name}`
 ORDER BY state_code, `{column_name}`;
 """
@@ -60,14 +61,14 @@ ORDER BY state_code, `{column_name}`;
 STATE_PERSON_NON_ENUM_QUERY_TEMPLATE = """
 WITH table_rows AS (
   SELECT
-    `{project_id}.state.state_person`.state_code,
-    IF(`{project_id}.state.state_person`.{column_name} IS NULL, 'NULL', 'NOT_NULL') AS {column_name},
-    `{project_id}.state.state_person_external_id` AS matching_id
+    `{project_id}.{base_dataset}.state_person`.state_code,
+    IF(`{project_id}.{base_dataset}.state_person`.{column_name} IS NULL, 'NULL', 'NOT_NULL') AS {column_name},
+    `{project_id}.{base_dataset}.state_person_external_id` AS matching_id
   FROM
-    `{project_id}.state.state_person`
+    `{project_id}.{base_dataset}.state_person`
   LEFT OUTER JOIN
-    `{project_id}.state.state_person_external_id`
-  ON `{project_id}.state.state_person`.person_id = `{project_id}.state.state_person_external_id`.person_id
+    `{project_id}.{base_dataset}.state_person_external_id`
+  ON `{project_id}.{base_dataset}.state_person`.person_id = `{project_id}.{base_dataset}.state_person_external_id`.person_id
 )
 SELECT
   state_code,
@@ -113,6 +114,7 @@ class StatePersonBigQueryViewCollector(
                 should_build_predicate=table_column_checker.get_has_column_predicate(
                     col
                 ),
+                base_dataset=STATE_BASE_DATASET,
             )
             for col in get_enum_property_names(entity)
             if col not in METADATA_EXCLUDED_PROPERTIES
@@ -130,6 +132,7 @@ class StatePersonBigQueryViewCollector(
                     should_build_predicate=table_column_checker.get_has_column_predicate(
                         col
                     ),
+                    base_dataset=STATE_BASE_DATASET,
                 )
                 for col in get_non_enum_property_names(entity)
                 if col not in METADATA_EXCLUDED_PROPERTIES

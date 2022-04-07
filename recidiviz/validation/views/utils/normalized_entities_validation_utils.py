@@ -20,7 +20,6 @@ from typing import List
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
 )
-from recidiviz.calculator.query.state import dataset_config
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -33,7 +32,7 @@ SELECT
     COUNT(*) as total_count,
     COUNT(DISTINCT({id_column})) as distinct_id_count
 FROM
-    `{{project_id}}.{dataset_id}.{table_id}`
+    `{{project_id}}.{{normalized_state_dataset}}.{table_id}`
 GROUP BY 1
 """
 
@@ -42,8 +41,6 @@ def unique_entity_id_values_query() -> str:
     """Builds a query to identify when entity normalization pipelines are producing
     entities with duplicate ID values."""
     entity_sub_queries: List[str] = []
-
-    dataset = dataset_config.NORMALIZED_STATE_DATASET
 
     for entity_cls in NORMALIZED_ENTITY_CLASSES:
         base_class_name = entity_cls.base_class_name()
@@ -60,7 +57,6 @@ def unique_entity_id_values_query() -> str:
             StrictStringFormatter().format(
                 UNIQUE_IDS_TEMPLATE,
                 table_id=table_id,
-                dataset_id=dataset,
                 id_column=id_column,
             )
         )

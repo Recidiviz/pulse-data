@@ -68,7 +68,7 @@ SELECT DISTINCT
         IF(dates.next_recommended_face_to_face_date < CURRENT_DATE('US/Eastern'), TRUE, FALSE) AS overdue_for_face_to_face,
         IF(dates.next_recommended_home_visit_date < CURRENT_DATE('US/Eastern'), TRUE, FALSE) AS overdue_for_home_visit,
         FROM dates
-        JOIN `{project_id}.state.state_assessment` state_assessment
+        JOIN `{project_id}.{base_dataset}.state_assessment` state_assessment
         ON dates.most_recent_assessment_date = state_assessment.assessment_date
         AND dates.state_code = state_assessment.state_code
         AND dates.person_id = state_assessment.person_id
@@ -83,6 +83,7 @@ CONTACTS_AND_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CONTACTS_AND_ASSESSMENTS_QUERY_TEMPLATE,
     description=CONTACTS_AND_ASSESSMENTS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == "__main__":

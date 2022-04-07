@@ -92,9 +92,9 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 level_1_incarceration_location_external_id,
                 INITCAP(level_1_incarceration_location_external_id) AS level_1_incarceration_location_name,
                 level_1_incarceration_location_external_id AS level_1_incarceration_location_alias
-        FROM `{project_id}.external_reference.us_id_incarceration_facility_map`
+        FROM `{project_id}.{external_reference_dataset}.us_id_incarceration_facility_map`
         LEFT OUTER JOIN
-            `{project_id}.external_reference.us_id_incarceration_facility_names`
+            `{project_id}.{external_reference_dataset}.us_id_incarceration_facility_names`
         ON level_2_incarceration_location_external_id = facility_code
     ),
     tn_location_names AS (
@@ -108,9 +108,9 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 level_1_incarceration_location_external_id,
                 INITCAP(level_1_incarceration_location_external_id) AS level_1_incarceration_location_name,
                 level_1_incarceration_location_external_id AS level_1_incarceration_location_alias
-        FROM `{project_id}.external_reference.us_tn_incarceration_facility_map`
+        FROM `{project_id}.{external_reference_dataset}.us_tn_incarceration_facility_map`
         LEFT OUTER JOIN
-            `{project_id}.external_reference.us_tn_incarceration_facility_names`
+            `{project_id}.{external_reference_dataset}.us_tn_incarceration_facility_names`
         ON level_2_incarceration_location_external_id = facility_code
     )
     SELECT * FROM me_location_names

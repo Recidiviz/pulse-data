@@ -20,6 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
@@ -214,13 +215,13 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
               level_1_supervision_location_name,
               level_2_supervision_location_external_id,
               level_2_supervision_location_name
-              FROM `{project_id}.reference_views.supervision_location_ids_to_names` 
+              FROM `{project_id}.{reference_dataset}.supervision_location_ids_to_names` 
               ) ref 
         ON df_and_board_actions.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
       AND df_and_board_actions.level_2_supervision_location_external_id = ref.level_2_supervision_location_external_id
       AND df_and_board_actions.state_code = ref.state_code      
     LEFT JOIN 
-        ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.reference_views.augmented_agent_info`) agent
+        ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.{reference_dataset}.augmented_agent_info`) agent
         ON df_and_board_actions.supervising_officer_external_id = agent.external_id
         AND df_and_board_actions.state_code = agent.state_code
     INNER JOIN `{project_id}.{base_dataset}.state_person` person
@@ -239,6 +240,7 @@ US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=ANALYST_VIEWS_DATASET,
     base_dataset=STATE_BASE_DATASET,
     raw_dataset=US_PA_RAW_DATASET,
+    reference_dataset=REFERENCE_VIEWS_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,
 )

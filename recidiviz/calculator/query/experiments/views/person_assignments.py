@@ -22,11 +22,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
-US_PA_RAW_DATASET = "us_pa_raw_data_up_to_date_views"
 
 # date range for covid-era early release policies to take effect
 COVID_POLICY_START_DATE = "2020-02-01"
@@ -74,7 +74,7 @@ WITH last_day_of_data AS (
         DATE(prgrm_strt_dt) AS variant_date,
         NULL AS block_id,
     FROM
-        `{project_id}.{us_id_raw_dataset}.DoPro_Participant_latest` a
+        `{project_id}.{us_id_raw_data_up_to_date_dataset}.DoPro_Participant_latest` a
     INNER JOIN
         `{project_id}.{state_base_dataset}.state_person_external_id` b
     ON
@@ -95,7 +95,7 @@ WITH last_day_of_data AS (
         DATE(start_date) AS variant_date,
         NULL AS block_id,
     FROM
-        `{project_id}.us_id_raw_data_up_to_date_views.geo_cis_participants_latest` a
+        `{project_id}.{us_id_raw_data_up_to_date_dataset}.geo_cis_participants_latest` a
     INNER JOIN
         `{project_id}.{state_base_dataset}.state_person_external_id` b
     ON
@@ -177,12 +177,12 @@ geo_cis_referral_matched AS (
         MIN(DATE(Status_Dt)) AS variant_date,
         NULL AS block_id,
     FROM 
-        `{project_id}.{us_pa_raw_dataset}.dbo_vwCCISAllMvmt_latest` a
+        `{project_id}.{us_pa_raw_data_up_to_date_dataset}.dbo_vwCCISAllMvmt_latest` a
     INNER JOIN (
         SELECT
             CCISMvmt_Id,
         FROM
-            `{project_id}.{us_pa_raw_dataset}.dbo_vwCCISAllProgDtls_latest`
+            `{project_id}.{us_pa_raw_data_up_to_date_dataset}.dbo_vwCCISAllProgDtls_latest`
         WHERE
             -- covid-related furloughs only
             Program_Id = "70"
@@ -237,8 +237,8 @@ PERSON_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    us_id_raw_dataset=US_ID_RAW_DATASET,
-    us_pa_raw_dataset=US_PA_RAW_DATASET,
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
+    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_pa"),
     covid_start=COVID_POLICY_START_DATE,
     covid_end=COVID_POLICY_END_DATE,
     should_materialize=True,

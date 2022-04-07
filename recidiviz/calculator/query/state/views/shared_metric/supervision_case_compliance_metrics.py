@@ -19,6 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import hack_us_id_absconsions
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -38,6 +39,7 @@ SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME,
     view_query_template=SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE,
     description=SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION,
+    state_base_dataset=STATE_BASE_DATASET,
     should_materialize=True,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )

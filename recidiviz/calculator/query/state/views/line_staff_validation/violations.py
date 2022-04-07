@@ -22,6 +22,7 @@ To generate the BQ view, run:
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -35,7 +36,7 @@ SELECT state_code,
  person_external_id,
  revocation_violation_type,
  revocation_report_date
- FROM `{project_id}.po_report_views.report_data_by_person_by_month_materialized`
+ FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
 WHERE DATE(year, month, 1) = DATE_SUB(
     DATE(EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')), EXTRACT(MONTH FROM CURRENT_DATE('US/Eastern')), 1),
     INTERVAL 1 MONTH
@@ -48,6 +49,7 @@ VIOLATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=VIOLATIONS_QUERY_TEMPLATE,
     description=VIOLATIONS_DESCRIPTION,
+    po_report_dataset=PO_REPORT_DATASET,
 )
 
 if __name__ == "__main__":

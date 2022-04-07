@@ -19,7 +19,7 @@ from typing import Optional
 
 
 def raw_tables_dataset_for_region(
-    region_code: str, sandbox_dataset_prefix: Optional[str]
+    region_code: str, sandbox_dataset_prefix: Optional[str] = None
 ) -> str:
     """Returns the dataset containing raw data tables for this region."""
     prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
@@ -27,7 +27,7 @@ def raw_tables_dataset_for_region(
 
 
 def raw_latest_views_dataset_for_region(
-    region_code: str, sandbox_dataset_prefix: Optional[str]
+    region_code: str, sandbox_dataset_prefix: Optional[str] = None
 ) -> str:
     """Returns the dataset containing raw data "latest" views for this region."""
     prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""

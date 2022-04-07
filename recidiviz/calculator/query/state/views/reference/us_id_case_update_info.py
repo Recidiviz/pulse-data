@@ -17,6 +17,9 @@
 """BQ View containing US_ID case updates from agnt_case_update"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,7 +47,7 @@ US_ID_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
             create_by_usr_id,
             agnt_note_title
         FROM
-            `{project_id}.us_id_raw_data_up_to_date_views.agnt_case_updt_latest`)
+            `{project_id}.{us_id_raw_data_up_to_date_dataset}.agnt_case_updt_latest`)
     SELECT
         * EXCEPT (ofndr_num)
     FROM
@@ -61,6 +64,7 @@ US_ID_CASE_UPDATE_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ID_CASE_UPDATE_INFO_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
     should_materialize=True,
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
 )
 
 if __name__ == "__main__":

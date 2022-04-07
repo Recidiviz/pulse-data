@@ -69,7 +69,7 @@ METRICS_FROM_PO_REPORT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=METRICS_FROM_PO_REPORT_DESCRIPTION,
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    case_triage_dataset=case_triage_dataset_config.VIEWS_DATASET,
+    case_triage_dataset=case_triage_dataset_config.CASE_TRIAGE_DATASET,
 )
 
 if __name__ == "__main__":

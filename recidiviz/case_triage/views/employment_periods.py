@@ -22,7 +22,10 @@ experience.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -36,12 +39,12 @@ SELECT
   IF(employment.enddate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(enddate, 0, 10))) AS recorded_end_date,
   REGEXP_CONTAINS(UPPER(employers.name), r".*UNEMPLOY.*") AS is_unemployed
 FROM
-    `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
+    `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_offender_latest` offenders
 LEFT JOIN
-  `{project_id}.us_id_raw_data_up_to_date_views.cis_employment_latest` employment
+  `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_employment_latest` employment
 ON employment.personemploymentid = offenders.id
 LEFT JOIN
-  `{project_id}.us_id_raw_data_up_to_date_views.cis_employer_latest` employers
+  `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_employer_latest` employers
 ON
   employers.id = employment.employerid
 WHERE
@@ -55,11 +58,12 @@ Provides a period-based view of employment data, indicating start and end date f
  Currently only generates data for Idaho."""
 
 CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=VIEWS_DATASET,
+    dataset_id=CASE_TRIAGE_DATASET,
     view_id="employment_periods",
     description=CURRENT_EMPLOYMENT_PERIODS_DESCRIPTION,
     view_query_template=CURRENT_EMPLOYMENT_PERIODS_QUERY_TEMPLATE,
     should_materialize=True,
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
 )
 
 if __name__ == "__main__":
