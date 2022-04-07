@@ -94,7 +94,10 @@ class BuildPersonMetadata(beam.DoFn):
             person, race_ethnicity_population_counts
         )
 
-        yield person.person_id, person_metadata
+        person_id = person.person_id
+        if person_id is None:
+            raise ValueError("Found unexpected null person_id.")
+        yield person_id, person_metadata
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

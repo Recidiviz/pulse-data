@@ -30,7 +30,10 @@ from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     MetricPipelineJobArgs,
     ProduceMetrics,
 )
-from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
+from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
+    PersonMetadata,
+    RecidivizMetric,
+)
 from recidiviz.calculator.pipeline.metrics.violation import pipeline
 from recidiviz.calculator.pipeline.metrics.violation.events import (
     ViolationWithResponseEvent,
@@ -613,18 +616,19 @@ class AssertMatchers:
     @staticmethod
     def count_metrics(
         expected_metric_counts: Dict[str, int]
-    ) -> Callable[[Dict[str, int]], None]:
+    ) -> Callable[[List[RecidivizMetric]], None]:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output: Dict[str, int]) -> None:
+        def _count_metrics(output: List[RecidivizMetric]) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():
                 actual_combination_counts[key] = 0
 
             for metric in output:
-                assert isinstance(metric, ViolationMetric)
+                if not isinstance(metric, ViolationMetric):
+                    raise ValueError(f"Found unexpected metric type [{type(metric)}].")
 
                 metric_type = metric.metric_type
 
