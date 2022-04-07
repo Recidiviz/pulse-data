@@ -23,7 +23,6 @@ import unittest
 from base64 import decodebytes
 from typing import List
 
-import paramiko
 import pytz
 from mock import MagicMock, Mock, patch
 from paramiko import RSAKey, SFTPAttributes
@@ -32,6 +31,7 @@ from paramiko.hostkeys import HostKeyEntry
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
+from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
@@ -172,9 +172,8 @@ class TestSftpAuth(unittest.TestCase):
         self.assertEqual(result.hostname, "testhost.ftp")
         self.assertEqual(result.username, "username")
         self.assertEqual(result.password, "password")
-        self.assertEqual(result.hostkey_entry.hostnames, ["testhost.ftp"])
         self.assertEqual(
-            result.hostkey_entry.key,
+            result.cnopts.get_hostkey("testhost.ftp"),
             RSAKey(data=decodebytes(bytes(TEST_SSH_RSA_KEY, "utf-8"))),
         )
         self.assertEqual(result.port, 2223)
@@ -241,6 +240,7 @@ class TestSftpAuth(unittest.TestCase):
     "for_region",
     return_value=SftpAuth(
         "testhost.ftp",
+        f"testhost.ftp ssh-rsa {TEST_SSH_RSA_KEY}",
         HostKeyEntry(
             ["testhost.ftp"], RSAKey(data=decodebytes(bytes(TEST_SSH_RSA_KEY, "utf-8")))
         ),
@@ -260,6 +260,12 @@ class TestSftpAuth(unittest.TestCase):
     "has_raw_file_been_discovered",
     lambda _, path: "discovered" in path.abs_path(),
 )
+@patch.object(RecidivizSftpConnection, "_start_transport", lambda _, _host, _port: None)
+@patch.object(
+    RecidivizSftpConnection,
+    "_auth_transport",
+    lambda _, _username, _password, _private_key: None,
+)
 class TestDownloadFilesFromSftpController(unittest.TestCase):
     """Tests for DownloadFilesFromSftpController."""
 
@@ -275,18 +281,13 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.project_id_patcher.stop()
 
     @patch.object(
-        target=DownloadFilesFromSftpController,
-        attribute="_client",
-        return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
-            listdir=mock_listdir,
-            listdir_attr=mock_listdir_attr,
-            stat=mock_stat,
-        ),
+        RecidivizSftpConnection,
+        "__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
     )
     def test_get_paths_to_download(
         self,
-        _mock_connection: Mock,
+        mock_connection: Mock,
         mock_fs_factory: Mock,
         _mock_auth: Mock,
         _mock_download: Mock,
@@ -294,11 +295,15 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         mock_fs = FakeGCSFileSystem()
         mock_fs_factory.return_value = mock_fs
 
+        mock_connection.listdir.side_effect = mock_listdir
+        mock_connection.listdir_attr.side_effect = mock_listdir_attr
+        mock_connection.stat.side_effect = mock_stat
+
         controller = DownloadFilesFromSftpController(
             self.project_id, self.region, self.lower_bound_date
         )
 
-        files_with_timestamps = controller.get_paths_to_download()
+        files_with_timestamps = controller.get_paths_to_download(mock_connection)
         expected = [
             ("./testToday/file1.txt", TODAY.astimezone(pytz.UTC)),
             ("./testToday/already_processed.csv", TODAY.astimezone(pytz.UTC)),
@@ -307,10 +312,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.assertCountEqual(files_with_timestamps, expected)
 
     @patch.object(
-        DownloadFilesFromSftpController,
-        "_client",
+        RecidivizSftpConnection,
+        "__enter__",
         return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
+            spec=RecidivizSftpConnection,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
             stat=mock_stat,
@@ -349,10 +354,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        DownloadFilesFromSftpController,
-        "_client",
+        RecidivizSftpConnection,
+        "__enter__",
         return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
+            spec=RecidivizSftpConnection,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
             stat=mock_stat,
@@ -392,10 +397,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        DownloadFilesFromSftpController,
-        "_client",
+        RecidivizSftpConnection,
+        "__enter__",
         return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
+            spec=RecidivizSftpConnection,
             listdir=lambda _: Exception("SomeError"),
             listdir_attr=mock_listdir_attr,
             stat=mock_stat,
@@ -418,10 +423,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             _ = controller.do_fetch()
 
     @patch.object(
-        DownloadFilesFromSftpController,
-        "_client",
+        RecidivizSftpConnection,
+        "__enter__",
         return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
+            spec=RecidivizSftpConnection,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
             stat=mock_stat,
@@ -477,10 +482,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        DownloadFilesFromSftpController,
-        "_client",
+        RecidivizSftpConnection,
+        "__enter__",
         return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
+            spec=RecidivizSftpConnection,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
             stat=mock_stat,
@@ -503,10 +508,10 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
-        DownloadFilesFromSftpController,
-        "_client",
+        RecidivizSftpConnection,
+        "__enter__",
         return_value=Mock(
-            spec=paramiko.sftp_client.SFTPClient,
+            spec=RecidivizSftpConnection,
             listdir=mock_listdir,
             listdir_attr=mock_listdir_attr,
             stat=mock_stat,

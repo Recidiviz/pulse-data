@@ -60,6 +60,7 @@ types-redis = "<4.2.0"
 types-requests = "*"
 types-PyYAML = "*"
 msal = "*"
+types-pysftp = "*"
 
 [packages]
 callee = "*"
@@ -183,6 +184,7 @@ ratelimit-stubs = "*"
 # TODO(flask-sqlalchemy-session#14): Unpin/remove explicit dependency once the latest
 # version of Flask-SQLAlchemy-Session stops relying on __ident_func__ from Locals
 werkzeug = "<2.1.0"
+pysftp = "*"
 
 [requires]
 python_version = "3.8"
