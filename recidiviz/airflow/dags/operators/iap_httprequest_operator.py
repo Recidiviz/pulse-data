@@ -30,7 +30,7 @@ from recidiviz.cloud_functions.cloud_function_utils import (
 
 
 def make_iap_export_request(url: str) -> Dict[str, Any]:
-    client_id = IAP_CLIENT_ID[os.environ["GCP_PROJECT_ID"]]
+    client_id = IAP_CLIENT_ID[os.environ["GCP_PROJECT"]]
     # make_iap_request raises an exception if the returned status code is not 200
     response = make_iap_request(url, client_id)
 

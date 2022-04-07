@@ -22,7 +22,7 @@ import datetime
 import os
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from airflow import models
+from airflow.decorators import dag
 from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 
 # Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
@@ -50,7 +50,7 @@ GCP_PROJECT_STAGING = "recidiviz-staging"
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
 
-project_id = os.environ.get("GCP_PROJECT_ID")
+project_id = os.environ.get("GCP_PROJECT")
 config_file = os.environ.get("CONFIG_FILE")
 
 default_args = {
@@ -81,7 +81,7 @@ def trigger_export_operator(export_name: str) -> PubSubPublishMessageOperator:
 
 def get_zone_for_region(pipeline_region: str) -> str:
     if pipeline_region in {"us-west1", "us-west3", "us-central1"}:
-        return pipeline_region + "-a"
+        return f"{pipeline_region}-a"
 
     if pipeline_region == "us-east1":
         return "us-east1-b"  # For some reason, 'us-east1-a' doesn't exist
@@ -131,72 +131,79 @@ def dataflow_operator_for_pipeline(
     )
 
 
-# By setting catchup to False and max_active_runs to 1, we ensure that at
-# most one instance of this DAG is running at a time. Because we set catchup
-# to false, it ensures that new DAG runs aren't enqueued while the old one is
-# waiting to finish.
-with models.DAG(
-    dag_id=f"{project_id}_incremental_calculation_pipeline_dag",
-    default_args=default_args,
-    schedule_interval=None,
-    catchup=False,
-    max_active_runs=1,
-) as daily_dag:
+def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> None:
+    """This represents the overall execution of our calculation pipelines.
+
+    The series of steps is as follows:
+    1. Update the normalized state output for each state.
+    2. Update the metric output for each state.
+    3. Trigger BigQuery exports for each state and other datasets."""
+
     if config_file is None:
         raise Exception("Configuration file not specified")
+
+    update_normalized_state = IAPHTTPRequestOperator(
+        task_id="update_normalized_state",
+        url=f"https://{project_id}.appspot.com/calculation_data_storage_manager/update_normalized_state_dataset",
+    )
 
     normalization_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "normalization_pipelines"
     )
 
-    incremental_metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
-        "incremental_metric_pipelines"
+    # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
+    #  calculation month counts
+    metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+        "historical_metric_pipelines"
+        if use_historical
+        else "incremental_metric_pipelines"
     )
 
     supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "supplemental_dataset_pipelines"
     )
 
-    update_normalized_state_incremental = IAPHTTPRequestOperator(
-        task_id="update_normalized_state",
-        url=f"https://{project_id}.appspot.com/calculation_data_storage_manager/update_normalized_state_dataset",
-    )
-
-    case_triage_export = trigger_export_operator("CASE_TRIAGE")
-
     states_to_trigger = {
-        pipeline.peek("state_code", str) for pipeline in incremental_metric_pipelines
+        pipeline.peek("state_code", str) for pipeline in metric_pipelines
     }
 
-    state_trigger_export_operators = {
-        state_code: trigger_export_operator(state_code)
-        for state_code in states_to_trigger
-    }
-
-    incremental_metric_pipelines_by_state: Dict[str, List] = {
+    metric_pipelines_by_state: Dict[str, List] = {
         state_code: [] for state_code in states_to_trigger
     }
 
-    for metric_pipeline in incremental_metric_pipelines:
+    state_trigger_export_operators = (
+        {
+            state_code: trigger_export_operator(state_code)
+            for state_code in states_to_trigger
+        }
+        if should_trigger_exports
+        else {}
+    )
+
+    if should_trigger_exports:
+        case_triage_export = trigger_export_operator("CASE_TRIAGE")
+
+    for metric_pipeline in metric_pipelines:
         pipeline_config_args = get_pipeline_config_args(metric_pipeline)
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            incremental_metric_pipeline = dataflow_operator_for_pipeline(
+            metric_pipeline_operator = dataflow_operator_for_pipeline(
                 pipeline_config_args, metric_pipeline
             )
             # Add the pipeline to the list of metric pipelines for this state
-            incremental_metric_pipelines_by_state[pipeline_config_args.state_code] += [
-                incremental_metric_pipeline
+            metric_pipelines_by_state[pipeline_config_args.state_code] += [
+                metric_pipeline_operator
             ]
 
             # This >> ensures that all the calculation pipelines will run before the
             # Pub / Sub message is published saying the pipelines are done.
-            (
-                incremental_metric_pipeline
-                >> state_trigger_export_operators[pipeline_config_args.state_code]
-            )
-            if pipeline_config_args.state_code in CASE_TRIAGE_STATES:
-                incremental_metric_pipeline >> case_triage_export
+            if should_trigger_exports:
+                (
+                    metric_pipeline_operator
+                    >> state_trigger_export_operators[pipeline_config_args.state_code]
+                )
+                if pipeline_config_args.state_code in CASE_TRIAGE_STATES:
+                    metric_pipeline_operator >> case_triage_export
 
     for normalization_pipeline in normalization_pipelines:
         pipeline_config_args = get_pipeline_config_args(normalization_pipeline)
@@ -206,92 +213,64 @@ with models.DAG(
                 pipeline_config_args, normalization_pipeline
             )
 
-            normalization_calculation_pipeline >> update_normalized_state_incremental
+            normalization_calculation_pipeline >> update_normalized_state
 
-            for incremental_metric_pipeline in incremental_metric_pipelines_by_state[
+            for metric_pipeline in metric_pipelines_by_state[
                 pipeline_config_args.state_code
             ]:
                 # This ensures that all of the normalization pipelines for a state will
                 # run before the metric pipelines for the state are triggered.
-                normalization_calculation_pipeline >> incremental_metric_pipeline
+                normalization_calculation_pipeline >> metric_pipeline
 
     for supplemental_pipeline in supplemental_dataset_pipelines:
         pipeline_config_args = get_pipeline_config_args(supplemental_pipeline)
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            supplemental_dataset_pipeline = dataflow_operator_for_pipeline(
+            _ = dataflow_operator_for_pipeline(
                 pipeline_config_args, supplemental_pipeline
             )
 
     # These exports don't depend on pipeline output.
-    _ = trigger_export_operator("COVID_DASHBOARD")
-    _ = trigger_export_operator("INGEST_METADATA")
-    _ = trigger_export_operator("VALIDATION_METADATA")
-    _ = trigger_export_operator("JUSTICE_COUNTS")
+    if should_trigger_exports:
+        _ = trigger_export_operator("COVID_DASHBOARD")
+        _ = trigger_export_operator("INGEST_METADATA")
+        _ = trigger_export_operator("VALIDATION_METADATA")
+        _ = trigger_export_operator("JUSTICE_COUNTS")
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
 # most one instance of this DAG is running at a time. Because we set catchup
 # to false, it ensures that new DAG runs aren't enqueued while the old one is
 # waiting to finish.
-with models.DAG(
+@dag(
+    dag_id=f"{project_id}_incremental_calculation_pipeline_dag",
+    default_args=default_args,
+    schedule_interval=None,
+    catchup=False,
+    max_active_runs=1,
+)
+def incremental_dag() -> None:
+    """This executes the calculations for all of the incremental pipelines."""
+
+    execute_calculations(use_historical=False, should_trigger_exports=True)
+
+
+# By setting catchup to False and max_active_runs to 1, we ensure that at
+# most one instance of this DAG is running at a time. Because we set catchup
+# to false, it ensures that new DAG runs aren't enqueued while the old one is
+# waiting to finish.
+@dag(
     dag_id=f"{project_id}_historical_calculation_pipeline_dag",
     default_args=default_args,
     schedule_interval=None,
     catchup=False,
     max_active_runs=1,
-) as historical_dag:
-    # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
-    #  calculation month counts
-    if config_file is None:
-        raise Exception("Configuration file not specified")
+)
+def historical_dag() -> None:
+    """This executes the calculations for all of the historical pipelines."""
 
-    update_normalized_state_historical = IAPHTTPRequestOperator(
-        task_id="update_normalized_state",
-        url=f"https://{project_id}.appspot.com/calculation_data_storage_manager/update_normalized_state_dataset",
-    )
+    execute_calculations(use_historical=True, should_trigger_exports=False)
 
-    historical_metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
-        "historical_metric_pipelines"
-    )
 
-    historical_metric_pipelines_by_state: Dict[str, List] = {
-        state_code: [] for state_code in states_to_trigger
-    }
-
-    for metric_pipeline in historical_metric_pipelines:
-        pipeline_config_args = get_pipeline_config_args(metric_pipeline)
-
-        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            historical_metric_pipeline = dataflow_operator_for_pipeline(
-                pipeline_config_args, metric_pipeline
-            )
-            # Add the pipeline to the list of metric pipelines for this state
-            historical_metric_pipelines_by_state[pipeline_config_args.state_code] += [
-                historical_metric_pipeline
-            ]
-
-    for normalization_pipeline in normalization_pipelines:
-        pipeline_config_args = get_pipeline_config_args(normalization_pipeline)
-
-        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            normalization_calculation_pipeline = dataflow_operator_for_pipeline(
-                pipeline_config_args, normalization_pipeline
-            )
-
-            normalization_calculation_pipeline >> update_normalized_state_historical
-
-            for historical_metric_pipeline in historical_metric_pipelines_by_state[
-                pipeline_config_args.state_code
-            ]:
-                # This ensures that all of the normalization pipelines for a state will
-                # run before the metric pipelines for the state are triggered.
-                normalization_calculation_pipeline >> historical_metric_pipeline
-
-    for supplemental_pipeline in supplemental_dataset_pipelines:
-        pipeline_config_args = get_pipeline_config_args(supplemental_pipeline)
-
-        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            supplemental_dataset_pipeline = dataflow_operator_for_pipeline(
-                pipeline_config_args, supplemental_pipeline
-            )
+incremental_dag = incremental_dag()
+historical_dag = historical_dag()

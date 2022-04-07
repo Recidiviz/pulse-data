@@ -28,7 +28,7 @@ dag_folder = "dags"
 @patch(
     "os.environ",
     {
-        "GCP_PROJECT_ID": "recidiviz-testing",
+        "GCP_PROJECT": "recidiviz-testing",
         "CONFIG_FILE": "../calculator/pipeline/calculation_pipeline_templates.yaml",
     },
 )

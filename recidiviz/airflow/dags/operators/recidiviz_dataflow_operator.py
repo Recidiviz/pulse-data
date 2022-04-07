@@ -24,14 +24,14 @@ from airflow.providers.google.cloud.hooks.dataflow import DataflowHook
 from airflow.providers.google.cloud.operators.dataflow import (
     DataflowTemplatedJobStartOperator,
 )
+from airflow.utils.context import Context
 
 
 class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
     def execute(
         self,
-        # TODO(#11816) Update to airflow.utils.context.Context once upgrade is complete.
         # Some context about the context: https://bcb.github.io/airflow/execute-context
-        context: Any,  # pylint: disable=unused-argument
+        context: Context,  # pylint: disable=unused-argument
     ) -> Dict[Any, Any]:
         hook = DataflowHook(
             gcp_conn_id=self.gcp_conn_id,
