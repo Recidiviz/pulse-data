@@ -155,9 +155,6 @@ from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissio
 from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
     INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.liberty_to_prison_population_snapshot_by_dimension_internal_consistency import (
-    LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.multiple_supervision_info_for_commitment_admission import (
     MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
 )
@@ -263,9 +260,6 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 )
 from recidiviz.validation.views.state.supervision_termination_reason_no_date import (
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.supervision_to_liberty_population_snapshot_by_dimension_internal_consistency import (
-    SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
 
 
@@ -438,14 +432,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
