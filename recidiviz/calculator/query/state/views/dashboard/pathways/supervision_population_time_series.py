@@ -19,7 +19,10 @@
 To generate the BQ view, run:
 python -m recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_time_series
 """
-from recidiviz.calculator.query.bq_utils import filter_to_enabled_states
+from recidiviz.calculator.query.bq_utils import (
+    deduped_supervision_sessions,
+    filter_to_enabled_states,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -39,8 +42,8 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_DESCRIPTION = (
     """Supervision population count time series."""
 )
 
-SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
+SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     WITH cte AS (
         /*
         Use equivalent logic from compartment_sessions to deduplicate individuals who have more than
@@ -55,27 +58,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
             IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
             CASE WHEN s.state_code="US_ND" THEN NULL 
                 ELSE IFNULL(session_attributes.correctional_level, "EXTERNAL_UNKNOWN") END AS supervision_level,
-        FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` s,
-        UNNEST(GENERATE_DATE_ARRAY(DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH), 
-            CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)) as date_of_supervision,
-        UNNEST (session_attributes) session_attributes
-        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` name_map
-            ON s.state_code = name_map.state_code
-            AND session_attributes.supervision_office = name_map.location_id
-        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_2_dedup_priority` cl2_dedup
-            ON "SUPERVISION" = cl2_dedup.compartment_level_1
-            AND session_attributes.compartment_level_2=cl2_dedup.compartment_level_2
-        LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` sl_dedup
-            ON session_attributes.correctional_level=sl_dedup.correctional_level
-        WHERE session_attributes.compartment_level_1 = 'SUPERVISION' 
-            AND date_of_supervision BETWEEN s.start_date AND COALESCE(s.end_date, CURRENT_DATE('US/Eastern'))
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, date_of_supervision
-            ORDER BY COALESCE(cl2_dedup.priority, 999),
-            COALESCE(sl_dedup.correctional_level_priority, 999),
-            NULLIF(session_attributes.supervising_officer_external_id, 'EXTERNAL_UNKNOWN') NULLS LAST,
-            NULLIF(session_attributes.case_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
-            NULLIF(session_attributes.judicial_district_code, 'EXTERNAL_UNKNOWN') NULLS LAST
-        ) = 1
+        FROM {deduped_supervision_sessions()}
     ),
     full_time_series as (
         SELECT 
@@ -94,7 +77,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
                 month,
                 district,
                 supervision_level
-            FROM `{project_id}.{dashboard_views_dataset}.{dimension_combination_view}`
+            FROM `{{project_id}}.{{dashboard_views_dataset}}.{{dimension_combination_view}}`
         ) USING (state_code, year, month, district, supervision_level)
         GROUP BY 1,2,3,4,5
     )
@@ -108,7 +91,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
     FROM full_time_series,
     UNNEST([district, "ALL"]) AS district,
     UNNEST([supervision_level, "ALL"]) AS supervision_level
-    {filter_to_enabled_states}
+    {{filter_to_enabled_states}}
     AND DATE(year, month, 1) <= CURRENT_DATE('US/Eastern')
     GROUP BY 1, 2, 3, 4, 5
     ORDER BY year, month
