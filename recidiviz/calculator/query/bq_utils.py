@@ -19,7 +19,7 @@
 # pylint: disable=line-too-long
 
 
-from typing import List, Set
+from typing import List, Optional, Set
 
 
 def exclude_rows_with_missing_fields(required_columns: Set[str]) -> str:
@@ -234,3 +234,30 @@ def convert_days_to_years(day_expr: str) -> str:
 
     # 365.256 days in a year
     return f"CAST(FLOOR({day_expr}/365.256) AS INT64)"
+
+
+def deduped_supervision_sessions(where_clause: Optional[str] = "") -> str:
+    return f"""
+        `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized` s,
+        UNNEST(GENERATE_DATE_ARRAY(DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH), 
+            CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)) as date_of_supervision,
+        UNNEST (session_attributes) session_attributes
+        LEFT JOIN `{{project_id}}.{{dashboards_dataset}}.pathways_supervision_location_name_map` name_map
+            ON s.state_code = name_map.state_code
+            AND session_attributes.supervision_office = name_map.location_id
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_2_dedup_priority` cl2_dedup
+            ON "SUPERVISION" = cl2_dedup.compartment_level_1
+            AND session_attributes.compartment_level_2=cl2_dedup.compartment_level_2
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority` sl_dedup
+            ON session_attributes.correctional_level=sl_dedup.correctional_level
+        WHERE session_attributes.compartment_level_1 = 'SUPERVISION' 
+            AND date_of_supervision BETWEEN s.start_date AND COALESCE(s.end_date, CURRENT_DATE('US/Eastern'))
+            {where_clause}
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, date_of_supervision
+            ORDER BY COALESCE(cl2_dedup.priority, 999),
+            COALESCE(sl_dedup.correctional_level_priority, 999),
+            NULLIF(session_attributes.supervising_officer_external_id, 'EXTERNAL_UNKNOWN') NULLS LAST,
+            NULLIF(session_attributes.case_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
+            NULLIF(session_attributes.judicial_district_code, 'EXTERNAL_UNKNOWN') NULLS LAST
+        ) = 1
+    """

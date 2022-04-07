@@ -19,11 +19,14 @@
 To generate the BQ view, run:
 python -m recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_snapshot_by_dimension
 """
-from recidiviz.calculator.query.bq_utils import filter_to_enabled_states
+from recidiviz.calculator.query.bq_utils import (
+    deduped_supervision_sessions,
+    filter_to_enabled_states,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     DASHBOARD_VIEWS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_supervision_last_updated_date,
@@ -45,27 +48,39 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION = (
     """Supervision population snapshot by dimension"""
 )
 
-SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
-    /*{description}*/
+SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     WITH 
-    get_last_updated AS ({get_pathways_supervision_last_updated_date})
+    get_last_updated AS ({{get_pathways_supervision_last_updated_date}})
+    , cte AS ( 
+        /*
+        Use equivalent logic from compartment_sessions to deduplicate individuals who have more than
+        one supervision location on a given day.
+        */
+        SELECT DISTINCT
+            s.state_code,
+            s.person_id,
+            IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
+            CASE WHEN s.state_code="US_ND" THEN NULL 
+                ELSE IFNULL(session_attributes.correctional_level, "EXTERNAL_UNKNOWN") END AS supervision_level,
+            FROM {deduped_supervision_sessions('AND end_date IS NULL')}
+    )
     , all_dimensions AS (
         SELECT 
             state_code, 
             last_updated,
-            IFNULL(location_name, location_id) AS district,
+            district,
             CASE 
                 WHEN state_code='US_ID' and COALESCE(supervision_level, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
                     THEN "OTHER"
                 ELSE IFNULL(supervision_level, "EXTERNAL_UNKNOWN")
             END as supervision_level,
             COUNT(DISTINCT person_id) as person_count,
-        FROM `{project_id}.{metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`,
-        UNNEST([level_1_supervision_location_external_id, 'ALL']) AS location_id,
+        FROM cte,
+        UNNEST([district, 'ALL']) AS district,
         UNNEST([supervision_level, 'ALL']) AS supervision_level
         LEFT JOIN get_last_updated  USING (state_code)
-        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` USING (state_code, location_id)
-        {filter_to_enabled_states}
+        {{filter_to_enabled_states}}
         GROUP BY 1, 2, 3, 4
     )
     SELECT
@@ -92,7 +107,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
         "supervision_level",
     ),
     dashboards_dataset=DASHBOARD_VIEWS_DATASET,
-    metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=ENABLED_STATES
