@@ -513,7 +513,7 @@ class GetMetrics(beam.PTransform):
 )
 @with_output_types(
     beam.typehints.Tuple[
-        Optional[int],
+        int,
         beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent]],
     ]
 )
@@ -528,7 +528,7 @@ class ClassifyEvents(beam.DoFn):
         identifier: BaseIdentifier,
         pipeline_config: PipelineConfig,
     ) -> Generator[
-        Tuple[Optional[int], Tuple[entities.StatePerson, List[IdentifierEvent]]],
+        Tuple[int, Tuple[entities.StatePerson, List[IdentifierEvent]]],
         None,
         None,
     ]:
@@ -552,7 +552,10 @@ class ClassifyEvents(beam.DoFn):
         events = identifier.find_events(person, all_kwargs)
 
         if events:
-            yield person.person_id, (person, events)
+            person_id = person.person_id
+            if person_id is None:
+                raise ValueError("Found unexpected null person_id.")
+            yield person_id, (person, events)
 
     def to_runner_api_parameter(
         self, _unused_context: PipelineContext

@@ -63,7 +63,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
-from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
@@ -707,6 +706,8 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
         fully_connected_hydrated_entities: Dict[EntityClassName, List[Entity]] = {}
 
         unifying_id, element_data = element
+        if unifying_id is None:
+            raise ValueError("Found unexpected null unifying_id.")
 
         entities, associations, reference_table_data = self._split_element_data(
             element_data=element_data, relationships_to_hydrate=relationships_to_hydrate
@@ -1150,11 +1151,11 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
 
 @with_input_types(
     beam.typehints.Dict[str, Any],
-    **{"entity_class": Type[BuildableAttr], "unifying_id_field": str},
+    **{"entity_class": Type[Entity], "unifying_id_field": str},
 )
-@with_output_types(beam.typehints.Tuple[int, BuildableAttr])
+@with_output_types(beam.typehints.Tuple[int, Entity])
 class _ShallowHydrateEntity(beam.DoFn):
-    """Hydrates a BuildableAttr Entity."""
+    """Hydrates an Entity."""
 
     def process(self, element: TableRow, *_args, **kwargs):
         """Builds an entity from key-value pairs.
@@ -1163,8 +1164,8 @@ class _ShallowHydrateEntity(beam.DoFn):
             element: A dictionary containing Entity information.
             **kwargs: This should be a dictionary with values for the
                     following keys:
-                        - entity_class: Entity class of type BuildableAttr to
-                            be built.
+                        - entity_class: Entity class to be built. Classes must also
+                          be subclasses of BuildableAttr.
                         - unifying_id_field: Field in |element| corresponding
                             to an id that is needed to unify this root entity
                             with other related root entities.
@@ -1177,6 +1178,8 @@ class _ShallowHydrateEntity(beam.DoFn):
         unifying_id_field = kwargs["unifying_id_field"]
 
         hydrated_entity = entity_class.build_from_dictionary(element)
+        if not isinstance(hydrated_entity, Entity):
+            raise ValueError(f"Found unexpected entity type [{type(hydrated_entity)}]")
 
         unifying_id = _get_value_from_table_row(element, unifying_id_field)
 

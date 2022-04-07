@@ -17,7 +17,7 @@
 """Tests for supervision/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Any, Callable, Collection, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Collection, Dict, List, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
@@ -1527,14 +1527,15 @@ class AssertMatchers:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output: List[SupervisionMetric]) -> None:
+        def _count_metrics(output: List[RecidivizMetric]) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():
                 actual_combination_counts[key] = 0
 
             for metric in output:
-                assert isinstance(metric, SupervisionMetric)
+                if not isinstance(metric, SupervisionMetric):
+                    raise ValueError(f"Found unexpected metric type [{type(metric)}].")
 
                 metric_type = metric.metric_type
 
@@ -1550,19 +1551,3 @@ class AssertMatchers:
                     )
 
         return _count_metrics
-
-    @staticmethod
-    def validate_metric_is_expected_type(
-        expected_metric_type: Type[SupervisionMetric],
-    ) -> Callable:
-        """Asserts that the SupervisionMetric is of the expected SupervisionMetricType."""
-
-        def _validate_metric_is_expected_type(output: List[SupervisionMetric]) -> None:
-            supervision_metric = output[0]
-
-            if not isinstance(supervision_metric, expected_metric_type):
-                raise BeamAssertException(
-                    f"Failed assert. Metric not of expected type {expected_metric_type}."
-                )
-
-        return _validate_metric_is_expected_type
