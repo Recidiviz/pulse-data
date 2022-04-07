@@ -34,6 +34,7 @@ def generate_fake_user_restrictions(
     can_access_case_triage: bool = False,
     should_see_beta_charts: bool = False,
     routes: dict = None,
+    include_hash: bool = True,
 ) -> DashboardUserRestrictions:
     return DashboardUserRestrictions(
         state_code=region_code,
@@ -45,6 +46,7 @@ def generate_fake_user_restrictions(
         can_access_case_triage=can_access_case_triage,
         should_see_beta_charts=should_see_beta_charts,
         routes=routes,
+        user_hash=f"{email}::hashed" if include_hash else None,
     )
 
 
