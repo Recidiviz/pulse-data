@@ -46,3 +46,10 @@ variable "schema" {
 variable "recidiviz_root" {
   type = string
 }
+
+# If false, this reference table can be deleted. See
+# https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_table#deletion_protection
+variable "deletion_protection" {
+  type = bool
+  default = true
+}
