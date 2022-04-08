@@ -23,7 +23,8 @@ import * as IngestOperations from "../navigation/IngestOperations";
 import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import "../style/App.css";
-import AgencyProvisioningView from "./AgencyProvisioningView";
+import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
+import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
 import ColumnView from "./ColumnView";
@@ -142,6 +143,11 @@ const App = (): JSX.Element => {
                 Agency Provisioning
               </Link>
             </Menu.Item>
+            <Menu.Item key={JusticeCountsTools.USER_PROVISIONING_ROUTE}>
+              <Link to={JusticeCountsTools.USER_PROVISIONING_ROUTE}>
+                User Provisioning
+              </Link>
+            </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
@@ -213,6 +219,10 @@ const App = (): JSX.Element => {
           <Route
             path={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}
             component={AgencyProvisioningView}
+          />
+          <Route
+            path={JusticeCountsTools.USER_PROVISIONING_ROUTE}
+            component={UserProvisioningView}
           />
           <Redirect
             from="/"

@@ -25,26 +25,15 @@ import {
   message,
 } from "antd";
 import * as React from "react";
-import { getAgencies, createAgency } from "../AdminPanelAPI";
-import { useFetchedDataJSON } from "../hooks";
-import { formLayout, formTailLayout } from "./constants";
-
-type Agency = {
-  id: number;
-  name: string;
-};
-
-export type AgencyRequest = {
-  name: string;
-};
-
-type AgenciesResponse = {
-  agencies: Agency[];
-};
-
-type CreateAgencyResponse = {
-  agency: Agency;
-};
+import { getAgencies, createAgency } from "../../AdminPanelAPI";
+import {
+  AgenciesResponse,
+  CreateAgencyRequest,
+  CreateAgencyResponse,
+  ErrorResponse,
+} from "./constants";
+import { useFetchedDataJSON } from "../../hooks";
+import { formLayout, formTailLayout } from "../constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = React.useState(false);
@@ -57,26 +46,24 @@ const AgencyProvisioningView = (): JSX.Element => {
       key: "name",
     },
   ];
-  const onFinish = async ({ name }: AgencyRequest) => {
+  const onFinish = async ({ name }: CreateAgencyRequest) => {
     const nameTrimmed = name.trim();
     setShowSpinner(true);
     try {
       const response = await createAgency(nameTrimmed);
-      const text = await response.text();
-      try {
-        const { agency } = JSON.parse(text) as CreateAgencyResponse; // Try to parse it as JSON
-        if (data?.agencies) {
-          setData({ agencies: [...data.agencies, agency] });
-        } else {
-          setData({ agencies: [agency] });
-        }
-        form.resetFields();
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
         setShowSpinner(false);
-        message.success(`"${nameTrimmed}" added!`);
-      } catch (err) {
-        setShowSpinner(false);
-        message.error(`An error occured: ${text}`);
+        message.error(`An error occured: ${error}`);
+        return;
       }
+      const { agency } = (await response.json()) as CreateAgencyResponse;
+      setData({
+        agencies: data?.agencies ? [...data.agencies, agency] : [agency],
+      });
+      form.resetFields();
+      setShowSpinner(false);
+      message.success(`"${nameTrimmed}" added!`);
     } catch (err) {
       setShowSpinner(false);
       message.error(`An error occured: ${err}`);

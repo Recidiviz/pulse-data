@@ -35,11 +35,27 @@ class AgencyInterface:
         return agency
 
     @staticmethod
+    def get_agency_by_id(session: Session, agencyId: int) -> Agency:
+        return session.query(Agency).filter(Agency.id == agencyId).one()
+
+    @staticmethod
+    def get_agencies_by_id(session: Session, agency_ids: List[int]) -> List[Agency]:
+        agencies = session.query(Agency).filter(Agency.id.in_(agency_ids)).all()
+        found_agency_ids = {a.id for a in agencies}
+        if len(agency_ids) != len(found_agency_ids):
+            missing_agency_ids = set(agency_ids).difference(found_agency_ids)
+            raise ValueError(
+                f"Could not find the following agencies: {missing_agency_ids}"
+            )
+
+        return agencies
+
+    @staticmethod
     def get_agency_by_name(session: Session, name: str) -> Agency:
         return session.query(Agency).filter(Agency.name == name).one()
 
     @staticmethod
-    def get_agencies_by_name(session: Session, names: List[str]) -> Agency:
+    def get_agencies_by_name(session: Session, names: List[str]) -> List[Agency]:
         agencies = session.query(Agency).filter(Agency.name.in_(names)).all()
         found_agency_names = {a.name for a in agencies}
         if len(names) != len(found_agency_names):

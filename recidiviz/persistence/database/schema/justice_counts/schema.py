@@ -222,13 +222,12 @@ class UserAccount(JusticeCountsBase):
     )
 
     def to_json(self) -> Dict[str, Any]:
-        agencies = [a.to_json() for a in self.agencies]
         return {
             "id": self.id,
-            "name": self.name,
-            "email_address": self.email_address,
             "auth0_user_id": self.auth0_user_id,
-            "agencies": agencies,
+            "email_address": self.email_address,
+            "name": self.name,
+            "agencies": [agency.to_json() for agency in self.agencies],
         }
 
 
