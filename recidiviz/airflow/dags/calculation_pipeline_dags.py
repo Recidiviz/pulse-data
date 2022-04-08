@@ -24,6 +24,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 
 from airflow.decorators import dag
 from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
+from airflow.utils.trigger_rule import TriggerRule
 
 # Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
 # Cloud Composer environment at the top-level. However, for unit tests, we still need to
@@ -35,7 +36,15 @@ try:
     from operators.recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
     )
+    from utils.export_tasks_config import (  # type: ignore
+        CASE_TRIAGE_STATES,
+        PIPELINE_AGNOSTIC_EXPORTS,
+    )
 except ImportError:
+    from recidiviz.airflow.dags.utils.export_tasks_config import (
+        CASE_TRIAGE_STATES,
+        PIPELINE_AGNOSTIC_EXPORTS,
+    )
     from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
         IAPHTTPRequestOperator,
     )
@@ -63,10 +72,6 @@ PipelineConfigArgs = NamedTuple(
     "PipelineConfigArgs",
     [("state_code", str), ("pipeline_name", str), ("staging_only", Optional[bool])],
 )
-
-CASE_TRIAGE_STATES = [
-    "US_ID",
-]
 
 
 def trigger_export_operator(export_name: str) -> PubSubPublishMessageOperator:
@@ -145,6 +150,9 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
         url=f"https://{project_id}.appspot.com/calculation_data_storage_manager/update_normalized_state_dataset",
+        # This will trigger the task regardless of the failure or success of the
+        # normalization pipelines
+        trigger_rule=TriggerRule.ALL_DONE,
     )
 
     normalization_pipelines = YAMLDict.from_path(config_file).pop_dicts(
@@ -180,8 +188,16 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
         else {}
     )
 
+    for state_export in state_trigger_export_operators.values():
+        # This ensures that the normalized_state dataset will be updated before the
+        # export for a state is triggered
+        update_normalized_state >> state_export
+
     if should_trigger_exports:
         case_triage_export = trigger_export_operator("CASE_TRIAGE")
+
+        # Case triage export also relies on an updated normalized_state dataset
+        update_normalized_state >> case_triage_export
 
     for metric_pipeline in metric_pipelines:
         pipeline_config_args = get_pipeline_config_args(metric_pipeline)
@@ -232,10 +248,8 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
 
     # These exports don't depend on pipeline output.
     if should_trigger_exports:
-        _ = trigger_export_operator("COVID_DASHBOARD")
-        _ = trigger_export_operator("INGEST_METADATA")
-        _ = trigger_export_operator("VALIDATION_METADATA")
-        _ = trigger_export_operator("JUSTICE_COUNTS")
+        for export in PIPELINE_AGNOSTIC_EXPORTS:
+            _ = trigger_export_operator(export)
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at

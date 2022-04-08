@@ -101,6 +101,13 @@ resource "google_storage_bucket_object" "operators_file" {
   source   = "${local.recidiviz_root}/airflow/dags/operators/${each.key}"
 }
 
+resource "google_storage_bucket_object" "utils_file" {
+  for_each = fileset("${local.recidiviz_root}/airflow/dags/utils", "*.py")
+  name     = "dags/utils/${each.key}"
+  bucket   = local.composer_dag_bucket
+  source   = "${local.recidiviz_root}/airflow/dags/utils/${each.key}"
+}
+
 resource "google_storage_bucket_object" "pipeline_templates" {
   name   = "dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
   bucket = local.composer_dag_bucket
