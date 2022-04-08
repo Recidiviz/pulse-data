@@ -68,6 +68,7 @@ class TestSchema(TestCase):
                 publish_date=datetime.date(2020, 10, 1),
                 acquisition_method=schema.AcquisitionMethod.SCRAPED,
                 project=schema.Project.JUSTICE_COUNTS_DATA_SCAN,
+                status=schema.ReportStatus.PUBLISHED,
             )
             act_session.add(report)
 

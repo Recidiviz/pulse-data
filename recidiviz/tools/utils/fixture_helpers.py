@@ -20,6 +20,7 @@
 Helper functions for loading fixture data into Postgres instances
 """
 import os
+from typing import Optional
 
 import psycopg2
 from sqlalchemy.ext.declarative import DeclarativeMeta
@@ -33,10 +34,13 @@ from recidiviz.persistence.database.constants import (
 )
 
 
-def reset_fixtures(tables: DeclarativeMeta, fixture_directory: str) -> None:
+def reset_fixtures(
+    tables: DeclarativeMeta, fixture_directory: str, csv_headers: Optional[bool] = False
+) -> None:
     """
     Deletes all existing data in `tables` and re-imports data from CSV files
-    in `fixture_directory`.
+    in `fixture_directory`. If `csv_headers=True`, the fixture files are
+    assumed to have a header row that names the columns.
     """
 
     user = os.getenv(SQLALCHEMY_DB_USER, "postgres")
@@ -52,15 +56,28 @@ def reset_fixtures(tables: DeclarativeMeta, fixture_directory: str) -> None:
     with connection.cursor() as cursor:
 
         def _import_csv(path: str, table: str) -> None:
+
+            column_names = ""
+            header = ""
+            if csv_headers:
+                # Read the column names from the first line of the csv
+                with open(path, "r", encoding="utf-8") as f:
+                    column_names = f"({f.readline().rstrip()})"
+                header = " HEADER"
+
             with open(path, "r", encoding="utf-8") as csv:
                 cursor.copy_expert(
-                    f"COPY {table} FROM STDIN WITH DELIMITER ',' CSV",
+                    f"COPY {table} {column_names} FROM STDIN WITH DELIMITER ',' CSV{header}",
                     csv,
                 )
 
-        for table in tables:
+        # Clear all tables in reverse order to avoid "foreign key is still referenced" errors
+        for table in reversed(tables):
             table_name = table.__table__.name
             cursor.execute(f"DELETE FROM {table_name}")
+
+        for table in tables:
+            table_name = table.__table__.name
             _import_csv(
                 os.path.realpath(
                     os.path.join(

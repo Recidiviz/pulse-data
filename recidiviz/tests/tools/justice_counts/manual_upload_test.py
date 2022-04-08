@@ -219,6 +219,7 @@ class ManualUploadTest(TestCase):
             )
             self.assertEqual("Solange Knowles", report.acquired_by)
             self.assertEqual(schema.Project.JUSTICE_COUNTS_DATA_SCAN, report.project)
+            self.assertEqual(schema.ReportStatus.PUBLISHED, report.status)
 
             [table_definition] = session.query(schema.ReportTableDefinition).all()
             self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
