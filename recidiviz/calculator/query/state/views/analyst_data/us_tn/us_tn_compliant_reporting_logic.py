@@ -934,14 +934,15 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 date_spe_eligible,
                 date_drug_screen_eligible,
                 date_cr_rejection_eligible) AS greatest_date_eligible,
-        CASE -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting
-             WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 'c4'
+        CASE 
              WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c1'
              WHEN all_eligible_and_offense_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c2'
              WHEN all_eligible_and_offense_and_zt_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c3'
+             -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting
+             WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 'c4'
              END AS compliant_reporting_eligible,
         CASE WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 1 ELSE 0 END AS eligible_c4,
-        CASE WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c1,
+            CASE WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c1,
         CASE WHEN all_eligible_and_offense_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c2,
         CASE WHEN all_eligible_and_offense_and_zt_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c3
     FROM add_more_flags_2
