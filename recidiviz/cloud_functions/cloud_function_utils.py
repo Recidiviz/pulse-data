@@ -31,7 +31,11 @@ import google.oauth2.credentials
 import google.oauth2.service_account
 import requests
 from google.auth import crypt
-from google.auth.transport.requests import Request
+from google.auth.credentials import Credentials
+from google.auth.transport.requests import (  # type: ignore[attr-defined]
+    AuthorizedSession,
+    Request,
+)
 
 IAP_CLIENT_ID = {
     "recidiviz-staging": (
@@ -133,7 +137,7 @@ def get_google_open_id_connect_token(
     service_account_jwt = (
         service_account_credentials._make_authorization_grant_assertion()
     )
-    request = google.auth.transport.requests.Request()
+    request = Request()
     body = {
         "assertion": service_account_jwt,
         "grant_type": google.oauth2._client._JWT_GRANT_TYPE,
@@ -165,3 +169,70 @@ def build_query_param_string(
         if isinstance(param_value, str):
             query_tuples.append((param_key, param_value))
     return f"?{urllib.parse.urlencode(query_tuples)}"
+
+
+# Following GCP best practices, these credentials should be
+# constructed at start-up time and used throughout
+# https://cloud.google.com/apis/docs/client-libraries-best-practices
+_COMPOSER_AUTH_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+
+_COMPOSER_CREDENTIALS = None
+
+
+def get_composer_credentials() -> Credentials:
+    global _COMPOSER_CREDENTIALS
+    if _COMPOSER_CREDENTIALS is None:
+        _COMPOSER_CREDENTIALS, _ = google.auth.default(scopes=[_COMPOSER_AUTH_SCOPE])
+    return _COMPOSER_CREDENTIALS
+
+
+# From https://cloud.google.com/composer/docs/composer-2/triggering-with-gcf#add_the_code_for_triggering_dags_using_airflow_rest_api
+def make_composer2_web_server_request(
+    url: str, method: str = "GET", **kwargs: Any
+) -> requests.Response:
+    """
+    Make a request to Cloud Composer 2 environment's web server.
+    Args:
+      url: The URL to fetch.
+      method: The request method to use ('GET', 'OPTIONS', 'HEAD', 'POST', 'PUT',
+        'PATCH', 'DELETE')
+      **kwargs: Any of the parameters defined for the request function:
+                https://github.com/requests/requests/blob/master/requests/api.py
+                  If no timeout is provided, it is set to 90 by default.
+    """
+
+    authed_session = AuthorizedSession(get_composer_credentials())
+
+    # Set the default timeout, if missing
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = 90
+
+    return authed_session.request(method, url, **kwargs)
+
+
+def trigger_dag(web_server_url: str, dag_id: str, data: dict) -> requests.Response:
+    """
+    Make a request to trigger a dag using the stable Airflow 2 REST API.
+    https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html
+
+    Args:
+      web_server_url: The URL of the Airflow 2 web server.
+      dag_id: The DAG ID.
+      data: Additional configuration parameters for the DAG run (json).
+    """
+
+    endpoint = f"api/v1/dags/{dag_id}/dagRuns"
+    request_url = f"{web_server_url}/{endpoint}"
+    json_data = {"conf": data}
+
+    response = make_composer2_web_server_request(
+        request_url, method="POST", json=json_data
+    )
+
+    if response.status_code == 403:
+        raise requests.HTTPError(
+            "You do not have a permission to perform this operation. "
+            "Check Airflow RBAC roles for your account."
+            f"{response.headers} / {response.text}"
+        )
+    return response
