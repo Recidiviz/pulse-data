@@ -1,0 +1,135 @@
+facility_code,facility_name,type,district,division
+P82F,Blountville Probation Office,DUAL,10,EAST
+BLOP,Blountville Probation Office,DUAL,10,EAST
+P10F,Elizabethton Probation Parole Office,DUAL,10,EAST
+FTHR,First TN Human Resource Agency,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+GRVP,Greeneville Area Parole Office,PAROLE,10,EAST
+P30F,Greeneville Probation And Parole Office,DUAL,10,EAST
+GREP,Greeneville Probation Office,PROBATION,10,EAST
+HHSE,Hay House,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+DRC90,Johnson City Day Reporting Center,DUAL,10,EAST
+FTRP,Johnson City Field Office,PROBATION,10,EAST
+JCYP,Johnson City Probation And Parole Office,DUAL,10,EAST
+P90D,Johnson City Probation And Parole Office,DUAL,10,EAST
+MORP,Morristown Area Parole Office,PAROLE,10,EAST
+P32F,Morristown Probation And Parole Office,DUAL,10,EAST
+MRPP,Morristown Probation Office,PROBATION,10,EAST
+DAVC,Opportunity House Sentencing Support Ctr.,COMMUNITY_CORRECTIONS,10,EAST
+P45F,Dandridge Probation And Parole Office,DUAL,20,EAST
+ETRP,East Tennessee Regional Probation Office,PROBATION,20,EAST
+KCCA,Knox County Alternative Prg,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+DRC47,Knoxville Day Reporting Center,DUAL,20,EAST
+KXRP,Knoxville Parole Office,PAROLE,20,EAST
+P47R,Knoxville Probation And Parole Office,DUAL,20,EAST
+P13F,New Tazewell Probation And Parole Office,DUAL,20,EAST
+P15F,Newport Probation And Parole Office,DUAL,20,EAST
+P78F,Sevierville Probation And Parole Office,DUAL,30,EAST
+BCCC,Blount County Community Corrections,COMMUNITY_CORRECTIONS,21,EAST
+P01F2,Clinton Probation And Parole Office,DUAL,21,EAST
+CLNP,Clinton Probation Office,PROBATION,21,EAST
+P07F,Jacksboro Probation And Parole Office,DUAL,21,EAST
+MAPO,Maryville Area Parole Office,PAROLE,21,EAST
+P05F,Maryville Probation And Parole Office,DUAL,21,EAST
+MARP,Maryville Probation Office,PROBATION,21,EAST
+MCRRC,Morgan County Residential Recovery Court,COMMUNITY_CORRECTIONS,21,EAST
+OAKP,Oak Ridge Area Parole Office,PAROLE,21,EAST
+P54F,Athens Probation and Parole Office,DUAL,30,EAST
+CHRP,Chattanooga Parole Office,PAROLE,30,EAST
+P33D1,Chattanooga Probation & Parole Office (Rural),DUAL,30,EAST
+P33D2,Chattanooga Probation & Parole Office (Urban),DUAL,30,EAST
+CLVP,Cleveland Area Parole Office,PAROLE,30,EAST
+P06F,Cleveland Probation And Parole Office,DUAL,30,EAST
+CLEP,Cleveland Probation Office,PROBATION,30,EAST
+HCCC,Hamilton County Community Corrections,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+P58F,Jasper Probation And Parole Office,DUAL,30,EAST
+MADP,Madisonville Probation Office,PROBATION,30,EAST
+P89F,McMinnville Probation And Parole Office,DUAL,30,EAST
+MCMP,McMinnville Probation Office,PROBATION,30,EAST
+SERP,Southeast Regional Probation Office,PROBATION,30,EAST
+SEHR,Southeast Tennessee Human Resource Agency,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+P62F,Madisonville Probation And Parole Office,DUAL,30,EAST
+FJDCC,15th Judicial District Community Corrections,COMMUNITY_CORRECTIONS,31,MIDDLE
+UCRP,Cookeville Field Office,PROBATION,31,MIDDLE
+P71F,Cookeville Probation And Parole Office,DUAL,31,MIDDLE
+P18F,Crossville Probation And Parole Office,DUAL,31,MIDDLE
+MCHR,Mid-Cumberland Human Resource Agency,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+MDCR,Mid-Cumberland Regional Probation Office,PROBATION,31,MIDDLE
+SPAP,Sparta Parole Office,PAROLE,31,MIDDLE
+UCHR,Upper Cumberland Human Resource Agency,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+P19D,East Nashville Probation And Parole Office,DUAL,40,MIDDLE
+DCCCP,Davidson County Community Corrections Program,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+DCDC4,Davidson Drug Court Residential Center,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+DRC19,Nashville Day Reporting Center,DUAL,40,MIDDLE
+NARP,Nashville Parole Office,PAROLE,41,MIDDLE
+P19R,Nashville Probation And Parole Office,DUAL,40,MIDDLE
+P19R2,Nashville Probation And Parole Office 2,DUAL,41,MIDDLE
+NSPL,Nashville Satellite Parole Office,PAROLE,41,MIDDLE
+PPCO,Probation And Parole Central Office,TC,NOT_APPLICABLE,NOT_APPLICABLE
+P94F,Franklin Probation And Parole Office,DUAL,51,MIDDLE
+FRAP,Franklin Probation Office,PROBATION,50,MIDDLE
+DRC75,Murfreesboro Day Reporting Center,DUAL,50,MIDDLE
+P75F,Murfreesboro Probation And Parole Office,DUAL,50,MIDDLE
+MRFP,Murfreesboro Probation Office,PROBATION,50,MIDDLE
+TLLP,Tullahoma Area Parole Office,PAROLE,50,MIDDLE
+P16F,Tullahoma Probation And Parole Office,DUAL,50,MIDDLE
+TULP,Tullahoma Probation Office,PROBATION,50,MIDDLE
+P60D,Columbia Probation And Parole Office,DUAL,51,MIDDLE
+LAWP,Lawrenceburg Probation Office,PROBATION,51,MIDDLE
+CLBP,Columbia Area Parole Office,PAROLE,51,MIDDLE
+P50F,Lawrenceburg Probation And Parole Office,DUAL,51,MIDDLE
+CMCS,Somerville Correction Management Corp,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+NWRP,Dresden Field Office,PROBATION,60,WEST
+P92F,Dresden Probation And Parole Office,DUAL,61,WEST
+P23F,Dyersburg Probation And Parole Office,DUAL,61,WEST
+DYBP,Dyersburg Probation Office,PROBATION,60,WEST
+DRC57,Jackson Day Reporting Center,DUAL,60,WEST
+JKRP,Jackson Parole Office,PAROLE,60,WEST
+P57R,Jackson Probation And Parole Office,DUAL,60,WEST
+P39F,Lexington Probation And Parole Office,DUAL,61,WEST
+LEWP,Lexington Probation Office,PROBATION,60,WEST
+MCCC,Madison County Community Corrections,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+P40F,Paris Probation And Parole,DUAL,61,WEST
+P24F,Somerville Probation And Parole Office,DUAL,60,WEST
+P66F,Union City Probation And Parole,DUAL,61,WEST
+DECC,24th Jud Dist Comm Corr Prog,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+CMCH,Humbolt Community Corrections Management Corp,COMMUNITY_CORRECTIONS,61,WEST
+CMCU,Union City Community Corrections Management Corp,COMMUNITY_CORRECTIONS,61,WEST
+DYGP,Dyersburg Area Parole Office,PAROLE,61,WEST
+PARP,Paris Parole Office,PAROLE,61,WEST
+COLP,South Central Regional Prob Office,PROBATION,61,WEST
+WSCN,Westate Corrections Network,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+P79F2,East Memphis Probation And Parole Office,DUAL,71,WEST
+DRC79,Memphis Day Reporting Center,DUAL,71,WEST
+MERP,Memphis Parole Office,PAROLE,10,WEST
+P79D,Memphis Probation And Parole Office (D),DUAL,71,WEST
+P79R,Memphis Probation And Parole Office (R),DUAL,70,WEST
+P79F1,Memphis Probation And Parole Reporting Center,DUAL,71,WEST
+NMEP,North Memphis Probation Office,PROBATION,10,WEST
+PWIT,Project Wit (Whatever It Takes),COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+SMPO,South Memphis Parole Office,PAROLE,10,WEST
+SMEP,South Memphis Probation Office,PROBATION,10,WEST
+CHAP,Charlotte Probation Office,PROBATION,80,MIDDLE
+CKVP,Clarksville Area Parole Office,PAROLE,80,MIDDLE
+P63F,Clarksville Probation And Parole Office,DUAL,80,MIDDLE
+CLKP,Clarksville Probation Office,PROBATION,80,MIDDLE
+P22F,Dickson Probation And Parole Office,DUAL,80,MIDDLE
+P83F,Gallatin Probation And Parole Office,DUAL,81,MIDDLE
+GALP,Gallatin Probation Office,PROBATION,80,MIDDLE
+P95F,Lebanon Probation And Parole Office,DUAL,81,MIDDLE
+LEBP,Lebanon Probation Office,PROBATION,80,MIDDLE
+P74F,Springfield Probation And Parole Office,DUAL,81,MIDDLE
+SPRP,Springfield Probation Office,PROBATION,80,MIDDLE
+MRCP,Montgomery-Robertson County Community Correction,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+MMEP,Delta Probation Region Day Reporting Center,PROBATION,INTERNAL_UNKNOWN,INTERNAL_UNKNOWN
+DERP,Delta Regional Probation Office,PROBATION,INTERNAL_UNKNOWN,INTERNAL_UNKNOWN
+ETHR,East Tennessee Human Resource Agency,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+SECC,Southeast TN Community Corrections,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+SCHR,South Central Human Resource Agency,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+CACC,Correctional Alternative,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+CATS,Community Alternative Treatment Services,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
+CNV,Conversion,PAROLE,NOT_APPLICABLE,NOT_APPLICABLE
+OIC,Office Of Investigations,DUAL,0,NOT_APPLICABLE
+PUPPF,Unsupervised/Private Probation,PROBATION,NOT_APPLICABLE,NOT_APPLICABLE
+SWEP,Southwest Regional Probation Office,PROBATION,NOT_APPLICABLE,WEST
+BPCO,Board of Parole Central Office,TC,0,NOT_APPLICABLE
+HCCF,Hardeman County Correctional Facility,COMMUNITY_CORRECTIONS,NOT_APPLICABLE,NOT_APPLICABLE
