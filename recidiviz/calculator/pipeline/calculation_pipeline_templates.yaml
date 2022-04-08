@@ -151,6 +151,13 @@ incremental_metric_pipelines:
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 36
     region: us-west3
+  - pipeline: supervision_metrics
+    job_name: us-me-supervision-metrics-36
+    state_code: US_ME
+    calculation_month_count: 36
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-west3
+    staging_only: True
 
 historical_metric_pipelines:
   - pipeline: incarceration_metrics
@@ -249,6 +256,13 @@ historical_metric_pipelines:
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west3
+  - pipeline: supervision_metrics
+    job_name: us-me-historical-supervision-metrics-240
+    state_code: US_ME
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-west3
+    staging_only: True
 
 supplemental_dataset_pipelines:
   - pipeline: us_id_case_note_extracted_entities_supplemental
