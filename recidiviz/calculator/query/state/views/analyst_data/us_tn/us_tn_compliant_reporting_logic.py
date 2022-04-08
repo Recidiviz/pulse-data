@@ -33,9 +33,42 @@ US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_DESCRIPTION = (
 )
 
 US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
-    -- First CTE uses standards list and creates flags to apply supervision level and time spent criteria
-    WITH standards AS (
-        SELECT * EXCEPT(Offender_ID),
+    -- This CTE calculates various supervision and system session dates
+    WITH supervision_sessions_in_system AS (
+        SELECT  ss.person_id,
+                ss.start_date as latest_system_session_start_date,
+                CASE WHEN ROW_NUMBER() OVER(PARTITION BY ss.person_id ORDER BY cs.start_date ASC) = 1 THEN cs.start_date END AS earliest_supervision_start_date,
+                CASE WHEN ROW_NUMBER() OVER(PARTITION BY ss.person_id ORDER BY cs.start_date DESC) = 1 THEN cs.start_date END AS latest_supervision_start_date,
+        FROM (
+            SELECT *
+            FROM `{project_id}.{sessions_dataset}.system_sessions_materialized`
+            WHERE TRUE 
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY session_id_end DESC) = 1 
+        ) ss
+        -- Here, we're not restricting supervision super sessions to be within a system session, but since we're
+        -- restricting to keeping someone's latest system session, that will happen by definition
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized` cs
+            ON ss.person_id = cs.person_id
+            AND cs.start_date >= ss.start_date
+            AND cs.compartment_level_0 = 'SUPERVISION'
+    ), 
+    calc_dates AS (
+        SELECT  person_id,
+                -- Since we start with everyone actively on supervision, everyone's "most recent system session" will also be 
+                -- their current system session
+                any_value(latest_system_session_start_date) AS latest_system_session_start_date,
+                max(earliest_supervision_start_date) AS earliest_supervision_start_date_in_latest_system,
+                max(latest_supervision_start_date) AS latest_supervision_start_date,
+        FROM supervision_sessions_in_system
+        GROUP BY 1
+    ),
+    -- This CTE uses standards list and creates flags to apply supervision level and time spent criteria, as well as bringing various supervision and system session dates
+    standards AS (
+        SELECT standards.* EXCEPT(Offender_ID),
+                pei.person_id,
+                latest_system_session_start_date,
+                earliest_supervision_start_date_in_latest_system,
+                latest_supervision_start_date,
                 LPAD(CAST(Offender_ID AS string), 8, '0') AS Offender_ID,
                 -- Criteria: 1 year on Minimum, 18 months on Medium
                 CASE WHEN Supervision_Level LIKE '%MINIMUM%' AND DATE_DIFF(current_date('US/Eastern'),Plan_Start_Date,MONTH)>=12 THEN 1
@@ -47,7 +80,11 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 CASE WHEN Supervision_Level LIKE "%MINIMUM%" THEN DATE_ADD(Plan_Start_Date, INTERVAL 12 MONTH)
                      WHEN Supervision_Level LIKE "%MEDIUM%" THEN DATE_ADD(Plan_Start_Date, INTERVAL 18 MONTH)
                     ELSE '9999-01-01' END AS date_sup_level_eligible,
-            FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due`
+            FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due` standards
+            LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+                ON pei.external_id = LPAD(CAST(Offender_ID AS string), 8, '0')
+            LEFT JOIN calc_dates
+                ON pei.person_id = calc_dates.person_id
             WHERE date_of_standards = (
                 SELECT MAX(date_of_standards)
                 FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due`
@@ -77,7 +114,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         -- is >= 18 months, we include them
         WHERE SupervisionLevelClean = 'MINIMUM' 
         AND prev_level = 'MEDIUM' 
-        AND time_since_prev_start >= 18 
+        AND time_since_prev_start >= 18
         AND time_since_current_start < 12
         AND PlanEndDate IS NULL
         -- After applying these filters, there should be no duplicates left, but just in case there are multiple open plan periods, this line dedups
@@ -279,35 +316,69 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     permanent_exemptions AS (
         SELECT DISTINCT exemptions.AccountSAK
               FROM exemptions 
-              WHERE ReasonCode IN ('SSDB','JORD','CORD','SISS')               
+              WHERE ReasonCode IN ('SSDB','JORD','CORD','SISS') 
+              AND EndDate IS NULL              
         ),
     current_exemptions AS (
-        SELECT AccountSAK, ARRAY_AGG(ReasonCode IGNORE NULLS) AS current_exemption_type
+        SELECT AccountSAK, 
+                ARRAY_AGG(ReasonCode IGNORE NULLS) AS current_exemption_type,
+                MAX(CASE WHEN ReasonCode IN ('SSDB','JORD','CORD','SISS') THEN 1 ELSE 0 END) AS has_permanent_exemption
               FROM exemptions 
               WHERE EndDate IS NULL
         GROUP BY 1
         ),
-    -- This calculates unpaid total after subtracting any exemption amounts, since often an invoice is run on the same date
-    -- that an exemption goes into effect
-    arrearages AS (
-            SELECT 
-                inv.AccountSAK,
-                SUM(UnPaidAmount - COALESCE(ExemptAmount,0)) as unpaid_total, 
-            FROM inv
-            LEFT JOIN exemptions
-                ON inv.AccountSAK = exemptions.AccountSAK
-                AND inv.FeeItemID = exemptions.FeeItemID
-                AND inv.InvoiceDate BETWEEN exemptions.StartDate AND COALESCE(exemptions.EndDate,'9999-01-01')
-            GROUP BY 1
+    -- These CTEs calculate unpaid total.The first CTE calculates it for the most recent system session, the second calculates
+    -- for all. First, we join on any exemption when invoice is greater than exemption amount
+    -- (since sometimes a person can be billed $0 for an item that they have an exemption for), and join on the same FeeItemID and for
+    -- any invoices during an exemption. Next, there are various edge cases where paid amount (invoice minus unpaid) is greater
+    -- than actual amount owed (invoice minus exempt). When that happens, actual unpaid balance is set to the difference between unpaid and exempt
+    -- Otherwise, we take the UnpaidAmount and sum it 
+    arrearages_latest AS (
+            SELECT sup_plan_standards.Offender_ID, 
+                    accounts.AccountSAK, 
+                    SUM(
+                        CASE WHEN COALESCE(inv_1.InvoiceAmount,0) - COALESCE(inv_1.UnPaidAmount,0) >= COALESCE(inv_1.InvoiceAmount,0) - COALESCE(exemption_1.ExemptAmount,0) THEN COALESCE(inv_1.UnPaidAmount,0) - COALESCE(exemption_1.ExemptAmount,0)
+                             ELSE COALESCE(inv_1.UnPaidAmount,0)
+                             END
+                    ) as unpaid_total_latest,
+            FROM sup_plan_standards
+            LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.OffenderAccounts_latest` accounts
+                ON sup_plan_standards.Offender_ID = accounts.OffenderID
+            LEFT JOIN inv inv_1 
+                ON accounts.AccountSAK = inv_1.AccountSAK
+                AND inv_1.InvoiceDate >= COALESCE(DATE_TRUNC(latest_supervision_start_date,MONTH),DATE_TRUNC(latest_system_session_start_date,MONTH),'1900-01-01')
+            LEFT JOIN exemptions exemption_1
+                ON inv_1.AccountSAK = exemption_1.AccountSAK
+                AND inv_1.FeeItemID = exemption_1.FeeItemID
+                AND inv_1.InvoiceDate BETWEEN exemption_1.StartDate AND COALESCE(exemption_1.EndDate,'9999-01-01')
+                AND inv_1.InvoiceAmount >= COALESCE(exemption_1.ExemptAmount,0)
+            GROUP BY 1,2
     ),
-    -- Join onto main OFS table that links accounts and people
-    -- If someone has an account but nothing in invoices, this could be because they have an exemption, so no invoices are generated
-    -- Therefore assume unpaid amount is 0
-    all_accounts AS (
-        SELECT AccountSAK, OffenderID as Offender_ID, COALESCE(unpaid_total,0) AS unpaid_total
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderAccounts_latest` 
-        LEFT JOIN arrearages 
-            USING(AccountSAK)
+    arrearages_all AS (
+            SELECT sup_plan_standards.Offender_ID, 
+                    accounts.AccountSAK, 
+                    SUM(
+                        CASE WHEN COALESCE(inv_2.InvoiceAmount,0) - COALESCE(inv_2.UnPaidAmount,0) >= COALESCE(inv_2.InvoiceAmount,0) - COALESCE(exemption_2.ExemptAmount,0) THEN COALESCE(inv_2.UnPaidAmount,0) - COALESCE(exemption_2.ExemptAmount,0)
+                             ELSE COALESCE(inv_2.UnPaidAmount,0)
+                             END
+                    ) as unpaid_total_all,
+            FROM sup_plan_standards
+            LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.OffenderAccounts_latest` accounts
+                ON sup_plan_standards.Offender_ID = accounts.OffenderID
+            LEFT JOIN inv inv_2 
+                ON accounts.AccountSAK = inv_2.AccountSAK
+            LEFT JOIN exemptions exemption_2
+                ON inv_2.AccountSAK = exemption_2.AccountSAK
+                AND inv_2.FeeItemID = exemption_2.FeeItemID
+                AND inv_2.InvoiceDate BETWEEN exemption_2.StartDate AND COALESCE(exemption_2.EndDate,'9999-01-01')
+                AND inv_2.InvoiceAmount >= COALESCE(exemption_2.ExemptAmount,0)                
+            GROUP BY 1,2
+    ),
+    arrearages AS (
+        SELECT arrearages_latest.*, unpaid_total_all
+        FROM arrearages_latest
+        JOIN arrearages_all
+            USING(Offender_ID, AccountSAK)
     ),
     payments AS (
         SELECT AccountSAK, 
@@ -351,12 +422,39 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY ContactNoteDateTime DESC) = 1
     ), 
     latest_off_mvmt AS (
-    SELECT OffenderID as Offender_ID,
-            CAST(SPLIT(LastUpdateDate,' ')[OFFSET(0)] AS DATE) as latest_mvmt_date,
-            MovementType as latest_mvmt_code,
-    FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderMovement_latest`
-    WHERE MovementType LIKE '%DI%'
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY MovementDateTime DESC) = 1
+        SELECT OffenderID as Offender_ID,
+                CAST(SPLIT(LastUpdateDate,' ')[OFFSET(0)] AS DATE) as latest_mvmt_date,
+                MovementType as latest_mvmt_code,
+        FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderMovement_latest`
+        WHERE MovementType LIKE '%DI%'
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY MovementDateTime DESC) = 1
+    ),
+    -- Parole board action conditions live in a different data source than special conditions associated with sentences
+    -- The BoardAction data is unique on person, hearing date, hearing type, and staff ID. For our purposes, we keep 
+    -- conditions where "final decision" is yes, and keep all distinct parole conditions on a given person/day
+    -- Then we keep all relevant hearings that happen in someone's latest system session, and keep all codes since then
+    board_conditions AS (
+        SELECT Offender_ID, hearing_date, condition, Decode AS condition_description
+        FROM (
+            SELECT DISTINCT OffenderID AS Offender_ID, CAST(HearingDate AS DATE) AS hearing_date, ParoleCondition1, ParoleCondition2, ParoleCondition3, ParoleCondition4, ParoleCondition5
+            FROM `{project_id}.us_tn_raw_data_up_to_date_views.BoardAction_latest`
+            WHERE FinalDecision = 'Y'
+        )
+        UNPIVOT(condition for c in (ParoleCondition1, ParoleCondition2, ParoleCondition3, ParoleCondition4, ParoleCondition5))
+        LEFT JOIN (
+            SELECT *
+            FROM `{project_id}.us_tn_raw_data_up_to_date_views.CodesDescription_latest`
+            WHERE CodesTableID = 'TDPD030'
+        ) codes 
+            ON condition = codes.Code
+    ),
+    relevant_conditions AS (
+        SELECT sup_plan_standards.Offender_ID, ARRAY_AGG(STRUCT(condition, condition_description)) AS board_conditions
+        FROM sup_plan_standards
+        JOIN board_conditions
+            ON sup_plan_standards.Offender_ID = board_conditions.Offender_ID
+            AND hearing_date >= COALESCE(latest_system_session_start_date,'1900-01-01')
+        GROUP BY 1
     ),
     special_conditions AS (
         SELECT person_id, ARRAY_AGG(conditions IGNORE NULLS) AS special_conditions_on_current_sentences
@@ -380,7 +478,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 dru_contacts.* EXCEPT(total_screens_in_past_year,Offender_ID),
                 account_flags.*,
                 sum_payments.last_paid_amount,
-                all_accounts.* EXCEPT(Offender_ID),
+                arrearages.* EXCEPT(Offender_ID),
                 zt_codes,
             -- General pattern:
             -- a) if dont have the flag now, didnt have it in past sentences or prior record, eligible
@@ -469,10 +567,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         CASE WHEN 
             CR_rejection_codes_dynamic.Offender_ID IS NULL THEN 1 ELSE 0 END AS cr_not_rejected_x_months_flag,
         CASE WHEN zero_tolerance_codes.Offender_ID IS NULL THEN 1 ELSE 0 END AS no_zero_tolerance_codes,
-        #CASE WHEN ((unpaid_total <= 2000 AND have_past_1_month_payment = 1 AND have_past_2_month_payment = 1 AND have_past_3_month_payment=1) OR unpaid_total = 0 OR permanent_exemptions.AccountSAK IS NOT NULL) THEN 'Option 1 - Eligible' 
-         #    WHEN ((unpaid_total <= 2000 AND have_at_least_1_past_6_mo_payment=1) OR unpaid_total = 0 OR permanent_exemptions.AccountSAK IS NOT NULL) THEN 'Option 2 - Eligible' 
-         CASE   WHEN ((unpaid_total <= 500) OR unpaid_total = 0 OR permanent_exemptions.AccountSAK IS NOT NULL) THEN 'Option 3 - Eligible'
-            WHEN ((unpaid_total <= 2000) OR unpaid_total = 0 OR permanent_exemptions.AccountSAK IS NOT NULL) THEN 'Option 4 - Eligible' 
+        CASE WHEN COALESCE(unpaid_total_latest,0) <= 500 THEN 'low_balance'
+             WHEN permanent_exemptions.AccountSAK IS NOT NULL THEN 'exempt'
+             WHEN unpaid_total_latest <= 2000 AND have_past_1_month_payment = 1 AND have_past_2_month_payment = 1 AND have_past_3_month_payment = 1 THEN 'regular_payments'
             ELSE 'Ineligible' END AS fines_fees_eligible,        
         CASE WHEN sanctions.Offender_ID IS NULL THEN 1 ELSE 0 END as no_serious_sanctions_flag,
         CASE WHEN permanent_exemptions.AccountSAK IS NOT NULL THEN 'Fees Waived' 
@@ -489,7 +586,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             USING(Offender_ID)
         LEFT JOIN CR_rejection_codes_dynamic 
             USING(Offender_ID)
-        LEFT JOIN all_accounts 
+        LEFT JOIN arrearages 
             USING(Offender_ID)
         LEFT JOIN account_flags 
             USING(AccountSAK)
@@ -510,7 +607,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     add_more_flags_2 AS (
         SELECT
             COALESCE(full_name,TO_JSON_STRING(STRUCT(first_name as given_names,"" as middle_names,"" as name_suffix,last_name as surname)))  AS person_name,
-            pei.person_id,
+            add_more_flags_1.person_id,
             first_name,
             last_name,
             Phone_Number AS phone_number,
@@ -570,13 +667,16 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND person_status in ("ACTV","PEND")
                 THEN 1 ELSE 0 END AS overdue_for_discharge_within_180,
             sentence_start_date,
-            sessions_supervision.start_date AS latest_supervision_start_date,
+            latest_supervision_start_date,
+            latest_system_session_start_date,
+            earliest_supervision_start_date_in_latest_system,
             DATE_DIFF(COALESCE(EXP_Date,sentence_expiration_date_internal),sentence_start_date,DAY) AS sentence_length_days,
             DATE_DIFF(COALESCE(EXP_Date,sentence_expiration_date_internal),sentence_start_date,YEAR) AS sentence_length_years,
             add_more_flags_1.Offender_ID AS person_external_id,
             person_status,
             special_conditions_on_current_sentences,
-            unpaid_total AS current_balance,
+            COALESCE(unpaid_total_latest,0) AS current_balance,
+            COALESCE(unpaid_total_all,0) AS current_balance_all,
             current_exemption_type,
             most_recent_payment AS last_payment_date,
             last_paid_amount AS last_payment_amount,
@@ -613,6 +713,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             has_active_sentence,
             DRUN_array AS last_DRUN,
             sanctions_in_last_year,
+            board_conditions,
             arrests_past_year AS last_arr_check_past_year,
             zt_codes,
             Last_Sanctions_Type AS last_sanction,
@@ -666,8 +767,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             date_arrest_check_eligible,
             COALESCE(date_sanction_eligible,'1900-01-01') AS date_sanction_eligible,
             COALESCE(Last_SPE_Note,'1900-01-01') AS date_spe_eligible,
-            CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date >= sessions_supervision.start_date THEN earliest_DRUN_date
-                 WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date < COALESCE(sessions_supervision.start_date,Plan_Start_Date) THEN COALESCE(Last_DRU_Note,'1900-01-01')
+            CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date >= latest_supervision_start_date THEN earliest_DRUN_date
+                 WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date < COALESCE(latest_supervision_start_date, Plan_Start_Date) THEN COALESCE(Last_DRU_Note,'1900-01-01')
                   WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date IS NULL THEN '1900-01-01'
                   WHEN COALESCE(drug_offense,drug_offense_ever) = 1 and sum_negative_tests_in_past_year >= 2 and most_recent_test_negative = 1 THEN Last_DRU_Note
                   ELSE '9999-01-01'
@@ -717,7 +818,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 -- filter to people on parole
                 AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
                 AND eligible_counties = 1
-                AND fines_fees_eligible not in ('Option 4 - Eligible','Ineligible')
+                AND fines_fees_eligible not in ('Ineligible')
             THEN 1 ELSE 0 END AS all_eligible,
             CASE WHEN eligible_supervision_level = 1
                 AND time_on_level_flag_adj = 1 
@@ -747,7 +848,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 -- filter to people on parole
                 AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
                 AND eligible_counties = 1
-                AND fines_fees_eligible not in ('Option 4 - Eligible','Ineligible')
+                AND fines_fees_eligible not in ('Ineligible')
             THEN 1 ELSE 0 END AS all_eligible_and_offense_discretion,
             CASE WHEN eligible_supervision_level = 1
                 AND time_on_level_flag_adj = 1 
@@ -771,7 +872,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND cr_not_rejected_x_months_flag = 1
                 AND no_lifetime_flag = 1
                 AND eligible_counties = 1
-                AND fines_fees_eligible not in ('Option 4 - Eligible','Ineligible') 
+                AND fines_fees_eligible not in ('Ineligible') 
             THEN 1 ELSE 0 END AS all_eligible_and_offense_and_zt_discretion,
             CASE WHEN eligible_supervision_level = 1
                 AND time_on_level_flag_adj = 1 
@@ -799,6 +900,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         FROM add_more_flags_1    
         LEFT JOIN contacts_cte_arrays 
             USING(Offender_ID)
+        LEFT JOIN relevant_conditions
+            USING(Offender_ID)
         LEFT JOIN sanctions_array 
             USING(Offender_ID)
         LEFT JOIN sanction_eligible_date
@@ -807,20 +910,10 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             USING(Offender_ID)
         LEFT JOIN rejection_codes_max_date
             USING(Offender_ID)
-        LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
-            ON pei.external_id = Offender_ID
-        -- Use compartment level 0 to get most recent supervision start date
-        LEFT JOIN (
-            SELECT *
-            FROM `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized`
-            WHERE compartment_level_0 = 'SUPERVISION' 
-            QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY session_id_end DESC) = 1 
-            ) sessions_supervision
-            ON pei.person_id = sessions_supervision.person_id
         LEFT JOIN special_conditions
-            ON pei.person_id = special_conditions.person_id
+            ON add_more_flags_1.person_id = special_conditions.person_id
         LEFT JOIN `{project_id}.{base_dataset}.state_person` sp
-            ON sp.person_id = pei.person_id
+            ON sp.person_id = add_more_flags_1.person_id
         LEFT JOIN person_status_cte
             USING(Offender_ID)
         LEFT JOIN latest_tepe
@@ -856,13 +949,13 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
 
 US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    base_dataset=STATE_BASE_DATASET,
     view_id=US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 
