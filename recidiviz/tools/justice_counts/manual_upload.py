@@ -1484,6 +1484,7 @@ def _convert_entities(
         acquisition_method=report_metadata.acquisition_method,
         acquired_by=report_metadata.acquired_by,
         project=schema.Project.JUSTICE_COUNTS_DATA_SCAN,
+        status=schema.ReportStatus.PUBLISHED,
     )
     # Does not delete associated report_table_definitions of report_table_instances,
     # which may in certain cases leave orphaned report_table_definition_rows

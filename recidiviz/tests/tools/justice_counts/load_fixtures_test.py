@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements tests for the script that loads fixture data into the Justice Counts DB."""
 
-from recidiviz.persistence.database.schema.justice_counts.schema import Source
+from recidiviz.persistence.database.schema.justice_counts.schema import Report, Source
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
@@ -36,5 +36,5 @@ class TestJusticeCountsLoadFixtures(JusticeCountsDatabaseTestCase):
             self.database_key, autocommit=False
         ) as read_session:
             # TODO(#11588): Add fixture data for all Justice Counts schema tables
-            for fixture_class in [Source]:
+            for fixture_class in [Source, Report]:
                 self.assertTrue(len(read_session.query(fixture_class).all()) > 0)

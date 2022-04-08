@@ -39,7 +39,15 @@ from sqlalchemy.sql.schema import (
     PrimaryKeyConstraint,
     UniqueConstraint,
 )
-from sqlalchemy.sql.sqltypes import ARRAY, Date, Enum, Integer, Numeric, String
+from sqlalchemy.sql.sqltypes import (
+    ARRAY,
+    Date,
+    DateTime,
+    Enum,
+    Integer,
+    Numeric,
+    String,
+)
 
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 
@@ -48,6 +56,7 @@ class AcquisitionMethod(enum.Enum):
     SCRAPED = "SCRAPED"
     UPLOADED = "UPLOADED"
     MANUALLY_ENTERED = "MANUALLY_ENTERED"
+    CONTROL_PANEL = "CONTROL_PANEL"
 
 
 class MetricType(enum.Enum):
@@ -96,10 +105,24 @@ class System(enum.Enum):
 
 
 class Project(enum.Enum):
-    # Internal projects that ingest Justice Counts data.
+    """Internal projects that ingest Justice Counts data."""
 
     JUSTICE_COUNTS_DATA_SCAN = "JUSTICE_COUNTS_DATA_SCAN"
     JUSTICE_COUNTS_CONTROL_PANEL = "JUSTICE_COUNTS_CONTROL_PANEL"
+
+
+class ReportStatus(enum.Enum):
+    """Reports can be in one of the following states:
+    - NOT STARTED: Report was created, but no data has been filled in
+    - DRAFT: Some data has been filled in, but report has not been published and report's
+        data is not accessible via the Publisher API or dashboards
+    - PUBLISHED: All required data has been filled in and report's data is accessible via
+        the Publisher API and dasboards.
+    """
+
+    NOT_STARTED = "NOT_STARTED"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
 
 
 # This table maintains the many-to-many relationship between UserAccount and Agency.
@@ -238,7 +261,18 @@ class Report(JusticeCountsBase):
     # If manually entered or collected, the person who collected the data.
     acquired_by = Column(String(255))
     # Project that was responsible for ingesting this data (e.g. data scan, control panel).
-    project = Column(Enum(Project))
+    project = Column(Enum(Project), nullable=False)
+    # Indicates whether the report is started, drafted, or published
+    status = Column(Enum(ReportStatus), nullable=False)
+    # If date_range_start and date_range_end are specified,
+    # we will enforce that all tables in the report are for the same time period.
+    # If they are null, then the tables can be for varying time periods.
+    date_range_start = Column(Date)
+    date_range_end = Column(Date)  # exclusive
+    # Timestamp of last modification (in UTC)
+    last_modified_at = Column(DateTime)
+    # List of ids of users who have modified the report
+    modified_by = Column(ARRAY(Integer))
 
     __table_args__ = tuple(
         [
