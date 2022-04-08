@@ -26,10 +26,12 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     DASHBOARD_VIEWS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_supervision_last_updated_date,
+    pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -61,8 +63,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = f"""
             s.state_code,
             s.person_id,
             IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
-            CASE WHEN s.state_code="US_ND" THEN NULL 
-                ELSE IFNULL(session_attributes.correctional_level, "EXTERNAL_UNKNOWN") END AS supervision_level,
+            {{state_specific_supervision_level}} AS supervision_level,
             FROM {deduped_supervision_sessions('AND end_date IS NULL')}
     )
     , all_dimensions AS (
@@ -70,11 +71,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = f"""
             state_code, 
             last_updated,
             district,
-            CASE 
-                WHEN state_code='US_ID' and COALESCE(supervision_level, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
-                    THEN "OTHER"
-                ELSE IFNULL(supervision_level, "EXTERNAL_UNKNOWN")
-            END as supervision_level,
+            supervision_level,
             COUNT(DISTINCT person_id) as person_count,
         FROM cte,
         UNNEST([district, 'ALL']) AS district,
@@ -108,9 +105,15 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
     ),
     dashboards_dataset=DASHBOARD_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=ENABLED_STATES
+    ),
+    state_specific_supervision_level=pathways_state_specific_supervision_level(
+        "s.state_code",
+        "session_attributes.correctional_level",
+        "metrics.supervision_level_raw_text",
     ),
 )
 
