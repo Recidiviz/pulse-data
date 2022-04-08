@@ -244,6 +244,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     -- we conservatively use these codes 
     zero_tolerance_codes AS (
         SELECT OffenderID as Offender_ID, 
+                ARRAY_AGG(STRUCT(ContactNoteType,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE))) AS zt_codes,
                 MAX(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) AS latest_zero_tolerance_sanction_date
         FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
         WHERE ContactNoteType IN ('VWAR','PWAR','ZTVR','COHC')
@@ -359,9 +360,19 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     ),
     special_conditions AS (
         SELECT person_id, ARRAY_AGG(conditions IGNORE NULLS) AS special_conditions_on_current_sentences
-        FROM `{project_id}.{base_dataset}.state_supervision_sentence`
-        WHERE state_code ='US_TN'
-        AND completion_date >= CURRENT_DATE('US/Eastern')
+        FROM (
+            SELECT person_id, conditions
+            FROM `{project_id}.{base_dataset}.state_supervision_sentence`
+            WHERE state_code ='US_TN'
+            AND completion_date >= CURRENT_DATE('US/Eastern')
+            
+            UNION ALL
+            
+            SELECT person_id, conditions
+            FROM `{project_id}.{base_dataset}.state_incarceration_sentence`
+            WHERE state_code ='US_TN'
+            AND completion_date >= CURRENT_DATE('US/Eastern')
+        )
         GROUP BY 1
     ),
     add_more_flags_1 AS (
@@ -370,6 +381,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 account_flags.*,
                 sum_payments.last_paid_amount,
                 all_accounts.* EXCEPT(Offender_ID),
+                zt_codes,
             -- General pattern:
             -- a) if dont have the flag now, didnt have it in past sentences or prior record, eligible
             -- b) if don't have the flag now, didnt have it in prior record, DID have it in past sentences but those sentences expired over 10 years ago, eligible
@@ -518,7 +530,13 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             Last_ARR_Note,
             Last_FEE_Note,
             FEE_Note_Due,
+            CASE WHEN SPE_Note_Due IS NULL AND Last_SPE_Note IS NULL AND Last_SPET_Date IS NULL THEN 'none'
+                 WHEN SPE_Note_Due IS NULL AND Last_SPE_Note IS NOT NULL AND Last_SPET_Date IS NOT NULL THEN 'terminated'
+                 WHEN SPE_Note_Due > CURRENT_DATE('US/Eastern') THEN 'current'
+                 END AS spe_flag,
             SPE_Note_Due AS  SPE_note_due,
+            Last_SPE_Note AS last_SPE_note, 
+            Last_SPET_Date AS last_SPET_date,
             EXP_Date AS sentence_expiration_date,
             missing_at_least_1_exp_date,
             COALESCE(has_TN_sentence,0) AS has_TN_sentence,
@@ -576,7 +594,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             Supervision_Level AS supervision_level,
             eligible_level_start,
             Plan_Start_Date AS supervision_level_start,
-            COALESCE(active_offenses,lifetime_offenses) AS current_offenses,
+            -- Current offenses is just active offenses. If someone is missing an active sentence, this is null
+            active_offenses AS current_offenses,
+            -- These are prior offenses that make someone ineligible, but that expired 10+ years ago
             CASE WHEN domestic_flag_eligibility in ('Eligible - Expired')
                 OR sex_offense_flag_eligibility in ('Eligible - Expired')
                 OR assaultive_offense_flag_eligibility in ('Eligible - Expired')
@@ -586,12 +606,15 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 OR young_victim_flag_eligibility in ('Eligible - Expired')
                 THEN lifetime_offenses
                 END AS lifetime_offenses_expired,
-            docket_numbers,
+            ARRAY_CONCAT(lifetime_offenses, prior_offenses) AS past_offenses,
             prior_offenses,
+            lifetime_offenses AS lifetime_offenses_all,
+            docket_numbers,
             has_active_sentence,
             DRUN_array AS last_DRUN,
             sanctions_in_last_year,
             arrests_past_year AS last_arr_check_past_year,
+            zt_codes,
             Last_Sanctions_Type AS last_sanction,
             Last_DRU_Note AS last_drug_screen_date,
             Region as district,
@@ -651,7 +674,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                   END as date_drug_screen_eligible,
             CASE WHEN latest_cr_rejection_code_date IS NOT NULL THEN DATE_ADD(latest_cr_rejection_code_date, INTERVAL 3 MONTH)
                  ELSE '1900-01-01' END AS date_cr_rejection_eligible,        
-            
             CASE WHEN domestic_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND sex_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND assaultive_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
@@ -819,12 +841,16 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 date_spe_eligible,
                 date_drug_screen_eligible,
                 date_cr_rejection_eligible) AS greatest_date_eligible,
-        CASE WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c1'
+        CASE -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting
+             WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 'c4'
+             WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c1'
              WHEN all_eligible_and_offense_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c2'
              WHEN all_eligible_and_offense_and_zt_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c3'
-             -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting
-             WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 'c4'
-             END AS compliant_reporting_eligible
+             END AS compliant_reporting_eligible,
+        CASE WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 1 ELSE 0 END AS eligible_c4,
+        CASE WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c1,
+        CASE WHEN all_eligible_and_offense_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c2,
+        CASE WHEN all_eligible_and_offense_and_zt_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c3
     FROM add_more_flags_2
 """
 
