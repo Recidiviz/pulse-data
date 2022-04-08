@@ -43,6 +43,7 @@ from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     cloud_sql_to_bq_blueprint,
 )
+from recidiviz.practices.etl.routes import get_practices_etl_blueprint
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
 scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
@@ -65,6 +66,7 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (direct_ingest_control, "/direct"),
     (export_blueprint, "/export"),
     (justice_counts_control, "/justice_counts"),
+    (get_practices_etl_blueprint(), "/practices-etl"),
     (validation_manager_blueprint, "/validation_manager"),
     (view_update_manager_blueprint, "/view_update"),
 ]

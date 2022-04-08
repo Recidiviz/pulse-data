@@ -24,8 +24,8 @@ module "justice-counts-data-bucket" {
 module "justice-counts-ingest" {
   source = "./modules/cloud-storage-bucket"
 
-  project_id                  = var.project_id
-  name_suffix                 = "justice-counts-ingest"
+  project_id  = var.project_id
+  name_suffix = "justice-counts-ingest"
 }
 
 module "direct-ingest-state-storage" {
@@ -206,6 +206,24 @@ module "practices-etl-data" {
   project_id                  = var.project_id
   name_suffix                 = "practices-etl-data"
   uniform_bucket_level_access = false
+}
+
+module "practices-etl-data-archive" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "practices-etl-data-archive"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
 }
 
 module "processed-state-aggregates" {
