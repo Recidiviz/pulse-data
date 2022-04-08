@@ -155,6 +155,12 @@ resource "google_cloud_run_service" "justice-counts" {
     }
 
     metadata {
+      annotations = {
+        "autoscaling.knative.dev/minScale"        = 1
+        "autoscaling.knative.dev/maxScale"        = var.max_justice_counts_instances
+        "run.googleapis.com/cloudsql-instances"   = module.justice_counts_database.connection_name
+      }
+  
       name = "justice-counts-web-${replace(var.docker_image_tag, ".", "-")}"
     }
   }

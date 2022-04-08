@@ -65,6 +65,11 @@ variable "max_case_triage_instances" {
   default = 3
 }
 
+variable "max_justice_counts_instances" {
+  type = number
+  default = 3
+}
+
 variable "github_username" {
   type        = string
   default     = "Recidiviz"
