@@ -151,12 +151,18 @@ supervision_level_sessions_padded AS (
         OffenderID,
         AssignmentType,
         'EXTERNAL_UNKNOWN' AS SupervisionLevel,
-        MAX(SessionEndDate) AS SessionStartDate,
+        SessionStartDate,
         DATE(9999, 12, 31) AS SessionEndDate,
-    FROM supervision_level_sessions
-    GROUP BY 1, 2
-    -- Don't create a period if the person already has an open period for this assignment type
-    HAVING MAX(SessionEndDate) IS NOT NULL
+    FROM  (
+        SELECT 
+            OffenderID,
+            AssignmentType,
+            MAX(SessionEndDate) AS SessionStartDate
+        FROM supervision_level_sessions
+        GROUP BY 1, 2
+        -- Don't create a period if the person already has an open period for this assignment type
+        HAVING LOGICAL_AND(SessionEndDate IS NOT NULL) 
+    ) AS max_session_end_date
     
     UNION ALL
     
