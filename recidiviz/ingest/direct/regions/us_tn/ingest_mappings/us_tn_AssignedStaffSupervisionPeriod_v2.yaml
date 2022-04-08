@@ -156,6 +156,7 @@ output:
                       StateSupervisionLevel.MEDIUM:
                         - 3D3  # ELEVATED - DRC PHASE 3
                         - 4ME  # STANDARD - MEDIUM
+                        - 6P3  # PSU INTERMEDIATE (SEX OFFENDER)
                         - KG2  # KNOWN SEX MOT ON GPS - ME
                         - KN2  # KNOWN SEX MOT NO GPS - ME
                         - MED  # MEDIUM OFFENDER
@@ -219,6 +220,9 @@ output:
                       StateSupervisionLevel.UNSUPERVISED:
                         - ZIC  # INACTIVE SUPV COMM. CORR.
                         - ZIN  # INACTIVE SUPV PROBATION
+                        - 9JS  # ADM: JUDICIAL SUSP SUPVN
+                        - 9SD  # ADM - SUSP OF DIRECT SUPVN
+                        - SDS  # SUSPENSION OF DIRECT SUPV
 
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.INTERNAL_UNKNOWN:
@@ -228,17 +232,14 @@ output:
                         - 3P2  # ELEVATED - PSU PHASE TWO
                         - 3RE  # ELEVATED - RESISTIVE
                         - 4P3  # STANDARD - PSU PHASE THREE
-                        - 6P1  # "TODO(#7424): Update with definition."
-                        - 6P2  # "TODO(#7424): Update with definition."
-                        - 6P3  # "TODO(#7424): Update with definition."
-                        - 6P4  # "TODO(#7424): Update with definition."
+                        - 6P1  # PSU PRIMARY (SEX OFFENDER)
+                        - 6P2  # PSU SECONDARY (SEX OFFENDER)
+                        - 6P4  # PSU TRANSITIONAL (SEX OFFENDER)
                         - 9AB  # ADM - ABSCONDED OFFENDER
                         - 9DP  # ADM - DEPORTED
                         - 9DT  # ADM - DETAINER
                         - 9IS  # ADM - ISC OUTGOING
-                        - 9JS  # ADM: JUDICIAL SUSP SUPVN
                         - 9RT  # ADM - RES. TREATMNT PLCMT
-                        - 9SD  # ADM - SUSP OF DIRECT SUPVN
                         - 9WR  # ADM - WARRANT
                         - ABS  # ABSCONDED OFFENDER
                         - DET  # DETAINER STATUS OFFENDER
@@ -248,9 +249,7 @@ output:
                         - MSD  # MISDEMEANOR OFFENDER
                         - NIA  # WARRANT FILED; NOT SERVED
                         - RTP  # RESIDENT TREATMT PLACEMNT
-                        - SDS  # SUSPENSION OF DIRECT SUPV
                         - WRB  # WARRANT ON BOND
-                        - WRT  # WARRANT STATUS OFFENDER
                         - WRT  # WARRANT STATUS OFFENDER
                         - Z1C  # INTENSIVE PHASE 1
                         - Z1E  # INTENSIVE ELECTRONIC 1
@@ -260,7 +259,6 @@ output:
                         - Z3C  # INTENSIVE PHASE 3
                         - Z3E  # INTENSIVE ELECTRONIC 3
                         - Z4A  # PHASE 2 INTENSIVE
-                        - ZAB  # ABSCONDER PROBATION
                         - ZAB  # ABSCONDER PROBATION
                         - ZAC  # ABSCONDER COMM. CORR.
                         - ZAP  # ABSCONDER PAROLE
