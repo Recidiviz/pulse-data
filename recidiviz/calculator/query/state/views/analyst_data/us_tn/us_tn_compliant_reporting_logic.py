@@ -281,7 +281,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     -- we conservatively use these codes 
     zero_tolerance_codes AS (
         SELECT OffenderID as Offender_ID, 
-                ARRAY_AGG(STRUCT(ContactNoteType,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE))) AS zt_codes,
+                ARRAY_AGG(STRUCT(ContactNoteType,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date)) AS zt_codes,
                 MAX(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) AS latest_zero_tolerance_sanction_date
         FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
         WHERE ContactNoteType IN ('VWAR','PWAR','ZTVR','COHC')
