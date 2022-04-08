@@ -66,6 +66,10 @@ resource "google_composer_environment" "default_v2" {
   region = var.region
   config {
 
+    node_config {
+      zone = var.zone
+    }
+
     software_config {
       # TODO(#4900): Not sure if we actually need these, given that they are specified in airflow.cfg, but leaving them
       # for consistency with the existing dag for now.
