@@ -75,7 +75,7 @@ resource "google_composer_environment" "default_v2" {
       # for consistency with the existing dag for now.
       airflow_config_overrides = {
         "api-auth_backend"                     = "airflow.composer.api.backend.composer_auth"
-        "composer_auth_user_registration_role" = "Op"
+        "api-composer_auth_user_registration_role" = "Op"
         "webserver-web_server_name"            = "orchestration-v2"
       }
       env_variables = {
