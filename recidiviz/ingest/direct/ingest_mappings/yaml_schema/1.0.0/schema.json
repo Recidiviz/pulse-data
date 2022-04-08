@@ -62,7 +62,8 @@
         "DOC_NUM",
         "FIRST",
         "LAST",
-        "DOB"
+        "DOB",
+        "SSN"
       ],
       "unused_columns": [
         "SSN"
