@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for the Justice Counts AgencyInterface."""
 
+from sqlalchemy.exc import IntegrityError
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -28,8 +29,8 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            AgencyInterface.create_agency(session=session, name="Agency Alpha")
-            AgencyInterface.create_agency(session=session, name="Beta Initiative")
+            for agency_name in ["Agency Alpha", "Beta Initiative"]:
+                AgencyInterface.create_agency(session=session, name=agency_name)
 
     def test_get_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -38,16 +39,24 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(agency_1.name, "Agency Alpha")
 
-            agencies = AgencyInterface.get_agencies(session=session)
+            allAgencies = AgencyInterface.get_agencies(session=session)
             self.assertEqual(
-                {a.name for a in agencies}, {"Agency Alpha", "Beta Initiative"}
+                {a.name for a in allAgencies}, {"Agency Alpha", "Beta Initiative"}
             )
 
-            agencies = AgencyInterface.get_agencies_by_name(
+            agenciesByName = AgencyInterface.get_agencies_by_name(
                 session=session, names=["Agency Alpha", "Beta Initiative"]
             )
             self.assertEqual(
-                {a.name for a in agencies}, {"Agency Alpha", "Beta Initiative"}
+                {a.name for a in agenciesByName}, {"Agency Alpha", "Beta Initiative"}
+            )
+
+            agenciesById = AgencyInterface.get_agencies_by_id(
+                session=session,
+                agency_ids=[agency.id for agency in agenciesByName],
+            )
+            self.assertEqual(
+                {a.name for a in agenciesById}, {"Agency Alpha", "Beta Initiative"}
             )
 
             # Raise error if one of the agencies not found
@@ -57,3 +66,21 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
                 AgencyInterface.get_agencies_by_name(
                     session=session, names=["Agency Alpha", "Agency Beta"]
                 )
+
+    def test_create_agency(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            for agency_name in ["Agency Gamma", "Agency Delta"]:
+                AgencyInterface.create_agency(session=session, name=agency_name)
+
+        agencies = AgencyInterface.get_agencies(session=session)
+        self.assertEqual(
+            {a.name for a in agencies},
+            {"Agency Alpha", "Beta Initiative", "Agency Gamma", "Agency Delta"},
+        )
+
+        # Raise error if agency of that name already exists
+        with self.assertRaisesRegex(
+            IntegrityError,
+            "psycopg2.errors.UniqueViolation",
+        ):
+            AgencyInterface.create_agency(session=session, name="Agency Delta")

@@ -25,3 +25,20 @@ export const getAgencies = async (): Promise<Response> => {
 export const createAgency = async (name: string): Promise<Response> => {
   return postWithURLAndBody(`/api/justice_counts_tools/agencies`, { name });
 };
+
+// User Provisioning
+export const getUsers = async (): Promise<Response> => {
+  return getResource(`/api/justice_counts_tools/users`);
+};
+
+export const createUser = async (
+  email: string,
+  agencyIds: number[],
+  name?: string
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/justice_counts_tools/users`, {
+    email,
+    agency_ids: agencyIds,
+    name,
+  });
+};
