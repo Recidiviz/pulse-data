@@ -53,6 +53,7 @@ _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH = (
 _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH = (
     "/case_triage_ops/handle_gcs_imports"
 )
+_APP_ENGINE_PRACTICES_ETL_ARCHIVE_PATH = "/practices-etl/archive-file"
 
 
 def _build_url(
@@ -403,3 +404,27 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
     )
     logging.info("The response status is %s", response.status_code)
     return "", HTTPStatus(response.status_code)
+
+
+def archive_practices_etl_data(
+    data: Dict[str, Any], _: ContextType
+) -> Tuple[str, HTTPStatus]:
+    """This function is triggered when a file is dropped in the
+    `{project_id}-practices-etl-data` bucket and calls the endpoint that will archive it.
+    """
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    if not project_id:
+        logging.error(
+            "No project id set for call to archive Practices ETL data, returning."
+        )
+        return "", HTTPStatus.BAD_REQUEST
+
+    filename = data["name"]
+    endpoint_url = _build_url(project_id, _APP_ENGINE_PRACTICES_ETL_ARCHIVE_PATH, None)
+    endpoint_response = make_iap_request(
+        endpoint_url,
+        IAP_CLIENT_ID[project_id],
+        method="POST",
+        json={"filename": filename},
+    )
+    return "", HTTPStatus(endpoint_response.status_code)

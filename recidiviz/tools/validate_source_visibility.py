@@ -293,6 +293,7 @@ def main() -> int:
                 "recidiviz.justice_counts",
                 "recidiviz.metrics",
                 "recidiviz.persistence",
+                "recidiviz.practices",
                 "recidiviz.reporting",
                 "recidiviz.server_blueprint_registry",
                 "recidiviz.server_config",

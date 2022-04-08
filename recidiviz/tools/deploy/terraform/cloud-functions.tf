@@ -233,3 +233,25 @@ resource "google_cloudfunctions_function" "trigger_post_deploy_cloudsql_to_bq_re
     url = local.repo_url
   }
 }
+
+resource "google_cloudfunctions_function" "archive_practices_etl_data" {
+  name    = "archive_practices_etl_data"
+  runtime = "python38"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.storage.object.finalize"
+    resource   = "${var.project_id}-practices-etl-data"
+  }
+
+  entry_point = "archive_practices_etl_data"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
+
+  source_repository {
+    url = local.repo_url
+  }
+}
