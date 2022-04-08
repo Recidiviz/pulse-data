@@ -130,8 +130,6 @@ resource "google_cloudfunctions_function" "trigger_incremental_calculation_pipel
     "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
     "GCP_PROJECT"       = var.project_id
     "PIPELINE_DAG_TYPE" = "incremental"
-    # Gets the IAP client id to use when talking to airflow from our custom python source.
-    "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
   }
 
   source_repository {
@@ -159,8 +157,6 @@ resource "google_cloudfunctions_function" "trigger_historical_calculation_pipeli
     "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
     "GCP_PROJECT"       = var.project_id
     "PIPELINE_DAG_TYPE" = "historical"
-    # Gets the IAP client id to use when talking to airflow from our custom python source.
-    "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
   }
 
   source_repository {

@@ -87,17 +87,6 @@ resource "google_composer_environment" "default_v2" {
 
 }
 
-# This gets the IAP client id for the given airflow instance. It should only change when a composer environment is
-# recreated. See https://cloud.google.com/composer/docs/how-to/using/triggering-with-gcf#getting_the_client_id.
-data "external" "composer_iap_client_id" {
-  program = ["python", "${path.module}/iap_client.py"]
-
-  query = {
-    airflow_uri = google_composer_environment.default_v2.config.0.airflow_uri
-  }
-  # Outputs a result that contains 'iap_client_id' to be consumed by any resources that need to call into Airflow.
-}
-
 resource "google_storage_bucket_object" "dags_file" {
   for_each = fileset("${local.recidiviz_root}/airflow/dags", "*dag*.py")
   name     = "dags/${each.key}"

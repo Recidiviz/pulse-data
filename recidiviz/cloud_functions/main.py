@@ -27,6 +27,7 @@ from cloud_function_utils import (  # type: ignore[import]
     GCP_PROJECT_ID_KEY,
     IAP_CLIENT_ID,
     make_iap_request,
+    trigger_dag,
 )
 
 # Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
@@ -345,12 +346,6 @@ def trigger_calculation_pipeline_dag(
         logging.error(error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    iap_client_id = os.environ.get("IAP_CLIENT_ID")
-    if not iap_client_id:
-        error_str = "The environment variable 'IAP_CLIENT_ID' is not set."
-        logging.error(error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
     airflow_uri = os.environ.get("AIRFLOW_URI")
     if not airflow_uri:
         error_str = "The environment variable 'AIRFLOW_URI' is not set"
@@ -365,11 +360,8 @@ def trigger_calculation_pipeline_dag(
 
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_{pipeline_dag_type}_calculation_pipeline_dag"
-    webserver_url = f"{airflow_uri}/api/experimental/dags/{dag_name}/dag_runs"
 
-    monitor_response = make_iap_request(
-        webserver_url, iap_client_id, method="POST", json={"conf": data}
-    )
+    monitor_response = trigger_dag(airflow_uri, dag_name, data)
     logging.info("The monitoring Airflow response is %s", monitor_response)
     return "", HTTPStatus(monitor_response.status_code)
 
