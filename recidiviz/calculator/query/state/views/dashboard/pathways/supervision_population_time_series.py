@@ -24,6 +24,9 @@ from recidiviz.calculator.query.bq_utils import (
     filter_to_enabled_states,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    pathways_state_specific_supervision_level,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
 )
@@ -56,8 +59,10 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = f"""
             EXTRACT(YEAR FROM date_of_supervision) AS year,
             EXTRACT(MONTH FROM date_of_supervision) AS month,
             IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
-            CASE WHEN s.state_code="US_ND" THEN NULL 
-                ELSE IFNULL(session_attributes.correctional_level, "EXTERNAL_UNKNOWN") END AS supervision_level,
+            CASE
+                WHEN s.state_code="US_ND" THEN NULL
+                ELSE {{state_specific_supervision_level}}
+            END AS supervision_level,
         FROM {deduped_supervision_sessions()}
     ),
     full_time_series as (
@@ -104,12 +109,18 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuil
     dimensions=("state_code", "year", "month", "district", "supervision_level"),
     description=SUPERVISION_POPULATION_TIME_SERIES_VIEW_DESCRIPTION,
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=ENABLED_STATES
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     dimension_combination_view=PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_NAME,
+    state_specific_supervision_level=pathways_state_specific_supervision_level(
+        "s.state_code",
+        "session_attributes.correctional_level",
+        "metrics.supervision_level_raw_text",
+    ),
 )
 
 if __name__ == "__main__":
