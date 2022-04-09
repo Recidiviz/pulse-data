@@ -22,6 +22,42 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.validation.views.external_data.county_jail_population_person_level import (
+    COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.incarceration_admission_person_level import (
+    INCARCERATION_ADMISSION_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.incarceration_population_by_facility import (
+    INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.incarceration_population_person_level import (
+    INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.incarceration_release_person_level import (
+    INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.population_projection_monthly_population import (
+    POPULATION_PROJECTION_MONTHLY_POPULATION_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.population_projection_monthly_population_per_facility import (
+    POPULATION_PROJECTION_MONTHLY_POPULATION_PER_FACILITY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.recidivism_person_level import (
+    RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.supervision_early_discharge_person_level import (
+    SUPERVISION_EARLY_DISCHARGE_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.supervision_population_person_level import (
+    SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.supervision_start_person_level import (
+    SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.supervision_termination_person_level import (
+    SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
+)
 from recidiviz.validation.views.metadata.column_counter import (
     ValidationTableColumnCounterBigQueryViewCollector,
 )
@@ -99,6 +135,21 @@ _CROSS_PROJECT_VALIDATION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SESSIONS_JUSTICE_COUNTS_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 ]
 
+EXTERNAL_VALIDATION_DATA_VIEW_BUILDERS = [
+    COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+    INCARCERATION_ADMISSION_PERSON_LEVEL_VIEW_BUILDER,
+    INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+    INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+    INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
+    POPULATION_PROJECTION_MONTHLY_POPULATION_PER_FACILITY_VIEW_BUILDER,
+    POPULATION_PROJECTION_MONTHLY_POPULATION_VIEW_BUILDER,
+    RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER,
+    SUPERVISION_EARLY_DISCHARGE_PERSON_LEVEL_VIEW_BUILDER,
+    SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+    SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER,
+    SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
+]
+
 
 def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
     return (
@@ -117,6 +168,7 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
         ]
         + _CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
+        + EXTERNAL_VALIDATION_DATA_VIEW_BUILDERS
         + get_generated_validation_view_builders()
     )
 
