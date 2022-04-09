@@ -46,7 +46,9 @@ class ClientRecordEtlDelegateTest(TestCase):
                 {
                     "address": "123 Etna st., Faketown, TN 12345",
                     "compliantReportingEligible": {
+                        "eligibilityCategory": "c3",
                         "currentOffenses": None,
+                        "pastOffenses": ["TRAFFIC OFFENSE", "EVADING ARREST"],
                         "drugScreensPastYear": [
                             {"date": "2021-02-03", "result": "DRUN"},
                             {"date": "2021-04-20", "result": "DRUN"},
@@ -56,15 +58,26 @@ class ClientRecordEtlDelegateTest(TestCase):
                         "lifetimeOffensesExpired": None,
                         "mostRecentArrestCheck": "2021-11-15",
                         "sanctionsPastYear": ["OPRD"],
+                        "finesFeesEligible": "regular_payments",
+                        "zeroToleranceCodes": [
+                            {
+                                "contactNoteType": "COHC",
+                                "contactNoteDate": "2020-02-02",
+                            },
+                            {
+                                "contactNoteType": "PWAR",
+                                "contactNoteDate": "2020-03-03",
+                            },
+                        ],
                     },
                     "currentBalance": 45.1,
-                    "eligible": True,
-                    "eligibleWithDiscretion": True,
                     "expirationDate": "2022-02-28",
                     "feeExemptions": "Exemption 1, Exemption2",
                     "lastPaymentAmount": 10.25,
                     "lastPaymentDate": "2021-12-20",
                     "nextSpecialConditionsCheck": "2021-12-02",
+                    "lastSpecialConditionsNote": "2021-07-07",
+                    "specialConditionsTerminatedDate": "2021-08-08",
                     "officerId": "100",
                     "personExternalId": "200",
                     "pseudonymizedId": "p200",
@@ -80,6 +93,19 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionType": "Probation",
+                    "boardConditions": [
+                        {
+                            "condition": "CT",
+                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
+                        },
+                        {
+                            "condition": "CW",
+                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
+                        },
+                    ],
+                    "earliestSupervisionStartDateInLatestSystem": "2021-03-04",
+                    "district": "DISTRICT 0",
+                    "specialConditionsFlag": "current",
                 },
             )
 
