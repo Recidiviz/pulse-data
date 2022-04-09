@@ -75,6 +75,6 @@ def get_external_validation_schema() -> DatasetSchemaInfo:
     return DatasetSchemaInfo.from_yaml(
         os.path.join(
             os.path.dirname(config.__file__),
-            "validation_external_accuracy_tables_schema.yaml",
+            "validation_external_accuracy_schema.yaml",
         )
     )

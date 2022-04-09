@@ -135,6 +135,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "us_tn_raw_data_up_to_date_views",
     "us_me_raw_data_up_to_date_views",
     "us_mi_raw_data_up_to_date_views",
+    "validation_external_accuracy",
     "validation_metadata",
     "validation_views",
     "vitals_report_views",

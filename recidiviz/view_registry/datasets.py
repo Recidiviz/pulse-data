@@ -44,7 +44,7 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
-from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
+from recidiviz.validation.views.dataset_config import validation_dataset_for_state
 
 RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
     raw_tables_dataset_for_region(
@@ -66,6 +66,15 @@ SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
     for state_code in StateCode
 }
 SUPPLEMENTAL_DATASETS = set(SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS.keys())
+
+VALIDATION_DATASETS_TO_DESCRIPTIONS = {
+    validation_dataset_for_state(
+        state_code
+    ): f"Contains one-off validation data provided directly by {StateCode.get_state(state_code)}."
+    for state_code in StateCode
+}
+VALIDATION_DATASETS = set(VALIDATION_DATASETS_TO_DESCRIPTIONS.keys())
+
 
 NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
     **{
@@ -89,10 +98,6 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
     COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",
     DATAFLOW_METRICS_DATASET: "Stores metric output of Dataflow pipeline jobs.",
-    EXTERNAL_ACCURACY_DATASET: "Stores data provided by the states that are used in"
-    " external validations of state metrics. Requires manual"
-    " updates when onboarding a new state to a new external"
-    " validation.",
     EXTERNAL_REFERENCE_DATASET: "Stores data gathered from external sources. CSV versions"
     " of tables are committed to our codebase, and updates to"
     " tables are fully managed by Terraform.",
@@ -114,6 +119,7 @@ OTHER_SOURCE_TABLE_DATASETS = set(OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS.ke
 VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     **RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS,
     **SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS,
+    **VALIDATION_DATASETS_TO_DESCRIPTIONS,
     **OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
     **NORMALIZED_DATASETS_TO_DESCRIPTIONS,
 }

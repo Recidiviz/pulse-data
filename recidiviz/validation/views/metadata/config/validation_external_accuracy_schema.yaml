@@ -1,6 +1,6 @@
 # Configuration describing the schema for our external validation tables.
 
-dataset: validation_external_accuracy_tables
+dataset: validation_external_accuracy
 tables:
   - name: incarceration_admission_person_level
     columns:
