@@ -16,6 +16,7 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
+import re
 from typing import Any, Callable, Dict, Generic, List, Optional, Set, TypeVar
 
 from google.cloud import bigquery
@@ -115,6 +116,9 @@ class BigQueryView(bigquery.TableReference):
                 f"[{materialized_address_override}] when `should_materialize` is not "
                 f"True. Must set `should_materialize` to set address override."
             )
+        self._parent_tables: Set[BigQueryAddress] = self._parse_parent_tables(
+            self._view_query
+        )
         if materialized_address_override == self.address:
             raise ValueError(
                 f"Materialized address override [{materialized_address_override}] "
@@ -200,6 +204,24 @@ class BigQueryView(bigquery.TableReference):
     @property
     def view_query_template(self) -> str:
         return self._view_query_template
+
+    @property
+    def parent_tables(self) -> Set[BigQueryAddress]:
+        """Returns a set of set of addresses for tables/views referenced in the fully
+        formatted view query.
+        """
+        return self._parent_tables
+
+    @staticmethod
+    def _parse_parent_tables(view_query: str) -> Set[BigQueryAddress]:
+        """Returns a set of set of addresses for tables/views referenced in the provided
+        |view_query|.
+        """
+        parents = re.findall(r"`[\w-]*\.([\w-]*)\.([\w-]*)`", view_query)
+        return {
+            BigQueryAddress(dataset_id=candidate[0], table_id=candidate[1])
+            for candidate in parents
+        }
 
     @property
     def direct_select_query(self) -> str:
