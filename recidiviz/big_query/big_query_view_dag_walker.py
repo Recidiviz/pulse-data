@@ -17,7 +17,6 @@
 """Implements a class that allows us to walk across a DAG of BigQueryViews
 and perform actions on each of them in some order."""
 import logging
-import re
 from concurrent import futures
 from typing import Callable, Dict, List, Optional, Set, Tuple, TypeVar
 
@@ -93,11 +92,7 @@ class BigQueryViewDagNode:
     @property
     def parent_tables(self) -> Set[BigQueryAddress]:
         """The set of actual tables/views referenced by this view."""
-        parents = re.findall(r"`[\w-]*\.([\w-]*)\.([\w-]*)`", self.view.view_query)
-        return {
-            BigQueryAddress(dataset_id=candidate[0], table_id=candidate[1])
-            for candidate in parents
-        }
+        return self.view.parent_tables
 
     @property
     def parent_keys(self) -> Set[DagKey]:
