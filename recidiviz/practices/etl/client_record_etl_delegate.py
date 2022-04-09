@@ -46,7 +46,7 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
 
-        if not data["eligible"]:
+        if not "compliant_reporting_eligible" in data:
             return None, None
 
         # First fill the non-nullable fields
@@ -59,10 +59,9 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
                 for k, v in json.loads(data["person_name"]).items()
             },
             "officerId": data["officer_id"],
-            "eligible": data["eligible"],
-            "eligibleWithDiscretion": data["eligible_with_discretion"],
             "currentBalance": data["current_balance"],
             "specialConditions": data["special_conditions"],
+            "district": data["district"],
         }
         supervision_type = data["supervision_type"]
         new_document["supervisionType"] = SUPERVISION_TYPE_MAPPING.get(
@@ -88,6 +87,9 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
         if "supervision_level" in data:
             new_document["supervisionLevel"] = data["supervision_level"]
 
+        if "special_conditions_flag" in data:
+            new_document["specialConditionsFlag"] = data["special_conditions_flag"]
+
         # Note that date fields such as these are preserved as ISO strings (i.e., "YYYY-MM-DD")
         # rather than datetimes to avoid time-zone discrepancies
         if "supervision_level_start" in data:
@@ -98,16 +100,33 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
                 "next_special_conditions_check"
             ]
 
+        if "last_special_conditions_note" in data:
+            new_document["lastSpecialConditionsNote"] = data[
+                "last_special_conditions_note"
+            ]
+
+        if "special_conditions_terminated_date" in data:
+            new_document["specialConditionsTerminatedDate"] = data[
+                "special_conditions_terminated_date"
+            ]
+
         if "last_payment_date" in data:
             new_document["lastPaymentDate"] = data["last_payment_date"]
 
         if "expiration_date" in data:
             new_document["expirationDate"] = data["expiration_date"]
 
+        if "earliest_supervision_start_date_in_latest_system" in data:
+            new_document["earliestSupervisionStartDateInLatestSystem"] = data[
+                "earliest_supervision_start_date_in_latest_system"
+            ]
+
         # add nullable objects
-        if data["eligible"]:
+        if data["compliant_reporting_eligible"]:
             new_document["compliantReportingEligible"] = {
+                "eligibilityCategory": data["compliant_reporting_eligible"],
                 "currentOffenses": data.get("current_offenses"),
+                "pastOffenses": data.get("past_offenses"),
                 "lifetimeOffensesExpired": data.get("lifetime_offenses_expired"),
                 "judicialDistrict": data.get("judicial_district"),
                 "drugScreensPastYear": [
@@ -118,6 +137,7 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
                     for screen in data["drug_screens_past_year"]
                 ],
                 "sanctionsPastYear": data.get("sanctions_past_year"),
+                "finesFeesEligible": data["fines_fees_eligible"],
             }
 
             if "eligible_level_start" in data:
@@ -129,6 +149,24 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
                 new_document["compliantReportingEligible"][
                     "mostRecentArrestCheck"
                 ] = data["most_recent_arrest_check"]
+
+            if data["zero_tolerance_codes"]:
+                new_document["compliantReportingEligible"]["zeroToleranceCodes"] = [
+                    {
+                        "contactNoteType": code["ContactNoteType"],
+                        "contactNoteDate": code["contact_date"],
+                    }
+                    for code in data["zero_tolerance_codes"]
+                ]
+
+        if data["board_conditions"]:
+            new_document["boardConditions"] = [
+                {
+                    "condition": condition["condition"],
+                    "conditionDescription": condition["condition_description"],
+                }
+                for condition in data["board_conditions"]
+            ]
 
         return data["person_external_id"], new_document
 

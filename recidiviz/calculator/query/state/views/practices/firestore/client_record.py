@@ -47,15 +47,23 @@ CLIENT_RECORD_QUERY_TEMPLATE = """
             exemption_notes AS fee_exemptions,
             special_conditions_on_current_sentences AS special_conditions,
             SPE_note_due AS next_special_conditions_check,
-            compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible = 'c1' AS eligible,
-            compliant_reporting_eligible IS NOT NULL AND compliant_reporting_eligible IN ('c1', 'c2', 'c3') AS eligible_with_discretion,
+            last_SPE_note AS last_special_conditions_note,
+            last_SPET_date AS special_conditions_terminated_date,
+            board_conditions,
+            compliant_reporting_eligible,
             eligible_level_start,
             current_offenses,
+            past_offenses,
             lifetime_offenses_expired,
             judicial_district,
             last_DRUN AS drug_screens_past_year,
             sanctions_in_last_year AS sanctions_past_year,
             last_ARR_Note AS most_recent_arrest_check,
+            zt_codes AS zero_tolerance_codes,
+            fines_fees_eligible,
+            earliest_supervision_start_date_in_latest_system,
+            district,
+            spe_flag AS special_conditions_flag
         FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
     )
 
