@@ -17,11 +17,13 @@
 import { DropdownMenuItem, DropdownToggle } from "@recidiviz/design-system";
 import styled from "styled-components/macro";
 
+import { palette } from "../GlobalStyles";
+
 export const ExtendedDropdownToggle = styled(DropdownToggle)`
   padding: 0;
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  color: ${palette.text.darkgrey};
 
   &[aria-expanded="true"] {
     color: #0073e5;
@@ -32,14 +34,14 @@ export const ExtendedDropdownToggle = styled(DropdownToggle)`
   }
 
   &:focus {
-    color: inherit;
+    color: ${palette.text.darkgrey};
   }
 `;
 
 export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)`
   &:focus {
     background-color: transparent;
-    color: inherit;
+    color: ${palette.text.darkgrey};
   }
 
   &:hover {
