@@ -1430,6 +1430,7 @@ def open_table_file(
 def _get_report_and_acquirer(
     gcs: GCSFileSystem, manifest_path: GcsfsFilePath
 ) -> Tuple[Report, str]:
+    """Reads report from manifest_path and returns report manifest and acquirer"""
     logging.info("Reading report manifest: %s", manifest_path)
     manifest_handle = gcs.download_to_temp_file(manifest_path)
     if manifest_handle is None:
@@ -1442,12 +1443,12 @@ def _get_report_and_acquirer(
     tables = _parse_tables(
         gcs, manifest_path, source_name, manifest.pop_dicts("tables")
     )
-
+    publish_date = manifest.pop("publish_date", str)
     report = Report(
         source_name=source_name,
         report_type=manifest.pop("report_type", str),
         report_instance=manifest.pop("report_instance", str),
-        publish_date=manifest.pop("publish_date", str),
+        publish_date=publish_date,
         url=manifest.pop("url", str),
         tables=tables,
     )
@@ -1480,6 +1481,7 @@ def _convert_entities(
         type=ingested_report.report_type,
         instance=ingested_report.report_instance,
         publish_date=ingested_report.publish_date,
+        created_at=ingested_report.publish_date,
         url=ingested_report.url.geturl(),
         acquisition_method=report_metadata.acquisition_method,
         acquired_by=report_metadata.acquired_by,
