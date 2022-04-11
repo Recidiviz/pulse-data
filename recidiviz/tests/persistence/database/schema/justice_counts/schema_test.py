@@ -66,6 +66,7 @@ class TestSchema(TestCase):
                 type="Monthly Prison Report",
                 instance="September 2020",
                 publish_date=datetime.date(2020, 10, 1),
+                created_at=datetime.date(2020, 10, 1),
                 acquisition_method=schema.AcquisitionMethod.SCRAPED,
                 project=schema.Project.JUSTICE_COUNTS_DATA_SCAN,
                 status=schema.ReportStatus.PUBLISHED,

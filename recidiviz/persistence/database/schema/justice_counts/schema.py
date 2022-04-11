@@ -251,8 +251,10 @@ class Report(JusticeCountsBase):
     # generated.
     instance = Column(String(255), nullable=False)
 
+    # The date the report was created
+    created_at = Column(Date)
     # The date the report was published.
-    publish_date = Column(Date, nullable=False)
+    publish_date = Column(Date)
     # The URL for the report on the source's website
     url = Column(String(255))
     # The method used to acquire the data (e.g. scraped).
