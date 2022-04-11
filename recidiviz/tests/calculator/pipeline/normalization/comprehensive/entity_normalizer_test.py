@@ -17,10 +17,9 @@
 """Tests the entity_normalizer."""
 import unittest
 from copy import deepcopy
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 import attr
-import mock
 
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     EntityNormalizerResult,
@@ -43,8 +42,12 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
@@ -105,25 +108,7 @@ class TestNormalizeEntities(unittest.TestCase):
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the
         ComprehensiveEntityNormalizer."""
-
-        state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        if not state_code_override:
-            state_specific_delegate_patcher.start()
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=(state_code_override or _STATE_CODE),
-            required_delegates=self.pipeline_config.state_specific_required_delegates,
-        )
-
-        if not state_code_override:
-            state_specific_delegate_patcher.stop()
-
-        all_kwargs = {
-            **required_delegates,
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             StateIncarcerationPeriod.__name__: incarceration_periods or [],
             StateSupervisionPeriod.__name__: supervision_periods or [],
             StateSupervisionViolationResponse.__name__: violation_responses or [],
@@ -132,6 +117,18 @@ class TestNormalizeEntities(unittest.TestCase):
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
         }
+        if not state_code_override:
+            required_delegates = STATE_DELEGATES_FOR_TESTS
+        else:
+            required_delegates = get_required_state_specific_delegates(
+                state_code=(state_code_override or _STATE_CODE),
+                required_delegates=self.pipeline_config.state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
+
+        all_kwargs: Dict[
+            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
+        ] = {**required_delegates, **entity_kwargs}
 
         assert self.full_graph_person.person_id is not None
 
@@ -274,25 +271,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         state_code_override: Optional[str] = None,
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
-
-        state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        if not state_code_override:
-            state_specific_delegate_patcher.start()
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=(state_code_override or _STATE_CODE),
-            required_delegates=self.pipeline_config.state_specific_required_delegates,
-        )
-
-        if not state_code_override:
-            state_specific_delegate_patcher.stop()
-
-        all_kwargs = {
-            **required_delegates,
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             StateIncarcerationPeriod.__name__: incarceration_periods or [],
             StateSupervisionPeriod.__name__: supervision_periods or [],
             StateSupervisionViolationResponse.__name__: violation_responses or [],
@@ -301,6 +280,19 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
         }
+
+        if not state_code_override:
+            required_delegates = STATE_DELEGATES_FOR_TESTS
+        else:
+            required_delegates = get_required_state_specific_delegates(
+                state_code=(state_code_override or _STATE_CODE),
+                required_delegates=self.pipeline_config.state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
+
+        all_kwargs: Dict[
+            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
+        ] = {**required_delegates, **entity_kwargs}
 
         assert self.full_graph_person.person_id is not None
 

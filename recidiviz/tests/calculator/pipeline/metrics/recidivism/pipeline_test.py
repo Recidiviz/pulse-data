@@ -117,13 +117,12 @@ class TestRecidivismPipeline(unittest.TestCase):
         )
 
         self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates"
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_delegates",
+            return_value=STATE_DELEGATES_FOR_TESTS,
         )
-        self.mock_get_state_delegate_container = (
+        self.mock_get_required_state_delegates = (
             self.state_specific_delegate_patcher.start()
         )
-        self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
         self.run_delegate_class = pipeline.RecidivismMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
@@ -476,13 +475,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         self.identifier = identifier.RecidivismIdentifier()
         self.run_delegate_class = pipeline.RecidivismMetricsPipelineRunDelegate
         self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates"
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_delegates",
+            return_value=STATE_DELEGATES_FOR_TESTS,
         )
-        self.mock_get_state_delegate_container = (
+        self.mock_get_required_state_delegates = (
             self.state_specific_delegate_patcher.start()
         )
-        self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()

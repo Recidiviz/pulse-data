@@ -142,14 +142,12 @@ class TestSupervisionPipeline(unittest.TestCase):
             metric_type.value: True for metric_type in SupervisionMetricType
         }
         self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates"
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_delegates",
+            return_value=STATE_DELEGATES_FOR_TESTS,
         )
-        self.mock_get_state_delegate_container = (
+        self.mock_get_required_state_delegates = (
             self.state_specific_delegate_patcher.start()
         )
-        self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
-
         self.metric_producer_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.metrics.supervision"
             ".metric_producer.get_state_specific_supervision_delegate"
@@ -1031,13 +1029,12 @@ class TestClassifyEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_XX"
         self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates"
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_delegates",
+            return_value=STATE_DELEGATES_FOR_TESTS,
         )
-        self.mock_get_state_delegate_container = (
+        self.mock_get_required_state_delegates = (
             self.state_specific_delegate_patcher.start()
         )
-        self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
         self.identifier = identifier.SupervisionIdentifier()
         self.run_delegate_class = pipeline.SupervisionMetricsPipelineRunDelegate
 

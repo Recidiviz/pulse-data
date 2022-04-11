@@ -20,7 +20,18 @@ import datetime
 import logging
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Type, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 from googleapiclient.discovery import build
 from more_itertools import one
@@ -53,7 +64,7 @@ EntityAssociation = Tuple[int, int]
 
 
 # The structure of table rows loaded from BigQuery
-TableRow = Dict[str, str]
+TableRow = Dict[str, Any]
 
 
 def get_job_id(project_id: str, region: str, job_name: str) -> str:
@@ -174,7 +185,7 @@ def kwargs_for_entity_lists(
     arg_to_entities_map: Dict[
         Union[EntityClassName, TableName], Union[Iterable[Entity], Iterable[TableRow]]
     ]
-) -> Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]]:
+) -> Dict[Union[EntityClassName, TableName], Union[Sequence[Entity], List[TableRow]]]:
     """In the calculation pipelines we use the CoGroupByKey function to group
     entities by their person_id values. The output of CoGroupByKey is a dictionary
     where the keys are the variable names expected by the pipeline, and the values are
@@ -187,7 +198,7 @@ def kwargs_for_entity_lists(
     Returns the dictionary.
     """
     entity_map: Dict[
-        Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+        Union[EntityClassName, TableName], Union[Sequence[Entity], List[TableRow]]
     ] = {}
 
     # This builds the dictionary in a way that satisfies mypy
@@ -226,7 +237,7 @@ def person_and_kwargs_for_identifier(
     ]
 ) -> Tuple[
     StatePerson,
-    Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
+    Dict[Union[EntityClassName, TableName], Union[Sequence[Entity], List[TableRow]]],
 ]:
     """In the calculation pipelines we use the CoGroupByKey function to group StatePerson entities with their associated
     entities. The output of CoGroupByKey is a dictionary where the keys are the variable names expected in the

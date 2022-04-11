@@ -46,7 +46,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateProgramAssignment,
@@ -103,7 +102,6 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
                 StateSupervisionViolationResponse.__name__
             ],
             program_assignments=normalizer_args[StateProgramAssignment.__name__],
-            assessments=normalizer_args[StateAssessment.__name__],
         )
 
     def _normalize_entities(
@@ -119,7 +117,6 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         supervision_periods: List[StateSupervisionPeriod],
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],
-        assessments: List[StateAssessment],
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
         processed_entities = all_normalized_entities(
@@ -134,7 +131,6 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             program_assignments=program_assignments,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
-            assessments=assessments,
             field_index=self.field_index,
         )
 
@@ -153,7 +149,6 @@ def all_normalized_entities(
     program_assignments: List[StateProgramAssignment],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
-    assessments: List[StateAssessment],
     field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
@@ -205,7 +200,6 @@ def all_normalized_entities(
         field_index=field_index,
         incarceration_sentences=incarceration_sentences,
         supervision_sentences=supervision_sentences,
-        assessments=assessments,
     )
 
     additional_attributes_map = merge_additional_attributes_maps(

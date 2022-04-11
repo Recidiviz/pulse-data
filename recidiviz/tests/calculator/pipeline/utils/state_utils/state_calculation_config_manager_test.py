@@ -18,8 +18,8 @@
 state_calculation_config_manager functions."""
 import os.path
 import unittest
-from inspect import getmembers, isfunction
-from typing import Any, Dict, List, Set, Type
+from typing import Any, Dict, List, Sequence, Set, Type, Union, no_type_check
+from unittest.mock import MagicMock
 
 import mock
 
@@ -32,11 +32,14 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils import (
     state_calculation_config_manager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    StateSpecificDelegateContainer,
+    get_required_state_specific_delegates,
+    get_state_specific_case_compliance_manager,
+    get_state_specific_supervision_delegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -66,22 +69,22 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_viola
     UsXxViolationDelegate,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 STATE_UTILS_PATH = os.path.dirname(state_calculation_config_manager.__file__)
 
-# The StateSpecificDelegateContainer that should be used in state-agnostic tests
-STATE_DELEGATES_FOR_TESTS = StateSpecificDelegateContainer(
-    state_code=StateCode.US_XX,
-    ip_normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
-    sp_normalization_delegate=UsXxSupervisionNormalizationDelegate(),
-    program_assignment_normalization_delegate=UsXxProgramAssignmentNormalizationDelegate(),
-    violation_response_normalization_delegate=UsXxViolationResponseNormalizationDelegate(),
-    commitment_from_supervision_delegate=UsXxCommitmentFromSupervisionDelegate(),
-    violation_delegate=UsXxViolationDelegate(),
-    incarceration_delegate=UsXxIncarcerationDelegate(),
-    supervision_delegate=UsXxSupervisionDelegate(),
-)
+# The state-specific delegates that should be used in state-agnostic tests
+STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
+    "StateSpecificIncarcerationNormalizationDelegate": UsXxIncarcerationNormalizationDelegate(),
+    "StateSpecificSupervisionNormalizationDelegate": UsXxSupervisionNormalizationDelegate(),
+    "StateSpecificProgramAssignmentNormalizationDelegate": UsXxProgramAssignmentNormalizationDelegate(),
+    "StateSpecificViolationResponseNormalizationDelegate": UsXxViolationResponseNormalizationDelegate(),
+    "StateSpecificCommitmentFromSupervisionDelegate": UsXxCommitmentFromSupervisionDelegate(),
+    "StateSpecificViolationDelegate": UsXxViolationDelegate(),
+    "StateSpecificIncarcerationDelegate": UsXxIncarcerationDelegate(),
+    "StateSpecificSupervisionDelegate": UsXxSupervisionDelegate(),
+}
 
 
 def _get_supported_states() -> Set[StateCode]:
@@ -112,80 +115,99 @@ def _get_supported_states() -> Set[StateCode]:
     return supported_states
 
 
-def test_get_state_specific_delegate_functions() -> None:
+@no_type_check
+def test_get_required_state_specific_delegates() -> None:
     """Tests that we can call all functions in the state_calculation_config_manager
     file with all of the state codes that we expect to be supported."""
     supported_states = _get_supported_states()
+    for state in supported_states:
+        get_required_state_specific_delegates(state.value, [], entity_kwargs={})
 
-    for state_delegate_function_name, _ in getmembers(
-        state_calculation_config_manager, isfunction
-    ):
-        for state in supported_states:
-            if (
-                state_delegate_function_name
-                == state_calculation_config_manager.get_state_specific_case_compliance_manager.__name__
-            ):
-                # The signature of this function differs from the rest
-                test_sp = StateSupervisionPeriod.new_with_defaults(
-                    state_code=state.value,
-                )
+        test_sp = StateSupervisionPeriod.new_with_defaults(state_code=state.value)
 
-                getattr(state_calculation_config_manager, state_delegate_function_name)(
-                    None, test_sp, None, None, None, None, None, None, None, None
-                )
-            elif (
-                state_delegate_function_name
-                == state_calculation_config_manager.get_required_state_specific_delegates.__name__
-            ):
-                getattr(state_calculation_config_manager, state_delegate_function_name)(
-                    state.value, {}
-                )
-            else:
-                _ = getattr(
-                    state_calculation_config_manager, state_delegate_function_name
-                )(state.value)
+        get_state_specific_case_compliance_manager(
+            person=None,
+            supervision_period=test_sp,
+            case_type=None,
+            start_of_supervision=None,
+            assessments=None,
+            supervision_contacts=None,
+            violation_responses=None,
+            incarceration_sentences=None,
+            incarceration_period_index=None,
+            supervision_delegate=None,
+        )
+
+        get_state_specific_supervision_delegate(state.value)
 
 
 class TestGetRequiredStateSpecificDelegates(unittest.TestCase):
     """Tests the get_required_state_specific_delegates function."""
 
-    def setUp(self) -> None:
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates"
-        )
-        self.mock_get_state_delegate_container = (
-            self.state_specific_delegate_patcher.start()
-        )
-        self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager"
+        "._get_state_specific_violation_response_normalization_delegate"
+    )
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager"
+        "._get_state_specific_supervision_period_normalization_delegate"
+    )
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager"
+        "._get_state_specific_incarceration_period_normalization_delegate"
+    )
+    def test_get_required_state_specific_delegates(
+        self,
+        get_incarceration_delegate: MagicMock,
+        get_supervision_delegate: MagicMock,
+        get_violation_response_delegate: MagicMock,
+    ) -> None:
+        get_incarceration_delegate.return_value = STATE_DELEGATES_FOR_TESTS[
+            StateSpecificIncarcerationNormalizationDelegate.__name__
+        ]
+        get_supervision_delegate.return_value = STATE_DELEGATES_FOR_TESTS[
+            StateSpecificSupervisionNormalizationDelegate.__name__
+        ]
+        get_violation_response_delegate.return_value = STATE_DELEGATES_FOR_TESTS[
+            StateSpecificViolationResponseNormalizationDelegate.__name__
+        ]
 
-    def test_get_required_state_specific_delegates(self) -> None:
         required_delegates = [
             StateSpecificIncarcerationNormalizationDelegate,
             StateSpecificSupervisionNormalizationDelegate,
             StateSpecificViolationResponseNormalizationDelegate,
         ]
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {}
 
         delegates = (
             state_calculation_config_manager.get_required_state_specific_delegates(
-                state_code="US_XX", required_delegates=required_delegates
+                state_code="US_XX",
+                required_delegates=required_delegates,
+                entity_kwargs=entity_kwargs,
             )
         )
-
         expected_delegates = {
-            StateSpecificIncarcerationNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
-            StateSpecificSupervisionNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
-            StateSpecificViolationResponseNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS.violation_response_normalization_delegate,
+            StateSpecificIncarcerationNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS[
+                StateSpecificIncarcerationNormalizationDelegate.__name__
+            ],
+            StateSpecificSupervisionNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS[
+                StateSpecificSupervisionNormalizationDelegate.__name__
+            ],
+            StateSpecificViolationResponseNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS[
+                StateSpecificViolationResponseNormalizationDelegate.__name__
+            ],
         }
 
         self.assertEqual(expected_delegates, delegates)
 
     def test_get_required_state_specific_delegates_no_delegates(self) -> None:
         required_delegates: List[Type[StateSpecificDelegate]] = []
-
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {}
         delegates = (
             state_calculation_config_manager.get_required_state_specific_delegates(
-                state_code="US_XX", required_delegates=required_delegates
+                state_code="US_XX",
+                required_delegates=required_delegates,
+                entity_kwargs=entity_kwargs,
             )
         )
 

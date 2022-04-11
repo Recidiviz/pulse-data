@@ -44,6 +44,9 @@ class UsMeSupervisionNormalizationDelegate(
 ):
     """US_ME implementation of the supervision pre-processing delegate"""
 
+    def __init__(self, assessments: List[StateAssessment]):
+        self._assessments = assessments
+
     def normalization_relies_on_assessments(self) -> bool:
         return True
 
@@ -76,12 +79,10 @@ class UsMeSupervisionNormalizationDelegate(
         return supervision_period.termination_reason
 
     def supervision_level_override(
-        self,
-        supervision_period: StateSupervisionPeriod,
-        assessments: Optional[List[StateAssessment]],
+        self, supervision_period: StateSupervisionPeriod
     ) -> Optional[StateSupervisionLevel]:
         """US_ME specific logic for determining supervision level from assessment scores."""
-        if not assessments:
+        if not self._assessments:
             return StateSupervisionLevel.INTERNAL_UNKNOWN
 
         assessment_type_raw_texts = [
@@ -105,7 +106,7 @@ class UsMeSupervisionNormalizationDelegate(
 
         assessments_before_period_ends: List[StateAssessment] = []
 
-        for assessment in assessments:
+        for assessment in self._assessments:
             # Only include assessments done before the supervision period's end date
             if (
                 supervision_period.end_date_exclusive is None

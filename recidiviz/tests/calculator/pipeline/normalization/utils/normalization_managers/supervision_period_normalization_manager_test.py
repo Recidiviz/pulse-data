@@ -53,7 +53,6 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             incarceration_sentences=None,
             supervision_sentences=None,
             incarceration_periods=None,
-            assessments=None,
         )
 
         (
@@ -420,7 +419,6 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             incarceration_sentences=None,
             supervision_sentences=None,
             incarceration_periods=None,
-            assessments=None,
         )
 
         (
