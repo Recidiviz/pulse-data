@@ -22,45 +22,6 @@ locals {
   composer_dag_bucket = trimprefix(trimsuffix(google_composer_environment.default_v2.config.0.dag_gcs_prefix, "/dags"), "gs://")
 }
 
-# TODO(#11816) Remove when deployed Cloud Composer v2
-resource "google_composer_environment" "default" {
-  name   = "orchestration"
-  region = var.region
-  config {
-    node_count = 5
-
-    node_config {
-      zone         = var.zone
-      machine_type = "n1-standard-4"
-      ip_allocation_policy {
-        # Ensure that we use a VPC-native cluster
-        use_ip_aliases = true
-      }
-    }
-
-    software_config {
-      # TODO(#4900): Not sure if we actually need these, given that they are specified in airflow.cfg, but leaving them
-      # for consistency with the existing dag for now.
-      airflow_config_overrides = {
-        "api-auth_backend"          = "airflow.api.auth.backend.default"
-        "webserver-web_server_name" = "orchestration"
-      }
-      env_variables = {
-        "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
-      }
-      image_version  = "composer-1.17.0-airflow-1.10.15"
-      python_version = "3"
-    }
-
-    private_environment_config {
-      # Ensure that access to the public endpoint of the GKE cluster is denied
-      enable_private_endpoint = true
-    }
-
-  }
-
-}
-
 resource "google_composer_environment" "default_v2" {
   name   = "orchestration-v2"
   region = var.region
