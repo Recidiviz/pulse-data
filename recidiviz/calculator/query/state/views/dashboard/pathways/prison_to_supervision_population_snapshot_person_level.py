@@ -19,7 +19,10 @@ from recidiviz.calculator.query.bq_utils import (
     get_binned_time_period_months,
     get_person_full_name,
 )
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
     state_specific_external_id_type,
@@ -49,17 +52,20 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
             age,
             age_group,
             {transition_time_period} AS time_period,
-            level_1_location_external_id AS location_id,
+            IFNULL(aggregating_location_id, location_id) AS facility,
         FROM `{project_id}.{shared_metric_views_dataset}.prison_to_supervision_transitions` transitions
         LEFT JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
             ON transitions.person_id = pei.person_id
-            AND {state_id_type} = pei.id_type 
+            AND {state_id_type} = pei.id_type
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
+            ON transitions.state_code = name_map.state_code
+            AND transitions.level_1_location_external_id = name_map.location_id
     )
 
     SELECT
         state_code,
         last_updated,
-        IFNULL(aggregating_location_id, location_id) AS facility,
+        facility,
         transitions.gender,
         age,
         age_group,
@@ -69,10 +75,9 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
     FROM transitions
     LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (state_code, person_id)
     LEFT JOIN data_freshness USING (state_code)
-    LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` 
-        USING (state_code, location_id)
-    WHERE 
-        time_period IS NOT NULL
+    WHERE {facility_filter}
+    AND time_period IS NOT NULL
+        
 """
 
 # This is a MetricBigQueryViewBuilder instead of a PathwaysMetricBigQueryViewBuilder because we
@@ -96,6 +101,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = MetricBigQ
     state_dataset=dataset_config.STATE_BASE_DATASET,
     state_id_type=state_specific_external_id_type("transitions"),
     transition_time_period=get_binned_time_period_months("transition_date"),
+    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":
