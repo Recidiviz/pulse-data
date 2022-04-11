@@ -19,15 +19,6 @@ data "google_secret_manager_secret_version" "vpc_access_connector_us_central_cid
 
 data "google_secret_manager_secret_version" "vpc_access_connector_us_east_cidr" { secret = "vpc_access_connector_us_east_cidr" }
 
-resource "google_redis_instance" "data_discovery_cache" {
-  name           = "data-discovery-cache"
-  region         = var.app_engine_region
-  memory_size_gb = 8
-  tier           = "BASIC"
-  redis_version  = "REDIS_5_0"
-}
-
-
 resource "google_redis_instance" "case_triage_rate_limiter_cache" {
   name           = "rate-limit-cache"
   region         = var.app_engine_region
@@ -72,15 +63,6 @@ resource "google_vpc_access_connector" "us_central_redis_vpc_connector" {
 
 
 # Store host in a secret
-resource "google_secret_manager_secret" "data_discovery_redis_host" {
-  secret_id = "data_discovery_redis_host"
-  replication { automatic = true }
-}
-
-resource "google_secret_manager_secret_version" "secret_version_redis_host" {
-  secret      = google_secret_manager_secret.data_discovery_redis_host.name
-  secret_data = google_redis_instance.data_discovery_cache.host
-}
 
 resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_host" {
   secret_id = "case_triage_rate_limiter_redis_host"
@@ -103,15 +85,6 @@ resource "google_secret_manager_secret_version" "case_triage_sessions_redis_host
 }
 
 # Store port in a secret
-resource "google_secret_manager_secret" "data_discovery_redis_port" {
-  secret_id = "data_discovery_redis_port"
-  replication { automatic = true }
-}
-
-resource "google_secret_manager_secret_version" "data_discovery_redis_port" {
-  secret      = google_secret_manager_secret.data_discovery_redis_port.name
-  secret_data = google_redis_instance.data_discovery_cache.port
-}
 
 resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_port" {
   secret_id = "case_triage_rate_limiter_redis_port"

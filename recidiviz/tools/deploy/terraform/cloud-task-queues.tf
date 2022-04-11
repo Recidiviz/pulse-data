@@ -15,15 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-resource "google_cloud_tasks_queue" "admin_panel_data_discovery_queue" {
-  name     = "admin-panel-data-discovery"
-  location = var.app_engine_region
-
-  stackdriver_logging_config {
-    sampling_ratio = 1.0
-  }
-}
-
 resource "google_cloud_tasks_queue" "scraper_phase_queue" {
   name     = "scraper-phase-v2"
   location = var.app_engine_region
