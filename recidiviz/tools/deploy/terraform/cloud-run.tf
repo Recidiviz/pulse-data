@@ -22,28 +22,33 @@ resource "google_service_account" "cloud_run" {
 }
 
 resource "google_project_iam_member" "cloud_run_admin" {
-  role   = "roles/run.admin"
-  member = "serviceAccount:${google_service_account.cloud_run.email}"
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
 resource "google_project_iam_member" "cloud_run_secret_accessor" {
-  role   = "roles/secretmanager.secretAccessor"
-  member = "serviceAccount:${google_service_account.cloud_run.email}"
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
 resource "google_project_iam_member" "cloud_run_cloud_sql" {
-  role   = "roles/cloudsql.client"
-  member = "serviceAccount:${google_service_account.cloud_run.email}"
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
 resource "google_project_iam_member" "cloud_run_gcs_access" {
-  role   = google_project_iam_custom_role.gcs-object-and-bucket-viewer.name
-  member = "serviceAccount:${google_service_account.cloud_run.email}"
+  project = var.project_id
+  role    = google_project_iam_custom_role.gcs-object-and-bucket-viewer.name
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
 resource "google_project_iam_member" "cloud_run_log_writer" {
-  role   = "roles/logging.logWriter"
-  member = "serviceAccount:${google_service_account.cloud_run.email}"
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
 # Use existing Justice Counts service account for Justice Counts Cloud Run
@@ -51,7 +56,7 @@ data "google_service_account" "justice_counts_cloud_run" {
   account_id = "jstc-counts-spotlights-staging"
 
   # TODO(#11710): Remove staging-only check when we create production environment
-  count      = var.project_id == "recidiviz-123" ? 0 : 1
+  count = var.project_id == "recidiviz-123" ? 0 : 1
 }
 
 # Env vars from secrets
@@ -75,7 +80,7 @@ resource "google_cloud_run_service" "case-triage" {
         }
 
         env {
-          name = "APP_URL"
+          name  = "APP_URL"
           value = var.project_id == "recidiviz-123" ? "https://app.recidiviz.org" : "https://app-staging.recidiviz.org"
         }
 
@@ -135,7 +140,7 @@ resource "google_cloud_run_service" "justice-counts" {
   location = var.region
 
   # TODO(#11710): Remove staging-only check when we create production environment
-  count    = var.project_id == "recidiviz-123" ? 0 : 1
+  count = var.project_id == "recidiviz-123" ? 0 : 1
 
   template {
     spec {
@@ -149,18 +154,18 @@ resource "google_cloud_run_service" "justice-counts" {
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
         }
       }
-      
-      
+
+
       service_account_name = data.google_service_account.justice_counts_cloud_run[count.index].email
     }
 
     metadata {
       annotations = {
-        "autoscaling.knative.dev/minScale"        = 1
-        "autoscaling.knative.dev/maxScale"        = var.max_justice_counts_instances
-        "run.googleapis.com/cloudsql-instances"   = module.justice_counts_database.connection_name
+        "autoscaling.knative.dev/minScale"      = 1
+        "autoscaling.knative.dev/maxScale"      = var.max_justice_counts_instances
+        "run.googleapis.com/cloudsql-instances" = module.justice_counts_database.connection_name
       }
-  
+
       name = "justice-counts-web-${replace(var.docker_image_tag, ".", "-")}"
     }
   }
@@ -171,7 +176,7 @@ resource "google_cloud_run_service" "justice-counts" {
   }
 
   autogenerate_revision_name = false
-} 
+}
 
 # By default, Cloud Run services are private and secured by IAM. 
 # The blocks below set up public access so that anyone (e.g. our frontends)
@@ -186,7 +191,7 @@ resource "google_cloud_run_service_iam_member" "public-access" {
 
 resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
   # TODO(#11710): Remove staging-only check when we create production environment
-  count    = var.project_id == "recidiviz-123" ? 0 : 1
+  count = var.project_id == "recidiviz-123" ? 0 : 1
 
   location = google_cloud_run_service.justice-counts[count.index].location
   project  = google_cloud_run_service.justice-counts[count.index].project
@@ -215,7 +220,7 @@ resource "google_compute_ssl_policy" "modern-ssl-policy" {
 
 module "unified-product-load-balancer" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
-  version = "~> 5.1"
+  version = "~> 6.2.0"
   name    = "unified-product-lb"
   project = var.project_id
 
