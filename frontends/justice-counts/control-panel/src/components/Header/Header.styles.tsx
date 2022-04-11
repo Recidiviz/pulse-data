@@ -17,7 +17,11 @@
 
 import styled from "styled-components/macro";
 
-export const HeaderWrapper = styled.header`
+type HeaderCellProps = {
+  textAlign?: "right" | "left";
+};
+
+export const HeaderRow = styled.header`
   width: 100%;
   height: 50px;
   display: flex;
@@ -26,17 +30,37 @@ export const HeaderWrapper = styled.header`
   padding: 16px 22px;
 `;
 
-type HeaderItemProps = {
-  textAlign?: "right" | "left";
-};
-
-export const HeaderItem = styled.div<HeaderItemProps>`
-  width: calc(100% / 3);
+export const HeaderCell = styled.div<HeaderCellProps>`
+  width: 300px;
   display: flex;
   justify-content: ${({ textAlign }) => {
     if (!textAlign) {
+      // defaults as 'flex-start' if 'textAlign' is not defined.
       return "flex-start";
     }
     return textAlign === "right" ? "flex-end" : "flex-start";
   }};
+
+  &:nth-child(1) {
+    width: 400px;
+  }
+
+  &:nth-child(2) {
+    width: 330px;
+  }
+
+  &:nth-child(3) {
+    width: 400px;
+  }
+
+  &:nth-child(4) {
+    width: 200px;
+  }
+
+  @media only screen and (max-width: 1150px) {
+    // hides extra empty cell
+    &:nth-child(3) {
+      display: none;
+    }
+  }
 `;

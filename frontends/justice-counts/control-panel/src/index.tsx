@@ -22,6 +22,7 @@ import { createGlobalStyle } from "styled-components/macro";
 
 import App from "./App";
 import AuthWall from "./components/Auth";
+import { palette } from "./components/GlobalStyles";
 import { StoreProvider } from "./stores";
 
 const GlobalStyle = createGlobalStyle`
@@ -39,8 +40,9 @@ const GlobalStyle = createGlobalStyle`
     width: 100%;
     font-family: "Inter", sans-serif;
     font-weight: 500;
-    background-color: #FFFFFF;
-    color: #171C2B;
+    font-size: 16px;
+    background-color: ${palette.white};
+    color: ${palette.text.darkgrey};
   }
 `;
 

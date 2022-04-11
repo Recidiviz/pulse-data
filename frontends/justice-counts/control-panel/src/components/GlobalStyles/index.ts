@@ -15,22 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
-
-import Menu from "../Menu";
-import { HeaderCell, HeaderRow } from ".";
-
-const Header = () => {
-  return (
-    <HeaderRow>
-      <HeaderCell>Justice Counts Data Publisher</HeaderCell>
-      <HeaderCell>State Department of Corrections</HeaderCell>
-      <HeaderCell />
-      <HeaderCell textAlign="right">
-        <Menu />
-      </HeaderCell>
-    </HeaderRow>
-  );
-};
-
-export default Header;
+export * from "./Palette";

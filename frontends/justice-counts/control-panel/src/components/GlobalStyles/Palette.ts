@@ -15,22 +15,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
-
-import Menu from "../Menu";
-import { HeaderCell, HeaderRow } from ".";
-
-const Header = () => {
-  return (
-    <HeaderRow>
-      <HeaderCell>Justice Counts Data Publisher</HeaderCell>
-      <HeaderCell>State Department of Corrections</HeaderCell>
-      <HeaderCell />
-      <HeaderCell textAlign="right">
-        <Menu />
-      </HeaderCell>
-    </HeaderRow>
-  );
+export const palette = {
+  white: `rgba(255,255,255)`,
+  text: {
+    darkgrey: `rgba(23, 28, 43, 1)`,
+    blue: `rgba(0, 115, 229, 1)`,
+    grey: `rgba(23, 28, 43, 0.6)`,
+    green: `rgba(0, 117, 65, 1)`,
+  },
+  highlight: {
+    green: `rgba(0, 117, 65, 0.1)`,
+    blue: `rgba(0, 115, 229, 0.1)`,
+    lightgrey: `rgba(23, 28, 43, 0.1)`,
+    lightergrey: `rgba(23, 28, 43, 0.05)`,
+    dark: `rgba(23, 28, 43, 1)`,
+  },
+  line: {
+    grey: `rgba(119, 119, 119, 1)`,
+  },
 };
-
-export default Header;

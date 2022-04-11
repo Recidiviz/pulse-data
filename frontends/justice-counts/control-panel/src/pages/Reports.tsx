@@ -19,73 +19,78 @@ import React from "react";
 
 import {
   ArrowDownIcon,
-  ReportsFilterBar,
-  ReportsFilterLabel,
-  ReportsFilterLabelHighlighter,
-  ReportsFilterOptions,
+  Badge,
+  Cell,
+  FilterBar,
+  FilterBy,
+  FilterOptions,
+  Label,
+  LabelRow,
+  ReportsHeader,
   ReportsPageTitle,
-  ReportsRow,
-  ReportsRowBadge,
-  ReportsRowItem,
-  ReportsRowLabel,
-  ReportsRowLabels,
-  ReportsSortBy,
+  Row,
+  SortBy,
+  Table,
 } from "../components/Reports";
 
 const Reports: React.FC = () => {
   return (
     <>
-      <ReportsPageTitle>All Reports</ReportsPageTitle>
+      <ReportsHeader>
+        <ReportsPageTitle>All Reports</ReportsPageTitle>
 
-      <ReportsFilterBar>
-        <ReportsFilterOptions>
-          <ReportsFilterLabel>All Reports</ReportsFilterLabel>
-          <ReportsFilterLabel>Drafts</ReportsFilterLabel>
-          <ReportsFilterLabel>Published</ReportsFilterLabel>
-          <ReportsFilterLabel>Missing</ReportsFilterLabel>
-          <ReportsFilterLabelHighlighter />
-        </ReportsFilterOptions>
+        <FilterBar>
+          <FilterOptions>
+            <FilterBy selected>All Reports</FilterBy>
+            <FilterBy>Drafts</FilterBy>
+            <FilterBy>Published</FilterBy>
+            <FilterBy>Missing</FilterBy>
+          </FilterOptions>
 
-        <ReportsSortBy>
-          Sort by Reporting Period
-          <ArrowDownIcon />
-        </ReportsSortBy>
-      </ReportsFilterBar>
+          <SortBy>
+            Sort by Reporting Period
+            <ArrowDownIcon />
+          </SortBy>
+        </FilterBar>
 
-      <ReportsRowLabels>
-        <ReportsRowLabel>Report Period</ReportsRowLabel>
-        <ReportsRowLabel>Last Modified</ReportsRowLabel>
-        <ReportsRowLabel>Editors</ReportsRowLabel>
-        <ReportsRowLabel>Status</ReportsRowLabel>
-      </ReportsRowLabels>
+        <LabelRow>
+          <Label>Report Period</Label>
+          <Label>Last Modified</Label>
+          <Label>Editors</Label>
+          <Label>Status</Label>
+        </LabelRow>
+      </ReportsHeader>
 
-      <ReportsRow>
-        <ReportsRowItem>
-          March 2022 <ReportsRowBadge>Monthly</ReportsRowBadge>
-        </ReportsRowItem>
-        <ReportsRowItem>1 day ago</ReportsRowItem>
-        <ReportsRowItem>Jody Weston</ReportsRowItem>
-        <ReportsRowItem>Draft</ReportsRowItem>
-      </ReportsRow>
+      <Table>
+        <Row>
+          <Cell>
+            March 2022 <Badge>Monthly</Badge>
+          </Cell>
 
-      <ReportsRow>
-        <ReportsRowItem>
-          February 2022 <ReportsRowBadge>Monthly</ReportsRowBadge>
-        </ReportsRowItem>
-        <ReportsRowItem>17 days ago</ReportsRowItem>
-        <ReportsRowItem>Jody Weston</ReportsRowItem>
-        <ReportsRowItem>Draft</ReportsRowItem>
-      </ReportsRow>
+          <Cell>1 day ago</Cell>
+          <Cell>Jody Weston</Cell>
+          <Cell>Draft</Cell>
+        </Row>
 
-      <ReportsRow completed>
-        <ReportsRowItem>
-          Annual Report 2021
-          <ReportsRowBadge completed>Annual</ReportsRowBadge>
-        </ReportsRowItem>
-        <ReportsRowItem>35 days ago</ReportsRowItem>
-        <ReportsRowItem>Jody Weston</ReportsRowItem>
-        <ReportsRowItem>Published</ReportsRowItem>
-      </ReportsRow>
+        <Row>
+          <Cell>
+            February 2022 <Badge>Monthly</Badge>
+          </Cell>
+          <Cell>17 days ago</Cell>
+          <Cell>Jody Weston</Cell>
+          <Cell>Draft</Cell>
+        </Row>
+
+        <Row published>
+          <Cell>
+            Annual Report 2021
+            <Badge published>Annual</Badge>
+          </Cell>
+          <Cell>35 days ago</Cell>
+          <Cell>Jody Weston</Cell>
+          <Cell>Published</Cell>
+        </Row>
+      </Table>
     </>
   );
 };
