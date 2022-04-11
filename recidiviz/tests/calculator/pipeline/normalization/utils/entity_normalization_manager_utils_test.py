@@ -31,6 +31,12 @@ from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_mana
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
+    StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
@@ -67,6 +73,7 @@ from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
+from recidiviz.utils.types import assert_type
 
 
 class TestIncarcerationNormalizationDelegate(UsXxIncarcerationNormalizationDelegate):
@@ -86,6 +93,18 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
     """Tests the normalized_periods_for_calculations function."""
 
     def setUp(self) -> None:
+        self.ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate = assert_type(
+            STATE_DELEGATES_FOR_TESTS[
+                StateSpecificIncarcerationNormalizationDelegate.__name__
+            ],
+            StateSpecificIncarcerationNormalizationDelegate,
+        )
+        self.sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate = assert_type(
+            STATE_DELEGATES_FOR_TESTS[
+                StateSpecificSupervisionNormalizationDelegate.__name__
+            ],
+            StateSpecificSupervisionNormalizationDelegate,
+        )
         self.field_index = CoreEntityFieldIndex()
         self.person_id = 123
 
@@ -114,15 +133,14 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
 
         ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
-            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
-            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            ip_normalization_delegate=self.ip_normalization_delegate,
+            sp_normalization_delegate=self.sp_normalization_delegate,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
             normalized_violation_responses=None,
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
-            assessments=None,
         )
 
         self.assertEqual([incarceration_period], processed_ips)
@@ -143,15 +161,14 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
 
         ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
-            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
-            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            ip_normalization_delegate=self.ip_normalization_delegate,
+            sp_normalization_delegate=self.sp_normalization_delegate,
             incarceration_periods=[incarceration_period],
             supervision_periods=None,
             normalized_violation_responses=None,
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
-            assessments=None,
         )
 
         self.assertEqual([incarceration_period], processed_ips)
@@ -177,14 +194,13 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             (_, _,) = normalized_periods_for_calculations(
                 person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
-                sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+                sp_normalization_delegate=self.sp_normalization_delegate,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=None,
                 normalized_violation_responses=[],
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
-                assessments=None,
             )
 
     def test_normalized_periods_for_calculations_no_violation_responses_state_requires(
@@ -207,14 +223,13 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             (_, _,) = normalized_periods_for_calculations(
                 person_id=self.person_id,
                 ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
-                sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+                sp_normalization_delegate=self.sp_normalization_delegate,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[],
                 normalized_violation_responses=None,
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
-                assessments=None,
             )
 
     def test_normalized_periods_for_calculations_no_sentences_state_requires(
@@ -236,7 +251,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             # that relies on sentences for SP pre-processing
             (_, _) = normalized_periods_for_calculations(
                 person_id=self.person_id,
-                ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
+                ip_normalization_delegate=self.ip_normalization_delegate,
                 sp_normalization_delegate=TestSupervisionNormalizationDelegate(),
                 incarceration_periods=[],
                 supervision_periods=[supervision_period],
@@ -244,7 +259,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
-                assessments=None,
             )
 
     def test_normalized_periods_for_calculations_no_ips(self) -> None:
@@ -260,15 +274,14 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
 
         ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
-            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
-            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            ip_normalization_delegate=self.ip_normalization_delegate,
+            sp_normalization_delegate=self.sp_normalization_delegate,
             incarceration_periods=None,
             supervision_periods=[supervision_period],
             normalized_violation_responses=None,
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
-            assessments=None,
         )
 
         self.assertEqual([], processed_ips)
@@ -278,15 +291,14 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
 
         ((processed_ips, _), (processed_sps, _),) = normalized_periods_for_calculations(
             person_id=self.person_id,
-            ip_normalization_delegate=STATE_DELEGATES_FOR_TESTS.ip_normalization_delegate,
-            sp_normalization_delegate=STATE_DELEGATES_FOR_TESTS.sp_normalization_delegate,
+            ip_normalization_delegate=self.ip_normalization_delegate,
+            sp_normalization_delegate=self.sp_normalization_delegate,
             incarceration_periods=[],
             supervision_periods=[],
             normalized_violation_responses=[],
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
-            assessments=None,
         )
 
         self.assertEqual([], processed_ips)

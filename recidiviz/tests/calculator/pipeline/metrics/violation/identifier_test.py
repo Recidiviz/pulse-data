@@ -18,8 +18,7 @@
 """Tests for violation/identifier.py"""
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional
-from unittest import mock
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import attr
 
@@ -38,6 +37,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
 )
@@ -55,6 +55,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
@@ -79,30 +80,23 @@ class TestFindViolationEvents(unittest.TestCase):
     ) -> List[ViolationEvent]:
         """Helper function for testing the find_events function."""
 
-        state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+            NormalizedStateSupervisionViolation.base_class_name(): violations,
+        }
         if not state_code_override:
-            state_specific_delegate_patcher.start()
+            required_delegates = STATE_DELEGATES_FOR_TESTS
         else:
             self.person.person_id = (
                 int(StateCode(state_code_override).get_state().fips) * 1000 + 123
             )
 
-        required_delegates = get_required_state_specific_delegates(
-            state_code=(state_code_override or _STATE_CODE),
-            required_delegates=ViolationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
-        )
+            required_delegates = get_required_state_specific_delegates(
+                state_code=(state_code_override or _STATE_CODE),
+                required_delegates=ViolationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
 
-        if not state_code_override:
-            state_specific_delegate_patcher.stop()
-
-        all_kwargs: Dict[str, Any] = {
-            **required_delegates,
-            NormalizedStateSupervisionViolation.base_class_name(): violations,
-        }
+        all_kwargs: Dict[str, Any] = {**required_delegates, **entity_kwargs}
 
         return self.identifier.find_events(self.person, all_kwargs)
 
@@ -210,22 +204,15 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         state_code_override: Optional[str] = None,
     ) -> List[ViolationWithResponseEvent]:
         """Helper for running _find_violation_with_response_events."""
-
-        state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {}
         if not state_code_override:
-            state_specific_delegate_patcher.start()
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=(state_code_override or _STATE_CODE),
-            required_delegates=ViolationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
-        )
-
-        if not state_code_override:
-            state_specific_delegate_patcher.stop()
+            required_delegates = STATE_DELEGATES_FOR_TESTS
+        else:
+            required_delegates = get_required_state_specific_delegates(
+                state_code=(state_code_override or _STATE_CODE),
+                required_delegates=ViolationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
 
         violation_delegate = required_delegates[StateSpecificViolationDelegate.__name__]
 

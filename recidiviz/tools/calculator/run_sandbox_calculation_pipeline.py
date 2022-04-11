@@ -31,7 +31,8 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           --state_code STATE_CODE \
           --sandbox_output_dataset SANDBOX_OUTPUT_DATASET \
           --calculation_month_count NUM_MONTHS \
-          [--input INPUT] \
+          [--normalized_input INPUT] \
+          [--data_input INPUT] \
           [--reference_view_input REFERENCE_VIEW_INPUT] \
           [--static_reference_input STATIC_REFERENCE_VIEW_INPUT] \
           # Note: The --metric_types arg must be last since it is a list

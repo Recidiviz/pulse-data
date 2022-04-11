@@ -19,7 +19,7 @@
 
 import unittest
 from datetime import date
-from typing import List, Optional
+from typing import Dict, List, Optional, Sequence, Union
 from unittest import mock
 
 from dateutil.relativedelta import relativedelta
@@ -41,8 +41,12 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
@@ -55,6 +59,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
@@ -87,29 +92,26 @@ class TestFindProgramEvents(unittest.TestCase):
         state_code_override: Optional[str] = None,
     ) -> List[ProgramEvent]:
         """Helper for testing the find_events function on the identifier."""
-
-        state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        if not state_code_override:
-            state_specific_delegate_patcher.start()
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=(state_code_override or _STATE_CODE),
-            required_delegates=ProgramMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
-        )
-
-        if not state_code_override:
-            state_specific_delegate_patcher.stop()
-
-        all_kwargs = {
-            **required_delegates,
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateProgramAssignment.base_class_name(): program_assignments,
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
             StateAssessment.__name__: assessments,
             "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+        }
+        if not state_code_override:
+            required_delegates = STATE_DELEGATES_FOR_TESTS
+        else:
+            required_delegates = get_required_state_specific_delegates(
+                state_code=(state_code_override or _STATE_CODE),
+                required_delegates=ProgramMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
+
+        all_kwargs: Dict[
+            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
+        ] = {
+            **required_delegates,
+            **entity_kwargs,
         }
 
         return self.identifier.find_events(self.person, all_kwargs)

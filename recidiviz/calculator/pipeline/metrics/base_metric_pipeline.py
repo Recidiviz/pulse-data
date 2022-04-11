@@ -26,6 +26,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -540,10 +541,11 @@ class ClassifyEvents(beam.DoFn):
         required_delegates = get_required_state_specific_delegates(
             state_code=state_code,
             required_delegates=pipeline_config.state_specific_required_delegates,
+            entity_kwargs=entity_kwargs,
         )
 
         all_kwargs: Dict[
-            str, Union[List[Entity], List[TableRow], StateSpecificDelegate]
+            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
         ] = {
             **entity_kwargs,
             **required_delegates,

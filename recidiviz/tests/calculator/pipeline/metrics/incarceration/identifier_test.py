@@ -17,8 +17,7 @@
 """Tests for incarceration/identifier.py."""
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional
-from unittest import mock
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -50,12 +49,15 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_all_state_specific_delegates,
     get_required_state_specific_delegates,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -124,6 +126,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
@@ -132,6 +135,7 @@ from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalizatio
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
+from recidiviz.utils.types import assert_type
 
 _STATE_CODE = "US_XX"
 _COUNTY_OF_RESIDENCE = "county"
@@ -187,29 +191,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         state_code_override: Optional[str] = None,
     ) -> List[IncarcerationEvent]:
         """Helper for testing the find_events function on the identifier."""
-
-        state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        if not state_code_override:
-            state_specific_delegate_patcher.start()
-        else:
-            self.person.person_id = (
-                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
-            )
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=(state_code_override or _STATE_CODE),
-            required_delegates=IncarcerationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
-        )
-
-        if not state_code_override:
-            state_specific_delegate_patcher.stop()
-
-        all_kwargs = {
-            **required_delegates,
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods
             or [],
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods
@@ -224,6 +206,22 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             "incarceration_period_judicial_district_association": _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
             "persons_to_recent_county_of_residence": _COUNTY_OF_RESIDENCE_ROWS,
         }
+
+        if not state_code_override:
+            required_delegates = STATE_DELEGATES_FOR_TESTS
+        else:
+            required_delegates = get_required_state_specific_delegates(
+                state_code=(state_code_override or _STATE_CODE),
+                required_delegates=IncarcerationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
+            self.person.person_id = (
+                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+            )
+
+        all_kwargs: Dict[
+            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
+        ] = {**required_delegates, **entity_kwargs}
         return self.identifier.find_events(self.person, all_kwargs)
 
     def test_find_incarceration_events(self) -> None:
@@ -993,12 +991,16 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         county_of_residence: Optional[str] = _COUNTY_OF_RESIDENCE,
     ) -> Optional[IncarcerationAdmissionEvent]:
         """Runs `_admission_event_for_period`."""
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {}
         state_specific_delegates = (
-            get_all_state_specific_delegates(state_code=state_specific_override)
+            get_required_state_specific_delegates(
+                state_code=state_specific_override,
+                required_delegates=IncarcerationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
             if state_specific_override
             else STATE_DELEGATES_FOR_TESTS
         )
-
         incarceration_period_index = (
             incarceration_period_index
             or default_normalized_ip_index_for_tests(
@@ -1015,12 +1017,31 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             else []
         )
 
+        supervision_delegate = state_specific_delegates[
+            "StateSpecificSupervisionDelegate"
+        ]
+        if not isinstance(supervision_delegate, StateSpecificSupervisionDelegate):
+            raise ValueError(
+                f"Unexpected supervision delegate type: {type(supervision_delegate)}"
+            )
+
         # pylint: disable=protected-access
         return self.identifier._admission_event_for_period(
-            incarceration_delegate=state_specific_delegates.incarceration_delegate,
-            commitment_from_supervision_delegate=state_specific_delegates.commitment_from_supervision_delegate,
-            violation_delegate=state_specific_delegates.violation_delegate,
-            supervision_delegate=state_specific_delegates.supervision_delegate,
+            incarceration_delegate=assert_type(
+                state_specific_delegates["StateSpecificIncarcerationDelegate"],
+                StateSpecificIncarcerationDelegate,
+            ),
+            commitment_from_supervision_delegate=assert_type(
+                state_specific_delegates[
+                    "StateSpecificCommitmentFromSupervisionDelegate"
+                ],
+                StateSpecificCommitmentFromSupervisionDelegate,
+            ),
+            violation_delegate=assert_type(
+                state_specific_delegates["StateSpecificViolationDelegate"],
+                StateSpecificViolationDelegate,
+            ),
+            supervision_delegate=supervision_delegate,
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,

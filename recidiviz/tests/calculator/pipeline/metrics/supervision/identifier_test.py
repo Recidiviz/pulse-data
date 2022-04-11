@@ -21,8 +21,7 @@ import datetime
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional
-from unittest import mock
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -66,9 +65,13 @@ from recidiviz.calculator.pipeline.utils.assessment_utils import (
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
     get_state_specific_case_compliance_manager,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -127,6 +130,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import last_day_of_month
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationSentence,
@@ -200,28 +204,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         """Helper for testing the find_events function on the identifier."""
         self._set_expected_sp_fields(supervision_periods)
 
-        state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        if not state_code_override:
-            state_specific_delegate_patcher.start()
-        else:
-            self.person.person_id = (
-                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
-            )
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=(state_code_override or _STATE_CODE),
-            required_delegates=SupervisionMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
-        )
-
-        if not state_code_override:
-            state_specific_delegate_patcher.stop()
-
-        all_kwargs = {
-            **required_delegates,
+        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods,
             StateIncarcerationSentence.__name__: incarceration_sentences,
             StateSupervisionSentence.__name__: supervision_sentences,
@@ -233,6 +216,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             "supervision_period_judicial_district_association": supervision_period_judicial_district_association
             or DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
+        }
+        if not state_code_override:
+            required_delegates = STATE_DELEGATES_FOR_TESTS
+        else:
+            self.person.person_id = (
+                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+            )
+            required_delegates = get_required_state_specific_delegates(
+                state_code=(state_code_override or _STATE_CODE),
+                required_delegates=SupervisionMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                entity_kwargs=entity_kwargs,
+            )
+
+        all_kwargs: Dict[
+            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
+        ] = {
+            **required_delegates,
+            **entity_kwargs,
         }
 
         return self.identifier.find_events(self.person, all_kwargs)

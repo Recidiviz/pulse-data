@@ -16,9 +16,7 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 from datetime import date
-from typing import Dict, List, Optional, Type
-
-import attr
+from typing import Dict, List, Optional, Sequence, Type, Union
 
 from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
@@ -42,6 +40,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -212,79 +211,71 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violations_dele
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
 )
-
-
-@attr.s(frozen=True)
-class StateSpecificDelegateContainer:
-    """Stores all state-specific delegates required for running pipelines."""
-
-    state_code: StateCode = attr.ib()
-
-    ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate = (
-        attr.ib()
-    )
-    sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate = attr.ib()
-    program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate = (
-        attr.ib()
-    )
-    violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate = (
-        attr.ib()
-    )
-    commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate = (
-        attr.ib()
-    )
-
-    violation_delegate: StateSpecificViolationDelegate = attr.ib()
-    incarceration_delegate: StateSpecificIncarcerationDelegate = attr.ib()
-    supervision_delegate: StateSpecificSupervisionDelegate = attr.ib()
+from recidiviz.utils.types import assert_type
 
 
 def get_required_state_specific_delegates(
     state_code: str,
     required_delegates: List[Type[StateSpecificDelegate]],
+    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
 ) -> Dict[str, StateSpecificDelegate]:
-    """Returns a dictionary where the keys are the names of all of the delegates
+    """Returns a dictionary where the keys are the names of the required delegates
     listed in |required_delegates|, and the values are the state-specific
     implementation of that delegate."""
-    all_delegates_for_state = get_all_state_specific_delegates(state_code)
-
-    return {
-        delegate.__class__.__base__.__name__: delegate
-        for delegate in all_delegates_for_state.__dict__.values()
-        if delegate.__class__.__base__ in required_delegates
-    }
-
-
-def get_all_state_specific_delegates(
-    state_code: str,
-) -> StateSpecificDelegateContainer:
-    return StateSpecificDelegateContainer(
-        state_code=StateCode(state_code),
-        ip_normalization_delegate=_get_state_specific_incarceration_period_normalization_delegate(
-            state_code
-        ),
-        sp_normalization_delegate=_get_state_specific_supervision_period_normalization_delegate(
-            state_code
-        ),
-        program_assignment_normalization_delegate=_get_state_specific_program_assignment_normalization_delegate(
-            state_code
-        ),
-        violation_response_normalization_delegate=_get_state_specific_violation_response_normalization_delegate(
-            state_code
-        ),
-        commitment_from_supervision_delegate=_get_state_specific_commitment_from_supervision_delegate(
-            state_code
-        ),
-        violation_delegate=_get_state_specific_violation_delegate(state_code),
-        incarceration_delegate=_get_state_specific_incarceration_delegate(state_code),
-        supervision_delegate=get_state_specific_supervision_delegate(state_code),
-    )
+    required_state_specific_delegates: Dict[str, StateSpecificDelegate] = {}
+    for required_delegate in required_delegates:
+        if required_delegate is StateSpecificIncarcerationNormalizationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_incarceration_period_normalization_delegate(
+                state_code
+            )
+        elif required_delegate is StateSpecificSupervisionNormalizationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_supervision_period_normalization_delegate(
+                state_code, entity_kwargs
+            )
+        elif required_delegate is StateSpecificProgramAssignmentNormalizationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_program_assignment_normalization_delegate(
+                state_code
+            )
+        elif required_delegate is StateSpecificViolationResponseNormalizationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_violation_response_normalization_delegate(
+                state_code
+            )
+        elif required_delegate is StateSpecificCommitmentFromSupervisionDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_commitment_from_supervision_delegate(state_code)
+        elif required_delegate is StateSpecificViolationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_violation_delegate(state_code)
+        elif required_delegate is StateSpecificIncarcerationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_incarceration_delegate(state_code)
+        elif required_delegate is StateSpecificSupervisionDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = get_state_specific_supervision_delegate(state_code)
+        else:
+            raise ValueError(
+                f"Unexpected required delegate {required_delegate} for pipeline."
+            )
+    return required_state_specific_delegates
 
 
 def get_state_specific_case_compliance_manager(
@@ -369,13 +360,27 @@ def _get_state_specific_incarceration_period_normalization_delegate(
 
 def _get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
+    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
 ) -> StateSpecificSupervisionNormalizationDelegate:
     """Returns the type of SupervisionNormalizationDelegate that should be used for
     normalizing StateSupervisionPeriod entities from a given |state_code|."""
+    assessments = (
+        [
+            assert_type(a, StateAssessment)
+            for a in entity_kwargs[StateAssessment.__name__]
+        ]
+        if entity_kwargs and entity_kwargs.get(StateAssessment.__name__) is not None
+        else None
+    )
+
     if state_code == StateCode.US_ID.value:
         return UsIdSupervisionNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeSupervisionNormalizationDelegate()
+        if assessments is None:
+            raise ValueError(
+                "Missing StateAssessment entity for UsMeSupervisionNormalizationDelegate"
+            )
+        return UsMeSupervisionNormalizationDelegate(assessments=assessments)
     if state_code == StateCode.US_MO.value:
         return UsMoSupervisionNormalizationDelegate()
     if state_code == StateCode.US_ND.value:

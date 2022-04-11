@@ -47,7 +47,6 @@ from recidiviz.persistence.entity.entity_utils import (
     is_placeholder,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionCaseTypeEntry,
@@ -72,9 +71,7 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         return supervision_periods
 
     def supervision_level_override(
-        self,
-        supervision_period: StateSupervisionPeriod,
-        assessments: Optional[List[StateAssessment]],
+        self, supervision_period: StateSupervisionPeriod
     ) -> Optional[StateSupervisionLevel]:
         """States may have specific logic that determines the supervision level for a supervision period.
         By default, uses the one on the supervision period as ingested."""
@@ -136,12 +133,6 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         StateIncarcerationPeriod entities."""
         return False
 
-    def normalization_relies_on_assessments(self) -> bool:
-        """State-specific implementations of this class should return whether the SP
-        normalization logic for the state relies on information in
-        StateAssessment entities."""
-        return False
-
 
 class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     """Handles the normalization of StateSupervisionPeriods for use in calculations."""
@@ -154,7 +145,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         incarceration_sentences: Optional[List[StateIncarcerationSentence]],
         supervision_sentences: Optional[List[StateSupervisionSentence]],
         incarceration_periods: Optional[List[StateIncarcerationPeriod]],
-        assessments: Optional[List[StateAssessment]],
         earliest_death_date: Optional[datetime.date] = None,
     ):
         self._person_id = person_id
@@ -179,10 +169,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             incarceration_periods
             if self.delegate.normalization_relies_on_incarceration_periods()
             else None
-        )
-
-        self._assessments: Optional[List[StateAssessment]] = (
-            assessments if self.delegate.normalization_relies_on_assessments() else None
         )
 
         # The end date of the earliest incarceration or supervision period ending in
@@ -253,7 +239,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             mid_processing_periods = (
                 self._process_fields_on_final_supervision_period_set(
                     mid_processing_periods,
-                    self._assessments,
                     self._supervision_sentences,
                 )
             )
@@ -409,7 +394,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     def _process_fields_on_final_supervision_period_set(
         self,
         supervision_periods: List[StateSupervisionPeriod],
-        assessments: Optional[List[StateAssessment]],
         supervision_sentences: Optional[List[StateSupervisionSentence]],
     ) -> List[StateSupervisionPeriod]:
         """After all supervision periods are sorted, dropped and split as necessary,
@@ -427,9 +411,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                     sp, supervision_sentences
                 )
             )
-            sp.supervision_level = self.delegate.supervision_level_override(
-                sp, assessments
-            )
+            sp.supervision_level = self.delegate.supervision_level_override(sp)
             updated_periods.append(sp)
         return updated_periods
 

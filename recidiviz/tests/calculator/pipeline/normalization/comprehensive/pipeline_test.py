@@ -73,21 +73,19 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             FakeWriteNormalizedEntitiesToBigQuery
         )
 
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.state_utils"
-            ".state_calculation_config_manager.get_all_state_specific_delegates"
+        self.required_state_specific_delegates_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.normalization.base_normalization_pipeline"
+            ".get_required_state_specific_delegates",
+            return_value=STATE_DELEGATES_FOR_TESTS,
         )
-        self.mock_get_state_delegate_container = (
-            self.state_specific_delegate_patcher.start()
+
+        self.mock_get_required_state_delegates = (
+            self.required_state_specific_delegates_patcher.start()
         )
-        self.mock_get_state_delegate_container.return_value = STATE_DELEGATES_FOR_TESTS
         self.run_delegate_class = pipeline.ComprehensiveNormalizationPipelineRunDelegate
 
     def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        self.required_state_specific_delegates_patcher.stop()
 
     def run_test_pipeline(
         self,
@@ -272,7 +270,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         data_dict.update(data_dict_overrides)
         return data_dict
 
-    def testComprehensiveNormalizationPipeline(self) -> None:
+    def test_comprehensive_normalization_pipeline(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_comprehensive_normalization_pipeline_data_dict(
             fake_person_id=fake_person_id

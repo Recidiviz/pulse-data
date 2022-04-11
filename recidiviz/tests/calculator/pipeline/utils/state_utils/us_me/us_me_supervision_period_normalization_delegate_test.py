@@ -44,8 +44,11 @@ _STATE_CODE = StateCode.US_ME.value
 class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
     """Tests functions in UsMeSupervisionNormalizationDelegate."""
 
-    def setUp(self) -> None:
-        self.delegate = UsMeSupervisionNormalizationDelegate()
+    @staticmethod
+    def _build_delegate(
+        assessments: List[StateAssessment],
+    ) -> UsMeSupervisionNormalizationDelegate:
+        return UsMeSupervisionNormalizationDelegate(assessments=assessments)
 
     def test_supervision_level_override_active_period(self) -> None:
         """Assert that assessments taken within an active period are used to set the supervision level."""
@@ -64,7 +67,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionLevel.MEDIUM,
-            self.delegate.supervision_level_override(supervision_period, assessments),
+            self._build_delegate(assessments).supervision_level_override(
+                supervision_period
+            ),
         )
 
     def test_supervision_level_override_no_assessments(self) -> None:
@@ -78,7 +83,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         assessments: List[StateAssessment] = []
         self.assertEqual(
             StateSupervisionLevel.INTERNAL_UNKNOWN,
-            self.delegate.supervision_level_override(supervision_period, assessments),
+            self._build_delegate(assessments).supervision_level_override(
+                supervision_period
+            ),
         )
 
     def test_supervision_level_override_spin_w_most_recent(self) -> None:
@@ -104,7 +111,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionLevel.HIGH,
-            self.delegate.supervision_level_override(supervision_period, assessments),
+            self._build_delegate(assessments).supervision_level_override(
+                supervision_period
+            ),
         )
 
     def test_supervision_level_override_lsir_most_recent(self) -> None:
@@ -136,7 +145,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionLevel.MAXIMUM,
-            self.delegate.supervision_level_override(supervision_period, assessments),
+            self._build_delegate(assessments).supervision_level_override(
+                supervision_period
+            ),
         )
 
     def test_supervision_level_override_most_recent_static_99(self) -> None:
@@ -178,7 +189,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionLevel.MEDIUM,
-            self.delegate.supervision_level_override(supervision_period, assessments),
+            self._build_delegate(assessments).supervision_level_override(
+                supervision_period
+            ),
         )
 
     def test_supervision_level_override_most_recent_lsir(self) -> None:
@@ -206,7 +219,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionLevel.MINIMUM,
-            self.delegate.supervision_level_override(supervision_period, assessments),
+            self._build_delegate(assessments).supervision_level_override(
+                supervision_period
+            ),
         )
 
     def test_supervision_termination_reason_override_revocation_sentence_future_date(
@@ -232,7 +247,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionPeriodTerminationReason.REVOCATION,
-            self.delegate.supervision_termination_reason_override(
+            self._build_delegate(
+                assessments=[]
+            ).supervision_termination_reason_override(
                 supervision_period, supervision_sentences
             ),
         )
@@ -260,7 +277,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionPeriodTerminationReason.REVOCATION,
-            self.delegate.supervision_termination_reason_override(
+            self._build_delegate(
+                assessments=[]
+            ).supervision_termination_reason_override(
                 supervision_period, supervision_sentences
             ),
         )
@@ -288,7 +307,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(
             StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            self.delegate.supervision_termination_reason_override(
+            self._build_delegate(
+                assessments=[]
+            ).supervision_termination_reason_override(
                 supervision_period, supervision_sentences
             ),
         )
@@ -305,7 +326,9 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = []
         self.assertEqual(
             StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
-            self.delegate.supervision_termination_reason_override(
+            self._build_delegate(
+                assessments=[]
+            ).supervision_termination_reason_override(
                 supervision_period, supervision_sentences
             ),
         )
