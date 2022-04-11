@@ -40,3 +40,12 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`flask`](https://flask.palletsprojects.com/en/1.1.x/) web server
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
+
+## SQLAlchemy Primer
+
+- A _session_ is a "holding zone" for all the objects you’ve loaded (via `session.query()`) or associated with it (via `session.add()`) during its lifespan.
+- Until you (or a context manager) calls `session.commit()`, any changes you've made are _temporary_.
+- Calling `session.commit()` will persist new data to the database, and also refresh objects with their new ID.
+- If you're operating in a `with SessionFactory.using_database` context manager (i.e. in our unit tests), then `session.commit()` will be called ._automatically_ for you at the end of the block. Try to take advantage of this functionality and avoid calling `session.commit()` yourself in unit tests.
+- In our API code, `session.commit()` will not be called for you automatically. Thus, at the end of any ObjectInterface method that creates or updates objects, remember to call `session.add()` followed by `session.commit()`. You should call these methods in the Interface classes, not in the API itself.
+- You generally shouldn't need to call `session.flush()` or `session.refresh()`. If you think you need to, add a comment explaining what was going wrong without it.

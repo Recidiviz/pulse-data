@@ -54,11 +54,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def get_engine(self) -> Engine:
         return self.session.get_bind()
 
-    def test_hello(self) -> None:
-        response = self.client.get("/api/hello")
-        response_json = response.json or {}
-        self.assertEqual(response_json["response"], "Hello, World!")
-
     def test_logout(self) -> None:
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
@@ -86,7 +81,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             "/api/users",
             json={
                 "email_address": email_address,
-                "agency_names": [agency_name],
+                "agency_ids": [1],
                 "name": name,
             },
         )

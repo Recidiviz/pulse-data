@@ -30,8 +30,7 @@ class AgencyInterface:
     def create_agency(session: Session, name: str) -> Agency:
         agency = Agency(name=name)
         session.add(agency)
-        session.flush()
-        session.refresh(agency)
+        session.commit()
         return agency
 
     @staticmethod
