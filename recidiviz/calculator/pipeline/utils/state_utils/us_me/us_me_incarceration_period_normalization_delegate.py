@@ -63,7 +63,7 @@ class UsMeIncarcerationNormalizationDelegate(
                 sentence_metadata["TERM_INTAKE_DATE"], "%Y-%m-%d %I:%M:%S"
             )
 
-            # TODO(#11516): Revert this to sentence_metadata["IS_REVOCATION_SENTENCE"] == "Y"
+            # TODO(#11586): Revert this to sentence_metadata["IS_REVOCATION_SENTENCE"] == "Y"
             #  once that field is hydrated post-rerun.
             is_revocation_sentence = (
                 sentence_metadata.get("IS_REVOCATION_SENTENCE", None) == "Y"

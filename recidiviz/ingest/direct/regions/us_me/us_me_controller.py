@@ -43,12 +43,12 @@ class UsMeController(BaseDirectIngestController):
         return (
             ["CLIENT"]
             + (
-                # TODO(#11516): Ship CURRENT_STATUS_incarceration_periods_v2 to primary staging
-                # TODO(#11584): Ship CURRENT_STATUS_incarceration_periods_v2 to secondary production
                 # TODO(#11586): Ship CURRENT_STATUS_incarceration_periods_v2 to primary production
                 ["CURRENT_STATUS_incarceration_periods_v2"]
-                if not environment.in_gcp_production()
-                and self.ingest_instance == DirectIngestInstance.SECONDARY
+                if (
+                    not environment.in_gcp_production()
+                    or self.ingest_instance == DirectIngestInstance.SECONDARY
+                )
                 else ["CURRENT_STATUS_incarceration_periods"]
             )
             + [
