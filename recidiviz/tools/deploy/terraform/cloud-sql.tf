@@ -18,6 +18,7 @@
 module "case_triage_database" {
   source = "./modules/cloud-sql-instance"
 
+  project_id             = var.project_id
   instance_key           = "case_triage"
   base_secret_name       = "case_triage"
   region                 = var.region
@@ -31,6 +32,7 @@ module "case_triage_database" {
 module "jails_database" {
   source = "./modules/cloud-sql-instance"
 
+  project_id       = var.project_id
   instance_key     = "jails"
   base_secret_name = "sqlalchemy"
   database_version = "POSTGRES_9_6"
@@ -46,6 +48,7 @@ module "jails_database" {
 module "jails_database_v2" {
   source = "./modules/cloud-sql-instance"
 
+  project_id        = var.project_id
   instance_key      = "jails_v2"
   base_secret_name  = "jails_v2"
   database_version  = "POSTGRES_13"
@@ -59,6 +62,7 @@ module "jails_database_v2" {
 module "justice_counts_database" {
   source = "./modules/cloud-sql-instance"
 
+  project_id        = var.project_id
   instance_key      = "justice_counts"
   base_secret_name  = "justice_counts"
   region            = "us-east1"
@@ -71,6 +75,7 @@ module "justice_counts_database" {
 module "operations_database" {
   source = "./modules/cloud-sql-instance"
 
+  project_id        = var.project_id
   instance_key      = "operations"
   base_secret_name  = "operations"
   database_version  = "POSTGRES_11"
@@ -85,6 +90,7 @@ module "operations_database" {
 module "operations_database_v2" {
   source = "./modules/cloud-sql-instance"
 
+  project_id        = var.project_id
   instance_key      = "operations_v2"
   base_secret_name  = "operations_v2"
   database_version  = "POSTGRES_13"
@@ -98,6 +104,7 @@ module "operations_database_v2" {
 module "state_database" {
   source = "./modules/cloud-sql-instance"
 
+  project_id        = var.project_id
   instance_key      = "state"
   base_secret_name  = "state"
   database_version  = "POSTGRES_9_6"
@@ -112,6 +119,7 @@ module "state_database" {
 module "state_database_v2" {
   source = "./modules/cloud-sql-instance"
 
+  project_id        = var.project_id
   instance_key      = "state_v2"
   base_secret_name  = "state_v2"
   database_version  = "POSTGRES_13"

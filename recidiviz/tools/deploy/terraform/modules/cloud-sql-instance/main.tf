@@ -15,6 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+
+# The project for the related database instance
+variable "project_id" {
+  type = string
+}
+
 # The a string key for the database instance, e.g. "state" or "justice_counts".
 variable "instance_key" {
   type = string
@@ -148,8 +154,9 @@ resource "google_sql_database_instance" "data" {
 }
 
 resource "google_project_iam_member" "gcs-read-write-access" {
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_sql_database_instance.data.service_account_email_address}"
+  project = var.project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_sql_database_instance.data.service_account_email_address}"
 }
 
 resource "google_sql_user" "postgres" {
