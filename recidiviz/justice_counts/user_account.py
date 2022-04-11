@@ -55,8 +55,7 @@ class UserAccountInterface:
         )
 
         session.add(user)
-        session.flush()
-        session.refresh(user)
+        session.commit()
         return user
 
     @staticmethod
@@ -84,6 +83,7 @@ class UserAccountInterface:
         )
 
         result = session.execute(insert_statement)
+
         user = session.query(UserAccount).get(result.inserted_primary_key)
         if agency_ids is not None:
             agencies = AgencyInterface.get_agencies_by_id(
@@ -91,6 +91,7 @@ class UserAccountInterface:
             )
             user.agencies = agencies
 
+        session.commit()
         return user
 
     @staticmethod
@@ -123,3 +124,4 @@ class UserAccountInterface:
         agency = AgencyInterface.get_agency_by_name(session=session, name=agency_name)
         user.agencies.append(agency)
         session.add(user)
+        session.commit()

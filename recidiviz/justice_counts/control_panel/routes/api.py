@@ -26,17 +26,11 @@ from recidiviz.persistence.database.schema.justice_counts.schema import UserAcco
 from recidiviz.utils.types import assert_type
 
 
-# TODO(#11504): Replace dummy endpoint
 def get_api_blueprint(
     auth_decorator: Callable, secret_key: Optional[str] = None
 ) -> Blueprint:
     """Api endpoints for Justice Counts control panel and admin panel"""
     api_blueprint = Blueprint("api", __name__)
-
-    @api_blueprint.route("/hello")
-    @auth_decorator
-    def hello() -> Response:
-        return jsonify({"response": "Hello, World!"})
 
     @api_blueprint.route("/init")
     @auth_decorator
@@ -54,23 +48,15 @@ def get_api_blueprint(
         email_address = request_json["email_address"]
         name = request_json.get("name")
         auth0_user_id = request_json.get("auth0_user_id")
-        agency_names = request_json.get("agency_names")
-        result: UserAccount = UserAccountInterface.create_or_update_user(
+        agency_ids = request_json.get("agency_ids")
+        UserAccountInterface.create_or_update_user(
             session=current_session,
             email_address=email_address,
             name=name,
             auth0_user_id=auth0_user_id,
+            agency_ids=agency_ids,
         )
-        if not agency_names:
-            return make_response(result.to_json(), 200)
 
-        for agency_name in agency_names:
-            UserAccountInterface.add_agency_to_user(
-                session=current_session,
-                email_address=email_address,
-                agency_name=agency_name,
-            )
-            current_session.commit()
         updated_user: UserAccount = UserAccountInterface.get_user_by_email_address(
             session=current_session, email_address=email_address
         )
