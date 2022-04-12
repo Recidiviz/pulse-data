@@ -31,9 +31,13 @@ local path to the credentials directory to the --credentials_directory path. Thi
 expecting the path to be: `/Your/local/path/credentials.json`. For more instruction on downloading
 the credentials file, see the recidiviz.utils.google_drive utility.
 
+YOU MUST LIST ALL PII COLUMNS FOR THE `columns_to_randomize` OPTION. Not just identifiers, but anything that is
+personally identifiable should be randomized as part of usage of this script. If you are unsure as to what constitutes
+PII, please reach out to a teammate to discuss.
+
 Example Usage:
     python -m recidiviz.tools.ingest.testing.regenerate_raw_data_fixtures_from_sheet --region_code US_XX \
-    --columns_to_randomize Person_Id_Column First_Name Last_Name\
+    --columns_to_randomize Person_Id_Column First_Name Last_Name Birthdate\
     --person_external_id_columns Person_Id_Column Other_Person_Id_Col \
     --regenerate_fixtures_from_sheet_id GOOGLE_SHEETS_ID \
     --credentials_directory /Your/local/google/credentials/path \

@@ -19,16 +19,26 @@
 
 This script will query BigQuery for each raw table defined in the ingest view and filter on the person external IDs
 provided. It can take multiple person external IDs and multiple person external ID column names. It can filter
-a table by one or more column names provided, this is useful if there is a table with multiple external ID columns,
-like US_PA. The output will be CSV fixtures for each raw data table referenced in the ingest view, with randomized
-values for the columns listed in the `columns_to_randomize` option. The script will produce the same
-randomized value for matching values across each of the raw data fixtures. List all PII columns for this option.
+a table by one or more column names provided, which is useful if there is a table with multiple external ID columns,
+like US_PA. The script optionally takes a list of tables that should be generated in full, e.g. tables in the raw data
+that exist only to list possible code values for another table, like in US_ME.
 
-It optionally takes a list of tables that should be generated in full.
+The output will be CSV fixtures for each raw data table referenced in the ingest view, with randomized
+values for the columns listed in the `columns_to_randomize` option. The script will produce the same
+randomized value for matching values across each of the raw data fixtures.
+
+YOU MUST LIST ALL PII COLUMNS FOR THIS `columns_to_randomize` OPTION. Not just identifiers, but anything that is
+personally identifiable should be randomized as part of usage of this script. If you are unsure as to what constitutes
+PII, please reach out to a teammate to discuss.
+
+The optional `randomized_values_map` can be used to explicitly define what you want specific values found in one of the
+`columns_to_randomize` to be transformed into. Any value found in one of the `columns_to_randomize` which is not listed
+in `randomized_values_map` will be given a random value, though for non-id columns, it will not necessarily be readable.
+This makes `randomized_values_map` especially useful for non-id columns, like birthdays.
 
 Example Usage:
     python -m recidiviz.tools.ingest.testing.generate_raw_data_fixtures_from_bq --region_code US_XX \
-    --columns_to_randomize Person_Id_Column First_Name Last_Name\
+    --columns_to_randomize Person_Id_Column First_Name Last_Name Birthdate\
     --person_external_id_columns Person_Id_Column Other_Person_Id_Col \
     --ingest_view_tag incarceration_periods \
     --output_filename basic \
@@ -36,7 +46,7 @@ Example Usage:
     [--file_tags_to_load_in_full CIS_3150_TRANSFER_TYPE OTHER_TABLE] \
     [--project_id GCP_PROJECT_STAGING] \
     [--overwrite True] \
-    [--randomized_values_map '{"person_id_here": "randomized_id_here"}']
+    [--randomized_values_map '{"person_id_here": "randomized_id_here", "birthdate_value_here": "randomized_date_here"}']
 """
 import argparse
 import json
