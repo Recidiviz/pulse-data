@@ -141,7 +141,7 @@ class InstanceIngestViewContents:
         self.dataset_prefix = dataset_prefix
         self._temp_results_dataset = self._build_temp_results_dataset()
 
-    def _results_dataset(self) -> str:
+    def results_dataset(self) -> str:
         """Returns the dataset of the results tables for this ingest instance."""
         dataset_prefix = f"{self.dataset_prefix}_" if self.dataset_prefix else ""
         return (
@@ -155,7 +155,7 @@ class InstanceIngestViewContents:
 
     def _build_temp_results_dataset(self) -> str:
         date_ts = datetime.datetime.utcnow().strftime("%Y%m%d")
-        return f"{self._results_dataset()}_temp_{date_ts}"
+        return f"{self.results_dataset()}_temp_{date_ts}"
 
     def _datetime_clause(self, dt: datetime.datetime) -> str:
         """Returns a datetime formatted as a BigQuery DATETIME() function."""
@@ -234,7 +234,7 @@ class InstanceIngestViewContents:
     def _ingest_view_results_address(self, ingest_view_name: str) -> BigQueryAddress:
         """Returns the address of the results table for this ingest view."""
         return BigQueryAddress(
-            dataset_id=self._results_dataset(),
+            dataset_id=self.results_dataset(),
             table_id=ingest_view_name,
         )
 
