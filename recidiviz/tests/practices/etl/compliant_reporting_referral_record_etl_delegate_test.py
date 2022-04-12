@@ -52,7 +52,7 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "clientLastName": "Mouse",
                     "dateToday": "2022-03-25",
                     "tdocId": "200",
-                    "physicalAddress": "123 fake st.",
+                    "physicalAddress": "123 fake st., Metropolis, TN 59545",
                     "convictionCounty": "123ABC",
                     "currentOffenses": ["BURGLARY", "AGGRAVATED BURGLARY"],
                     "supervisionType": "TN PROBATIONER",

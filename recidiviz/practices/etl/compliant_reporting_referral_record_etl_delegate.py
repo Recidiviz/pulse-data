@@ -106,7 +106,11 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
 
         # add nullable fields
         if "physical_address" in data:
-            new_document["physicalAddress"] = data["physical_address"]
+            # Addresses arrive in the form: "123 Fake st., Metropolis, Tn 59545
+            # This fixes the misformatted state code
+            new_document["physicalAddress"] = data["physical_address"].replace(
+                " Tn ", " TN "
+            )
 
         if "current_employer" in data:
             new_document["currentEmployer"] = data["current_employer"]
