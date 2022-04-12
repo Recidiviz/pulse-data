@@ -15,8 +15,28 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-export * from "./API";
-export * from "./ReportStore";
-export { default as rootStore } from "./RootStore";
-export * from "./StoreProvider";
-export * from "./UserStore";
+export const printDateAsMonthYear = (month: number, year: number): string => {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(Date.UTC(year, month, 1));
+};
+
+export const printReportTitle = (
+  month: number,
+  year: number,
+  frequency: "MONTHLY" | "ANNUAL"
+): string => {
+  if (frequency === "ANNUAL") {
+    return `Annual Report ${year}`;
+  }
+
+  return printDateAsMonthYear(month, year);
+};
+
+export const printElapsedDaysSinceDate = (date: number): string => {
+  const now = +new Date(Date.now());
+  const daysLapsed = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+  return `${daysLapsed} day${daysLapsed !== 1 ? "s" : ""} ago`; // '1 day ago', '0 days ago', '365 days ago'
+};

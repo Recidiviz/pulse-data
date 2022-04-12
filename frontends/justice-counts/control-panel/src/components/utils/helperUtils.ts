@@ -15,8 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-export * from "./API";
-export * from "./ReportStore";
-export { default as rootStore } from "./RootStore";
-export * from "./StoreProvider";
-export * from "./UserStore";
+// separate multiple people on a list by comma - no comma for the last person on the list
+// e.g. ['Editor 1', 'Editor 2', 'Editor 3'] would print: `Editor 1, Editor 2, Editor 3`
+export const printCommaSeparatedList = (list: string[]): string => {
+  const string = list.map((item, i) =>
+    i < list.length - 1 ? `${item}, ` : `${item}`
+  );
+  return string.join(" ");
+};

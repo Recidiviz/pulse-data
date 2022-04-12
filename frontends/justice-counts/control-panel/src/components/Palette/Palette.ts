@@ -15,8 +15,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-export * from "./API";
-export * from "./ReportStore";
-export { default as rootStore } from "./RootStore";
-export * from "./StoreProvider";
-export * from "./UserStore";
+export const palette = {
+  white: `rgba(255,255,255)`,
+  text: {
+    darkgrey: `rgba(23, 28, 43, 1)`,
+    blue: `rgba(0, 115, 229, 1)`,
+    grey: `rgba(23, 28, 43, 0.6)`,
+    green: `rgba(0, 117, 65, 1)`,
+  },
+  highlight: {
+    green: `rgba(0, 117, 65, 0.1)`,
+    blue: `rgba(0, 115, 229, 0.1)`,
+    lightgrey: `rgba(23, 28, 43, 0.1)`,
+    lightergrey: `rgba(23, 28, 43, 0.05)`,
+    dark: `rgba(23, 28, 43, 1)`,
+  },
+  line: {
+    grey: `rgba(119, 119, 119, 1)`,
+  },
+};

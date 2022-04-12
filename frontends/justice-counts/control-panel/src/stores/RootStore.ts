@@ -18,6 +18,7 @@ import { Auth0ClientOptions } from "@auth0/auth0-spa-js";
 
 import { AuthStore } from "../components/Auth";
 import API from "./API";
+import ReportStore from "./ReportStore";
 import UserStore from "./UserStore";
 
 const getAuthSettings = (): Auth0ClientOptions | undefined => {
@@ -40,12 +41,15 @@ class RootStore {
 
   userStore: UserStore;
 
+  reportStore: ReportStore;
+
   constructor() {
     this.authStore = new AuthStore({
       authSettings: getAuthSettings(),
     });
     this.api = new API(this.authStore);
     this.userStore = new UserStore(this.authStore, this.api);
+    this.reportStore = new ReportStore(this.userStore, this.api);
   }
 }
 
