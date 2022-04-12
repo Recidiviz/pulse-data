@@ -115,6 +115,10 @@ class UserAccountInterface:
         )
 
     @staticmethod
+    def get_user_by_id(session: Session, user_account_id: int) -> UserAccount:
+        return session.query(UserAccount).get(user_account_id)
+
+    @staticmethod
     def add_agency_to_user(
         session: Session, email_address: str, agency_name: str
     ) -> None:

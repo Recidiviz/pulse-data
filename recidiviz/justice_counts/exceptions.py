@@ -26,3 +26,10 @@ class JusticeCountsAuthorizationError(FlaskException):
 
     def __init__(self, code: str, description: str) -> None:
         super().__init__(code, description, HTTPStatus.UNAUTHORIZED)
+
+
+class JusticeCountsPermissionError(FlaskException):
+    """Exception for when the a user does not have the perissions to perform a certain action in the control panel."""
+
+    def __init__(self, code: str, description: str) -> None:
+        super().__init__(code, description, HTTPStatus.UNAUTHORIZED)

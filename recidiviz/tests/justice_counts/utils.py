@@ -16,12 +16,21 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 
+import datetime
 from typing import Optional
 from unittest import TestCase
 
 import pytest
 from sqlalchemy.engine import Engine
 
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    AcquisitionMethod,
+    Agency,
+    Project,
+    Report,
+    ReportStatus,
+    UserAccount,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -68,4 +77,52 @@ class JusticeCountsDatabaseTestCase(TestCase):
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
+        )
+
+
+class JusticeCountsSchemaTestObjects:
+    """Class for test schema objects"""
+
+    def __init__(self) -> None:
+        self.test_agency_A = Agency(id=1, name="Agency Alpha")
+        self.test_agency_B = Agency(id=2, name="Agency Beta")
+        self.test_user_A = UserAccount(
+            id=1,
+            name="Jane Doe",
+            auth0_user_id="auth0_id_A",
+            email_address="user@gmail.com",
+            agencies=[self.test_agency_A],
+        )
+        self.test_user_B = UserAccount(
+            id=2,
+            name="John Doe",
+            email_address="user@email.gov",
+            auth0_user_id="auth0_id_B",
+            agencies=[self.test_agency_B],
+        )
+        self.test_report_monthly = Report(
+            id=1,
+            source_id=self.test_agency_A.id,
+            type="MONTHLY",
+            instance="generated_instance_id",
+            status=ReportStatus.NOT_STARTED,
+            date_range_start=datetime.date.fromisoformat("2022-06-01"),
+            date_range_end=datetime.date.fromisoformat("2022-07-01"),
+            project=Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=AcquisitionMethod.CONTROL_PANEL,
+            created_at=datetime.date.fromisoformat("2022-05-30"),
+        )
+        self.test_report_annual = Report(
+            id=2,
+            source_id=self.test_agency_B.id,
+            type="ANNUAL",
+            instance="generated_instance_id",
+            status=ReportStatus.DRAFT,
+            date_range_start=datetime.date.fromisoformat("2022-01-01"),
+            date_range_end=datetime.date.fromisoformat("2023-01-01"),
+            modified_by=[self.test_user_B.id],
+            project=Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=AcquisitionMethod.CONTROL_PANEL,
+            last_modified_at=datetime.datetime.fromisoformat("2022-07-05T08:00:00"),
+            created_at=datetime.date.fromisoformat("2021-12-30"),
         )

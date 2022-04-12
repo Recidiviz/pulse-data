@@ -27,7 +27,10 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     UserAccount,
 )
 from recidiviz.tests.auth.utils import get_test_auth0_config
-from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
+from recidiviz.tests.justice_counts.utils import (
+    JusticeCountsDatabaseTestCase,
+    JusticeCountsSchemaTestObjects,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 
@@ -49,6 +52,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # `flask_sqlalchemy_session` sets the `scoped_session` attribute on the app,
         # even though this is not specified in the types for `app`.
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
+        self.test_schema_objects = JusticeCountsSchemaTestObjects()
         super().setUp()
 
     def get_engine(self) -> Engine:
@@ -70,6 +74,35 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             response.data,
             b"window.AUTH0_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'};",
+        )
+
+    def test_get_reports(self) -> None:
+        agency_id = 1
+        user_A = self.test_schema_objects.test_user_A
+        self.session.add_all(
+            [
+                user_A,
+                self.test_schema_objects.test_report_monthly,
+            ]
+        )
+        self.session.commit()
+        response = self.client.get(
+            f"/api/reports?user_id={user_A.id}&agency_id={agency_id}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json,
+            [
+                {
+                    "editors": [],
+                    "frequency": "MONTHLY",
+                    "id": 1,
+                    "last_modified_at": None,
+                    "month": 6,
+                    "status": "NOT_STARTED",
+                    "year": 2022,
+                }
+            ],
         )
 
     def test_create_user(self) -> None:
