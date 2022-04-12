@@ -20,7 +20,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import API from "./API";
 import UserStore from "./UserStore";
 
-interface ReportOverview {
+export interface ReportOverview {
   id: number;
   month: number;
   year: number;

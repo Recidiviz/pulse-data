@@ -81,7 +81,6 @@ export const Row = styled.div<{
   color: ${({ published }) =>
     published ? palette.text.green : palette.text.darkgrey};
   transition: 0.3s ease;
-
   &:hover {
     ${({ noHover }) =>
       noHover
