@@ -152,12 +152,6 @@ class Source(JusticeCountsBase):
     # in this case, either "source" or "agency".
     type = Column(String(255))
 
-    # Type is the "discriminator" column, and is configured to act as such by the
-    # "mapper.polymorphic_on" parameter (see below).
-    # This column will store a value which indicates the type of object represented within the row;
-    # in this case, either "source" or "agency".
-    type = Column(String(255))
-
     __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(name)])
 
     # We use SQLAlchemy's single table inheritance (https://docs.sqlalchemy.org/en/14/orm/inheritance.html)
