@@ -170,7 +170,10 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 1 AS drug_screen,
         FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
         -- Limit to DRU% (DRUN,DRUM, etc) type contacts in the last 12 months 
-        WHERE DATE_DIFF(CURRENT_DATE,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE),MONTH)<=12
+        -- While the policy technically states the test must have been passed within the last 12 months, increasing the lookback
+        -- window allows us to include people on the margin of eligibility who may have received a negative drug screen
+        -- just before the 12 month cutoff
+        WHERE DATE_DIFF(CURRENT_DATE,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE),DAY)<=395
         AND ContactNoteType LIKE '%DRU%'
     ),
     -- This CTE calculates total drug screens and total negative screens in the past year
