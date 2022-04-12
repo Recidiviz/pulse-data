@@ -37,18 +37,15 @@ class ReportStore {
 
   reports: ReportOverview[];
 
-  filteredReports: ReportOverview[];
-
   constructor(userStore: UserStore, api: API) {
     makeAutoObservable(this);
 
     this.api = api;
     this.userStore = userStore;
     this.reports = [];
-    this.filteredReports = [];
   }
 
-  async getReports(): Promise<void> {
+  async getReports(): Promise<void | Error> {
     try {
       const response = (await this.api.request({
         path: "./mocks/reports.json",
@@ -57,11 +54,10 @@ class ReportStore {
       const allReports = await response.json();
 
       runInAction(() => {
-        this.reports = allReports.reports; // maintains a master copy of all reports retrieved
-        this.filteredReports = this.reports; // what will be updated & rendered in the view
+        this.reports = allReports.reports;
       });
     } catch (error) {
-      if (error instanceof Error) throw new Error(error.message);
+      if (error instanceof Error) return new Error(error.message);
     }
   }
 }

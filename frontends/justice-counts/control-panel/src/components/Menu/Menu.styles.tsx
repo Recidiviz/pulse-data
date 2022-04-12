@@ -39,6 +39,8 @@ export const ExtendedDropdownToggle = styled(DropdownToggle)`
 `;
 
 export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)`
+  color: ${palette.text.darkgrey};
+
   &:focus {
     background-color: transparent;
     color: ${palette.text.darkgrey};

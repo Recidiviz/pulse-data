@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { observer } from "mobx-react-lite";
-import React, { Fragment, useEffect } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 
 import {
   ArrowDownIcon,
@@ -35,11 +35,20 @@ import {
   Table,
 } from "../components/Reports";
 import {
+  normalizeString,
   printCommaSeparatedList,
   printElapsedDaysSinceDate,
   printReportTitle,
+  removeSnakeCase,
 } from "../components/utils";
 import { ReportOverview, useStore } from "../stores";
+
+enum ReportStatusFilterOption {
+  AllReports = "All Reports",
+  Draft = "Draft",
+  Published = "Published",
+  NotStarted = "Not_Started",
+}
 
 const reportListColumnTitles = [
   "Report Period",
@@ -51,6 +60,16 @@ const reportListColumnTitles = [
 const Reports: React.FC = () => {
   const { reportStore } = useStore();
 
+  const [reportsFilter, setReportsFilter] = useState<string>("allreports");
+
+  const filterReportsBy = (
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>
+  ): void => {
+    const { id } = e.target as HTMLDivElement;
+    const normalizedID = normalizeString(id);
+    setReportsFilter(normalizedID);
+  };
+
   /*
    * In a given listen of reports, we sort it in descending order (for now) and go one by one,
    * comparing the current `report.year` and the next `report.year` on the list and print a stateless
@@ -60,14 +79,14 @@ const Reports: React.FC = () => {
    */
 
   const renderReportYearRow = (
+    filteredReports: ReportOverview[],
     currentIndex: number,
     currentReportYear: number
   ): JSX.Element | undefined => {
     const indexIsLessThanListOfReports =
-      currentIndex + 1 < reportStore.filteredReports.length;
+      currentIndex + 1 < filteredReports.length;
     const nextReportYear =
-      indexIsLessThanListOfReports &&
-      reportStore.filteredReports[currentIndex + 1].year;
+      indexIsLessThanListOfReports && filteredReports[currentIndex + 1].year;
 
     if (indexIsLessThanListOfReports && nextReportYear !== currentReportYear) {
       return <Row noHover>{nextReportYear}</Row>;
@@ -79,18 +98,34 @@ const Reports: React.FC = () => {
     reportStore.getReports();
   }, [reportStore]);
 
+  const filteredReportsMemoized = React.useMemo(
+    () =>
+      reportsFilter === "allreports"
+        ? reportStore.reports
+        : reportStore.reports.filter(
+            (report) => normalizeString(report.status) === reportsFilter
+          ),
+    [reportStore.reports, reportsFilter]
+  );
+
   return (
     <>
       <ReportsHeader>
-        <ReportsPageTitle>All Reports</ReportsPageTitle>
+        <ReportsPageTitle>Reports</ReportsPageTitle>
 
         {/* Filter Reports By */}
         <FilterBar>
           <FilterOptions>
-            <FilterBy selected>All Reports</FilterBy>
-            <FilterBy>Drafts</FilterBy>
-            <FilterBy>Published</FilterBy>
-            <FilterBy>Missing</FilterBy>
+            {Object.values(ReportStatusFilterOption).map((option) => (
+              <FilterBy
+                key={option}
+                id={option}
+                selected={normalizeString(option) === reportsFilter}
+                onClick={(e) => filterReportsBy(e)}
+              >
+                {removeSnakeCase(option)}
+              </FilterBy>
+            ))}
           </FilterOptions>
 
           {/* Sort By */}
@@ -110,8 +145,8 @@ const Reports: React.FC = () => {
 
       {/* Reports List Table */}
       <Table>
-        {reportStore.filteredReports.length > 0 ? (
-          reportStore.filteredReports.map(
+        {filteredReportsMemoized.length > 0 ? (
+          filteredReportsMemoized.map(
             (report: ReportOverview, index: number) => (
               <Fragment key={report.id}>
                 <Row published={report.status === "PUBLISHED"}>
@@ -143,12 +178,16 @@ const Reports: React.FC = () => {
 
                   {/* Status */}
                   <Cell capitalize>
-                    {report.status.split("_").join(" ").toLowerCase()}
+                    {removeSnakeCase(report.status).toLowerCase()}
                   </Cell>
                 </Row>
 
                 {/* Report Year Marker */}
-                {renderReportYearRow(index, report.year)}
+                {renderReportYearRow(
+                  filteredReportsMemoized,
+                  index,
+                  report.year
+                )}
               </Fragment>
             )
           )
