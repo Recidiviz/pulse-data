@@ -30,6 +30,7 @@ from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     check_is_valid_sandbox_bucket,
     import_raw_files_to_bq_sandbox,
 )
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
@@ -53,6 +54,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     get_unprocessed_raw_files_in_bucket,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.flash_database_tools import move_ingest_view_results_to_backup
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
@@ -465,3 +467,31 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             jsonify({"rawFilesList": raw_files_list}),
             HTTPStatus.OK,
         )
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/move_ingest_view_results_to_backup",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _move_ingest_view_results_to_backup() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            move_ingest_view_results_to_backup(
+                state_code, ingest_instance, BigQueryClientImpl()
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
