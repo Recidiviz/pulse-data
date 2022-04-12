@@ -39,7 +39,7 @@ import {
   printElapsedDaysSinceDate,
   printReportTitle,
 } from "../components/utils";
-import { useStore } from "../stores";
+import { ReportOverview, useStore } from "../stores";
 
 const reportListColumnTitles = [
   "Report Period",
@@ -50,6 +50,29 @@ const reportListColumnTitles = [
 
 const Reports: React.FC = () => {
   const { reportStore } = useStore();
+
+  /*
+   * In a given listen of reports, we sort it in descending order (for now) and go one by one,
+   * comparing the current `report.year` and the next `report.year` on the list and print a stateless
+   * row of the next `report.year` on the reports list.
+   * e.g. (in descending order) compare [current report year: 2022] and [next report year: 2021],
+   * then print `2021` (because the following list of reports will be for the year 2021)
+   */
+
+  const renderReportYearRow = (
+    currentIndex: number,
+    currentReportYear: number
+  ): JSX.Element | undefined => {
+    const indexIsLessThanListOfReports =
+      currentIndex + 1 < reportStore.filteredReports.length;
+    const nextReportYear =
+      indexIsLessThanListOfReports &&
+      reportStore.filteredReports[currentIndex + 1].year;
+
+    if (indexIsLessThanListOfReports && nextReportYear !== currentReportYear) {
+      return <Row noHover>{nextReportYear}</Row>;
+    }
+  };
 
   useEffect(() => {
     // should only run once every render.
@@ -88,42 +111,47 @@ const Reports: React.FC = () => {
       {/* Reports List Table */}
       <Table>
         {reportStore.filteredReports.length > 0 ? (
-          reportStore.filteredReports.map((report, index) => (
-            <Fragment key={report.id}>
-              <Row published={report.status === "PUBLISHED"}>
-                {/* Report Period */}
-                <Cell id="report_period">
-                  {printReportTitle(
-                    report.month,
-                    report.year,
-                    report.frequency
-                  )}
-                  <Badge published={report.status === "PUBLISHED"}>
-                    {report.frequency}
-                  </Badge>
-                </Cell>
+          reportStore.filteredReports.map(
+            (report: ReportOverview, index: number) => (
+              <Fragment key={report.id}>
+                <Row published={report.status === "PUBLISHED"}>
+                  {/* Report Period */}
+                  <Cell id="report_period">
+                    {printReportTitle(
+                      report.month,
+                      report.year,
+                      report.frequency
+                    )}
+                    <Badge published={report.status === "PUBLISHED"}>
+                      {report.frequency}
+                    </Badge>
+                  </Cell>
 
-                {/* Last Modified */}
-                <Cell>
-                  {report.last_modified_at === ""
-                    ? "-"
-                    : printElapsedDaysSinceDate(+report.last_modified_at)}
-                </Cell>
+                  {/* Last Modified */}
+                  <Cell>
+                    {report.last_modified_at === ""
+                      ? "-"
+                      : printElapsedDaysSinceDate(+report.last_modified_at)}
+                  </Cell>
 
-                {/* Editors */}
-                <Cell>
-                  {report.editors.length === 0
-                    ? "-"
-                    : printCommaSeparatedList(report.editors)}
-                </Cell>
+                  {/* Editors */}
+                  <Cell>
+                    {report.editors.length === 0
+                      ? "-"
+                      : printCommaSeparatedList(report.editors)}
+                  </Cell>
 
-                {/* Status */}
-                <Cell capitalize>
-                  {report.status.split("_").join(" ").toLowerCase()}
-                </Cell>
-              </Row>
-            </Fragment>
-          ))
+                  {/* Status */}
+                  <Cell capitalize>
+                    {report.status.split("_").join(" ").toLowerCase()}
+                  </Cell>
+                </Row>
+
+                {/* Report Year Marker */}
+                {renderReportYearRow(index, report.year)}
+              </Fragment>
+            )
+          )
         ) : (
           <NoReportsDisplay>No reports to display.</NoReportsDisplay>
         )}
