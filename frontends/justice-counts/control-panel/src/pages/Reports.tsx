@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
+import { observer } from "mobx-react-lite";
+import React, { Fragment, useEffect } from "react";
 
 import {
   ArrowDownIcon,
@@ -26,19 +27,41 @@ import {
   FilterOptions,
   Label,
   LabelRow,
+  NoReportsDisplay,
   ReportsHeader,
   ReportsPageTitle,
   Row,
   SortBy,
   Table,
 } from "../components/Reports";
+import {
+  printCommaSeparatedList,
+  printElapsedDaysSinceDate,
+  printReportTitle,
+} from "../components/utils";
+import { useStore } from "../stores";
+
+const reportListColumnTitles = [
+  "Report Period",
+  "Last Modified",
+  "Editors",
+  "Status",
+];
 
 const Reports: React.FC = () => {
+  const { reportStore } = useStore();
+
+  useEffect(() => {
+    // should only run once every render.
+    reportStore.getReports();
+  }, [reportStore]);
+
   return (
     <>
       <ReportsHeader>
         <ReportsPageTitle>All Reports</ReportsPageTitle>
 
+        {/* Filter Reports By */}
         <FilterBar>
           <FilterOptions>
             <FilterBy selected>All Reports</FilterBy>
@@ -47,52 +70,66 @@ const Reports: React.FC = () => {
             <FilterBy>Missing</FilterBy>
           </FilterOptions>
 
+          {/* Sort By */}
           <SortBy>
             Sort by Reporting Period
             <ArrowDownIcon />
           </SortBy>
         </FilterBar>
 
+        {/* Labels */}
         <LabelRow>
-          <Label>Report Period</Label>
-          <Label>Last Modified</Label>
-          <Label>Editors</Label>
-          <Label>Status</Label>
+          {reportListColumnTitles.map((title) => (
+            <Label key={title}>{title}</Label>
+          ))}
         </LabelRow>
       </ReportsHeader>
 
+      {/* Reports List Table */}
       <Table>
-        <Row>
-          <Cell>
-            March 2022 <Badge>Monthly</Badge>
-          </Cell>
+        {reportStore.filteredReports.length > 0 ? (
+          reportStore.filteredReports.map((report, index) => (
+            <Fragment key={report.id}>
+              <Row published={report.status === "PUBLISHED"}>
+                {/* Report Period */}
+                <Cell id="report_period">
+                  {printReportTitle(
+                    report.month,
+                    report.year,
+                    report.frequency
+                  )}
+                  <Badge published={report.status === "PUBLISHED"}>
+                    {report.frequency}
+                  </Badge>
+                </Cell>
 
-          <Cell>1 day ago</Cell>
-          <Cell>Jody Weston</Cell>
-          <Cell>Draft</Cell>
-        </Row>
+                {/* Last Modified */}
+                <Cell>
+                  {report.last_modified_at === ""
+                    ? "-"
+                    : printElapsedDaysSinceDate(+report.last_modified_at)}
+                </Cell>
 
-        <Row>
-          <Cell>
-            February 2022 <Badge>Monthly</Badge>
-          </Cell>
-          <Cell>17 days ago</Cell>
-          <Cell>Jody Weston</Cell>
-          <Cell>Draft</Cell>
-        </Row>
+                {/* Editors */}
+                <Cell>
+                  {report.editors.length === 0
+                    ? "-"
+                    : printCommaSeparatedList(report.editors)}
+                </Cell>
 
-        <Row published>
-          <Cell>
-            Annual Report 2021
-            <Badge published>Annual</Badge>
-          </Cell>
-          <Cell>35 days ago</Cell>
-          <Cell>Jody Weston</Cell>
-          <Cell>Published</Cell>
-        </Row>
+                {/* Status */}
+                <Cell capitalize>
+                  {report.status.split("_").join(" ").toLowerCase()}
+                </Cell>
+              </Row>
+            </Fragment>
+          ))
+        ) : (
+          <NoReportsDisplay>No reports to display.</NoReportsDisplay>
+        )}
       </Table>
     </>
   );
 };
 
-export default Reports;
+export default observer(Reports);
