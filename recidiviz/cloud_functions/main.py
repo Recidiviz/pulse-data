@@ -46,7 +46,6 @@ _DIRECT_INGEST_PATH = "/direct/handle_direct_ingest_file"
 _DIRECT_INGEST_NORMALIZE_RAW_PATH_PATH = "/direct/normalize_raw_file_path"
 
 _METRIC_VIEW_EXPORT_PATH = "/export/create_metric_view_data_export_tasks"
-_APP_ENGINE_UPDATE_AUTH0_USER_METADATA_PATH = "/auth/update_auth0_user_metadata"
 _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH = (
     "/auth/handle_import_user_restrictions_csv_to_sql"
 )
@@ -243,18 +242,6 @@ def handle_state_dashboard_user_restrictions_file(
             import_user_restrictions_url,
             response.status_code,
         )
-
-        if response.status_code == HTTPStatus.OK:
-            update_users_url = _build_url(
-                project_id,
-                _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_PATH,
-                {"region_code": region_code},
-            )
-            # Hit the App Engine endpoint `auth/update_auth0_user_metadata`.
-            response = make_iap_request(update_users_url, IAP_CLIENT_ID[project_id])
-            logging.info(
-                "The %s response status is %s", update_users_url, response.status_code
-            )
 
     return "", HTTPStatus.OK
 
