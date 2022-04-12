@@ -8,6 +8,12 @@ To run the app locally, you need to spin up both the backend and frontend simult
 
 ## Setting up your environment
 
+### Aliases
+
+See the [scripts] section of our Pipfile for some useful aliases, all of which can be run via `pipenv run <name>` (e.g. `pipenv run docker-jc`).
+
+### Development secrets
+
 The following application secrets are stored in Google Secrets Manager (GSM):
 
 - justice_counts_auth0: A JSON blob containing Auth0 clientID, audience, domain, and algorithm
@@ -29,11 +35,15 @@ First build the Docker image:
 docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest
 ```
 
+(Or equivalently, `pipenv run docker-build`.)
+
 Then run `docker-compose`:
 
 ```bash
 docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up
 ```
+
+(Or equivalently, `pipenv run docker-jc`.)
 
 We use `docker-compose` to run all services that the app depends on. This includes:
 

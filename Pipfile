@@ -188,3 +188,13 @@ pysftp = "*"
 
 [requires]
 python_version = "3.8"
+
+[scripts] 
+# Run via `pipenv run <name>`
+pylint = "./recidiviz/tools/lint/run_pylint.sh"
+docker-build = "docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest"
+cloudsql = "./recidiviz/tools/postgres/access_cloudsql_instance.sh"
+# Specific to Justice Counts team
+docker-jc = "docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up"
+fixtures-jc = "python -m recidiviz.tools.justice_counts.control_panel.load_fixtures"
+migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --database JUSTICE_COUNTS --message "
