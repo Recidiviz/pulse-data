@@ -17,7 +17,7 @@
 """Delegate class to ETL compliant reporting referral records for practices into Firestore."""
 import json
 import logging
-from typing import Tuple
+from typing import Optional, Tuple
 
 from recidiviz.practices.etl.practices_etl_delegate import PracticesFirestoreETLDelegate
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -31,8 +31,11 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
     EXPORT_FILENAME = "compliant_reporting_referral_record.json"
     COLLECTION_NAME = "compliantReportingReferrals"
 
-    def transform_row(self, row: str) -> Tuple[str, dict]:
+    def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
+
+        if "compliant_reporting_eligible" not in data:
+            return None, None
 
         # First fill the non-nullable fields
         new_document = {

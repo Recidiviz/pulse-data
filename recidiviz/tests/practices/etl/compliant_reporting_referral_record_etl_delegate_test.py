@@ -168,3 +168,8 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingFswCurrent": False,
                 },
             )
+
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertIsNone(doc_id)
+            self.assertIsNone(row)
