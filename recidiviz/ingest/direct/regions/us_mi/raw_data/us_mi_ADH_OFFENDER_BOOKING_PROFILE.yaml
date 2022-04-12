@@ -11,6 +11,9 @@ columns:
     description: The OMNI-database generated ID for a person's jurisdiction in MDOC.
   - name: profile_date
     description: The date that a given profile for a given offender_booking_id is updated.
+    is_datetime: True
+    datetime_sql_parsers: 
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
   - name: living_unit_id
   - name: eye_color_id
   - name: hair_color_id

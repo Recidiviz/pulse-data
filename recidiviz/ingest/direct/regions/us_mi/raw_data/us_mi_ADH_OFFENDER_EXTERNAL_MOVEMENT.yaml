@@ -17,11 +17,17 @@ columns:
       The location id that indicates where the person moved from (referenced from LOCATION)
   - name: movement_date
     description: When the movement occurred
+    is_datetime: True
+    datetime_sql_parsers: 
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
   - name: destination_location_id
     description: |-
       The location id that indicates where the person moved to (referenced from LOCATION)
   - name: reporting_date
     description: When this movement was reported
+    is_datetime: True
+    datetime_sql_parsers: 
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
   - name: movement_reason_id
     description: The id indicating the movement reason (referenced from MOVEMENT_REASON)
   - name: escort_id

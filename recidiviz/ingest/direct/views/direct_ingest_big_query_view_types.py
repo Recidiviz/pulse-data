@@ -162,13 +162,19 @@ FROM rows_with_recency_rank
 WHERE recency_rank = 1
 """
 
-DATETIME_COL_NORMALIZATION_TEMPLATE = """
+DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE = """
         COALESCE(
             CAST(SAFE_CAST({col_name} AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', {col_name}) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', {col_name}) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', {col_name}) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name}) AS DATETIME) AS STRING),
+            {col_name}
+        ) AS {col_name}"""
+DATETIME_SQL_CAST_TEMPLATE = """
+            CAST(SAFE_CAST({col_sql} AS DATETIME) AS STRING),"""
+DATETIME_COL_NORMALIZATION_TEMPLATE = """
+        COALESCE({datetime_casts}
             {col_name}
         ) AS {col_name}"""
 
@@ -291,9 +297,25 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
             ", ".join(
                 [
                     StrictStringFormatter().format(
-                        DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=col_name
+                        DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=col_name
                     )
-                    for col_name in datetime_cols_to_format
+                    if not col_sql_opt
+                    else StrictStringFormatter().format(
+                        DATETIME_COL_NORMALIZATION_TEMPLATE,
+                        col_name=col_name,
+                        datetime_casts="".join(
+                            [
+                                StrictStringFormatter().format(
+                                    DATETIME_SQL_CAST_TEMPLATE,
+                                    col_sql=StrictStringFormatter().format(
+                                        col_sql, col_name=col_name
+                                    ),
+                                )
+                                for col_sql in col_sql_opt
+                            ]
+                        ),
+                    )
+                    for col_name, col_sql_opt in datetime_cols_to_format
                 ]
             )
         )

@@ -23,9 +23,7 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REGEX = r"\:\d\d\d.*"
-
-VIEW_QUERY_TEMPLATE = f"""
+VIEW_QUERY_TEMPLATE = """
 WITH
   offender_name_max_seq AS (
     SELECT
@@ -40,7 +38,7 @@ WITH
       SELECT *, 
         ROW_NUMBER() OVER (PARTITION BY offender_id 
           ORDER BY SAFE_CAST(sequence_number AS INT64) DESC) AS seq_number_order
-        FROM {{ADH_OFFENDER_NAME}}
+        FROM {ADH_OFFENDER_NAME}
     ) AS o
     WHERE seq_number_order = 1
   ),
@@ -51,10 +49,9 @@ WITH
     FROM (
       SELECT *, 
         ROW_NUMBER() OVER (PARTITION BY offender_id 
-          -- Translating dates from the format of 'Month Day Year HH:mm:ss:fffAM' to 'YYYY-MM-DDTHH:mm:ss'
-          ORDER BY PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(begin_date, r'{REGEX}', '')) DESC
+          ORDER BY begin_date DESC
       ) AS booking_order 
-      FROM {{ADH_OFFENDER_BOOKING}}
+      FROM {ADH_OFFENDER_BOOKING}
     ) AS b
     WHERE booking_order = 1),
   latest_profiles AS (
@@ -71,10 +68,9 @@ WITH
     FROM (
       SELECT *, 
         ROW_NUMBER() OVER (PARTITION BY offender_booking_id 
-          -- Translating dates from the format of 'Month Day Year HH:mm:ss:fffAM' to 'YYYY-MM-DDTHH:mm:ss'
-          ORDER BY PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(profile_date, r'{REGEX}', '')) DESC
+          ORDER BY profile_date DESC
         ) AS profile_order
-      FROM {{ADH_OFFENDER_BOOKING_PROFILE}}
+      FROM {ADH_OFFENDER_BOOKING_PROFILE}
       -- TODO(#11580) Remove this check once everything for MI is parsing correctly
       WHERE SAFE_CAST(offender_booking_id AS INT64) IS NOT NULL
     ) AS p
@@ -87,8 +83,7 @@ SELECT
   first_name,
   middle_name,
   name_suffix,
-  -- Translating dates from the format of 'Month Day Year HH:mm:ss:fffAM' to 'YYYY-MM-DDTHH:mm:ss'
-  DATE(PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(n.birth_date, r'{REGEX}', ''))) AS birth_date,
+  n.birth_date,
   sex_id,
   cultural_affiliation_id,
   multiracial_flag,
@@ -99,7 +94,7 @@ SELECT
   hispanic_flag,
   racial_identification_code_id
 FROM
-  {{ADH_OFFENDER}} ids
+  {ADH_OFFENDER} ids
 LEFT JOIN
   offender_name_max_seq n
 ON
