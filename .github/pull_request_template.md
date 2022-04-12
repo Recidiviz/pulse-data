@@ -20,6 +20,9 @@ Closes #XXXX
 
 ### Development
 
+**This box MUST be checked by the submitter prior to merging**:
+- [ ] **Double- and triple-checked that there is no Personally Identifiable Information (PII) being mistakenly added in this pull request**
+
 These boxes should be checked by the submitter prior to merging:
 - [ ] Tests have been written to cover the code changed/added as part of this pull request
 
