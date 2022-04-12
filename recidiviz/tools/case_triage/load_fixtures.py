@@ -24,7 +24,7 @@ This will delete everything from the etl_* tables and then re-add them from the
 fixture files.
 
 Usage against default development database:
-SQLALCHEMY_DB_NAME=case_triage python -m recidiviz.tools.case_triage.load_fixtures
+python -m recidiviz.tools.case_triage.load_fixtures
 
 Usage against non-default development database:
 SQLALCHEMY_DB_HOST="" SQLALCHEMY_DB_USER="" SQLALCHEMY_DB_PASSWORD="" SQLALCHEMY_DB_NAME="" \
@@ -36,8 +36,12 @@ from recidiviz.case_triage.views.view_config import ETL_TABLES
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 
 
-def reset_case_triage_fixtures() -> None:
+def reset_case_triage_fixtures(in_test: bool = False) -> None:
     """Deletes all ETL data and re-imports data from our fixture files"""
+
+    if not in_test:
+        os.environ["SQLALCHEMY_DB_NAME"] = "case_triage"
+
     reset_fixtures(
         tables=ETL_TABLES,
         fixture_directory=os.path.join(

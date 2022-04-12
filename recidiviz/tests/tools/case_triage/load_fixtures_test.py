@@ -82,7 +82,7 @@ class TestLoadFixtures(TestCase):
 
     def test_load_fixtures_succeeds(self) -> None:
         # First order of business, this shouldn't crash.
-        reset_case_triage_fixtures()
+        reset_case_triage_fixtures(in_test=True)
 
         # Make sure values are actually written to the tables we know about.
         with SessionFactory.using_database(

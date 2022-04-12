@@ -24,7 +24,7 @@ This will delete everything from the tables and then re-add them from the
 fixture files.
 
 Usage against default development database:
-SQLALCHEMY_DB_NAME=justice_counts python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
+python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 
 Usage against non-default development database:
 SQLALCHEMY_DB_HOST="" SQLALCHEMY_DB_USER="" SQLALCHEMY_DB_PASSWORD="" SQLALCHEMY_DB_NAME="" \
@@ -36,8 +36,11 @@ from recidiviz.persistence.database.schema.justice_counts.schema import Report, 
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 
 
-def reset_justice_counts_fixtures() -> None:
+def reset_justice_counts_fixtures(in_test: bool = False) -> None:
     """Deletes all data and then re-imports data from our fixture files."""
+    if not in_test:
+        os.environ["SQLALCHEMY_DB_NAME"] = "justice_counts"
+
     reset_fixtures(
         # TODO(#11588): Add fixture data for all Justice Counts schema tables
         tables=[Source, Report],

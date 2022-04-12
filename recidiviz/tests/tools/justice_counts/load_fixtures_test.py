@@ -29,7 +29,7 @@ class TestJusticeCountsLoadFixtures(JusticeCountsDatabaseTestCase):
 
     def test_load_fixtures_succeeds(self) -> None:
         # Clear DB and then load in fixture data
-        reset_justice_counts_fixtures()
+        reset_justice_counts_fixtures(in_test=True)
 
         # Assert that DB is now non-empty
         with SessionFactory.using_database(
