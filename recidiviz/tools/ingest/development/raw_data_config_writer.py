@@ -58,11 +58,16 @@ class RawDataConfigWriter:
             return ""
 
         column_string = f"  - name: {column.name}"
-        if column.is_datetime:
-            column_string += "\n    is_datetime: True"
         if column.description:
             column_description_string = "\n      ".join(column.description.splitlines())
             column_string += f"\n    description: |-\n      {column_description_string}"
+        if column.is_datetime:
+            column_string += "\n    is_datetime: True"
+        if column.datetime_sql_parsers:
+            column_string += "\n    datetime_sql_parsers:"
+            for parser in column.datetime_sql_parsers:
+                column_datetime_sql_str = parser.replace("\\", "\\\\")
+                column_string += f'\n      - "{column_datetime_sql_str}"'
         if column.is_enum:
             column_string += self._get_known_values_config_string(column)
         return column_string

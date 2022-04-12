@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for types defined in direct_ingest_big_query_view_types_test.py"""
+# pylint: disable=anomalous-backslash-in-string
 import unittest
 
 import attr
@@ -185,6 +186,14 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                         name="col2", is_datetime=True, description="col2 description"
                     ),
                     RawTableColumnInfo(
+                        name="col3",
+                        is_datetime=True,
+                        description="col3 description",
+                        datetime_sql_parsers=[
+                            "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
+                        ],
+                    ),
+                    RawTableColumnInfo(
                         name="undocumented_column", is_datetime=True, description=None
                     ),
                 ],
@@ -214,6 +223,10 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             col2
         ) AS col2, 
         COALESCE(
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            col3
+        ) AS col3, 
+        COALESCE(
             CAST(SAFE_CAST(undocumented_column AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', undocumented_column) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', undocumented_column) AS DATETIME) AS STRING),
@@ -228,7 +241,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_primary_key_str="col1",
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
-            columns_clause="col1, col2",
+            columns_clause="col1, col2, col3",
             normalized_columns=f"col1, update_datetime, {expected_datetime_cols_clause}",
             supplemental_order_by_clause="",
         )

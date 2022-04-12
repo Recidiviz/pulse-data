@@ -1,0 +1,12 @@
+file_tag: badDatetimeSqlParsingNoColName
+file_description: |-
+  bad datetime configuration file with no {col_name}
+data_classification: source
+primary_key_cols:
+  - col1
+columns:
+  - name: col1
+  - name: bad_date
+    is_datetime: True
+    datetime_sql_parsers: 
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(column, r'\\:\\d\\d\\d.*', ''))"

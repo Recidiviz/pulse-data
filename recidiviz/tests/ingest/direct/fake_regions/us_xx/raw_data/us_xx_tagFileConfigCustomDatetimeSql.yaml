@@ -1,0 +1,12 @@
+file_tag: tagFileConfigCustomDatetimeSql
+file_description: |-
+  Testing custom datetime sql parsing associated with the datetime field
+data_classification: source
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+  - name: COL2
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"

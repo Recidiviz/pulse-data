@@ -19,6 +19,7 @@ import csv
 import datetime
 import logging
 import os
+import re
 from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -66,6 +67,10 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestRawFile
 from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
+DATETIME_SQL_REGEX = re.compile(
+    r"SAFE.PARSE_(TIMESTAMP|DATE|DATETIME)\(.*{col_name}.*\)"
+)
+
 
 class RawDataClassification(Enum):
     """Defines whether this is source or validation data.
@@ -96,7 +101,7 @@ class RawTableColumnInfo:
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # True if a column is a date/time
-    is_datetime: bool = attr.ib(validator=attr.validators.instance_of(bool))
+    is_datetime: bool = attr.ib(validator=attr_validators.is_bool)
     # Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a
     # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
@@ -104,6 +109,41 @@ class RawTableColumnInfo:
     known_values: Optional[List[ColumnEnumValueInfo]] = attr.ib(
         default=None, validator=attr_validators.is_opt_list
     )
+    # Describes the SQL parsers needed to parse the datetime string appropriately.
+    # It should contain the string literal {col_name} and follow the format with the
+    # SAFE.PARSE_TIMESTAMP('[insert your time format st]', [some expression w/ {col_name}]).
+    # SAFE.PARSE_DATE or SAFE.PARSE_DATETIME can also be used.
+    # See recidiviz.ingest.direct.views.direct_ingest_big_query_view_types.DATETIME_COL_NORMALIZATION_TEMPLATE
+    datetime_sql_parsers: Optional[List[str]] = attr.ib(
+        default=None, validator=attr_validators.is_opt_list
+    )
+
+    def __attrs_post_init__(self) -> None:
+        self._validate_datetime_sql_parsers()
+
+    def _validate_datetime_sql_parsers(self) -> None:
+        """Validates the datetime_sql field by ensuring that is_datetime is set to True
+        and the correct string literals are contained within the string."""
+        if not self.is_datetime and self.datetime_sql_parsers:
+            raise ValueError(
+                f"Expected datetime_sql_parsers to be null if is_datetime is False for {self.name}"
+            )
+        # TODO(#12174) Enforce that is self.is_datetime is True, that datetime_sql_parsers exist.
+        if self.datetime_sql_parsers:
+            for parser in self.datetime_sql_parsers:
+                if "{col_name}" not in parser:
+                    raise ValueError(
+                        "Expected datetime_sql_parser to have the string literal {col_name}"
+                        f"for {self.name}: {parser}"
+                    )
+                if not re.match(
+                    DATETIME_SQL_REGEX,
+                    parser.strip(),
+                ):
+                    raise ValueError(
+                        f"Expected datetime_sql_parser must match expected timestamp parsing formats for {self.name}. Current parser: {parser}"
+                        "See recidiviz.ingest.direct.views.direct_ingest_big_query_view_types.DATETIME_COL_NORMALIZATION_TEMPLATE"
+                    )
 
     @property
     def is_enum(self) -> bool:
@@ -216,9 +256,9 @@ class DirectIngestRawFileConfig:
         return [column for column in self.columns if column.description]
 
     @property
-    def available_datetime_cols(self) -> List[str]:
+    def available_datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
         return [
-            column.name
+            (column.name, column.datetime_sql_parsers)
             for column in self.columns
             if column.is_datetime and column.description
         ]
@@ -236,8 +276,12 @@ class DirectIngestRawFileConfig:
         return [column.name for column in self.columns if not column.is_datetime]
 
     @property
-    def datetime_cols(self) -> List[str]:
-        return [column.name for column in self.columns if column.is_datetime]
+    def datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
+        return [
+            (column.name, column.datetime_sql_parsers)
+            for column in self.columns
+            if column.is_datetime
+        ]
 
     @property
     def has_enums(self) -> bool:
@@ -333,6 +377,9 @@ class DirectIngestRawFileConfig:
                         for x in column["known_values"]
                     ]
                     if "known_values" in column
+                    else None,
+                    datetime_sql_parsers=list(column["datetime_sql_parsers"])
+                    if "datetime_sql_parsers" in column
                     else None,
                 )
                 for column in columns
