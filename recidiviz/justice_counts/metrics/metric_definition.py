@@ -16,6 +16,8 @@
 # =============================================================================
 """Base class for official Justice Counts metrics."""
 
+
+import enum
 from typing import List, Optional, Type
 
 import attr
@@ -25,9 +27,13 @@ from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
-    ReportingFrequency,
     System,
 )
+
+
+class ReportingFrequency(enum.Enum):
+    ANNUALLY = "ANNUALLY"
+    MONTHLY = "MONTHLY"
 
 
 @attr.define()
