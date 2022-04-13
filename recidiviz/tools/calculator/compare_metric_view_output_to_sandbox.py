@@ -208,14 +208,9 @@ def compare_metric_view_output_to_sandbox(
                 f"{bq_client.project_id}.{sandbox_dataset_id}"
             )
 
-        if view_builder.should_materialize and not check_determinism:
-            view = view_builder.build()
-            if not view.materialized_address:
-                raise ValueError(
-                    f"Unexpected empty materialized_address for " f"{view_builder}."
-                )
-            base_dataset_id = view.materialized_address.dataset_id
-            base_view_id = view.materialized_address.table_id
+        if view_builder.materialized_address and not check_determinism:
+            base_dataset_id = view_builder.materialized_address.dataset_id
+            base_view_id = view_builder.materialized_address.table_id
         else:
             base_dataset_id, base_view_id = (
                 view_builder.dataset_id,

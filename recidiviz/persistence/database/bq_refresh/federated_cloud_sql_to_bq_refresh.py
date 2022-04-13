@@ -229,9 +229,14 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.dataset_id = config.unioned_regional_dataset(dataset_override_prefix=None)
         self.view_id = f"{table.name}_view"
         self.projects_to_deploy = None
-        self.materialized_address_override = BigQueryAddress(
+        self.materialized_address = self._build_materialized_address(
             dataset_id=self.dataset_id,
-            table_id=table.name,
+            view_id=self.view_id,
+            materialized_address_override=BigQueryAddress(
+                dataset_id=self.dataset_id,
+                table_id=table.name,
+            ),
+            should_materialize=True,
         )
 
     def _build(
@@ -247,12 +252,11 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
-            materialized_address_override=self.materialized_address_override,
+            materialized_address=self.materialized_address,
             dataset_overrides=dataset_overrides,
             description=f"A view that unions the contents of the [{self.table.name}] "
             f"across all state segments.",
             view_query_template=table_union_query_fmt,
-            should_materialize=True,
             clustering_fields=None,
             **kwargs,
         )

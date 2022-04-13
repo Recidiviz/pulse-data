@@ -42,7 +42,7 @@ from mock import call, create_autospec
 from recidiviz.big_query import big_query_client
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
 
@@ -79,13 +79,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.job_config = bigquery.CopyJobConfig()
         self.mock_job_config.return_value = self.job_config
 
-        self.mock_view = BigQueryView(
+        self.mock_view = SimpleBigQueryViewBuilder(
             dataset_id=self.mock_dataset_id,
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
-        )
+        ).build()
 
         self.bq_client = BigQueryClientImpl()
 
@@ -586,7 +586,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table = create_autospec(bigquery.Table)
         self.mock_client.get_table.return_value = mock_table
 
-        mock_view = BigQueryView(
+        mock_view = SimpleBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="test_view",
             description="test_view description",
@@ -595,7 +595,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             materialized_address_override=BigQueryAddress(
                 dataset_id="custom_dataset", table_id="custom_view"
             ),
-        )
+        ).build()
 
         self.bq_client.materialize_view_to_table(mock_view)
 
@@ -618,13 +618,13 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_materialize_view_to_table_no_materialized_address(self) -> None:
         """Tests that the materialize_view_to_table function does not call the function to create a table from a
         query if there is no set materialized_address on the view."""
-        invalid_view = BigQueryView(
+        invalid_view = SimpleBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=False,
-        )
+        ).build()
 
         with self.assertRaises(ValueError):
             self.bq_client.materialize_view_to_table(invalid_view)

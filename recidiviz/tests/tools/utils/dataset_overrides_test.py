@@ -45,8 +45,8 @@ class TestDatasetOverrides(unittest.TestCase):
         datasets = set()
         for builder in builders:
             datasets.add(builder.dataset_id)
-            if builder.materialized_address_override:
-                datasets.add(builder.materialized_address_override.dataset_id)
+            if builder.materialized_address:
+                datasets.add(builder.materialized_address.dataset_id)
         return datasets
 
     def test_dataset_overrides_for_view_builders(self) -> None:

@@ -27,7 +27,11 @@ from unittest.mock import patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryView,
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
@@ -70,19 +74,19 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         #   /   \
         #  4     5
         self.x_shaped_dag_views_list = [
-            BigQueryView(
+            SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
                 view_id="table_1",
                 description="table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-            ),
-            BigQueryView(
+            ).build(),
+            SimpleBigQueryViewBuilder(
                 dataset_id="dataset_2",
                 view_id="table_2",
                 description="table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-            ),
-            BigQueryView(
+            ).build(),
+            SimpleBigQueryViewBuilder(
                 dataset_id="dataset_3",
                 view_id="table_3",
                 description="table_3 description",
@@ -90,21 +94,21 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
-            ),
-            BigQueryView(
+            ).build(),
+            SimpleBigQueryViewBuilder(
                 dataset_id="dataset_4",
                 view_id="table_4",
                 description="table_4 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-            ),
-            BigQueryView(
+            ).build(),
+            SimpleBigQueryViewBuilder(
                 dataset_id="dataset_5",
                 view_id="table_5",
                 description="table_5 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-            ),
+            ).build(),
         ]
 
         # Views forming a DAG with a diamond in it:
@@ -117,7 +121,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         #     6
         self.diamond_shaped_dag_views_list = self.x_shaped_dag_views_list.copy()
         self.diamond_shaped_dag_views_list.append(
-            BigQueryView(
+            SimpleBigQueryViewBuilder(
                 dataset_id="dataset_6",
                 view_id="table_6",
                 description="table_6 description",
@@ -125,7 +129,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_4.table_4`
             JOIN `{project_id}.dataset_5.table_5`
             USING (col)""",
-            )
+            ).build()
         )
 
     def tearDown(self) -> None:
@@ -373,18 +377,18 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(len(self.all_views), len(result))
 
     def test_dag_with_cycle_at_root(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-        )
+        ).build()
 
         with self.assertRaisesRegex(
             ValueError, "^No roots detected. Input views contain a cycle.$"
@@ -392,25 +396,25 @@ The following views have less restrictive projects_to_deploy than their parents:
             _ = BigQueryViewDagWalker([view_1, view_2])
 
     def test_dag_with_cycle_at_root_with_other_valid_dag(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-        )
+        ).build()
 
-        view_3 = BigQueryView(
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
+        ).build()
 
         with self.assertRaisesRegex(
             ValueError,
@@ -420,13 +424,13 @@ The following views have less restrictive projects_to_deploy than their parents:
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
     def test_dag_with_cycle_after_root(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
@@ -434,13 +438,13 @@ The following views have less restrictive projects_to_deploy than their parents:
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_3.table_3`
             USING (col)""",
-        )
-        view_3 = BigQueryView(
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
-        )
+        ).build()
         with self.assertRaisesRegex(
             ValueError,
             r"^Detected cycle in graph reachable from \('dataset_1', 'table_1'\): "
@@ -449,19 +453,19 @@ The following views have less restrictive projects_to_deploy than their parents:
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
     def test_dag_no_cycle(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_3 = BigQueryView(
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -469,7 +473,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
-        )
+        ).build()
         _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
     def test_populate_node_family_full_parentage(self) -> None:
@@ -795,19 +799,19 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertCountEqual(expected_views, sub_dag.views)
 
     def test_populate_node_family_full_parentage_complex_dependencies(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-        )
-        view_3 = BigQueryView(
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -815,8 +819,8 @@ The following views have less restrictive projects_to_deploy than their parents:
                            SELECT * FROM `{project_id}.dataset_1.table_1`
                            JOIN `{project_id}.dataset_2.table_2`
                            USING (col)""",
-        )
-        view_4 = BigQueryView(
+        ).build()
+        view_4 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_4",
             view_id="table_4",
             description="table_4 description",
@@ -824,7 +828,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                            SELECT * FROM `{project_id}.dataset_2.table_2`
                            JOIN `{project_id}.dataset_3.table_3`
                            USING (col)""",
-        )
+        ).build()
 
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4])
         start_node = dag_walker.node_for_view(view_4)
@@ -845,19 +849,19 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(expected_parent_nodes, start_node.node_family.full_parentage)
 
     def test_populate_node_family_parentage_dfs_tree_str(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_3 = BigQueryView(
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -865,21 +869,21 @@ The following views have less restrictive projects_to_deploy than their parents:
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
-        )
-        view_4 = BigQueryView(
+        ).build()
+        view_4 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_4",
             view_id="table_4",
             description="table_4 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        view_5 = BigQueryView(
+        ).build()
+        view_5 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_5",
             view_id="table_5",
             description="table_5 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
+        ).build()
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4, view_5])
 
         # Top level view
@@ -934,19 +938,19 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
 
     def test_populate_node_family_descendants_dfs_tree_str(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_3 = BigQueryView(
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -954,28 +958,28 @@ The following views have less restrictive projects_to_deploy than their parents:
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
-        )
-        view_4 = BigQueryView(
+        ).build()
+        view_4 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_4",
             view_id="table_4",
             description="table_4 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        view_5 = BigQueryView(
+        ).build()
+        view_5 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_5",
             view_id="table_5",
             description="table_5 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        view_6 = BigQueryView(
+        ).build()
+        view_6 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_6",
             view_id="table_6",
             description="table_6 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_5.table_5`""",
-        )
+        ).build()
         dag_walker = BigQueryViewDagWalker(
             [view_1, view_2, view_3, view_4, view_5, view_6]
         )
@@ -1002,13 +1006,13 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(expected_tree, node.node_family.child_dfs_tree_str)
 
     def test_dag_materialized_view_clobbers_other(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
@@ -1017,7 +1021,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id=view_1.dataset_id, table_id=view_1.view_id
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
+        ).build()
         with self.assertRaisesRegex(
             ValueError,
             r"^Found materialized view address for view \[\('dataset_2', 'table_2'\)\] that "
@@ -1026,7 +1030,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             _ = BigQueryViewDagWalker([view_1, view_2])
 
     def test_dag_two_views_same_materialized_address(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
@@ -1035,8 +1039,8 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="other_dataset", table_id="other_table"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
@@ -1045,7 +1049,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="other_dataset", table_id="other_table"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
+        ).build()
         with self.assertRaisesRegex(
             ValueError,
             r"Found materialized view address for view \[\('dataset_2', 'table_2'\)\] "
@@ -1054,21 +1058,21 @@ The following views have less restrictive projects_to_deploy than their parents:
             _ = BigQueryViewDagWalker([view_1, view_2])
 
     def test_dag_parents_materialized(self) -> None:
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_3 = BigQueryView(
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -1076,7 +1080,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                 SELECT * FROM `{project_id}.dataset_1.table_1`
                 JOIN `{project_id}.dataset_2.table_2_materialized`
                 USING (col)""",
-        )
+        ).build()
         walker = BigQueryViewDagWalker([view_1, view_2, view_3])
 
         def process_simple(
@@ -1098,7 +1102,7 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_dag_parents_materialized_non_default(self) -> None:
         self.maxDiff = None
-        view_1 = BigQueryView(
+        view_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
@@ -1107,8 +1111,8 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="other_dataset_1", table_id="other_table_1"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
@@ -1117,8 +1121,8 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="other_dataset_2", table_id="other_table_2"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_3 = BigQueryView(
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -1126,7 +1130,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                 SELECT * FROM `{project_id}.dataset_1.table_1`
                 JOIN `{project_id}.other_dataset_2.other_table_2`
                 USING (col)""",
-        )
+        ).build()
         walker = BigQueryViewDagWalker([view_1, view_2, view_3])
 
         def process_simple(
@@ -1167,7 +1171,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertCountEqual([], unioned_dag.views)
 
     def test_union_dags_same_view_different_object(self) -> None:
-        view = BigQueryView(
+        view = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
@@ -1176,13 +1180,13 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="other_dataset_1", table_id="other_table_1"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
+        ).build()
 
         unioned_dag = BigQueryViewDagWalker.union_dags(
             BigQueryViewDagWalker([view]),
             BigQueryViewDagWalker(
                 [
-                    BigQueryView(
+                    SimpleBigQueryViewBuilder(
                         dataset_id="dataset_1",
                         view_id="table_1",
                         description="table_1 description",
@@ -1191,7 +1195,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                             dataset_id="other_dataset_1", table_id="other_table_1"
                         ),
                         view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-                    )
+                    ).build()
                 ]
             ),
         )
@@ -1316,12 +1320,12 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         self.project_id_patcher.stop()
 
     def test_parse_simple_view(self) -> None:
-        view = BigQueryView(
+        view = SimpleBigQueryViewBuilder(
             dataset_id="my_dataset",
             view_id="my_view_id",
             description="my view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table`",
-        )
+        ).build()
         node = BigQueryViewDagNode(view)
         self.assertIsNone(view.materialized_address)
         node.set_materialized_addresss({})
@@ -1358,19 +1362,19 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         self.assertEqual(node.child_keys, {child_key})
 
     def test_parse_view_materialized_parent(self) -> None:
-        view = BigQueryView(
+        view = SimpleBigQueryViewBuilder(
             dataset_id="my_dataset",
             view_id="my_view_id",
             description="my view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table_materialized`",
-        )
-        parent_view = BigQueryView(
+        ).build()
+        parent_view = SimpleBigQueryViewBuilder(
             dataset_id="some_dataset",
             view_id="some_table",
             description="my parent view description",
             view_query_template="SELECT * FROM UNNEST([])",
             should_materialize=True,
-        )
+        ).build()
         node = BigQueryViewDagNode(view)
         if not parent_view.materialized_address:
             raise ValueError("Null materialized_address for view [{parent_view}]")
@@ -1389,7 +1393,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         )
 
     def test_parse_view_multiple_parents(self) -> None:
-        view = BigQueryView(
+        view = SimpleBigQueryViewBuilder(
             dataset_id="my_dataset",
             view_id="my_view_id",
             description="my view description",
@@ -1397,7 +1401,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             LEFT OUTER JOIN `{project_id}.some_dataset.other_table`
             USING (some_col);
             """,
-        )
+        ).build()
         node = BigQueryViewDagNode(view)
         node.set_materialized_addresss({})
         self.assertEqual(

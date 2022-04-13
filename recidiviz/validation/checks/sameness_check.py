@@ -168,7 +168,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
             view_query_template=ERROR_ROWS_VIEW_BUILDER_TEMPLATE,
             description=self.view_builder.description,
             validation_view=validation_view_query,
-            should_materialize=self.view_builder.should_materialize,
+            should_materialize=True,
             validation_check=self.get_checker().get_validation_query_str(self),
         )
 

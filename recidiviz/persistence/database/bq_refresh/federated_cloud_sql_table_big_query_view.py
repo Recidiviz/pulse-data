@@ -60,7 +60,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
         view_id: str,
         cloud_sql_query: str,
         database_key: SQLAlchemyDatabaseKey,
-        materialized_address_override: BigQueryAddress,
+        materialized_address: BigQueryAddress,
         dataset_overrides: Optional[Dict[str, str]] = None,
     ):
         description = StrictStringFormatter().format(
@@ -74,8 +74,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
             dataset_id=dataset_id,
             view_id=view_id,
             description=description,
-            should_materialize=True,
-            materialized_address_override=materialized_address_override,
+            materialized_address=materialized_address,
             dataset_overrides=dataset_overrides,
             view_query_template=TABLE_QUERY_TEMPLATE,
             # View query template args
@@ -103,10 +102,15 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
         self.table = table
         self.view_id = view_id
         self.database_key = database_key
-        self.materialized_address_override = materialized_address_override
         self.connection_name = self._connection_name_for_database(self.database_key)
         self.dataset_id = f"{self.connection_name}_connection"
         self.cloud_sql_query = cloud_sql_query
+        self.materialized_address = self._build_materialized_address(
+            dataset_id=self.dataset_id,
+            view_id=self.view_id,
+            materialized_address_override=materialized_address_override,
+            should_materialize=True,
+        )
 
     @staticmethod
     def _connection_name_for_database(database_key: SQLAlchemyDatabaseKey) -> str:
@@ -126,8 +130,8 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
     def _build(
         self, *, dataset_overrides: Optional[Dict[str, str]] = None
     ) -> FederatedCloudSQLTableBigQueryView:
-        if self.materialized_address_override is None:
-            raise ValueError("The materialized_address_override field cannot be None.")
+        if self.materialized_address is None:
+            raise ValueError("The materialized_address field cannot be None.")
         return FederatedCloudSQLTableBigQueryView(
             dataset_id=self.dataset_id,
             connection_region=self.connection_region,
@@ -136,7 +140,7 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
             view_id=self.view_id,
             cloud_sql_query=self.cloud_sql_query,
             database_key=self.database_key,
-            materialized_address_override=self.materialized_address_override,
+            materialized_address=self.materialized_address,
             dataset_overrides=dataset_overrides,
         )
 

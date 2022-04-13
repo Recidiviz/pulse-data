@@ -614,8 +614,7 @@ class ViewManagerTest(unittest.TestCase):
             BigQueryView(
                 dataset_id=_DATASET_NAME,
                 description=f"{view['view_id']} description",
-                should_materialize=False,
-                materialized_address_override=None,
+                materialized_address=None,
                 clustering_fields=None,
                 dataset_overrides=None,
                 **view,

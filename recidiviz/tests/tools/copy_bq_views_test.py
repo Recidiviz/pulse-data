@@ -21,7 +21,7 @@ from unittest import mock
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tools.copy_bq_views import copy_bq_views
 
 
@@ -44,14 +44,14 @@ class CopyBQViewsTest(unittest.TestCase):
         self.client_patcher = mock.patch("recidiviz.big_query.big_query_client.client")
         self.mock_client = self.client_patcher.start().return_value
 
-        self.mock_view = BigQueryView(
+        self.mock_view = SimpleBigQueryViewBuilder(
             project_id=self.mock_source_project_id,
             dataset_id="dataset",
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
-        )
+        ).build()
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
@@ -79,14 +79,14 @@ class CopyBQViewsTest(unittest.TestCase):
             destination_dataset_id=self.mock_destination_dataset_id,
         )
 
-        expected_view = BigQueryView(
+        expected_view = SimpleBigQueryViewBuilder(
             project_id=self.mock_destination_project_id,
             dataset_id=self.mock_destination_dataset_id,
             view_id=self.mock_view.view_id,
             description=self.mock_view.description,
             view_query_template=self.mock_view.view_query,
             should_materialize=True,
-        )
+        ).build()
 
         expected_destination_dataset_ref = bigquery.DatasetReference(
             project=self.mock_destination_project_id,
@@ -151,14 +151,14 @@ class CopyBQViewsTest(unittest.TestCase):
         self, mock_table_exists: mock.MagicMock, mock_copy_view: mock.MagicMock
     ) -> None:
         """Check that copy_view is called, even when the project_id is in the view_query_template."""
-        view_with_project_id = BigQueryView(
+        view_with_project_id = SimpleBigQueryViewBuilder(
             project_id=self.mock_source_project_id,
             dataset_id=self.mock_source_dataset_id,
             view_id="test_view",
             description="test_view description",
             view_query_template=f"SELECT * FROM {self.mock_source_project_id}.other_dataset.table LIMIT 0",
             should_materialize=True,
-        )
+        ).build()
 
         self.mock_client.list_tables.return_value = [view_with_project_id]
         self.mock_client.get_table.return_value = view_with_project_id
@@ -171,14 +171,14 @@ class CopyBQViewsTest(unittest.TestCase):
             destination_dataset_id=self.mock_destination_dataset_id,
         )
 
-        expected_view = BigQueryView(
+        expected_view = SimpleBigQueryViewBuilder(
             project_id=self.mock_destination_project_id,
             dataset_id=self.mock_destination_dataset_id,
             view_id="test_view",
             description="test_view description",
             view_query_template=f"SELECT * FROM {self.mock_destination_project_id}.other_dataset.table LIMIT 0",
             should_materialize=True,
-        )
+        ).build()
 
         expected_destination_dataset_ref = bigquery.DatasetReference(
             project=self.mock_destination_project_id,
