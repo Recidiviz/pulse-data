@@ -22,6 +22,7 @@ import datetime
 from typing import List, Optional
 
 import pytz
+from sqlalchemy import and_
 
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -198,7 +199,9 @@ class DirectIngestViewMaterializationMetadataManager:
         ) as session:
             table_cls = schema.DirectIngestViewMaterializationMetadata
             delete_query = table_cls.__table__.delete().where(
-                table_cls.region_code == self.region_code
-                and table_cls.instance == self.ingest_instance.value
+                and_(
+                    table_cls.region_code == self.region_code,
+                    table_cls.instance == self.ingest_instance.value,
+                )
             )
             session.execute(delete_query)

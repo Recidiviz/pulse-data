@@ -133,6 +133,84 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         with self.assertRaisesRegex(sqlalchemy.exc.NoResultFound, no_row_found_regex):
             self.metadata_manager.get_metadata_for_job_args(args)
 
+    def test_clear_materialization_job_metadata_only_clears_for_region(self) -> None:
+        args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        self.run_materialization_job_progression(args, self.metadata_manager)
+
+        self.assertIsNotNone(self.metadata_manager.get_metadata_for_job_args(args))
+
+        other_region_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager_other_region.ingest_instance,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        self.run_materialization_job_progression(
+            other_region_args, self.metadata_manager_other_region
+        )
+
+        self.assertIsNotNone(
+            self.metadata_manager_other_region.get_metadata_for_job_args(args)
+        )
+
+        # Act
+        self.metadata_manager.clear_instance_metadata()
+
+        # Assert
+        no_row_found_regex = r"No row was found when one was required"
+        with self.assertRaisesRegex(sqlalchemy.exc.NoResultFound, no_row_found_regex):
+            self.metadata_manager.get_metadata_for_job_args(args)
+
+        self.assertIsNotNone(
+            self.metadata_manager_other_region.get_metadata_for_job_args(args)
+        )
+
+    def test_clear_materialization_job_metadata_only_clears_for_instance(self) -> None:
+        args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        self.run_materialization_job_progression(args, self.metadata_manager)
+
+        self.assertIsNotNone(self.metadata_manager.get_metadata_for_job_args(args))
+
+        other_instance_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager_secondary.ingest_instance,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        self.run_materialization_job_progression(
+            other_instance_args, self.metadata_manager_secondary
+        )
+
+        self.assertIsNotNone(
+            self.metadata_manager_secondary.get_metadata_for_job_args(args)
+        )
+
+        # Act
+        self.metadata_manager.clear_instance_metadata()
+
+        # Assert
+        no_row_found_regex = r"No row was found when one was required"
+        with self.assertRaisesRegex(sqlalchemy.exc.NoResultFound, no_row_found_regex):
+            self.metadata_manager.get_metadata_for_job_args(args)
+
+        self.assertIsNotNone(
+            self.metadata_manager_secondary.get_metadata_for_job_args(args)
+        )
+
     def test_full_job_progression_two_regions(self) -> None:
         args = BQIngestViewMaterializationArgs(
             ingest_view_name="ingest_view_name",

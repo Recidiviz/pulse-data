@@ -21,6 +21,7 @@ import datetime
 from typing import List, Optional
 
 import pytz
+from sqlalchemy import and_
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -535,7 +536,9 @@ class PostgresDirectIngestIngestFileMetadataManager(
         ) as session:
             table_cls = schema.DirectIngestIngestFileMetadata
             delete_query = table_cls.__table__.delete().where(
-                table_cls.region_code == self.region_code
-                and table_cls.ingest_database_name == self.database_key.db_name
+                and_(
+                    table_cls.region_code == self.region_code,
+                    table_cls.ingest_database_name == self.ingest_database_name,
+                )
             )
             session.execute(delete_query)
