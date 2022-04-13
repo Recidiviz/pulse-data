@@ -115,6 +115,8 @@ def generate_district_id_from_district_name(district_name_field: str) -> str:
     )
 
 
+# TODO(#12146): Exclude absconsion periods from US_ID in the
+#  UsIdSupervisionCaseCompliance delegate
 def hack_us_id_absconsions(dataflow_metric_table: str) -> str:
     return f"""
         WITH latest_periods AS (

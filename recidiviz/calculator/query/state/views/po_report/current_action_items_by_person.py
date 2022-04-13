@@ -68,7 +68,7 @@ CURRENT_ACTION_ITEMS_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=CURRENT_ACTION_ITEMS_BY_PERSON_QUERY_TEMPLATE,
     description=CURRENT_ACTION_ITEMS_BY_PERSON_DESCRIPTION,
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
 )
 

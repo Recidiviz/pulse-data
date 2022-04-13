@@ -89,7 +89,7 @@ REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=REPORT_DATA_BY_PERSON_BY_MONTH_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET,
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     state_specific_external_id_type=state_specific_query_strings.state_specific_external_id_type(
         state_code_table_prefix="person"
     ),

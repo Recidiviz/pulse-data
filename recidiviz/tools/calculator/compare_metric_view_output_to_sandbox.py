@@ -385,7 +385,8 @@ def _view_output_comparison_job(
     if not preserve_column_types:
         # Cast all columns to strings to guard against column types that may have changed
         columns_to_compare = [
-            f"CAST({col} AS STRING) as {col}" for col in columns_to_compare
+            f"IFNULL(CAST({col} AS STRING), 'NULL') as {col}"
+            for col in columns_to_compare
         ]
 
     base_dataset_id_for_query = (
