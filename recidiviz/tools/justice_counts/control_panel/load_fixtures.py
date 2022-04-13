@@ -32,7 +32,12 @@ python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 """
 import os
 
-from recidiviz.persistence.database.schema.justice_counts.schema import Report, Source
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    Report,
+    Source,
+    UserAccount,
+    agency_user_account_association_table,
+)
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 
 
@@ -43,7 +48,7 @@ def reset_justice_counts_fixtures(in_test: bool = False) -> None:
 
     reset_fixtures(
         # TODO(#11588): Add fixture data for all Justice Counts schema tables
-        tables=[Source, Report],
+        tables=[Source, Report, UserAccount, agency_user_account_association_table],
         fixture_directory=os.path.join(
             os.path.dirname(__file__),
             "../../../..",

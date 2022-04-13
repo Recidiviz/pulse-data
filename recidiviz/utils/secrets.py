@@ -95,12 +95,16 @@ def get_local_secret(local_path: str, secret_name: str) -> Optional[str]:
     """
     if in_development() or in_test():
         try:
-            secret = Path(os.path.join(local_path, "gsm", secret_name)).read_text(
-                "utf-8"
+            return get_secret_from_local_directory(
+                local_path=local_path, secret_name=secret_name
             )
-            return secret.strip()
         except OSError:
             logging.error("Couldn't locate secret %s", secret_name)
             return None
 
     return get_secret(secret_name)
+
+
+def get_secret_from_local_directory(local_path: str, secret_name: str) -> str:
+    secret = Path(os.path.join(local_path, "gsm", secret_name)).read_text("utf-8")
+    return secret.strip()

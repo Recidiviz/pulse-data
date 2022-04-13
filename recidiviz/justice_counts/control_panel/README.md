@@ -59,3 +59,29 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - If you're operating in a `with SessionFactory.using_database` context manager (i.e. in our unit tests), then `session.commit()` will be called ._automatically_ for you at the end of the block. Try to take advantage of this functionality and avoid calling `session.commit()` yourself in unit tests.
 - In our API code, `session.commit()` will not be called for you automatically. Thus, at the end of any ObjectInterface method that creates or updates objects, remember to call `session.add()` followed by `session.commit()`. You should call these methods in the Interface classes, not in the API itself.
 - You generally shouldn't need to call `session.flush()` or `session.refresh()`. If you think you need to, add a comment explaining what was going wrong without it.
+
+## Testing the backend
+
+1: Download `justice-counts-auth0-m2m-files.zip` from the Justice Counts 1password vault. Extract the contents (there should be two files) into the directory `recidiviz/pulse-data/recidiviz/justice_counts/control_panel/local/gsm`
+
+2: Run docker:
+
+```bash
+pipenv run docker-jc
+```
+
+3: Load fixtures:
+
+```bash
+pipenv run fixtures-jc
+```
+
+4: Make test requests to the backend API:
+
+```bash
+# python -m recidiviz.tools.justice_counts.control_panel.request_api <endpoint name> <params>`
+python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0}'
+python -m recidiviz.tools.justice_counts.control_panel.request_api users '{"email_address":"jsmith@gmail.com"}'
+```
+
+Note that if you make changes to any of the fixtures .csv files, you'll have to re-run the `pipenv run fixtures` script.
