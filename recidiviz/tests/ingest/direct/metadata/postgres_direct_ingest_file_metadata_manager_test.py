@@ -541,6 +541,152 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, no_row_found_regex):
             self.metadata_manager.get_ingest_view_file_metadata(path)
 
+    def test_clear_ingest_view_file_metadata_only_one_instance(self) -> None:
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name="file_tag",
+            output_bucket_name=self.output_bucket_name,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        path = _make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+        self.run_ingest_view_file_progression(args, self.metadata_manager, path)
+
+        self.assertIsNotNone(self.metadata_manager.get_ingest_view_file_metadata(path))
+
+        self.assertTrue(
+            self.metadata_manager.has_ingest_view_file_been_discovered(path)
+        )
+        self.assertTrue(self.metadata_manager.has_ingest_view_file_been_processed(path))
+
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name="file_tag",
+            output_bucket_name=self.output_bucket_name,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        path = _make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+        self.run_ingest_view_file_progression(
+            args, self.metadata_manager_secondary, path
+        )
+
+        self.assertIsNotNone(
+            self.metadata_manager_secondary.get_ingest_view_file_metadata(path)
+        )
+
+        self.assertTrue(
+            self.metadata_manager_secondary.has_ingest_view_file_been_discovered(path)
+        )
+        self.assertTrue(
+            self.metadata_manager_secondary.has_ingest_view_file_been_processed(path)
+        )
+
+        # Act
+        self.metadata_manager.clear_ingest_file_metadata()
+
+        # Assert
+        no_row_found_regex = (
+            r"^Unexpected number of metadata results for path .*\: \[0\]"
+        )
+        with self.assertRaisesRegex(ValueError, no_row_found_regex):
+            self.metadata_manager.has_ingest_view_file_been_discovered(path)
+        with self.assertRaisesRegex(ValueError, no_row_found_regex):
+            self.metadata_manager.has_ingest_view_file_been_processed(path)
+        with self.assertRaisesRegex(ValueError, no_row_found_regex):
+            self.metadata_manager.get_ingest_view_file_metadata(path)
+
+        # Secondary not impacted
+        self.assertIsNotNone(
+            self.metadata_manager_secondary.get_ingest_view_file_metadata(path)
+        )
+
+        self.assertTrue(
+            self.metadata_manager_secondary.has_ingest_view_file_been_discovered(path)
+        )
+        self.assertTrue(
+            self.metadata_manager_secondary.has_ingest_view_file_been_processed(path)
+        )
+
+    def test_clear_ingest_view_file_metadata_only_one_region(self) -> None:
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name="file_tag",
+            output_bucket_name=self.output_bucket_name,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        path = _make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+        self.run_ingest_view_file_progression(args, self.metadata_manager, path)
+
+        self.assertIsNotNone(self.metadata_manager.get_ingest_view_file_metadata(path))
+
+        self.assertTrue(
+            self.metadata_manager.has_ingest_view_file_been_discovered(path)
+        )
+        self.assertTrue(self.metadata_manager.has_ingest_view_file_been_processed(path))
+
+        args = GcsfsIngestViewExportArgs(
+            ingest_view_name="file_tag",
+            output_bucket_name=self.output_bucket_name,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
+        )
+
+        path = _make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        )
+        self.run_ingest_view_file_progression(
+            args, self.metadata_manager_other_region, path
+        )
+
+        self.assertIsNotNone(
+            self.metadata_manager_other_region.get_ingest_view_file_metadata(path)
+        )
+
+        self.assertTrue(
+            self.metadata_manager_other_region.has_ingest_view_file_been_discovered(
+                path
+            )
+        )
+        self.assertTrue(
+            self.metadata_manager_other_region.has_ingest_view_file_been_processed(path)
+        )
+
+        # Act
+        self.metadata_manager.clear_ingest_file_metadata()
+
+        # Assert
+        no_row_found_regex = (
+            r"^Unexpected number of metadata results for path .*\: \[0\]"
+        )
+        with self.assertRaisesRegex(ValueError, no_row_found_regex):
+            self.metadata_manager.has_ingest_view_file_been_discovered(path)
+        with self.assertRaisesRegex(ValueError, no_row_found_regex):
+            self.metadata_manager.has_ingest_view_file_been_processed(path)
+        with self.assertRaisesRegex(ValueError, no_row_found_regex):
+            self.metadata_manager.get_ingest_view_file_metadata(path)
+
+        # Other region not impacted
+        self.assertIsNotNone(
+            self.metadata_manager_other_region.get_ingest_view_file_metadata(path)
+        )
+
+        self.assertTrue(
+            self.metadata_manager_other_region.has_ingest_view_file_been_discovered(
+                path
+            )
+        )
+        self.assertTrue(
+            self.metadata_manager_other_region.has_ingest_view_file_been_processed(path)
+        )
+
     def test_ingest_view_file_progression_discovery_before_export_recorded(
         self,
     ) -> None:
