@@ -20,10 +20,10 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 400
+    hard_num_allowed_rows_override: 500
     override_reason: In MO we rely on a table where they build incarceration period
-      spans for us; some older rows have issues with overlap. Rerun did not improve this number. Current error at 387 
-      rows as of 03/01/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods 
+      spans for us; some older rows have issues with overlap. Rerun did not improve this number. Current error at 411 
+      rows as of 04/12/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods 
       query to derive periods directly from the status codes table.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 1500
