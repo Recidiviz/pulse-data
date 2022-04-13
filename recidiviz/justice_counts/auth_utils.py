@@ -15,10 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for Justice Counts"""
+import logging
+
 from flask import session
 
 from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
-from recidiviz.utils.auth.auth0 import TokenClaims, update_session_with_user_info
+from recidiviz.utils.auth.auth0 import (
+    AuthorizationError,
+    TokenClaims,
+    update_session_with_user_info,
+)
+from recidiviz.utils.environment import in_development
 
 
 def on_successful_authorization(jwt_claims: TokenClaims) -> None:
@@ -27,4 +34,18 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
         description="You are not authorized to access this application",
     )
 
-    update_session_with_user_info(session, jwt_claims, auth_error)
+    try:
+        update_session_with_user_info(session, jwt_claims, auth_error)
+    except AuthorizationError as e:
+        # When using M2M authentication during development testing, our access token won't have
+        # a custom email token claim (because the token doesn't actually belong to a user),
+        # but this is okay and shouldn't raise an error.
+        # Details: https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow
+        if in_development() and e.code == "invalid_claims":
+            logging.info(
+                "Token claims is missing email address; "
+                "assuming this is an M2M client-credentials grant."
+            )
+            session["user_info"] = {}
+            return
+        raise e

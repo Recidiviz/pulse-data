@@ -20,9 +20,11 @@
 Helper functions for loading fixture data into Postgres instances
 """
 import os
+from types import ModuleType
 from typing import Optional
 
 import psycopg2
+from sqlalchemy import Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.constants import (
@@ -73,11 +75,11 @@ def reset_fixtures(
 
         # Clear all tables in reverse order to avoid "foreign key is still referenced" errors
         for table in reversed(tables):
-            table_name = table.__table__.name
+            table_name = _get_table_name(module=table)
             cursor.execute(f"DELETE FROM {table_name}")
 
         for table in tables:
-            table_name = table.__table__.name
+            table_name = _get_table_name(module=table)
             _import_csv(
                 os.path.realpath(
                     os.path.join(
@@ -89,3 +91,10 @@ def reset_fixtures(
             )
 
         cursor.execute("commit")
+
+
+def _get_table_name(module: ModuleType) -> str:
+    if isinstance(module, Table):
+        # Handle association tables properly
+        return module.name
+    return module.__table__.name
