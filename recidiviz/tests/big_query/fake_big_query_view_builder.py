@@ -16,8 +16,9 @@
 # =============================================================================
 """A test-only implementation of the BigQueryViewBuilder that just accepts an already built view as a constructor arg.
 """
-from typing import Optional, Dict
+from typing import Optional
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder, BigQueryViewType
 
 
@@ -27,7 +28,7 @@ class FakeBigQueryViewBuilder(BigQueryViewBuilder):
 
     # pylint: disable=unused-argument
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> BigQueryViewType:
         return self.view
 

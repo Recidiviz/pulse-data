@@ -30,6 +30,7 @@ from google.cloud.bigquery.job.query import QueryJob
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.big_query import view_update_manager
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.utils import metadata, monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -47,8 +48,8 @@ from recidiviz.validation.validation_result_storage import (
     ValidationResultForStorage,
     store_validation_results_in_big_query,
 )
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_view_builders,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
@@ -238,9 +239,9 @@ def _get_validations_jobs(
 ) -> List[DataValidationJob]:
     view_builders = deployed_view_builders(metadata.project_id())
 
-    sandbox_dataset_overrides = None
+    sandbox_address_overrides = None
     if sandbox_dataset_prefix:
-        sandbox_dataset_overrides = dataset_overrides_for_view_builders(
+        sandbox_address_overrides = address_overrides_for_view_builders(
             sandbox_dataset_prefix, view_builders
         )
 
@@ -253,7 +254,7 @@ def _get_validations_jobs(
             views_to_update_builders=view_builders,
             all_view_builders=view_builders,
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            dataset_overrides=sandbox_dataset_overrides,
+            address_overrides=sandbox_address_overrides,
             # If a given view hasn't been loaded to the sandbox it will skip it
             skip_missing_views=True,
         )
@@ -262,7 +263,7 @@ def _get_validations_jobs(
     return _fetch_validation_jobs_to_perform(
         region_code_filter=region_code_filter,
         validation_name_filter=validation_name_filter,
-        dataset_overrides=sandbox_dataset_overrides,
+        address_overrides=sandbox_address_overrides,
     )
 
 
@@ -311,7 +312,7 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
 def _fetch_validation_jobs_to_perform(
     region_code_filter: Optional[str] = None,
     validation_name_filter: Optional[Pattern] = None,
-    dataset_overrides: Optional[Dict[str, str]] = None,
+    address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> List[DataValidationJob]:
     """
     Creates and returns validation jobs for all validations meeting the name filter,
@@ -339,7 +340,7 @@ def _fetch_validation_jobs_to_perform(
                     DataValidationJob(
                         validation=updated_check,
                         region_code=region_code,
-                        dataset_overrides=dataset_overrides,
+                        address_overrides=address_overrides,
                     )
                 )
 

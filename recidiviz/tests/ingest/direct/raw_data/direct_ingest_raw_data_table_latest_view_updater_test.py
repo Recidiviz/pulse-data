@@ -22,6 +22,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 from mock import create_autospec, patch
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.raw_data import (
     direct_ingest_raw_data_table_latest_view_updater as latest_view_updater_module,
@@ -107,12 +108,12 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
                 DirectIngestRawDataTableLatestView(
                     region_code=self.test_region.region_code,
                     raw_file_config=self.mock_raw_file_configs["tagA"],
-                    dataset_overrides=None,
+                    address_overrides=None,
                 ),
                 DirectIngestRawDataTableLatestView(
                     region_code=self.test_region.region_code,
                     raw_file_config=self.mock_raw_file_configs["tagC"],
-                    dataset_overrides=None,
+                    address_overrides=None,
                 ),
             ]
             views_dataset = DatasetReference(
@@ -156,20 +157,24 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
                 ]
             )
 
-            expected_dataset_overrides = {
-                "us_xx_raw_data_up_to_date_views": "my_prefix_us_xx_raw_data_up_to_date_views"
-            }
+            expected_address_overrides_builder = BigQueryAddressOverrides.Builder(
+                sandbox_prefix="my_prefix"
+            )
+            expected_address_overrides_builder.register_sandbox_override_for_entire_dataset(
+                "us_xx_raw_data_up_to_date_views"
+            )
+            expected_address_overrides = expected_address_overrides_builder.build()
 
             expected_views = [
                 DirectIngestRawDataTableLatestView(
                     region_code=self.test_region.region_code,
                     raw_file_config=self.mock_raw_file_configs["tagA"],
-                    dataset_overrides=expected_dataset_overrides,
+                    address_overrides=expected_address_overrides,
                 ),
                 DirectIngestRawDataTableLatestView(
                     region_code=self.test_region.region_code,
                     raw_file_config=self.mock_raw_file_configs["tagC"],
-                    dataset_overrides=expected_dataset_overrides,
+                    address_overrides=expected_address_overrides,
                 ),
             ]
 
@@ -220,20 +225,24 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
                 ]
             )
 
-            expected_dataset_overrides = {
-                "us_xx_raw_data_up_to_date_views": "my_prefix_us_xx_raw_data_up_to_date_views"
-            }
+            expected_address_overrides_builder = BigQueryAddressOverrides.Builder(
+                "my_prefix"
+            )
+            expected_address_overrides_builder.register_sandbox_override_for_entire_dataset(
+                "us_xx_raw_data_up_to_date_views"
+            )
+            expected_address_overrides = expected_address_overrides_builder.build()
 
             expected_views = [
                 DirectIngestRawDataTableLatestView(
                     region_code=self.test_region.region_code,
                     raw_file_config=self.mock_raw_file_configs["tagA"],
-                    dataset_overrides=expected_dataset_overrides,
+                    address_overrides=expected_address_overrides,
                 ),
                 DirectIngestRawDataTableLatestView(
                     region_code=self.test_region.region_code,
                     raw_file_config=self.mock_raw_file_configs["tagC"],
-                    dataset_overrides=expected_dataset_overrides,
+                    address_overrides=expected_address_overrides,
                 ),
             ]
 

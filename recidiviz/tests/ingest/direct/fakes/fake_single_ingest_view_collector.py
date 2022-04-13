@@ -16,8 +16,9 @@
 # =============================================================================
 """Fake ingest view ViewCollector for tests."""
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -47,7 +48,7 @@ class _FakeDirectIngestViewBuilder(
 
     # pylint: disable=unused-argument
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> DirectIngestPreProcessedIngestView:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",

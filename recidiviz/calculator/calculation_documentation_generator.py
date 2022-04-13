@@ -208,7 +208,7 @@ class CalculationDocumentationGenerator:
             build_views_to_update(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 candidate_view_builders=all_deployed_view_builders(),
-                dataset_overrides=None,
+                address_overrides=None,
                 override_should_build_predicate=True,
             )
         )

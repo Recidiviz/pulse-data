@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Collector and Builder for the DirectIngestRawDataTableLatestView class"""
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
@@ -61,13 +62,13 @@ class DirectIngestRawDataTableLatestViewBuilder(
         self.materialized_address = None
 
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> DirectIngestRawDataTableLatestView:
         return DirectIngestRawDataTableLatestView(
             project_id=self.project_id,
             region_code=self.region_code,
             raw_file_config=self.raw_file_config,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
         )
 
     def should_build(self) -> bool:

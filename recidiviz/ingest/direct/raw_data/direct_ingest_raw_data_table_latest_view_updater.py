@@ -41,8 +41,8 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
 )
 from recidiviz.utils import monitoring
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_view_builders,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
 )
 
 m_failed_latest_views_update = measure.MeasureInt(
@@ -139,7 +139,7 @@ class DirectIngestRawDataTableLatestViewUpdater:
         )
 
         return builder.build(
-            dataset_overrides=dataset_overrides_for_view_builders(
+            address_overrides=address_overrides_for_view_builders(
                 view_dataset_override_prefix=self.views_sandbox_dataset_prefix,
                 view_builders=[builder],
             )

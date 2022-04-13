@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a BigQueryView that enforces that the output has the required columns."""
-from typing import Dict, List, Optional, Set
+from typing import List, Optional, Set
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 
@@ -38,7 +39,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
         columns: List[str],
         description: Optional[str],
         materialized_address: Optional[BigQueryAddress],
-        dataset_overrides: Optional[Dict[str, str]],
+        address_overrides: Optional[BigQueryAddressOverrides],
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
     ):
@@ -53,7 +54,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             description=full_description,
             view_query_template=view_query_template,
             materialized_address=materialized_address,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             clustering_fields=clustering_fields,
             **query_format_kwargs,
         )
@@ -104,7 +105,7 @@ class SelectedColumnsBigQueryViewBuilder(
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> SelectedColumnsBigQueryView:
         return SelectedColumnsBigQueryView(
             dataset_id=self.dataset_id,
@@ -114,7 +115,7 @@ class SelectedColumnsBigQueryViewBuilder(
             description=self.description,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             **self.query_format_kwargs,
         )
 

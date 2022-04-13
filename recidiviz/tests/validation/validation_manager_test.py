@@ -24,6 +24,7 @@ import attr
 from flask import Flask
 from mock import MagicMock, call, patch
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.utils import metadata
@@ -716,7 +717,13 @@ class TestFetchValidations(TestCase):
             view_query_template="select * from literally_anything",
         )
 
-        dataset_overrides = {"my_dataset": "my_dataset_override"}
+        address_overrides_builder = BigQueryAddressOverrides.Builder(
+            sandbox_prefix="prefix"
+        )
+        address_overrides_builder.register_custom_dataset_override(
+            "my_dataset", "my_dataset_override"
+        )
+        address_overrides = address_overrides_builder.build()
 
         existence_check_job = DataValidationJob(
             validation=ExistenceDataValidationCheck(
@@ -735,7 +742,7 @@ class TestFetchValidations(TestCase):
                 view_builder=builder, validation_category=ValidationCategory.INVARIANT
             ),
             region_code="US_XX",
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
         )
 
         self.assertEqual(

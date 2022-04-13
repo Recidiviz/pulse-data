@@ -18,10 +18,11 @@
 """Models representing data validation."""
 import abc
 from enum import Enum
-from typing import Dict, Generic, List, Optional, TypeVar
+from typing import Generic, List, Optional, TypeVar
 
 import attr
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.validation.validation_config import ValidationRegionConfig
@@ -117,17 +118,17 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
     region_code: str = attr.ib()
 
     # Optional dataset overrides to change which datasets will be used for query
-    dataset_overrides: Optional[Dict[str, str]] = attr.ib(default=None)
+    address_overrides: Optional[BigQueryAddressOverrides] = attr.ib(default=None)
 
     def original_builder_query_str(self) -> str:
         view = self.validation.view_builder.build(
-            dataset_overrides=self.dataset_overrides
+            address_overrides=self.address_overrides
         )
         return _query_str_for_region_code(view=view, region_code=self.region_code)
 
     def error_builder_query_str(self) -> str:
         view = self.validation.error_view_builder.build(
-            dataset_overrides=self.dataset_overrides
+            address_overrides=self.address_overrides
         )
         return _query_str_for_region_code(view=view, region_code=self.region_code)
 

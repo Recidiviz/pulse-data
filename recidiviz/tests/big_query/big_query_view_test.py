@@ -20,6 +20,7 @@ import unittest
 
 from mock import patch
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -231,11 +232,15 @@ class BigQueryViewTest(unittest.TestCase):
             view_not_materialized.direct_select_query,
         )
 
-    def test_materialized_address_dataset_overrides(self) -> None:
-        dataset_overrides = {
-            "view_dataset": "my_override_view_dataset",
-            "other_dataset": "my_override_other_dataset",
-        }
+    def test_materialized_address_overrides(self) -> None:
+        address_overrides_builder = BigQueryAddressOverrides.Builder(
+            sandbox_prefix="my_override"
+        )
+        for dataset in ["view_dataset", "other_dataset"]:
+            address_overrides_builder.register_sandbox_override_for_entire_dataset(
+                dataset
+            )
+        address_overrides = address_overrides_builder.build()
 
         view_materialized_no_override = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
@@ -244,7 +249,7 @@ class BigQueryViewTest(unittest.TestCase):
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        ).build(dataset_overrides=dataset_overrides)
+        ).build(address_overrides=address_overrides)
 
         self.assertEqual(
             BigQueryAddress(
@@ -270,7 +275,7 @@ class BigQueryViewTest(unittest.TestCase):
             ),
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        ).build(dataset_overrides=dataset_overrides)
+        ).build(address_overrides=address_overrides)
 
         self.assertEqual(
             BigQueryAddress(
@@ -289,7 +294,7 @@ class BigQueryViewTest(unittest.TestCase):
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
         )

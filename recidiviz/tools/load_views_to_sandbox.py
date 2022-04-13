@@ -46,8 +46,8 @@ from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import str_to_bool
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_view_builders,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
@@ -80,8 +80,6 @@ def load_views_to_sandbox(
     view_ids_to_load : Optional[List[str]]
         If specified, only loads views whose view_id matches one of the listed view_ids.
         View_ids must take the form dataset_id.view_id
-        TODO(#10076): this flag requires `update_ancestors` to be True because it has
-        to upload all ancestors in the same dataset as the view_ids provided
 
     dataset_ids_to_load : Optional[List[str]]
         If specified, only loads views whose dataset_id matches one of the listed
@@ -91,10 +89,6 @@ def load_views_to_sandbox(
         Only applied if `view_ids_to_load` or `dataset_ids_to_load` is included.
         If True, loads descendant views of views found in the two aforementioned
         parameters.
-        TODO(#10076): this flag does not work if there are ancestors in the same dataset
-        that are not loaded. If you are getting errors using this flag you will need to
-        add the problematic views/datasets to the relevant `*_to_load` arg.
-        Once fixed, make this argument default to True
 
     update_ancestors : bool, default False
         To be used with `view_ids_to_load` or `dataset_ids_to_load`. If True, loads
@@ -115,13 +109,7 @@ def load_views_to_sandbox(
             "Only supply view_ids_to_load OR dataset_ids_to_load, not both."
         )
 
-    # TODO(#10076): update the dataset overrides so that a single view can be updated
-    # throw error if view_ids_to_load is set without update_ancestors
-    if view_ids_to_load and not update_ancestors:
-        raise ValueError(
-            "Cannot use view_ids_to_load without including update_ancestors TODO(#10076)"
-        )
-
+    logging.info("Gathering all deployed views...")
     view_builders = deployed_view_builders(project_id())
 
     # if view_ids_to_load or dataset_ids_to_load, use dag walker to get ancestor views
@@ -143,6 +131,7 @@ def load_views_to_sandbox(
         else:
             raise ValueError("view_ids_to_load and dataset_ids_to_load not defined.")
 
+        logging.info("Gathering views to load to sandbox...")
         builders_to_update = view_builder_sub_graph_for_view_builders_to_load(
             view_builders_to_load=view_builders_to_load,
             all_view_builders_in_dag=view_builders,
@@ -165,7 +154,7 @@ def load_views_to_sandbox(
 
     logging.info("Updating %s views.", len(builders_to_update))
 
-    sandbox_dataset_overrides = dataset_overrides_for_view_builders(
+    sandbox_address_overrides = address_overrides_for_view_builders(
         view_dataset_override_prefix=sandbox_dataset_prefix,
         view_builders=builders_to_update,
         dataflow_dataset_override=dataflow_dataset_override,
@@ -176,7 +165,7 @@ def load_views_to_sandbox(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             views_to_update_builders=builders_to_update,
             all_view_builders=view_builders,
-            dataset_overrides=sandbox_dataset_overrides,
+            address_overrides=sandbox_address_overrides,
             # If a given view hasn't been loaded to the sandbox, skip it
             skip_missing_views=True,
         )
@@ -184,7 +173,7 @@ def load_views_to_sandbox(
         create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=builders_to_update,
-            dataset_overrides=sandbox_dataset_overrides,
+            address_overrides=sandbox_address_overrides,
             # Don't clean up datasets when running a sandbox script
             historically_managed_datasets_to_clean=None,
         )
@@ -268,7 +257,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="If True, will load views that are descendants of those provided in "
         "view_ids_to_load or dataset_ids_to_load.",
         type=str_to_bool,
-        default=False,
+        default=True,
         required=False,
     )
 

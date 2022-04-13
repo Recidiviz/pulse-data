@@ -16,10 +16,11 @@
 # =============================================================================
 """Export data from Cloud SQL and load it into BigQuery."""
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from sqlalchemy import Table
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
@@ -47,8 +48,8 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_view_builders,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.deployed_views import (
     CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
@@ -133,9 +134,9 @@ def _federated_bq_regional_dataset_refresh(
             if region_code.lower() not in dataset
         }
 
-    dataset_overrides = None
+    address_overrides = None
     if dataset_override_prefix:
-        dataset_overrides = dataset_overrides_for_view_builders(
+        address_overrides = address_overrides_for_view_builders(
             view_dataset_override_prefix=dataset_override_prefix,
             view_builders=view_builders,
         )
@@ -143,7 +144,7 @@ def _federated_bq_regional_dataset_refresh(
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=set(),
         view_builders_to_update=view_builders,
-        dataset_overrides=dataset_overrides,
+        address_overrides=address_overrides,
         bq_region_override=bq_region_override,
         force_materialize=True,
         historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,
@@ -240,7 +241,7 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> BigQueryView:
         (
             table_union_query_fmt,
@@ -253,7 +254,7 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             materialized_address=self.materialized_address,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             description=f"A view that unions the contents of the [{self.table.name}] "
             f"across all state segments.",
             view_query_template=table_union_query_fmt,
@@ -330,14 +331,20 @@ def _hydrate_unioned_regional_dataset_for_schema(
         UnionedStateSegmentsViewBuilder(config=config, table=t, state_codes=state_codes)
         for t in config.get_tables_to_export()
     ]
-    dataset_overrides = None
+    address_overrides = None
     if dataset_override_prefix:
-        dataset_overrides = dataset_overrides_for_view_builders(
+        address_overrides = address_overrides_for_view_builders(
             view_dataset_override_prefix=dataset_override_prefix,
             view_builders=view_builders,
         )
+        address_overrides_builder = address_overrides.to_builder(
+            sandbox_prefix=dataset_override_prefix
+        )
         for dataset in source_table_datasets:
-            dataset_overrides[dataset] = f"{dataset_override_prefix}_{dataset}"
+            address_overrides_builder.register_sandbox_override_for_entire_dataset(
+                dataset
+            )
+        address_overrides = address_overrides_builder.build()
 
     historically_managed_unioned_regional_datasets_for_schema = CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
         config.schema_type
@@ -346,7 +353,7 @@ def _hydrate_unioned_regional_dataset_for_schema(
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=source_table_datasets,
         view_builders_to_update=view_builders,
-        dataset_overrides=dataset_overrides,
+        address_overrides=address_overrides,
         bq_region_override=bq_region_override,
         force_materialize=True,
         historically_managed_datasets_to_clean=historically_managed_unioned_regional_datasets_for_schema,
