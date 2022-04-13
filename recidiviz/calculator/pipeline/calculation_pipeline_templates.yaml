@@ -157,7 +157,6 @@ incremental_metric_pipelines:
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west3
-    staging_only: True
 
 historical_metric_pipelines:
   - pipeline: incarceration_metrics
@@ -262,7 +261,6 @@ historical_metric_pipelines:
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west3
-    staging_only: True
 
 supplemental_dataset_pipelines:
   - pipeline: us_id_case_note_extracted_entities_supplemental
