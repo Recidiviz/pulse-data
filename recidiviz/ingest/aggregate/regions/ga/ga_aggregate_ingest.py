@@ -21,8 +21,8 @@ from typing import Dict, List
 import pandas as pd
 import tabula
 import us
-from PyPDF2 import PdfFileReader
 from more_itertools.more import one
+from PyPDF2 import PdfFileReader
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips, str_field_utils
@@ -31,7 +31,7 @@ from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import GaCountyAggregate
 
-DATE_PARSE_ANCHOR = "DATA SUMMARY"
+DATE_PARSE_ANCHOR = "DATASUMMARY"
 
 
 def parse(filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
@@ -59,9 +59,11 @@ def _parse_date(filename: str) -> datetime.date:
         except Exception as e:
             raise AggregateDateParsingError(str(e)) from e
         for index, line in enumerate(lines):
-            if DATE_PARSE_ANCHOR in line:
+            if DATE_PARSE_ANCHOR in line.replace(" ", ""):
                 # The date is on the next line if anchor is present on the line
-                parsed_date = str_field_utils.parse_date(lines[index + 1])
+                parsed_date = str_field_utils.parse_date(
+                    lines[index + 1].replace(" ", "")
+                )
                 if parsed_date:
                     return parsed_date
         raise AggregateDateParsingError("Could not extract date")

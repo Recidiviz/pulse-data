@@ -68,6 +68,8 @@ class RawDataConfigWriter:
             for parser in column.datetime_sql_parsers:
                 column_datetime_sql_str = parser.replace("\\", "\\\\")
                 column_string += f'\n      - "{column_datetime_sql_str}"'
+        if column.is_pii:
+            column_string += "\n    is_pii: True"
         if column.is_enum:
             column_string += self._get_known_values_config_string(column)
         return column_string

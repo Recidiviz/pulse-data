@@ -19,16 +19,20 @@
 """Class to generate or regenerate raw data fixtures for ingest view tests."""
 import os
 import string
+from functools import partial
 from typing import Dict, List, Optional, Tuple
 
 import numpy
+from faker import Faker
 from google.cloud import bigquery
+from more_itertools import first
 from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
+    RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestRawDataTableLatestView,
@@ -39,18 +43,35 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.utils.regions import get_region
 
+Faker.seed(0)
+FAKE = Faker(locale=["en-US"])
 
-def randomize_value(value: str) -> str:
+
+def randomize_value(
+    value: str, column_info: RawTableColumnInfo, datetime_format: str
+) -> str:
     """For each character in a string, checks whether the character is a number or letter and replaces it with a random
     matching type character."""
+    # TODO(#12179) Improve and unit test randomization options by specifying pii_type.
     randomized_value = ""
-    for character in value:
-        if character.isnumeric():
-            randomized_value += str(numpy.random.randint(1, 9, 1)[0])
-        if character.isalpha():
-            randomized_value += numpy.random.choice(
-                list(string.ascii_uppercase), size=1
-            )[0]
+    if column_info.is_datetime:
+        randomized_value = FAKE.date(pattern=datetime_format)
+    elif "name" in column_info.name.lower():
+        first_middle_name_strs = {"first", "f", "middle", "m"}
+        if any(x in column_info.name for x in first_middle_name_strs):
+            randomized_value = FAKE.first_name_nonbinary()
+        surname_strs = {"surname", "last", "l", "sur"}
+        if any(x in column_info.name for x in surname_strs):
+            randomized_value = FAKE.last_name()
+    else:
+        randomized_value = ""
+        for character in value:
+            if character.isnumeric():
+                randomized_value += str(numpy.random.randint(1, 9, 1)[0])
+            if character.isalpha():
+                randomized_value += numpy.random.choice(
+                    list(string.ascii_uppercase), size=1
+                )[0]
 
     print(f"Randomizing original value {value} to random value {randomized_value}")
     return randomized_value
@@ -73,6 +94,7 @@ class RawDataFixturesGenerator:
         columns_to_randomize: List[str],
         file_tags_to_load_in_full: List[str],
         randomized_values_map: Dict[str, str],
+        datetime_format: str,
         overwrite: Optional[bool] = False,
     ):
         self.project_id = project_id
@@ -81,9 +103,9 @@ class RawDataFixturesGenerator:
         self.output_filename = output_filename
         self.person_external_ids = person_external_ids
         self.person_external_id_columns = person_external_id_columns
-        self.columns_to_randomize = columns_to_randomize
         self.file_tags_to_load_in_full = file_tags_to_load_in_full
         self.randomized_values_map = randomized_values_map
+        self.datetime_format = datetime_format
         self.overwrite = overwrite
 
         self.bq_client = BigQueryClientImpl(project_id=project_id)
@@ -95,6 +117,14 @@ class RawDataFixturesGenerator:
         self.ingest_view_raw_table_configs = (
             view_builder.build().raw_table_dependency_configs
         )
+
+        # TODO(#12178) Rely only on pii fields once all states have labeled PII fields.
+        self.columns_to_randomize = [
+            column
+            for raw_config in self.ingest_view_raw_table_configs
+            for column in raw_config.columns
+            if column.is_pii or column.name in columns_to_randomize
+        ]
 
     def get_output_fixture_path(self, raw_table_file_tag: str) -> str:
         return direct_ingest_fixture_path(
@@ -183,8 +213,19 @@ class RawDataFixturesGenerator:
         columns_to_randomize_for_table = [
             column
             for column in original_column_order
-            if column in self.columns_to_randomize
+            if any(
+                column == column_info.name for column_info in self.columns_to_randomize
+            )
         ]
+
+        column_info_for_columns_to_randomize = {
+            column: first(
+                column_info
+                for column_info in self.columns_to_randomize
+                if column == column_info.name
+            )
+            for column in columns_to_randomize_for_table
+        }
 
         if not columns_to_randomize_for_table:
             return query_results
@@ -202,10 +243,12 @@ class RawDataFixturesGenerator:
             value: key for (key, value) in original_col_name_to_random_col_name.items()
         }
 
-        def find_or_create_randomized_value(original_value: str) -> str:
+        def find_or_create_randomized_value(
+            column_info: RawTableColumnInfo, original_value: str
+        ) -> str:
             if original_value not in self.randomized_values_map:
                 self.randomized_values_map[original_value] = randomize_value(
-                    original_value
+                    original_value, column_info, self.datetime_format
                 )
             return self.randomized_values_map[original_value]
 
@@ -213,7 +256,12 @@ class RawDataFixturesGenerator:
             distinct_values_to_randomize[
                 original_col_name_to_random_col_name[column]
             ] = distinct_values_to_randomize[column].apply(
-                lambda val: find_or_create_randomized_value(val) if val else ""
+                lambda val: partial(
+                    find_or_create_randomized_value,
+                    column_info_for_columns_to_randomize[column],
+                )(val)
+                if val
+                else ""
             )
 
         # Replace the original values with the randomized values in the original dataframe

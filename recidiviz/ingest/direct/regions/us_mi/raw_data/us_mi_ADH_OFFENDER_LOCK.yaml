@@ -6,6 +6,7 @@ primary_key_cols: []
 columns:
   - name: offender_lock_id
   - name: offender_id
+    is_pii: True
   - name: unit_lock_id
   - name: location_id
   - name: date_in

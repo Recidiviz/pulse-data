@@ -69,6 +69,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             person_external_id_columns=self.person_external_id_columns,
             columns_to_randomize=self.columns_to_randomize,
             file_tags_to_load_in_full=[],
+            datetime_format="%m/%d/%y",
             randomized_values_map={},
         )
 

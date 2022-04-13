@@ -8,7 +8,9 @@ columns:
   - name: offender_charge_id
   - name: legal_order_id
   - name: offender_id
+    is_pii: True
   - name: offender_booking_id
+    is_pii: True
   - name: sentence_record_no
   - name: monetary_only
   - name: sentence_type_id
@@ -17,6 +19,7 @@ columns:
   - name: sentence_status_id
   - name: sentencing_status_id
   - name: judge_id
+    is_pii: True
   - name: counts
   - name: review_flag_id
   - name: effective_date
@@ -55,6 +58,7 @@ columns:
   - name: expiration_date
   - name: closing_reason_code
   - name: closing_authority_id
+    is_pii: True
   - name: closing_date
   - name: closing_notes
   - name: notes

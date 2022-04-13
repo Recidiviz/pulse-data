@@ -45,6 +45,7 @@ Example Usage:
     --person_external_ids 111 222 333 \
     [--file_tags_to_load_in_full CIS_3150_TRANSFER_TYPE OTHER_TABLE] \
     [--project_id GCP_PROJECT_STAGING] \
+    [--datetime_format '%m/%d/%y'] \
     [--overwrite True] \
     [--randomized_values_map '{"person_id_here": "randomized_id_here", "birthdate_value_here": "randomized_date_here"}']
 """
@@ -71,6 +72,7 @@ def main(
     columns_to_randomize: List[str],
     file_tags_to_load_in_full: List[str],
     randomized_values_map: Dict[str, str],
+    datetime_format: str,
     overwrite: bool = False,
 ) -> None:
     """Generate raw data fixtures from the latest views in BQ to be used as mock data in view query tests."""
@@ -81,9 +83,11 @@ def main(
         output_filename=output_filename,
         person_external_ids=person_external_ids,
         person_external_id_columns=person_external_id_columns,
+        # TODO(#12178) Remove this option once all states have labeled PII fields.
         columns_to_randomize=columns_to_randomize,
         file_tags_to_load_in_full=file_tags_to_load_in_full,
         randomized_values_map=randomized_values_map,
+        datetime_format=datetime_format,
         overwrite=overwrite,
     )
     fixtures_generator.generate_fixtures_for_ingest_view()
@@ -128,6 +132,7 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         required=True,
     )
 
+    # TODO(#12178) Remove this option once all states have labeled PII fields.
     parser.add_argument(
         "--columns_to_randomize",
         dest="columns_to_randomize",
@@ -175,6 +180,14 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--datetime_format",
+        dest="datetime_format",
+        help="A datetime format string to specify for any datetime fields in the raw data fixtures that need to be randomized. Default is %m/%d/%y",
+        required=False,
+        default="%m/%d/%y",
+    )
+
+    parser.add_argument(
         "--randomized_values_map",
         dest="randomized_values_map",
         help="A mapping of a person_external_id to a randomized value to export it as. This is useful for updating "
@@ -203,5 +216,6 @@ if __name__ == "__main__":
             columns_to_randomize=args.columns_to_randomize,
             file_tags_to_load_in_full=args.file_tags_to_load_in_full,
             randomized_values_map=args.randomized_values_map,
+            datetime_format=args.datetime_format,
             overwrite=args.overwrite,
         )

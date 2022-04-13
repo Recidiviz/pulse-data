@@ -178,6 +178,7 @@ class DirectIngestDocumentationGenerator:
                 column.description or "<No documentation>",
                 _is_primary_key(column.name),
                 _get_enum_bullets(column.known_values),
+                column.is_pii,
             ]
             for column in raw_file_config.columns
         ]
@@ -187,6 +188,7 @@ class DirectIngestDocumentationGenerator:
                 "Column Description",
                 "Part of Primary Key?",
                 "Distinct Values",
+                "Is PII?",
             ],
             value_matrix=table_matrix,
             # Margin values other than 0 have nondeterministic spacing. Do not change.

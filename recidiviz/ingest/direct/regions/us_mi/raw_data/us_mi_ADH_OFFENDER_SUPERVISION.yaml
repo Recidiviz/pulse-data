@@ -6,6 +6,7 @@ primary_key_cols: []
 columns:
   - name: offender_supervision_id
   - name: offender_booking_id
+    is_pii: True
   - name: supervision_level_id
   - name: description
   - name: effective_date

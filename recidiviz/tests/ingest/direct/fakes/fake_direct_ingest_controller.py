@@ -114,6 +114,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                         name="mockKey",
                         description="mockKey description",
                         is_datetime=False,
+                        is_pii=False,
                     )
                 ],
                 supplemental_order_by_clause="",
@@ -136,6 +137,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                         name="mockKey",
                         description="mockKey description",
                         is_datetime=False,
+                        is_pii=False,
                     )
                 ],
                 supplemental_order_by_clause="",
@@ -158,6 +160,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                         name="mockKey",
                         description="mockKey description",
                         is_datetime=False,
+                        is_pii=False,
                     )
                 ],
                 supplemental_order_by_clause="",

@@ -96,6 +96,7 @@ ORDER BY
         name=column.name,
         description=column.description,
         is_datetime=column.is_datetime,
+        is_pii=False,
         known_values=new_known_values_list,
     )
 

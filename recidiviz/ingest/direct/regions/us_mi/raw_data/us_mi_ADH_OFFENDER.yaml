@@ -9,9 +9,11 @@ primary_key_cols:
 columns:
   - name: offender_id
     description: The OMNI-database generated ID for the justice-involved individual.
+    is_pii: True
   - name: offender_number_source_id
   - name: offender_number
     description: The MDOC ID that all staff uses for the justice-involved individual.
+    is_pii: True
   - name: last_update_user
   - name: last_update_date
   - name: last_update_node

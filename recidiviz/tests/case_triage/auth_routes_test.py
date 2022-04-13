@@ -49,7 +49,7 @@ class TestAuthRoutes(unittest.TestCase):
             response = client.post("/auth/log_out")
 
             self.assertEqual(
-                "session=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; Path=/",
+                "session=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/",
                 response.headers["Set-Cookie"],
             )
 

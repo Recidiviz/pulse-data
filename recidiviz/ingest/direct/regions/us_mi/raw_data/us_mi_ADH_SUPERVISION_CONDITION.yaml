@@ -8,8 +8,10 @@ columns:
   - name: special_condition_id
   - name: corporation_id
   - name: person_id
+    is_pii: True
   - name: legal_order_id
   - name: offender_booking_id
+    is_pii: True
   - name: payment_amount
   - name: frequency
   - name: due_date

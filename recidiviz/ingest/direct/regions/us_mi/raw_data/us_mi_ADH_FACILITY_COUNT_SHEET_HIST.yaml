@@ -9,7 +9,9 @@ columns:
   - name: cell
   - name: bunk
   - name: offender_number
+    is_pii: True
   - name: offender_last_name
+    is_pii: True
   - name: out_flag
   - name: empty_flag
   - name: sequence_number
@@ -19,6 +21,7 @@ columns:
   - name: unit_lock_id
   - name: in_flg
   - name: employee_id
+    is_pii: True
   - name: submit_date
   - name: temperature
   - name: perm_temp_flg
