@@ -88,6 +88,8 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_BUILDER = MetricBigQueryView
     description=CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
+    # TODO(#12140): Convert to using normalized_state instead of state once there is a
+    #  normalized version of supervision_period_to_agent_association
     base_dataset=dataset_config.STATE_BASE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )

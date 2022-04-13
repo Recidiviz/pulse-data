@@ -51,6 +51,8 @@ ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_DESCRIPTION,
+    # TODO(#12140): Convert to using normalized_state instead of state once there is a
+    #  normalized version of supervision_period_to_agent_association
     state_dataset=dataset_config.STATE_BASE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )

@@ -200,6 +200,8 @@ THROUGH_07_2020_US_ID_ASSESSMENT_SCORE_RANGE: Dict[
 class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     """US_ID specific calculations for supervision case compliance."""
 
+    # TODO(#12146): Exclude absconsion periods from US_ID in the
+    #  UsIdSupervisionCaseCompliance delegate
     def _guidelines_applicable_for_case(self, evaluation_date: date) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
         guidelines are only applicable for supervision cases of type GENERAL and SEX_OFFENSE, each with corresponding

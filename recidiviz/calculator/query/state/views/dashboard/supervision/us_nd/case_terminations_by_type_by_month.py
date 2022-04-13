@@ -96,6 +96,8 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE,
     dimensions=("state_code", "year", "month", "supervision_type", "district"),
     description=CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION,
+    # TODO(#12140): Convert to using normalized_state instead of state once there is a
+    #  normalized version of supervision_period_to_agent_association
     base_dataset=dataset_config.STATE_BASE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )

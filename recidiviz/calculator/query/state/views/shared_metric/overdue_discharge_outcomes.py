@@ -75,7 +75,7 @@ OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=OVERDUE_DISCHARGE_OUTCOMES_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

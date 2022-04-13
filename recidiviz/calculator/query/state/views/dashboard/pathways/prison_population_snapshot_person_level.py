@@ -92,10 +92,11 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = MetricBigQueryViewBuilder
         "legal_status",
         "facility",
         "age_group",
+        "state_id",
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     add_age_groups=add_age_groups(),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
