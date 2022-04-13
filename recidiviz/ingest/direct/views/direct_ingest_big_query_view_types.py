@@ -1023,7 +1023,7 @@ class DirectIngestPreProcessedIngestViewBuilder(
             primary_key_tables_for_entity_deletion or []
         )
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
-        self.materialized_address_override = None
+        self.materialized_address = None
 
     # pylint: disable=unused-argument
     def _build(

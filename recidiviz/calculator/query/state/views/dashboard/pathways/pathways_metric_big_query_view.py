@@ -17,12 +17,10 @@
 
 """An extension of MetricBigQueryViewBuilder with extra functionality related to pathways views specifically."""
 
-from typing import Dict, Optional
+from typing import List, Optional, Tuple
 
-from recidiviz.metrics.metric_big_query_view import (
-    MetricBigQueryView,
-    MetricBigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 
 class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
@@ -32,34 +30,49 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
     our file size.
     """
 
-    def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
-    ) -> MetricBigQueryView:
-        return MetricBigQueryView(
-            dataset_id=self.dataset_id,
-            view_id=self.view_id,
-            description=self.description,
-            view_query_template=self._view_query_template_with_filtered_dimensions(),
-            dimensions=self.dimensions,
-            should_materialize=self.should_materialize,
-            materialized_address_override=self.materialized_address_override,
-            clustering_fields=self.clustering_fields,
-            dataset_overrides=dataset_overrides,
-            **self.query_format_kwargs,
+    def __init__(
+        self,
+        *,
+        dataset_id: str,
+        view_id: str,
+        description: str,
+        view_query_template: str,
+        dimensions: Tuple[str, ...],
+        should_materialize: bool = False,
+        materialized_address_override: Optional[BigQueryAddress] = None,
+        clustering_fields: Optional[List[str]] = None,
+        # All keyword args must have string values
+        **query_format_kwargs: str,
+    ):
+        super().__init__(
+            dataset_id=dataset_id,
+            view_id=view_id,
+            description=description,
+            view_query_template=self._view_query_template_with_filtered_dimensions(
+                view_query_template=view_query_template, dimensions=dimensions
+            ),
+            dimensions=dimensions,
+            should_materialize=should_materialize,
+            materialized_address_override=materialized_address_override,
+            clustering_fields=clustering_fields,
+            **query_format_kwargs,
         )
 
-    @property
-    def _has_all_dimensions_clause(self) -> str:
+    @classmethod
+    def _has_all_dimensions_clause(cls, dimensions: Tuple[str, ...]) -> str:
         clauses = [
             f"COALESCE(UPPER(CAST({dimension} AS STRING)), 'EXTERNAL_UNKNOWN') NOT IN ('UNKNOWN', 'EXTERNAL_UNKNOWN', 'INTERNAL_UNKNOWN')"
-            for dimension in self.dimensions
+            for dimension in dimensions
         ]
 
         return "\n AND ".join(clauses)
 
-    def _view_query_template_with_filtered_dimensions(self) -> str:
+    @classmethod
+    def _view_query_template_with_filtered_dimensions(
+        cls, view_query_template: str, dimensions: Tuple[str, ...]
+    ) -> str:
         return f"""
-            WITH pathways_view AS ( {self.view_query_template} )
+            WITH pathways_view AS ( {view_query_template} )
             SELECT * FROM pathways_view
-            WHERE {self._has_all_dimensions_clause}
+            WHERE {cls._has_all_dimensions_clause(dimensions)}
         """

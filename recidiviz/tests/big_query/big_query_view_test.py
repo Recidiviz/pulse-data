@@ -117,11 +117,11 @@ class BigQueryViewTest(unittest.TestCase):
     def test_materialized_address_override_same_as_view_throws(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "^Materialized address override "
+            "^Materialized address "
             r"\[BigQueryAddress\(dataset_id='view_dataset', table_id='my_view'\)\] cannot be "
             "same as view itself.$",
         ):
-            _ = BigQueryView(
+            _ = SimpleBigQueryViewBuilder(
                 dataset_id="view_dataset",
                 view_id="my_view",
                 description="my_view description",
@@ -131,7 +131,7 @@ class BigQueryViewTest(unittest.TestCase):
                 ),
                 view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
                 some_dataset="a_dataset",
-            )
+            ).build()
 
     def test_materialized_address_override_no_should_materialize_throws(self) -> None:
         with self.assertRaisesRegex(
@@ -140,7 +140,7 @@ class BigQueryViewTest(unittest.TestCase):
             r"BigQueryAddress\(dataset_id='view_dataset_materialized', table_id='my_view_table'\)\] "
             "when `should_materialize` is not True",
         ):
-            _ = BigQueryView(
+            _ = SimpleBigQueryViewBuilder(
                 dataset_id="view_dataset",
                 view_id="my_view",
                 description="my_view description",
@@ -150,17 +150,17 @@ class BigQueryViewTest(unittest.TestCase):
                 ),
                 view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
                 some_dataset="a_dataset",
-            )
+            ).build()
 
     def test_materialized_address(self) -> None:
-        view_materialized_no_override = BigQueryView(
+        view_materialized_no_override = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        )
+        ).build()
 
         self.assertEqual(
             BigQueryAddress(dataset_id="view_dataset", table_id="my_view_materialized"),
@@ -179,7 +179,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_materialized_no_override.direct_select_query,
         )
 
-        view_with_override = BigQueryView(
+        view_with_override = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
@@ -190,7 +190,7 @@ class BigQueryViewTest(unittest.TestCase):
             ),
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        )
+        ).build()
 
         self.assertEqual(
             BigQueryAddress(dataset_id="other_dataset", table_id="my_view_table"),
@@ -209,13 +209,13 @@ class BigQueryViewTest(unittest.TestCase):
             view_with_override.direct_select_query,
         )
 
-        view_not_materialized = BigQueryView(
+        view_not_materialized = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        )
+        ).build()
 
         self.assertIsNone(view_not_materialized.materialized_address)
         self.assertEqual(
@@ -237,15 +237,14 @@ class BigQueryViewTest(unittest.TestCase):
             "other_dataset": "my_override_other_dataset",
         }
 
-        view_materialized_no_override = BigQueryView(
+        view_materialized_no_override = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
             should_materialize=True,
-            dataset_overrides=dataset_overrides,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        )
+        ).build(dataset_overrides=dataset_overrides)
 
         self.assertEqual(
             BigQueryAddress(
@@ -260,7 +259,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_materialized_no_override.table_for_query,
         )
 
-        view_with_override = BigQueryView(
+        view_with_override = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
@@ -269,10 +268,9 @@ class BigQueryViewTest(unittest.TestCase):
                 dataset_id="other_dataset",
                 table_id="my_view_table",
             ),
-            dataset_overrides=dataset_overrides,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
-        )
+        ).build(dataset_overrides=dataset_overrides)
 
         self.assertEqual(
             BigQueryAddress(

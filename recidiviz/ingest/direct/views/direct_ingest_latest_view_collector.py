@@ -58,7 +58,7 @@ class DirectIngestRawDataTableLatestViewBuilder(
             region_code=self.region_code.lower(), sandbox_dataset_prefix=None
         )
         self.projects_to_deploy = None
-        self.materialized_address_override = None
+        self.materialized_address = None
 
     def _build(
         self, *, dataset_overrides: Optional[Dict[str, str]] = None

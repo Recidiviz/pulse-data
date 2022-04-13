@@ -141,9 +141,9 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
 
             for view_builder in view_builders:
                 datasets_for_schema_refresh.add(view_builder.dataset_id)
-                if view_builder.materialized_address_override:
+                if view_builder.materialized_address:
                     datasets_for_schema_refresh.add(
-                        view_builder.materialized_address_override.dataset_id
+                        view_builder.materialized_address.dataset_id
                     )
 
             self.assertEqual(

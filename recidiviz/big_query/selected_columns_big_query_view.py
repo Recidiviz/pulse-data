@@ -37,8 +37,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
         view_query_template: str,
         columns: List[str],
         description: Optional[str],
-        should_materialize: bool,
-        materialized_address_override: Optional[BigQueryAddress],
+        materialized_address: Optional[BigQueryAddress],
         dataset_overrides: Optional[Dict[str, str]],
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
@@ -53,8 +52,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             view_id=view_id,
             description=full_description,
             view_query_template=view_query_template,
-            should_materialize=should_materialize,
-            materialized_address_override=materialized_address_override,
+            materialized_address=materialized_address,
             dataset_overrides=dataset_overrides,
             clustering_fields=clustering_fields,
             **query_format_kwargs,
@@ -95,9 +93,13 @@ class SelectedColumnsBigQueryViewBuilder(
         self.view_query_template = view_query_template
         self.columns = columns
         self.description = description
-        self.should_materialize = should_materialize
         self.projects_to_deploy = projects_to_deploy
-        self.materialized_address_override = materialized_address_override
+        self.materialized_address = self._build_materialized_address(
+            dataset_id=dataset_id,
+            view_id=view_id,
+            materialized_address_override=materialized_address_override,
+            should_materialize=should_materialize,
+        )
         self.clustering_fields = clustering_fields
         self.query_format_kwargs = query_format_kwargs
 
@@ -110,8 +112,7 @@ class SelectedColumnsBigQueryViewBuilder(
             view_query_template=self.view_query_template,
             columns=self.columns,
             description=self.description,
-            should_materialize=self.should_materialize,
-            materialized_address_override=self.materialized_address_override,
+            materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs,

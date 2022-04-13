@@ -97,8 +97,8 @@ def dataset_overrides_for_view_builders(
         _add_override(
             dataset_overrides, view_dataset_override_prefix, builder.dataset_id
         )
-        if builder.materialized_address_override:
-            materialized_dataset_id = builder.materialized_address_override.dataset_id
+        if builder.materialized_address:
+            materialized_dataset_id = builder.materialized_address.dataset_id
             _add_override(
                 dataset_overrides, view_dataset_override_prefix, materialized_dataset_id
             )
