@@ -9,15 +9,10 @@ input_columns:
   - middle_name
   - name_suffix
   - birth_date
-  - sex_id
+  - gender_id
+  - race_id
   - cultural_affiliation_id
-  - multiracial_flag
-  - caucasian_racial_flag
-  - native_american_racial_flag
-  - black_racial_flag
-  - asian_racial_flag
   - hispanic_flag
-  - racial_identification_code_id
 unused_columns: []
 output:
   StatePerson:
@@ -34,7 +29,7 @@ output:
         $name_suffix: name_suffix
     gender:
       $enum_mapping:
-        $raw_text: sex_id
+        $raw_text: gender_id
         $mappings:
           Gender.MALE: '435'
           Gender.FEMALE: '434'
@@ -43,7 +38,7 @@ output:
       - StatePersonRace:
           race:
             $enum_mapping:
-              $raw_text: racial_identification_code_id
+              $raw_text: race_id
               $mappings:
                 Race.AMERICAN_INDIAN_ALASKAN_NATIVE: '373'
                 Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '9875'
@@ -51,46 +46,6 @@ output:
                 Race.BLACK: '371'
                 Race.ASIAN: '372'
                 Race.EXTERNAL_UNKNOWN: '7404'
-      - $conditional:
-          - $if:
-              $equal: 
-                - multiracial_flag
-                - $literal("1")
-            $then:
-              StatePersonRace:
-                race: $literal_enum(Race.OTHER)
-      - $conditional:
-          - $if:
-              $equal: 
-                - caucasian_racial_flag
-                - $literal("1")
-            $then:
-              StatePersonRace:
-                race: $literal_enum(Race.WHITE)
-      - $conditional:
-          - $if:
-              $equal: 
-                - native_american_racial_flag
-                - $literal("1")
-            $then:
-              StatePersonRace:
-                race: $literal_enum(Race.AMERICAN_INDIAN_ALASKAN_NATIVE)
-      - $conditional:
-          - $if:
-              $equal: 
-                - black_racial_flag
-                - $literal("1")
-            $then:
-              StatePersonRace:
-                race: $literal_enum(Race.BLACK)
-      - $conditional:
-          - $if:
-              $equal: 
-                - asian_racial_flag
-                - $literal("1")
-            $then:
-              StatePersonRace:
-                race: $literal_enum(Race.ASIAN)
     ethnicities:
       - $conditional:
           - $if:

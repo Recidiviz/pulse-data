@@ -24,89 +24,27 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH
-  offender_name_max_seq AS (
-    SELECT
-      offender_id,
-      last_name,
-      first_name,
-      middle_name,
-      name_suffix,
-      birth_date,
-      sex_id
-    FROM (
-      SELECT *, 
-        ROW_NUMBER() OVER (PARTITION BY offender_id 
-          ORDER BY SAFE_CAST(sequence_number AS INT64) DESC) AS seq_number_order
-        FROM {ADH_OFFENDER_NAME}
-    ) AS o
-    WHERE seq_number_order = 1
-  ),
-  latest_bookings AS (
-    SELECT
-      offender_booking_id,
-      offender_id
-    FROM (
-      SELECT *, 
-        ROW_NUMBER() OVER (PARTITION BY offender_id 
-          ORDER BY begin_date DESC
-      ) AS booking_order 
-      FROM {ADH_OFFENDER_BOOKING}
-    ) AS b
-    WHERE booking_order = 1),
-  latest_profiles AS (
-    SELECT
-      offender_booking_id,
-      cultural_affiliation_id,
-      multiracial_flag,
-      caucasian_racial_flag,
-      native_american_racial_flag,
-      black_racial_flag,
-      asian_racial_flag,
-      hispanic_flag,
-      racial_identification_code_id
-    FROM (
-      SELECT *, 
-        ROW_NUMBER() OVER (PARTITION BY offender_booking_id 
-          ORDER BY profile_date DESC
-        ) AS profile_order
-      FROM {ADH_OFFENDER_BOOKING_PROFILE}
-      -- TODO(#11580) Remove this check once everything for MI is parsing correctly
-      WHERE SAFE_CAST(offender_booking_id AS INT64) IS NOT NULL
-    ) AS p
-    -- TODO(#11580) Remove this check once everything for MI is parsing correctly
-    WHERE SAFE_CAST(offender_booking_id AS INT64) IS NOT NULL
-    AND profile_order = 1)
-SELECT 
-  offender_number,
-  last_name,
-  first_name,
-  middle_name,
-  name_suffix,
-  n.birth_date,
-  sex_id,
-  cultural_affiliation_id,
-  multiracial_flag,
-  caucasian_racial_flag,
-  native_american_racial_flag,
-  black_racial_flag,
-  asian_racial_flag,
-  hispanic_flag,
-  racial_identification_code_id
+SELECT DISTINCT
+  ids.offender_number,
+  p.last_name,
+  p.first_name,
+  p.middle_name,
+  p.name_suffix,
+  p.birth_date,
+  p.gender_id,
+  p.race_id,
+  bp.cultural_affiliation_id,
+  bp.hispanic_flag,
 FROM
   {ADH_OFFENDER} ids
 LEFT JOIN
-  offender_name_max_seq n
+  {ADH_OFFENDER_PROFILE_SUMMARY_WRK} p
+ON 
+  ids.offender_id = p.offender_id AND
+  ids.offender_number = p.offender_number
+LEFT JOIN {ADH_OFFENDER_BOOKING_PROFILE} bp
 ON
-  ids.offender_id = n.offender_id
-LEFT JOIN
-  latest_bookings b
-ON
-  b.offender_id = n.offender_id
-LEFT JOIN
-  latest_profiles p
-ON
-  (b.offender_booking_id = p.offender_booking_id)
+  bp.offender_booking_id = p.offender_booking_id
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
