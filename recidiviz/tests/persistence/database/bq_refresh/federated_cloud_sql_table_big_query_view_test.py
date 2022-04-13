@@ -31,8 +31,8 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_view_builders,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
 )
 
 
@@ -97,10 +97,10 @@ FROM EXTERNAL_QUERY(
         )
 
         # Build with dataset overrides
-        dataset_overrides = dataset_overrides_for_view_builders(
+        address_overrides = address_overrides_for_view_builders(
             "test_prefix", [view_builder]
         )
-        view_with_overrides = view_builder.build(dataset_overrides=dataset_overrides)
+        view_with_overrides = view_builder.build(address_overrides=address_overrides)
 
         self.assertIsInstance(view, FederatedCloudSQLTableBigQueryView)
         self.assertEqual(expected_view_query, view_with_overrides.view_query)

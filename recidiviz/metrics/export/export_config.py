@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Sequence, Set, TypedDict
 
 import attr
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
@@ -361,7 +362,7 @@ class ExportViewCollectionConfig:
         self,
         project_id: str,
         state_code_filter: Optional[str] = None,
-        dataset_overrides: Optional[Dict[str, str]] = None,
+        address_overrides: Optional[BigQueryAddressOverrides] = None,
         destination_override: Optional[str] = None,
     ) -> Sequence[ExportBigQueryViewConfig]:
         """Builds a list of ExportBigQueryViewConfig that define how all views in
@@ -384,7 +385,7 @@ class ExportViewCollectionConfig:
 
         configs = []
         for vb in self.view_builders_to_export:
-            view = vb.build(dataset_overrides=dataset_overrides)
+            view = vb.build(address_overrides=address_overrides)
             optional_args = {}
             if self.export_output_formats is not None:
                 optional_args["export_output_formats"] = self.export_output_formats

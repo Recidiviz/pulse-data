@@ -18,10 +18,11 @@
 import re
 import string
 from enum import Enum, auto
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import attr
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -216,7 +217,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         description: str,
         view_query_template: str,
         raw_file_config: DirectIngestRawFileConfig,
-        dataset_overrides: Optional[Dict[str, str]] = None,
+        address_overrides: Optional[BigQueryAddressOverrides] = None,
         include_undocumented_columns: bool = False,
     ):
         if not raw_file_config.primary_key_cols:
@@ -251,7 +252,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
             columns_clause=columns_clause,
             normalized_columns=normalized_columns,
             supplemental_order_by_clause=supplemental_order_by_clause,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
         )
         self.raw_file_config = raw_file_config
 
@@ -332,7 +333,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
         project_id: str = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
-        dataset_overrides: Optional[Dict[str, str]] = None,
+        address_overrides: Optional[BigQueryAddressOverrides] = None,
     ):
         view_id = f"{raw_file_config.file_tag}_latest"
         description = f"{raw_file_config.file_tag} latest view"
@@ -348,7 +349,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
             description=description,
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
         )
 
 
@@ -934,7 +935,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return DirectIngestRawDataTableLatestView(
             region_code=region_code,
             raw_file_config=raw_table_config,
-            dataset_overrides=None,
+            address_overrides=None,
         ).select_query_uninjected_project_id
 
     @staticmethod
@@ -1027,7 +1028,7 @@ class DirectIngestPreProcessedIngestViewBuilder(
 
     # pylint: disable=unused-argument
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
         return DirectIngestPreProcessedIngestView(

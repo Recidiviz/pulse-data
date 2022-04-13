@@ -40,8 +40,8 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.tools.load_views_to_sandbox import str_to_list
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_view_builders,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
@@ -125,7 +125,7 @@ def deploy_views(
             get_descendants=False,
         )
 
-    test_dataset_overrides = None
+    test_address_overrides = None
     table_expiration = None
 
     if test_schema:
@@ -140,7 +140,7 @@ def deploy_views(
             default_table_expiration=DEFAULT_TEMPORARY_TABLE_EXPIRATION,
         )
 
-        test_dataset_overrides = dataset_overrides_for_view_builders(
+        test_address_overrides = address_overrides_for_view_builders(
             view_dataset_override_prefix=test_dataset_prefix,
             view_builders=view_builders_to_update,
             override_source_datasets=True,
@@ -149,7 +149,7 @@ def deploy_views(
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         view_builders_to_update=view_builders_to_update,
-        dataset_overrides=test_dataset_overrides,
+        address_overrides=test_address_overrides,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         default_table_expiration_for_new_datasets=table_expiration,
     )

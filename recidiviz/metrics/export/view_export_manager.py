@@ -24,6 +24,7 @@ from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
 from recidiviz.big_query import view_update_manager
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_export_validator import (
     ExistsBigQueryViewExportValidator,
@@ -182,7 +183,7 @@ def get_configs_for_export_name(
     project_id: str,
     state_code: Optional[str] = None,
     destination_override: Optional[str] = None,
-    dataset_overrides: Optional[Dict[str, str]] = None,
+    address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> Sequence[ExportBigQueryViewConfig]:
     """Checks the export index for a matching export and if one exists, returns the
     export name paired with a sequence of export view configs."""
@@ -199,7 +200,7 @@ def get_configs_for_export_name(
         project_id=project_id,
         state_code_filter=state_code.upper() if state_code else None,
         destination_override=destination_override,
-        dataset_overrides=dataset_overrides,
+        address_overrides=address_overrides,
     )
 
 
@@ -244,7 +245,7 @@ def export_view_data_to_cloud_storage(
     override_view_exporter: Optional[BigQueryViewExporter] = None,
     should_materialize_views: Optional[bool] = True,
     destination_override: Optional[str] = None,
-    dataset_overrides: Optional[Dict[str, str]] = None,
+    address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
@@ -260,7 +261,7 @@ def export_view_data_to_cloud_storage(
         state_code=state_code,
         project_id=project_id,
         destination_override=destination_override,
-        dataset_overrides=dataset_overrides,
+        address_overrides=address_overrides,
     )
 
     if should_materialize_views:

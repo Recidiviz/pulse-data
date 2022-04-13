@@ -24,6 +24,7 @@ from unittest.mock import create_autospec, patch
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
@@ -153,20 +154,27 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             view.materialized_address,
         )
 
-    def test_build_unioned_segments_view_with_dataset_overrides(self) -> None:
+    def test_build_unioned_segments_view_with_address_overrides(self) -> None:
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
         view_builder = UnionedStateSegmentsViewBuilder(
             config=config,
             table=StateBase.metadata.tables["state_person_external_id"],
             state_codes=[StateCode.US_XX, StateCode.US_WW],
         )
-        view = view_builder.build(
-            dataset_overrides={
-                "state_regional": "my_prefix_state_regional",
-                "us_xx_state_regional": "my_prefix_us_xx_state_regional",
-                "us_ww_state_regional": "my_prefix_us_ww_state_regional",
-            }
+
+        address_overrides_builder = BigQueryAddressOverrides.Builder(
+            sandbox_prefix="my_prefix"
         )
+        for dataset_id in [
+            "state_regional",
+            "us_xx_state_regional",
+            "us_ww_state_regional",
+        ]:
+            address_overrides_builder.register_sandbox_override_for_entire_dataset(
+                dataset_id
+            )
+        address_overrides = address_overrides_builder.build()
+        view = view_builder.build(address_overrides=address_overrides)
         expected_query = (
             "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
             "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"

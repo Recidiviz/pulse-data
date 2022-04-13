@@ -25,6 +25,7 @@ from google.cloud import exceptions
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import (
@@ -42,7 +43,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.utils import metadata, monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.view_registry.dataset_overrides import format_override
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
@@ -100,7 +100,7 @@ def rematerialize_views_for_view_builders(
     views_to_update_builders: Sequence[BigQueryViewBuilder],
     all_view_builders: Sequence[BigQueryViewBuilder],
     view_source_table_datasets: Set[str],
-    dataset_overrides: Optional[Dict[str, str]] = None,
+    address_overrides: Optional[BigQueryAddressOverrides] = None,
     skip_missing_views: bool = False,
 ) -> None:
     """For all views corresponding to the builders in |views_to_update_builders| list,
@@ -114,21 +114,22 @@ def rematerialize_views_for_view_builders(
             either depend on or are dependents of the list of input views.
         view_source_table_datasets: Set of datasets containing tables that can be
             treated as root nodes in the view dependency graph.
-        dataset_overrides: A dictionary mapping dataset_ids to the dataset name they
-            should be replaced with for the given list of views_to_update.
+        address_overrides: A class that provides a mapping of table/view addresses
+            and the address they should be replaced with for the given list of
+            views_to_update.
         skip_missing_views: If True, ignores any input views that do not exist. If
             False, crashes if tries to materialize a view that does not exist.
     """
     views_to_update = build_views_to_update(
         view_source_table_datasets=view_source_table_datasets,
         candidate_view_builders=views_to_update_builders,
-        dataset_overrides=dataset_overrides,
+        address_overrides=address_overrides,
     )
     rematerialize_views(
         views_to_update=views_to_update,
         all_view_builders=all_view_builders,
         view_source_table_datasets=view_source_table_datasets,
-        dataset_overrides=dataset_overrides,
+        address_overrides=address_overrides,
         skip_missing_views=skip_missing_views,
     )
 
@@ -137,7 +138,7 @@ def rematerialize_views(
     views_to_update: List[BigQueryView],
     all_view_builders: Sequence[BigQueryViewBuilder],
     view_source_table_datasets: Set[str],
-    dataset_overrides: Optional[Dict[str, str]] = None,
+    address_overrides: Optional[BigQueryAddressOverrides] = None,
     skip_missing_views: bool = False,
     bq_region_override: Optional[str] = None,
 ) -> None:
@@ -152,15 +153,16 @@ def rematerialize_views(
             either depend on or are dependents of the list of input views.
         view_source_table_datasets: Set of datasets containing tables that can be
             treated as root nodes in the view dependency graph.
-        dataset_overrides: A dictionary mapping dataset_ids to the dataset name they
-            should be replaced with for the given list of views_to_update.
+        address_overrides: A class that provides a mapping of table/view addresses
+            and the address they should be replaced with for the given list of
+            views_to_update.
         skip_missing_views: If True, ignores any input views that do not exist. If
             False, crashes if tries to materialize a view that does not exist.
         bq_region_override: If set, overrides the region (e.g. us-east1) associated with
             all BigQuery operations.
     """
     default_table_expiration_for_new_datasets = None
-    if dataset_overrides:
+    if address_overrides:
         default_table_expiration_for_new_datasets = (
             TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
         )
@@ -176,7 +178,7 @@ def rematerialize_views(
             build_views_to_update(
                 view_source_table_datasets=view_source_table_datasets,
                 candidate_view_builders=all_view_builders,
-                dataset_overrides=dataset_overrides,
+                address_overrides=address_overrides,
             )
         )
         dataset_map = get_managed_view_and_materialized_table_addresses_by_dataset(
@@ -225,7 +227,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     historically_managed_datasets_to_clean: Optional[Set[str]],
-    dataset_overrides: Optional[Dict[str, str]] = None,
+    address_overrides: Optional[BigQueryAddressOverrides] = None,
     bq_region_override: Optional[str] = None,
     force_materialize: bool = False,
     default_table_expiration_for_new_datasets: Optional[int] = None,
@@ -241,7 +243,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     Should only be called if we expect the views to have changed (either the view query
     or schema from querying underlying tables), e.g. at deploy time.
     """
-    if default_table_expiration_for_new_datasets is None and dataset_overrides:
+    if default_table_expiration_for_new_datasets is None and address_overrides:
         default_table_expiration_for_new_datasets = (
             TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
         )
@@ -253,7 +255,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
         views_to_update = build_views_to_update(
             view_source_table_datasets=view_source_table_datasets,
             candidate_view_builders=view_builders_to_update,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
         )
 
         _create_managed_dataset_and_deploy_views(
@@ -278,7 +280,9 @@ def copy_dataset_schemas_to_sandbox(
     """
 
     def copy_dataset_schema(dataset: str) -> Optional[str]:
-        test_dataset = format_override(sandbox_prefix, dataset)
+        test_dataset = BigQueryAddressOverrides.format_sandbox_dataset(
+            sandbox_prefix, dataset
+        )
         if not bq_client.dataset_exists(
             dataset_ref=bq_client.dataset_ref_for_id(dataset)
         ):
@@ -306,7 +310,7 @@ def copy_dataset_schemas_to_sandbox(
 def build_views_to_update(
     view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
-    dataset_overrides: Optional[Dict[str, str]],
+    address_overrides: Optional[BigQueryAddressOverrides],
     override_should_build_predicate: bool = False,
 ) -> List[BigQueryView]:
     """Returns the list of views that should be updated, built from builders in the |candidate_view_builders| list."""
@@ -320,7 +324,7 @@ def build_views_to_update(
 
         try:
             view = view_builder.build(
-                dataset_overrides=dataset_overrides,
+                address_overrides=address_overrides,
                 override_should_build_predicate=override_should_build_predicate,
             )
         except BigQueryViewBuilderShouldNotBuildError:
@@ -487,7 +491,7 @@ def view_builder_sub_graph_for_view_builders_to_load(
     views_to_load = build_views_to_update(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         candidate_view_builders=view_builders_to_load,
-        dataset_overrides=None,
+        address_overrides=None,
     )
 
     # Get dag walker for *all* views
@@ -495,7 +499,7 @@ def view_builder_sub_graph_for_view_builders_to_load(
         build_views_to_update(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             candidate_view_builders=all_view_builders_in_dag,
-            dataset_overrides=None,
+            address_overrides=None,
         )
     )
 

@@ -44,8 +44,8 @@ from recidiviz.metrics.export.view_export_manager import (
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_deployed_view_datasets,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_deployed_view_datasets,
 )
 
 
@@ -69,9 +69,9 @@ def export_metrics_from_dataset_to_gcs(
     sandbox_dataset_prefix: Optional[str],
 ) -> None:
     """Exports metric files into a sandbox GCS bucket."""
-    sandbox_dataset_overrides = None
+    sandbox_address_overrides = None
     if sandbox_dataset_prefix:
-        sandbox_dataset_overrides = dataset_overrides_for_deployed_view_datasets(
+        sandbox_address_overrides = address_overrides_for_deployed_view_datasets(
             project_id=project_id,
             view_dataset_override_prefix=sandbox_dataset_prefix,
         )
@@ -92,7 +92,7 @@ def export_metrics_from_dataset_to_gcs(
         state_code=state_code,
         should_materialize_views=False,
         destination_override=destination_bucket,
-        dataset_overrides=sandbox_dataset_overrides,
+        address_overrides=sandbox_address_overrides,
     )
 
     logging.info(

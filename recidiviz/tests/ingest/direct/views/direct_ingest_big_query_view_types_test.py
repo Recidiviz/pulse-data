@@ -98,7 +98,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
             ),
-            dataset_overrides=None,
+            address_overrides=None,
         )
 
         self.assertEqual(self.PROJECT_ID, view.project)
@@ -155,7 +155,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
             ),
-            dataset_overrides=None,
+            address_overrides=None,
         )
 
         self.assertEqual(self.PROJECT_ID, view.project)

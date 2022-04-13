@@ -41,8 +41,8 @@ from recidiviz.utils.environment import (
     GCP_PROJECTS,
 )
 from recidiviz.validation.views import dataset_config as validations_dataset_config
-from recidiviz.view_registry.dataset_overrides import (
-    dataset_overrides_for_view_builders,
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
@@ -482,7 +482,7 @@ class ViewManagerTest(unittest.TestCase):
     ) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders creates
         new datasets with a set table expiration for all datasets specified in
-        dataset_overrides."""
+        address_overrides."""
         materialized_dataset = "other_dataset"
 
         override_dataset_ref = bigquery.dataset.DatasetReference(
@@ -529,7 +529,7 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         mock_view_builders += [materialized_view_builder]
-        dataset_overrides = dataset_overrides_for_view_builders(
+        address_overrides = address_overrides_for_view_builders(
             view_dataset_override_prefix="test_prefix", view_builders=mock_view_builders
         )
 
@@ -545,7 +545,7 @@ class ViewManagerTest(unittest.TestCase):
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=mock_view_builders,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             historically_managed_datasets_to_clean=None,
         )
 
@@ -564,7 +564,7 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(view_builder.build(dataset_overrides=dataset_overrides))
+                mock.call(view_builder.build(address_overrides=address_overrides))
                 for view_builder in mock_view_builders
             ],
             any_order=True,
@@ -572,7 +572,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [
                 mock.call(
-                    materialized_view_builder.build(dataset_overrides=dataset_overrides)
+                    materialized_view_builder.build(address_overrides=address_overrides)
                 )
             ],
             any_order=True,
@@ -616,7 +616,7 @@ class ViewManagerTest(unittest.TestCase):
                 description=f"{view['view_id']} description",
                 materialized_address=None,
                 clustering_fields=None,
-                dataset_overrides=None,
+                address_overrides=None,
                 **view,
             )
             for view in sample_views

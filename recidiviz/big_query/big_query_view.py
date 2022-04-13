@@ -21,6 +21,7 @@ from typing import Any, Callable, Dict, Generic, List, Optional, Set, TypeVar
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
@@ -51,40 +52,26 @@ class BigQueryView(bigquery.TableReference):
         # Address this table will be materialized to, if this is a view that is
         # materialized.
         materialized_address: Optional[BigQueryAddress] = None,
-        dataset_overrides: Optional[
-            Dict[str, str]
-        ] = None,  # 'original_name' -> 'prefix_original_name'
+        address_overrides: Optional[BigQueryAddressOverrides] = None,
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: Any,
     ) -> None:
+        if address_overrides:
+            original_address = BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
+            sandbox_address = address_overrides.get_sandbox_address(original_address)
+            if sandbox_address:
+                dataset_id = sandbox_address.dataset_id
 
-        override_kwargs = {}
-        if dataset_overrides:
-            override_kwargs = self._get_dataset_override_kwargs(
-                dataset_overrides=dataset_overrides, **query_format_kwargs
-            )
-
-            if override_kwargs and dataset_id not in dataset_overrides:
-                raise ValueError(
-                    f"Dataset [{dataset_id}] for view [{view_id}] not found in dataset_overrides even though dependent "
-                    f"table datasets are overwritten: [{override_kwargs}]. You cannot write a view with "
-                    f"overwritten kwargs to its standard dataset."
-                )
-
-            if dataset_id in dataset_overrides:
-                dataset_id = dataset_overrides[dataset_id]
-
-            if (
-                materialized_address
-                and materialized_address.dataset_id in dataset_overrides
-            ):
-                updated_materialized_dataset_override = dataset_overrides[
-                    materialized_address.dataset_id
-                ]
-                materialized_address = BigQueryAddress(
-                    dataset_id=updated_materialized_dataset_override,
-                    table_id=materialized_address.table_id,
-                )
+                if materialized_address:
+                    sandbox_materialized_address = (
+                        address_overrides.get_sandbox_address(materialized_address)
+                    )
+                    if not sandbox_materialized_address:
+                        raise ValueError(
+                            f"Found override set for [{original_address}] but no override"
+                            f"set for the materialized address [{materialized_address}]"
+                        )
+                    materialized_address = sandbox_materialized_address
 
         if project_id is None:
             project_id = metadata.project_id()
@@ -100,14 +87,20 @@ class BigQueryView(bigquery.TableReference):
         super().__init__(dataset_ref, view_id)
         self.query_format_kwargs = {
             **query_format_kwargs,
-            **override_kwargs,
             "description": description,
         }
         self._view_id = view_id
         self._description = description
         self._view_query_template = view_query_template
-        self._view_query = self._format_view_query(
+        view_query_no_overrides = self._format_view_query(
             view_query_template, inject_project_id=True, **self.query_format_kwargs
+        )
+        self._view_query = (
+            self._apply_overrides_to_view_query(
+                view_query_no_overrides, address_overrides
+            )
+            if address_overrides
+            else view_query_no_overrides
         )
         self._parent_tables: Set[BigQueryAddress] = self._parse_parent_tables(
             self._view_query
@@ -119,23 +112,6 @@ class BigQueryView(bigquery.TableReference):
             )
         self._materialized_address = materialized_address
         self._clustering_fields = clustering_fields
-
-    @classmethod
-    def _get_dataset_override_kwargs(
-        cls, *, dataset_overrides: Dict[str, str], **query_format_kwargs: Any
-    ) -> Dict[str, str]:
-        overrides = {}
-        for key, original_value in query_format_kwargs.items():
-            if original_value in dataset_overrides:
-                if not key.endswith("_dataset") and not key.endswith("_dataset_id"):
-                    raise ValueError(
-                        f"Keyword arg key [{key}] with dataset overridden value [{original_value}] "
-                        f"does not have an expected suffix."
-                    )
-                new_value = dataset_overrides[original_value]
-                overrides[key] = new_value
-
-        return overrides
 
     @classmethod
     def _format_view_query_without_project_id(
@@ -176,6 +152,19 @@ class BigQueryView(bigquery.TableReference):
             )
         except ValueError as e:
             raise ValueError(f"Unable to format view query for {self.address}") from e
+
+    def _apply_overrides_to_view_query(
+        self, view_query: str, address_overrides: BigQueryAddressOverrides
+    ) -> str:
+        query_with_overrides = view_query
+        referenced_parent_tables = self._parse_parent_tables(view_query)
+        for parent_table in referenced_parent_tables:
+            if override := address_overrides.get_sandbox_address(address=parent_table):
+                query_with_overrides = query_with_overrides.replace(
+                    f"`{self.project}.{parent_table.dataset_id}.{parent_table.table_id}`",
+                    f"`{self.project}.{override.dataset_id}.{override.table_id}`",
+                )
+        return query_with_overrides
 
     def _query_format_args_with_project_id(
         self, **query_format_kwargs: Any
@@ -288,18 +277,18 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     def build(
         self,
         *,
-        dataset_overrides: Optional[Dict[str, str]] = None,
+        address_overrides: Optional[BigQueryAddressOverrides] = None,
         override_should_build_predicate: bool = False,
     ) -> BigQueryViewType:
         """Builds and returns the view object. Throws an exception of type  `BigQueryViewBuilderShouldNotBuildError`
         if `should_build()` is false for this view."""
         if not override_should_build_predicate and not self.should_build():
             raise BigQueryViewBuilderShouldNotBuildError()
-        return self._build(dataset_overrides=dataset_overrides)
+        return self._build(address_overrides=address_overrides)
 
     @abc.abstractmethod
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> BigQueryViewType:
         """Should be implemented by subclasses to build the view. Will only be called if should_build() returns True."""
 
@@ -385,7 +374,9 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             should_materialize=should_materialize,
         )
 
-    def _build(self, *, dataset_overrides: Dict[str, str] = None) -> BigQueryView:
+    def _build(
+        self, *, address_overrides: BigQueryAddressOverrides = None
+    ) -> BigQueryView:
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
@@ -393,7 +384,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             view_query_template=self.view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             **self.query_format_kwargs,
         )
 

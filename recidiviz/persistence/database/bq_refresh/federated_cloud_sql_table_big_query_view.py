@@ -18,10 +18,11 @@
 tables.
 """
 
-from typing import Dict, Optional
+from typing import Optional
 
 from sqlalchemy import Table
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -61,7 +62,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
         cloud_sql_query: str,
         database_key: SQLAlchemyDatabaseKey,
         materialized_address: BigQueryAddress,
-        dataset_overrides: Optional[Dict[str, str]] = None,
+        address_overrides: Optional[BigQueryAddressOverrides] = None,
     ):
         description = StrictStringFormatter().format(
             DESCRIPTION_TEMPLATE,
@@ -75,7 +76,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
             view_id=view_id,
             description=description,
             materialized_address=materialized_address,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             view_query_template=TABLE_QUERY_TEMPLATE,
             # View query template args
             connection_region=connection_region,
@@ -128,7 +129,7 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
         )
 
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> FederatedCloudSQLTableBigQueryView:
         if self.materialized_address is None:
             raise ValueError("The materialized_address field cannot be None.")
@@ -141,7 +142,7 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
             cloud_sql_query=self.cloud_sql_query,
             database_key=self.database_key,
             materialized_address=self.materialized_address,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
         )
 
     def should_build(self) -> bool:

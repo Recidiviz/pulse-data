@@ -17,8 +17,9 @@
 
 """An extension of BigQueryView with extra functionality related to metric views specifically."""
 
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 
@@ -37,7 +38,7 @@ class MetricBigQueryView(BigQueryView):
         view_query_template: str,
         dimensions: Tuple[str, ...],
         materialized_address: Optional[BigQueryAddress],
-        dataset_overrides: Optional[Dict[str, str]],
+        address_overrides: Optional[BigQueryAddressOverrides],
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
     ):
@@ -47,7 +48,7 @@ class MetricBigQueryView(BigQueryView):
             description=description,
             view_query_template=view_query_template,
             materialized_address=materialized_address,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             clustering_fields=clustering_fields,
             **query_format_kwargs,
         )
@@ -97,7 +98,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
-        self, *, dataset_overrides: Optional[Dict[str, str]] = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> MetricBigQueryView:
         return MetricBigQueryView(
             dataset_id=self.dataset_id,
@@ -107,7 +108,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
             dimensions=self.dimensions,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
-            dataset_overrides=dataset_overrides,
+            address_overrides=address_overrides,
             **self.query_format_kwargs,
         )
 
