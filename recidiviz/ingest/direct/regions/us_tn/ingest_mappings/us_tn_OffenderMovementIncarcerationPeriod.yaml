@@ -147,7 +147,8 @@ output:
                   - PAFA-DETAN  # Parole to facility - Detainer
                   - PAFA-EXPIR  # Parole to facility - Expiration
                   # These started appearing in Feb 2022 and appear to be new codes
-                  - PAFA-PTVOS  # Parole to facility - TODO(#11765) Add in description
+                  - PAFA-PTVOS  # Parole to facility
+                  - PRFA-PTVOS  # Probation to facility
           admission_reason:
             $enum_mapping:
               $raw_text:
@@ -294,6 +295,7 @@ output:
                   - PAFA-EXPIR  # Parole to facility - Expiration
                   # These started appearing in Feb 2022 and appear to be new codes
                   - PAFA-PTVOS  # Parole to facility - TODO(#11765) Add in description
+                  - PRFA-PTVOS  # Probation to facility
           release_reason:
             $enum_mapping:
               $raw_text:
@@ -500,7 +502,8 @@ output:
                   - CTFA-MISPR
                   - FUFA-INTRS
                   # These started appearing in Feb 2022 and appear to be new codes
-                  - PAFA-PTVOS  # Parole to facility - TODO(#11765) Add in description
+                  - PAFA-PTVOS  # Parole to facility
+                  - PRFA-PTVOS  # Probation to facility
               $ignore:
                   - "CTPR-NEWAD"
                   - "CTCC-NEWAD"
