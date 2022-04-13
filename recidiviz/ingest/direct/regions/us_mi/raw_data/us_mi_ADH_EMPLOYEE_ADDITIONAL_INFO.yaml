@@ -5,7 +5,9 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: employee_id
+    is_pii: True
   - name: email_address
+    is_pii: True
   - name: mdoc_anniversary_date
   - name: gvp_card_replacement_count
   - name: card_expiration_date
@@ -15,6 +17,7 @@ columns:
   - name: non_mdoc_employee_flag
   - name: non_mdoc_employee_type_id
   - name: non_mdoc_employer_id
+    is_pii: True
   - name: agency_code
   - name: agency_name
   - name: tku_code
@@ -37,16 +40,27 @@ columns:
   - name: lola_service_hours
   - name: other_service_hours
   - name: alt_phone_country_code
+    is_pii: True
   - name: alt_phone_area_code
+    is_pii: True
   - name: alt_phone_number
+    is_pii: True
   - name: alt_phone_extension
+    is_pii: True
   - name: cell_phone_country_code
+    is_pii: True
   - name: cell_phone_area_code
+    is_pii: True
   - name: cell_phone_number
+    is_pii: True
   - name: emp_address1
+    is_pii: True
   - name: emp_address2
+    is_pii: True
   - name: emp_address3
+    is_pii: True
   - name: emp_address4
+    is_pii: True
   - name: sigma_hm_dist_co
   - name: sigma_hm_acct_unit
   - name: sigma_hm_acct_unit_desc

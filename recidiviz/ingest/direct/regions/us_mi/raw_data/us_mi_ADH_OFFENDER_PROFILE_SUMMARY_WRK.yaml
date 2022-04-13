@@ -10,16 +10,22 @@ primary_key_cols:
 columns:
   - name: offender_id
     description: The OMNI-database generated ID for the justice-involved individual.
+    is_pii: True
   - name: offender_number
     description: The MDOC ID that all staff uses for the justice-involved individual.
+    is_pii: True
   - name: offender_booking_id
     description: The OMNI-database generated ID for the booking row.
+    is_pii: True
   - name: last_name
     description: The last name of the justice-involved individual
+    is_pii: True
   - name: first_name
     description: The first name of the justice-involved individual
+    is_pii: True
   - name: middle_name
     description: The middle name of the justice-involved individual
+    is_pii: True
   - name: name_suffix
     description: The name suffix (Jr., Sr. III) of the justice-involved individual
   - name: birth_date
@@ -27,6 +33,7 @@ columns:
     is_datetime: True
     datetime_sql_parsers: 
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
+    is_pii: True
   - name: eye_color_id
   - name: eye_color
   - name: hair_color_id
@@ -68,6 +75,7 @@ columns:
   - name: county
   - name: profile_date
   - name: ofr_sequence_number
+    is_pii: True
   - name: active_flag
   - name: disclosure_flag
   - name: hyta_flag
@@ -89,4 +97,5 @@ columns:
     description: |-
       The sequence number associated with the person - the sequence number indicates the 
       latest jurisdiction for a person within MDOC.
+    is_pii: True
   - name: last_update_date

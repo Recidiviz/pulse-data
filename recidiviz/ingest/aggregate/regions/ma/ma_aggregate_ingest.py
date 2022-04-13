@@ -58,13 +58,13 @@ def _parse_date(filename: str) -> datetime:
         reader = PdfFileReader(f)
         title = reader.getDocumentInfo().title  # type: ignore
         try:
-            return datetime.strptime(title, "Weekly Count (%m-%d-%Y).xlsx")
+            return datetime.strptime(title, "Weekly_DOC_Count_%m%d%Y.xls")
         except ValueError as e:
             page = reader.getPage(0)
             text = page.extractText()
             match = re.search(r"DATE :(\w+ \d{1,2}, \d{4})", text)
             if not match:
-                raise ValueError("Couldn't find date in PDF.") from e
+                raise ValueError(f"Couldn't find date in PDF. {title}") from e
             return datetime.strptime(match.group(1), "%B %d, %Y")
 
 

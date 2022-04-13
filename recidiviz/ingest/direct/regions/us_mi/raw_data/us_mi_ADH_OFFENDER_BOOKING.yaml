@@ -8,13 +8,17 @@ primary_key_cols:
 columns:
   - name: offender_booking_id
     description: The OMNI-database generated ID for the booking row.
+    is_pii: True
   - name: offender_booking_number
+    is_pii: True
   - name: offender_id
     description: The ID of the justice-involved individual to which this booking applies.
+    is_pii: True
   - name: offender_name_seq_no
     description: |-
       The sequence number associated with the latest booking for a person (since
       there may be multiple jurisdictions for someone).
+    is_pii: True
   - name: location_id
     description: The location ID of the booking (referenced by LOCATION table).
   - name: begin_date
@@ -32,11 +36,13 @@ columns:
       There might be situations where one individual may have two offender_numbers
       because of historical MDOC offender_number merging scenarios, so this field will
       have the previous_offender_id for a person.
+    is_pii: True
   - name: next_offender_id
     description: |-
       There might be situations where one individual may have two offender_numbers
       because of historical MDOC offender_number merging scenarios, so this field will
       have the next_offender_id for a person.
+    is_pii: True
   - name: active_flag
     description: Indicates whether or not this jurisdiction for the person is active.
     known_values:

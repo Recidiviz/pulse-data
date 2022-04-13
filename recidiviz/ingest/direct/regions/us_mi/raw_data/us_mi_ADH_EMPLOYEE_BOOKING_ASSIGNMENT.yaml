@@ -6,14 +6,18 @@ primary_key_cols: []
 columns:
   - name: offender_booking_id
   - name: employee_id
+    is_pii: True
   - name: sequence_number
   - name: assignment_date
   - name: closure_date
   - name: assignment_type_id
   - name: active_flag
   - name: assignment_employee_id
+    is_pii: True
   - name: source_employee_id
+    is_pii: True
   - name: destination_employee_id
+    is_pii: True
   - name: notes
   - name: assignment_subtype_id
   - name: closing_reason_id

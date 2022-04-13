@@ -102,6 +102,8 @@ class RawTableColumnInfo:
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # True if a column is a date/time
     is_datetime: bool = attr.ib(validator=attr_validators.is_bool)
+    # True if a column contains Personal Identifiable Information (PII)
+    is_pii: bool = attr.ib(validator=attr_validators.is_bool)
     # Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a
     # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
@@ -368,6 +370,7 @@ class DirectIngestRawFileConfig:
                 RawTableColumnInfo(
                     name=column["name"],
                     is_datetime=column.get("is_datetime", False),
+                    is_pii=column.get("is_pii", False),
                     description=column.get("description", None),
                     known_values=[
                         ColumnEnumValueInfo(

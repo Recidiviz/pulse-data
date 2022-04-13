@@ -6,6 +6,7 @@ primary_key_cols: []
 columns:
   - name: offender_charge_id
   - name: offender_booking_id
+    is_pii: True
   - name: legal_order_id
   - name: charge_number
   - name: offense_id

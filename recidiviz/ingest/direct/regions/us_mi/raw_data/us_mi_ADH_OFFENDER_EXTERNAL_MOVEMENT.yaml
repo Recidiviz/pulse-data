@@ -12,6 +12,7 @@ columns:
     description: |-
       The associated booking id (indicating the jurisdiction) this movement 
       occurred under (as referenced by OFFENDER_BOOKING).
+    is_pii: True
   - name: source_location_id
     description: |- 
       The location id that indicates where the person moved from (referenced from LOCATION)

@@ -9,6 +9,7 @@ primary_key_cols:
 columns:
   - name: offender_booking_id
     description: The OMNI-database generated ID for a person's jurisdiction in MDOC.
+    is_pii: True
   - name: profile_date
     description: The date that a given profile for a given offender_booking_id is updated.
     is_datetime: True

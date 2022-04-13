@@ -77,10 +77,16 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 primary_key_cols=["col1", "col2"],
                 columns=[
                     RawTableColumnInfo(
-                        name="col1", is_datetime=False, description="col1 description"
+                        name="col1",
+                        is_datetime=False,
+                        is_pii=False,
+                        description="col1 description",
                     ),
                     RawTableColumnInfo(
-                        name="col2", is_datetime=False, description="col2 description"
+                        name="col2",
+                        is_datetime=False,
+                        is_pii=False,
+                        description="col2 description",
                     ),
                 ],
                 supplemental_order_by_clause="CAST(seq_num AS INT64)",
@@ -128,10 +134,16 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 primary_key_cols=["col1", "col2"],
                 columns=[
                     RawTableColumnInfo(
-                        name="col1", is_datetime=False, description="col1 description"
+                        name="col1",
+                        is_datetime=False,
+                        is_pii=False,
+                        description="col1 description",
                     ),
                     RawTableColumnInfo(
-                        name="col2", is_datetime=False, description="col2 description"
+                        name="col2",
+                        is_datetime=False,
+                        is_pii=False,
+                        description="col2 description",
                     ),
                 ],
                 supplemental_order_by_clause="CAST(seq_num AS INT64)",
@@ -180,21 +192,31 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 primary_key_cols=["col1"],
                 columns=[
                     RawTableColumnInfo(
-                        name="col1", is_datetime=False, description="col1 description"
+                        name="col1",
+                        is_datetime=False,
+                        is_pii=False,
+                        description="col1 description",
                     ),
                     RawTableColumnInfo(
-                        name="col2", is_datetime=True, description="col2 description"
+                        name="col2",
+                        is_datetime=True,
+                        is_pii=False,
+                        description="col2 description",
                     ),
                     RawTableColumnInfo(
                         name="col3",
                         is_datetime=True,
+                        is_pii=False,
                         description="col3 description",
                         datetime_sql_parsers=[
                             "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
                         ],
                     ),
                     RawTableColumnInfo(
-                        name="undocumented_column", is_datetime=True, description=None
+                        name="undocumented_column",
+                        is_datetime=True,
+                        is_pii=False,
+                        description=None,
                     ),
                 ],
                 supplemental_order_by_clause="",
@@ -263,10 +285,16 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 primary_key_cols=["col1"],
                 columns=[
                     RawTableColumnInfo(
-                        name="col1", is_datetime=False, description="col1 description"
+                        name="col1",
+                        is_datetime=False,
+                        is_pii=False,
+                        description="col1 description",
                     ),
                     RawTableColumnInfo(
-                        name="col2", is_datetime=True, description="col2 description"
+                        name="col2",
+                        is_datetime=True,
+                        is_pii=False,
+                        description="col2 description",
                     ),
                 ],
                 supplemental_order_by_clause="",

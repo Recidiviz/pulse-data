@@ -6,6 +6,7 @@ primary_key_cols: []
 columns:
   - name: legal_order_id
   - name: offender_booking_id
+    is_pii: True
   - name: order_type_id
   - name: order_status_id
   - name: create_date
@@ -29,17 +30,25 @@ columns:
   - name: closing_date
   - name: closing_notes
   - name: offender_court_last_name
+    is_pii: True
   - name: offender_court_first_name
+    is_pii: True
   - name: offender_court_middle_name
+    is_pii: True
   - name: offender_court_name_suffix
+    is_pii: True
   - name: reporting_instructions
   - name: order_disclosure_id
   - name: prison_prefix
   - name: judge_id
+    is_pii: True
   - name: defense_counsel_name
+    is_pii: True
   - name: prosecuting_attorney_name
+    is_pii: True
   - name: retained_appointed_id
   - name: sentencing_employee_id
+    is_pii: True
   - name: sentencing_location_id
   - name: docket_number_description
   - name: last_update_user

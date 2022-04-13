@@ -125,6 +125,7 @@ def main(
                 columns_to_randomize=columns_to_randomize,
                 file_tags_to_load_in_full=[],
                 randomized_values_map=external_id_to_test_id_map,
+                datetime_format="%m/%d/%y",
                 overwrite=True,
             )
             fixtures_generator.generate_fixtures_for_ingest_view()
