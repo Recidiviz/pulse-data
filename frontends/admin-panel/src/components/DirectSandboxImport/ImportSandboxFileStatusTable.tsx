@@ -16,7 +16,6 @@
 // =============================================================================
 import { Table, Tag } from "antd";
 import * as React from "react";
-
 import { FileStatusList } from "./constants";
 
 const ImportSandboxFileStatusTable: React.FC<FileStatusList> = ({
@@ -30,9 +29,25 @@ const ImportSandboxFileStatusTable: React.FC<FileStatusList> = ({
     React.useState<TableData[] | undefined>(undefined);
 
   const formatTableData = React.useCallback(() => {
-    const data: TableData[] = fileStatusList?.map((x) => {
-      return { fileTag: x.fileTag, status: x.status };
-    });
+    const priorityOrder: { [key: string]: number } = {
+      failed: 0,
+      succeeded: 1,
+      skipped: 2,
+    };
+    const data: TableData[] = fileStatusList
+      ?.map((x) => {
+        return { fileTag: x.fileTag, status: x.status };
+      })
+      .sort((a, b) => {
+        const aStatus = a.status ?? "skipped";
+        const bStatus = b.status ?? "skipped";
+        const aFileTag = a.fileTag ?? "";
+        const bFileTag = b.fileTag ?? "";
+        if (aStatus === bStatus) {
+          return aFileTag.localeCompare(bFileTag);
+        }
+        return priorityOrder[aStatus] - priorityOrder[bStatus];
+      });
     setTableData(data);
   }, [fileStatusList]);
 
