@@ -23,7 +23,7 @@ from recidiviz.utils.string import StrictStringFormatter
 
 # TODO(#10054): Remove facility normalization once handled in ingest.
 from recidiviz.validation.views.utils.state_specific_query_strings import (
-    state_specific_dataflow_facility_name_tranformation,
+    state_specific_dataflow_facility_name_transformation,
 )
 
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
@@ -61,7 +61,7 @@ sanitized_internal_metrics AS (
       date_of_stay, 
       person_external_id, 
       CAST(person_id AS STRING) AS person_id,
-      {state_specific_dataflow_facility_name_tranformation},
+      {state_specific_dataflow_facility_name_transformation},
    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
 ),
 internal_metrics_for_valid_regions_and_dates AS (
@@ -115,5 +115,5 @@ def incarceration_population_person_level_query(
         external_data_required_fields_clause=exclude_rows_with_missing_fields(
             external_data_required_fields
         ),
-        state_specific_dataflow_facility_name_tranformation=state_specific_dataflow_facility_name_tranformation(),
+        state_specific_dataflow_facility_name_transformation=state_specific_dataflow_facility_name_transformation(),
     )
