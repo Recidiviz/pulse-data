@@ -17,10 +17,7 @@
 """Implements tests for conditions on SimpleBigQueryViewBuilder."""
 from unittest import TestCase, mock
 
-from recidiviz.big_query.big_query_view import (
-    SimpleBigQueryViewBuilder,
-    BigQueryViewBuilderShouldNotBuildError,
-)
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 
 
 class TestSimpleBigQueryViewBuilderConditions(TestCase):
@@ -34,25 +31,36 @@ class TestSimpleBigQueryViewBuilderConditions(TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_raise_when_condition_fails(self) -> None:
+    def test_should_not_deploy(self) -> None:
         builder = SimpleBigQueryViewBuilder(
             dataset_id="fake_dataset",
             view_id="my_fake_view",
             description="my_fake_view description",
             view_query_template="SELECT NULL LIMIT 0",
-            should_build_predicate=(lambda: False),
+            should_deploy_predicate=(lambda: False),
         )
-        with self.assertRaises(BigQueryViewBuilderShouldNotBuildError):
-            builder.build()
+        view = builder.build()
+        self.assertFalse(view.should_deploy())
 
-    def test_no_raise_when_condition_succeeds(self) -> None:
+    def test_should_deploy(self) -> None:
         builder = SimpleBigQueryViewBuilder(
             dataset_id="fake_dataset",
             view_id="my_fake_view",
             description="my_fake_view description",
             view_query_template="SELECT NULL LIMIT 0",
-            should_build_predicate=(lambda: True),
+            should_deploy_predicate=(lambda: True),
         )
 
-        # Should be no raise
-        builder.build()
+        view = builder.build()
+        self.assertTrue(view.should_deploy())
+
+    def test_should_deploy_default(self) -> None:
+        builder = SimpleBigQueryViewBuilder(
+            dataset_id="fake_dataset",
+            view_id="my_fake_view",
+            description="my_fake_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+        )
+
+        view = builder.build()
+        self.assertTrue(view.should_deploy())

@@ -17,6 +17,7 @@
 """Provides utilities for updating views within a live BigQuery instance."""
 import logging
 from concurrent import futures
+from enum import Enum
 from http import HTTPStatus
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
@@ -28,11 +29,7 @@ from opencensus.stats import view as opencensus_view
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.big_query_view import (
-    BigQueryView,
-    BigQueryViewBuilder,
-    BigQueryViewBuilderShouldNotBuildError,
-)
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
@@ -311,7 +308,6 @@ def build_views_to_update(
     view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     address_overrides: Optional[BigQueryAddressOverrides],
-    override_should_build_predicate: bool = False,
 ) -> List[BigQueryView]:
     """Returns the list of views that should be updated, built from builders in the |candidate_view_builders| list."""
 
@@ -322,19 +318,11 @@ def build_views_to_update(
                 f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
             )
 
-        try:
-            view = view_builder.build(
+        views_to_update.append(
+            view_builder.build(
                 address_overrides=address_overrides,
-                override_should_build_predicate=override_should_build_predicate,
             )
-        except BigQueryViewBuilderShouldNotBuildError:
-            logging.warning(
-                "Condition failed for view builder %s in dataset %s. Continuing without it.",
-                view_builder.view_id,
-                view_builder.dataset_id,
-            )
-            continue
-        views_to_update.append(view)
+        )
     return views_to_update
 
 
@@ -349,6 +337,12 @@ def _create_all_datasets_if_necessary(
     for dataset_id in dataset_ids:
         dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
         bq_client.create_dataset_if_necessary(dataset_ref, dataset_table_expiration)
+
+
+class CreateOrUpdateViewStatus(Enum):
+    SKIPPED = "SKIPPED"
+    SUCCESS_WITHOUT_CHANGES = "SUCCESS_WITHOUT_CHANGES"
+    SUCCESS_WITH_CHANGES = "SUCCESS_WITH_CHANGES"
 
 
 def _create_managed_dataset_and_deploy_views(
@@ -402,7 +396,9 @@ def _create_managed_dataset_and_deploy_views(
             dry_run=False,
         )
 
-    def process_fn(v: BigQueryView, parent_results: Dict[BigQueryView, bool]) -> bool:
+    def process_fn(
+        v: BigQueryView, parent_results: Dict[BigQueryView, CreateOrUpdateViewStatus]
+    ) -> CreateOrUpdateViewStatus:
         """Returns True if this view or any of its parents were updated."""
         return _create_or_update_view_and_materialize_if_necessary(
             bq_client, v, parent_results, force_materialize
@@ -414,14 +410,38 @@ def _create_managed_dataset_and_deploy_views(
 def _create_or_update_view_and_materialize_if_necessary(
     bq_client: BigQueryClient,
     view: BigQueryView,
-    parent_results: Dict[BigQueryView, bool],
+    parent_results: Dict[BigQueryView, CreateOrUpdateViewStatus],
     force_materialize: bool,
-) -> bool:
-    """Creates or updates the provided view in BigQuery and materializes that view into a table when appropriate.
-    Returns True if this view or any views in its parent chain have been updated from the version that was saved in
-    BigQuery before this update.
+) -> CreateOrUpdateViewStatus:
+    """Creates or updates the provided view in BigQuery and materializes that view into
+    a table when appropriate. Returns:
+        - CreateOrUpdateViewStatus.SKIPPED if this view cannot be deployed
+        - CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES if this view or any views in its
+           parent chain have been updated from the version that was saved in BigQuery
+           before this update.
+        - CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES if neither this view or any of the
+           views in its parent chain were updated.
     """
-    parent_changed = any(parent_results.values())
+    if not view.should_deploy():
+        logging.info(
+            "Skipping creation of view [%s.%s] which cannot be deployed.",
+            view.dataset_id,
+            view.view_id,
+        )
+        return CreateOrUpdateViewStatus.SKIPPED
+    skipped_parents = [
+        result
+        for result in parent_results.values()
+        if result == CreateOrUpdateViewStatus.SKIPPED
+    ]
+    if skipped_parents:
+        raise ValueError(
+            f"Found view [{view.address}] that has skipped parents - cannot deploy: {skipped_parents}"
+        )
+
+    parent_changed = (
+        CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES in parent_results.values()
+    )
     view_changed = False
     dataset_ref = bq_client.dataset_ref_for_id(view.dataset_id)
 
@@ -468,7 +488,12 @@ def _create_or_update_view_and_materialize_if_necessary(
                 view.dataset_id,
                 view.view_id,
             )
-    return view_changed or parent_changed or force_materialize
+    has_changes = view_changed or parent_changed or force_materialize
+    return (
+        CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES
+        if has_changes
+        else CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES
+    )
 
 
 def view_builder_sub_graph_for_view_builders_to_load(

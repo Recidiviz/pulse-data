@@ -34,10 +34,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import METADATA_DATASET
 from recidiviz.validation.views.metadata.validation_schema_config import (
-    get_external_validation_schema,
     DatasetSchemaInfo,
+    get_external_validation_schema,
 )
-
 
 COLUMN_COUNTER_STATE_QUERY_TEMPLATE = """
 WITH table_rows AS (
@@ -89,7 +88,7 @@ class ValidationTableColumnCounterBigQueryViewCollector(
                         validation_dataset=self.schema_config.dataset,
                         table_name=table_name,
                         column_name=col,
-                        should_build_predicate=table_column_checker.get_has_column_predicate(
+                        should_deploy_predicate=table_column_checker.get_has_column_predicate(
                             col
                         ),
                     )

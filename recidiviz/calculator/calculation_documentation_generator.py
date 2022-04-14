@@ -209,7 +209,6 @@ class CalculationDocumentationGenerator:
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 candidate_view_builders=all_deployed_view_builders(),
                 address_overrides=None,
-                override_should_build_predicate=True,
             )
         )
         self.prod_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)

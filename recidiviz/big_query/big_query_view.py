@@ -54,6 +54,7 @@ class BigQueryView(bigquery.TableReference):
         materialized_address: Optional[BigQueryAddress] = None,
         address_overrides: Optional[BigQueryAddressOverrides] = None,
         clustering_fields: Optional[List[str]] = None,
+        should_deploy_predicate: Optional[Callable[[], bool]] = None,
         **query_format_kwargs: Any,
     ) -> None:
         if address_overrides:
@@ -112,6 +113,23 @@ class BigQueryView(bigquery.TableReference):
             )
         self._materialized_address = materialized_address
         self._clustering_fields = clustering_fields
+
+        # Returns whether it's safe to deploy this view.
+        self._should_deploy_predicate = should_deploy_predicate
+
+        # Cached result of self._should_deploy_predicate
+        self._should_deploy: Optional[bool] = None
+
+    def should_deploy(self) -> bool:
+        """Returns whether it is safe to deploy this view. This may be an expensive
+        call (e.g. it might query against BQ).
+        """
+        if self._should_deploy is None:
+            if self._should_deploy_predicate:
+                self._should_deploy = self._should_deploy_predicate()
+            else:
+                self._should_deploy = True
+        return self._should_deploy
 
     @classmethod
     def _format_view_query_without_project_id(
@@ -278,29 +296,20 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
         self,
         *,
         address_overrides: Optional[BigQueryAddressOverrides] = None,
-        override_should_build_predicate: bool = False,
     ) -> BigQueryViewType:
-        """Builds and returns the view object. Throws an exception of type  `BigQueryViewBuilderShouldNotBuildError`
-        if `should_build()` is false for this view."""
-        if not override_should_build_predicate and not self.should_build():
-            raise BigQueryViewBuilderShouldNotBuildError()
+        """Builds and returns the view object."""
         return self._build(address_overrides=address_overrides)
 
     @abc.abstractmethod
     def _build(
         self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> BigQueryViewType:
-        """Should be implemented by subclasses to build the view. Will only be called if should_build() returns True."""
+        """Should be implemented by subclasses to build the view."""
 
     def build_and_print(self) -> None:
         """Builds the view and prints it to stdout."""
         view = self.build()
         print(view.view_query)
-
-    @abc.abstractmethod
-    def should_build(self) -> bool:
-        """Should be implemented by subclasses to return True if this view can be built
-        (e.g. if all dependent tables /columns exist). Returns False otherwise."""
 
     def should_deploy_in_project(self, project_id: str) -> bool:
         return self.projects_to_deploy is None or project_id in self.projects_to_deploy
@@ -354,7 +363,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
-        should_build_predicate: Optional[Callable[[], bool]] = None,
+        should_deploy_predicate: Optional[Callable[[], bool]] = None,
         clustering_fields: Optional[List[str]] = None,
         # All query format kwargs args must have string values
         **query_format_kwargs: str,
@@ -364,7 +373,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.projects_to_deploy = projects_to_deploy
         self.description = description
         self.view_query_template = view_query_template
-        self.should_build_predicate = should_build_predicate
+        self.should_deploy_predicate = should_deploy_predicate
         self.clustering_fields = clustering_fields
         self.query_format_kwargs = query_format_kwargs
         self.materialized_address = self._build_materialized_address(
@@ -385,11 +394,9 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
             address_overrides=address_overrides,
+            should_deploy_predicate=self.should_deploy_predicate,
             **self.query_format_kwargs,
         )
-
-    def should_build(self) -> bool:
-        return not self.should_build_predicate or self.should_build_predicate()
 
     # TODO(#7453): This functionality should be shared between *View and *ViewBuilder classes.
     @property
@@ -407,7 +414,3 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         if self.materialized_address:
             return self.materialized_address
         return self.address
-
-
-class BigQueryViewBuilderShouldNotBuildError(Exception):
-    """Error thrown when the should_build() check for a BigQueryView fails."""

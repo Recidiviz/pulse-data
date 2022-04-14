@@ -99,6 +99,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 infer_columns_from_config=False,
             ),
             address_overrides=None,
+            should_deploy_predicate=(lambda: True),
         )
 
         self.assertEqual(self.PROJECT_ID, view.project)
@@ -122,6 +123,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
             view.select_query,
         )
+        self.assertTrue(view.should_deploy())
 
     def test_raw_latest_historical_file_view(self) -> None:
         view = DirectIngestRawDataTableLatestView(
@@ -156,6 +158,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 infer_columns_from_config=False,
             ),
             address_overrides=None,
+            should_deploy_predicate=None,
         )
 
         self.assertEqual(self.PROJECT_ID, view.project)

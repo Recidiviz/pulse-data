@@ -56,6 +56,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             materialized_address=materialized_address,
             address_overrides=address_overrides,
             clustering_fields=clustering_fields,
+            should_deploy_predicate=None,
             **query_format_kwargs,
         )
         self.columns = columns
@@ -118,6 +119,3 @@ class SelectedColumnsBigQueryViewBuilder(
             address_overrides=address_overrides,
             **self.query_format_kwargs,
         )
-
-    def should_build(self) -> bool:
-        return True

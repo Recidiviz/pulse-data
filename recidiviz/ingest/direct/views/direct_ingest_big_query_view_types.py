@@ -18,7 +18,7 @@
 import re
 import string
 from enum import Enum, auto
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import attr
 
@@ -217,14 +217,10 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         description: str,
         view_query_template: str,
         raw_file_config: DirectIngestRawFileConfig,
+        should_deploy_predicate: Optional[Callable[[], bool]],
         address_overrides: Optional[BigQueryAddressOverrides] = None,
         include_undocumented_columns: bool = False,
     ):
-        if not raw_file_config.primary_key_cols:
-            raise ValueError(
-                f"Empty primary key list in raw file config with tag [{raw_file_config.file_tag}] during "
-                f"construction of DirectIngestRawDataTableBigQueryView"
-            )
         view_dataset_id = raw_latest_views_dataset_for_region(
             region_code=region_code.lower(),
             sandbox_dataset_prefix=None,
@@ -253,8 +249,21 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
             normalized_columns=normalized_columns,
             supplemental_order_by_clause=supplemental_order_by_clause,
             address_overrides=address_overrides,
+            should_deploy_predicate=should_deploy_predicate,
         )
         self.raw_file_config = raw_file_config
+
+    def should_deploy(self) -> bool:
+        should_deploy = super().should_deploy()
+
+        if should_deploy and not self.raw_file_config.primary_key_cols:
+            raise ValueError(
+                f"Empty primary key list in raw file config with tag "
+                f"[{self.raw_file_config.file_tag}] during construction of "
+                f"DirectIngestRawDataTableBigQueryView that is marked as "
+                f"should_deploy()==True."
+            )
+        return should_deploy
 
     @staticmethod
     def _supplemental_order_by_clause_for_config(
@@ -333,6 +342,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
         project_id: str = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
+        should_deploy_predicate: Optional[Callable[[], bool]],
         address_overrides: Optional[BigQueryAddressOverrides] = None,
     ):
         view_id = f"{raw_file_config.file_tag}_latest"
@@ -350,6 +360,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
             address_overrides=address_overrides,
+            should_deploy_predicate=should_deploy_predicate,
         )
 
 
@@ -385,6 +396,7 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
             include_undocumented_columns=include_undocumented_columns,
+            should_deploy_predicate=None,
         )
 
 
@@ -936,6 +948,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             region_code=region_code,
             raw_file_config=raw_table_config,
             address_overrides=None,
+            should_deploy_predicate=None,
         ).select_query_uninjected_project_id
 
     @staticmethod
@@ -1064,6 +1077,3 @@ class DirectIngestPreProcessedIngestViewBuilder(
                 )
             )
         )
-
-    def should_build(self) -> bool:
-        return True

@@ -34,6 +34,3 @@ class FakeBigQueryViewBuilder(BigQueryViewBuilder):
 
     def build_and_print(self) -> None:
         print(self.view.view_query)
-
-    def should_build(self) -> bool:
-        return True
