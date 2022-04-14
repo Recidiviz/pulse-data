@@ -56,6 +56,30 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_commitment_from_supervision_utils import (
+    UsCoCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_incarceration_delegate import (
+    UsCoIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_incarceration_period_normalization_delegate import (
+    UsCoIncarcerationNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_program_assignment_normalization_delegate import (
+    UsCoProgramAssignmentNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_supervision_delegate import (
+    UsCoSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_supervision_period_normalization_delegate import (
+    UsCoSupervisionNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_violation_response_normalization_delegate import (
+    UsCoViolationResponseNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_violations_delegate import (
+    UsCoViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_delegate import (
     UsIdCommitmentFromSupervisionDelegate,
 )
@@ -342,6 +366,8 @@ def _get_state_specific_incarceration_period_normalization_delegate(
 ) -> StateSpecificIncarcerationNormalizationDelegate:
     """Returns the type of IncarcerationNormalizationDelegate that should be used for
     normalizing StateIncarcerationPeriod entities from a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
@@ -372,7 +398,8 @@ def _get_state_specific_supervision_period_normalization_delegate(
         if entity_kwargs and entity_kwargs.get(StateAssessment.__name__) is not None
         else None
     )
-
+    if state_code == StateCode.US_CO.value:
+        return UsCoSupervisionNormalizationDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdSupervisionNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
@@ -398,6 +425,8 @@ def _get_state_specific_program_assignment_normalization_delegate(
 ) -> StateSpecificProgramAssignmentNormalizationDelegate:
     """Returns the type of ProgramAssignmentNormalizationDelegate that should be used for
     normalizing StateProgramAssignment entities from a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
@@ -419,6 +448,8 @@ def _get_state_specific_commitment_from_supervision_delegate(
 ) -> StateSpecificCommitmentFromSupervisionDelegate:
     """Returns the type of StateSpecificCommitmentFromSupervisionDelegate that should be used for
     commitment from supervision admission calculations in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_ME.value:
@@ -440,6 +471,8 @@ def _get_state_specific_violation_delegate(
 ) -> StateSpecificViolationDelegate:
     """Returns the type of StateSpecificViolationDelegate that should be used for
     violation calculations in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoViolationDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdViolationDelegate()
     if state_code == StateCode.US_ME.value:
@@ -461,6 +494,8 @@ def _get_state_specific_violation_response_normalization_delegate(
 ) -> StateSpecificViolationResponseNormalizationDelegate:
     """Returns the type of StateSpecificViolationResponseNormalizationDelegate that should be used for
     violation calculations in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
@@ -482,6 +517,8 @@ def _get_state_specific_incarceration_delegate(
 ) -> StateSpecificIncarcerationDelegate:
     """Returns the type of StateSpecificIncarcerationDelegate that should be used for
     incarceration calculations in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoIncarcerationDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdIncarcerationDelegate()
     if state_code == StateCode.US_ME.value:
@@ -505,6 +542,8 @@ def get_state_specific_supervision_delegate(
 ) -> StateSpecificSupervisionDelegate:
     """Returns the type of StateSpecificSupervisionDelegate that should be used for
     supervision calculations in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoSupervisionDelegate()
     if state_code == StateCode.US_ID.value:
         return UsIdSupervisionDelegate()
     if state_code == StateCode.US_ME.value:

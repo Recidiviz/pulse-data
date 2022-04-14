@@ -287,6 +287,11 @@ states:
    # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
    #  controller tests.
    SECONDARY: FILE
+- US_CO:
+   PRIMARY: FILE
+   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
+   #  controller tests.
+   SECONDARY: FILE
 - US_XX:
    PRIMARY: FILE
    # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
