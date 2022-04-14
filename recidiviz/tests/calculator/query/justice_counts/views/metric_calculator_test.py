@@ -33,8 +33,8 @@ from recidiviz.common import date
 from recidiviz.justice_counts.dimensions import corrections, location, person
 from recidiviz.justice_counts.dimensions.base import Dimension
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
 from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
-from recidiviz.tests.big_query.view_test_util import BaseViewTest
 
 _npd = np.datetime64
 
@@ -126,7 +126,7 @@ METRIC_CALCULATOR_SCHEMA = MockTableSchema(
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class MonthlyMetricViewTest(BaseViewTest):
+class MonthlyMetricViewTest(BigQueryViewTestCase):
     """Tests the Justice Counts metric by month view."""
 
     def test_recent_population(self) -> None:
@@ -2610,7 +2610,7 @@ class MonthlyMetricViewTest(BaseViewTest):
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class AnnualMetricViewTest(BaseViewTest):
+class AnnualMetricViewTest(BigQueryViewTestCase):
     """Tests the Justice Counts annual metric views."""
 
     def create_date_partitions(

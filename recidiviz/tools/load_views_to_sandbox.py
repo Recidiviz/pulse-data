@@ -85,7 +85,7 @@ def load_views_to_sandbox(
         If specified, only loads views whose dataset_id matches one of the listed
         dataset_ids.
 
-    update_descendants : bool, default False
+    update_descendants : bool, default True
         Only applied if `view_ids_to_load` or `dataset_ids_to_load` is included.
         If True, loads descendant views of views found in the two aforementioned
         parameters.

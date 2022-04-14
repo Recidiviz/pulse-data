@@ -29,8 +29,8 @@ from recidiviz.calculator.query.justice_counts.views import (
 )
 from recidiviz.justice_counts.dimensions import corrections, location
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
 from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
-from recidiviz.tests.big_query.view_test_util import BaseViewTest
 from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_test import (
     METRIC_CALCULATOR_SCHEMA,
     FakeState,
@@ -39,7 +39,7 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_tes
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class CorrectionsOutputViewTest(BaseViewTest):
+class CorrectionsOutputViewTest(BigQueryViewTestCase):
     """Tests the Corrections output view."""
 
     INPUT_SCHEMA = MockTableSchema(
@@ -492,7 +492,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class CorrectionsMetricsIntegrationTest(BaseViewTest):
+class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
     """Tests the Justice Counts Prison Population view."""
 
     def test_recent_population(self) -> None:

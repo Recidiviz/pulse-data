@@ -30,8 +30,8 @@ from recidiviz.calculator.query.justice_counts.views import (
 )
 from recidiviz.justice_counts.dimensions import location
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
 from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
-from recidiviz.tests.big_query.view_test_util import BaseViewTest
 from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_test import (
     METRIC_CALCULATOR_SCHEMA,
     FakeState,
@@ -41,7 +41,7 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_tes
 
 @patch("recidiviz.common.fips.validate_county_code", Mock(return_value=None))
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class JailsOutputViewTest(BaseViewTest):
+class JailsOutputViewTest(BigQueryViewTestCase):
     """Tests the Jails output view."""
 
     INPUT_SCHEMA = MockTableSchema(
@@ -257,7 +257,7 @@ class JailsOutputViewTest(BaseViewTest):
 
 @patch("recidiviz.common.fips.validate_county_code", Mock(return_value=None))
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class JailsMetricsIntegrationTest(BaseViewTest):
+class JailsMetricsIntegrationTest(BigQueryViewTestCase):
     """Tests the Jails output view."""
 
     INPUT_SCHEMA = MockTableSchema(

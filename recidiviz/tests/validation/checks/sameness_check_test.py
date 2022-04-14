@@ -26,7 +26,10 @@ from pandas._testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.tests.big_query.view_test_util import BaseViewTest, MockTableSchema
+from recidiviz.tests.big_query.big_query_view_test_case import (
+    BigQueryViewTestCase,
+    MockTableSchema,
+)
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
     SamenessDataValidationCheck,
@@ -773,7 +776,7 @@ class TestSamenessValidationCheckers(TestCase):
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class TestSamenessPerRowValidationCheckerSQL(BaseViewTest):
+class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
     """Tests for the TestSamenessPerRowValidationCheckerSQL error view builder queries."""
 
     def test_sameness_check_numbers_same_values(self) -> None:
@@ -1069,7 +1072,7 @@ class TestSamenessPerRowValidationCheckerSQL(BaseViewTest):
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class SamenessPerViewValidationChecker(BaseViewTest):
+class SamenessPerViewValidationChecker(BigQueryViewTestCase):
     """Tests for the SamenessPerViewValidationChecker error view builder queries."""
 
     def test_sameness_check_dates_same_values(self) -> None:
