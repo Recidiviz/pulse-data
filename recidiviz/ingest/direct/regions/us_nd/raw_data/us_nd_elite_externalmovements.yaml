@@ -32,6 +32,100 @@ columns:
   - name: FROM_AGY_LOC_ID
     description: |-
       ID of the facility that the movement came from.
+    known_values:
+      - value: 'CJ'
+        description: County Jail
+      - value: 'BTC'
+        description: Bismarck Transition Center
+      - value: 'CPP'
+        description: Community Placement Program
+      - value: 'GFC'
+        description: Grand Forks County Correctional
+      - value: 'OOS'
+        description: Out of State
+      - value: 'TRC'
+        description: Tompkins Rehabilitation and Correctional Center
+      - value: 'HRCC'
+        description: Heart River Correctional Center
+      - value: 'JRCC'
+        description: James River Correctional Center
+      - value: 'LRRP'
+        description: Lake Region Residential Reentry Center
+      - value: 'MRCC'
+        description: Missouri River Correctional Center
+      - value: 'NDSP'
+        description: North Dakota State Penitentiary
+      - value: 'DWCRC'
+        description: Dakota Women's Correctional and Rehabilitation Center
+      - value: 'FTPFAR'
+        description: Fargo - Female Transfer Program
+      - value: 'FTPMND'
+        description: Mandan - Female Transfer Program
+      - value: 'MTPFAR'
+        description: Fargo - Male Transfer Program
+      - value: 'MTPMND'
+        description: Mandan - Male Transfer Program
+      - value: 'TRCC'
+        description: Tompkins Rehabilitation and Correctional Center
+      - value: 'OUT'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'DEFP'
+        description: Deferred Prioritization
+      - value: 'NTAD'
+        description: |-
+          - Person is serving a dual sentence out of state and has not been delivered to the DOCR by the ND county of jurisdiction.  DOCR is not financially responsible.  The admission reason code for them is NTAD.
+          - Parole violator whose parole has been revoked by the Parole Board, but is in county jail on other charges.  DOCR is not financially responsible.  The admission reason code for them is PV.
+          - Escapee who has been recaptured by another jurisdiction and is awaiting disposition on outstanding charges in that jurisdiction.  DOCR is not financially responsible.  The admission reason code for them is REC.
+      - value: 'FD'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NE'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NW'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'OS'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'SC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'SE'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'SW'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NEC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'EAST'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'INACT'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'HACTC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NCCRC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'MTPMDN'
+        description: (sp) Mandan - Male Transfer Program
+      - value: 'PREA'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'DOC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'MNCF'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'PROB'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'FC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'BOP'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'YCC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'FCI'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'TRN'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'MON'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'CONT'
+        description: "TODO(#11833): Update with facility name."
   - name: MOVEMENT_SEQ
     description: |-
       The ordered index of the movement among the full set of movements associated with a particular booking.
@@ -48,6 +142,100 @@ columns:
   - name: TO_AGY_LOC_ID
     description: |-
       ID of the facility that the movement went to.
+    known_values:
+      - value: 'CJ'
+        description: County Jail
+      - value: 'BTC'
+        description: Bismarck Transition Center
+      - value: 'CPP'
+        description: Community Placement Program
+      - value: 'GFC'
+        description: Grand Forks County Correctional
+      - value: 'OOS'
+        description: Out of State
+      - value: 'TRC'
+        description: Tompkins Rehabilitation and Correctional Center
+      - value: 'HRCC'
+        description: Heart River Correctional Center
+      - value: 'JRCC'
+        description: James River Correctional Center
+      - value: 'LRRP'
+        description: Lake Region Residential Reentry Center
+      - value: 'MRCC'
+        description: Missouri River Correctional Center
+      - value: 'NDSP'
+        description: North Dakota State Penitentiary
+      - value: 'DWCRC'
+        description: Dakota Women's Correctional and Rehabilitation Center
+      - value: 'FTPFAR'
+        description: Fargo - Female Transfer Program
+      - value: 'FTPMND'
+        description: Mandan - Female Transfer Program
+      - value: 'MTPFAR'
+        description: Fargo - Male Transfer Program
+      - value: 'MTPMND'
+        description: Mandan - Male Transfer Program
+      - value: 'TRCC'
+        description: Tompkins Rehabilitation and Correctional Center
+      - value: 'OUT'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'DEFP'
+        description: Deferred Prioritization
+      - value: 'NTAD'
+        description: |-
+          - Person is serving a dual sentence out of state and has not been delivered to the DOCR by the ND county of jurisdiction.  DOCR is not financially responsible.  The admission reason code for them is NTAD.
+          - Parole violator whose parole has been revoked by the Parole Board, but is in county jail on other charges.  DOCR is not financially responsible.  The admission reason code for them is PV.
+          - Escapee who has been recaptured by another jurisdiction and is awaiting disposition on outstanding charges in that jurisdiction.  DOCR is not financially responsible.  The admission reason code for them is REC.
+      - value: 'FD'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NE'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NW'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'OS'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'SC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'SE'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'SW'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NEC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'EAST'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'INACT'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'HACTC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'NCCRC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'MTPMDN'
+        description: (sp) Mandan - Male Transfer Program
+      - value: 'PREA'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'TABLET'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'MNCF'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'PROB'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'DWCRC1'
+        description: Dakota Women's Correctional and Rehabilitation Center
+      - value: 'JMRU'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'YCC'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'MINN'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'TRN'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'SD'
+        description: "TODO(#11833): Update with facility name."
+      - value: 'CONT'
+        description: "TODO(#11833): Update with facility name."
   - name: CREATE_DATETIME
     is_datetime: True
     description: |-
