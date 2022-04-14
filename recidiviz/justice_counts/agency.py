@@ -34,8 +34,8 @@ class AgencyInterface:
         return agency
 
     @staticmethod
-    def get_agency_by_id(session: Session, agencyId: int) -> Agency:
-        return session.query(Agency).filter(Agency.id == agencyId).one()
+    def get_agency_by_id(session: Session, agency_id: int) -> Agency:
+        return session.query(Agency).filter(Agency.id == agency_id).one()
 
     @staticmethod
     def get_agencies_by_id(session: Session, agency_ids: List[int]) -> List[Agency]:
