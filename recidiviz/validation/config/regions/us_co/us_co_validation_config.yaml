@@ -1,0 +1,8 @@
+# Configuration for which validations to run for region US_CO.
+
+region_code: US_CO
+# TODO(#12236): Enable validations for US_CO.
+dev_mode: True
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []
