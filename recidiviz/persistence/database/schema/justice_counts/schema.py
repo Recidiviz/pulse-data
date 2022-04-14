@@ -96,6 +96,11 @@ class MeasurementType(enum.Enum):
     PERSON_BASED_DELTA = "PERSON_BASED_DELTA"
 
 
+class ReportingFrequency(enum.Enum):
+    ANNUAL = "ANNUAL"
+    MONTHLY = "MONTHLY"
+
+
 class System(enum.Enum):
     """Part of the overall criminal justice system that this pertains to, as defined by the Justice Counts Framework."""
 
@@ -286,6 +291,21 @@ class Report(JusticeCountsBase):
         lazy="selectin",
         passive_deletes=True,
     )
+
+    def get_reporting_frequency(self) -> ReportingFrequency:
+        if (
+            self.date_range_end.year == self.date_range_start.year
+            and self.date_range_end.month - self.date_range_start.month == 1
+        ):
+            inferred_frequency = ReportingFrequency.MONTHLY
+        else:
+            inferred_frequency = ReportingFrequency.ANNUAL
+        report_type_string = str(self.type)
+        if report_type_string.strip() != str(inferred_frequency.value):
+            raise ValueError(
+                f"Invalid Report Type: Report type is {report_type_string}, but inferred a reporting frequency of {str(inferred_frequency.value)} from the report date range."
+            )
+        return inferred_frequency
 
 
 class ReportTableDefinition(JusticeCountsBase):

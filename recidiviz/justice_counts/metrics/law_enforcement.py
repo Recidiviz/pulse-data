@@ -42,7 +42,7 @@ annual_budget = MetricDefinition(
     display_name="Annual Budget",
     description="Measures the total annual budget (in dollars) of the agency.",
     measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.ANNUALLY],
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
     reporting_note="Sheriff offices report on budget for patrol and detention separately",
     contexts=[
         Context(
@@ -64,7 +64,7 @@ residents = MetricDefinition(
     display_name="Jurisdiction residents",
     description="Measures the number of residents in the agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUALLY],
+    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
     contexts=[
         Context(
             key=ContextKey.JURISDICTION_AREA,
