@@ -31,8 +31,8 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryViewBuilderShouldNotBuildError
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
@@ -68,23 +68,11 @@ def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
 
     with local_project_id_override(args.project_id):
-        views = []
-        for view_builder in deployed_view_builders(project_id()):
-            if view_builder.dataset_id in VIEW_SOURCE_TABLE_DATASETS:
-                raise ValueError(
-                    f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
-                )
-
-            try:
-                view = view_builder.build()
-            except BigQueryViewBuilderShouldNotBuildError:
-                logging.warning(
-                    "Condition failed for view builder %s in dataset %s. Continuing without it.",
-                    view_builder.view_id,
-                    view_builder.dataset_id,
-                )
-                continue
-            views.append(view)
+        views = build_views_to_update(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=deployed_view_builders(project_id()),
+            address_overrides=None,
+        )
 
         dag_walker = BigQueryViewDagWalker(views)
         managed_views_map = (

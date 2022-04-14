@@ -22,7 +22,6 @@ Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.ingest.development.load_raw_data_latest_views_to_sandbox \
     --project_id recidiviz-staging \
     --state_code US_ND \
-    --dry_run True \
     --views_sandbox_dataset_prefix my_prefix \
     [--raw_tables_sandbox_dataset_prefix my_other_prefix]
 """
@@ -43,24 +42,20 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_u
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import str_to_bool
 
 
 def main(
     state_code: StateCode,
     raw_tables_sandbox_dataset_prefix: str,
     views_sandbox_dataset_prefix: str,
-    dry_run: bool,
 ) -> None:
     """Executes the main flow of the script."""
     bq_client = BigQueryClientImpl(project_id=metadata.project_id())
     controller = DirectIngestRawDataTableLatestViewUpdater(
         state_code=state_code.value.lower(),
-        project_id=metadata.project_id(),
         bq_client=bq_client,
         raw_tables_sandbox_dataset_prefix=raw_tables_sandbox_dataset_prefix,
         views_sandbox_dataset_prefix=views_sandbox_dataset_prefix,
-        dry_run=dry_run,
     )
     controller.update_views_for_state()
 
@@ -108,8 +103,6 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         default=None,
     )
 
-    parser.add_argument("--dry_run", type=str_to_bool, required=True)
-
     return parser.parse_args(argv)
 
 
@@ -122,5 +115,4 @@ if __name__ == "__main__":
             state_code=args.state_code,
             raw_tables_sandbox_dataset_prefix=args.raw_tables_sandbox_dataset_prefix,
             views_sandbox_dataset_prefix=args.views_sandbox_dataset_prefix,
-            dry_run=args.dry_run,
         )

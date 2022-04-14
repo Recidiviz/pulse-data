@@ -17,12 +17,13 @@
 """Tests for DirectIngestRawDataUpdateController."""
 import unittest
 from unittest import mock
+from unittest.mock import Mock
 
 from google.cloud import bigquery
-from google.cloud.bigquery import DatasetReference
 from mock import create_autospec, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.raw_data import (
     direct_ingest_raw_data_table_latest_view_updater as latest_view_updater_module,
@@ -30,14 +31,15 @@ from recidiviz.ingest.direct.raw_data import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
 )
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableLatestView,
+from recidiviz.ingest.direct.views import direct_ingest_latest_view_collector
+from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
+    DirectIngestRawDataTableLatestViewBuilder,
 )
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
     FakeDirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
@@ -49,235 +51,196 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
         )
 
         self.project_id = "recidiviz-456"
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "recidiviz-456"
+
         self.mock_big_query_client = create_autospec(BigQueryClient)
+        self.client_patcher = mock.patch(
+            "recidiviz.big_query.big_query_table_checker.BigQueryClientImpl"
+        )
+        self.client_fn = self.client_patcher.start()
+        self.client_fn.return_value = self.mock_big_query_client
 
-        def fake_get_dataset_ref(dataset_id: str) -> bigquery.DatasetReference:
-            return bigquery.DatasetReference(
-                project=self.project_id, dataset_id=dataset_id
-            )
+        def table_exists_side_effect(
+            # pylint: disable=unused-argument
+            dataset_ref: bigquery.DatasetReference,
+            table_id: str,
+        ) -> bool:
+            return table_id != "tagB"
 
-        self.mock_big_query_client.dataset_ref_for_id = fake_get_dataset_ref
-        self.mock_big_query_client.table_exists.side_effect = [
-            True,  # tagA
-            False,  # tagB
-            True,  # tagC
-            True,  # tagWeDoNotIngest
-        ]
+        self.mock_big_query_client.table_exists.side_effect = table_exists_side_effect
+
+        self.view_update_manager_patcher = patch(
+            "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
+        )
+        self.mock_view_update_manager = self.view_update_manager_patcher.start()
 
         self.mock_region_config = FakeDirectIngestRegionRawFileConfig(
             self.test_region.region_code
         )
         self.region_file_config_patcher = patch(
-            f"{latest_view_updater_module.__name__}.DirectIngestRegionRawFileConfig",
+            f"{direct_ingest_latest_view_collector.__name__}.DirectIngestRegionRawFileConfig",
             return_value=self.mock_region_config,
         )
         self.region_file_config_patcher.start()
 
     def tearDown(self) -> None:
         self.region_file_config_patcher.stop()
+        self.project_id_patcher.stop()
+        self.client_patcher.stop()
+        self.view_update_manager_patcher.stop()
 
-    def test_update_tables_for_state(self) -> None:
+    @mock.patch(
+        f"{latest_view_updater_module.__name__}.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    def test_update_tables_for_state(self, mock_view_exporter: Mock) -> None:
         self.mock_raw_file_configs = self.mock_region_config.raw_file_configs
 
         self.update_controller = DirectIngestRawDataTableLatestViewUpdater(
             state_code=self.test_region.region_code,
-            project_id=self.project_id,
             bq_client=self.mock_big_query_client,
             views_sandbox_dataset_prefix=None,
             raw_tables_sandbox_dataset_prefix=None,
         )
 
-        with local_project_id_override(self.project_id):
-            self.update_controller.update_views_for_state()
+        self.update_controller.update_views_for_state()
 
-            self.assertEqual(
-                self.mock_big_query_client.create_or_update_view.call_count, 2
-            )
+        mock_view_exporter.assert_called_with(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            # These are verified below
+            view_builders_to_update=mock.ANY,
+            historically_managed_datasets_to_clean=None,
+            address_overrides=None,
+        )
+        self._assert_has_valid_view_builders(
+            mock_view_exporter,
+            expected_input_dataset="us_xx_raw_data",
+            expected_output_dataset="us_xx_raw_data_up_to_date_views",
+        )
 
-            raw_data_dataset = DatasetReference(self.project_id, "us_xx_raw_data")
-            self.mock_big_query_client.table_exists.assert_has_calls(
-                [
-                    mock.call(raw_data_dataset, "tagA"),
-                    mock.call(raw_data_dataset, "tagB"),
-                    mock.call(raw_data_dataset, "tagC"),
-                    mock.call(raw_data_dataset, "tagWeDoNotIngest"),
-                ]
-            )
-
-            expected_views = [
-                DirectIngestRawDataTableLatestView(
-                    region_code=self.test_region.region_code,
-                    raw_file_config=self.mock_raw_file_configs["tagA"],
-                    address_overrides=None,
-                ),
-                DirectIngestRawDataTableLatestView(
-                    region_code=self.test_region.region_code,
-                    raw_file_config=self.mock_raw_file_configs["tagC"],
-                    address_overrides=None,
-                ),
-            ]
-            views_dataset = DatasetReference(
-                self.project_id, "us_xx_raw_data_up_to_date_views"
-            )
-
-            self.mock_big_query_client.create_or_update_view.assert_has_calls(
-                [mock.call(x) for x in expected_views]
-            )
-
-            self.mock_big_query_client.create_dataset_if_necessary.assert_called_once()
-            self.mock_big_query_client.create_dataset_if_necessary.assert_has_calls(
-                [mock.call(views_dataset, default_table_expiration_ms=None)]
-            )
-
-    def test_update_tables_for_state_with_sandbox_views_dataset(self) -> None:
+    @mock.patch(
+        f"{latest_view_updater_module.__name__}.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    def test_update_tables_for_state_with_sandbox_views_dataset(
+        self, mock_view_exporter: Mock
+    ) -> None:
         self.mock_raw_file_configs = self.mock_region_config.raw_file_configs
 
         self.update_controller = DirectIngestRawDataTableLatestViewUpdater(
             state_code=self.test_region.region_code,
-            project_id=self.project_id,
             bq_client=self.mock_big_query_client,
             views_sandbox_dataset_prefix="my_prefix",
             raw_tables_sandbox_dataset_prefix=None,
         )
 
-        with local_project_id_override(self.project_id):
-            self.update_controller.update_views_for_state()
+        self.update_controller.update_views_for_state()
+        mock_view_exporter.assert_called_with(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            # These are verified below
+            view_builders_to_update=mock.ANY,
+            historically_managed_datasets_to_clean=None,
+            # These are verified below
+            address_overrides=mock.ANY,
+        )
+        self._assert_has_valid_view_builders(
+            mock_view_exporter,
+            expected_input_dataset="us_xx_raw_data",
+            expected_output_dataset="my_prefix_us_xx_raw_data_up_to_date_views",
+        )
+        self._assert_has_address_overrides(mock_view_exporter)
 
-            self.assertEqual(
-                self.mock_big_query_client.create_or_update_view.call_count, 2
-            )
-
-            raw_data_dataset = DatasetReference(self.project_id, "us_xx_raw_data")
-            self.mock_big_query_client.table_exists.assert_has_calls(
-                [
-                    mock.call(raw_data_dataset, "tagA"),
-                    mock.call(raw_data_dataset, "tagB"),
-                    mock.call(raw_data_dataset, "tagC"),
-                    mock.call(raw_data_dataset, "tagWeDoNotIngest"),
-                ]
-            )
-
-            expected_address_overrides_builder = BigQueryAddressOverrides.Builder(
-                sandbox_prefix="my_prefix"
-            )
-            expected_address_overrides_builder.register_sandbox_override_for_entire_dataset(
-                "us_xx_raw_data_up_to_date_views"
-            )
-            expected_address_overrides = expected_address_overrides_builder.build()
-
-            expected_views = [
-                DirectIngestRawDataTableLatestView(
-                    region_code=self.test_region.region_code,
-                    raw_file_config=self.mock_raw_file_configs["tagA"],
-                    address_overrides=expected_address_overrides,
-                ),
-                DirectIngestRawDataTableLatestView(
-                    region_code=self.test_region.region_code,
-                    raw_file_config=self.mock_raw_file_configs["tagC"],
-                    address_overrides=expected_address_overrides,
-                ),
-            ]
-
-            self.mock_big_query_client.create_or_update_view.assert_has_calls(
-                [mock.call(x) for x in expected_views]
-            )
-
-            expected_views_dataset = DatasetReference(
-                self.project_id, "my_prefix_us_xx_raw_data_up_to_date_views"
-            )
-
-            self.mock_big_query_client.create_dataset_if_necessary.assert_called_once()
-            self.mock_big_query_client.create_dataset_if_necessary.assert_has_calls(
-                [
-                    mock.call(
-                        expected_views_dataset, default_table_expiration_ms=86400000
-                    )
-                ]
-            )
-
-    def test_update_tables_for_state_with_sandbox_views_and_raw_datasets(self) -> None:
+    @mock.patch(
+        f"{latest_view_updater_module.__name__}.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    def test_update_tables_for_state_with_sandbox_views_and_raw_datasets(
+        self, mock_view_exporter: Mock
+    ) -> None:
         self.mock_raw_file_configs = self.mock_region_config.raw_file_configs
 
         self.update_controller = DirectIngestRawDataTableLatestViewUpdater(
             state_code=self.test_region.region_code,
-            project_id=self.project_id,
             bq_client=self.mock_big_query_client,
             views_sandbox_dataset_prefix="my_prefix",
             raw_tables_sandbox_dataset_prefix="my_other_prefix",
         )
 
-        with local_project_id_override(self.project_id):
-            self.update_controller.update_views_for_state()
+        self.update_controller.update_views_for_state()
 
-            self.assertEqual(
-                self.mock_big_query_client.create_or_update_view.call_count, 2
-            )
-
-            raw_data_dataset = DatasetReference(
-                self.project_id, "my_other_prefix_us_xx_raw_data"
-            )
-            self.mock_big_query_client.table_exists.assert_has_calls(
-                [
-                    mock.call(raw_data_dataset, "tagA"),
-                    mock.call(raw_data_dataset, "tagB"),
-                    mock.call(raw_data_dataset, "tagC"),
-                    mock.call(raw_data_dataset, "tagWeDoNotIngest"),
-                ]
-            )
-
-            expected_address_overrides_builder = BigQueryAddressOverrides.Builder(
-                "my_prefix"
-            )
-            expected_address_overrides_builder.register_sandbox_override_for_entire_dataset(
-                "us_xx_raw_data_up_to_date_views"
-            )
-            expected_address_overrides = expected_address_overrides_builder.build()
-
-            expected_views = [
-                DirectIngestRawDataTableLatestView(
-                    region_code=self.test_region.region_code,
-                    raw_file_config=self.mock_raw_file_configs["tagA"],
-                    address_overrides=expected_address_overrides,
-                ),
-                DirectIngestRawDataTableLatestView(
-                    region_code=self.test_region.region_code,
-                    raw_file_config=self.mock_raw_file_configs["tagC"],
-                    address_overrides=expected_address_overrides,
-                ),
-            ]
-
-            self.mock_big_query_client.create_or_update_view.assert_has_calls(
-                [mock.call(x) for x in expected_views]
-            )
-
-            expected_views_dataset = DatasetReference(
-                self.project_id, "my_prefix_us_xx_raw_data_up_to_date_views"
-            )
-
-            self.mock_big_query_client.create_dataset_if_necessary.assert_called_once()
-            self.mock_big_query_client.create_dataset_if_necessary.assert_has_calls(
-                [
-                    mock.call(
-                        expected_views_dataset, default_table_expiration_ms=86400000
-                    )
-                ]
-            )
-
-    def test_failed_view_update(self) -> None:
-        self.mock_raw_file_configs = self.mock_region_config.raw_file_configs
-
-        self.update_controller = DirectIngestRawDataTableLatestViewUpdater(
-            state_code=self.test_region.region_code,
-            project_id=self.project_id,
-            bq_client=self.mock_big_query_client,
-            views_sandbox_dataset_prefix=None,
-            raw_tables_sandbox_dataset_prefix=None,
+        mock_view_exporter.assert_called_with(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            # These are verified below
+            view_builders_to_update=mock.ANY,
+            historically_managed_datasets_to_clean=None,
+            # These are verified below
+            address_overrides=mock.ANY,
         )
 
-        self.mock_big_query_client.create_or_update_view.side_effect = Exception
+        self._assert_has_valid_view_builders(
+            mock_view_exporter,
+            expected_input_dataset="my_other_prefix_us_xx_raw_data",
+            expected_output_dataset="my_prefix_us_xx_raw_data_up_to_date_views",
+        )
+        self._assert_has_address_overrides(mock_view_exporter)
 
-        with local_project_id_override(self.project_id):
-            with self.assertRaisesRegex(
-                ValueError, r"^Couldn't create/update views for file \[tagA\]$"
-            ):
-                self.update_controller.update_views_for_state()
+    def _assert_has_address_overrides(self, mock_view_exporter: Mock) -> None:
+        actual_address_overrides = mock_view_exporter.mock_calls[0].kwargs[
+            "address_overrides"
+        ]
+        if not isinstance(actual_address_overrides, BigQueryAddressOverrides):
+            raise ValueError(
+                f"Found bad type for address overrides {actual_address_overrides}"
+            )
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_prefix_us_xx_raw_data_up_to_date_views", table_id="tagA"
+            ),
+            actual_address_overrides.get_sandbox_address(
+                BigQueryAddress(
+                    dataset_id="us_xx_raw_data_up_to_date_views", table_id="tagA"
+                )
+            ),
+        )
+
+    def _assert_has_valid_view_builders(
+        self,
+        mock_view_exporter: Mock,
+        *,
+        expected_input_dataset: str,
+        expected_output_dataset: str,
+    ) -> None:
+        """Checks the view builders that were generated and confirms that they are what
+        we expect.
+        """
+        actual_address_overrides = mock_view_exporter.mock_calls[0].kwargs[
+            "address_overrides"
+        ]
+        if actual_address_overrides and not isinstance(
+            actual_address_overrides, BigQueryAddressOverrides
+        ):
+            raise ValueError(
+                f"Found bad type for address overrides {actual_address_overrides}"
+            )
+        view_builders_to_update = mock_view_exporter.mock_calls[0].kwargs[
+            "view_builders_to_update"
+        ]
+        found_view_ids = []
+        for view_builder in view_builders_to_update:
+            if not isinstance(view_builder, DirectIngestRawDataTableLatestViewBuilder):
+                raise ValueError(f"Found bad type for view builder: {view_builder}")
+            if view_builder.view_id in ("tagB_latest", "tagWeDoNotIngest_latest"):
+                self.assertFalse(view_builder.should_build())
+            else:
+                self.assertTrue(view_builder.should_build(), view_builder.view_id)
+                view = view_builder.build(address_overrides=actual_address_overrides)
+                tag = view_builder.view_id[: -len("_latest")]
+                self.assertEqual(
+                    {BigQueryAddress(dataset_id=expected_input_dataset, table_id=tag)},
+                    view.parent_tables,
+                )
+                self.assertEqual(expected_output_dataset, view.dataset_id)
+                found_view_ids.append(view.view_id)
+
+        self.assertEqual(
+            ["tagA_latest", "tagC_latest"],
+            found_view_ids,
+        )

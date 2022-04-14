@@ -29,9 +29,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
-)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestRawDataTableLatestView,
 )
@@ -80,32 +77,46 @@ class DirectIngestRawDataTableLatestViewCollector(
 ):
     """Collects all raw data `*_latest` views for a given region."""
 
-    def __init__(self, src_raw_tables_sandbox_dataset_prefix: Optional[str]):
-        self.src_raw_tables_sandbox_dataset_prefix = (
-            src_raw_tables_sandbox_dataset_prefix
+    def __init__(
+        self, region_code: str, src_raw_tables_sandbox_dataset_prefix: Optional[str]
+    ):
+        self.region_code = region_code
+        self.src_raw_tables_dataset = raw_tables_dataset_for_region(
+            self.region_code,
+            sandbox_dataset_prefix=src_raw_tables_sandbox_dataset_prefix,
         )
 
     def collect_view_builders(self) -> List[DirectIngestRawDataTableLatestViewBuilder]:
-        builder_list = []
-        for region_code in get_existing_region_dir_names():
-            region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
-            raw_file_configs = region_raw_file_config.raw_file_configs
-            src_raw_tables_dataset = raw_tables_dataset_for_region(
-                region_raw_file_config.region_code,
-                sandbox_dataset_prefix=self.src_raw_tables_sandbox_dataset_prefix,
+        region_raw_file_config = DirectIngestRegionRawFileConfig(self.region_code)
+        raw_file_configs = region_raw_file_config.raw_file_configs
+
+        return [
+            self._builder_for_config(config)
+            for config in raw_file_configs.values()
+            # TODO(#11251): Delete these once the should_build() check is moved to
+            #  deploy time.
+            if config.primary_key_cols and not config.is_undocumented
+        ]
+
+    def _builder_for_config(
+        self, config: DirectIngestRawFileConfig
+    ) -> DirectIngestRawDataTableLatestViewBuilder:
+        table_exists_predicate = BigQueryTableChecker(
+            self.src_raw_tables_dataset,
+            config.file_tag,
+        ).get_table_exists_predicate()
+
+        def should_build_predicate() -> bool:
+            predicate_result = table_exists_predicate()
+            result = (
+                predicate_result
+                and not config.is_undocumented
+                and bool(config.primary_key_cols)
             )
-            builder_list.extend(
-                [
-                    DirectIngestRawDataTableLatestViewBuilder(
-                        region_code=region_code,
-                        raw_file_config=config,
-                        should_build_predicate=BigQueryTableChecker(
-                            src_raw_tables_dataset,
-                            config.file_tag,
-                        ).get_table_exists_predicate(),
-                    )
-                    for config in raw_file_configs.values()
-                    if not config.is_undocumented and config.primary_key_cols
-                ]
-            )
-        return builder_list
+            return result
+
+        return DirectIngestRawDataTableLatestViewBuilder(
+            region_code=self.region_code,
+            raw_file_config=config,
+            should_build_predicate=should_build_predicate,
+        )
