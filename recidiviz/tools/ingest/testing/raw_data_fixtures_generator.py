@@ -186,6 +186,8 @@ class RawDataFixturesGenerator:
             project_id=self.project_id,
             region_code=self.region_code,
             raw_file_config=raw_table_config,
+            # We shouldn't need to deploy this view
+            should_deploy_predicate=(lambda: False),
         )
         dataset_ref = bigquery.DatasetReference.from_string(
             raw_table_view.dataset_id, default_project=raw_table_view.project
@@ -244,8 +246,10 @@ class RawDataFixturesGenerator:
         }
 
         def find_or_create_randomized_value(
-            column_info: RawTableColumnInfo, original_value: str
+            column_info: RawTableColumnInfo, original_value: Optional[str]
         ) -> str:
+            if original_value is None:
+                return ""
             if original_value not in self.randomized_values_map:
                 self.randomized_values_map[original_value] = randomize_value(
                     original_value, column_info, self.datetime_format
@@ -256,12 +260,10 @@ class RawDataFixturesGenerator:
             distinct_values_to_randomize[
                 original_col_name_to_random_col_name[column]
             ] = distinct_values_to_randomize[column].apply(
-                lambda val: partial(
+                partial(
                     find_or_create_randomized_value,
                     column_info_for_columns_to_randomize[column],
-                )(val)
-                if val
-                else ""
+                )
             )
 
         # Replace the original values with the randomized values in the original dataframe

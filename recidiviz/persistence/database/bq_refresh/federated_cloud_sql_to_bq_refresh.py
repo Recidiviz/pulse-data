@@ -259,11 +259,9 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
             f"across all state segments.",
             view_query_template=table_union_query_fmt,
             clustering_fields=None,
+            should_deploy_predicate=None,
             **kwargs,
         )
-
-    def should_build(self) -> bool:
-        return True
 
 
 def _hydrate_unioned_regional_dataset_for_schema(

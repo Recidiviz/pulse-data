@@ -15,13 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests deployed_views"""
-
+import datetime
 import unittest
 from typing import Set
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
@@ -35,50 +34,43 @@ class DeployedViewsTest(unittest.TestCase):
 
     def test_unique_addresses(self) -> None:
         view_addresses: Set[BigQueryAddress] = set()
-        with patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
-            mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
-
-            for view_builder in all_deployed_view_builders():
-                address = view_builder.build().address
-                self.assertNotIn(address, view_addresses)
-                view_addresses.add(address)
+        for view_builder in all_deployed_view_builders():
+            address = view_builder.build().address
+            self.assertNotIn(address, view_addresses)
+            view_addresses.add(address)
 
     def test_deployed_views(self) -> None:
-        with patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
-            mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
+        all_view_builders = all_deployed_view_builders()
+        staging_view_builders = deployed_view_builders(GCP_PROJECT_STAGING)
+        prod_view_builders = deployed_view_builders(GCP_PROJECT_PRODUCTION)
 
-            all_view_builders = all_deployed_view_builders()
-            staging_view_builders = deployed_view_builders(GCP_PROJECT_STAGING)
-            prod_view_builders = deployed_view_builders(GCP_PROJECT_PRODUCTION)
+        self.assertGreater(len(all_view_builders), 0)
 
-            self.assertGreater(len(all_view_builders), 0)
+        combined_view_builder_view_ids = {
+            builder.view_id for builder in staging_view_builders + prod_view_builders
+        }
 
-            combined_view_builder_view_ids = {
-                builder.view_id
-                for builder in staging_view_builders + prod_view_builders
-            }
+        all_view_builder_view_ids = {builder.view_id for builder in all_view_builders}
 
-            all_view_builder_view_ids = {
-                builder.view_id for builder in all_view_builders
-            }
+        self.assertSetEqual(
+            combined_view_builder_view_ids,
+            all_view_builder_view_ids,
+        )
 
-            self.assertSetEqual(
-                combined_view_builder_view_ids,
-                all_view_builder_view_ids,
-            )
+        self.assertGreater(len(staging_view_builders), 0)
+        self.assertLessEqual(len(staging_view_builders), len(all_view_builders))
 
-            self.assertGreater(len(staging_view_builders), 0)
-            self.assertLessEqual(len(staging_view_builders), len(all_view_builders))
+        self.assertGreater(len(prod_view_builders), 0)
+        self.assertLessEqual(len(prod_view_builders), len(all_view_builders))
 
-            self.assertGreater(len(prod_view_builders), 0)
-            self.assertLessEqual(len(prod_view_builders), len(all_view_builders))
+    def test_build_all_views_perf(self) -> None:
+        start = datetime.datetime.now()
+        all_view_builders = all_deployed_view_builders()
+        for builder in all_view_builders:
+            builder.build()
+
+        end = datetime.datetime.now()
+        total_seconds = (end - start).total_seconds()
+        # Building all our views should take less than 5s (as of 4/11/2022 it takes
+        # about .28 seconds).
+        self.assertLessEqual(total_seconds, 5)

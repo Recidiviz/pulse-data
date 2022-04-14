@@ -45,12 +45,12 @@ class DirectIngestRawDataTableLatestViewBuilder(
         project_id: str = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
-        should_build_predicate: Optional[Callable[[], bool]] = None,
+        should_deploy_predicate: Optional[Callable[[], bool]] = None,
     ):
         self.project_id = project_id
         self.region_code = region_code
         self.raw_file_config = raw_file_config
-        self.should_build_predicate = should_build_predicate
+        self.should_deploy_predicate = should_deploy_predicate
         self.view_id = f"{raw_file_config.file_tag}_latest"
         self.dataset_id = raw_latest_views_dataset_for_region(
             region_code=self.region_code.lower(), sandbox_dataset_prefix=None
@@ -66,10 +66,8 @@ class DirectIngestRawDataTableLatestViewBuilder(
             region_code=self.region_code,
             raw_file_config=self.raw_file_config,
             address_overrides=address_overrides,
+            should_deploy_predicate=self.should_deploy_predicate,
         )
-
-    def should_build(self) -> bool:
-        return not self.should_build_predicate or self.should_build_predicate()
 
 
 class DirectIngestRawDataTableLatestViewCollector(
@@ -91,11 +89,7 @@ class DirectIngestRawDataTableLatestViewCollector(
         raw_file_configs = region_raw_file_config.raw_file_configs
 
         return [
-            self._builder_for_config(config)
-            for config in raw_file_configs.values()
-            # TODO(#11251): Delete these once the should_build() check is moved to
-            #  deploy time.
-            if config.primary_key_cols and not config.is_undocumented
+            self._builder_for_config(config) for config in raw_file_configs.values()
         ]
 
     def _builder_for_config(
@@ -106,7 +100,7 @@ class DirectIngestRawDataTableLatestViewCollector(
             config.file_tag,
         ).get_table_exists_predicate()
 
-        def should_build_predicate() -> bool:
+        def should_deploy_predicate() -> bool:
             predicate_result = table_exists_predicate()
             result = (
                 predicate_result
@@ -118,5 +112,5 @@ class DirectIngestRawDataTableLatestViewCollector(
         return DirectIngestRawDataTableLatestViewBuilder(
             region_code=self.region_code,
             raw_file_config=config,
-            should_build_predicate=should_build_predicate,
+            should_deploy_predicate=should_deploy_predicate,
         )

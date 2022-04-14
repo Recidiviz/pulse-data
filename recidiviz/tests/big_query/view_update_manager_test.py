@@ -114,7 +114,7 @@ class ViewManagerTest(unittest.TestCase):
                 projects_to_deploy=None,
                 materialized_address_override=None,
                 clustering_fields=None,
-                should_build_predicate=None,
+                should_deploy_predicate=None,
                 **view,
             )
             for view in sample_views
@@ -510,7 +510,7 @@ class ViewManagerTest(unittest.TestCase):
                 projects_to_deploy=None,
                 materialized_address_override=None,
                 clustering_fields=None,
-                should_build_predicate=None,
+                should_deploy_predicate=None,
                 **view,
             )
             for view in sample_views
@@ -525,7 +525,7 @@ class ViewManagerTest(unittest.TestCase):
                 dataset_id=materialized_dataset,
                 table_id="some_table",
             ),
-            should_build_predicate=None,
+            should_deploy_predicate=None,
         )
 
         mock_view_builders += [materialized_view_builder]
@@ -617,6 +617,7 @@ class ViewManagerTest(unittest.TestCase):
                 materialized_address=None,
                 clustering_fields=None,
                 address_overrides=None,
+                should_deploy_predicate=None,
                 **view,
             )
             for view in sample_views
@@ -718,7 +719,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="a",
                 should_materialize=False,
                 materialized_address_override=None,
-                should_build_predicate=None,
+                should_deploy_predicate=None,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME_2,
@@ -727,7 +728,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="a",
                 should_materialize=False,
                 materialized_address_override=None,
-                should_build_predicate=None,
+                should_deploy_predicate=None,
             ),
         ]
 

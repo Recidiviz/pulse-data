@@ -72,9 +72,6 @@ class _FakeDirectIngestViewBuilder(
     def build_and_print(self) -> None:
         self.build()
 
-    def should_build(self) -> bool:
-        return True
-
 
 class FakeSingleIngestViewCollector(
     BigQueryViewCollector[_FakeDirectIngestViewBuilder]

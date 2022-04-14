@@ -227,20 +227,20 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
         for view_builder in view_builders_to_update:
             if not isinstance(view_builder, DirectIngestRawDataTableLatestViewBuilder):
                 raise ValueError(f"Found bad type for view builder: {view_builder}")
+            view = view_builder.build(address_overrides=actual_address_overrides)
+            found_view_ids.append(view.view_id)
             if view_builder.view_id in ("tagB_latest", "tagWeDoNotIngest_latest"):
-                self.assertFalse(view_builder.should_build())
+                self.assertFalse(view.should_deploy())
             else:
-                self.assertTrue(view_builder.should_build(), view_builder.view_id)
-                view = view_builder.build(address_overrides=actual_address_overrides)
-                tag = view_builder.view_id[: -len("_latest")]
+                self.assertTrue(view.should_deploy(), view_builder.view_id)
+                tag = view.raw_file_config.file_tag
                 self.assertEqual(
                     {BigQueryAddress(dataset_id=expected_input_dataset, table_id=tag)},
                     view.parent_tables,
                 )
                 self.assertEqual(expected_output_dataset, view.dataset_id)
-                found_view_ids.append(view.view_id)
 
         self.assertEqual(
-            ["tagA_latest", "tagC_latest"],
+            ["tagA_latest", "tagB_latest", "tagC_latest", "tagWeDoNotIngest_latest"],
             found_view_ids,
         )

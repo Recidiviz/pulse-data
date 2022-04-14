@@ -115,7 +115,7 @@ class StateTableNonEnumCounterBigQueryViewCollector(
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,
-                        should_build_predicate=table_column_checker.get_has_column_predicate(
+                        should_deploy_predicate=table_column_checker.get_has_column_predicate(
                             col
                         ),
                         base_dataset=STATE_BASE_DATASET,

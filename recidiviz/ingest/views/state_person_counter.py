@@ -111,7 +111,7 @@ class StatePersonBigQueryViewCollector(
                 ),
                 view_query_template=STATE_PERSON_ENUM_QUERY_TEMPLATE,
                 column_name=col,
-                should_build_predicate=table_column_checker.get_has_column_predicate(
+                should_deploy_predicate=table_column_checker.get_has_column_predicate(
                     col
                 ),
                 base_dataset=STATE_BASE_DATASET,
@@ -129,7 +129,7 @@ class StatePersonBigQueryViewCollector(
                     ),
                     view_query_template=STATE_PERSON_NON_ENUM_QUERY_TEMPLATE,
                     column_name=col,
-                    should_build_predicate=table_column_checker.get_has_column_predicate(
+                    should_deploy_predicate=table_column_checker.get_has_column_predicate(
                         col
                     ),
                     base_dataset=STATE_BASE_DATASET,

@@ -144,6 +144,3 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
             materialized_address=self.materialized_address,
             address_overrides=address_overrides,
         )
-
-    def should_build(self) -> bool:
-        return True

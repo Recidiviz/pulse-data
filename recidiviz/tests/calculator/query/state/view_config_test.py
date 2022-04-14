@@ -21,11 +21,7 @@ import unittest
 import mock
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import (
-    BigQueryView,
-    BigQueryViewBuilder,
-    BigQueryViewBuilderShouldNotBuildError,
-)
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
 from recidiviz.calculator.query.state import dataset_config, view_config
 from recidiviz.calculator.query.state.view_config import (
@@ -70,12 +66,7 @@ class ViewExportConfigTest(unittest.TestCase):
         ) in export_config.VIEW_COLLECTION_EXPORT_INDEX.values():
             for view_builder in dataset_export_config.view_builders_to_export:
                 self.assertIsInstance(view_builder, BigQueryViewBuilder)
-
-                try:
-                    view = view_builder.build()
-                except BigQueryViewBuilderShouldNotBuildError:
-                    continue
-
+                view = view_builder.build()
                 self.assertIsInstance(view, BigQueryView)
 
     @staticmethod
