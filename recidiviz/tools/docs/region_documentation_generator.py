@@ -18,7 +18,7 @@
 """A script which will be called using a pre-commit githook to generate portions of a State Ingest Specification.
 
 Can be run on-demand via:
-    $ pipenv run python -m recidiviz.tools.docs.region_documentation_generator
+    $ pipenv run python -m recidiviz.tools.docs.region_documentation_generator [--force-all]
 """
 
 import argparse
@@ -42,6 +42,7 @@ from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
 INGEST_CATALOG_ROOT = os.path.join(DOCS_ROOT_PATH, "ingest")
 
@@ -172,12 +173,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "Paths must be relative to the root of the repository. "
         "If none are provided, will use `git diff` to determine modified files.",
     )
+    parser.add_argument(
+        "--force-all",
+        action="store_true",
+        default=False,
+        help="Generate docs for all regions, even if they are not modified.",
+    )
     args = parser.parse_args(argv)
 
     # Arbitrary project ID - we just need to build views in order to obtain raw table dependencies
     with local_project_id_override(GCP_PROJECT_STAGING):
         modified = False
-        touched_raw_data_regions = get_touched_raw_data_regions(args.filenames)
+        if not args.force_all:
+            touched_raw_data_regions = get_touched_raw_data_regions(args.filenames)
+        else:
+            touched_raw_data_regions = get_supported_direct_ingest_region_codes()
         for region_code in touched_raw_data_regions:
             if not StateCode.is_state_code(region_code):
                 logging.info(
