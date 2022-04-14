@@ -16,29 +16,13 @@ To run the app locally, you need to spin up both the backend and frontend simult
    yarn install
    ```
 
-2. Set up your Auth0 environment variables
-
-   Expected variables:
-
-   ```js
-   REACT_APP_AUTH0_DOMAIN=
-   REACT_APP_AUTH0_CLIENT_ID=
-   REACT_APP_AUTH0_AUDIENCE=
-   ```
-
-   Optional variables (currently for testing calls to public and protected API endpoints):
-
-   ```js
-   REACT_APP_SERVER_URL=
-   ```
-
-3. Run the local development server
+2. Run the local development server
 
    ```sh
    yarn run dev
    ```
 
-4. Test your development environment
+3. Test your development environment
 
    ```sh
    yarn test
