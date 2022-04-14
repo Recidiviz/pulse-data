@@ -33,22 +33,23 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = """
 /*{description}*/
     WITH zip_code_county_map AS (
       SELECT
-        UPPER(SUBSTR(county, 0, LENGTH(county) -7)) AS normalized_county_name,
-        zip_code
+        UPPER(REPLACE(county_name, " ", "_")) AS normalized_county_name,
+        zip AS zip_code,
       FROM
-        `{project_id}.{static_reference_dataset}.zipcode_county_map`
+        `{project_id}.{static_reference_dataset}.zip_city_county_state`
     ),
     persons_with_last_known_address_and_zip AS (
       SELECT
         person_id,
         state_code,
-        SUBSTR(last_known_address, -5) AS zip_code
-      FROM `{project_id}.{reference_views_dataset}.persons_with_last_known_address`
+        SUBSTR(last_known_address, -5) AS zip_code,
+      FROM
+        `{project_id}.{reference_views_dataset}.persons_with_last_known_address`
     )
     SELECT
       state_code,
       person_id,
-      CONCAT(state_code, '_', normalized_county_name) AS county_of_residence
+      CONCAT(state_code, '_', normalized_county_name) AS county_of_residence,
     FROM
       persons_with_last_known_address_and_zip
     JOIN
