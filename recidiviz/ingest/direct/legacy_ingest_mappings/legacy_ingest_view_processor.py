@@ -21,12 +21,11 @@ intermediate ingest info objects and legacy ingest mappings files.
 #  ingest mappings design.
 import abc
 import logging
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
-from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
 )
@@ -211,14 +210,5 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
             should_set_with_empty_values,
         )
 
-        contents_iterator: Iterable[str]
-        if isinstance(contents_handle, LocalFileContentsHandle):
-            contents_iterator = contents_handle.get_contents_iterator()
-        else:
-            # TODO(#9717): Add support for reading from a contents handle that pulls
-            #  results from BigQuery.
-            raise ValueError(
-                f"Unsupported contents handle type: [{type(contents_handle)}]."
-            )
-
+        contents_iterator = self.row_iterator_from_contents_handle(contents_handle)
         return data_extractor.extract_and_populate_data(contents_iterator)
