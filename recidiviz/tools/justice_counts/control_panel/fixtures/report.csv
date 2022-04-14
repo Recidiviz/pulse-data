@@ -1,2 +1,2 @@
 id,source_id,type,instance,publish_date,url,acquisition_method,acquired_by,project,date_range_start,date_range_end,status,last_modified_at,modified_by
-0,0,MONTHLY,Jan2022,2022-01-30,www.agency.gov,CONTROL_PANEL,user,JUSTICE_COUNTS_CONTROL_PANEL,2022-01-01,2022-01-30,DRAFT,2022-01-08 04:05:06,"{0}"
+0,0,MONTHLY,Jan2022,2022-01-30,www.agency.gov,CONTROL_PANEL,user,JUSTICE_COUNTS_CONTROL_PANEL,2022-01-01,2022-02-01,DRAFT,2022-01-08 04:05:06,"{0}"

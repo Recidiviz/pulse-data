@@ -21,6 +21,7 @@ from flask import Blueprint, Response, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
+from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
 from recidiviz.utils.types import assert_type
@@ -61,5 +62,28 @@ def get_api_blueprint(
             session=current_session, email_address=email_address
         )
         return make_response(updated_user.to_json(), 200)
+
+    @api_blueprint.route("/reports", methods=["GET"])
+    @auth_decorator
+    def get_reports() -> Response:
+        request_dict = assert_type(request.args.to_dict(), dict)
+        agency_id = int(assert_type(request_dict.get("agency_id"), str))
+        user_id = int(assert_type(request_dict.get("user_id"), str))
+        if agency_id is None:
+            return make_response("agency_id parameter is required", 500)
+
+        if user_id is None:
+            return make_response("user_id parameter is required", 500)
+
+        reports = ReportInterface.get_reports_by_agency_id(
+            session=current_session, agency_id=agency_id, user_account_id=user_id
+        )
+        report_json = jsonify(
+            [
+                ReportInterface.to_json_response(session=current_session, report=r)
+                for r in reports
+            ]
+        )
+        return make_response(report_json, 200)
 
     return api_blueprint
