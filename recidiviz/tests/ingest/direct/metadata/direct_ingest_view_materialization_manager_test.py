@@ -34,6 +34,9 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
+    convert_schema_object_to_entity,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -530,3 +533,230 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
             self.metadata_manager.mark_ingest_view_materialized(args)
 
         self.assertEqual([], self.metadata_manager.get_jobs_pending_completion())
+
+    def test_mark_instance_data_invalidated_primary_instance(self) -> None:
+        # Arrange
+        job_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager.region_code,
+            instance=job_args.ingest_instance,
+            ingest_view_name=job_args.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager.register_ingest_materialization_job(job_args)
+
+        # Assert
+        metadata = self.metadata_manager.get_metadata_for_job_args(job_args)
+        self.assertEqual(expected_metadata, metadata)
+        self.assertIsNone(
+            self.metadata_manager.get_job_completion_time_for_args(job_args)
+        )
+
+        # Arrange
+        expected_metadata = attr.evolve(
+            expected_metadata,
+            is_invalidated=True,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:06:06"):
+            self.metadata_manager.mark_instance_data_invalidated()
+
+        # Assert
+        # metadata = self.metadata_manager.get_metadata_for_job_args(job_args)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            all_metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager.region_code.upper(),
+                    instance=job_args.ingest_instance.value,
+                )
+                .all()
+            )
+            for metadata in all_metadata:
+                # Check here that found_metadata has expected items and all are marked as invalidated.
+                self.assertEqual(
+                    expected_metadata, convert_schema_object_to_entity(metadata)
+                )
+
+    def test_mark_instance_data_invalidated_secondary_instance(self) -> None:
+        # Arrange
+        job_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager_secondary.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager_secondary.region_code,
+            instance=job_args.ingest_instance,
+            ingest_view_name=job_args.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager_secondary.register_ingest_materialization_job(
+                job_args
+            )
+
+        # Assert
+        metadata = self.metadata_manager_secondary.get_metadata_for_job_args(job_args)
+        self.assertEqual(expected_metadata, metadata)
+        self.assertIsNone(
+            self.metadata_manager_secondary.get_job_completion_time_for_args(job_args)
+        )
+
+        # Arrange
+        expected_metadata = attr.evolve(
+            expected_metadata,
+            is_invalidated=True,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:06:06"):
+            self.metadata_manager_secondary.mark_instance_data_invalidated()
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager_secondary.region_code.upper(),
+                    instance=job_args.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that found_metadata has expected items and all are marked as invalidated.
+            self.assertEqual(
+                expected_metadata, convert_schema_object_to_entity(metadata)
+            )
+
+    def test_mark_instance_data_invalidated_multiple_instances(self) -> None:
+        # Arrange
+        job_args_primary = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name_primary",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        job_args_secondary = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name_secondary",
+            ingest_instance_=self.metadata_manager_secondary.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 3),
+        )
+
+        expected_primary_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager.region_code,
+            instance=job_args_primary.ingest_instance,
+            ingest_view_name=job_args_primary.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args_primary.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args_primary.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        expected_secondary_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager_secondary.region_code,
+            instance=job_args_secondary.ingest_instance,
+            ingest_view_name=job_args_secondary.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args_secondary.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args_secondary.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager.register_ingest_materialization_job(job_args_primary)
+            self.metadata_manager_secondary.register_ingest_materialization_job(
+                job_args_secondary
+            )
+
+        # Assert Primary
+        metadata_primary = self.metadata_manager.get_metadata_for_job_args(
+            job_args_primary
+        )
+        self.assertEqual(expected_primary_metadata, metadata_primary)
+        self.assertIsNone(
+            self.metadata_manager.get_job_completion_time_for_args(job_args_primary)
+        )
+
+        # Assert Secondary
+        metadata_secondary = self.metadata_manager_secondary.get_metadata_for_job_args(
+            job_args_secondary
+        )
+        self.assertEqual(expected_secondary_metadata, metadata_secondary)
+        self.assertIsNone(
+            self.metadata_manager_secondary.get_job_completion_time_for_args(
+                job_args_secondary
+            )
+        )
+
+        # Arrange
+        expected_primary_metadata = attr.evolve(
+            expected_primary_metadata,
+            is_invalidated=True,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:06:06"):
+            self.metadata_manager.mark_instance_data_invalidated()
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            primary_metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager.region_code,
+                    instance=job_args_primary.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that found_metadata has expected items and all are marked as invalidated.
+            self.assertEqual(
+                expected_primary_metadata,
+                convert_schema_object_to_entity(primary_metadata),
+            )
+
+            secondary_metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager_secondary.region_code,
+                    instance=job_args_secondary.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that found_metadata has expected items and are NOT marked as invalidated.
+            self.assertEqual(
+                expected_secondary_metadata,
+                convert_schema_object_to_entity(secondary_metadata),
+            )

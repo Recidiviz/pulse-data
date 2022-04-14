@@ -205,3 +205,21 @@ class DirectIngestViewMaterializationMetadataManager:
                 )
             )
             session.execute(delete_query)
+
+    def mark_instance_data_invalidated(self) -> None:
+        """Sets the is_invalidated on all rows for the state/instance"""
+        with SessionFactory.using_database(
+            self.database_key,
+        ) as session:
+            table_cls = schema.DirectIngestViewMaterializationMetadata
+            update_query = (
+                table_cls.__table__.update()
+                .where(
+                    and_(
+                        table_cls.region_code == self.region_code.upper(),
+                        table_cls.instance == self.ingest_instance.value,
+                    )
+                )
+                .values(is_invalidated=True)
+            )
+            session.execute(update_query)

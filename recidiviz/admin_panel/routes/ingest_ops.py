@@ -49,6 +49,9 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
+    DirectIngestViewMaterializationMetadataManager,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
     get_unprocessed_raw_files_in_bucket,
@@ -487,6 +490,37 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             move_ingest_view_results_to_backup(
                 state_code, ingest_instance, BigQueryClientImpl()
             )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/mark_instance_ingest_view_data_invalidated",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _mark_instance_ingest_view_data_invalidated() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            ingest_view_metadata_manager = (
+                DirectIngestViewMaterializationMetadataManager(
+                    region_code=state_code.value, ingest_instance=ingest_instance
+                )
+            )
+            ingest_view_metadata_manager.mark_instance_data_invalidated()
             return (
                 "",
                 HTTPStatus.OK,
