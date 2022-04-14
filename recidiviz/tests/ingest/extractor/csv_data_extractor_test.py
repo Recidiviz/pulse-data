@@ -19,7 +19,7 @@
 import csv
 import os
 import unittest
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from recidiviz.ingest.extractor.csv_data_extractor import (
     CsvDataExtractor,
@@ -178,7 +178,9 @@ class CsvDataExtractorTest(unittest.TestCase):
         content = fixtures.as_string(
             "testdata/data_extractor/csv", "header_cols_only.csv"
         )
-        ingest_info = extractor.extract_and_populate_data(iter(content.splitlines()))
+        ingest_info = extractor.extract_and_populate_data(
+            csv.DictReader(content.splitlines())
+        )
 
         self.assertIsNotNone(ingest_info)
         self.assertFalse(ingest_info)

@@ -19,7 +19,6 @@
 might care about. The extracted information is put into the ingest data
 model and returned.
 """
-import collections.abc
 import csv
 import logging
 from collections import OrderedDict, defaultdict
@@ -28,7 +27,7 @@ from typing import (
     Callable,
     Dict,
     Generic,
-    Iterable,
+    Iterator,
     List,
     Optional,
     Set,
@@ -166,7 +165,9 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         )
 
     def extract_and_populate_data(
-        self, content: Union[str, Iterable[str]], ingest_info: IngestInfo = None
+        self,
+        content: Union[str, Iterator[Dict[str, str]]],
+        ingest_info: IngestInfo = None,
     ) -> IngestInfo:
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
@@ -190,20 +191,23 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         return ingest_info.prune()
 
     def _extract(
-        self, content: Union[str, Iterable[str]], ingest_info: IngestInfo
+        self, content: Union[str, Iterator[Dict[str, str]]], ingest_info: IngestInfo
     ) -> None:
         """Converts entries in |content| and adds data to |ingest_info|."""
+        rows: Iterator[Dict[str, str]]
         if isinstance(content, str):
             rows = csv.DictReader(content.splitlines())
-        elif isinstance(content, collections.abc.Iterable):
-            rows = csv.DictReader(content)
+        elif isinstance(content, Iterator):
+            rows = content
         else:
-            logging.error("%r is not a string or an Iterable", content)
+            logging.error("%r is not a string or an Iterator", content)
             return
 
         self._extract_rows(rows, ingest_info)
 
-    def _extract_rows(self, rows: csv.DictReader, ingest_info: IngestInfo) -> None:
+    def _extract_rows(
+        self, rows: Iterator[Dict[str, str]], ingest_info: IngestInfo
+    ) -> None:
         """Converts entries in |rows| and adds data to |ingest_info|."""
 
         if self.ingest_object_cache is None:

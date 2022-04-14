@@ -54,6 +54,18 @@ class IngestViewProcessor:
     ) -> bool:
         pass
 
+    @staticmethod
+    def row_iterator_from_contents_handle(
+        contents_handle: ContentsHandle,
+    ) -> Iterator[Dict[str, str]]:
+        if isinstance(contents_handle, LocalFileContentsHandle):
+            return csv.DictReader(contents_handle.get_contents_iterator())
+        if isinstance(contents_handle, BigQueryResultsContentsHandle):
+            return contents_handle.get_contents_iterator()
+        raise ValueError(
+            f"Unsupported contents handle type: [{type(contents_handle)}]."
+        )
+
 
 class IngestViewProcessorImpl(IngestViewProcessor):
     """Standard (new) implementation of the IngestViewProcessor, which takes ingest view
@@ -64,16 +76,6 @@ class IngestViewProcessorImpl(IngestViewProcessor):
     def __init__(self, ingest_view_file_parser: IngestViewResultsParser):
         self.ingest_view_file_parser = ingest_view_file_parser
 
-    @staticmethod
-    def _row_iterator(contents_handle: ContentsHandle) -> Iterator[Dict[str, str]]:
-        if isinstance(contents_handle, LocalFileContentsHandle):
-            return csv.DictReader(contents_handle.get_contents_iterator())
-        if isinstance(contents_handle, BigQueryResultsContentsHandle):
-            return contents_handle.get_contents_iterator()
-        raise ValueError(
-            f"Unsupported contents handle type: [{type(contents_handle)}]."
-        )
-
     def parse_and_persist_contents(
         self,
         args: ExtractAndMergeArgs,
@@ -82,7 +84,7 @@ class IngestViewProcessorImpl(IngestViewProcessor):
     ) -> bool:
         parsed_entities = self.ingest_view_file_parser.parse(
             ingest_view_name=args.ingest_view_name,
-            contents_iterator=self._row_iterator(contents_handle),
+            contents_iterator=self.row_iterator_from_contents_handle(contents_handle),
         )
 
         if all(isinstance(e, state_entities.StatePerson) for e in parsed_entities):
