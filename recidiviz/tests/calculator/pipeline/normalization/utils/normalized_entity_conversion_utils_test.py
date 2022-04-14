@@ -44,7 +44,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_convers
     convert_entity_trees_to_normalized_versions,
     fields_unique_to_normalized_class,
 )
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
@@ -256,7 +256,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
                 entities.StateCharge.new_with_defaults(
-                    state_code="US_XX", status=ChargeStatus.PRESENT_WITHOUT_INFO
+                    state_code="US_XX", status=StateChargeStatus.PRESENT_WITHOUT_INFO
                 )
             ],
         )

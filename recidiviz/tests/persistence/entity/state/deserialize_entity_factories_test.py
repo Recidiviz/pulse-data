@@ -26,7 +26,6 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
@@ -44,7 +43,10 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeClassificationType,
+    StateChargeStatus,
+)
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
@@ -669,7 +671,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StateCharge(self) -> None:
         result = deserialize_entity_factories.StateChargeFactory.deserialize(
-            status=ChargeStatus.ACQUITTED,
+            status=StateChargeStatus.ACQUITTED,
             status_raw_text="ACQ",
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text="F",
@@ -694,7 +696,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateCharge(
-            status=ChargeStatus.ACQUITTED,
+            status=StateChargeStatus.ACQUITTED,
             status_raw_text="ACQ",
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text="F",

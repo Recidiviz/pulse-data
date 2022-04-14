@@ -24,9 +24,7 @@ from typing import Dict, Optional
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
-# TODO(#8905): Determine strategy for removing _get_default_map() / EntityEnumMeta
-#   behavior for these shared enums once all states have fully migrated to v2 ingest
-#   view mappings.
+# TODO(#12203): Move these enums into /county and out of /shared_enums
 
 
 class Gender(EntityEnum, metaclass=EntityEnumMeta):

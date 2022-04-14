@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Factories for deserializing entities in state/entities.py from ingested values."""
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
@@ -129,7 +129,7 @@ class StateChargeFactory(EntityFactory):
         return entity_deserialize(
             cls=entities.StateCharge,
             converter_overrides={},
-            defaults={"status": ChargeStatus.PRESENT_WITHOUT_INFO},
+            defaults={"status": StateChargeStatus.PRESENT_WITHOUT_INFO},
             **kwargs,
         )
 

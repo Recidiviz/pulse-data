@@ -28,7 +28,6 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
@@ -46,7 +45,10 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeClassificationType,
+    StateChargeStatus,
+)
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
@@ -388,8 +390,8 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    status: ChargeStatus = attr.ib(
-        validator=attr.validators.instance_of(ChargeStatus)
+    status: StateChargeStatus = attr.ib(
+        validator=attr.validators.instance_of(StateChargeStatus)
     )  # non-nullable
     status_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str

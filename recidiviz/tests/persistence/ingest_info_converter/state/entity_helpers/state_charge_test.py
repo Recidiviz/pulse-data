@@ -19,8 +19,10 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
-from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeClassificationType,
+    StateChargeStatus,
+)
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -72,7 +74,7 @@ class StateChargeConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
-            status=ChargeStatus.ACQUITTED,
+            status=StateChargeStatus.ACQUITTED,
             status_raw_text="ACQUITTED",
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text="FELONY",
@@ -123,7 +125,7 @@ class StateChargeConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
-            status=ChargeStatus.ACQUITTED,
+            status=StateChargeStatus.ACQUITTED,
             status_raw_text="ACQUITTED",
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text="FELONY",
@@ -165,7 +167,7 @@ class StateChargeConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
-            status=ChargeStatus.ACQUITTED,
+            status=StateChargeStatus.ACQUITTED,
             status_raw_text="ACQUITTED",
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text="FELONY",

@@ -17,8 +17,8 @@
 """Helper methods to generate schema objects with required fields
 prepopulated.
 """
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -182,7 +182,7 @@ def generate_supervision_sentence(person, **kwargs) -> schema.StateSupervisionSe
 
 def generate_charge(person, **kwargs) -> schema.StateCharge:
     args = {
-        "status": ChargeStatus.PRESENT_WITHOUT_INFO.value,
+        "status": StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         "state_code": _STATE_CODE,
     }
     args.update(kwargs)

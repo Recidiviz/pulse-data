@@ -20,7 +20,6 @@ import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional, Sequence, Type
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Race,
@@ -34,7 +33,10 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeClassificationType,
+    StateChargeStatus,
+)
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
@@ -468,7 +470,7 @@ def generate_full_graph_state_person(
 
     charge = entities.StateCharge.new_with_defaults(
         external_id="CHARGE1_EXTERNAL_ID",
-        status=ChargeStatus.CONVICTED,
+        status=StateChargeStatus.CONVICTED,
         status_raw_text="CONVICTED",
         offense_date=datetime.date(year=2003, month=7, day=1),
         date_charged=datetime.date(year=2003, month=8, day=1),
@@ -486,7 +488,7 @@ def generate_full_graph_state_person(
 
     charge2 = entities.StateCharge.new_with_defaults(
         external_id="CHARGE2_EXTERNAL_ID",
-        status=ChargeStatus.CONVICTED,
+        status=StateChargeStatus.CONVICTED,
         status_raw_text="CONVICTED",
         offense_date=datetime.date(year=2003, month=7, day=1),
         date_charged=datetime.date(year=2003, month=8, day=1),
@@ -504,7 +506,7 @@ def generate_full_graph_state_person(
 
     charge3 = entities.StateCharge.new_with_defaults(
         external_id="CHARGE3_EXTERNAL_ID",
-        status=ChargeStatus.DROPPED,
+        status=StateChargeStatus.DROPPED,
         status_raw_text="DROPPED",
         offense_date=datetime.date(year=2003, month=7, day=1),
         date_charged=datetime.date(year=2003, month=8, day=1),
