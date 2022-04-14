@@ -423,8 +423,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         state_code,
         COALESCE(
             CASE WHEN inferred_release OR inferred_mo_release THEN 'RELEASE'
-                WHEN inferred_escape OR start_reason = 'ABSCONSION' THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
-                WHEN inferred_death THEN 'DEATH'    
+                WHEN inferred_escape
+                    OR (start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION"))
+                    THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
+                WHEN inferred_death THEN 'DEATH'
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
                 WHEN inferred_pending_custody OR inferred_mo_pending_custody THEN 'PENDING_CUSTODY'
@@ -436,7 +438,9 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
             CASE WHEN inferred_release OR inferred_mo_release THEN 'RELEASE'
-                WHEN inferred_escape OR start_reason = 'ABSCONSION' THEN 'ABSCONSION'
+                WHEN inferred_escape
+                    OR (start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION"))
+                    THEN 'ABSCONSION'
                 WHEN inferred_death THEN 'DEATH'
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
                 WHEN inferred_missing_data THEN LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date)
