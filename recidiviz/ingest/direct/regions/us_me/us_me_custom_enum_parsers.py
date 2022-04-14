@@ -232,56 +232,6 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
     return StateIncarcerationPeriodAdmissionReason.TRANSFER
 
 
-# TODO(#11586): Remove this parser once the v1 view is deprecated
-def parse_admission_reason_v1(raw_text: str) -> StateIncarcerationPeriodAdmissionReason:
-    """Parse admission reason from raw text"""
-    (
-        previous_status,
-        current_status,
-        movement_type,
-        transfer_type,
-        transfer_reason,
-        location_type,
-    ) = raw_text.upper().split("@@")
-
-    if (
-        previous_status
-        in SUPERVISION_STATUSES + SUPERVISION_PRECEDING_INCARCERATION_STATUSES
-    ):
-        # This includes when someone violates the terms of their community confinement (SCCP) and is sent back to
-        # prison. Maine does not use the term "revocation" to describe these instances, but they fit our internal
-        # definition of revocations.
-        return StateIncarcerationPeriodAdmissionReason.REVOCATION
-
-    if _is_new_admission(transfer_reason, movement_type):
-        return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
-
-    if movement_type in FURLOUGH_MOVEMENT_TYPES:
-        return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
-
-    if _in_temporary_custody(current_status, location_type, transfer_reason):
-        return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
-
-    if (
-        transfer_type in OTHER_JURISDICTION_TRANSFER_TYPES
-        or transfer_reason == OTHER_JURISDICTION_TRANSFER_REASON
-        or previous_status in OTHER_JURISDICTION_STATUSES
-    ):
-        return StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
-
-    if (
-        previous_status == "NONE"
-    ) and transfer_reason in SUPERVISION_VIOLATION_TRANSFER_REASONS:
-        # These rare cases happen if the previous supervision period occurred in a supervision office, or if the
-        # supervision period occurred before the year 2000.
-        return StateIncarcerationPeriodAdmissionReason.REVOCATION
-
-    if ESCAPE in [previous_status, movement_type]:
-        return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
-
-    return StateIncarcerationPeriodAdmissionReason.TRANSFER
-
-
 def parse_release_reason(
     raw_text: str,
 ) -> Optional[StateIncarcerationPeriodReleaseReason]:

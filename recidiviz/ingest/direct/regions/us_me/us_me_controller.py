@@ -22,8 +22,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import environment
 
 
 class UsMeController(BaseDirectIngestController):
@@ -40,22 +38,12 @@ class UsMeController(BaseDirectIngestController):
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """
-        return (
-            ["CLIENT"]
-            + (
-                # TODO(#11586): Ship CURRENT_STATUS_incarceration_periods_v2 to primary production
-                ["CURRENT_STATUS_incarceration_periods_v2"]
-                if (
-                    not environment.in_gcp_production()
-                    or self.ingest_instance == DirectIngestInstance.SECONDARY
-                )
-                else ["CURRENT_STATUS_incarceration_periods"]
-            )
-            + [
-                "supervision_periods",
-                "assessments",
-                "supervision_violations",
-                "incarceration_sentences",
-                "supervision_sentences",
-            ]
-        )
+        return [
+            "CLIENT",
+            "CURRENT_STATUS_incarceration_periods_v2",
+            "supervision_periods",
+            "assessments",
+            "supervision_violations",
+            "incarceration_sentences",
+            "supervision_sentences",
+        ]

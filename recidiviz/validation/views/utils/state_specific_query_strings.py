@@ -18,12 +18,12 @@
 """
 
 
-def state_specific_dataflow_facility_name_tranformation() -> str:
+def state_specific_dataflow_facility_name_transformation() -> str:
     """
     Facility name transformations for dataflow output when comparing against external validation data.
 
     For US_ME: The dataflow results will list SOUTHERN MAINE WOMEN'S REENTRY CENTER as a facility name, which is mapped from
-    the value of the housing_unit in the ingest mapping CURRENT_STATUS_incarceration_periods.yaml. However, US_ME's
+    the value of the housing_unit in the ingest mapping CURRENT_STATUS_incarceration_periods_v2.yaml. However, US_ME's
     validation reports lists this facility as Maine Correctional Center because of how the facility was created in
     their system."""
     return """
