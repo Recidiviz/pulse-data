@@ -23,7 +23,6 @@ import attr
 from mock import patch
 from more_itertools import one
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
@@ -31,6 +30,7 @@ from recidiviz.common.constants.shared_enums.person_characteristics import (
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -483,7 +483,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         new_charge = StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
@@ -672,7 +672,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             description="charge_1",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             court_case=db_court_case,
         )
         entity_charge = self.to_entity(db_charge)
@@ -758,7 +758,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             person=db_person,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             court_case=db_placeholder_court_case,
         )
         entity_charge = self.to_entity(db_charge)
@@ -843,7 +843,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_placeholder_charge = generate_charge(
             person=db_person,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         )
         entity_placeholder_charge = self.to_entity(db_placeholder_charge)
         db_supervision_sentence = generate_supervision_sentence(
@@ -863,7 +863,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID_2,
             person=db_person,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             court_case=db_court_case_2,
         )
         entity_charge_2 = self.to_entity(db_charge_2)
@@ -905,7 +905,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         charge_2 = StateCharge.new_with_defaults(
             external_id=_EXTERNAL_ID_2,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             charge_id=None,
             court_case=conflicting_court_case,
         )
@@ -975,7 +975,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         charge = StateCharge.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=ChargeStatus.DROPPED,
+            status=StateChargeStatus.DROPPED,
         )
         charge_dup = attr.evolve(charge)
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1342,7 +1342,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             description="charge_1",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         )
         entity_charge_1 = self.to_entity(db_charge_1)
         db_charge_2 = generate_charge(
@@ -1350,7 +1350,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             description="charge_2",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             court_case=db_court_case,
         )
         entity_charge_2 = self.to_entity(db_charge_2)
@@ -1469,7 +1469,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             description="charge_1",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             court_case=db_court_case,
         )
         entity_charge_1 = self.to_entity(db_charge_1)
@@ -1478,7 +1478,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_3,
             description="charge_2",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         )
         entity_charge_2 = self.to_entity(db_charge_2)
         db_assessment = generate_assessment(
@@ -2193,7 +2193,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_court_case = self.to_entity(db_court_case)
         db_charge = generate_charge(
             person=db_person,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             court_case=db_court_case,
@@ -2217,7 +2217,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             entity_court_case, county_code="county_code_updated"
         )
         placeholder_charge = StateCharge.new_with_defaults(
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE,
             court_case=court_case_updated,
         )
@@ -2277,7 +2277,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_court_case = self.to_entity(db_court_case)
         db_placeholder_charge = generate_charge(
             person=db_person,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             court_case=db_court_case,
         )
@@ -2297,7 +2297,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             entity_court_case, county_code="county_code_updated"
         )
         charge = StateCharge.new_with_defaults(
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             court_case=court_case_updated,
@@ -2470,7 +2470,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         charge_merged = StateCharge.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
         charge_unmerged = attr.evolve(charge_merged, charge_id=None)
         charge_duplicate_unmerged = attr.evolve(charge_unmerged)
@@ -2539,7 +2539,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         charge_merged = StateCharge.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case_merged,
         )
         charge_unmerged = attr.evolve(
@@ -2551,7 +2551,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         charge_2 = StateCharge.new_with_defaults(
             external_id=_EXTERNAL_ID_2,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=attr.evolve(court_case_unmerged),
         )
         sentence = StateIncarcerationSentence.new_with_defaults(
@@ -2633,7 +2633,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         charge = StateCharge.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
         )
         charge_matching = attr.evolve(charge, court_case=different_court_case)
@@ -2695,7 +2695,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             description="charge_1",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             court_case=db_court_case,
         )
         db_incarceration_sentence = generate_incarceration_sentence(
@@ -2739,7 +2739,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                         StateCharge.new_with_defaults(
                             state_code=_STATE_CODE,
                             external_id=_EXTERNAL_ID,
-                            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
                             court_case=StateCourtCase.new_with_defaults(
                                 state_code=_STATE_CODE,
                                 external_id=_EXTERNAL_ID,
@@ -2780,7 +2780,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             description="charge_1",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             court_case=db_court_case,
         )
         db_incarceration_sentence = generate_incarceration_sentence(
@@ -2822,7 +2822,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                     charges=[
                         StateCharge.new_with_defaults(
                             state_code=_STATE_CODE,
-                            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
                             court_case=StateCourtCase.new_with_defaults(
                                 state_code=_STATE_CODE,
                                 external_id=_EXTERNAL_ID,
@@ -2858,7 +2858,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         charge_merged = StateCharge.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
         charge_unmerged = attr.evolve(charge_merged, charge_id=None)
         charge_duplicate_unmerged = attr.evolve(charge_unmerged)

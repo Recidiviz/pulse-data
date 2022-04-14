@@ -19,7 +19,6 @@ import datetime
 import unittest
 from typing import List
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Race,
@@ -27,7 +26,10 @@ from recidiviz.common.constants.shared_enums.person_characteristics import (
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeClassificationType,
+    StateChargeStatus,
+)
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
@@ -493,7 +495,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             classification_subtype="1",
             ncic_code="5006",
             state_code="US_XX",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
         )
 
@@ -503,7 +505,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             classification_type_raw_text="M",
             classification_subtype="2",
             state_code="US_XX",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
         )
 
@@ -515,7 +517,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             classification_subtype="3",
             ncic_code="5006",
             description="OBSTRUCTION OF INVESTIGATION",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
         )
 

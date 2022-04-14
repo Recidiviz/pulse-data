@@ -6,7 +6,6 @@ from typing import List, Optional
 import attr
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Race,
@@ -14,6 +13,7 @@ from recidiviz.common.constants.shared_enums.person_characteristics import (
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
@@ -262,7 +262,7 @@ def generate_test_charge(
         charge_id=charge_id,
         person_id=person_id,
         state_code=state_code,
-        status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+        status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         court_case=court_case,
         court_case_id=(court_case.court_case_id if court_case else None),
     )

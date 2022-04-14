@@ -108,22 +108,22 @@ output:
                   $enum_mapping:
                     $raw_text: E_Charge_Outcome_Desc
                     $mappings:
-                      ChargeStatus.ACQUITTED:
+                      StateChargeStatus.ACQUITTED:
                         - Acquitted
                         - NCR  # Not Criminally Responsible
-                      ChargeStatus.ADJUDICATED:
+                      StateChargeStatus.ADJUDICATED:
                         - Adjudicated
                         - Deferred Disposition
-                      ChargeStatus.CONVICTED:
+                      StateChargeStatus.CONVICTED:
                         - Convicted
-                      ChargeStatus.DROPPED:
+                      StateChargeStatus.DROPPED:
                         - Dismissed
                         - Charge Dropped
                         - Incompetent
-                      ChargeStatus.PENDING:
+                      StateChargeStatus.PENDING:
                         - Charge Pending
                         - Filed
-                      ChargeStatus.TRANSFERRED_AWAY:
+                      StateChargeStatus.TRANSFERRED_AWAY:
                         - Bound Over-Case Transferred
                 offense_date: Offense_Date
                 date_charged: Referral_Date

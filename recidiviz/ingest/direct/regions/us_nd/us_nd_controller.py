@@ -22,7 +22,6 @@ from typing import Dict, List, Optional, Tuple, cast
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.external_id_types import (
     US_ND_ELITE,
@@ -34,6 +33,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
@@ -672,7 +672,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateCharge):
                 # Note: If we hear about a charge in Elite, the person has already been sentenced.
-                extracted_object.status = ChargeStatus.SENTENCED.value
+                extracted_object.status = StateChargeStatus.SENTENCED.value
 
     @staticmethod
     def _rationalize_controlling_charge(

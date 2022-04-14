@@ -17,8 +17,8 @@
 """Tests for state_matching_utils.py"""
 import datetime
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import Gender
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -440,7 +440,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_addChildToEntity_singular(self) -> None:
         charge = schema.StateCharge(
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             charge_id=_ID,
         )
         court_case = schema.StateCourtCase(state_code=_STATE_CODE, court_case_id=_ID)
@@ -550,10 +550,10 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_nonnullFieldsEntityMatch_placeholder(self) -> None:
         charge = schema.StateCharge(
-            state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO
+            state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
         )
         charge_another = schema.StateCharge(
-            state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO
+            state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
         )
         self.assertFalse(
             nonnull_fields_entity_match(
@@ -566,11 +566,11 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_nonnullFieldsEntityMatch_externalIdCompare(self) -> None:
         charge = schema.StateCharge(
             state_code=_STATE_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID,
         )
         charge_another = schema.StateCharge(
-            state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO
+            state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
         )
         self.assertFalse(
             nonnull_fields_entity_match(
@@ -593,12 +593,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE,
             ncic_code="1234",
             county_code=_COUNTY_CODE,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
         charge_another = schema.StateCharge(
             state_code=_STATE_CODE,
             ncic_code="1234",
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
 
         # If one of the entities is merely missing a field, we still consider it a match

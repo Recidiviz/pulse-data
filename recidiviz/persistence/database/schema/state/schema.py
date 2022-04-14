@@ -61,7 +61,6 @@ from recidiviz.persistence.database.schema.history_table_shared_columns_mixin im
     HistoryTableSharedColumns,
 )
 from recidiviz.persistence.database.schema.shared_enums import (
-    charge_status,
     ethnicity,
     gender,
     race,
@@ -216,6 +215,23 @@ state_charge_classification_type = Enum(
     state_enum_strings.state_charge_classification_type_misdemeanor,
     state_enum_strings.state_charge_classification_type_other,
     name="state_charge_classification_type",
+)
+
+state_charge_status = Enum(
+    state_enum_strings.state_charge_status_acquitted,
+    state_enum_strings.state_charge_status_adjudicated,
+    state_enum_strings.state_charge_status_completed,
+    state_enum_strings.state_charge_status_convicted,
+    state_enum_strings.state_charge_status_dropped,
+    state_enum_strings.state_charge_status_inferred_dropped,
+    enum_strings.external_unknown,
+    state_enum_strings.state_charge_status_pending,
+    state_enum_strings.state_charge_status_pretrial,
+    state_enum_strings.state_charge_status_sentenced,
+    state_enum_strings.state_charge_status_transferred_away,
+    enum_strings.present_without_info,
+    enum_strings.removed_without_info,
+    name="state_charge_status",
 )
 
 state_incarceration_type = Enum(
@@ -1302,7 +1318,9 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateCharge"
         ),
     )
-    status = Column(charge_status, nullable=False, comment="The status of the charge.")
+    status = Column(
+        state_charge_status, nullable=False, comment="The status of the charge."
+    )
     status_raw_text = Column(
         String(255), comment="The raw text value of the status of the charge."
     )

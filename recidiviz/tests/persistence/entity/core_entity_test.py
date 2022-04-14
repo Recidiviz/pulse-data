@@ -259,18 +259,18 @@ class TestCoreEntity(unittest.TestCase):
 
     def test_isDefaultEnum(self) -> None:
         entity = entities.StateCharge.new_with_defaults(
-            state_code="US_XX", status=entities.ChargeStatus.PRESENT_WITHOUT_INFO
+            state_code="US_XX", status=entities.StateChargeStatus.PRESENT_WITHOUT_INFO
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
         if not isinstance(db_entity, schema.StateCharge):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
         self.assertTrue(entity.is_default_enum("status"))
-        entity.status = entities.ChargeStatus.CONVICTED
+        entity.status = entities.StateChargeStatus.CONVICTED
         self.assertFalse(entity.is_default_enum("status"))
 
         self.assertTrue(db_entity.is_default_enum("status"))
-        db_entity.status = entities.ChargeStatus.CONVICTED.value
+        db_entity.status = entities.StateChargeStatus.CONVICTED.value
         self.assertFalse(db_entity.is_default_enum("status"))
 
     def test_isDefaultEnum_incarceration_type(self) -> None:

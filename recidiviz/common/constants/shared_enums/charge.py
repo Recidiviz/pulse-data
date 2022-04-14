@@ -24,6 +24,7 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#12203): Move this enum to /county and out of /shared_enums
 class ChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
     ACQUITTED = enum_strings.charge_status_acquitted
     ADJUDICATED = enum_strings.charge_status_adjudicated

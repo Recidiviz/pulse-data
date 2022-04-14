@@ -23,9 +23,9 @@ from typing import Any
 import attr
 from more_itertools import one
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
@@ -75,7 +75,7 @@ def make_incarceration_sentence(**kwargs: Any) -> StateIncarcerationSentence:
 
 def make_state_charge(**kwargs: Any) -> StateCharge:
     return StateCharge.new_with_defaults(
-        state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO, **kwargs
+        state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO, **kwargs
     )
 
 

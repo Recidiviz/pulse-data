@@ -21,7 +21,6 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.constants.shared_enums.person_characteristics import (
     Ethnicity,
     Gender,
@@ -29,6 +28,7 @@ from recidiviz.common.constants.shared_enums.person_characteristics import (
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
@@ -101,7 +101,7 @@ class TestCoreEntityFieldIndex(TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
                 StateCharge.new_with_defaults(
-                    state_code="US_XX", status=ChargeStatus.PRESENT_WITHOUT_INFO
+                    state_code="US_XX", status=StateChargeStatus.PRESENT_WITHOUT_INFO
                 )
             ],
             person=[StatePerson.new_with_defaults(state_code="US_XX")],
@@ -196,7 +196,7 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
     schema.StateCharge: [
         schema.StateCharge(
             state_code=StateCode.US_XX.value,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         )
     ],
     schema.StateCourtCase: [schema.StateCourtCase(state_code=StateCode.US_XX.value)],
@@ -264,7 +264,7 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
                 schema.StateCharge(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
                 )
             ],
         ),
@@ -301,7 +301,7 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
         schema.StateCharge(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         )
     ],
     schema.StateCourtCase: [
@@ -403,7 +403,7 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
                 schema.StateCharge(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
                 )
             ],
         ),
@@ -451,12 +451,12 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         schema.StateCharge(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             statute="1234a",
         ),
         schema.StateCharge(
             state_code=StateCode.US_XX.value,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             statute="1234a",
         ),
     ],
@@ -650,7 +650,7 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
                 schema.StateCharge(
                     state_code=StateCode.US_XX.value,
                     external_id=_EXTERNAL_ID,
-                    status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
                 )
             ],
         ),
