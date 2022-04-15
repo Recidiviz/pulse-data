@@ -57,6 +57,8 @@ in the year following assignment.
         COUNT(DISTINCT office) AS officer_office_count,
         MIN(officer_tenure_days) AS officer_tenure_days,"""
         officer_attributes = """
+    MAX(primary_offices.district) AS primary_district,
+    MAX(primary_offices.office) AS primary_office,
     AVG(officer_district_count) AS avg_district_count,
     AVG(officer_office_count) AS avg_office_count,
     MIN(officer_tenure_days) AS officer_tenure_days_start,"""
@@ -73,6 +75,7 @@ in the year following assignment.
         SAFE_DIVIDE(SUM(officer_tenure_days * caseload_all), SUM(caseload_all))
             AS client_weighted_officer_tenure_days,"""
         officer_attributes = """
+    COUNT(DISTINCT primary_offices.supervising_officer_external_id) AS distinct_primary_officers,
     AVG(officer_count) AS avg_officer_count,
     AVG(officer_tenure_days) AS avg_officer_tenure_days,
     AVG(client_weighted_officer_tenure_days) AS avg_client_weighted_officer_tenure_days,"""
@@ -124,6 +127,30 @@ WITH date_range AS (
         date_range 
 )
 
+, primary_offices AS (
+    SELECT
+        state_code,
+        supervising_officer_external_id,
+        period,
+        start_date,
+        end_date,
+        district,
+        office,
+        AVG(IFNULL(caseload_all, 0)) AS avg_daily_caseload_primary,
+    FROM
+        `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized` a
+    INNER JOIN
+        truncated_dates b
+    ON
+        a.date BETWEEN b.start_date AND b.end_date
+    GROUP BY 1, 2, 3, 4, 5, 6, 7
+    QUALIFY
+        ROW_NUMBER() OVER (PARTITION BY state_code, supervising_officer_external_id, 
+            period, start_date, end_date 
+            ORDER BY avg_daily_caseload_primary DESC, district, office
+        ) = 1
+)
+
 # {level}-day
 , {level}_level_metrics AS (
     SELECT
@@ -131,7 +158,6 @@ WITH date_range AS (
         state_code,
         {index_cols},
         date,
-        
         {level_dependent_metrics}
         # TODO(#11903): compare office and district-level metrics calculated here, which
         # weigh clients by number of officers, to those that weigh all clients
@@ -142,6 +168,7 @@ WITH date_range AS (
         SUM(caseload_out_of_state) AS caseload_out_of_state,
         SUM(caseload_parole) AS caseload_parole,
         SUM(caseload_probation) AS caseload_probation,
+        SUM(caseload_other_supervision_type) AS caseload_other_supervision_type,
         SUM(caseload_female) AS caseload_female,
         SUM(caseload_nonwhite) AS caseload_nonwhite,
         SUM(caseload_general) AS caseload_general,
@@ -149,7 +176,7 @@ WITH date_range AS (
         SUM(caseload_sex_offense) AS caseload_sex_offense,
         SUM(caseload_drug) AS caseload_drug,
         SUM(caseload_mental_health) AS caseload_mental_health,
-        SUM(caseload_other) AS caseload_other,
+        SUM(caseload_other_case_type) AS caseload_other_case_type,
         SAFE_DIVIDE(SUM(avg_lsir_score * caseload_all), SUM(caseload_all))
             AS avg_lsir_score,
         SUM(caseload_no_lsir_score) AS caseload_no_lsir_score,
@@ -183,14 +210,14 @@ SELECT
     start_date,
     end_date,
     
-    # officer attributes
-    {officer_attributes}
+    # officer attributes{officer_attributes}
     
     # caseload attributes, averaged across days
     AVG(caseload_all) AS avg_daily_caseload,
     AVG(caseload_out_of_state) AS avg_caseload_out_of_state,
     AVG(caseload_parole) AS avg_caseload_parole,
     AVG(caseload_probation) AS avg_caseload_probation,
+    AVG(caseload_other_supervision_type) AS avg_caseload_other_supervision_type,
     AVG(caseload_female) AS avg_caseload_female,
     AVG(caseload_nonwhite) AS avg_caseload_nonwhite,
     AVG(caseload_general) AS avg_caseload_general,
@@ -198,7 +225,7 @@ SELECT
     AVG(caseload_sex_offense) AS avg_caseload_sex_offense,
     AVG(caseload_drug) AS avg_caseload_drug,
     AVG(caseload_mental_health) AS avg_caseload_mental_health,
-    AVG(caseload_other) AS avg_caseload_other,
+    AVG(caseload_other_case_type) AS avg_caseload_other_case_type,
     AVG(avg_lsir_score) AS avg_lsir_score,
     AVG(caseload_no_lsir_score) AS avg_caseload_no_lsir_score,
     AVG(caseload_low_risk_level) AS avg_caseload_low_risk_level,
@@ -225,6 +252,10 @@ INNER JOIN
     truncated_dates b
 ON
     a.date BETWEEN b.start_date AND b.end_date
+LEFT JOIN
+    primary_offices
+USING
+    (state_code, {index_cols}, period, start_date, end_date)
 GROUP BY 1, 2, 3, 4, 5{", 6" if level == "office" else ""}
 ORDER BY 1, 2, 3, 4{", 5" if level == "office" else ""}
 """
@@ -232,9 +263,7 @@ ORDER BY 1, 2, 3, 4{", 5" if level == "office" else ""}
 
 
 # init object to hold view builders
-SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS: List[
-    SimpleBigQueryViewBuilder
-] = []
+SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = []
 
 # iteratively add each builder to list
 for lev in ["officer", "office", "district"]:
@@ -246,7 +275,7 @@ for lev in ["officer", "office", "district"]:
     else:
         clustering_fields.append(lev)
 
-    SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS.append(
+    SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS.append(
         SimpleBigQueryViewBuilder(
             dataset_id=ANALYST_VIEWS_DATASET,
             view_id=name,
@@ -260,5 +289,5 @@ for lev in ["officer", "office", "district"]:
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        for view_builder in SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS:
+        for view_builder in SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS:
             view_builder.build_and_print()
