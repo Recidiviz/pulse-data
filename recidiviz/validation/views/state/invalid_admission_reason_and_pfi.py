@@ -16,13 +16,13 @@
 # =============================================================================
 """A view revealing when we see invalid combinations of admission_reason and
 specialized_purpose_for_incarceration.
-Existence of any rows indicates a bug in IP pre-processing logic.
+Existence of any rows indicates a bug in IP normalization logic.
 """
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
-    IncarcerationAdmissionMetric,
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -32,13 +32,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.utils.dataflow_metric_validation_utils import (
-    validation_query_for_metric,
+from recidiviz.validation.views.utils.normalized_entities_validation_utils import (
+    validation_query_for_normalized_entity,
 )
 
 INVALID_ADMISSION_REASON_AND_PFI_VIEW_NAME = "invalid_admission_reason_and_pfi"
 
-INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION = """Incarceration admission metrics with invalid combinations of admission_reason and specialized_purpose_for_incarceration."""
+INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION = """Normalized incarceration periods with 
+invalid combinations of admission_reason and specialized_purpose_for_incarceration."""
 
 INVALID_ROWS_FILTER_CLAUSE = f"""WHERE (admission_reason =
 '{StateIncarcerationPeriodAdmissionReason.REVOCATION.value}'
@@ -65,21 +66,19 @@ INVALID_ROWS_FILTER_CLAUSE = f"""WHERE (admission_reason =
 INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=INVALID_ADMISSION_REASON_AND_PFI_VIEW_NAME,
-    view_query_template=validation_query_for_metric(
-        metric=IncarcerationAdmissionMetric,
+    view_query_template=validation_query_for_normalized_entity(
+        normalized_entity_class=NormalizedStateIncarcerationPeriod,
         additional_columns_to_select=[
             "person_id",
-            "metric_type",
             "admission_reason",
             "specialized_purpose_for_incarceration",
             "admission_date",
-            "job_id",
         ],
         invalid_rows_filter_clause=INVALID_ROWS_FILTER_CLAUSE,
         validation_description=INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION,
     ),
     description=INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION,
-    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

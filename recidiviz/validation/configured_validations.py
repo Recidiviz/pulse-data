@@ -146,8 +146,8 @@ from recidiviz.validation.views.state.invalid_admitted_from_supervision_admissio
 from recidiviz.validation.views.state.invalid_null_pfi_in_metrics import (
     INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.invalid_null_spfi_in_metrics import (
-    INVALID_NULL_SPFI_IN_METRICS_VIEW_BUILDER,
+from recidiviz.validation.views.state.invalid_null_spfi_in_normalized_ips import (
+    INVALID_NULL_SPFI_NORMALIZED_IPS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissions import (
     INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
@@ -391,7 +391,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         # TODO(#3275): Delete this view once all specialized_purpose_for_incarceration
         #  metric fields have been re-named to purpose_for_incarceration
         ExistenceDataValidationCheck(
-            view_builder=INVALID_NULL_SPFI_IN_METRICS_VIEW_BUILDER,
+            view_builder=INVALID_NULL_SPFI_NORMALIZED_IPS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

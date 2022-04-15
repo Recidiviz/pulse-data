@@ -18,7 +18,7 @@
 does not match the purpose_for_incarceration value on a population metric for the same
 person_id and metric date.
 
-Mismatches here indicate that IP pre-processing is not handling zero-day incarceration
+Mismatches here indicate that IP normalization is not handling zero-day incarceration
 periods with different PFI values than the PFI on another period that starts on the same
 day but extends to at least the next day.
 """
@@ -36,7 +36,7 @@ A view revealing when the purpose_for_incarceration value on an admission metric
 does not match the purpose_for_incarceration value on a population metric for the same
 person_id and metric date.
 
-Mismatches here indicate that IP pre-processing is not handling zero-day incarceration 
+Mismatches here indicate that IP normalization is not handling zero-day incarceration 
 periods with different PFI values than the PFI on another period that starts on the same
 day but extends to at least the next day.
 """
