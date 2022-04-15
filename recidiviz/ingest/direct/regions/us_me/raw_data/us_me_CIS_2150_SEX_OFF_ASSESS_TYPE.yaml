@@ -12,9 +12,11 @@ columns:
   - name : Created_By_Tx
     description: |-
       Notes about the creation of this assessment record.
+    is_pii: True
   - name : Created_On_Date
     description: |-
       The date that this assessment record was created.
+    is_datetime: True
   - name : Juvenile_Ind
     description: |-
       Indicates that this assessment was given to a juvenile, not an adult
@@ -22,15 +24,19 @@ columns:
   - name : Modified_By_Tx
     description: |-
       Notes about the modification of this assessment record.
+    is_pii: True
   - name : Modified_On_Date
     description: |-
       The date that this assessment record was created.
+    is_datetime: True
   - name : Sex_Off_Assess_Type_Desc
     description: |-
       The name of the assessment, closely matching the known values for Sex_Off_Assess_Type_Cd.
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Sex_Off_Assess_Type_Cd
     description: The primary key for this table. Known values map to a specific assessment type.
     known_values:

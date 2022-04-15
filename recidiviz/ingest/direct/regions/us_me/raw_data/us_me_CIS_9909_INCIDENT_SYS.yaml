@@ -15,12 +15,16 @@ columns:
     description: Indicates whether the value is used for juvenile clients.
   - name : PBS_IND
   - name : SYSTEM_REF_TX
+    is_pii: True
   - name : SYSTEM_REF_COMMENTS_TX
+    is_pii: True
   - name : LOGICAL_DELETE_IND
   - name : CIS_9906_INCIDENT_SUB_CD
     description: A sub-type code that could be useful in determining which table the code is used for.
   - name : CREATED_BY_TX
+    is_pii: True
   - name : CREATED_ON_DATE
   - name : MODIFIED_BY_TX
+    is_pii: True
   - name : MODIFIED_ON_DATE
   - name : PBS_FACILITY_IND

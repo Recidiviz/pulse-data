@@ -58,6 +58,7 @@ columns:
   - name : Cis_9083_9087_Oper_Cd
   - name : Cis_9083_9088_Type_Cd
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Loc_Cd_3Char_Tx
   - name : Loc_Cd_Tx
@@ -70,6 +71,7 @@ columns:
   - name : Lss_Export_Username
   - name : Lss_Ori
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx

@@ -8,14 +8,18 @@ primary_key_cols:
 columns:
   - name : Adult_Ind
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : E_Current_Status_Desc
     description : The plain text value associated with the Current_Status_Cd number.
   - name : Juvenile_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Current_Status_Cd
     description : Primary key field and status code used in CIS_125_CURRENT_STATUS_HIST table

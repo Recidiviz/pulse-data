@@ -9,6 +9,7 @@ columns:
   - name : Canteen_Balance_Num
   - name : Cis_900_Employee_Supervisor_Id
     description: The supervisor ID for the CIS_900_EMPLOYEE table.
+    is_pii: True
   - name : Cis_9001_Employee_Type_Cd
     description: The employee type code, see CIS_9001_EMPLOYEE_TYPE for all possible values.
   - name : Cis_908_Ccs_Location_Id
@@ -16,30 +17,39 @@ columns:
   - name : Cis_908_Secondary_Location_Id
   - name : Coordinator_Ind
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Email_Tx
+    is_pii: True
   - name : Employee_Id
     description: The primary key for this table and the ID used in all other raw tables for CIS_900_EMPLOYEE_ID fields.
+    is_pii: True
   - name : End_Date
     description: The end date of employment.
   - name : First_Name
     description: The employee's first name.
+    is_pii: True
   - name : Fw_Message_To_Asl_Ind
   - name : Fw_Message_To_User_Id
   - name : Health_Ind
   - name : Hris_Number_Tx
+    is_pii: True
   - name : Internal_Escape_Contact_Ind
   - name : Last_Name
     description: The employee's last name.
+    is_pii: True
   - name : Logical_Delete_Ind
   - name : Math_Test_Ind
   - name : Mental_Ind
   - name : Middle_Name
     description: The employee's middle name.
+    is_pii: True
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Msg_Viewed_Date
   - name : Oracle_User_Name
+    is_pii: True
   - name : Physical_Fitness_Ind
   - name : Psychosocial_Ind
   - name : Reading_Test_Ind
@@ -48,6 +58,8 @@ columns:
   - name : Substance_Ind
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Team_Member_Ind
   - name : Vocational_Ind

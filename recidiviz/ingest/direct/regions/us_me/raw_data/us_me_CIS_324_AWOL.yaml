@@ -9,6 +9,7 @@ columns:
     description: The primary key for the table.
   - name : CIS_100_CLIENT_ID
     description: The MDOC associated with this row.
+    is_pii: True
   - name : CIS_319_TERM_ID
     description: The Term associated with this instance of escape.
   - name : CIS_3240_AWOL_TYPE_CD
@@ -34,9 +35,14 @@ columns:
     is_datetime: True
   - name : DAYS_UAL_NUM
   - name : NOTES_TX
+    is_pii: True
   - name : CLOTHING_TX
+    is_pii: True
   - name : CONTACTS_TX
+    is_pii: True
   - name : CREATED_BY_TX
+    is_pii: True
   - name : CREATED_ON_DATE
   - name : MODIFIED_BY_TX
+    is_pii: True
   - name : MODIFIED_ON_DATE

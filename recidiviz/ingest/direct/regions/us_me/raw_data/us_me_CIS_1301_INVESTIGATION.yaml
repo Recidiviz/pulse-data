@@ -8,16 +8,20 @@ columns:
   - name : Adult_Ind
   - name : Cis_1302_Sub_Type_Cd
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Investi_Cd_Desc
     description: The description of the investigation code.
   - name : Juvenile_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Investigation_Cd
     description: The primary key for this table.
     known_values:

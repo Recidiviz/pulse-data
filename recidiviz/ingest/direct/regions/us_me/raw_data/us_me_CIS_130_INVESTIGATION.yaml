@@ -7,21 +7,29 @@ primary_key_cols:
 columns:
   - name : Cis_100_Client_Id
     description: This is the client ID associated with the investigation.
+    is_pii: True
   - name : Cis_900_Employee_Id
+    is_pii: True
   - name : Cis_908_Ccs_Location_Id
   - name : Complete_Date
   - name : Complete_Date_Changed_Date
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Due_Date
   - name : First_Name
+    is_pii: True
   - name : Investigation_Id
     description: This is the primary key for the table.
   - name : Last_Name
+    is_pii: True
   - name : Middle_Name
+    is_pii: True
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Notes_Tx
+    is_pii: True
   - name : Request_Date
   - name : Cis_1301_Type_Cd
   - name : Cis_9902_Court_Cd

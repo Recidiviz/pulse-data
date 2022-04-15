@@ -7,13 +7,17 @@ primary_key_cols:
 columns:
   - name : Cis_100_Client_Id
     description: This is the client ID associated with the note.
+    is_pii: True
   - name : Cis_2040_Contact_Mode_Cd
   - name : Cis_2041_Note_Type_Cd
   - name : Cis_2042_Person_Contacted_Cd
   - name : Cis_900_Empl_Create_Id
+    is_pii: True
   - name : Cis_900_Employee_Id
+    is_pii: True
   - name : Cis_908_Ccs_Location_Id
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Message_Hi_Rca_Ind
   - name : Message_Hi_Risk_Ind
@@ -21,6 +25,7 @@ columns:
   - name : Message_Lo_Rca_Ind
   - name : Message_Lo_Risk_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Note_Date
     description: This is the date the note was entered.
@@ -28,6 +33,8 @@ columns:
   - name : Note_Id
     description: This is the primary key for the table.
   - name : Note_Tx
+    is_pii: True
   - name : Running_Rpt_Ind
   - name : Short_Note_Tx
+    is_pii: True
   - name : Violation_Ind

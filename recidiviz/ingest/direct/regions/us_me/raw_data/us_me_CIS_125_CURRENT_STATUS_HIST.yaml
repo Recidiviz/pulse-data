@@ -9,6 +9,7 @@ columns:
   - name: Cis_100_Client_Id
     description: |-
       The unique identifier for all clients in the offender management system.
+    is_pii: True
   - name: Cis_1000_Current_Status_Cd
     description: |-
       This is a client's status in the system between the Effct_Date and the End_Date.
@@ -273,27 +274,29 @@ columns:
   - name: Cis_915_Bed_Id
   - name: Community_Ind
   - name: Created_By_Tx
+    is_pii: True
   - name: Created_On_Date
   - name: Current_Status_Hist_Id
     description: |-
       Primary key of the table
   - name: Effct_Date
-    is_dateime: True
     description: |-
       The date that the status starts.
-  - name: End_Date
     is_dateime: True
+  - name: End_Date
     description: |-
       The date that the status ends. If this date is in the future, then the status is still active.
+    is_dateime: True
   - name: End_Datetime
   - name: Furlough_Ind
   - name: Hospital_Ind
   - name: Ineffct_Date
-    is_dateime: True
     description: |-
       The date that the status ends. If this date is 12/31/9999 then the status is still active and the End_Date shows
       the anticipated end date or in some cases the End_Date is NULL.
+    is_dateime: True
   - name: Modified_By_Tx
+    is_pii: True
   - name: Modified_On_Date
   - name: Out_Pop_Count_Ind
   - name: Prim_Mess_Ind

@@ -18,6 +18,7 @@ columns:
   - name: Cis_100_Client_Id
     description: |-
       The assigned client's MEDOC ID
+    is_pii: True
   - name: Cis_1240_Supervision_Type_Cd
     description: |-
       A description of the supervising officer's broader job title.
@@ -99,12 +100,15 @@ columns:
   - name: Cis_900_Employee_Id
     description: |-
       This ID uniquely identifies the supervising officer in the CIS_900_EMPLOYEE table.
+    is_pii: True
   - name: Cis_908_Ccs_Location_Id
     description: |-
       This location is associated with the supervising officer's office location. This value is more accurate than an assigned client's location in the transfers table.
   - name: Created_By_Tx
+    is_pii: True
   - name: Created_On_Date
   - name: Modified_By_Tx
+    is_pii: True
   - name: Modified_On_Date
   - name: Primary_Ind
   - name: Supervision_End_Date

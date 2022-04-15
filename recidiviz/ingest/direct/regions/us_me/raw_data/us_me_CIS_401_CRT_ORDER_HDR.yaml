@@ -16,6 +16,7 @@ columns:
   - name: Adj_Days_Restored_Num
     description: Good time days restored from the Adj_Days_Lost_Num.
   - name: Amended_Comments_Tx
+    is_pii: True
   - name: Amended_Date
   - name: Apply_Det_Days_Ind
   - name: Cis_319_Term_Id
@@ -25,6 +26,7 @@ columns:
     description: |-
       Foreign-key association to the CIS_400_CHARGE table.
   - name: Cis_400_Cis_100_Client_Id
+    is_pii: True
     description: |-
       The unique MEDOC client ID that is associated with this sentence information, associated with the CIS_100_CLIENT table.
   - name: Cis_4003_Offence_Type_Cd
@@ -213,10 +215,14 @@ columns:
   - name: Cis_9902_Court_Cd
     description: The court where the order originated from, see CIS_9902_COURT for all possible values.
   - name: Cis_9904_Judge_Prof_Id
+    is_pii: True
     description: The ID of the professional (judge or justice) who tried the court case.
   - name: Cis_9910_Def_Att_Id
+    is_pii: True
   - name: Cis_9910_Pros_Att_Id
+    is_pii: True
   - name: Comm_Override_Notes_Tx
+    is_pii: True
     description: |-
       Additional information about the community override code
   - name: Comm_Override_Rel_Date
@@ -227,6 +233,7 @@ columns:
     description: The original release date for a community supervision status.
     is_datetime: True
   - name: Comments_Tx
+    is_pii: True
   - name: Count_Num
   - name: Court_Finding_Date
     description: The date that the finding of the court was made, e.g. when conviction or acquittal occurred.
@@ -238,6 +245,7 @@ columns:
     description: The date the court sentence was created.
     is_datetime: True
   - name: Created_By_Tx
+    is_pii: True
   - name: Created_On_Date
   - name: Csw_Comments_Tx
   - name: Csw_Due_Date
@@ -270,22 +278,28 @@ columns:
     is_datetime: True
   - name: Fine_Amount_Num
   - name: Fine_Comments_Tx
+    is_pii: True
   - name: Fine_Due_Date
   - name: Fine_Paid_Date
   - name: Fine_Paid_Ind
   - name: Fine_Paid_Not_By_Tx
+    is_pii: True
   - name: Fine_Pmt_Schd_Tx
+    is_pii: True
   - name: Fine_Sus_Amount_Num
   - name: Fine_Total_Amount_Num
   - name: Guardian_Tx
+    is_pii: True
   - name: Life_Ind
     description: Whether the sentence was a life sentence.
   - name: Max_Cust_Rel_Date
     description: The max date for release from custody.
     is_datetime: True
   - name: Modified_By_Tx
+    is_pii: True
   - name: Modified_On_Date
   - name: Other_Court_Desc_Tx
+    is_pii: True
   - name: Pre_Disp_Crt_App_Date
   - name: Pre_Sent_Rpt_Ord_Date
   - name: Pre_Sent_Rpt_Sub_Date
@@ -303,15 +317,19 @@ columns:
     description: Indicates that this is a sentence to a period of incarceration as a result of the revocation of probation.
   - name: Process_Adjustment_Ind
   - name: Resentence_Comments_Tx
+    is_pii: True
   - name: Resentence_Ind
   - name: Rest_Amount_Num
   - name: Rest_Comments_Tx
+    is_pii: True
   - name: Rest_Cond_Prob_Ind
   - name: Rest_Due_Date
   - name: Rest_Paid_Date
   - name: Rest_Paid_Ind
   - name: Rest_Paid_Not_By_Tx
+    is_pii: True
   - name: Rest_Pmt_Schd_Tx
+    is_pii: True
   - name: Revocation_Age_Num
   - name: Revocation_Days_Num
     description: The number of days in the revocation sentence.

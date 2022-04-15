@@ -6,12 +6,15 @@ primary_key_cols:
   - Charge_Id
 columns:
   - name : Atn_Tx
+    is_pii: True
   - name : Bind_Over_Result_Tx
+    is_pii: True
   - name : Charge_Id
     description: |-
       The primary key for this table. A unique ID assigned to each individual charge.
   - name : Charge_Outcome_Date
   - name : Charge_Outcome_Notes_Tx
+    is_pii: True
   - name : Cis_100_Client_Id
     description: |-
       The unique identifier for all clients in the offender management system.
@@ -41,29 +44,38 @@ columns:
   - name : Comments_Tx
     description: |-
       Free text comments about the charge written by some administrator within the MDOC system.
+    is_pii: True
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Ctn_Tx
+    is_pii: True
   - name : Detention_Req_Date
   - name : Drugs_Alc_Inv_Ind
   - name : Interstate_Comp_In_Ind
   - name : Juvenile_Ind
     description: |-
       Indicates that this charge was filed against a juvenile, not an adult
+    is_pii: True
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Offense_Date
     description: |-
       The date that the originating offense took place.
     is_datetime: True
   - name : Offense_Note_Tx
+    is_pii: True
   - name : Oos_Inv_Compl_Date
   - name : Oos_Inv_Req_Date
   - name : Petition_Outcome_Tx
+    is_pii: True
   - name : Petition_Req_Date
   - name : Petition_Req_Ind
   - name : Police_Officer_Tx
+    is_pii: True
   - name : Police_Rep_No_Tx
+    is_pii: True
   - name : Referral_Date
     description: |-
       The date that the offense was referred to the courts system for an official charge.
