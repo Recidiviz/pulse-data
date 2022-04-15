@@ -62,6 +62,7 @@ STATE_CODE_TO_PATHWAYS_SUPERVISION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode.US_ID: "movement",
     StateCode.US_ND: "docstars_offendercasestable",
     StateCode.US_TN: "SupervisionPlan",
+    StateCode.US_ME: "CIS_124_SUPERVISION_HISTORY",
 }
 
 
