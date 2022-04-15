@@ -31,9 +31,9 @@ resource "google_composer_environment" "default_v2" {
       # TODO(#4900): Not sure if we actually need these, given that they are specified in airflow.cfg, but leaving them
       # for consistency with the existing dag for now.
       airflow_config_overrides = {
-        "api-auth_backend"                         = "airflow.composer.api.backend.composer_auth"
+        "api-auth_backend"                     = "airflow.composer.api.backend.composer_auth"
         "api-composer_auth_user_registration_role" = "Op"
-        "webserver-web_server_name"                = "orchestration-v2"
+        "webserver-web_server_name"            = "orchestration-v2"
       }
       env_variables = {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
@@ -92,23 +92,4 @@ resource "google_storage_bucket_object" "yaml_dict" {
   name   = "dags/recidiviz/utils/yaml_dict.py"
   bucket = local.composer_dag_bucket
   source = "${local.recidiviz_root}/utils/yaml_dict.py"
-}
-
-resource "google_storage_bucket" "cloud_composer_bucket" {
-  name                        = local.composer_dag_bucket
-  location                    = "us-central1"
-  storage_class               = "STANDARD"
-  uniform_bucket_level_access = true
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      age = 3
-    }
-  }
-
-  versioning {
-    enabled = true
-  }
 }
