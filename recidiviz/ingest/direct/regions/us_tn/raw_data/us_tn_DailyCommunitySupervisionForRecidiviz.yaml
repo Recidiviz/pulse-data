@@ -1,7 +1,7 @@
 file_tag: DailyCommunitySupervisionForRecidiviz
 file_description: |-
   This table contains one occurence for each person on supervision on each ReportingDate
-data_classification: source
+data_classification: validation
 primary_key_cols:
   - SiteID
   - StaffID
