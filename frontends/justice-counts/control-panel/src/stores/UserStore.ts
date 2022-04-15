@@ -31,9 +31,13 @@ class UserStore {
 
   email: string | undefined;
 
+  userID: string | undefined;
+
   auth0UserID: string | undefined;
 
   userAgencies: UserAgencies[] | undefined;
+
+  userInfoLoaded: boolean;
 
   hasSeenOnboarding: boolean;
 
@@ -43,8 +47,10 @@ class UserStore {
     this.authStore = authStore;
     this.api = api;
     this.email = undefined;
+    this.userID = undefined;
     this.auth0UserID = undefined;
     this.userAgencies = undefined;
+    this.userInfoLoaded = false;
     this.hasSeenOnboarding = true;
 
     when(
@@ -72,16 +78,22 @@ class UserStore {
 
       const {
         email_address: emailAddress,
+        id: userID,
         auth0_user_id: auth0UserID,
-        has_seen_onboarding: hasSeenOnboarding, // will be undefined for now
-        agency_id: userAgencies, // will be undefined for now
+        agencies: userAgencies,
+        has_seen_onboarding: hasSeenOnboarding, // will be used in future
       } = await response.json();
 
       runInAction(() => {
         this.email = emailAddress;
+        this.userID = userID;
         this.auth0UserID = auth0UserID;
-        this.hasSeenOnboarding = hasSeenOnboarding; // will be set to undefined for now
-        this.userAgencies = userAgencies; // will be set to undefined for now
+        this.userAgencies = userAgencies;
+        this.hasSeenOnboarding = hasSeenOnboarding; // will be used in future
+
+        if (this.userID && this.userAgencies) {
+          this.userInfoLoaded = true;
+        }
       });
     } catch (error) {
       if (error instanceof Error) return error.message;

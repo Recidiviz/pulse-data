@@ -34,9 +34,12 @@ export const printReportTitle = (
   return printDateAsMonthYear(month, year);
 };
 
-export const printElapsedDaysSinceDate = (date: number): string => {
+export const printElapsedDaysSinceDate = (date: string): string => {
   const now = +new Date(Date.now());
-  const daysLapsed = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  const stringDateToNumber = +new Date(date);
+  const daysLapsed = Math.floor(
+    (now - stringDateToNumber) / (1000 * 60 * 60 * 24)
+  );
 
   return `${daysLapsed} day${daysLapsed !== 1 ? "s" : ""} ago`; // '1 day ago', '0 days ago', '365 days ago'
 };

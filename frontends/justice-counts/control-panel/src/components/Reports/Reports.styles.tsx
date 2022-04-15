@@ -190,5 +190,5 @@ export const NoReportsDisplay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 50;
+  margin-top: 50px;
 `;

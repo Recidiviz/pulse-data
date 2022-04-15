@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
 
@@ -58,7 +59,7 @@ const reportListColumnTitles = [
 ];
 
 const Reports: React.FC = () => {
-  const { reportStore } = useStore();
+  const { reportStore, userStore } = useStore();
 
   const [reportsFilter, setReportsFilter] = useState<string>("allreports");
 
@@ -93,10 +94,15 @@ const Reports: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    // should only run once every render.
-    reportStore.getReports();
-  }, [reportStore]);
+  useEffect(
+    () =>
+      // return when's disposer so it is cleaned up if it never runs
+      when(
+        () => userStore.userInfoLoaded,
+        () => reportStore.getReports()
+      ),
+    [reportStore, userStore]
+  );
 
   const filteredReportsMemoized = React.useMemo(
     () =>
@@ -166,7 +172,7 @@ const Reports: React.FC = () => {
                   <Cell>
                     {report.last_modified_at === ""
                       ? "-"
-                      : printElapsedDaysSinceDate(+report.last_modified_at)}
+                      : printElapsedDaysSinceDate(report.last_modified_at)}
                   </Cell>
 
                   {/* Editors */}
@@ -193,6 +199,12 @@ const Reports: React.FC = () => {
           )
         ) : (
           <NoReportsDisplay>No reports to display.</NoReportsDisplay>
+        )}
+        {userStore.userAgencies?.length === 0 && (
+          <NoReportsDisplay>
+            It looks like no agency is tied to this account. Please reach out to
+            your Recidiviz contact for assistance.
+          </NoReportsDisplay>
         )}
       </Table>
     </>
