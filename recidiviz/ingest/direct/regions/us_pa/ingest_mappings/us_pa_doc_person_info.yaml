@@ -68,19 +68,19 @@ output:
       $enum_mapping:
         $raw_text: sex
         $mappings:
-          Gender.MALE: MALE
-          Gender.FEMALE: FEMALE
+          StateGender.MALE: MALE
+          StateGender.FEMALE: FEMALE
     races:
       - StatePersonRace:
           race:
             $enum_mapping:
               $raw_text: race
               $mappings:
-                Race.ASIAN: ASIAN
-                Race.BLACK: BLACK
-                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN"
-                Race.OTHER: OTHER
-                Race.WHITE: WHITE
+                StateRace.ASIAN: ASIAN
+                StateRace.BLACK: BLACK
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN"
+                StateRace.OTHER: OTHER
+                StateRace.WHITE: WHITE
               $ignore:
                 # This is an ethnicity value - ignore when mapping to race.
                 - HISPANIC
@@ -90,6 +90,6 @@ output:
             $enum_mapping:
               $raw_text: race
               $mappings:
-                Ethnicity.HISPANIC: HISPANIC
+                StateEthnicity.HISPANIC: HISPANIC
               # These are race values - ignore when mapping to ethnicity.
               $ignore: [ASIAN, BLACK, "AMERICAN INDIAN", OTHER, WHITE]

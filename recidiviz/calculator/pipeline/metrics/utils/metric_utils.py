@@ -25,8 +25,8 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.state.state_person import StateGender
 
 
 class RecidivizMetricType(Enum):
@@ -68,7 +68,7 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
     prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
 
     # The gender of the persons the metric describes
-    gender: Optional[Gender] = attr.ib(default=None)
+    gender: Optional[StateGender] = attr.ib(default=None)
 
     # Record keeping fields
 

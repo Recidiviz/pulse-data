@@ -28,22 +28,22 @@ output:
       $enum_mapping:
         $raw_text: Gender
         $mappings:
-          Gender.MALE: '1'
-          Gender.FEMALE: '2'
-          Gender.EXTERNAL_UNKNOWN: '3'
+          StateGender.MALE: '1'
+          StateGender.FEMALE: '2'
+          StateGender.EXTERNAL_UNKNOWN: '3'
     races:
       - StatePersonRace:
           race:
             $enum_mapping:
               $raw_text: Race
               $mappings:
-                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: '1'
-                Race.ASIAN: '2'
-                Race.BLACK: '3'
-                Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '4'
-                Race.WHITE: '5'
-                Race.EXTERNAL_UNKNOWN: '6'
-                Race.OTHER:
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: '1'
+                StateRace.ASIAN: '2'
+                StateRace.BLACK: '3'
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '4'
+                StateRace.WHITE: '5'
+                StateRace.EXTERNAL_UNKNOWN: '6'
+                StateRace.OTHER:
                   - '8'
                   - '9'
     ethnicities:
@@ -52,6 +52,6 @@ output:
             $enum_mapping:
               $raw_text: Ethnicity
               $mappings:
-                Ethnicity.HISPANIC: '186'
-                Ethnicity.NOT_HISPANIC: '187'
-                Ethnicity.EXTERNAL_UNKNOWN: '188'
+                StateEthnicity.HISPANIC: '186'
+                StateEthnicity.NOT_HISPANIC: '187'
+                StateEthnicity.EXTERNAL_UNKNOWN: '188'

@@ -193,6 +193,27 @@ state_person_alias_alias_type_given_name = "GIVEN_NAME"
 state_person_alias_alias_type_maiden_name = "MAIDEN_NAME"
 state_person_alias_alias_type_nickname = "NICKNAME"
 
+state_gender_female = "FEMALE"
+state_gender_male = "MALE"
+state_gender_other = "OTHER"
+state_gender_trans = "TRANS"
+state_gender_trans_female = "TRANS_FEMALE"
+state_gender_trans_male = "TRANS_MALE"
+
+state_race_american_indian = "AMERICAN_INDIAN_ALASKAN_NATIVE"
+state_race_asian = "ASIAN"
+state_race_black = "BLACK"
+state_race_hawaiian = "NATIVE_HAWAIIAN_PACIFIC_ISLANDER"
+state_race_other = "OTHER"
+state_race_white = "WHITE"
+
+state_ethnicity_hispanic = "HISPANIC"
+state_ethnicity_not_hispanic = "NOT_HISPANIC"
+
+state_residency_status_homeless = "HOMELESS"
+state_residency_status_permanent = "PERMANENT"
+state_residency_status_transient = "TRANSIENT"
+
 # state_sentence.py
 state_sentence_status_commuted = "COMMUTED"
 state_sentence_status_completed = "COMPLETED"

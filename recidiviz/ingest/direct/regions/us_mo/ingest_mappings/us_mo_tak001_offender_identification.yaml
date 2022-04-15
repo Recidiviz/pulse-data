@@ -48,9 +48,9 @@ output:
       $enum_mapping:
         $raw_text: EK_SEX
         $mappings:
-          Gender.MALE: M
-          Gender.FEMALE: F
-          Gender.EXTERNAL_UNKNOWN: U
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+          StateGender.EXTERNAL_UNKNOWN: U
     birthdate: DOB
     races:
       - StatePersonRace:
@@ -58,19 +58,19 @@ output:
             $enum_mapping:
               $raw_text: EK_RAC
               $mappings:
-                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
-                Race.ASIAN: A
-                Race.BLACK: B
-                Race.WHITE: W
-                Race.EXTERNAL_UNKNOWN: U
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                StateRace.ASIAN: A
+                StateRace.BLACK: B
+                StateRace.WHITE: W
+                StateRace.EXTERNAL_UNKNOWN: U
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
             $enum_mapping:
               $raw_text: EK_ETH
               $mappings:
-                Ethnicity.HISPANIC: H
-                Ethnicity.NOT_HISPANIC: N
-                Ethnicity.EXTERNAL_UNKNOWN: U
+                StateEthnicity.HISPANIC: H
+                StateEthnicity.NOT_HISPANIC: N
+                StateEthnicity.EXTERNAL_UNKNOWN: U
 
 

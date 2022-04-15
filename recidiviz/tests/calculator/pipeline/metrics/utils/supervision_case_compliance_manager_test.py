@@ -45,12 +45,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -1897,7 +1897,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         assessment = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
-            assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE] + 1,
+            assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] + 1,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 1, 3),
         )
@@ -1944,7 +1944,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         assessment = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
-            assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE] - 1,
+            assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] - 1,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 1, 3),
         )

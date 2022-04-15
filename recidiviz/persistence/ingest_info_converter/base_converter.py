@@ -26,11 +26,22 @@ import attr
 
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.shared_enums.person_characteristics import (
-    PROTECTED_CLASSES,
+    Ethnicity,
+    Gender,
+    Race,
+)
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
 )
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.entities import EntityPersonType
+
+# TODO(#8905): Remove the State enums once all states have been migrated to v2 ingest
+#  mappings.
+PROTECTED_CLASSES = (Race, Ethnicity, Gender, StateRace, StateEthnicity, StateGender)
 
 
 @attr.s(frozen=True)

@@ -18,7 +18,7 @@
 
 import unittest
 
-from recidiviz.common.constants.shared_enums.person_characteristics import Ethnicity
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
@@ -49,7 +49,7 @@ class StatePersonEthnicityConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StatePersonEthnicity(
-            ethnicity=Ethnicity.HISPANIC,
+            ethnicity=StateEthnicity.HISPANIC,
             ethnicity_raw_text="HISPANIC",
             state_code="US_ND",
         )

@@ -17,13 +17,13 @@
 """Tests for state_matching_utils.py"""
 import datetime
 
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     is_commitment_from_supervision,
 )
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -354,7 +354,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_mergeFlatFields_AtomicEnums(self) -> None:
         ing_entity = schema.StatePerson(
             state_code=_STATE_CODE,
-            gender=Gender.EXTERNAL_UNKNOWN,
+            gender=StateGender.EXTERNAL_UNKNOWN,
         )
         db_entity = schema.StatePerson(
             state_code=_STATE_CODE,
@@ -363,7 +363,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         expected_entity = schema.StatePerson(
             state_code=_STATE_CODE,
-            gender=Gender.EXTERNAL_UNKNOWN,
+            gender=StateGender.EXTERNAL_UNKNOWN,
             # Old gender_raw_text is cleared
             birthdate=datetime.date(1992, 1, 1),
         )
@@ -380,7 +380,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         db_entity = schema.StatePerson(
             state_code=_STATE_CODE,
-            gender=Gender.EXTERNAL_UNKNOWN,
+            gender=StateGender.EXTERNAL_UNKNOWN,
             birthdate=datetime.date(1992, 1, 1),
         )
         expected_entity = schema.StatePerson(

@@ -26,12 +26,6 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-    ResidencyStatus,
-)
 from recidiviz.common.constants.state.shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
@@ -65,6 +59,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
+    StateResidencyStatus,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -157,7 +157,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             (
                 "strict",
                 EnumOverrides.Builder()
-                .add("Male", Gender.MALE, normalize_label=False)
+                .add("Male", StateGender.MALE, normalize_label=False)
                 .build(),
                 "Male",
                 StrictEnumParser,
@@ -174,7 +174,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         ],
     ) -> None:
         enum_parser: EnumParser = enum_parser_cls(
-            gender_raw_text, Gender, enum_overrides
+            gender_raw_text, StateGender, enum_overrides
         )
         enum_parser.parse()
         result = deserialize_entity_factories.StatePersonFactory.deserialize(
@@ -186,17 +186,17 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             full_name='{"full_name": "full NAME"}',
             birthdate="12-31-1999",
             current_address="NNN\n  STREET \t ZIP",
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             gender_raw_text="MALE",
             full_name='{"full_name": "FULL NAME"}',
             birthdate=date(year=1999, month=12, day=31),
             current_address="NNN STREET ZIP",
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -435,14 +435,14 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StatePersonRace(self) -> None:
         result = deserialize_entity_factories.StatePersonRaceFactory.deserialize(
-            race=Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
+            race=StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
             race_raw_text="SAMOAN",
             state_code="us_xx",
         )
 
         # Assert
         expected_result = entities.StatePersonRace(
-            race=Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
+            race=StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
             race_raw_text="SAMOAN",
             state_code="US_XX",
         )
@@ -553,14 +553,14 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StatePersonEthnicity(self) -> None:
         result = deserialize_entity_factories.StatePersonEthnicityFactory.deserialize(
-            ethnicity=Ethnicity.HISPANIC,
+            ethnicity=StateEthnicity.HISPANIC,
             ethnicity_raw_text="H",
             state_code="us_xx",
         )
 
         # Assert
         expected_result = entities.StatePersonEthnicity(
-            ethnicity=Ethnicity.HISPANIC,
+            ethnicity=StateEthnicity.HISPANIC,
             ethnicity_raw_text="H",
             state_code="US_XX",
         )

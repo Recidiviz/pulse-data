@@ -22,7 +22,6 @@ from typing import Dict, List, Optional, Tuple, cast
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.external_id_types import (
     US_ND_ELITE,
     US_ND_ELITE_BOOKING,
@@ -37,6 +36,7 @@ from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -402,7 +402,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             for person_race in person.state_person_races:
                 if person_race.race in {"5", "HIS"}:
                     ethnicity_to_create = StatePersonEthnicity(
-                        ethnicity=Ethnicity.HISPANIC.value
+                        ethnicity=StateEthnicity.HISPANIC.value
                     )
                     create_if_not_exists(
                         ethnicity_to_create, person, "state_person_ethnicities"

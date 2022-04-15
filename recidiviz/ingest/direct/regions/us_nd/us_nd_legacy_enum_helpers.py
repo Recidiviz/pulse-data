@@ -27,7 +27,6 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
@@ -39,6 +38,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
 )
+from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -142,14 +142,14 @@ def generate_enum_overrides() -> EnumOverrides:
     distinct columns in the source data.
     """
     overrides: Dict[Enum, List[str]] = {
-        Gender.FEMALE: ["2"],
-        Gender.MALE: ["1"],
-        Race.WHITE: ["1"],
-        Race.BLACK: ["2"],
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["3", "NAT"],
-        Race.ASIAN: ["4"],
-        Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["6", "HAW"],
-        Race.OTHER: ["MUL"],
+        StateGender.FEMALE: ["2"],
+        StateGender.MALE: ["1"],
+        StateRace.WHITE: ["1"],
+        StateRace.BLACK: ["2"],
+        StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: ["3", "NAT"],
+        StateRace.ASIAN: ["4"],
+        StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["6", "HAW"],
+        StateRace.OTHER: ["MUL"],
         StatePersonAliasType.AFFILIATION_NAME: ["GNG"],
         StatePersonAliasType.ALIAS: ["A", "O"],
         StatePersonAliasType.GIVEN_NAME: ["G", "CN"],

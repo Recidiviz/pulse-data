@@ -41,11 +41,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
-
-# pylint: disable=protected-access
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+
+# pylint: disable=protected-access
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
@@ -1879,14 +1879,14 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
     @parameterized.expand(
         [
-            (Gender.MALE,),
-            (Gender.TRANS_MALE,),
-            (Gender.FEMALE,),
-            (Gender.TRANS_FEMALE,),
+            (StateGender.MALE,),
+            (StateGender.TRANS_MALE,),
+            (StateGender.FEMALE,),
+            (StateGender.TRANS_FEMALE,),
         ]
     )
     def test_reassessment_requirements_at_sex_offense_boundaries(
-        self, gender: Gender
+        self, gender: StateGender
     ) -> None:
         self.person.gender = gender
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
@@ -1971,7 +1971,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             incarceration_delegate=UsIdIncarcerationDelegate()
         )
 
-    def _person_with_gender(self, gender: Gender) -> StatePerson:
+    def _person_with_gender(self, gender: StateGender) -> StatePerson:
         return StatePerson.new_with_defaults(state_code="US_ID", gender=gender)
 
     def _supervision_period_with_level(
@@ -1999,20 +1999,20 @@ class TestSupervisionDowngrades(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("male_old", Gender.MALE, date(2019, 12, 31)),
-            ("trans_ma_oldle", Gender.TRANS_MALE, date(2019, 12, 31)),
-            ("fema_oldle", Gender.FEMALE, date(2019, 12, 31)),
-            ("trans_fema_oldle", Gender.TRANS_FEMALE, date(2019, 12, 31)),
-            ("male_new", Gender.MALE, date(2020, 12, 31)),
-            ("trans_male_new", Gender.TRANS_MALE, date(2020, 12, 31)),
-            ("female_new", Gender.FEMALE, date(2020, 12, 31)),
-            ("trans_female_new", Gender.TRANS_FEMALE, date(2020, 12, 31)),
+            ("male_old", StateGender.MALE, date(2019, 12, 31)),
+            ("trans_ma_oldle", StateGender.TRANS_MALE, date(2019, 12, 31)),
+            ("fema_oldle", StateGender.FEMALE, date(2019, 12, 31)),
+            ("trans_fema_oldle", StateGender.TRANS_FEMALE, date(2019, 12, 31)),
+            ("male_new", StateGender.MALE, date(2020, 12, 31)),
+            ("trans_male_new", StateGender.TRANS_MALE, date(2020, 12, 31)),
+            ("female_new", StateGender.FEMALE, date(2020, 12, 31)),
+            ("trans_female_new", StateGender.TRANS_FEMALE, date(2020, 12, 31)),
         ]
     )
     def test_minimum_no_downgrade(
         self,
         _name: str,
-        gender: Gender,
+        gender: StateGender,
         evaluation_date: date,
     ) -> None:
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
@@ -2039,13 +2039,18 @@ class TestSupervisionDowngrades(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("medium", StateSupervisionLevel.MEDIUM, 16, Gender.EXTERNAL_UNKNOWN),
-            ("high", StateSupervisionLevel.HIGH, 24, Gender.EXTERNAL_UNKNOWN),
-            ("maximum", StateSupervisionLevel.MAXIMUM, 31, Gender.EXTERNAL_UNKNOWN),
+            ("medium", StateSupervisionLevel.MEDIUM, 16, StateGender.EXTERNAL_UNKNOWN),
+            ("high", StateSupervisionLevel.HIGH, 24, StateGender.EXTERNAL_UNKNOWN),
+            (
+                "maximum",
+                StateSupervisionLevel.MAXIMUM,
+                31,
+                StateGender.EXTERNAL_UNKNOWN,
+            ),
         ]
     )
     def test_old_downgrade_at_border(
-        self, _name: str, level: StateSupervisionLevel, score: int, gender: Gender
+        self, _name: str, level: StateSupervisionLevel, score: int, gender: StateGender
     ) -> None:
         compliance_no_downgrade = UsIdSupervisionCaseCompliance(
             self._person_with_gender(gender),
@@ -2087,23 +2092,33 @@ class TestSupervisionDowngrades(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("medium_female", StateSupervisionLevel.MEDIUM, 23, Gender.FEMALE),
+            ("medium_female", StateSupervisionLevel.MEDIUM, 23, StateGender.FEMALE),
             (
                 "medium_trans_female",
                 StateSupervisionLevel.MEDIUM,
                 23,
-                Gender.TRANS_FEMALE,
+                StateGender.TRANS_FEMALE,
             ),
-            ("medium_male", StateSupervisionLevel.MEDIUM, 21, Gender.MALE),
-            ("medium_trans_male", StateSupervisionLevel.MEDIUM, 21, Gender.TRANS_MALE),
-            ("high_female", StateSupervisionLevel.HIGH, 31, Gender.FEMALE),
-            ("high_trans_female", StateSupervisionLevel.HIGH, 31, Gender.TRANS_FEMALE),
-            ("high_male", StateSupervisionLevel.HIGH, 29, Gender.MALE),
-            ("high_trans_male", StateSupervisionLevel.HIGH, 29, Gender.TRANS_MALE),
+            ("medium_male", StateSupervisionLevel.MEDIUM, 21, StateGender.MALE),
+            (
+                "medium_trans_male",
+                StateSupervisionLevel.MEDIUM,
+                21,
+                StateGender.TRANS_MALE,
+            ),
+            ("high_female", StateSupervisionLevel.HIGH, 31, StateGender.FEMALE),
+            (
+                "high_trans_female",
+                StateSupervisionLevel.HIGH,
+                31,
+                StateGender.TRANS_FEMALE,
+            ),
+            ("high_male", StateSupervisionLevel.HIGH, 29, StateGender.MALE),
+            ("high_trans_male", StateSupervisionLevel.HIGH, 29, StateGender.TRANS_MALE),
         ]
     )
     def test_new_downgrade_at_border(
-        self, _name: str, level: StateSupervisionLevel, score: int, gender: Gender
+        self, _name: str, level: StateSupervisionLevel, score: int, gender: StateGender
     ) -> None:
         compliance_no_downgrade = UsIdSupervisionCaseCompliance(
             self._person_with_gender(gender),
@@ -2146,7 +2161,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
     def test_no_assessment(self) -> None:
         evaluation_date = date(2020, 12, 31)
 
-        person = self._person_with_gender(Gender.MALE)
+        person = self._person_with_gender(StateGender.MALE)
 
         no_assessments_no_downgrade = UsIdSupervisionCaseCompliance(
             person,
@@ -2193,7 +2208,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
         supervision_start = date(2021, 3, 15)
         evaluation_date = supervision_start + timedelta(days=40)
 
-        person = self._person_with_gender(Gender.MALE)
+        person = self._person_with_gender(StateGender.MALE)
 
         intake_no_downgrade = UsIdSupervisionCaseCompliance(
             person,

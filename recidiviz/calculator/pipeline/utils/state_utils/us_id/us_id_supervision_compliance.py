@@ -73,8 +73,8 @@ from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_man
 from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
     SupervisionLevelPolicy,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
@@ -91,11 +91,11 @@ SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
 # Minimum score for people with sex offenses to require an annual LSI-R re-assessment.
 # Current as of 2/17/2021, sourced from:
 # http://forms.idoc.idaho.gov/WebLink/0/edoc/283396/Sex%20Offenders%20Supervision%20and%20Classification.pdf
-SEX_OFFENSE_LSIR_MINIMUM_SCORE: Dict[Gender, int] = {
-    Gender.FEMALE: 23,
-    Gender.TRANS_FEMALE: 23,
-    Gender.MALE: 21,
-    Gender.TRANS_MALE: 21,
+SEX_OFFENSE_LSIR_MINIMUM_SCORE: Dict[StateGender, int] = {
+    StateGender.FEMALE: 23,
+    StateGender.TRANS_FEMALE: 23,
+    StateGender.MALE: 21,
+    StateGender.TRANS_MALE: 21,
 }
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
@@ -160,24 +160,24 @@ DATE_OF_SUPERVISION_LEVEL_SWITCH = date(2020, 7, 23)
 # See
 # http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf
 CURRENT_US_ID_ASSESSMENT_SCORE_RANGE: Dict[
-    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+    StateGender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
 ] = {
-    Gender.FEMALE: {
+    StateGender.FEMALE: {
         StateSupervisionLevel.MINIMUM: (0, 22),
         StateSupervisionLevel.MEDIUM: (23, 30),
         StateSupervisionLevel.HIGH: (31, None),
     },
-    Gender.TRANS_FEMALE: {
+    StateGender.TRANS_FEMALE: {
         StateSupervisionLevel.MINIMUM: (0, 22),
         StateSupervisionLevel.MEDIUM: (23, 30),
         StateSupervisionLevel.HIGH: (31, None),
     },
-    Gender.MALE: {
+    StateGender.MALE: {
         StateSupervisionLevel.MINIMUM: (0, 20),
         StateSupervisionLevel.MEDIUM: (21, 28),
         StateSupervisionLevel.HIGH: (29, None),
     },
-    Gender.TRANS_MALE: {
+    StateGender.TRANS_MALE: {
         StateSupervisionLevel.MINIMUM: (0, 20),
         StateSupervisionLevel.MEDIUM: (21, 28),
         StateSupervisionLevel.HIGH: (29, None),
@@ -185,7 +185,7 @@ CURRENT_US_ID_ASSESSMENT_SCORE_RANGE: Dict[
 }
 
 THROUGH_07_2020_US_ID_ASSESSMENT_SCORE_RANGE: Dict[
-    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+    StateGender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
 ] = {
     gender: {
         StateSupervisionLevel.MINIMUM: (0, 15),
@@ -193,7 +193,7 @@ THROUGH_07_2020_US_ID_ASSESSMENT_SCORE_RANGE: Dict[
         StateSupervisionLevel.HIGH: (24, 30),
         StateSupervisionLevel.MAXIMUM: (31, None),
     }
-    for gender in Gender
+    for gender in StateGender
 }
 
 

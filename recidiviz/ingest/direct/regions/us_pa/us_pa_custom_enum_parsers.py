@@ -23,18 +23,16 @@ my_enum_field:
     $custom_parser: us_pa_custom_enum_parsers.<function name>
 """
 
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    ResidencyStatus,
-)
+from recidiviz.common.constants.state.state_person import StateResidencyStatus
 
 
-def residency_status_from_address(raw_text: str) -> ResidencyStatus:
+def residency_status_from_address(raw_text: str) -> StateResidencyStatus:
     normalized_address = raw_text.upper()
     no_stable_housing_indicators = ["HOMELESS", "TRANSIENT"]
     for indicator in no_stable_housing_indicators:
         if indicator in normalized_address:
             # TODO(#9301): Use the term NO_STABLE_HOUSING in the schema instead of
             #  HOMELESS / TRANSIENT.
-            return ResidencyStatus.HOMELESS
+            return StateResidencyStatus.HOMELESS
 
-    return ResidencyStatus.PERMANENT
+    return StateResidencyStatus.PERMANENT

@@ -6,10 +6,6 @@ from typing import List, Optional
 import attr
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Race,
-)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -21,6 +17,7 @@ from recidiviz.common.constants.state.state_early_discharge import (
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -374,7 +371,7 @@ def generate_test_person(
             state_schema.StatePersonRace(
                 person_race_id=345,
                 state_code="US_XX",
-                race=Race.BLACK.value,
+                race=StateRace.BLACK.value,
                 race_raw_text="BLK",
                 person_id=person_id,
             )
@@ -383,7 +380,7 @@ def generate_test_person(
             state_schema.StatePersonEthnicity(
                 person_ethnicity_id=345,
                 state_code="US_XX",
-                ethnicity=Ethnicity.NOT_HISPANIC.value,
+                ethnicity=StateEthnicity.NOT_HISPANIC.value,
                 ethnicity_raw_text="HISP",
                 person_id=person_id,
             )

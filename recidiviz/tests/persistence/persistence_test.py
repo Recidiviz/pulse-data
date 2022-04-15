@@ -30,8 +30,8 @@ import sqlalchemy
 from mock import Mock, patch
 from opencensus.stats.measurement_map import MeasurementMap
 
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender, Race
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
+from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -88,7 +88,7 @@ PERSON_STATE_1_ENTITY = StatePerson(
     state_code=STATE_CODE,
     full_name=PERSON_1_FULL_NAME,
     birthdate=datetime(1979, 8, 15),
-    gender=Gender.MALE,
+    gender=StateGender.MALE,
     external_ids=[
         StatePersonExternalId(
             state_code=STATE_CODE, external_id="39768", id_type=FAKE_ID_TYPE
@@ -96,7 +96,7 @@ PERSON_STATE_1_ENTITY = StatePerson(
     ],
     races=[
         StatePersonRace(
-            state_code=STATE_CODE, race=Race.WHITE, race_raw_text="CAUCASIAN"
+            state_code=STATE_CODE, race=StateRace.WHITE, race_raw_text="CAUCASIAN"
         )
     ],
     aliases=[
@@ -122,14 +122,16 @@ PERSON_STATE_2_ENTITY = StatePerson(
     state_code=STATE_CODE_2,
     full_name=PERSON_2_FULL_NAME,
     birthdate=datetime(1986, 6, 24),
-    gender=Gender.FEMALE,
+    gender=StateGender.FEMALE,
     external_ids=[
         StatePersonExternalId(
             state_code=STATE_CODE_2, external_id="52163", id_type=FAKE_ID_TYPE_2
         )
     ],
     races=[
-        StatePersonRace(state_code=STATE_CODE_2, race=Race.BLACK, race_raw_text="BLACK")
+        StatePersonRace(
+            state_code=STATE_CODE_2, race=StateRace.BLACK, race_raw_text="BLACK"
+        )
     ],
     aliases=[
         StatePersonAlias(
@@ -412,7 +414,7 @@ class MultipleStateTestMixin:
         # Act
         # Update race on person 1 and sentence on person 2
         person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
-        person_state_1.races[0].race = Race.WHITE
+        person_state_1.races[0].race = StateRace.WHITE
 
         person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
         person_state_2.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED

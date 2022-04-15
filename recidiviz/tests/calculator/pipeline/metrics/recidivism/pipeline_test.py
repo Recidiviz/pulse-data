@@ -67,17 +67,17 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-    ResidencyStatus,
-)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
+    StateResidencyStatus,
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
@@ -133,9 +133,9 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person = schema.StatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         persons_data = [normalized_database_base_dict(fake_person)]
@@ -143,14 +143,14 @@ class TestRecidivismPipeline(unittest.TestCase):
         race_1 = schema.StatePersonRace(
             person_race_id=111,
             state_code="US_XX",
-            race=Race.BLACK,
+            race=StateRace.BLACK,
             person_id=fake_person_id,
         )
 
         race_2 = schema.StatePersonRace(
             person_race_id=111,
             state_code="ND",
-            race=Race.WHITE,
+            race=StateRace.WHITE,
             person_id=fake_person_id,
         )
 
@@ -159,7 +159,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
             state_code="US_XX",
-            ethnicity=Ethnicity.HISPANIC,
+            ethnicity=StateEthnicity.HISPANIC,
             person_id=fake_person_id,
         )
 
@@ -277,9 +277,9 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_1 = schema.StatePerson(
             state_code="US_XX",
             person_id=fake_person_id_1,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         fake_person_id_2 = 6789
@@ -287,9 +287,9 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_2 = schema.StatePerson(
             state_code="US_XX",
             person_id=fake_person_id_2,
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
             birthdate=date(1990, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         persons_data = [
@@ -497,9 +497,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=fake_person_id,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         initial_incarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -622,9 +622,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=fake_person_id,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         only_incarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -704,9 +704,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=fake_person_id,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         fake_person_id_to_county_query_result = {
@@ -797,8 +797,8 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=self.fake_person_id,
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         first_recidivism_release_event = RecidivismReleaseEvent(
@@ -897,8 +897,8 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=self.fake_person_id,
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         person_release_events: List[Tuple[entities.StatePerson, Dict]] = [
@@ -1033,7 +1033,7 @@ class MetricGroup:
         state_code="US_XX",
         release_cohort=2015,
         follow_up_period=1,
-        gender=Gender.MALE,
+        gender=StateGender.MALE,
         did_recidivate=True,
     )
 

@@ -60,12 +60,6 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
 )
-from recidiviz.persistence.database.schema.shared_enums import (
-    ethnicity,
-    gender,
-    race,
-    residency_status,
-)
 from recidiviz.utils.string import StrictStringFormatter
 
 ASSOCIATON_TABLE_COMMENT_TEMPLATE = (
@@ -273,6 +267,42 @@ state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_maiden_name,
     state_enum_strings.state_person_alias_alias_type_nickname,
     name="state_person_alias_type",
+)
+
+state_gender = Enum(
+    enum_strings.external_unknown,
+    state_enum_strings.state_gender_female,
+    state_enum_strings.state_gender_male,
+    state_enum_strings.state_gender_other,
+    state_enum_strings.state_gender_trans,
+    state_enum_strings.state_gender_trans_female,
+    state_enum_strings.state_gender_trans_male,
+    name="state_gender",
+)
+
+state_race = Enum(
+    state_enum_strings.state_race_american_indian,
+    state_enum_strings.state_race_asian,
+    state_enum_strings.state_race_black,
+    enum_strings.external_unknown,
+    state_enum_strings.state_race_hawaiian,
+    state_enum_strings.state_race_other,
+    state_enum_strings.state_race_white,
+    name="state_race",
+)
+
+state_ethnicity = Enum(
+    enum_strings.external_unknown,
+    state_enum_strings.state_ethnicity_hispanic,
+    state_enum_strings.state_ethnicity_not_hispanic,
+    name="state_ethnicity",
+)
+
+state_residency_status = Enum(
+    state_enum_strings.state_residency_status_homeless,
+    state_enum_strings.state_residency_status_permanent,
+    state_enum_strings.state_residency_status_transient,
+    name="state_residency_status",
 )
 
 state_incarceration_facility_security_level = Enum(
@@ -897,7 +927,7 @@ class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    race = Column(race, comment="A person’s reported race.")
+    race = Column(state_race, comment="A person’s reported race.")
     race_raw_text = Column(
         String(255), comment="The raw text value of the person's race."
     )
@@ -970,7 +1000,7 @@ class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    ethnicity = Column(ethnicity, comment="A person’s reported ethnicity.")
+    ethnicity = Column(state_ethnicity, comment="A person’s reported ethnicity.")
     ethnicity_raw_text = Column(
         String(255), comment="The raw text value of the ethnicity."
     )
@@ -1061,13 +1091,15 @@ class _StatePersonSharedColumns:
         "person’s age but not birthdate is reported, use age instead.",
     )
 
-    gender = Column(gender, comment="A person’s gender, as reported by the state.")
+    gender = Column(
+        state_gender, comment="A person’s gender, as reported by the state."
+    )
     gender_raw_text = Column(
         String(255), comment="The raw text value of the person's state-reported gender."
     )
 
     residency_status = Column(
-        residency_status, comment="A person's reported residency status."
+        state_residency_status, comment="A person's reported residency status."
     )
     residency_status_raw_text = Column(
         String(255),

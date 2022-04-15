@@ -29,6 +29,7 @@ strings in this file and only referring to them by their values here allows
 us to structure the application layer code any way we want, while only
 requiring the database to be updated when an enum value is created or removed.
 """
+# TODO(#12203): Move all of these into /county/enum_canonical_strings.py
 
 # Shared
 

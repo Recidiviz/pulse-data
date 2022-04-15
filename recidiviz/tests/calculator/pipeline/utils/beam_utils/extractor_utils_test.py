@@ -50,6 +50,12 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
+    StateResidencyStatus,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -59,12 +65,6 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
 )
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    Ethnicity,
-    Gender,
-    Race,
-    ResidencyStatus,
-)
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -97,8 +97,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="123 Street",
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -106,7 +106,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         schema_ethnicity = schema.StatePersonEthnicity(
             state_code="US_XX",
-            ethnicity=Ethnicity.NOT_HISPANIC,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             person_id=person_id,
             person_ethnicity_id=234,
         )
@@ -133,11 +133,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
         schema_race_1 = schema.StatePersonRace(
-            race=Race.WHITE, state_code="US_XX", person_id=person_id
+            race=StateRace.WHITE, state_code="US_XX", person_id=person_id
         )
 
         schema_race_2 = schema.StatePersonRace(
-            race=Race.BLACK, state_code="US_XX", person_id=person_id
+            race=StateRace.BLACK, state_code="US_XX", person_id=person_id
         )
 
         races_data = [
@@ -257,8 +257,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="123 Street",
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -409,7 +409,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         schema_ethnicity = schema.StatePersonEthnicity(
             state_code="US_XX",
-            ethnicity=Ethnicity.NOT_HISPANIC,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             person_id=person_id,
             person_ethnicity_id=234,
         )
@@ -436,11 +436,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
         schema_race_1 = schema.StatePersonRace(
-            race=Race.WHITE, state_code="US_XX", person_id=person_id
+            race=StateRace.WHITE, state_code="US_XX", person_id=person_id
         )
 
         schema_race_2 = schema.StatePersonRace(
-            race=Race.BLACK, state_code="US_XX", person_id=person_id
+            race=StateRace.BLACK, state_code="US_XX", person_id=person_id
         )
 
         races_data = [
@@ -547,8 +547,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="123 Street",
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -663,8 +663,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="123 Street",
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -672,7 +672,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         schema_ethnicity = schema.StatePersonEthnicity(
             state_code="US_XX",
-            ethnicity=Ethnicity.NOT_HISPANIC,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             person_id=person_id,
             person_ethnicity_id=234,
         )
@@ -699,11 +699,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
         schema_race_1 = schema.StatePersonRace(
-            race=Race.WHITE, state_code="US_XX", person_id=person_id
+            race=StateRace.WHITE, state_code="US_XX", person_id=person_id
         )
 
         schema_race_2 = schema.StatePersonRace(
-            race=Race.BLACK, state_code="US_XX", person_id=person_id
+            race=StateRace.BLACK, state_code="US_XX", person_id=person_id
         )
 
         races_data = [
@@ -833,8 +833,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="123 Street",
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -859,8 +859,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="890 Street",
             full_name="Steven Steven",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -1039,8 +1039,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="123 Street",
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
@@ -1048,7 +1048,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         schema_ethnicity = schema.StatePersonEthnicity(
             state_code="US_XX",
-            ethnicity=Ethnicity.NOT_HISPANIC,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             person_id=person_id,
             person_ethnicity_id=234,
         )
@@ -1075,11 +1075,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
 
         schema_race_1 = schema.StatePersonRace(
-            race=Race.WHITE, state_code="US_XX", person_id=person_id
+            race=StateRace.WHITE, state_code="US_XX", person_id=person_id
         )
 
         schema_race_2 = schema.StatePersonRace(
-            race=Race.BLACK, state_code="US_XX", person_id=person_id
+            race=StateRace.BLACK, state_code="US_XX", person_id=person_id
         )
 
         races_data = [
@@ -1203,8 +1203,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
             current_address="123 Street",
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
-            gender=Gender.MALE,
-            residency_status=ResidencyStatus.PERMANENT,
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 

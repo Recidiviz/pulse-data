@@ -18,7 +18,7 @@
 
 import unittest
 
-from recidiviz.common.constants.shared_enums.person_characteristics import Race
+from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
@@ -49,7 +49,7 @@ class StatePersonRaceConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StatePersonRace(
-            race=Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
+            race=StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER,
             race_raw_text="SAMOAN",
             state_code="US_ND",
         )

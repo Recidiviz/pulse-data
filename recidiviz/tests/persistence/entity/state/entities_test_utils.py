@@ -20,10 +20,6 @@ import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional, Sequence, Type
 
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Race,
-)
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -54,6 +50,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
@@ -203,17 +200,17 @@ def generate_full_graph_state_person(
 
     person.races = [
         entities.StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=Race.ASIAN, race_raw_text="ASIAN"
+            state_code="US_XX", race=StateRace.ASIAN, race_raw_text="ASIAN"
         ),
         entities.StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=Race.BLACK, race_raw_text="BLACK"
+            state_code="US_XX", race=StateRace.BLACK, race_raw_text="BLACK"
         ),
     ]
 
     person.ethnicities = [
         entities.StatePersonEthnicity.new_with_defaults(
             state_code="US_XX",
-            ethnicity=Ethnicity.NOT_HISPANIC,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             ethnicity_raw_text="NOT HISPANIC",
         )
     ]

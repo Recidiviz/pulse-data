@@ -20,7 +20,7 @@ from typing import Dict, Optional, Tuple
 
 import attr
 
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -37,7 +37,7 @@ class SupervisionLevelPolicy:
     # Mapping from gender -> supervision level -> risk assessment score range bounds
     # A value of None in the second field of the tuple implies there is no upper bound.
     level_mapping: Dict[
-        Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+        StateGender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
     ] = attr.ib()
 
     # start_date is inclusive
