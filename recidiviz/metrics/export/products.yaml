@@ -111,20 +111,13 @@ products:
       - state_code: US_TN
         environment: staging
       - state_code: US_ME
-        environment: staging
+        environment: production
   - name: Pathways With Population Projections
     description: Prison and Supervision populations and transitions over time including prison and supervsion population projections. Also see PATHWAYS for Pathways exports that do not include projections.
     exports:
       - PATHWAYS_AND_PROJECTIONS
     states:
       - state_code: US_ID
-        environment: production
-  - name: Pathways Prison Module
-    description: The Prison population and flows over time which can be drilled down by geographic region, demographic categories, time period, etc.
-    exports:
-      - PATHWAYS_PRISON
-    states:
-      - state_code: US_ME
         environment: production
   - name: Practices V2
     description: Practices V2 is a collection of data and tools that help POs and supervisors provide services to their clients and hold themselves accountable.
