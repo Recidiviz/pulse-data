@@ -29,10 +29,6 @@ from recidiviz.common.constants.county.bond import (
     BondStatus,
     BondType,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    RESIDENCY_STATUS_SUBSTRING_MAP,
-    ResidencyStatus,
-)
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import normalize, parse_date, parse_dollars
 
@@ -162,17 +158,6 @@ def parse_bond_amount_type_and_status(
         status = BondStatus.PRESENT_WITHOUT_INFO
 
     return amount, bond_type, status  # type: ignore
-
-
-def parse_residency_status(place_of_residence: str) -> ResidencyStatus:
-    """Returns the residency status of a person, e.g. PERMANENT or HOMELESS."""
-    normalized_place_of_residence = place_of_residence.upper()
-    for substring, residency_status in RESIDENCY_STATUS_SUBSTRING_MAP.items():
-        if substring in normalized_place_of_residence:
-            return residency_status
-    # If place of residence is provided and no other status is explicitly
-    # provided, assumed to be permanent
-    return ResidencyStatus.PERMANENT
 
 
 def parse_region_code_with_override(

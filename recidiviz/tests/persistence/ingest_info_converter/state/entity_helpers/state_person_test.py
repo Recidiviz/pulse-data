@@ -20,9 +20,9 @@
 import unittest
 from datetime import date, datetime
 
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Gender,
-    ResidencyStatus,
+from recidiviz.common.constants.state.state_person import (
+    StateGender,
+    StateResidencyStatus,
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -61,12 +61,12 @@ class StatePersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             gender_raw_text="MALE",
             full_name='{"full_name": "FULL_NAME"}',
             birthdate=date(year=1999, month=12, day=31),
             current_address="NNN STREET ZIP",
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_ND",
         )
 
@@ -118,7 +118,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
             current_address="12345 MAIN 58503",
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_ND",
         )
 
@@ -138,7 +138,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
             current_address="TRANSIENT MOVES AROUND",
-            residency_status=ResidencyStatus.TRANSIENT,
+            residency_status=StateResidencyStatus.TRANSIENT,
             state_code="US_XX",
         )
 

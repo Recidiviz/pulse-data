@@ -31,21 +31,21 @@ output:
       $enum_mapping:
         $raw_text: gender_id
         $mappings:
-          Gender.MALE: '435'
-          Gender.FEMALE: '434'
-          Gender.EXTERNAL_UNKNOWN: '7403'
+          StateGender.MALE: '435'
+          StateGender.FEMALE: '434'
+          StateGender.EXTERNAL_UNKNOWN: '7403'
     races:
       - StatePersonRace:
           race:
             $enum_mapping:
               $raw_text: race_id
               $mappings:
-                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: '373'
-                Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '9875'
-                Race.WHITE: '685'
-                Race.BLACK: '371'
-                Race.ASIAN: '372'
-                Race.EXTERNAL_UNKNOWN: '7404'
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: '373'
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '9875'
+                StateRace.WHITE: '685'
+                StateRace.BLACK: '371'
+                StateRace.ASIAN: '372'
+                StateRace.EXTERNAL_UNKNOWN: '7404'
     ethnicities:
       - $conditional:
           - $if:
@@ -54,7 +54,7 @@ output:
                 - $literal("1")
             $then:
               StatePersonEthnicity:
-                ethnicity: $literal_enum(Ethnicity.HISPANIC)
+                ethnicity: $literal_enum(StateEthnicity.HISPANIC)
           - $else_if:
               $not_null: cultural_affiliation_id
             $then:
@@ -63,7 +63,7 @@ output:
                   $enum_mapping:
                     $raw_text: cultural_affiliation_id
                     $mappings:
-                      Ethnicity.HISPANIC:
+                      StateEthnicity.HISPANIC:
                         - '608' # Mexican
                         - '602' # Hispanic
                     $ignore:

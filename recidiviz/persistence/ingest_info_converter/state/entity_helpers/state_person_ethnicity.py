@@ -20,7 +20,7 @@ entity."""
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Ethnicity
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonEthnicity
 from recidiviz.persistence.entity.state import entities
@@ -39,7 +39,7 @@ def convert(
 
     # Enum mappings
     new.ethnicity = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "ethnicity"), Ethnicity, metadata.enum_overrides
+        getattr(proto, "ethnicity"), StateEthnicity, metadata.enum_overrides
     )
     new.ethnicity_raw_text = getattr(proto, "ethnicity")
 

@@ -20,8 +20,8 @@ from typing import Any, Dict, Optional, Tuple
 import attr
 
 from recidiviz.case_triage.opportunities.types import OpportunityType
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -34,7 +34,7 @@ class PolicyRequirements:
     # Mapping from gender -> supervision level -> ranges of assessment scores for those folks.
     # If the second element of the range is None, then it is unbounded.
     assessment_score_cutoffs: Dict[
-        Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+        StateGender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
     ]
 
     # Abbreviated name of the state's DOC

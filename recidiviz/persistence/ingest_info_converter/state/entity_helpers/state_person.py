@@ -20,17 +20,15 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Gender,
-    ResidencyStatus,
+from recidiviz.common.constants.state.state_person import (
+    STATE_RESIDENCY_STATUS_SUBSTRING_MAP,
+    StateGender,
+    StateResidencyStatus,
 )
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    parse_residency_status,
-)
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
@@ -50,7 +48,7 @@ def copy_fields_to_builder(
 
     # Enum mappings
     new.gender = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "gender"), Gender, metadata.enum_overrides
+        getattr(proto, "gender"), StateGender, metadata.enum_overrides
     )
     new.gender_raw_text = getattr(proto, "gender")
 
@@ -60,9 +58,20 @@ def copy_fields_to_builder(
     new.current_address = getattr(proto, "current_address")
     new.residency_status = StrictEnumParser(
         raw_text=getattr(proto, "current_address"),
-        enum_cls=ResidencyStatus,
+        enum_cls=StateResidencyStatus,
         enum_overrides=EnumOverrides.Builder()
-        .add_mapper_fn(parse_residency_status, ResidencyStatus)
+        .add_mapper_fn(parse_residency_status, StateResidencyStatus)
         .build(),
     )
     new.state_code = metadata.region
+
+
+def parse_residency_status(place_of_residence: str) -> StateResidencyStatus:
+    """Returns the residency status of a person, e.g. PERMANENT or HOMELESS."""
+    normalized_place_of_residence = place_of_residence.upper()
+    for substring, residency_status in STATE_RESIDENCY_STATUS_SUBSTRING_MAP.items():
+        if substring in normalized_place_of_residence:
+            return residency_status
+    # If place of residence is provided and no other status is explicitly
+    # provided, assumed to be permanent
+    return StateResidencyStatus.PERMANENT

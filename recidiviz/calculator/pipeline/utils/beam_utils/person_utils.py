@@ -25,10 +25,7 @@ from more_itertools import one
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Race,
-)
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 PERSON_EVENTS_KEY = "PERSON_EVENTS"
@@ -36,10 +33,10 @@ PERSON_METADATA_KEY = "PERSON_METADATA"
 
 # Race and ethnicity values that we do not track in the
 # state_race_ethnicity_population_counts table
-_NON_PRIORITIZED_RACES_OR_ETHNICITIES: List[Union[Race, Ethnicity]] = [
-    Race.EXTERNAL_UNKNOWN,
-    Ethnicity.EXTERNAL_UNKNOWN,
-    Ethnicity.NOT_HISPANIC,
+_NON_PRIORITIZED_RACES_OR_ETHNICITIES: List[Union[StateRace, StateEthnicity]] = [
+    StateRace.EXTERNAL_UNKNOWN,
+    StateEthnicity.EXTERNAL_UNKNOWN,
+    StateEthnicity.NOT_HISPANIC,
 ]
 
 

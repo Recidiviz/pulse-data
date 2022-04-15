@@ -23,9 +23,9 @@ from typing import Any
 import attr
 from more_itertools import one
 
-from recidiviz.common.constants.shared_enums.person_characteristics import Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
+from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
@@ -297,7 +297,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
                 races=[
-                    make_person_race(race=Race.BLACK),
+                    make_person_race(race=StateRace.BLACK),
                 ],
                 incarceration_incidents=[
                     make_incarceration_incident(external_id="ID_1")
@@ -308,7 +308,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
                 races=[
-                    make_person_race(race=Race.BLACK),
+                    make_person_race(race=StateRace.BLACK),
                 ],
                 incarceration_incidents=[
                     make_incarceration_incident(external_id="ID_2")
@@ -321,7 +321,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                     make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
                 ],
                 races=[
-                    make_person_race(race=Race.BLACK),
+                    make_person_race(race=StateRace.BLACK),
                 ],
                 incarceration_incidents=[
                     make_incarceration_incident(external_id="ID_1"),

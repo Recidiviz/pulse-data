@@ -24,10 +24,10 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     _build_person_metadata,
     _determine_prioritized_race_or_ethnicity,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
 )
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
@@ -43,13 +43,13 @@ class TestBuildPersonMetadata(unittest.TestCase):
         self.state_race_ethnicity_population_counts = [
             StateRaceEthnicityPopulationCounts(
                 state_code="US_XX",
-                race_or_ethnicity=Race.WHITE.value,
+                race_or_ethnicity=StateRace.WHITE.value,
                 population_count=100,
                 representation_priority=2,
             ),
             StateRaceEthnicityPopulationCounts(
                 state_code="US_XX",
-                race_or_ethnicity=Race.BLACK.value,
+                race_or_ethnicity=StateRace.BLACK.value,
                 population_count=80,
                 representation_priority=1,
             ),
@@ -60,15 +60,17 @@ class TestBuildPersonMetadata(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -78,7 +80,7 @@ class TestBuildPersonMetadata(unittest.TestCase):
         )
 
         expected_person_metadata = PersonMetadata(
-            prioritized_race_or_ethnicity=Race.WHITE.value
+            prioritized_race_or_ethnicity=StateRace.WHITE.value
         )
 
         self.assertEqual(expected_person_metadata, person_metadata)
@@ -88,7 +90,7 @@ class TestBuildPersonMetadata(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         person_metadata = _build_person_metadata(
@@ -107,25 +109,25 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
         self.state_race_ethnicity_population_counts = [
             StateRaceEthnicityPopulationCounts(
                 state_code="US_XX",
-                race_or_ethnicity=Race.ASIAN.value,
+                race_or_ethnicity=StateRace.ASIAN.value,
                 population_count=65,
                 representation_priority=1,
             ),
             StateRaceEthnicityPopulationCounts(
                 state_code="US_XX",
-                race_or_ethnicity=Ethnicity.HISPANIC.value,
+                race_or_ethnicity=StateEthnicity.HISPANIC.value,
                 population_count=70,
                 representation_priority=2,
             ),
             StateRaceEthnicityPopulationCounts(
                 state_code="US_XX",
-                race_or_ethnicity=Race.BLACK.value,
+                race_or_ethnicity=StateRace.BLACK.value,
                 population_count=80,
                 representation_priority=3,
             ),
             StateRaceEthnicityPopulationCounts(
                 state_code="US_XX",
-                race_or_ethnicity=Race.WHITE.value,
+                race_or_ethnicity=StateRace.WHITE.value,
                 population_count=100,
                 representation_priority=4,
             ),
@@ -136,14 +138,14 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         race_white = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=Race.WHITE
+            state_code="US_XX", race=StateRace.WHITE
         )
         race_black = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=Race.BLACK
+            state_code="US_XX", race=StateRace.BLACK
         )
 
         person.races = [race_white, race_black]
@@ -152,7 +154,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             person, self.state_race_ethnicity_population_counts
         )
 
-        expected_output = Race.BLACK.value
+        expected_output = StateRace.BLACK.value
 
         self.assertEqual(expected_output, prioritized_race_ethnicity)
 
@@ -161,11 +163,11 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -174,7 +176,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             person, self.state_race_ethnicity_population_counts
         )
 
-        expected_output = Ethnicity.HISPANIC.value
+        expected_output = StateEthnicity.HISPANIC.value
 
         self.assertEqual(expected_output, prioritized_race_ethnicity)
 
@@ -183,7 +185,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         person.races = []
@@ -199,14 +201,14 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             state_code="US_NOT_SUPPORTED",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         race_white = StatePersonRace.new_with_defaults(
-            state_code="US_NOT_SUPPORTED", race=Race.WHITE
+            state_code="US_NOT_SUPPORTED", race=StateRace.WHITE
         )
         race_black = StatePersonRace.new_with_defaults(
-            state_code="US_NOT_SUPPORTED", race=Race.BLACK
+            state_code="US_NOT_SUPPORTED", race=StateRace.BLACK
         )
 
         person.races = [race_white, race_black]
@@ -221,12 +223,12 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         # We want to raise an error if a person has a race or ethnicity that isn't in the state prioritization
         race_unsupported = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER
+            state_code="US_XX", race=StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER
         )
 
         person.races = [race_unsupported]
@@ -241,11 +243,11 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         race_unsupported = StatePersonRace.new_with_defaults(
-            state_code="US_XX", race=Race.EXTERNAL_UNKNOWN
+            state_code="US_XX", race=StateRace.EXTERNAL_UNKNOWN
         )
 
         person.races = [race_unsupported]

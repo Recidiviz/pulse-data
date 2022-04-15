@@ -23,14 +23,14 @@ import attr
 from mock import patch
 from more_itertools import one
 
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -618,7 +618,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self._commit_to_db(db_person)
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         race_1 = StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.WHITE
+            state_code=_STATE_CODE, race=StateRace.WHITE
         )
         person = attr.evolve(
             entity_person,
@@ -627,7 +627,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_ids=[external_id],
         )
         race_2 = StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.OTHER
+            state_code=_STATE_CODE, race=StateRace.OTHER
         )
         external_id_2 = attr.evolve(entity_external_id_2, person_external_id_id=None)
         person_dup = attr.evolve(
@@ -1055,13 +1055,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self._commit_to_db(db_person, db_person_2)
 
         race = StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.BLACK
+            state_code=_STATE_CODE, race=StateRace.BLACK
         )
         alias = StatePersonAlias.new_with_defaults(
             state_code=_STATE_CODE, full_name=_FULL_NAME_ANOTHER
         )
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code=_STATE_CODE, ethnicity=Ethnicity.NOT_HISPANIC
+            state_code=_STATE_CODE, ethnicity=StateEthnicity.NOT_HISPANIC
         )
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         external_id_2 = attr.evolve(entity_external_id_2, person_external_id_id=None)
@@ -1235,13 +1235,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE, id_type=_ID_TYPE, external_id=_EXTERNAL_ID
         )
         race = StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.WHITE
+            state_code=_STATE_CODE, race=StateRace.WHITE
         )
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code=_STATE_CODE, ethnicity=Ethnicity.NOT_HISPANIC
+            state_code=_STATE_CODE, ethnicity=StateEthnicity.NOT_HISPANIC
         )
         person = StatePerson.new_with_defaults(
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             aliases=[alias],
             external_ids=[external_id],
             races=[race],
@@ -1264,13 +1264,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_noPlaceholders_updatePersonAttributes(self) -> None:
         # Arrange 1 - Match
-        db_race = generate_race(state_code=_STATE_CODE, race=Race.WHITE.value)
+        db_race = generate_race(state_code=_STATE_CODE, race=StateRace.WHITE.value)
         entity_race = self.to_entity(db_race)
         db_alias = generate_alias(state_code=_STATE_CODE, full_name=_FULL_NAME)
         entity_alias = self.to_entity(db_alias)
         db_ethnicity = generate_ethnicity(
             state_code=_STATE_CODE,
-            ethnicity=Ethnicity.HISPANIC.value,
+            ethnicity=StateEthnicity.HISPANIC.value,
         )
         entity_ethnicity = self.to_entity(db_ethnicity)
         db_external_id = generate_external_id(
@@ -1291,13 +1291,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self._commit_to_db(db_person)
 
         race = StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.BLACK
+            state_code=_STATE_CODE, race=StateRace.BLACK
         )
         alias = StatePersonAlias.new_with_defaults(
             state_code=_STATE_CODE, full_name=_FULL_NAME_ANOTHER
         )
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code=_STATE_CODE, ethnicity=Ethnicity.NOT_HISPANIC
+            state_code=_STATE_CODE, ethnicity=StateEthnicity.NOT_HISPANIC
         )
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         person = attr.evolve(
@@ -2444,7 +2444,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         external_id_2 = attr.evolve(entity_external_id_2, person_external_id_id=None)
         race = StatePersonRace.new_with_defaults(
-            race=Race.WHITE, state_code=_STATE_CODE
+            race=StateRace.WHITE, state_code=_STATE_CODE
         )
         person = StatePerson.new_with_defaults(
             external_ids=[external_id, external_id_2],
@@ -2995,7 +2995,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_ids=[external_id],
         )
         race = StatePersonRace.new_with_defaults(
-            state_code=_STATE_CODE, race=Race.OTHER
+            state_code=_STATE_CODE, race=StateRace.OTHER
         )
         external_id_2 = attr.evolve(entity_external_id_2, person_external_id_id=None)
         person_dup = attr.evolve(

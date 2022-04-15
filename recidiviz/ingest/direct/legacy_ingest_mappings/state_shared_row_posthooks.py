@@ -26,8 +26,8 @@ from typing import Callable, Dict, List, Optional, Type, Union
 
 import attr
 
-from recidiviz.common.constants.shared_enums.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
     create_if_not_exists,
@@ -95,7 +95,7 @@ def gen_rationalize_race_and_ethnicity(
         _cache: IngestObjectCache,
     ) -> None:
         ethnicity_override_values = []
-        for ethnicity in Ethnicity:
+        for ethnicity in StateEthnicity:
             ethnicity_override_values.extend(enum_overrides.get(ethnicity, []))
 
         for obj in extracted_objects:

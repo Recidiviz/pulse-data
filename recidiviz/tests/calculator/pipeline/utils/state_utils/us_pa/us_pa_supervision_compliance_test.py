@@ -39,7 +39,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
 # pylint: disable=protected-access
@@ -49,6 +48,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -2292,7 +2292,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             incarceration_delegate=UsPaIncarcerationDelegate()
         )
 
-    def _person_with_gender(self, gender: Gender) -> StatePerson:
+    def _person_with_gender(self, gender: StateGender) -> StatePerson:
         return StatePerson.new_with_defaults(state_code="US_PA", gender=gender)
 
     def _supervision_period_with_level(
@@ -2320,16 +2320,16 @@ class TestSupervisionDowngrades(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("male", Gender.MALE),
-            ("trans_male", Gender.TRANS_MALE),
-            ("female", Gender.FEMALE),
-            ("trans_female", Gender.TRANS_FEMALE),
+            ("male", StateGender.MALE),
+            ("trans_male", StateGender.TRANS_MALE),
+            ("female", StateGender.FEMALE),
+            ("trans_female", StateGender.TRANS_FEMALE),
         ]
     )
     def test_minimum_no_downgrade(
         self,
         _name: str,
-        gender: Gender,
+        gender: StateGender,
     ) -> None:
         us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
             self._person_with_gender(gender),
@@ -2363,7 +2363,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
         self, _name: str, level: StateSupervisionLevel, score: int
     ) -> None:
         compliance_no_downgrade = UsPaSupervisionCaseCompliance(
-            self._person_with_gender(Gender.EXTERNAL_UNKNOWN),
+            self._person_with_gender(StateGender.EXTERNAL_UNKNOWN),
             supervision_period=self._supervision_period_with_level(level),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
@@ -2381,7 +2381,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
         )
 
         compliance_downgrade = UsPaSupervisionCaseCompliance(
-            self._person_with_gender(Gender.EXTERNAL_UNKNOWN),
+            self._person_with_gender(StateGender.EXTERNAL_UNKNOWN),
             supervision_period=self._supervision_period_with_level(level),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,

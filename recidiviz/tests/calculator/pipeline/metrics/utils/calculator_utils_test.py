@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.pipeline_type import (
     INCARCERATION_METRICS_PIPELINE_NAME,
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
@@ -102,7 +102,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_MO",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         person_external_id = StatePersonExternalId.new_with_defaults(
@@ -125,7 +125,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         person_external_id = StatePersonExternalId.new_with_defaults(
@@ -145,7 +145,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         person_external_id_1 = StatePersonExternalId.new_with_defaults(
@@ -168,7 +168,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         # Wrong ID type
@@ -207,7 +207,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         event_date = date(2010, 9, 1)
@@ -222,7 +222,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             "person_id": person.person_id,
             "age": 26,
             "prioritized_race_or_ethnicity": "ASIAN",
-            "gender": Gender.FEMALE,
+            "gender": StateGender.FEMALE,
         }
 
         self.assertEqual(updated_characteristics, expected_output)
@@ -232,7 +232,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         event_date = date(2010, 9, 1)
@@ -245,7 +245,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "age": 26,
-            "gender": Gender.FEMALE,
+            "gender": StateGender.FEMALE,
             "person_id": person.person_id,
         }
 
@@ -285,7 +285,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
             races=[
                 StatePersonRace.new_with_defaults(
                     state_code="US_XX",
@@ -316,7 +316,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "age": 26,
-            "gender": Gender.FEMALE,
+            "gender": StateGender.FEMALE,
             "person_id": person.person_id,
             "person_external_id": "DOC1341",
         }
@@ -356,7 +356,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
             races=[
                 StatePersonRace.new_with_defaults(
                     state_code="US_XX",
@@ -390,7 +390,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "age": 26,
-            "gender": Gender.FEMALE,
+            "gender": StateGender.FEMALE,
             "person_id": person.person_id,
             "person_external_id": "DOC1341",
             "secondary_person_external_id": "SID9889",

@@ -28,12 +28,6 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-    ResidencyStatus,
-)
 from recidiviz.common.constants.state.shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
@@ -67,6 +61,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
+    StateResidencyStatus,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -194,7 +194,9 @@ class StatePersonRace(EnumEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    race: Optional[Race] = attr.ib(default=None, validator=attr_validators.is_opt(Race))
+    race: Optional[StateRace] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateRace)
+    )
     race_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -217,8 +219,8 @@ class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    ethnicity: Optional[Ethnicity] = attr.ib(
-        default=None, validator=attr_validators.is_opt(Ethnicity)
+    ethnicity: Optional[StateEthnicity] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateEthnicity)
     )
     ethnicity_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -257,16 +259,16 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_date
     )
 
-    gender: Optional[Gender] = attr.ib(
-        default=None, validator=attr_validators.is_opt(Gender)
+    gender: Optional[StateGender] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateGender)
     )
     gender_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
     # NOTE: This may change over time - we track these changes in history tables
-    residency_status: Optional[ResidencyStatus] = attr.ib(
-        default=None, validator=attr_validators.is_opt(ResidencyStatus)
+    residency_status: Optional[StateResidencyStatus] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateResidencyStatus)
     )
     residency_status_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str

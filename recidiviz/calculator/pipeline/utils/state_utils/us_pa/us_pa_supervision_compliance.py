@@ -27,12 +27,12 @@ from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_man
 from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
     SupervisionLevelPolicy,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
@@ -88,14 +88,14 @@ NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 10
 RISK_SCORE_TO_SUPERVISION_LEVEL_POLICY_DATE = date(2011, 1, 4)
 
 CURRENT_US_PA_ASSESSMENT_SCORE_RANGE: Dict[
-    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+    StateGender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
 ] = {
     gender: {
         StateSupervisionLevel.MINIMUM: (0, 19),
         StateSupervisionLevel.MEDIUM: (20, 27),
         StateSupervisionLevel.MAXIMUM: (28, None),
     }
-    for gender in Gender
+    for gender in StateGender
 }
 
 MEDIUM_HIGH_SANCTION_DECISION_RAW_TEXT_CODES: List[str] = [

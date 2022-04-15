@@ -31,8 +31,8 @@ output:
       $enum_mapping:
         $raw_text: OffSex
         $mappings:
-          Gender.MALE: [M, m]
-          Gender.FEMALE: [F, f]
+          StateGender.MALE: [M, m]
+          StateGender.FEMALE: [F, f]
         $ignore:
           # These are relatively rare erroneous values.
           - "1"
@@ -48,11 +48,11 @@ output:
             $enum_mapping:
               $raw_text: OffRaceEthnicGroup
               $mappings:
-                Race.ASIAN: A
-                Race.BLACK: B
-                Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
-                Race.OTHER: N
-                Race.WHITE: [W, w]
+                StateRace.ASIAN: A
+                StateRace.BLACK: B
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                StateRace.OTHER: N
+                StateRace.WHITE: [W, w]
               $ignore:
                 # This is an ethnicity value - ignore when mapping to race.
                 - H
@@ -73,7 +73,7 @@ output:
             $enum_mapping:
               $raw_text: OffRaceEthnicGroup
               $mappings:
-                Ethnicity.HISPANIC: H
+                StateEthnicity.HISPANIC: H
               $ignore:
                 # These are race values - ignore when mapping to ethnicity.
                 - A

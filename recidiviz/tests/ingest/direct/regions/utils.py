@@ -69,15 +69,15 @@ def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
 def build_state_person_entity(
     state_code: str,
     full_name: str,
-    gender: entities.Gender,
+    gender: entities.StateGender,
     gender_raw_text: str,
     birthdate: datetime.date,
     id_type: str,
     external_id: Optional[str] = None,
     race_raw_text: Optional[str] = None,
-    race: Optional[entities.Race] = None,
+    race: Optional[entities.StateRace] = None,
     ethnicity_raw_text: Optional[str] = None,
-    ethnicity: Optional[entities.Ethnicity] = None,
+    ethnicity: Optional[entities.StateEthnicity] = None,
 ) -> entities.StatePerson:
     """Build a StatePerson entity with optional state_person_external_id, state_person_race
     and state_person_ethnicity entities appended"""
@@ -116,7 +116,7 @@ def build_state_person_entity(
 def add_race_to_person(
     person: entities.StatePerson,
     race_raw_text: str,
-    race: entities.Race,
+    race: entities.StateRace,
     state_code: str,
 ) -> None:
     """Append race to the person (updates the person entity in place)."""
@@ -132,7 +132,7 @@ def add_race_to_person(
 def add_ethnicity_to_person(
     person: entities.StatePerson,
     ethnicity_raw_text: Optional[str],
-    ethnicity: entities.Ethnicity,
+    ethnicity: entities.StateEthnicity,
     state_code: str,
 ) -> None:
     """Append ethnicity to the person (updates the person entity in place)."""

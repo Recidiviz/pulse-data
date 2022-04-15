@@ -19,10 +19,6 @@ import datetime
 import unittest
 from typing import List
 
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Race,
-)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -39,6 +35,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
@@ -569,15 +566,15 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 ],
                 races=[
                     StatePersonRace(
-                        race=Race.WHITE, race_raw_text="WHITE", state_code="US_XX"
+                        race=StateRace.WHITE, race_raw_text="WHITE", state_code="US_XX"
                     ),
                     StatePersonRace(
-                        race=Race.OTHER, race_raw_text="OTHER", state_code="US_XX"
+                        race=StateRace.OTHER, race_raw_text="OTHER", state_code="US_XX"
                     ),
                 ],
                 ethnicities=[
                     StatePersonEthnicity(
-                        ethnicity=Ethnicity.HISPANIC,
+                        ethnicity=StateEthnicity.HISPANIC,
                         ethnicity_raw_text="HISPANIC",
                         state_code="US_XX",
                     )

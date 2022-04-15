@@ -33,10 +33,10 @@ from recidiviz.calculator.pipeline.metrics.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -66,17 +66,17 @@ class TestProduceViolationMetrics(unittest.TestCase):
             state_code=self.state_code,
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
         self.race = StatePersonRace.new_with_defaults(
-            state_code=self.state_code, race=Race.WHITE
+            state_code=self.state_code, race=StateRace.WHITE
         )
 
         self.person.races = [self.race]
 
         self.ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code=self.state_code, ethnicity=Ethnicity.NOT_HISPANIC
+            state_code=self.state_code, ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         self.person.ethnicities = [self.ethnicity]

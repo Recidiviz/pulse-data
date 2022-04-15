@@ -57,10 +57,10 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -121,7 +121,7 @@ class TestViolationPipeline(unittest.TestCase):
         fake_person = schema.StatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
         )
         persons_data = [normalized_database_base_dict(fake_person)]
@@ -129,13 +129,13 @@ class TestViolationPipeline(unittest.TestCase):
         race_1 = schema.StatePersonRace(
             person_race_id=111,
             state_code="US_XX",
-            race=Race.ASIAN,
+            race=StateRace.ASIAN,
             person_id=fake_person_id,
         )
         race_2 = schema.StatePersonRace(
             person_race_id=111,
             state_code="US_XX",
-            race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
+            race=StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE,
             person_id=fake_person_id,
         )
 
@@ -144,7 +144,7 @@ class TestViolationPipeline(unittest.TestCase):
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
             state_code="US_XX",
-            ethnicity=Ethnicity.NOT_HISPANIC,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             person_id=fake_person_id,
         )
 
@@ -302,7 +302,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         self.fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=self.fake_person_id,
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
         )
         self.identifier = ViolationIdentifier()
@@ -516,7 +516,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=self.fake_person_id,
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
         )
 

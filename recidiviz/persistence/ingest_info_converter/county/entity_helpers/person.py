@@ -20,16 +20,17 @@ import re
 from typing import Optional
 
 from recidiviz.common.constants.shared_enums.person_characteristics import (
+    RESIDENCY_STATUS_SUBSTRING_MAP,
     Ethnicity,
     Gender,
     Race,
+    ResidencyStatus,
 )
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_birthdate,
     parse_external_id,
-    parse_residency_status,
 )
 from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
     IngestInfoProtoEnumMapper,
@@ -83,7 +84,7 @@ def copy_fields_to_builder(person_builder, proto, metadata):
     new.birthdate, new.birthdate_inferred_from_age = parse_birthdate(
         proto, "birthdate", "age"
     )
-    new.residency_status = fn(parse_residency_status, "place_of_residence", proto)
+    new.residency_status = fn(_parse_residency_status, "place_of_residence", proto)
     new.resident_of_region = fn(
         _parse_is_resident, "place_of_residence", proto, metadata.region
     )
@@ -151,3 +152,14 @@ def _parse_is_state_resident(residence_zip_code: str, region: str) -> Optional[b
     if not residence_state_code:
         return None
     return region_state_code == residence_state_code
+
+
+def _parse_residency_status(place_of_residence: str) -> ResidencyStatus:
+    """Returns the residency status of a person, e.g. PERMANENT or HOMELESS."""
+    normalized_place_of_residence = place_of_residence.upper()
+    for substring, residency_status in RESIDENCY_STATUS_SUBSTRING_MAP.items():
+        if substring in normalized_place_of_residence:
+            return residency_status
+    # If place of residence is provided and no other status is explicitly
+    # provided, assumed to be permanent
+    return ResidencyStatus.PERMANENT

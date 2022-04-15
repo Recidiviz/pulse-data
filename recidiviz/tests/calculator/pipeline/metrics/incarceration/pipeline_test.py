@@ -70,6 +70,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
+    StateResidencyStatus,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
@@ -79,10 +85,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
-    Ethnicity,
-    Gender,
-    Race,
-    ResidencyStatus,
     StateIncarcerationPeriod,
     StatePerson,
     StateSupervisionPeriod,
@@ -156,9 +158,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
         fake_person = schema.StatePerson(
             state_code=state_code,
             person_id=fake_person_id,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         persons_data = [normalized_database_base_dict(fake_person)]
@@ -166,14 +168,14 @@ class TestIncarcerationPipeline(unittest.TestCase):
         race_1 = schema.StatePersonRace(
             person_race_id=111,
             state_code=state_code,
-            race=Race.BLACK,
+            race=StateRace.BLACK,
             person_id=fake_person_id,
         )
 
         race_2 = schema.StatePersonRace(
             person_race_id=111,
             state_code=state_code,
-            race=Race.WHITE,
+            race=StateRace.WHITE,
             person_id=fake_person_id,
         )
 
@@ -182,7 +184,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
             state_code=state_code,
-            ethnicity=Ethnicity.HISPANIC,
+            ethnicity=StateEthnicity.HISPANIC,
             person_id=fake_person_id,
         )
 
@@ -450,9 +452,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
         fake_person_1 = schema.StatePerson(
             state_code="US_XX",
             person_id=fake_person_id,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         fake_person_id_2 = 6789
@@ -460,9 +462,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
         fake_person_2 = schema.StatePerson(
             state_code="US_XX",
             person_id=fake_person_id_2,
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
             birthdate=date(1990, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         persons_data = [
@@ -584,9 +586,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         fake_person = StatePerson.new_with_defaults(
             state_code=state_code,
             person_id=fake_person_id,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -724,9 +726,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         fake_person = StatePerson.new_with_defaults(
             state_code=state_code,
             person_id=123,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         person_entities = self.load_person_entities_dict(
@@ -807,9 +809,9 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=123,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         incarceration_events = [
@@ -876,9 +878,9 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=123,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
-            residency_status=ResidencyStatus.PERMANENT,
+            residency_status=StateResidencyStatus.PERMANENT,
         )
 
         test_pipeline = TestPipeline()

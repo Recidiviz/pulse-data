@@ -21,16 +21,16 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -542,13 +542,15 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             ],
             races=[
                 schema.StatePersonRace(
-                    state_code=StateCode.US_XX.value, race=Race.WHITE, race_raw_text="W"
+                    state_code=StateCode.US_XX.value,
+                    race=StateRace.WHITE,
+                    race_raw_text="W",
                 ),
             ],
         ),
         schema.StatePerson(
             state_code=StateCode.US_XX.value,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
             external_ids=[
                 schema.StatePersonExternalId(
                     state_code=StateCode.US_XX.value,
@@ -559,7 +561,7 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         ),
         schema.StatePerson(
             state_code=StateCode.US_XX.value,
-            gender=Gender.MALE,
+            gender=StateGender.MALE,
         ),
     ],
     schema.StatePersonAlias: [
@@ -568,11 +570,11 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
     schema.StatePersonEthnicity: [
         schema.StatePersonEthnicity(
             state_code=StateCode.US_XX.value,
-            ethnicity=Ethnicity.HISPANIC,
+            ethnicity=StateEthnicity.HISPANIC,
             ethnicity_raw_text="H",
         ),
         schema.StatePersonEthnicity(
-            state_code=StateCode.US_XX.value, ethnicity=Ethnicity.NOT_HISPANIC
+            state_code=StateCode.US_XX.value, ethnicity=StateEthnicity.NOT_HISPANIC
         ),
         schema.StatePersonEthnicity(
             state_code=StateCode.US_XX.value, ethnicity_raw_text="X"
@@ -585,9 +587,9 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
     ],
     schema.StatePersonRace: [
         schema.StatePersonRace(
-            state_code=StateCode.US_XX.value, race=Race.WHITE, race_raw_text="W"
+            state_code=StateCode.US_XX.value, race=StateRace.WHITE, race_raw_text="W"
         ),
-        schema.StatePersonRace(state_code=StateCode.US_XX.value, race=Race.WHITE),
+        schema.StatePersonRace(state_code=StateCode.US_XX.value, race=StateRace.WHITE),
         schema.StatePersonRace(state_code=StateCode.US_XX.value, race_raw_text="X"),
     ],
     schema.StateProgramAssignment: [

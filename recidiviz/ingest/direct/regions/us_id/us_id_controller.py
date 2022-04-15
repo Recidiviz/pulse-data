@@ -24,11 +24,6 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-)
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
@@ -52,6 +47,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -276,19 +276,19 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         }
 
     ENUM_OVERRIDES: Dict[Enum, List[str]] = {
-        Race.ASIAN: ["A"],
-        Race.BLACK: ["B"],
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["I"],
-        Race.OTHER: ["O"],
-        Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["P"],
-        Race.EXTERNAL_UNKNOWN: ["U"],
-        Race.WHITE: ["W"],
-        Ethnicity.HISPANIC: ["H"],
-        Gender.MALE: ["M"],
-        Gender.FEMALE: ["F"],
-        Gender.TRANS_MALE: ["X"],
-        Gender.TRANS_FEMALE: ["Y"],
-        Gender.EXTERNAL_UNKNOWN: ["U"],
+        StateRace.ASIAN: ["A"],
+        StateRace.BLACK: ["B"],
+        StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: ["I"],
+        StateRace.OTHER: ["O"],
+        StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["P"],
+        StateRace.EXTERNAL_UNKNOWN: ["U"],
+        StateRace.WHITE: ["W"],
+        StateEthnicity.HISPANIC: ["H"],
+        StateGender.MALE: ["M"],
+        StateGender.FEMALE: ["F"],
+        StateGender.TRANS_MALE: ["X"],
+        StateGender.TRANS_FEMALE: ["Y"],
+        StateGender.EXTERNAL_UNKNOWN: ["U"],
         StateAssessmentLevel.LOW: ["Minimum"],
         StateAssessmentLevel.LOW_MEDIUM: ["Low-Medium"],
         StateAssessmentLevel.MEDIUM_HIGH: ["High-Medium"],

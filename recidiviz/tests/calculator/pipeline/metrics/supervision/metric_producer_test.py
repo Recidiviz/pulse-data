@@ -49,17 +49,17 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetad
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
+    StateGender,
+    StateRace,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
@@ -109,15 +109,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -168,15 +170,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -230,15 +234,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -292,15 +298,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -355,15 +363,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -428,15 +438,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -505,15 +517,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ND", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ND", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -603,15 +617,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1993, 4, 2),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -667,15 +683,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -745,15 +763,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -807,15 +827,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ND", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ND", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -879,15 +901,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ND", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ND", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -966,12 +990,14 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
         person.races = [race]
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
         person.ethnicities = [ethnicity]
 
@@ -1012,15 +1038,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ND", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ND", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1068,15 +1096,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1122,15 +1152,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ND", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ND", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1189,15 +1221,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1282,15 +1316,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1370,15 +1406,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1450,15 +1488,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1521,15 +1561,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_ID",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ID", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ID", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1585,15 +1627,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_ID",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ID", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ID", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1649,15 +1693,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_ID",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ID", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ID", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1704,15 +1750,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_ID",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_ID", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_ID", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
@@ -1758,15 +1806,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
+            gender=StateGender.FEMALE,
         )
 
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]

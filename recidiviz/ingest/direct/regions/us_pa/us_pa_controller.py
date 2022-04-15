@@ -26,7 +26,6 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
@@ -44,6 +43,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -460,8 +460,8 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     }
 
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
-        Gender: ["W", "B", "U", "A", "1"],  # Unexplained rare values
-        Race: [
+        StateGender: ["W", "B", "U", "A", "1"],  # Unexplained rare values
+        StateRace: [
             "M",
             "U",
             "F",
