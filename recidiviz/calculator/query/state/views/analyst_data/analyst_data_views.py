@@ -39,8 +39,8 @@ from recidiviz.calculator.query.state.views.analyst_data.population_density_by_s
 from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
     PROJECTED_DISCHARGES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_office_and_district_metrics import (
-    SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS,
+from recidiviz.calculator.query.state.views.analyst_data.supervision_aggregated_metrics import (
+    SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_office_metrics import (
     SUPERVISION_OFFICER_OFFICE_METRICS_VIEW_BUILDER,
@@ -143,4 +143,4 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
     US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER,
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
-] + SUPERVISION_OFFICER_OFFICE_AND_DISTRICT_VIEW_BUILDERS
+] + SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS

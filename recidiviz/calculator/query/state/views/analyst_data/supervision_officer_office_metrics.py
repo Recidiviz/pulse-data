@@ -144,6 +144,7 @@ WITH date_array AS (
         AND violations.person_id = b.person_id
         AND violations.response_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
 )
+
 , incarcerations AS (
     SELECT 
         a.state_code,
@@ -250,8 +251,10 @@ WITH date_array AS (
             c.person_id, NULL)) AS caseload_out_of_state,
         COUNT(DISTINCT IF(compartment_level_2 IN ("PAROLE", "DUAL"), c.person_id, NULL)
             ) AS caseload_parole,
-        COUNT(DISTINCT IF(compartment_level_2 IN ("PROBATION"), c.person_id, NULL)
-            ) AS caseload_probation,
+        COUNT(DISTINCT IF(compartment_level_2 IN ("PROBATION", "INFORMAL_PROBATION"), 
+            c.person_id, NULL)) AS caseload_probation,
+        COUNT(DISTINCT IF(compartment_level_2 IN ("BENCH_WARRANT", "ABSCONSION",
+            "INTERNAL_UNKNOWN"), c.person_id, NULL)) AS caseload_other_supervision_type,
         COUNT(DISTINCT IF(c.gender = "FEMALE", c.person_id, NULL)
             ) AS caseload_female,
         COUNT(DISTINCT IF(c.prioritized_race_or_ethnicity != "WHITE", c.person_id, NULL)
@@ -268,7 +271,7 @@ WITH date_array AS (
             "MENTAL_HEALTH_COURT"), c.person_id, NULL)) AS caseload_mental_health,
         COUNT(DISTINCT IF(case_type_start NOT IN ("GENERAL", "DOMESTIC_VIOLENCE",
             "SEX_OFFENSE", "DRUG_COURT", "SERIOUS_MENTAL_ILLNESS", 
-            "MENTAL_HEALTH_COURT"), c.person_id, NULL)) AS caseload_other,
+            "MENTAL_HEALTH_COURT"), c.person_id, NULL)) AS caseload_other_case_type,
         COUNT(DISTINCT IF(case_type_start IS NULL, c.person_id, NULL)
             ) AS caseload_unknown,
         AVG(assessment_score) AS avg_lsir_score,
