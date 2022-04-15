@@ -1,0 +1,114 @@
+file_tag: TDPOP
+file_description: |-
+  This table contains incarceration population validation data sent by TN DOC and TN STS to Recidiviz via data-updates emails.
+data_classification: validation
+primary_key_cols:
+  - OffenderID
+  - Site
+  - Date
+columns:
+  - name: OffenderID
+    is_pii: True
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number
+  - name: First_Name
+    is_pii: True
+    description: |-
+      This is the first name of a person.
+  - name: Last_Name
+    is_pii: True
+    description: |-
+      The last name of a person.
+  - name: DOB
+    is_pii: True
+    is_datetime: True
+    description: |-
+      The date on which a person was born.
+  - name: Sex
+    description: |-
+      An abbreviation that identifies the sex of a person.
+  - name: Race
+    description: |-
+      The NCIC race code.
+  - name: Status
+    description: |-
+      The status of a person's incarceration period.
+  - name: Offense_Type
+    description: |-
+      The type of offense committed by a person.
+  - name: Offense
+    description: |-
+      The offense that a person is originally charged.
+  - name: County_Conviction
+    description: |-
+      The county in which a person commits the offense for a judgment order.
+  - name: Sentenced_To
+    description: |-
+      An abbreviation indicating where a person sentenced in Tennessee is to serve their time.
+  - name: Max_Years
+    description: |-
+      The maximum number of years for a person's sentence.
+  - name: Max_Months
+    description: |-
+      The maximum number of months for a person's sentence.
+  - name: Max_Days
+    description: |-
+      The maximum number of days for a person's sentence.
+  - name: Admit_Date
+    is_datetime: True
+    description: |-
+      This is the date of the admission of the person
+  - name: Admit_Reason
+    description: |-
+      This is the description of the specific reason for the admission of the person
+  - name: RED_Date
+    is_datetime: True
+    description: |-
+      The date a person  is eligible for release to parole for a sentence.
+  - name: EXP_Date
+    is_datetime: True
+    description: |-
+      The date that a sentence expires.  This date includes all credits earned by a person.
+  - name: Hearing_Date
+    is_datetime: True
+    description: |-
+      The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
+  - name: Future_Act_Date
+    is_datetime: True
+    description: |-
+      The date on which some future action will be taken.
+  - name: Site_Type
+    description: |-
+      The type of site that a person  is assigned
+  - name: Site
+    description: |-
+      This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
+  - name: Last_RNA_in_Prison_Jail
+    is_datetime: True
+    description: |-
+      TODO(#7424) - Update once received from TN.
+  - name: Last_RNA_in_Field
+    is_datetime: True
+    description: |-
+      TODO(#7424) - Update once received from TN.
+  - name: Last_RNA_in_CC
+    is_datetime: True
+    description: |-
+      TODO(#7424) - Update once received from TN.
+  - name: PSI_Date
+    is_datetime: True
+    description: |-
+      TODO(#7424) - Update once received from TN.
+  - name: Death_Row_Indicator
+    description: |-
+      Indicator to tell if a person was sentenced on the judgment order to a death sentence.
+  - name: Life_without_Parole_Indicator
+    description: |-
+      Indicator to tell if a person  was sentenced on the judgment order to a life sentence without parole.
+  - name: Level_of_Care
+    description: |-
+      TODO(#7424) - Update once received from TN.
+  - name: Date
+    is_datetime: True
+    description: |-
+      This is the date that reports that the associated person is incarcerated.
