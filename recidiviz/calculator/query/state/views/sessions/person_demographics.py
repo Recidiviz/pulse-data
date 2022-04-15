@@ -31,9 +31,7 @@ PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION = (
     """Person level demographics - age, race, gender, external ID"""
 )
 
-PERSON_DEMOGRAPHICS_PRIORITIZED_ID_TYPES = (
-    """('US_ID_DOC', 'US_MO_DOC', 'US_ND_SID', 'US_PA_INMATE', 'US_TN_DOC')"""
-)
+PERSON_DEMOGRAPHICS_PRIORITIZED_ID_TYPES = """('US_ID_DOC', 'US_ME_DOC', 'US_MO_DOC', 'US_ND_SID', 'US_PA_INMATE', 'US_TN_DOC')"""
 
 PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
     /*{description}*/
@@ -69,9 +67,9 @@ PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
         state_code,
         person_id,
         external_id AS prioritized_external_id,
-        ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY external_id) AS id_number,
     FROM `{project_id}.{base_dataset}.state_person_external_id`
     WHERE id_type IN {prioritized_id_types}
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY external_id) = 1
     )
     SELECT 
         state_code,
@@ -85,8 +83,6 @@ PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
         USING(state_code, person_id) 
     LEFT JOIN prioritized_external_id_table
         USING(state_code, person_id) 
-    WHERE
-        id_number = 1
     ORDER BY
         state_code,
         person_id
