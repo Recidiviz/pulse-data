@@ -16,7 +16,10 @@
 # =============================================================================
 """Releases from supervision by month."""
 
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
 )
@@ -38,30 +41,47 @@ SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_DESCRIPTION = (
 )
 
 aggregate_query = """
-SELECT
-    transitions.state_code,
-    EXTRACT(YEAR FROM transition_date) as year,
-    EXTRACT(MONTH FROM transition_date) as month,
-    gender,
-    supervision_type,
-    # TODO(#11020) Re-enable supervision_level once BE has been updated to handle larger metric files
-    "ALL" AS supervision_level,
-    # IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
-    age_group,
-    race,
-    district,
-    COUNT(1) as event_count,
-FROM
-    `{project_id}.{shared_metric_views_dataset}.supervision_to_liberty_transitions` transitions,
+    WITH transitions AS (
+        SELECT
+            transitions.state_code,
+            EXTRACT(YEAR FROM transition_date) as year,
+            EXTRACT(MONTH FROM transition_date) as month,
+            gender,
+            supervision_type,
+            # TODO(#11020) Re-enable supervision_level once BE has been updated to handle larger metric files
+            "ALL" AS supervision_level,
+            # IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
+            age_group,
+            prioritized_race_or_ethnicity AS race,
+            IFNULL(location_name, district_id) AS district,
+        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_liberty_transitions` transitions
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
+        ON transitions.state_code = location.state_code 
+        AND transitions.district_id = location.location_id
+    ),
+    filtered_rows AS (
+        SELECT * FROM transitions
+        WHERE {state_specific_district_filter}
+    )
+    SELECT 
+        state_code,
+        year,
+        month,
+        gender,
+        supervision_type,
+        supervision_level,
+        age_group,
+        race,
+        district,
+        COUNT(1) as event_count,
+    FROM filtered_rows,
     UNNEST ([gender, 'ALL']) AS gender,
     UNNEST ([supervision_type, 'ALL']) AS supervision_type,
     UNNEST ([age_group, 'ALL']) AS age_group,
-    UNNEST ([prioritized_race_or_ethnicity, "ALL"]) AS race
-LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
-    ON transitions.state_code = location.state_code 
-    AND transitions.district_id = location.location_id,
-    UNNEST ([IFNULL(location_name, district_id), "ALL"]) AS district
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9"""
+    UNNEST ([race, "ALL"]) AS race,
+    UNNEST ([district, "ALL"]) AS district
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
+"""
 
 dimensions = [
     "supervision_type",
@@ -89,6 +109,7 @@ SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewB
     description=SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
+    state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 
 if __name__ == "__main__":

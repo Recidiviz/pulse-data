@@ -472,6 +472,39 @@ def pathways_state_specific_facility_filter() -> str:
     """
 
 
+def pathways_state_specific_supervision_district_filter() -> str:
+    """State-specific logic to filter out supervision locations that should not be included in
+    Pathways metrics."""
+    return """
+        CASE
+            -- TODO(#12239): Remove this filtering once we figure out why there are DOC facilities in supervision periods
+            WHEN state_code = "US_ME" THEN
+                district NOT IN (
+                    -- Filter out unknown locations, using both the location mapping name and the external id
+                    "Non-Committed Adult",
+                    "NON-COMMITTED ADULT",
+                    "TEMP SOCIETY OUT ADULT",
+                    "Temp Society Out",
+                    -- Filter out DOC Facilities
+                    "MAINE CORRECTIONAL FACILITY",
+                    "MOUNTAIN VIEW CORRECTIONAL FACILITY",
+                    "SOUTHERN MAINE WOMEN'S REENTRY CENTER",
+                    "BOLDUC CORRECTIONAL FACILITY",
+                    "MAINE STATE PRISON",
+                    "CENTRAL MAINE PRE-RELEASE CENTER",
+                    "DOWNEAST CORRECTIONAL FACILITY",
+                    "BANGOR PRE-RELEASE CENTER",
+                    "BANGOR WOMEN'S CENTER",
+                    "CENTRAL OFFICE, IT",
+                    "MOUNTAIN VIEW ADULT CENTER",
+                    "CHARLESTON CORRECTIONAL FACILITY",
+                    "SOUTHERN MAINE PRE-RELEASE"
+                )
+            ELSE TRUE
+        END
+    """
+
+
 # TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
 def pathways_state_specific_supervision_level(
     state_code_query: str = "state_code",

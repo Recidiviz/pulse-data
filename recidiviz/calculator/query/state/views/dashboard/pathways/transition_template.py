@@ -56,9 +56,11 @@ def transition_monthly_aggregate_template(
     return f"""
     WITH aggregate_event_counts AS (
         {aggregate_query}
-    ), blanks_filled AS (
+    ), 
+    blanks_filled AS (
         {_get_zero_imputation_query(dimensions, dimension_combination_view)}
-    ), averaged_event_count AS (
+    ),
+    averaged_event_count AS (
       SELECT
         *,
         ROUND(AVG(event_count) OVER (

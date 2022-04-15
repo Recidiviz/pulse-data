@@ -45,8 +45,16 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 WHEN Cis_9009_Region_Cd = '5' THEN 'Central Office'
             ELSE NULL
             END AS level_2_supervision_location_name,
-            Ccs_Location_Id AS level_1_supervision_location_external_id,
-            TRIM(REGEXP_REPLACE(Location_Name, r',|Adult1|Adult', '')) AS level_1_supervision_location_name
+            -- TODO(#11167): Update this to use the external ID instead of location name once it is hydrated in the
+            -- entities.
+            UPPER(Location_Name) AS level_1_supervision_location_external_id,
+            TRIM(
+                REGEXP_REPLACE(
+                REGEXP_REPLACE(Location_Name, r',|Adult1|Adult|\\(Main Office\\)', ''), 
+                r'\\(Region (\\d)\\)', 
+                r'(R\\1)'
+                )
+            ) AS level_1_supervision_location_name
         FROM `{project_id}.us_me_raw_data_up_to_date_views.CIS_908_CCS_LOCATION_latest`
         -- Adult Supervision Office Location Type
         WHERE Cis_9080_Ccs_Location_Type_Cd = '4'

@@ -20,7 +20,10 @@ from recidiviz.calculator.query.bq_utils import (
     get_binned_time_period_months,
     length_of_stay_month_groups,
 )
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_supervision_last_updated_date,
 )
@@ -57,10 +60,33 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
                 DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
             FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions`
         )
-    )
-    , event_counts AS (
+    ),
+    transitions AS (
         SELECT
             transitions.state_code,
+            time_period,
+            gender,
+            supervision_type,
+            age_group,
+            prioritized_race_or_ethnicity AS race,
+            IFNULL(location_name, level_1_location_external_id) AS district,
+            length_of_stay,
+            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
+            "ALL" AS most_severe_violation,
+            "ALL" AS number_of_violations,
+        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
+            ON transitions.state_code = location.state_code 
+            AND transitions.level_1_location_external_id = location.location_id
+        LEFT JOIN binned_values USING (person_id, transition_date)
+    ),
+    filtered_rows AS (
+        SELECT * FROM transitions
+        WHERE {state_specific_district_filter}
+    ),
+    event_counts AS (
+        SELECT
+            state_code,
             time_period,
             gender,
             supervision_type,
@@ -68,21 +94,17 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             race,
             district,
             length_of_stay,
-            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
-            "ALL" AS most_severe_violation,
-            "ALL" AS number_of_violations,
+            supervision_level,
+            most_severe_violation,
+            number_of_violations,
             COUNT(1) as event_count,
-        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions,
+        FROM filtered_rows,
             UNNEST ([gender, 'ALL']) AS gender,
             UNNEST ([supervision_type, 'ALL']) AS supervision_type,
             UNNEST ([supervision_level, 'ALL']) AS supervision_level,
             UNNEST ([age_group, 'ALL']) AS age_group,
-            UNNEST ([prioritized_race_or_ethnicity, "ALL"]) AS race
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
-            ON transitions.state_code = location.state_code 
-            AND transitions.level_1_location_external_id = location.location_id,
-            UNNEST ([IFNULL(location_name, level_1_location_external_id), "ALL"]) AS district
-        LEFT JOIN binned_values USING (person_id, transition_date),
+            UNNEST ([race, "ALL"]) AS race,
+            UNNEST ([district, "ALL"]) AS district,
             UNNEST ([length_of_stay, "ALL"]) AS length_of_stay
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     )
@@ -120,6 +142,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
     length_of_stay_months_grouped=length_of_stay_month_groups(),
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     transition_time_period=get_binned_time_period_months("transition_date"),
+    state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 
 if __name__ == "__main__":
