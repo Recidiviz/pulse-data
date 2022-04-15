@@ -16,7 +16,10 @@
 # =============================================================================
 """A view that can be used to validate that BigQuery has fresh contacts data
 """
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.case_triage.views.dataset_config import (
     CASE_TRIAGE_DATASET,
     CASE_TRIAGE_FEDERATED_DATASET,
@@ -70,6 +73,16 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             assertion_name="STATE_TABLES_CONTAIN_FRESH_DATA",
             description="Checks that the state tables were successfully updated",
             dataset=STATE_BASE_DATASET,
+            table="state_supervision_contact",
+            date_column_clause="contact_date",
+            allowed_days_stale=MAX_DAYS_STALE,
+            filter_clause="state_code = 'US_ID'",
+        ),
+        FreshnessValidationAssertion(
+            region_code="US_ID",
+            assertion_name="NORMALIZED_STATE_TABLES_CONTAIN_FRESH_DATA",
+            description="Checks that the normalized_state tables were successfully updated",
+            dataset=NORMALIZED_STATE_DATASET,
             table="state_supervision_contact",
             date_column_clause="contact_date",
             allowed_days_stale=MAX_DAYS_STALE,
