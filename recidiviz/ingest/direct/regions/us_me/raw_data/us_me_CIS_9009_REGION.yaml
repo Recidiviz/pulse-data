@@ -6,15 +6,19 @@ primary_key_cols:
   - Region_Cd
 columns:
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : E_Region_Desc
     description: The name of the region.
   - name : Logical_Delete_Ind
   - name : Medicaid_Provider_Num
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Region_Cd
     description: The primary key for this table and the region code referenced in other raw tables.
     known_values:

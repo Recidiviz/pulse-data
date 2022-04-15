@@ -15,6 +15,7 @@ columns:
       is located at an entirely different address. This is because of how the location was originally registered in the CORIS
       system.
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Desc_Tx
     description: |-
@@ -23,6 +24,7 @@ columns:
       name, for example the `Name_Tx` field will have "SMWRC" and the `Desc_Tx` might have "Southern Maine Women's ReEntry Center".
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Name_Tx
     description : |-

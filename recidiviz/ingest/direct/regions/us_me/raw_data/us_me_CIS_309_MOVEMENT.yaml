@@ -80,12 +80,16 @@ columns:
   - name : Cis_Client_Id
     description: |-
       The unique identifier for all clients in the offender management system.
+    is_pii: True
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Estimated_Time
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Movement_Date
     description : The date the movement occurred.
+    is_datetime: True
   - name : Movement_Id
     description : Primary key field

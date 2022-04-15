@@ -12,6 +12,7 @@ columns:
     is_datetime: True
   - name : Cis_100_Client_Id
     description: The client that is associated with this violation entry.
+    is_pii: True
   - name : Cis_1016_Extradition_Cd
   - name : Cis_4009_Client_Loc_Cd
     description: |-
@@ -108,16 +109,20 @@ columns:
       - value: 11
         description: Absconded - Facility Notified
   - name : Cis_900_Employee_Id
+    is_pii: True
     description: |-
       The agent who initiated the violation proceedings.
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Extradition_Other_Tx
+    is_pii: True
   - name : Finding_Date
     description: The date the violation outcome decision was completed.
     is_datetime: True
   - name : Finding_Notes_Tx
     description: Notes recorded about the finding results.
+    is_pii: True
   - name : Fta_Date
     description: When the "Failure to Appear" occurred, if applicable.
     is_datetime: True
@@ -125,6 +130,7 @@ columns:
     description: Indicates whether or not there is a "Failure to Appear" related to the violation outcome proceedings.
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Start_Date
     description: The date the violation was entered.
@@ -138,6 +144,7 @@ columns:
     is_datetime: True
   - name : Violation_Descr_Tx
     description: A note describing the violation entered by the supervising officer.
+    is_pii: True
   - name : Violation_Id
     description: The primary key for this table.
   - name : Warning_Issued_Ind

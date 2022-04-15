@@ -9,6 +9,7 @@ columns:
     description: |-
       Indicates that this violation was attributed to an adult, not a juvenile.
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Finding_Type_Cd
     description: The type of location where the violation apparently took place.
@@ -22,11 +23,15 @@ columns:
       Indicates that this violation was attributed to a juvenile, not an adult.
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Violation_Finding_Descr_Tx
     description: The description that maps to the code.
+    is_pii: True
   - name : Violation_Finding_Cd
     description: The violation finding code that is used in other raw tables.
     known_values:

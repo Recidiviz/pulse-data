@@ -7,6 +7,7 @@ primary_key_cols:
 columns:
   - name : Adult_Ind
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : E_Plea_Type_Desc
     description: |-
@@ -14,6 +15,7 @@ columns:
   - name : Juvenile_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Plea_Type_Cd
     description: |-
@@ -40,4 +42,6 @@ columns:
       - value: "?"
         description: DC CONV (Exact meaning unclear, usage is rare)
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True

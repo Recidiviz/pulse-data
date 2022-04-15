@@ -25,12 +25,16 @@ columns:
         description: 'No'
   - name : SERVICE_PROV_IND
   - name : SYSTEM_REF_TX
+    is_pii: True
   - name : SYSTEM_REF_COMMENTS_TX
+    is_pii: True
   - name : LOGICAL_DELETE_IND
   - name : CIS_1015_CLIENT_SUB_TYPE_CD
     description: The sub-type of the code, can be used to figure out which table this code is used for.
   - name : CIS_1221_SP_TYPE_CD
   - name : CREATED_BY_TX
+    is_pii: True
   - name : CREATED_ON_DATE
   - name : MODIFIED_BY_TX
+    is_pii: True
   - name : MODIFIED_ON_DATE

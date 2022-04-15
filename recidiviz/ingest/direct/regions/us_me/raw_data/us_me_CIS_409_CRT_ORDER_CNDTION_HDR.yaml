@@ -12,7 +12,9 @@ columns:
   - name : Cis_408_Condition_Hdr_Id
     description: The foreign key for the CIS_403_CONDITION table.
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Original_Ind

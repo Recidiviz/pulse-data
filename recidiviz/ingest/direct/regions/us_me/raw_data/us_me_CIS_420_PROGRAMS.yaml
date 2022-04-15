@@ -25,8 +25,12 @@ columns:
   - name : CIS_450_AGENCY_ID
     description: An ID of the agency providing the program.
   - name : CIS_451_CONTACT_ID
+    is_pii: True
   - name : CIS_451_FACILITATOR_ID
+    is_pii: True
   - name : CREATED_BY_TX
+    is_pii: True
   - name : CREATED_ON_DATE
   - name : MODIFIED_BY_TX
+    is_pii: True
   - name : MODIFIED_ON_DATE

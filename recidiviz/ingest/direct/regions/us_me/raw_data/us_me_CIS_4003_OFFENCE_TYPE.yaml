@@ -13,6 +13,7 @@ columns:
   - name : Cis_4009_40028_Severity_Cd
   - name : Cis_4020_Class_Cd
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Dna_Ind
   - name : Domestic_Violence_Ind
@@ -37,12 +38,15 @@ columns:
     description: |-
       Maine Judicial Information System (MEJIS) coding system offense title.
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Sexreg_Ind
   - name : Statute_2004_Xmt_Ind
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Offence_Type_Cd
     description: |-
       The primary key for this table. A unique ID assigned to each distinct offense type.

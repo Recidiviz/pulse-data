@@ -6,9 +6,11 @@ primary_key_cols:
   - Override_Type_Cd
 columns:
   - name: Created_By_Tx
+    is_pii: True
   - name: Created_On_Date
   - name: Logical_Delete_Ind
   - name: Modified_By_Tx
+    is_pii: True
   - name: Modified_On_Date
   - name: Override_Type_Desc
     description: The description of the override type.
@@ -18,6 +20,8 @@ columns:
       - value: 2
         description: Discretionary - A client's supervision level can be overridden based on the supervising officer's discretion.
   - name: System_Ref_Comments_Tx
+    is_pii: True
   - name: System_Ref_Tx
+    is_pii: True
   - name: Override_Type_Cd
     description: The primary key for the table and the override type code referenced in other raw tables.

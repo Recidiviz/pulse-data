@@ -9,6 +9,8 @@ columns:
   - name : Birth_Date
     description : |-
       The date on which this person was born.
+    is_pii: True
+    is_datetime: True
   - name : Cis_1002_Citizenship_Cd
   - name : Cis_1004_Eye_Colour_Cd
   - name : Cis_1005_Hair_Colour_Cd
@@ -56,6 +58,7 @@ columns:
   - name : Cis_900_Employee_Id
     description : |-
       The MDOC Employee ID associated with the person who updated whether the client is deceased.
+    is_pii: True
   - name : Cis_9012_Gender_Cd
     description : |-
       The code that maps to the person's gender.
@@ -71,28 +74,43 @@ columns:
   - name : Client_Id
     description : |-
       The unique identifier for all clients in the offender management system.
+    is_pii: True
   - name : Clothing_Description_Tx
+    is_pii: True
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Dangerous_Not_Dangerous_Tx
+    is_pii: True
   - name : Date_Of_Emancipation_Tx
+    is_pii: True
   - name : Death_Certificate_Tx
+    is_pii: True
   - name : Death_Date
+    is_pii: True
   - name : Death_Description_Tx
+    is_pii: True
   - name : Death_Ind
   - name : Delete_Comment_Tx
+    is_pii: True
   - name : Dna_Required_Ind
   - name : Dna_Sample_Date
   - name : Email_Tx
+    is_pii: True
   - name : Fbi_Number_Tx
+    is_pii: True
   - name : Fingerprint_Classification_Tx
+    is_pii: True
   - name : First_Name
     description : |-
       This is the first name of a person.
+    is_pii: True
   - name : Furlough_Date
   - name : Glasses_Ind
+    is_pii: True
   - name : Grievance_Policy_Notification_Date
   - name : Height_Num
+    is_pii: True
   - name : Hispanic_Ind
     description : |-
       Whether the person has Hispanic ethnicity. This field is no longer used and is kept for historical reasons.
@@ -103,11 +121,15 @@ columns:
         description: "No"
   - name : Home_Visit_Ind
   - name : Juv_Id
+    is_pii: True
   - name : Juvenile_Ind
+    is_pii: True
   - name : Last_Name
     description : |-
       This is the last name of a person.
+    is_pii: True
   - name : Laundry_Num
+    is_pii: True
   - name : Literacy_Read_Ind
   - name : Literacy_Write_Ind
   - name : Lmtd_Engl_Spk_Ablty_Ind
@@ -115,34 +137,56 @@ columns:
   - name : Med_Marijuana_Program_Physician_Certificate_Ind
   - name : Medicaid_Elig_Ind
   - name : Medicare_Number_Tx
+    is_pii: True
   - name : Middle_Name
     description : |-
       This is the middle name of a person.
+    is_pii: True
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Mothers_Maiden_Name
+    is_pii: True
   - name : Name_Suffix_Tx
+    is_pii: True
   - name : Next_Reporting_Date
   - name : Note_Place_Tx
+    is_pii: True
   - name : Phone_Pin_Num
+    is_pii: True
   - name : Physical_App_Notes_Tx
+    is_pii: True
   - name : Place_Of_Birth_Tx
+    is_pii: True
   - name : Sex_Off_Not_Ind
   - name : Sex_Off_Reg_Ind
   - name : Sid_Number_Tx
+    is_pii: True
   - name : Sin_Number_Tx
+    is_pii: True
   - name : Single_Room_Ind
   - name : Soundex_First_Name
+    is_pii: True
   - name : Soundex_Last_Name
+    is_pii: True
   - name : Soundex_Middle_Name
+    is_pii: True
   - name : Ssn_Number_Tx
+    is_pii: True
   - name : Upper_First_Name
+    is_pii: True
   - name : Upper_Last_Name
+    is_pii: True
   - name : Upper_Middle_Name
+    is_pii: True
   - name : Wabanaki_Descendent_Ind
+    is_pii: True
   - name : Wabanaki_Ind
+    is_pii: True
   - name : Wabanaki_Member_Ind
+    is_pii: True
   - name : Weight_Num
+    is_pii: True
   - name : Cis_1016_Insurance_Type_Cd
   - name : Current_Free_Phone_Minutes_Limit
   - name : Current_Kiosk_Property_Limit

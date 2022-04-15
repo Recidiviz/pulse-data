@@ -7,18 +7,27 @@ primary_key_cols:
 columns:
   - name : ATTORNEY_ID
     description: The primary key of the table.
+    is_pii: True
   - name : MEJIS_ORGN_SEQ
+    is_pii: True
   - name : ATT_LAST_NAME
     description: The attorney's last name
+    is_pii: True
   - name : ATT_FIRST_NAME
     description: The attorney's first name
+    is_pii: True
   - name : MIDDLE_NAME
     description: The attorney's middle name
+    is_pii: True
   - name : SYS_ROW_IND
   - name : SYSTEM_REF_TX
+    is_pii: True
   - name : SYSTEM_REF_COMMENTS_TX
+    is_pii: True
   - name : LOGICAL_DELETE_IND
   - name : CREATED_ON_DATE
   - name : CREATED_BY_TX
+    is_pii: True
   - name : MODIFIED_ON_DATE
   - name : MODIFIED_BY_TX
+    is_pii: True

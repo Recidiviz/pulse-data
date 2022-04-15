@@ -10,6 +10,7 @@ columns:
   - name: Cis_100_Client_Id
     description: |-
       The unique identifier for the client that took the assessment.
+    is_pii: True
   - name: Cis_1009_Lsi_Type_Cd
     description: |-
       The type of LSI questionnaire that was completed, see CIS_1009_LSI_TYPE for all possible values and descriptions.
@@ -49,22 +50,29 @@ columns:
   - name: Cis_900_Approver_Id
     description: |-
       The employee who approved the planned override of the LSI rating of this assessment.
+    is_pii: True
   - name: Cis_900_Employee_Id
     description: |-
       The employee who conducted the assessment. This value does not change when an override is applied or approved.
+    is_pii: True
   - name: Citrix_Lsi_Id
   - name: Comm_Apprv_Notes_Tx
     description: Note entered when the LSI rating was approved.
+    is_pii: True
   - name: Comm_Override_Notes_Tx
     description: Note entered when the LSI rating was overridden.
+    is_pii: True
   - name: Competency_Tx
     description: Notes about the client and assessment results.
+    is_pii: True
   - name: Created_By_Tx
     description: |-
       Notes about the creation of this assessment record.
+    is_pii: True
   - name: Created_On_Date
     description: |-
       The date that this assessment record was created.
+    is_datetime: True
   - name: Home_Visit_Ind
   - name: Lsi_Date
     description: |-
@@ -77,10 +85,12 @@ columns:
     description: |-
       The LSI raw score number from the questionnaire from 0-49.
   - name: Lsi_Xml_Tx
+    is_pii: True
   - name: Manual_Score_Ind
   - name: Modified_By_Tx
     description: |-
       Notes about the modification of this assessment record.
+    is_pii: True
   - name: Modified_On_Date
     description: |-
       The date that this assessment record was last modified.

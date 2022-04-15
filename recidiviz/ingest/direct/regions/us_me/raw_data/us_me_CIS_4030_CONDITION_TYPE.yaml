@@ -8,6 +8,7 @@ columns:
   - name : Adult_Ind
   - name : Cis_4009_Sent_Calc_Sys_Cd
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : E_Condition_Type_Desc
     description: The description of the condition imposed.
@@ -351,11 +352,14 @@ columns:
   - name : Juvenile_Ind
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
   - name : Standard_Ind
   - name : Sys_Row_Ind
   - name : System_Ref_Comments_Tx
+    is_pii: True
   - name : System_Ref_Tx
+    is_pii: True
   - name : Web_Include_Ind
   - name : Condition_Type_Cd
     description: The primary key for this table.

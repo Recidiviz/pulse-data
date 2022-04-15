@@ -15,12 +15,15 @@ columns:
   - name : Condition_Id
     description: The primary key for this table.
   - name : Created_By_Tx
+    is_pii: True
   - name : Created_On_Date
   - name : Due_Date
     description: The date the condition must be met by.
     is_datetime: True
   - name : Fulfilled_Inactive_Comment_Tx
   - name : General_Comments_Tx
+    is_pii: True
   - name : Logical_Delete_Ind
   - name : Modified_By_Tx
+    is_pii: True
   - name : Modified_On_Date
