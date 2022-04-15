@@ -17,7 +17,10 @@
 """Admissions from supervision to prison aggregated over different time periods and grouped by supervising officer."""
 
 from recidiviz.calculator.query.bq_utils import get_binned_time_period_months
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_supervision_last_updated_date,
 )
@@ -38,32 +41,52 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
     /* {description} */
     WITH
     data_freshness AS ({get_pathways_supervision_last_updated_date})
-    , event_counts AS (
+    ,
+    transitions AS (
         SELECT
             transitions.state_code,
             {transition_time_period} AS time_period,
             gender,
             supervision_type,
             age_group,
+            prioritized_race_or_ethnicity AS race,
+            IFNULL(location_name, level_1_location_external_id) AS district,
+            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
+            INITCAP(given_names || ' ' || surname) AS officer_name,
+        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
+            ON transitions.state_code = location.state_code 
+            AND transitions.level_1_location_external_id = location.location_id
+        LEFT JOIN `{project_id}.{reference_dataset}.agent_external_id_to_full_name` agent ON
+            transitions.state_code = agent.state_code
+            AND transitions.supervising_officer = agent.external_id
+    )
+    ,
+    filtered_rows AS (
+        SELECT * FROM transitions
+        WHERE {state_specific_district_filter}
+    )
+    ,
+    event_counts AS (
+        SELECT
+            state_code,
+            time_period,
+            gender,
+            supervision_type,
+            age_group,
             race,
             district,
-            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
+            supervision_level,
             officer_name,
             COUNT(1) as event_count,
-        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions,
+        FROM filtered_rows,
             UNNEST ([gender, 'ALL']) AS gender,
             UNNEST ([supervision_type, 'ALL']) AS supervision_type,
             UNNEST ([supervision_level, 'ALL']) AS supervision_level,
             UNNEST ([age_group, 'ALL']) AS age_group,
-            UNNEST ([prioritized_race_or_ethnicity, "ALL"]) AS race
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
-            ON transitions.state_code = location.state_code 
-            AND transitions.level_1_location_external_id = location.location_id,
-            UNNEST ([IFNULL(location_name, level_1_location_external_id), "ALL"]) AS district
-        LEFT JOIN `{project_id}.{reference_dataset}.agent_external_id_to_full_name` agent ON
-            transitions.state_code = agent.state_code
-            AND transitions.supervising_officer = agent.external_id,
-            UNNEST([INITCAP(given_names || ' ' || surname), "ALL"]) AS officer_name
+            UNNEST ([race, "ALL"]) AS race,
+            UNNEST ([district, "ALL"]) AS district,
+            UNNEST([officer_name, "ALL"]) AS officer_name 
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     )
 
@@ -95,6 +118,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetr
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     transition_time_period=get_binned_time_period_months("transition_date"),
+    state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 
 if __name__ == "__main__":

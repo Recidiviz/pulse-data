@@ -23,7 +23,10 @@ from recidiviz.calculator.query.bq_utils import (
     deduped_supervision_sessions,
     filter_to_enabled_states,
 )
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DASHBOARD_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -64,7 +67,12 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = f"""
             s.person_id,
             IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
             {{state_specific_supervision_level}} AS supervision_level,
-            FROM {deduped_supervision_sessions('AND end_date IS NULL')}
+        FROM {deduped_supervision_sessions('AND end_date IS NULL')}
+    ),
+    filtered_rows AS (
+        SELECT *
+        FROM cte
+        WHERE {{state_specific_district_filter}}
     )
     , all_dimensions AS (
         SELECT 
@@ -73,7 +81,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = f"""
             district,
             supervision_level,
             COUNT(DISTINCT person_id) as person_count,
-        FROM cte,
+        FROM filtered_rows,
         UNNEST([district, 'ALL']) AS district,
         UNNEST([supervision_level, 'ALL']) AS supervision_level
         LEFT JOIN get_last_updated  USING (state_code)
@@ -115,6 +123,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
         "session_attributes.correctional_level",
         "metrics.supervision_level_raw_text",
     ),
+    state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 
 if __name__ == "__main__":

@@ -45,6 +45,8 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 WHEN Cis_9009_Region_Cd = '5' THEN 'Central Office'
             ELSE NULL
             END AS level_2_incarceration_location_name,
+            -- TODO(#11167): Update this to use the external ID instead of location name once it is hydrated in the
+            -- entities.
             CASE 
                 WHEN Location_Name IN ('Mountain View Adult Center', 'Charleston Correctional Facility')
                     THEN 'MOUNTAIN VIEW CORRECTIONAL FACILITY' 
