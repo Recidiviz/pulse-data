@@ -14,9 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View tracking characteristics/composition of the supervision population in each district by month"""
+"""View tracking characteristics/composition of the supervision population in each
+district by month"""
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_template import (
     supervision_population_attributes_template,
 )
@@ -27,7 +32,10 @@ SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_NAME = (
     "supervision_population_attributes_by_supervision_office_by_month"
 )
 
-SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_DESCRIPTION = "Captures demographic composition of supervision population for a given month by supervision office"
+SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_DESCRIPTION = (
+    "Captures demographic composition of supervision population for a given month by "
+    "supervision office"
+)
 
 SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_QUERY_TEMPLATE = (
     f"""
@@ -43,17 +51,17 @@ SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_QUERY_TEMPLATE 
     LEFT JOIN
         `{project_id}.{analyst_dataset}.population_density_by_supervision_office` p
     USING
-        (supervision_office)
+        (state_code, supervision_office)
     """
 )
 
 SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_DESCRIPTION,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
-    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 
