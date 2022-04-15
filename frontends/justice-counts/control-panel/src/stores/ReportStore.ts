@@ -47,15 +47,22 @@ class ReportStore {
 
   async getReports(): Promise<void | Error> {
     try {
-      const response = (await this.api.request({
-        path: "./mocks/reports.json",
-        method: "GET",
-      })) as Response;
-      const allReports = await response.json();
+      const { userID, userAgencies } = this.userStore;
 
-      runInAction(() => {
-        this.reports = allReports.reports;
-      });
+      if (userID && userAgencies && userAgencies.length > 0) {
+        const response = (await this.api.request({
+          // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
+          path: `/api/reports?user_id=${userID}&agency_id=${userAgencies[0].id}`,
+          method: "GET",
+        })) as Response;
+        const allReports = await response.json();
+
+        runInAction(() => {
+          this.reports = allReports;
+        });
+      } else {
+        Promise.reject(new Error("No user or agency information initialized."));
+      }
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }

@@ -15,16 +15,35 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
+import { when } from "mobx";
+import React, { useEffect, useState } from "react";
 
+import { useStore } from "../../stores";
 import Menu from "../Menu";
 import { HeaderCell, HeaderRow } from ".";
 
 const Header = () => {
+  const [agencyName, setAgencyName] = useState<string>("");
+  const { userStore } = useStore();
+
+  useEffect(
+    () =>
+      // return when's disposer so it is cleaned up if it never runs
+      when(
+        () => userStore.userInfoLoaded,
+        () => {
+          if (userStore.userAgencies && userStore.userAgencies.length > 0) {
+            setAgencyName(userStore.userAgencies[0].name);
+          }
+        }
+      ),
+    [userStore]
+  );
+
   return (
     <HeaderRow>
       <HeaderCell>Justice Counts Data Publisher</HeaderCell>
-      <HeaderCell>State Department of Corrections</HeaderCell>
+      <HeaderCell>{agencyName}</HeaderCell>
       <HeaderCell />
       <HeaderCell textAlign="right">
         <Menu />
