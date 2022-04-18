@@ -223,3 +223,53 @@ class DirectIngestViewMaterializationMetadataManager:
                 .values(is_invalidated=True)
             )
             session.execute(update_query)
+
+    def transfer_metadata_to_new_instance(
+        self,
+        new_instance_manager: "DirectIngestViewMaterializationMetadataManager",
+    ) -> None:
+        """Take all rows where `is_invalidated=False` and transfer to the instance assocaited with
+        the new_instance_manager
+        """
+        if (
+            new_instance_manager.ingest_instance == self.ingest_instance
+            or new_instance_manager.region_code != self.region_code
+        ):
+            raise ValueError(
+                "Either state codes are not the same or new instance is same as origin."
+            )
+
+        with SessionFactory.using_database(
+            self.database_key,
+        ) as session:
+            table_cls = schema.DirectIngestViewMaterializationMetadata
+            # check destination instance does not have any valid metadata rows
+            check_query = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.region_code.upper(),
+                    instance=new_instance_manager.ingest_instance.value,
+                    is_invalidated=False,
+                )
+                .all()
+            )
+            if check_query:
+                raise ValueError(
+                    "Destination instance should not have any valid metadata rows."
+                )
+
+            update_query = (
+                table_cls.__table__.update()
+                .where(
+                    and_(
+                        table_cls.region_code == self.region_code.upper(),
+                        table_cls.instance == self.ingest_instance.value,
+                        # pylint: disable=singleton-comparison
+                        table_cls.is_invalidated == False,
+                    )
+                )
+                .values(
+                    instance=new_instance_manager.ingest_instance.value,
+                )
+            )
+            session.execute(update_query)

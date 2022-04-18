@@ -529,3 +529,44 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError as error:
             logging.exception(error)
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/transfer_ingest_view_metadata_to_new_instance",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _transfer_ingest_view_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            src_ingest_instance = DirectIngestInstance(
+                request_json["srcIngestInstance"].upper()
+            )
+            dest_ingest_instance = DirectIngestInstance(
+                request_json["destIngestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            ingest_view_metadata_manager = (
+                DirectIngestViewMaterializationMetadataManager(
+                    region_code=state_code.value, ingest_instance=src_ingest_instance
+                )
+            )
+
+            new_instance_manager = DirectIngestViewMaterializationMetadataManager(
+                region_code=state_code.value,
+                ingest_instance=dest_ingest_instance,
+            )
+            ingest_view_metadata_manager.transfer_metadata_to_new_instance(
+                new_instance_manager=new_instance_manager
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR

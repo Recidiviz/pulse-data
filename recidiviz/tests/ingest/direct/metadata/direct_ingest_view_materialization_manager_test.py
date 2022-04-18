@@ -760,3 +760,471 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
                 expected_secondary_metadata,
                 convert_schema_object_to_entity(secondary_metadata),
             )
+
+    def test_transfer_metadata_to_new_instance_secondary_to_primary(self) -> None:
+        # Arrange
+        job_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager_secondary.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager_secondary.region_code,
+            instance=job_args.ingest_instance,
+            ingest_view_name=job_args.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager_secondary.register_ingest_materialization_job(
+                job_args
+            )
+
+        # Assert
+        metadata = self.metadata_manager_secondary.get_metadata_for_job_args(job_args)
+        self.assertEqual(expected_metadata, metadata)
+        self.assertIsNone(
+            self.metadata_manager_secondary.get_job_completion_time_for_args(job_args)
+        )
+
+        # Arrange
+        expected_metadata = attr.evolve(
+            expected_metadata,
+            instance=self.metadata_manager.ingest_instance,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:06:06"):
+            self.metadata_manager_secondary.transfer_metadata_to_new_instance(
+                self.metadata_manager
+            )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager.region_code.upper(),
+                    instance=self.metadata_manager.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that found_metadata has expected items and all instances are marked primary
+            self.assertEqual(
+                expected_metadata, convert_schema_object_to_entity(metadata)
+            )
+
+            # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
+            no_row_found_regex = r"No row was found when one was required"
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.NoResultFound, no_row_found_regex
+            ):
+                metadata = (
+                    session.query(schema.DirectIngestViewMaterializationMetadata)
+                    .filter_by(
+                        region_code=self.metadata_manager_secondary.region_code.upper(),
+                        instance=self.metadata_manager_secondary.ingest_instance.value,
+                    )
+                    .one()
+                )
+
+    def test_transfer_metadata_to_new_instance_primary_to_secondary(self) -> None:
+        # Arrange
+        job_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager.region_code,
+            instance=job_args.ingest_instance,
+            ingest_view_name=job_args.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager.register_ingest_materialization_job(job_args)
+
+        # Assert
+        metadata = self.metadata_manager.get_metadata_for_job_args(job_args)
+        self.assertEqual(expected_metadata, metadata)
+        self.assertIsNone(
+            self.metadata_manager.get_job_completion_time_for_args(job_args)
+        )
+
+        # Arrange
+        expected_metadata = attr.evolve(
+            expected_metadata,
+            instance=self.metadata_manager_secondary.ingest_instance,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:06:06"):
+            self.metadata_manager.transfer_metadata_to_new_instance(
+                self.metadata_manager_secondary
+            )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager_secondary.region_code.upper(),
+                    instance=self.metadata_manager_secondary.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that found_metadata has expected items and all instances are marked primary
+            self.assertEqual(
+                expected_metadata, convert_schema_object_to_entity(metadata)
+            )
+
+            # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
+            no_row_found_regex = r"No row was found when one was required"
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.NoResultFound, no_row_found_regex
+            ):
+                metadata = (
+                    session.query(schema.DirectIngestViewMaterializationMetadata)
+                    .filter_by(
+                        region_code=self.metadata_manager.region_code.upper(),
+                        instance=self.metadata_manager.ingest_instance.value,
+                    )
+                    .one()
+                )
+
+    def test_transfer_data_to_new_instance_multiple(self) -> None:
+        # Arrange
+        job_args_primary = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        job_args_secondary = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager_secondary.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_primary_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager.region_code,
+            instance=job_args_primary.ingest_instance,
+            ingest_view_name=job_args_primary.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args_primary.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args_primary.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        expected_secondary_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager_secondary.region_code,
+            instance=job_args_secondary.ingest_instance,
+            ingest_view_name=job_args_secondary.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args_secondary.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args_secondary.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager.register_ingest_materialization_job(job_args_primary)
+            self.metadata_manager_secondary.register_ingest_materialization_job(
+                job_args_secondary
+            )
+
+        # Assert Primary
+        metadata_primary = self.metadata_manager.get_metadata_for_job_args(
+            job_args_primary
+        )
+        self.assertEqual(expected_primary_metadata, metadata_primary)
+        self.assertIsNone(
+            self.metadata_manager.get_job_completion_time_for_args(job_args_primary)
+        )
+
+        # Assert Secondary
+        metadata_secondary = self.metadata_manager_secondary.get_metadata_for_job_args(
+            job_args_secondary
+        )
+        self.assertEqual(expected_secondary_metadata, metadata_secondary)
+        self.assertIsNone(
+            self.metadata_manager_secondary.get_job_completion_time_for_args(
+                job_args_secondary
+            )
+        )
+
+        # Arrange
+        expected_metadata = attr.evolve(
+            expected_secondary_metadata,
+            instance=self.metadata_manager.ingest_instance,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:06:06"):
+            self.metadata_manager.mark_instance_data_invalidated()
+            self.metadata_manager_secondary.transfer_metadata_to_new_instance(
+                self.metadata_manager
+            )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            all_metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager.region_code.upper(),
+                    instance=self.metadata_manager.ingest_instance.value,
+                    is_invalidated=False,
+                )
+                .all()
+            )
+            # Check here that found_metadata has expected items and all instances are marked primary
+            for metadata in all_metadata:
+                self.assertEqual(
+                    expected_metadata, convert_schema_object_to_entity(metadata)
+                )
+
+            # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
+            no_row_found_regex = r"No row was found when one was required"
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.NoResultFound, no_row_found_regex
+            ):
+                metadata = (
+                    session.query(schema.DirectIngestViewMaterializationMetadata)
+                    .filter_by(
+                        region_code=self.metadata_manager_secondary.region_code.upper(),
+                        instance=self.metadata_manager_secondary.ingest_instance.value,
+                    )
+                    .one()
+                )
+
+    def test_transfer_metadata_to_new_instance_primary_to_primary(self) -> None:
+        # Arrange
+        job_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager.region_code,
+            instance=job_args.ingest_instance,
+            ingest_view_name=job_args.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager.register_ingest_materialization_job(job_args)
+
+        # Assert
+        metadata = self.metadata_manager.get_metadata_for_job_args(job_args)
+        self.assertEqual(expected_metadata, metadata)
+        self.assertIsNone(
+            self.metadata_manager.get_job_completion_time_for_args(job_args)
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:06:06"):
+            # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
+            same_instance = r"Either state codes are not the same or new instance is same as origin."
+            with self.assertRaisesRegex(ValueError, same_instance):
+                self.metadata_manager.transfer_metadata_to_new_instance(
+                    self.metadata_manager
+                )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager.region_code.upper(),
+                    instance=self.metadata_manager.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that origin database is same
+            self.assertEqual(
+                expected_metadata, convert_schema_object_to_entity(metadata)
+            )
+
+    def test_transfer_metadata_to_new_instance_different_states(self) -> None:
+        # Arrange
+        job_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager_secondary.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager_secondary.region_code,
+            instance=job_args.ingest_instance,
+            ingest_view_name=job_args.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager_secondary.register_ingest_materialization_job(
+                job_args
+            )
+
+        # Assert
+        metadata = self.metadata_manager_secondary.get_metadata_for_job_args(job_args)
+        self.assertEqual(expected_metadata, metadata)
+        self.assertIsNone(
+            self.metadata_manager_secondary.get_job_completion_time_for_args(job_args)
+        )
+
+        # Assert
+        with freeze_time("2015-01-02T03:06:06"):
+            same_instance = r"Either state codes are not the same or new instance is same as origin."
+            with self.assertRaisesRegex(ValueError, same_instance):
+                self.metadata_manager_secondary.transfer_metadata_to_new_instance(
+                    self.metadata_manager_other_region
+                )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager_secondary.region_code.upper(),
+                    instance=self.metadata_manager_secondary.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that origin database is same
+            self.assertEqual(
+                expected_metadata, convert_schema_object_to_entity(metadata)
+            )
+
+    def test_transfer_data_to_new_instance_multiple_raise_exception(self) -> None:
+        # Arrange
+        job_args_primary = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        job_args_secondary = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager_secondary.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+
+        expected_primary_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager.region_code,
+            instance=job_args_primary.ingest_instance,
+            ingest_view_name=job_args_primary.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args_primary.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args_primary.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        expected_secondary_metadata = DirectIngestViewMaterializationMetadata(
+            region_code=self.metadata_manager_secondary.region_code,
+            instance=job_args_secondary.ingest_instance,
+            ingest_view_name=job_args_secondary.ingest_view_name,
+            is_invalidated=False,
+            job_creation_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+            lower_bound_datetime_exclusive=job_args_secondary.lower_bound_datetime_exclusive,
+            upper_bound_datetime_inclusive=job_args_secondary.upper_bound_datetime_inclusive,
+            materialization_time=None,
+        )
+
+        # Act
+        with freeze_time("2015-01-02T03:05:05"):
+            self.metadata_manager.register_ingest_materialization_job(job_args_primary)
+            self.metadata_manager_secondary.register_ingest_materialization_job(
+                job_args_secondary
+            )
+
+        # Assert Primary
+        metadata_primary = self.metadata_manager.get_metadata_for_job_args(
+            job_args_primary
+        )
+        self.assertEqual(expected_primary_metadata, metadata_primary)
+        self.assertIsNone(
+            self.metadata_manager.get_job_completion_time_for_args(job_args_primary)
+        )
+
+        # Assert Secondary
+        metadata_secondary = self.metadata_manager_secondary.get_metadata_for_job_args(
+            job_args_secondary
+        )
+        self.assertEqual(expected_secondary_metadata, metadata_secondary)
+        self.assertIsNone(
+            self.metadata_manager_secondary.get_job_completion_time_for_args(
+                job_args_secondary
+            )
+        )
+
+        # Assert
+        with freeze_time("2015-01-02T03:06:06"):
+            same_instance = (
+                r"Destination instance should not have any valid metadata rows."
+            )
+            with self.assertRaisesRegex(ValueError, same_instance):
+                self.metadata_manager_secondary.transfer_metadata_to_new_instance(
+                    self.metadata_manager
+                )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestViewMaterializationMetadata)
+                .filter_by(
+                    region_code=self.metadata_manager_secondary.region_code.upper(),
+                    instance=self.metadata_manager_secondary.ingest_instance.value,
+                )
+                .one()
+            )
+            # Check here that origin database is same
+            self.assertEqual(
+                expected_secondary_metadata, convert_schema_object_to_entity(metadata)
+            )
