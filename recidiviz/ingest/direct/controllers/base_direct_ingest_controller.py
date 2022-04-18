@@ -137,6 +137,7 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     GcsfsRawDataBQImportArgs,
     IngestViewMaterializationArgs,
     LegacyExtractAndMergeArgs,
+    NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -267,6 +268,11 @@ class BaseDirectIngestController:
         self.view_materialization_metadata_manager: Optional[
             DirectIngestViewMaterializationMetadataManager
         ] = None
+        # TODO(#11424): Update the type of this variable to non-optional once BQ ingest
+        #  view materialization is enabled for all states and remove all checks in this
+        #  file for optional view_materialization_metadata_manager.
+        self.ingest_view_contents: Optional[InstanceIngestViewContents] = None
+
         if not self.is_bq_materialization_enabled:
             # TODO(#11424): Delete this branch once BQ ingest view materialization is
             #  enabled for all states.
@@ -304,14 +310,15 @@ class BaseDirectIngestController:
                 bq_client=big_query_client,
                 ingest_view_rank_list=self.get_ingest_view_rank_list(),
             )
+            self.ingest_view_contents = InstanceIngestViewContents(
+                big_query_client=big_query_client,
+                region_code=self.region_code(),
+                ingest_instance=self.ingest_instance,
+                dataset_prefix=None,
+            )
             materializer_delegate = BQBasedMaterializerDelegate(
                 metadata_manager=self.view_materialization_metadata_manager,
-                ingest_view_contents=InstanceIngestViewContents(
-                    big_query_client=big_query_client,
-                    region_code=self.region_code(),
-                    ingest_instance=self.ingest_instance,
-                    dataset_prefix=None,
-                ),
+                ingest_view_contents=self.ingest_view_contents,
             )
             materialization_args_generator_delegate = (
                 BQBasedMaterializationArgsGeneratorDelegate(
@@ -712,18 +719,22 @@ class BaseDirectIngestController:
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", args.job_tag())
 
-        if not self._contents_exist_for_args(args):
-            logging.warning(
-                "Contents does not exist for ingest run [%s] - returning.",
-                args.job_tag(),
-            )
-            return False
-
         if not self.is_bq_materialization_enabled:
             # TODO(#11424): We should be able to delete this check once we're reading
             #   chunks of data directly from BigQuery.
             if not isinstance(args, LegacyExtractAndMergeArgs):
                 raise ValueError(f"Unexpected args type: [{args}]")
+
+            # Checking if contents "exist" is the same as checking if they are empty in
+            # the BQ-materialization world. Do this check (checks if the file exists)
+            # only for file-based materialization states
+            if not self._contents_file_exists(args):
+                logging.warning(
+                    "Contents does not exist for ingest run [%s] - returning.",
+                    args.job_tag(),
+                )
+                return False
+
             if not self._ingest_view_file_contents_meet_scale_requirements(args):
                 logging.warning(
                     "Cannot proceed with contents for ingest run [%s] - returning.",
@@ -755,14 +766,9 @@ class BaseDirectIngestController:
             #  enabled for all states.
             if not isinstance(args, LegacyExtractAndMergeArgs):
                 raise ValueError(f"Unexpected args type: [{args}]")
-            contents_are_empty = self._are_contents_empty(args)
+            contents_are_empty = self._are_contents_empty_legacy(args)
         else:
-            # TODO(#9717): Implement ability to check for empty BQ-based ingest view
-            #  results.
-            raise NotImplementedError(
-                f"Functionality not yet supported for BQ-materialization enabled states: "
-                f"[{type(args)}]."
-            )
+            contents_are_empty = self._are_contents_empty(contents_handle)
 
         if not contents_are_empty:
             self._parse_and_persist_contents(args, contents_handle)
@@ -891,15 +897,21 @@ class BaseDirectIngestController:
                 raise ValueError(f"Unexpected args type: [{type(args)}]")
             return self.fs.download_to_temp_file(args.file_path)
 
-        # TODO(#9717): Implement get contents handle for BQ-based ingest view results.
-        raise NotImplementedError(
-            f"Functionality not yet supported for BQ-materialization enabled states: "
-            f"[{type(args)}]."
+        if not isinstance(args, NewExtractAndMergeArgs):
+            raise ValueError(f"Unexpected args type: [{type(args)}]")
+
+        # TODO(#11424): Remove this check once the ingest_view_contents is non-optional.
+        if not self.ingest_view_contents:
+            raise ValueError("Found null ingest_view_contents_provider")
+        return self.ingest_view_contents.get_unprocessed_rows_for_batch(
+            ingest_view_name=args.ingest_view_name,
+            upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
+            batch_number=args.batch_number,
         )
 
     # TODO(#11424): We should be able to delete this function once we're reading
     #   chunks of data directly from BigQuery.
-    def _are_contents_empty(
+    def _are_contents_empty_legacy(
         self,
         args: LegacyExtractAndMergeArgs,
     ) -> bool:
@@ -911,6 +923,14 @@ class BaseDirectIngestController:
             args.file_path, delegate=delegate, chunk_size=1, skiprows=1
         )
         return delegate.df is None
+
+    def _are_contents_empty(self, contents_handle: ContentsHandle) -> bool:
+        """Returns True if there any materialized ingest view results in the contents
+        handle.
+        """
+        for _ in contents_handle.get_contents_iterator():
+            return True
+        return False
 
     def _do_cleanup(self, args: ExtractAndMergeArgs) -> None:
         """Does necessary cleanup once ingest view contents have been successfully
@@ -938,33 +958,33 @@ class BaseDirectIngestController:
             )
             return
 
-        # TODO(#9717): Implement clean up for BQ-based ingest view results. Mark rows
-        #  as processed in BQ.
-        raise NotImplementedError(
-            f"Functionality not yet supported for BQ-materialization enabled states: "
-            f"[{type(args)}]."
+        if not isinstance(args, NewExtractAndMergeArgs):
+            raise ValueError(f"Unexpected args type: [{type(args)}]")
+
+        # TODO(#11424): Remove this check once the ingest_view_contents is non-optional.
+        if not self.ingest_view_contents:
+            raise ValueError("The ingest_view_contents is unexpectedly None.")
+        self.ingest_view_contents.mark_rows_as_processed(
+            ingest_view_name=args.ingest_view_name,
+            upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
+            batch_number=args.batch_number,
         )
 
-    def _contents_exist_for_args(self, args: ExtractAndMergeArgs) -> bool:
-        if not self.is_bq_materialization_enabled:
-            # TODO(#11424): Delete this block once BQ ingest view materialization is
-            #  enabled for all states.
-            if not isinstance(args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{args}]")
-            if not self.fs.exists(args.file_path):
-                logging.warning(
-                    "Path [%s] does not exist - returning.",
-                    args.file_path.abs_path(),
-                )
-                return False
-            return True
+    # TODO(#11424): Delete this function once BQ ingest view materialization is
+    #  enabled for all states.
+    def _contents_file_exists(self, args: LegacyExtractAndMergeArgs) -> bool:
+        if self.is_bq_materialization_enabled:
+            raise ValueError(
+                "Function should not be called for BQ-materialization-enabled states."
+            )
 
-        # TODO(#9717): Implement checking if contents exist up for BQ-based ingest view
-        #  results.
-        raise NotImplementedError(
-            f"Functionality not yet supported for BQ-materialization enabled states: "
-            f"[{type(args)}]."
-        )
+        if not self.fs.exists(args.file_path):
+            logging.warning(
+                "Path [%s] does not exist - returning.",
+                args.file_path.abs_path(),
+            )
+            return False
+        return True
 
     # TODO(#11424): We should be able to delete this check once we're reading
     #   chunks of data directly from BigQuery.
@@ -975,7 +995,7 @@ class BaseDirectIngestController:
         ingest for a file of this size.
         """
         parts = filename_parts_from_path(args.file_path)
-        return self._are_contents_empty(args) or not self._must_split_contents(
+        return self._are_contents_empty_legacy(args) or not self._must_split_contents(
             parts.file_type, args.file_path
         )
 
