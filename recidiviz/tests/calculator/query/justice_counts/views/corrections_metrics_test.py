@@ -30,7 +30,7 @@ from recidiviz.calculator.query.justice_counts.views import (
 from recidiviz.justice_counts.dimensions import corrections, location
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
-from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_test import (
     METRIC_CALCULATOR_SCHEMA,
     FakeState,
@@ -42,7 +42,7 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_tes
 class CorrectionsOutputViewTest(BigQueryViewTestCase):
     """Tests the Corrections output view."""
 
-    INPUT_SCHEMA = MockTableSchema(
+    INPUT_SCHEMA = PostgresTableSchema(
         {
             **METRIC_CALCULATOR_SCHEMA.data_types,
             "compare_date_partition": sqltypes.Date(),
@@ -57,7 +57,9 @@ class CorrectionsOutputViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "YY"], [3, "ZZ"]], columns=["id", "name"]
             ),
@@ -65,7 +67,9 @@ class CorrectionsOutputViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -332,13 +336,17 @@ class CorrectionsOutputViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -501,7 +509,9 @@ class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "YY"], [3, "ZZ"]], columns=["id", "name"]
             ),
@@ -509,7 +519,9 @@ class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -558,7 +570,7 @@ class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -605,7 +617,7 @@ class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -630,7 +642,9 @@ class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 3000],

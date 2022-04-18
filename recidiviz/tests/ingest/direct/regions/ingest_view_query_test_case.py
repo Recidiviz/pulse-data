@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
-from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.utils import csv
 from recidiviz.utils.regions import get_region
@@ -156,8 +156,8 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
     @staticmethod
     def schema_from_raw_file_config(
         config: DirectIngestRawFileConfig,
-    ) -> MockTableSchema:
-        return MockTableSchema(
+    ) -> PostgresTableSchema:
+        return PostgresTableSchema(
             {
                 # Postgres does case-sensitive lowercase search on all non-quoted
                 # column (and table) names. We lowercase all the column names so that

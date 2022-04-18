@@ -29,7 +29,7 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.tests.big_query.fakes.fake_big_query_database import FakeBigQueryDatabase
-from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -79,7 +79,7 @@ class BigQueryViewTestCase(unittest.TestCase):
         self,
         dataset_id: str,
         table_id: str,
-        mock_schema: MockTableSchema,
+        mock_schema: PostgresTableSchema,
         mock_data: pd.DataFrame,
     ) -> None:
         self.fake_bq_db.create_mock_bq_table(

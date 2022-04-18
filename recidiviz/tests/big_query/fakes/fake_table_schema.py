@@ -25,9 +25,8 @@ from google.cloud import bigquery
 from sqlalchemy.sql import sqltypes
 
 
-# TODO(#9717): Rename to PostgresTableSchema?
 @attr.s(frozen=True)
-class MockTableSchema:
+class PostgresTableSchema:
     """Defines the table schema to be used when mocking a table in Postgres, with
     helpers to construct from various sources.
     """
@@ -35,7 +34,7 @@ class MockTableSchema:
     data_types: Dict[str, sqltypes.SchemaType] = attr.ib()
 
     @classmethod
-    def from_sqlalchemy_table(cls, table: sqlalchemy.Table) -> "MockTableSchema":
+    def from_sqlalchemy_table(cls, table: sqlalchemy.Table) -> "PostgresTableSchema":
         data_types = {}
         for column in table.columns:
             if isinstance(column.type, sqltypes.Enum):
@@ -47,7 +46,7 @@ class MockTableSchema:
     @classmethod
     def from_big_query_schema_fields(
         cls, bq_schema: List[bigquery.SchemaField]
-    ) -> "MockTableSchema":
+    ) -> "PostgresTableSchema":
         data_types = {}
         for field in bq_schema:
             field_type = bigquery.enums.SqlTypeNames(field.field_type)

@@ -28,7 +28,7 @@ from sqlalchemy.sql import sqltypes
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tests.big_query.big_query_view_test_case import (
     BigQueryViewTestCase,
-    MockTableSchema,
+    PostgresTableSchema,
 )
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
@@ -784,7 +784,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.Integer(),
                     "a": sqltypes.Integer(),
@@ -833,7 +833,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.Integer(),
                     "a": sqltypes.Integer(),
@@ -883,7 +883,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.Integer(),
                     "a": sqltypes.Integer(),
@@ -934,7 +934,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.Integer(),
                     "a": sqltypes.Integer(),
@@ -1009,7 +1009,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.Integer(),
                     "a": sqltypes.Integer(),
@@ -1091,7 +1091,7 @@ class SamenessPerViewValidationChecker(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.String(),
                     "a": sqltypes.Date(),
@@ -1163,7 +1163,7 @@ class SamenessPerViewValidationChecker(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.String(),
                     "a": sqltypes.Date(),
@@ -1248,7 +1248,7 @@ class SamenessPerViewValidationChecker(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="test_data",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {
                     "label": sqltypes.String(),
                     "a": sqltypes.String(),
