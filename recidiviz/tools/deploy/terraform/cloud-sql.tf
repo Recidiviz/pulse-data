@@ -28,22 +28,6 @@ module "case_triage_database" {
   require_ssl_connection = true
 }
 
-# TODO(#8282): Delete this database on 2/25/2021.
-module "jails_database" {
-  source = "./modules/cloud-sql-instance"
-
-  project_id       = var.project_id
-  instance_key     = "jails"
-  base_secret_name = "sqlalchemy"
-  database_version = "POSTGRES_9_6"
-  region           = "us-east4"
-  zone             = local.is_production ? "us-east4-b" : "us-east4-c"
-  # 4 vCPU, 15GB Memory | 1 vCPU, 3.75GB Memory
-  tier              = coalesce(var.default_sql_tier, local.is_production ? "db-custom-4-15360" : "db-custom-1-3840")
-  has_readonly_user = local.is_production
-
-  deprecated = true
-}
 
 module "jails_database_v2" {
   source = "./modules/cloud-sql-instance"
@@ -71,21 +55,6 @@ module "justice_counts_database" {
   has_readonly_user = local.is_production
 }
 
-# TODO(#8282): Delete this database on 2/25/2021.
-module "operations_database" {
-  source = "./modules/cloud-sql-instance"
-
-  project_id        = var.project_id
-  instance_key      = "operations"
-  base_secret_name  = "operations"
-  database_version  = "POSTGRES_11"
-  region            = "us-east1"
-  zone              = "us-east1-b"
-  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
-  has_readonly_user = local.is_production
-
-  deprecated = true
-}
 
 module "operations_database_v2" {
   source = "./modules/cloud-sql-instance"
@@ -100,21 +69,6 @@ module "operations_database_v2" {
   has_readonly_user = true
 }
 
-# TODO(#8282): Delete this database on 2/25/2021.
-module "state_database" {
-  source = "./modules/cloud-sql-instance"
-
-  project_id        = var.project_id
-  instance_key      = "state"
-  base_secret_name  = "state"
-  database_version  = "POSTGRES_9_6"
-  region            = "us-east1"
-  zone              = "us-east1-c"
-  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
-  has_readonly_user = local.is_production
-
-  deprecated = true
-}
 
 module "state_database_v2" {
   source = "./modules/cloud-sql-instance"
@@ -134,10 +88,7 @@ locals {
     ", ",
     [
       module.case_triage_database.connection_name,
-      module.jails_database.connection_name,
       module.justice_counts_database.connection_name,
-      module.operations_database.connection_name,
-      module.state_database.connection_name,
       # v2 modules
       module.jails_database_v2.connection_name,
       module.operations_database_v2.connection_name,
