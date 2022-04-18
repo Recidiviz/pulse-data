@@ -90,6 +90,7 @@ class RawDataConfigWriter:
         default_encoding: str,
         default_separator: str,
         default_ignore_quotes: bool,
+        default_always_historical_export: bool,
     ) -> None:
         """Writes a yaml config file to the given path for a given raw file config"""
         file_description_string = "\n  ".join(
@@ -107,8 +108,6 @@ class RawDataConfigWriter:
 
         if raw_file_config.supplemental_order_by_clause:
             config += "supplemental_order_by_clause: True\n"
-        if raw_file_config.always_historical_export:
-            config += "always_historical_export: True\n"
         if raw_file_config.infer_columns_from_config:
             config += "infer_columns_from_config: True\n"
 
@@ -121,6 +120,10 @@ class RawDataConfigWriter:
         # If whether to ignore quotes is not the default, we need to include it in the config
         if raw_file_config.ignore_quotes != default_ignore_quotes:
             config += f"ignore_quotes: {raw_file_config.ignore_quotes}\n"
+        # If whether to always treat raw files as historical exports is not the default,
+        # we need to include it in the config
+        if raw_file_config.always_historical_export != default_always_historical_export:
+            config += f"always_historical_export: {raw_file_config.always_historical_export}\n"
         if raw_file_config.custom_line_terminator:
             config += (
                 f"custom_line_terminator: '{raw_file_config.custom_line_terminator}'\n"

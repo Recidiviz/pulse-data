@@ -52,6 +52,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     default_encoding="UTF-8",
                     default_separator=",",
                     default_ignore_quotes=False,
+                    default_always_historical_export=False,
                     output_path=test_output_path,
                     raw_file_config=config,
                 )

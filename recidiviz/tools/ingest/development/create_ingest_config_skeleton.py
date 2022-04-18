@@ -76,6 +76,8 @@ def initialize_state_directories(state_code: str) -> None:
                 f"default_line_terminator: {PLACEHOLDER_TO_DO_STRING}\n"
                 f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_ignore_quotes value\n",
                 "default_ignore_quotes: False\n",
+                f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_always_historical_export value\n",
+                "default_always_historical_export: False\n",
             ]
         )
 
