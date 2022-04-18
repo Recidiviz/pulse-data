@@ -52,6 +52,7 @@ def get_existing_entity(
 def update_existing_or_create(
     ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session
 ) -> schema.JusticeCountsDatabaseEntity:
+    expunge_existing(session=session, ingested_entity=ingested_entity)
     # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
     # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
     # (e.g. table instance) so we can clear child entities, so we probably wouldn't win much if anything.
@@ -69,16 +70,44 @@ def update_existing_or_create(
     return ingested_entity
 
 
-def delete_existing_and_create(
+def delete_existing(
     session: Session,
     ingested_entity: schema.JusticeCountsDatabaseEntity,
     entity_cls: Type[schema.JusticeCountsDatabaseEntity],
-) -> schema.JusticeCountsDatabaseEntity:
+) -> None:
+    expunge_existing(session=session, ingested_entity=ingested_entity)
     table_entity = get_existing_entity(ingested_entity, session)
     if table_entity is not None:
         table = ingested_entity.__table__
         # TODO(#4477): need to have a better way to identify id since below method doesn't guarantee id is a valid attr
         delete_q = table.delete().where(entity_cls.id == table_entity.id)  # type: ignore[attr-defined]
         session.execute(delete_q)
+
+
+def delete_existing_and_create(
+    session: Session,
+    ingested_entity: schema.JusticeCountsDatabaseEntity,
+    entity_cls: Type[schema.JusticeCountsDatabaseEntity],
+) -> schema.JusticeCountsDatabaseEntity:
+    delete_existing(
+        session=session, ingested_entity=ingested_entity, entity_cls=entity_cls
+    )
     session.add(ingested_entity)
     return ingested_entity
+
+
+def expunge_existing(
+    session: Session,
+    ingested_entity: schema.JusticeCountsDatabaseEntity,
+) -> None:
+    """In certain cases, the act of creating the `ingested_entity` will also add it to the session.
+    Then, then we perform the query in `get_existing_entity`, this will perform an auto-flush,
+    and we'll try to insert the `ingested_entity`, even if an existing one already exists,
+    causing a constraint violation error. To avoid, we can remove the `ingested_entity` from the
+    session here. It will be added back at the end of this method.
+    See https://stackoverflow.com/questions/17116277/creating-sqlalchemy-object-outside-of-session
+    """
+    if ingested_entity not in session:
+        return
+
+    session.expunge(ingested_entity)

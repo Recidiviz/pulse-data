@@ -81,12 +81,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 self.test_schema_objects.test_user_A,
             )
 
-        with SessionFactory.using_database(self.database_key) as session:
-            agency_id = 1
+            session.flush()
+            session.refresh(self.test_schema_objects.test_agency_A)
+            session.refresh(self.test_schema_objects.test_agency_A)
+
+            user_id = self.test_schema_objects.test_agency_A.id
+            agency_id = self.test_schema_objects.test_agency_A.id
+
             new_monthly_report = ReportInterface.create_report(
                 session=session,
                 agency_id=agency_id,
-                user_account_id=1,
+                user_account_id=user_id,
                 month=2,
                 year=2022,
                 frequency=schema.ReportingFrequency.MONTHLY.value,
@@ -104,7 +109,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             new_annual_report = ReportInterface.create_report(
                 session=session,
                 agency_id=agency_id,
-                user_account_id=1,
+                user_account_id=user_id,
                 year=2022,
                 month=3,
                 frequency=schema.ReportingFrequency.ANNUAL.value,
@@ -168,8 +173,99 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 disaggregated_cells[0].aggregated_dimension_values, ["PATROL"]
             )
-            self.assertEqual(disaggregated_cells[0].value, 40000)
+            self.assertEqual(disaggregated_cells[0].value, 33334)
             self.assertEqual(
                 disaggregated_cells[1].aggregated_dimension_values, ["DETENTION"]
             )
-            self.assertEqual(disaggregated_cells[1].value, 60000)
+            self.assertEqual(disaggregated_cells[1].value, 66666)
+
+    def test_update_metric_no_change(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                reported_metric=self.test_schema_objects.reported_budget_metric,
+            )
+
+            # This should be a no-op, because the metric definition is the same
+            # according to our unique constraints, so we update the existing records
+            # (which does nothing, since nothing has changed)
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                reported_metric=self.test_schema_objects.reported_budget_metric,
+            )
+
+            queried_definitions = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(len(queried_definitions), 2)
+
+            queried_instances = session.query(schema.ReportTableInstance).all()
+            self.assertEqual(len(queried_instances), 2)
+
+    def test_update_metric_with_new_values(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                reported_metric=self.test_schema_objects.reported_budget_metric,
+            )
+
+            # This should result in an update to the existing database objects
+            reported_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+                value=1000
+            )
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                reported_metric=reported_metric,
+            )
+
+            queried_instances = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.id)
+                .all()
+            )
+            self.assertEqual(len(queried_instances), 2)
+
+            aggregate_cells = queried_instances[0].cells
+            self.assertEqual(len(aggregate_cells), 1)
+            self.assertEqual(aggregate_cells[0].value, 1000)
+
+            disaggregated_cells = sorted(
+                queried_instances[1].cells, key=lambda x: x.value
+            )
+            self.assertEqual(len(disaggregated_cells), 2)
+            self.assertEqual(
+                disaggregated_cells[0].aggregated_dimension_values, ["PATROL"]
+            )
+            self.assertEqual(disaggregated_cells[0].value, 334)
+            self.assertEqual(
+                disaggregated_cells[1].aggregated_dimension_values, ["DETENTION"]
+            )
+            self.assertEqual(disaggregated_cells[1].value, 666)
+
+    def test_remove_disaggregation_from_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                reported_metric=self.test_schema_objects.reported_budget_metric,
+            )
+
+            # User decides they don't want to report the disaggregation
+            reported_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+                include_disaggregations=False
+            )
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                reported_metric=reported_metric,
+            )
+
+            # Should only have one instance and cell in the db
+            # (corresponding to the aggregated value)
+            queried_instances = session.query(schema.ReportTableInstance).all()
+            self.assertEqual(len(queried_instances), 1)
+
+            queried_instances = session.query(schema.Cell).all()
+            self.assertEqual(len(queried_instances), 1)

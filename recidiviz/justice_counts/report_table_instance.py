@@ -24,6 +24,10 @@ from recidiviz.justice_counts.metrics.reported_metric import (
     ReportedAggregatedDimension,
     ReportedMetric,
 )
+from recidiviz.justice_counts.utils.persistence_utils import (
+    delete_existing,
+    update_existing_or_create,
+)
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Cell,
     Report,
@@ -36,7 +40,7 @@ class ReportTableInstanceInterface:
     """Contains methods for working with ReportTableInstances."""
 
     @staticmethod
-    def create_from_reported_metric(
+    def create_or_update_from_reported_metric(
         session: Session,
         report: Report,
         report_table_definition: ReportTableDefinition,
@@ -47,24 +51,58 @@ class ReportTableInstanceInterface:
         (optional) aggregated dimension, create (or update) the corresponding
         ReportTableInstances and Cells.
         """
+        table_instance = update_existing_or_create(
+            ReportTableInstance(
+                report=report,
+                report_table_definition=report_table_definition,
+                time_window_start=report.date_range_start,
+                time_window_end=report.date_range_end,
+                # TODO(#12050): Populate `methodology` column with `ReportedContexts`
+                methodology=None,
+            ),
+            session,
+        )
+
         if not aggregated_dimension:
-            cells = [Cell(value=reported_metric.value, aggregated_dimension_values=[])]
+            cells = [
+                update_existing_or_create(
+                    Cell(
+                        value=reported_metric.value,
+                        aggregated_dimension_values=[],
+                        report_table_instance=table_instance,
+                    ),
+                    session,
+                )
+            ]
+
         else:
             cells = [
-                Cell(
-                    value=value,
-                    aggregated_dimension_values=[key.dimension_value],
+                update_existing_or_create(
+                    Cell(
+                        value=value,
+                        aggregated_dimension_values=[key.dimension_value],
+                        report_table_instance=table_instance,
+                    ),
+                    session,
                 )
                 for key, value in aggregated_dimension.dimension_to_value.items()
             ]
-        instance = ReportTableInstance(
-            report=report,
-            report_table_definition=report_table_definition,
-            time_window_start=report.date_range_start,
-            time_window_end=report.date_range_end,
-            # TODO(#12050): Populate `methodology` column with `ReportedContexts`
-            methodology=None,
-            cells=cells,
+        table_instance.cells = cells
+        return table_instance
+
+    @staticmethod
+    def delete_from_reported_metric(
+        session: Session,
+        report: Report,
+        report_table_definition: ReportTableDefinition,
+    ) -> None:
+        delete_existing(
+            session,
+            ReportTableInstance(
+                report=report,
+                report_table_definition=report_table_definition,
+                time_window_start=report.date_range_start,
+                time_window_end=report.date_range_end,
+            ),
+            ReportTableInstance,
         )
-        session.add(instance)
-        return instance

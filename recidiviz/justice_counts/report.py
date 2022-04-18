@@ -28,6 +28,7 @@ from recidiviz.justice_counts.report_table_definition import (
 )
 from recidiviz.justice_counts.report_table_instance import ReportTableInstanceInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.persistence_utils import get_existing_entity
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -168,8 +169,7 @@ class ReportInterface:
                 session=session, reported_metric=reported_metric
             )
         )
-        # TODO(#12051): Enable updating of reported metrics
-        ReportTableInstanceInterface.create_from_reported_metric(
+        ReportTableInstanceInterface.create_or_update_from_reported_metric(
             session=session,
             report=report,
             report_table_definition=report_table_definition,
@@ -183,13 +183,52 @@ class ReportInterface:
                 ReportTableDefinitionInterface.create_or_update_from_reported_metric(
                     session=session,
                     reported_metric=reported_metric,
-                    aggregated_dimension=dimension,
+                    aggregated_dimension_identifier=dimension.dimension_identifier(),
                 )
             )
-            ReportTableInstanceInterface.create_from_reported_metric(
+            ReportTableInstanceInterface.create_or_update_from_reported_metric(
                 session=session,
                 report=report,
                 report_table_definition=report_table_definition,
                 reported_metric=reported_metric,
                 aggregated_dimension=dimension,
+            )
+
+        # Finally, if any disaggregated dimensions that are defined on the metric
+        # were explicitly not reported by the agency, this means that the agency
+        # decided to remove them, so delete them from the DB
+        definition_dimension_identifiers = {
+            dimension.dimension_identifier()
+            for dimension in reported_metric.metric_definition.aggregated_dimensions
+            or []
+        }
+        reported_dimension_identifiers = {
+            dimension.dimension_identifier()
+            for dimension in reported_metric.aggregated_dimensions or []
+        }
+        dimension_identifiers_to_delete = (
+            definition_dimension_identifiers - reported_dimension_identifiers
+        )
+        for dimension_identifier in dimension_identifiers_to_delete:
+            # No need to delete the ReportTableDefinition, but we do need
+            # to load it so we can identify/delete the proper ReportTableInstance
+            # (which will also delete all child Cell objects too)
+            report_table_definition_row = get_existing_entity(
+                ingested_entity=ReportTableDefinitionInterface.build_entity(
+                    reported_metric=reported_metric,
+                    aggregated_dimension_identifier=dimension_identifier,
+                ),
+                session=session,
+            )
+            if not report_table_definition_row:
+                raise ValueError(
+                    f"No existing ReportTableDefinition found for dimension identifier: {dimension_identifier}"
+                )
+            report_table_definition = ReportTableDefinitionInterface.get_by_id(
+                session=session, _id=report_table_definition_row.id
+            )
+            ReportTableInstanceInterface.delete_from_reported_metric(
+                session=session,
+                report=report,
+                report_table_definition=report_table_definition,
             )
