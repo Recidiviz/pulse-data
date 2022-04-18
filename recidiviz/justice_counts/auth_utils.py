@@ -17,8 +17,9 @@
 """Utils for Justice Counts"""
 import logging
 
-from flask import session
+from flask import g, session
 
+from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
 from recidiviz.utils.auth.auth0 import (
     AuthorizationError,
@@ -47,5 +48,6 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
                 "assuming this is an M2M client-credentials grant."
             )
             session["user_info"] = {}
-            return
         raise e
+
+    g.user_context = UserContext(auth0_user_id=session["jwt_sub"])

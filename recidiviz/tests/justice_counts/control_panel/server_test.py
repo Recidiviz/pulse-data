@@ -16,11 +16,12 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 import pytest
-from flask import session
+from flask import g, session
 from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
+from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     Source,
@@ -81,9 +82,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         report = self.test_schema_objects.test_report_monthly
         self.session.add_all([report, user_A])
         self.session.commit()
-        response = self.client.get(
-            f"/api/reports?user_id={user_A.id}&agency_id={report.source_id}"
-        )
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+            response = self.client.get(f"/api/reports?agency_id={report.source_id}")
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json,

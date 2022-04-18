@@ -52,7 +52,7 @@ class ReportStore {
       if (userID && userAgencies && userAgencies.length > 0) {
         const response = (await this.api.request({
           // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
-          path: `/api/reports?user_id=${userID}&agency_id=${userAgencies[0].id}`,
+          path: `/api/reports?agency_id=${userAgencies[0].id}`,
           method: "GET",
         })) as Response;
         const allReports = await response.json();
