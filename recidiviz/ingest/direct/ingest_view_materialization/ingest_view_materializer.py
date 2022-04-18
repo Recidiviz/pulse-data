@@ -65,13 +65,13 @@ TABLE_NAME_DATE_FORMAT = "%Y_%m_%d_%H_%M_%S"
 class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
     @abc.abstractmethod
     def materialize_view_for_args(
-        self, ingest_view_export_args: IngestViewMaterializationArgsT
+        self, ingest_view_materialization_args: IngestViewMaterializationArgsT
     ) -> bool:
-        """Performs an Cloud Storage export of a single ingest view with date bounds
-        specified in the provided args. If the provided args contain an upper and lower
-        bound date, the exported view contains only the delta between the two dates. If
-        only the upper bound is provided, then the exported view contains historical
-        results up until the bound date.
+        """Materializes the results of a single ingest view with date bounds specified
+        in the provided args. If the provided args contain an upper and lower bound
+        date, the materialized view results will contain only the delta between the two
+        dates. If only the upper bound is provided, then the materialized view results
+        will contain historical results up until the bound date.
         """
 
 
@@ -157,120 +157,125 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
     @staticmethod
     def _get_upper_bound_intermediate_table_name(
-        # TODO(#9717): Rename ingest_view_export_args to ingest_view_materialization_args
-        #  here and elsewhere in file.
-        ingest_view_export_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> str:
         """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
         upper_bound_datetime_inclusive in the args.
         """
         return (
-            f"{ingest_view_export_args.ingest_view_name}_"
-            f"{ingest_view_export_args.upper_bound_datetime_inclusive.strftime(TABLE_NAME_DATE_FORMAT)}_"
+            f"{ingest_view_materialization_args.ingest_view_name}_"
+            f"{ingest_view_materialization_args.upper_bound_datetime_inclusive.strftime(TABLE_NAME_DATE_FORMAT)}_"
             f"upper_bound"
         )
 
     @staticmethod
     def _get_lower_bound_intermediate_table_name(
-        ingest_view_export_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> str:
         """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
         lower_bound_datetime_exclusive in the args.
 
         Throws if the args have a null lower_bound_datetime_exclusive.
         """
-        if not ingest_view_export_args.lower_bound_datetime_exclusive:
+        if not ingest_view_materialization_args.lower_bound_datetime_exclusive:
             raise ValueError(
-                f"Expected nonnull lower_bound_datetime_exclusive for args: {ingest_view_export_args}"
+                f"Expected nonnull lower_bound_datetime_exclusive for args: {ingest_view_materialization_args}"
             )
         return (
-            f"{ingest_view_export_args.ingest_view_name}_"
-            f"{ingest_view_export_args.lower_bound_datetime_exclusive.strftime(TABLE_NAME_DATE_FORMAT)}_"
+            f"{ingest_view_materialization_args.ingest_view_name}_"
+            f"{ingest_view_materialization_args.lower_bound_datetime_exclusive.strftime(TABLE_NAME_DATE_FORMAT)}_"
             f"lower_bound"
         )
 
-    def _get_export_query_for_args(
-        self, ingest_view_export_args: IngestViewMaterializationArgs
+    def _get_materialization_query_for_args(
+        self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> str:
-        """Returns a query to export the ingest view with date bounds specified in the provided args. This query will
-        only work if the intermediate tables have been exported via the
+        """Returns a query that will produce the ingest view results for date bounds
+        specified in the provided args. This query will only work if the intermediate
+        tables have been loaded via the
         _load_individual_date_queries_into_intermediate_tables function.
         """
         ingest_view = self.ingest_views_by_name[
-            ingest_view_export_args.ingest_view_name
+            ingest_view_materialization_args.ingest_view_name
         ]
-        export_query = StrictStringFormatter().format(
+        materialization_query = StrictStringFormatter().format(
             SELECT_SUBQUERY,
             project_id=self.big_query_client.project_id,
             dataset_id=self.delegate.temp_dataset_id(),
             table_name=self._get_upper_bound_intermediate_table_name(
-                ingest_view_export_args
+                ingest_view_materialization_args
             ),
         )
 
-        if ingest_view_export_args.lower_bound_datetime_exclusive:
+        if ingest_view_materialization_args.lower_bound_datetime_exclusive:
 
             upper_bound_prev_query = StrictStringFormatter().format(
                 SELECT_SUBQUERY,
                 project_id=self.big_query_client.project_id,
                 dataset_id=self.delegate.temp_dataset_id(),
                 table_name=self._get_lower_bound_intermediate_table_name(
-                    ingest_view_export_args
+                    ingest_view_materialization_args
                 ),
             )
-            export_query = self._create_date_diff_query(
-                upper_bound_query=export_query,
+            materialization_query = self._create_date_diff_query(
+                upper_bound_query=materialization_query,
                 upper_bound_prev_query=upper_bound_prev_query,
                 do_reverse_date_diff=ingest_view.do_reverse_date_diff,
             )
 
         return DirectIngestPreProcessedIngestView.add_order_by_suffix(
-            query=export_query, order_by_cols=ingest_view.order_by_cols
+            query=materialization_query, order_by_cols=ingest_view.order_by_cols
         )
 
     def _load_individual_date_queries_into_intermediate_tables(
-        self, ingest_view_export_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> None:
-        """Loads query results from the upper and lower bound queries for this export job into intermediate tables."""
+        """Loads query results from the upper and lower bound queries for this
+        materialization job into intermediate tables.
+        """
 
         ingest_view = self.ingest_views_by_name[
-            ingest_view_export_args.ingest_view_name
+            ingest_view_materialization_args.ingest_view_name
         ]
 
-        single_date_table_export_jobs = []
+        single_date_table_materialization_jobs = []
 
         upper_bound_table_job = self._generate_ingest_view_query_job_for_date(
             table_name=self._get_upper_bound_intermediate_table_name(
-                ingest_view_export_args
+                ingest_view_materialization_args
             ),
             ingest_view=ingest_view,
-            date_bound=ingest_view_export_args.upper_bound_datetime_inclusive,
+            date_bound=ingest_view_materialization_args.upper_bound_datetime_inclusive,
         )
-        single_date_table_export_jobs.append(upper_bound_table_job)
+        single_date_table_materialization_jobs.append(upper_bound_table_job)
 
-        if ingest_view_export_args.lower_bound_datetime_exclusive:
+        if ingest_view_materialization_args.lower_bound_datetime_exclusive:
             lower_bound_table_job = self._generate_ingest_view_query_job_for_date(
                 table_name=self._get_lower_bound_intermediate_table_name(
-                    ingest_view_export_args
+                    ingest_view_materialization_args
                 ),
                 ingest_view=ingest_view,
-                date_bound=ingest_view_export_args.lower_bound_datetime_exclusive,
+                date_bound=ingest_view_materialization_args.lower_bound_datetime_exclusive,
             )
-            single_date_table_export_jobs.append(lower_bound_table_job)
+            single_date_table_materialization_jobs.append(lower_bound_table_job)
 
         # Wait for completion of all async date queries
-        for export_job in single_date_table_export_jobs:
-            export_job.result()
+        for job in single_date_table_materialization_jobs:
+            job.result()
 
     def _delete_intermediate_tables(
-        self, ingest_view_export_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> None:
         single_date_table_ids = [
-            self._get_upper_bound_intermediate_table_name(ingest_view_export_args)
+            self._get_upper_bound_intermediate_table_name(
+                ingest_view_materialization_args
+            )
         ]
-        if ingest_view_export_args.lower_bound_datetime_exclusive:
+        if ingest_view_materialization_args.lower_bound_datetime_exclusive:
             single_date_table_ids.append(
-                self._get_lower_bound_intermediate_table_name(ingest_view_export_args)
+                self._get_lower_bound_intermediate_table_name(
+                    ingest_view_materialization_args
+                )
             )
 
         for table_id in single_date_table_ids:
@@ -281,19 +286,20 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             logging.info("Deleted intermediate table [%s]", table_id)
 
     def materialize_view_for_args(
-        self, ingest_view_export_args: IngestViewMaterializationArgsT
+        self, ingest_view_materialization_args: IngestViewMaterializationArgsT
     ) -> bool:
-        """Performs an Cloud Storage export of a single ingest view with date bounds
-        specified in the provided args. If the provided args contain an upper and lower
-        bound date, the exported view contains only the delta between the two dates. If
-        only the upper bound is provided, then the exported view contains historical
-        results up until the bound date.
+        """Materializes the results of a single ingest view with date bounds specified
+        in the provided args. If the provided args contain an upper and lower bound
+        date, the materialized view results will contain only the delta between the two
+        dates. If only the upper bound is provided, then the materialized view results
+        will contain historical results up until the bound date.
 
         Note: In order to prevent resource exhaustion in BigQuery, the ultimate query in
         this method is broken down into distinct parts. This method first persists the
         results of historical queries for each given bound date (upper and lower) into
         temporary tables. The delta between those tables is then queried separately using
-        SQL's `EXCEPT DISTINCT` and those final results are exported to Cloud Storage.
+        SQL's `EXCEPT DISTINCT` and those final results are saved to the appropriate
+        location in BigQuery.
         """
         if not self.region.is_ingest_launched_in_env():
             raise ValueError(
@@ -301,24 +307,24 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             )
 
         job_completion_time = self.delegate.get_job_completion_time_for_args(
-            ingest_view_export_args
+            ingest_view_materialization_args
         )
         if job_completion_time:
             logging.warning(
                 "Already materialized view for args [%s] - returning.",
-                ingest_view_export_args,
+                ingest_view_materialization_args,
             )
             return False
 
-        self.delegate.prepare_for_job(ingest_view_export_args)
+        self.delegate.prepare_for_job(ingest_view_materialization_args)
 
         ingest_view = self.ingest_views_by_name[
-            ingest_view_export_args.ingest_view_name
+            ingest_view_materialization_args.ingest_view_name
         ]
 
         if (
             ingest_view.do_reverse_date_diff
-            and not ingest_view_export_args.lower_bound_datetime_exclusive
+            and not ingest_view_materialization_args.lower_bound_datetime_exclusive
         ):
             raise ValueError(
                 f"Attempting to process reverse date diff view "
@@ -329,25 +335,29 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             "Start loading results of individual date queries into intermediate tables."
         )
         self._load_individual_date_queries_into_intermediate_tables(
-            ingest_view_export_args
+            ingest_view_materialization_args
         )
         logging.info(
             "Completed loading results of individual date queries into intermediate tables."
         )
 
-        export_query = self._get_export_query_for_args(ingest_view_export_args)
+        materialization_query = self._get_materialization_query_for_args(
+            ingest_view_materialization_args
+        )
 
-        logging.info("Generated final export query [%s]", str(export_query))
+        logging.info(
+            "Generated final materialization query [%s]", str(materialization_query)
+        )
 
         self.delegate.materialize_query_results(
-            ingest_view_export_args, ingest_view, export_query
+            ingest_view_materialization_args, ingest_view, materialization_query
         )
 
         logging.info("Deleting intermediate tables.")
-        self._delete_intermediate_tables(ingest_view_export_args)
+        self._delete_intermediate_tables(ingest_view_materialization_args)
         logging.info("Done deleting intermediate tables.")
 
-        self.delegate.mark_job_complete(ingest_view_export_args)
+        self.delegate.mark_job_complete(ingest_view_materialization_args)
 
         return True
 
@@ -355,12 +365,14 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def debug_query_for_args(
         cls,
         ingest_views_by_name: Dict[str, DirectIngestPreProcessedIngestView],
-        ingest_view_export_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> str:
-        """Returns a version of the export query for the provided args that can be run in the BigQuery UI."""
+        """Returns a version of the materialization query for the provided args that can
+        be run in the BigQuery UI.
+        """
         query, query_params = cls._debug_generate_unified_query(
-            ingest_views_by_name[ingest_view_export_args.ingest_view_name],
-            ingest_view_export_args,
+            ingest_views_by_name[ingest_view_materialization_args.ingest_view_name],
+            ingest_view_materialization_args,
         )
 
         for param in query_params:
@@ -376,10 +388,10 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def _debug_generate_unified_query(
         cls,
         ingest_view: DirectIngestPreProcessedIngestView,
-        ingest_view_export_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
         """Generates a single query that is date bounded such that it represents the data that has changed for this view
-        between the specified date bounds in the provided export args.
+        between the specified date bounds in the provided materialization args.
 
         If there is no lower bound, this produces a query for a historical query up to the upper bound date. Otherwise,
         it diffs two historical queries to produce a delta query, using the SQL 'EXCEPT DISTINCT' function.
@@ -390,23 +402,23 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         """
 
         upper_bound_table_id = cls._get_upper_bound_intermediate_table_name(
-            ingest_view_export_args
+            ingest_view_materialization_args
         )
         query, query_params = cls._generate_ingest_view_query_and_params_for_date(
             ingest_view=ingest_view,
             destination_table_type=DestinationTableType.TEMPORARY,
             destination_dataset_id=None,
             destination_table_id=upper_bound_table_id,
-            update_timestamp=ingest_view_export_args.upper_bound_datetime_inclusive,
+            update_timestamp=ingest_view_materialization_args.upper_bound_datetime_inclusive,
             param_name=UPPER_BOUND_TIMESTAMP_PARAM_NAME,
             raw_table_subquery_name_prefix="upper_"
             if ingest_view.materialize_raw_data_table_views
             else "",
         )
 
-        if ingest_view_export_args.lower_bound_datetime_exclusive:
+        if ingest_view_materialization_args.lower_bound_datetime_exclusive:
             lower_bound_table_id = cls._get_lower_bound_intermediate_table_name(
-                ingest_view_export_args
+                ingest_view_materialization_args
             )
             (
                 lower_bound_query,
@@ -416,7 +428,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 destination_table_type=DestinationTableType.TEMPORARY,
                 destination_dataset_id=None,
                 destination_table_id=lower_bound_table_id,
-                update_timestamp=ingest_view_export_args.lower_bound_datetime_exclusive,
+                update_timestamp=ingest_view_materialization_args.lower_bound_datetime_exclusive,
                 param_name=LOWER_BOUND_TIMESTAMP_PARAM_NAME,
                 raw_table_subquery_name_prefix="lower_"
                 if ingest_view.materialize_raw_data_table_views
@@ -470,7 +482,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
 if __name__ == "__main__":
 
-    # Update these variables and run to print an export query you can run in the BigQuery UI
+    # Update these variables and run to print a materialization query you can run in the BigQuery UI
     region_code_: str = "us_mo"
     ingest_view_name_: str = "tak001_offender_identification"
     lower_bound_datetime_exclusive_: datetime.datetime = datetime.datetime(2020, 10, 15)
