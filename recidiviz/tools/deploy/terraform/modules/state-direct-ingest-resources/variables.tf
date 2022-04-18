@@ -40,31 +40,6 @@ variable "state_admin_role" {
   type = string
 }
 
-# Name of the CloudSQL instance where new dbs will be provisioned.
-variable "cloudsql_instance_name" {
-  type = string
-}
-
-# Instance ID of the CloudSQL instance i.e. `recidiviz-staging:us-east1:dev-state-data`.
-variable "cloudsql_instance_id" {
-  type = string
-}
-
-# Region of the CloudSQL instance, e.g. "us-east1".
-variable "cloudsql_instance_region" {
-  type = string
-}
-
-# User name that should be used to log into the CloudSQL instance.
-variable "cloudsql_instance_user_name" {
-  type = string
-}
-
-# Password for cloudsql_instance_user_name.
-variable "cloudsql_instance_user_password" {
-  type = string
-}
-
 # PG v13 upgrade DB - Name of the CloudSQL instance where new dbs will be provisioned.
 variable "v2_cloudsql_instance_name" {
   type = string

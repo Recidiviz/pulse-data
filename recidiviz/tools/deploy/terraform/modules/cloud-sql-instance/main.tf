@@ -65,13 +65,6 @@ variable "zone" {
   type = string
 }
 
-# Whether the instance is deprecated.
-# TODO(#8282): Remove this option once we delete the v1 databases.
-variable "deprecated" {
-  type    = bool
-  default = false
-}
-
 
 # Used for allowing access from `prod-data-client` to the CloudSQL instance
 data "google_secret_manager_secret_version" "prod_data_client_cidr" { secret = "prod_data_client_cidr" }
@@ -120,16 +113,12 @@ resource "google_sql_database_instance" "data" {
   settings {
     disk_autoresize = true
     tier            = var.tier
-
-    # Turns off high availability for deprecated instances
-    availability_type = var.deprecated ? "ZONAL" : "REGIONAL"
+    availability_type = "REGIONAL"
 
     backup_configuration {
-      enabled  = !var.deprecated
+      enabled  = true
       location = "us"
-
-      # needed for HA, but must be false if backups are set to false
-      point_in_time_recovery_enabled = !var.deprecated
+      point_in_time_recovery_enabled = true
     }
 
     ip_configuration {
