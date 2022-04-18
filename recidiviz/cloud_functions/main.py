@@ -419,4 +419,5 @@ def archive_practices_etl_data(
             method="POST",
             json={"filename": filename},
         )
-    return "", HTTPStatus(endpoint_response.status_code)
+        return "", HTTPStatus(endpoint_response.status_code)
+    return "", HTTPStatus.OK
