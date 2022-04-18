@@ -23,14 +23,18 @@ from unittest import TestCase
 import pytest
 from sqlalchemy.engine import Engine
 
-from recidiviz.persistence.database.schema.justice_counts.schema import (
-    AcquisitionMethod,
-    Agency,
-    Project,
-    Report,
-    ReportStatus,
-    UserAccount,
+from recidiviz.justice_counts.dimensions.law_enforcement import (
+    CallType,
+    SheriffBudgetType,
 )
+from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.constants import ContextKey
+from recidiviz.justice_counts.metrics.reported_metric import (
+    ReportedAggregatedDimension,
+    ReportedContext,
+    ReportedMetric,
+)
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -84,41 +88,83 @@ class JusticeCountsSchemaTestObjects:
     """Class for test schema objects"""
 
     def __init__(self) -> None:
-        self.test_agency_A = Agency(name="Agency Alpha")
-        self.test_agency_B = Agency(name="Agency Beta")
-        self.test_user_A = UserAccount(
+        # Agencies
+        self.test_agency_A = schema.Agency(name="Agency Alpha")
+        self.test_agency_B = schema.Agency(name="Agency Beta")
+
+        # Users
+        self.test_user_A = schema.UserAccount(
             name="Jane Doe",
             auth0_user_id="auth0_id_A",
             email_address="user@gmail.com",
             agencies=[self.test_agency_A],
         )
-        self.test_user_B = UserAccount(
+        self.test_user_B = schema.UserAccount(
             name="John Doe",
             email_address="user@email.gov",
             auth0_user_id="auth0_id_B",
             agencies=[self.test_agency_B],
         )
-        self.test_report_monthly = Report(
+
+        # Reports
+        self.test_report_monthly = schema.Report(
             source=self.test_agency_A,
             type="MONTHLY",
             instance="generated_instance_id",
-            status=ReportStatus.NOT_STARTED,
+            status=schema.ReportStatus.NOT_STARTED,
             date_range_start=datetime.date.fromisoformat("2022-06-01"),
             date_range_end=datetime.date.fromisoformat("2022-07-01"),
-            project=Project.JUSTICE_COUNTS_CONTROL_PANEL,
-            acquisition_method=AcquisitionMethod.CONTROL_PANEL,
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             created_at=datetime.date.fromisoformat("2022-05-30"),
         )
-        self.test_report_annual = Report(
+        self.test_report_annual = schema.Report(
             source=self.test_agency_B,
             type="ANNUAL",
             instance="generated_instance_id",
-            status=ReportStatus.DRAFT,
+            status=schema.ReportStatus.DRAFT,
             date_range_start=datetime.date.fromisoformat("2022-01-01"),
             date_range_end=datetime.date.fromisoformat("2023-01-01"),
             modified_by=[self.test_user_B.id],
-            project=Project.JUSTICE_COUNTS_CONTROL_PANEL,
-            acquisition_method=AcquisitionMethod.CONTROL_PANEL,
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             last_modified_at=datetime.datetime.fromisoformat("2022-07-05T08:00:00"),
             created_at=datetime.date.fromisoformat("2021-12-30"),
+        )
+
+        # Metrics
+        self.reported_budget_metric = ReportedMetric(
+            key=law_enforcement.annual_budget.key,
+            value=100000,
+            contexts=[
+                ReportedContext(
+                    key=ContextKey.PRIMARY_FUNDING_SOURCE, value="government"
+                )
+            ],
+            aggregated_dimensions=[
+                ReportedAggregatedDimension(
+                    dimension_to_value={
+                        SheriffBudgetType.DETENTION: 60000,
+                        SheriffBudgetType.PATROL: 40000,
+                    }
+                )
+            ],
+        )
+        self.reported_calls_for_service_metric = ReportedMetric(
+            key=law_enforcement.calls_for_service.key,
+            value=100,
+            contexts=[
+                ReportedContext(
+                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
+                )
+            ],
+            aggregated_dimensions=[
+                ReportedAggregatedDimension(
+                    dimension_to_value={
+                        CallType.EMERGENCY: 20,
+                        CallType.NON_EMERGENCY: 60,
+                        CallType.UNKNOWN: 20,
+                    }
+                )
+            ],
         )

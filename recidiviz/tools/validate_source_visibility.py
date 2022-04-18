@@ -343,6 +343,8 @@ def main() -> int:
                 "recidiviz.utils",
                 "recidiviz.reporting",
                 "recidiviz.cloud_storage",
+                # TODO(#6795): Get rid of this dependency
+                "recidiviz.tests.ingest.fixtures",
             }
         ),
     )

@@ -18,10 +18,7 @@
 
 from unittest import TestCase
 
-from recidiviz.justice_counts.dimensions.law_enforcement import (
-    CallType,
-    SheriffBudgetType,
-)
+from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.dimensions.person import Gender
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
@@ -30,46 +27,17 @@ from recidiviz.justice_counts.metrics.reported_metric import (
     ReportedContext,
     ReportedMetric,
 )
+from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 
 
 class TestJusticeCountsMetricDefinition(TestCase):
     """Implements tests for the Justice Counts ReportedMetric class."""
 
     def setUp(self) -> None:
-        self.reported_budget = ReportedMetric(
-            key=law_enforcement.annual_budget.key,
-            value=100000,
-            contexts=[
-                ReportedContext(
-                    key=ContextKey.PRIMARY_FUNDING_SOURCE, value="government"
-                )
-            ],
-            aggregated_dimensions=[
-                ReportedAggregatedDimension(
-                    dimension_to_value={
-                        SheriffBudgetType.DETENTION: 50000,
-                        SheriffBudgetType.PATROL: 50000,
-                    }
-                )
-            ],
-        )
-        self.reported_calls_for_service = ReportedMetric(
-            key=law_enforcement.calls_for_service.key,
-            value=100,
-            contexts=[
-                ReportedContext(
-                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
-                )
-            ],
-            aggregated_dimensions=[
-                ReportedAggregatedDimension(
-                    dimension_to_value={
-                        CallType.EMERGENCY: 20,
-                        CallType.NON_EMERGENCY: 60,
-                        CallType.UNKNOWN: 20,
-                    }
-                )
-            ],
+        self.test_schema_objects = JusticeCountsSchemaTestObjects()
+        self.reported_budget = self.test_schema_objects.reported_budget_metric
+        self.reported_calls_for_service = (
+            self.test_schema_objects.reported_calls_for_service_metric
         )
 
     def test_init(self) -> None:
