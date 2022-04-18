@@ -17,12 +17,14 @@
 import { Dropdown, DropdownMenu } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useStore } from "../../stores";
 import { ExtendedDropdownMenuItem, ExtendedDropdownToggle } from ".";
 
 const Menu = () => {
   const { authStore, api } = useStore();
+  const navigate = useNavigate();
 
   const logout = async (): Promise<void | string> => {
     try {
@@ -57,6 +59,12 @@ const Menu = () => {
       </ExtendedDropdownToggle>
 
       <DropdownMenu alignment="right">
+        <ExtendedDropdownMenuItem onClick={() => navigate("/reports/create")}>
+          Create Report
+        </ExtendedDropdownMenuItem>
+        <ExtendedDropdownMenuItem onClick={() => navigate("/")}>
+          Reports
+        </ExtendedDropdownMenuItem>
         <ExtendedDropdownMenuItem onClick={dummyNavigationToAccountSettings}>
           Account Settings
         </ExtendedDropdownMenuItem>

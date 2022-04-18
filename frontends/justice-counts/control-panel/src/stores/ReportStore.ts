@@ -25,9 +25,15 @@ export interface ReportOverview {
   month: number;
   year: number;
   frequency: "MONTHLY" | "ANNUAL";
-  last_modified_at: string;
+  last_modified_at: string | null;
   editors: string[];
   status: "NOT_STARTED" | "DRAFT" | "PUBLISHED";
+}
+
+export interface CreateReportFormValuesType extends Record<string, unknown> {
+  month: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+  year: number;
+  frequency: "MONTHLY" | "ANNUAL";
 }
 
 class ReportStore {
@@ -49,7 +55,11 @@ class ReportStore {
     try {
       const { userID, userAgencies } = this.userStore;
 
-      if (userID && userAgencies && userAgencies.length > 0) {
+      if (
+        userID !== undefined &&
+        userAgencies !== undefined &&
+        userAgencies.length > 0
+      ) {
         const response = (await this.api.request({
           // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
           path: `/api/reports?agency_id=${userAgencies[0].id}`,
@@ -63,6 +73,32 @@ class ReportStore {
       } else {
         Promise.reject(new Error("No user or agency information initialized."));
       }
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async createReport(
+    body: Record<string, unknown>
+  ): Promise<Response | Error | undefined> {
+    try {
+      const { userID, userAgencies } = this.userStore;
+      const agencyID =
+        userAgencies && userAgencies.length && userAgencies[0].id;
+
+      if (userID !== undefined && agencyID !== undefined) {
+        const response = (await this.api.request({
+          path: "/api/reports",
+          method: "POST",
+          body: { user_id: userID, agency_id: agencyID, ...body },
+        })) as Response;
+
+        return response;
+      }
+
+      throw new Error(
+        "Either invalid user/agency information or no user or agency information initialized."
+      );
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }

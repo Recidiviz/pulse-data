@@ -15,11 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+export const monthsByName = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 export const printDateAsMonthYear = (month: number, year: number): string => {
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
     year: "numeric",
-  }).format(Date.UTC(year, month, 1));
+  }).format(Date.UTC(year, month, -15));
 };
 
 export const printReportTitle = (
