@@ -16,6 +16,7 @@
 # =============================================================================
 """Base class for official Justice Counts metrics."""
 
+import enum
 from typing import List, Optional, Type
 
 import attr
@@ -28,6 +29,15 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
     System,
 )
+
+
+class MetricCategory(enum.Enum):
+    CAPACITY_AND_COST = "CAPACITY AND COST"
+    OPERATIONS_AND_DYNAMICS = "OPERATIONS_AND_DYNAMICS"
+    POPULATIONS = "POPULATIONS"
+    PUBLIC_SAFETY = "PUBLIC_SAFETY"
+    EQUITY = "EQUITY"
+    FAIRNESS = "FAIRNESS"
 
 
 @attr.define()
@@ -70,6 +80,14 @@ class AggregatedDimension:
         return self.dimension.dimension_identifier()
 
 
+@attr.define()
+class Definition:
+    """A definition provided to the agency to help them report the metric."""
+
+    term: str
+    definition: str
+
+
 @attr.define(frozen=True)
 class MetricDefinition:
     """Represents an official Justice Counts metric. An instance
@@ -80,6 +98,8 @@ class MetricDefinition:
     system: System
     # Metrics are unique by <system, metric_type, filtered_dimensions, aggregated_dimensions>
     metric_type: MetricType
+    # Each metric belongs to a particular category
+    category: MetricCategory
 
     # Human-readable name for the metric
     display_name: str
@@ -93,6 +113,8 @@ class MetricDefinition:
     reporting_note: Optional[str] = None
     # Additional context that the agency is required to report on this metric
     contexts: Optional[List[Context]] = None
+    # Definitions provided to the agency to help them report this metric
+    definitions: Optional[List[Definition]] = None
 
     # Dimensions where the data to be reported should only account for a certain dimension value
     filtered_dimensions: Optional[List[FilteredDimension]] = None

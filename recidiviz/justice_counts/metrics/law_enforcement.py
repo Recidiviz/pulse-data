@@ -26,7 +26,9 @@ from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
+    Definition,
     FilteredDimension,
+    MetricCategory,
     MetricDefinition,
     ReportingFrequency,
 )
@@ -39,6 +41,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 annual_budget = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.BUDGET,
+    category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
     description="Measures the total annual budget (in dollars) of the agency.",
     measurement_type=MeasurementType.INSTANT,
@@ -61,6 +64,7 @@ annual_budget = MetricDefinition(
 residents = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.POPULATION,
+    category=MetricCategory.POPULATIONS,
     display_name="Jurisdiction residents",
     description="Measures the number of residents in the agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
@@ -78,14 +82,25 @@ residents = MetricDefinition(
     ],
 )
 
+
 calls_for_service = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.CALLS_FOR_SERVICE,
+    category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Calls for Service",
     description="Measures the number of calls for service routed to the agency, by call type.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     reporting_note="Do not include calls that are officer-initiated.",
+    definitions=[
+        Definition(
+            term="Calls for service",
+            definition="""One case that represents a request for police service generated
+            by the community and received through an emergency or non-emergency method 
+            (911, 311, 988, online report). Count all calls for service, regardless of
+            whether an underlying incident report was filed.""",
+        )
+    ],
     contexts=[
         Context(
             key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
