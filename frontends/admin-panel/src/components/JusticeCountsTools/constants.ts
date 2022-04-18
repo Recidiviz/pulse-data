@@ -19,11 +19,15 @@ export type ErrorResponse = {
   error: string;
 };
 
+/* eslint-disable camelcase */
 export type User = {
   id: number;
-  email: string;
+  email_address: string;
+  agencies: Agency[];
   name?: string;
+  auth0_user_id?: string;
 };
+/* eslint-enable camelcase */
 
 export type CreateUserRequest = {
   email: string;

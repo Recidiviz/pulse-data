@@ -96,7 +96,7 @@ class UserAccountInterface:
 
     @staticmethod
     def get_users(session: Session) -> List[UserAccount]:
-        return session.query(UserAccount).all()
+        return session.query(UserAccount).order_by(UserAccount.id).all()
 
     @staticmethod
     def get_user_by_email_address(session: Session, email_address: str) -> UserAccount:

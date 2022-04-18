@@ -34,3 +34,16 @@ export const postWithURLAndBody = async (
     },
   });
 };
+
+export const putWithURLAndBody = async (
+  url: string,
+  body: Record<string, unknown> = {}
+): Promise<Response> => {
+  return fetch(`/admin${url}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};

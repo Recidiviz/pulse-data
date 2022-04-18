@@ -75,52 +75,58 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 )
             raise e
 
-    @bp.route("/api/justice_counts_tools/users", methods=["GET", "POST"])
+    @bp.route("/api/justice_counts_tools/users", methods=["GET", "POST", "PUT"])
     @requires_gae_auth
     def users() -> Tuple[Response, HTTPStatus]:
         """On GET request: Returns all UserAccount records.
         On POST request: Creates a User and returns the created User. Returns an error message if the user already exists with that email address.
+        On PUT request: Creates or updates a User and returns the User.
         """
         try:
             with SessionFactory.using_database(
                 SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
             ) as session:
-                if request.method == "POST":
-                    request_json = assert_type(request.json, dict)
-                    email = assert_type(request_json.get("email"), str)
-                    agency_ids = request_json.get("agency_ids")
-                    name = request_json.get("name")
-                    userExists = False
-
-                    try:
+                if request.method == "GET":
+                    return (
+                        jsonify(
+                            {
+                                "users": [
+                                    user.to_json()
+                                    for user in UserAccountInterface.get_users(
+                                        session=session
+                                    )
+                                ]
+                            }
+                        ),
+                        HTTPStatus.OK,
+                    )
+                request_json = assert_type(request.json, dict)
+                email = assert_type(request_json.get("email"), str)
+                agency_ids = request_json.get("agency_ids")
+                name = request_json.get("name")
+                try:
+                    if request.method == "POST":
                         user = UserAccountInterface.create_user(
                             session=session,
                             email_address=email,
                             agency_ids=agency_ids,
                             name=name,
                         )
-                    except ValueError:
-                        return (
-                            jsonify({"error": "Invalid email address format."}),
-                            HTTPStatus.UNPROCESSABLE_ENTITY,
+                    else:
+                        user = UserAccountInterface.create_or_update_user(
+                            session=session,
+                            email_address=email,
+                            agency_ids=agency_ids,
+                            name=name,
                         )
-
+                except ValueError as e:
                     return (
-                        jsonify({"user": user.to_json()}),
-                        HTTPStatus.OK if userExists else HTTPStatus.CREATED,
+                        jsonify({"error": str(e)}),
+                        HTTPStatus.UNPROCESSABLE_ENTITY,
                     )
-                # else request.method must be "GET"
+
                 return (
-                    jsonify(
-                        {
-                            "users": [
-                                user.to_json()
-                                for user in UserAccountInterface.get_users(
-                                    session=session
-                                )
-                            ]
-                        }
-                    ),
+                    jsonify({"user": user.to_json()}),
                     HTTPStatus.OK,
                 )
         except IntegrityError as e:
