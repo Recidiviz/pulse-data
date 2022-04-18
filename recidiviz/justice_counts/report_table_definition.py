@@ -22,10 +22,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.dimensions.location import Country, County, State
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
-from recidiviz.justice_counts.metrics.reported_metric import (
-    ReportedAggregatedDimension,
-    ReportedMetric,
-)
+from recidiviz.justice_counts.metrics.reported_metric import ReportedMetric
 from recidiviz.justice_counts.utils.persistence_utils import update_existing_or_create
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportTableDefinition,
@@ -36,13 +33,12 @@ class ReportTableDefinitionInterface:
     """Contains methods for working with ReportTableDefinitions."""
 
     @staticmethod
-    def create_or_update_from_reported_metric(
-        session: Session,
+    def build_entity(
         reported_metric: ReportedMetric,
-        aggregated_dimension: Optional[ReportedAggregatedDimension] = None,
+        aggregated_dimension_identifier: Optional[str] = None,
     ) -> ReportTableDefinition:
         """Given a Report, a ReportedMetric, and an (optional) aggregated dimension,
-        create (or update) a corresponding ReportTableDefinition.
+        build a corresponding ReportTableDefinition object.
         """
         metric_definition = reported_metric.metric_definition
         (
@@ -52,20 +48,44 @@ class ReportTableDefinitionInterface:
             metric_definition=metric_definition
         )
 
+        return ReportTableDefinition(
+            system=metric_definition.system,
+            metric_type=metric_definition.metric_type,
+            measurement_type=metric_definition.measurement_type,
+            filtered_dimensions=filtered_dimensions,
+            filtered_dimension_values=filtered_dimension_values,
+            aggregated_dimensions=[aggregated_dimension_identifier]
+            if aggregated_dimension_identifier
+            else [],
+            label=reported_metric.metric_definition.key
+            + ("_AGGREGATED" if not aggregated_dimension_identifier else ""),
+        )
+
+    @staticmethod
+    def create_or_update_from_reported_metric(
+        session: Session,
+        reported_metric: ReportedMetric,
+        aggregated_dimension_identifier: Optional[str] = None,
+    ) -> ReportTableDefinition:
+        """Given a Report, a ReportedMetric, and an (optional) aggregated dimension,
+        create (or update) a corresponding ReportTableDefinition.
+        """
+        report_table_definition = ReportTableDefinitionInterface.build_entity(
+            reported_metric=reported_metric,
+            aggregated_dimension_identifier=aggregated_dimension_identifier,
+        )
+
         return update_existing_or_create(
-            ingested_entity=ReportTableDefinition(
-                system=metric_definition.system,
-                metric_type=metric_definition.metric_type,
-                measurement_type=metric_definition.measurement_type,
-                filtered_dimensions=filtered_dimensions,
-                filtered_dimension_values=filtered_dimension_values,
-                aggregated_dimensions=[aggregated_dimension.dimension_identifier()]
-                if aggregated_dimension
-                else [],
-                label=reported_metric.metric_definition.key
-                + ("_AGGREGATED" if not aggregated_dimension else ""),
-            ),
+            ingested_entity=report_table_definition,
             session=session,
+        )
+
+    @staticmethod
+    def get_by_id(session: Session, _id: int) -> ReportTableDefinition:
+        return (
+            session.query(ReportTableDefinition)
+            .filter(ReportTableDefinition.id == _id)
+            .one()
         )
 
     @staticmethod

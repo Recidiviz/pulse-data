@@ -89,7 +89,8 @@ class ReportedMetric:
 
     @value.validator
     def validate_value(self, _attribute: attr.Attribute, value: Any) -> None:
-        # Validate that, for each reported aggregate dimension for which sum_to_total = True,
+        # Validate that all required breakdowns have been reported and that
+        # for each reported aggregate dimension for which sum_to_total = True,
         # the reported values for this aggregate dimension sum to the total value metric
         dimension_identifier_to_reported_dimension = {
             dimension.dimension_identifier(): dimension
@@ -100,10 +101,17 @@ class ReportedMetric:
                 continue
 
             dimension_identifier = dimension_definition.dimension_identifier()
-            reported_dimension_values = dimension_identifier_to_reported_dimension[
+            reported_dimension = dimension_identifier_to_reported_dimension.get(
                 dimension_identifier
-            ].dimension_to_value.values()
+            )
+            if not reported_dimension:
+                if dimension_definition.required:
+                    raise ValueError(
+                        f"The following required disaggregation is missing: {dimension_identifier}"
+                    )
+                return
 
+            reported_dimension_values = reported_dimension.dimension_to_value.values()
             if sum(reported_dimension_values) != value:
                 raise ValueError(
                     f"Sums across dimension {dimension_identifier} do not equal "
