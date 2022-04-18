@@ -178,6 +178,7 @@ def main(
             default_config.default_encoding,
             default_config.default_separator,
             default_config.default_ignore_quotes,
+            default_config.default_always_historical_export,
         )
 
 

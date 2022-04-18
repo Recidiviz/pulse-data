@@ -315,6 +315,7 @@ class DirectIngestRawFileConfig:
         default_separator: str,
         default_line_terminator: Optional[str],
         default_ignore_quotes: bool,
+        default_always_historical_export: bool,
         default_infer_columns_from_config: Optional[bool],
         file_config_dict: YAMLDict,
         yaml_filename: str,
@@ -398,7 +399,7 @@ class DirectIngestRawFileConfig:
             ignore_quotes=ignore_quotes if ignore_quotes else default_ignore_quotes,
             always_historical_export=always_historical_export
             if always_historical_export
-            else False,
+            else default_always_historical_export,
             import_chunk_size_rows=import_chunk_size_rows
             or _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
             infer_columns_from_config=infer_columns_from_config
@@ -423,6 +424,8 @@ class DirectIngestRawFileDefaultConfig:
     default_separator: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # The default setting for whether to ignore quotes in files from this region
     default_ignore_quotes: bool = attr.ib(validator=attr_validators.is_bool)
+    # The default setting for whether to always treat raw files as historical exports
+    default_always_historical_export: bool = attr.ib(validator=attr_validators.is_bool)
     # The default line terminator for raw files from this region
     default_line_terminator: Optional[str] = attr.ib(
         default=None,
@@ -459,6 +462,9 @@ class DirectIngestRegionRawFileConfig:
             "default_line_terminator", str
         )
         default_ignore_quotes = default_contents.pop("default_ignore_quotes", bool)
+        default_always_historical_export = default_contents.pop(
+            "default_always_historical_export", bool
+        )
         default_infer_columns_from_config = default_contents.pop_optional(
             "default_infer_columns_from_config", bool
         )
@@ -470,6 +476,7 @@ class DirectIngestRegionRawFileConfig:
             default_line_terminator=default_line_terminator,
             default_ignore_quotes=default_ignore_quotes,
             default_infer_columns_from_config=default_infer_columns_from_config,
+            default_always_historical_export=default_always_historical_export,
         )
 
     def _region_ingest_dir(self) -> str:
@@ -525,6 +532,7 @@ class DirectIngestRegionRawFileConfig:
                     default_config.default_separator,
                     default_config.default_line_terminator,
                     default_config.default_ignore_quotes,
+                    default_config.default_always_historical_export,
                     default_config.default_infer_columns_from_config,
                     yaml_contents,
                     filename,
