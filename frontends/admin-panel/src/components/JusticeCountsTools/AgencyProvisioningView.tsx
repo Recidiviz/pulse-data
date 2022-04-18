@@ -23,11 +23,15 @@ import {
   Spin,
   Typography,
   message,
+  Space,
 } from "antd";
 import * as React from "react";
+import { SearchOutlined } from "@ant-design/icons";
+import { FilterDropdownProps } from "antd/lib/table/interface";
 import { getAgencies, createAgency } from "../../AdminPanelAPI";
 import {
   AgenciesResponse,
+  Agency,
   CreateAgencyRequest,
   CreateAgencyResponse,
   ErrorResponse,
@@ -39,13 +43,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = React.useState(false);
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-    },
-  ];
+
   const onFinish = async ({ name }: CreateAgencyRequest) => {
     const nameTrimmed = name.trim();
     setShowSpinner(true);
@@ -69,6 +67,62 @@ const AgencyProvisioningView = (): JSX.Element => {
       message.error(`An error occured: ${err}`);
     }
   };
+
+  const getColumnSearchProps = (dataIndex: keyof Agency) => ({
+    filterDropdown: ({
+      setSelectedKeys,
+      selectedKeys,
+      confirm,
+      clearFilters,
+    }: FilterDropdownProps) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={(e) =>
+            setSelectedKeys(e.target.value ? [e.target.value] : [])
+          }
+          onPressEnter={() => confirm()}
+          style={{ marginBottom: 8, display: "block" }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => confirm()}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Search
+          </Button>
+          <Button onClick={clearFilters} size="small" style={{ width: 90 }}>
+            Reset
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered: boolean) => (
+      <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
+    ),
+    onFilter: (value: string | number | boolean, record: Agency) => {
+      const result = record[dataIndex];
+      return result
+        ? result
+            .toString()
+            .toLowerCase()
+            .includes(value.toString().toLowerCase())
+        : false;
+    },
+  });
+
+  const columns = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      ...getColumnSearchProps("name"),
+    },
+  ];
 
   return (
     <>

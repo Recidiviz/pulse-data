@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { getResource, postWithURLAndBody } from "./utils";
+import { getResource, postWithURLAndBody, putWithURLAndBody } from "./utils";
 
 // Agency Provisioning
 export const getAgencies = async (): Promise<Response> => {
@@ -37,6 +37,18 @@ export const createUser = async (
   name?: string
 ): Promise<Response> => {
   return postWithURLAndBody(`/api/justice_counts_tools/users`, {
+    email,
+    agency_ids: agencyIds,
+    name,
+  });
+};
+
+export const createOrUpdateUser = async (
+  email: string,
+  agencyIds?: number[],
+  name?: string
+): Promise<Response> => {
+  return putWithURLAndBody(`/api/justice_counts_tools/users`, {
     email,
     agency_ids: agencyIds,
     name,
