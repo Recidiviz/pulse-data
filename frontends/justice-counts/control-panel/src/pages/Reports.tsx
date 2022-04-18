@@ -170,7 +170,7 @@ const Reports: React.FC = () => {
 
                   {/* Last Modified */}
                   <Cell>
-                    {report.last_modified_at === ""
+                    {!report.last_modified_at
                       ? "-"
                       : printElapsedDaysSinceDate(report.last_modified_at)}
                   </Cell>

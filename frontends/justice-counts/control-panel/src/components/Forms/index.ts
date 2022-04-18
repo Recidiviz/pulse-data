@@ -15,25 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { observer } from "mobx-react-lite";
-import React, { ReactElement } from "react";
-import { Route, Routes } from "react-router-dom";
-
-import Header from "./components/Header";
-import CreateReports from "./components/Reports/CreateReport";
-import Reports from "./pages/Reports";
-
-const App: React.FC = (): ReactElement => {
-  return (
-    <>
-      <Header />
-
-      <Routes>
-        <Route path="/" element={<Reports />} />
-        <Route path="/reports/create" element={<CreateReports />} />
-      </Routes>
-    </>
-  );
-};
-
-export default observer(App);
+export * from "./BinaryRadioButton";
