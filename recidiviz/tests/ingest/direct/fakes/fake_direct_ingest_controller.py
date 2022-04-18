@@ -332,18 +332,22 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         self.launched_ingest_views = launched_ingest_views
 
     def materialize_view_for_args(
-        self, ingest_view_export_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> bool:
-        if ingest_view_export_args in self.processed_args:
+        if ingest_view_materialization_args in self.processed_args:
             return False
 
-        self.delegate.prepare_for_job(ingest_view_export_args)
+        self.delegate.prepare_for_job(ingest_view_materialization_args)
 
         if isinstance(self.delegate, FileBasedMaterializerDelegate):
-            if not isinstance(ingest_view_export_args, GcsfsIngestViewExportArgs):
-                raise ValueError(f"Unexpected args type [{ingest_view_export_args}]")
+            if not isinstance(
+                ingest_view_materialization_args, GcsfsIngestViewExportArgs
+            ):
+                raise ValueError(
+                    f"Unexpected args type [{ingest_view_materialization_args}]"
+                )
             export_path = FileBasedMaterializerDelegate.generate_output_path(
-                ingest_view_export_args
+                ingest_view_materialization_args
             )
             data_local_path = _get_fixture_for_direct_ingest_path(
                 export_path, region_code=self.region.region_code.upper()
@@ -357,8 +361,8 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
                 "TODO(#9717): Will need to fake materialization logic for BQ materialization."
             )
 
-        self.delegate.mark_job_complete(ingest_view_export_args)
-        self.processed_args.append(ingest_view_export_args)
+        self.delegate.mark_job_complete(ingest_view_materialization_args)
+        self.processed_args.append(ingest_view_materialization_args)
 
         return True
 
