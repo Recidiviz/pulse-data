@@ -507,9 +507,7 @@ class DirectIngestCloudTaskManager:
                     cloud_task_args_dict
                 )
             if args_type == NewExtractAndMergeArgs.__name__:
-                return BQIngestViewMaterializationArgs.from_serializable(
-                    cloud_task_args_dict
-                )
+                return NewExtractAndMergeArgs.from_serializable(cloud_task_args_dict)
             # TODO(#11424): Delete this block once BQ materialization is fully shipped.
             if args_type == GcsfsIngestViewExportArgs.__name__:
                 return GcsfsIngestViewExportArgs.from_serializable(cloud_task_args_dict)
