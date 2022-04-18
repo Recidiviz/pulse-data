@@ -33,7 +33,7 @@ from recidiviz.tests.big_query.fakes.big_query_query_rewriter import (
 from recidiviz.tests.big_query.fakes.fake_big_query_address_registry import (
     FakeBigQueryAddressRegistry,
 )
-from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tools.postgres import local_postgres_helpers
 
 _CREATE_ARRAY_CONCAT_AGG_FUNC = """
@@ -191,7 +191,7 @@ class FakeBigQueryDatabase:
         self,
         dataset_id: str,
         table_id: str,
-        mock_schema: MockTableSchema,
+        mock_schema: PostgresTableSchema,
         mock_data: pd.DataFrame,
     ) -> None:
         postgres_table_name = self._address_registry.register_bq_address(

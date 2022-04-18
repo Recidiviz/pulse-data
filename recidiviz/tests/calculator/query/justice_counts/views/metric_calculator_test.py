@@ -34,7 +34,7 @@ from recidiviz.justice_counts.dimensions import corrections, location, person
 from recidiviz.justice_counts.dimensions.base import Dimension
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
-from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 
 _npd = np.datetime64
 
@@ -107,7 +107,7 @@ def row(
     )
 
 
-METRIC_CALCULATOR_SCHEMA = MockTableSchema(
+METRIC_CALCULATOR_SCHEMA = PostgresTableSchema(
     {
         "source_id": sqltypes.Integer(),
         "report_type": sqltypes.String(255),
@@ -135,7 +135,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "YY"], [3, "ZZ"]], columns=["id", "name"]
             ),
@@ -143,7 +145,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -192,7 +196,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -239,7 +243,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -264,7 +268,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 3000],
@@ -336,7 +342,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "AA"], [2, "XX"], [3, "YY"], [4, "ZZ"]], columns=["id", "name"]
             ),
@@ -344,7 +352,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -403,7 +413,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -475,7 +485,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -502,7 +512,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, ["PAROLE", "Parole"], 3000],
@@ -613,7 +625,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "YY"], [3, "ZZ"], [4, "XA"], [5, "BJS"], [6, "FED"]],
                 columns=["id", "name"],
@@ -622,7 +636,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -701,7 +717,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -789,7 +805,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -820,7 +836,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, ["MALE", "Male"], 3000],
@@ -1035,7 +1053,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "XX Courts"]], columns=["id", "name"]
             ),
@@ -1043,7 +1063,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -1082,7 +1104,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1111,7 +1133,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1138,7 +1160,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 995],
@@ -1205,13 +1229,17 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -1240,7 +1268,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1279,7 +1307,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1302,7 +1330,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, ["PAROLE"], 450],
@@ -1366,13 +1396,17 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -1401,7 +1435,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1439,7 +1473,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1462,7 +1496,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 450],
@@ -1524,13 +1560,17 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -1559,7 +1599,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1588,7 +1628,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1606,7 +1646,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, ["BLACK", ""], 101],
@@ -1692,7 +1734,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "XX Courts"]], columns=["id", "name"]
             ),
@@ -1700,7 +1744,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -1739,7 +1785,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1768,7 +1814,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1802,7 +1848,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 1],
@@ -1877,13 +1925,17 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -1912,7 +1964,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1941,7 +1993,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -1967,7 +2019,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 1],
@@ -2022,13 +2076,17 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -2057,7 +2115,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2086,7 +2144,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2119,7 +2177,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 1],
@@ -2196,13 +2256,17 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -2231,7 +2295,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2260,7 +2324,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2286,7 +2350,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 1],
@@ -2340,13 +2406,17 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -2375,7 +2445,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2404,7 +2474,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2425,7 +2495,9 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, ["NEW_COMMITMENT", "A"], 3],
@@ -2623,7 +2695,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id=bq_address.dataset_id,
             table_id=bq_address.table_id,
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 {"state_code": sqltypes.String, "date_partition": sqltypes.Date}
             ),
             mock_data=pd.DataFrame(
@@ -2642,7 +2714,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "XX Courts"]], columns=["id", "name"]
             ),
@@ -2650,7 +2724,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -2689,7 +2765,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2718,7 +2794,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2752,7 +2828,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 1],
@@ -2822,13 +2900,17 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -2857,7 +2939,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2886,7 +2968,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -2916,7 +2998,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 1],
@@ -3007,7 +3091,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame(
                 [[1, "XX"], [2, "YY"], [3, "ZZ"]], columns=["id", "name"]
             ),
@@ -3015,7 +3101,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -3054,7 +3142,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -3092,7 +3180,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -3117,7 +3205,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, [], 3000],
@@ -3190,13 +3280,17 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="source_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Source.__table__
+            ),
             mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
         )
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -3225,7 +3319,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -3254,7 +3348,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -3305,7 +3399,9 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     # 2020: YTD each month for full year

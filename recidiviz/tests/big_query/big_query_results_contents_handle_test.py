@@ -28,7 +28,7 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 )
 from recidiviz.tests.big_query.fakes.fake_big_query_client import FakeBigQueryClient
 from recidiviz.tests.big_query.fakes.fake_big_query_database import FakeBigQueryDatabase
-from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -52,7 +52,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
         self.fake_bq_db.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="my_table",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 data_types={"foo": sqltypes.String(255), "bar": sqltypes.Integer()}
             ),
             mock_data=pd.DataFrame(
@@ -80,7 +80,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
         self.fake_bq_db.create_mock_bq_table(
             dataset_id="my_dataset",
             table_id="my_empty_table",
-            mock_schema=MockTableSchema({"foo": sqltypes.Integer()}),
+            mock_schema=PostgresTableSchema({"foo": sqltypes.Integer()}),
             mock_data=pd.DataFrame([]),
         )
 

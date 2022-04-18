@@ -31,7 +31,7 @@ from recidiviz.calculator.query.justice_counts.views import (
 from recidiviz.justice_counts.dimensions import location
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
-from recidiviz.tests.big_query.fakes.fake_table_schema import MockTableSchema
+from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_test import (
     METRIC_CALCULATOR_SCHEMA,
     FakeState,
@@ -44,7 +44,7 @@ from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_tes
 class JailsOutputViewTest(BigQueryViewTestCase):
     """Tests the Jails output view."""
 
-    INPUT_SCHEMA = MockTableSchema(
+    INPUT_SCHEMA = PostgresTableSchema(
         {
             **METRIC_CALCULATOR_SCHEMA.data_types,
             "compare_date_partition": sqltypes.Date(),
@@ -260,7 +260,7 @@ class JailsOutputViewTest(BigQueryViewTestCase):
 class JailsMetricsIntegrationTest(BigQueryViewTestCase):
     """Tests the Jails output view."""
 
-    INPUT_SCHEMA = MockTableSchema(
+    INPUT_SCHEMA = PostgresTableSchema(
         {
             **METRIC_CALCULATOR_SCHEMA.data_types,
             "compare_start_of_month": sqltypes.Date(),
@@ -277,7 +277,9 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -316,7 +318,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -358,7 +360,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -381,7 +383,9 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, ["US_XX_ALPHA", "00001"], 3000],
@@ -404,7 +408,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="external_reference",
             table_id="county_fips",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 data_types={
                     "fips": sqltypes.String(255),
                     "state_code": sqltypes.String(255),
@@ -425,7 +429,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="external_reference",
             table_id="county_resident_populations",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 data_types={
                     "fips": sqltypes.String(255),
                     "year": sqltypes.Integer,
@@ -893,7 +897,9 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Report.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [
@@ -932,7 +938,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_definition_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableDefinition.__table__
             ),
             mock_data=pd.DataFrame(
@@ -965,7 +971,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_table_instance_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
                 schema.ReportTableInstance.__table__
             ),
             mock_data=pd.DataFrame(
@@ -986,7 +992,9 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="cell_materialized",
-            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_schema=PostgresTableSchema.from_sqlalchemy_table(
+                schema.Cell.__table__
+            ),
             mock_data=pd.DataFrame(
                 [
                     [1, 1, ["US_XX", "US_XX_ALPHA", "00001"], 3000],
@@ -1011,7 +1019,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="external_reference",
             table_id="county_fips",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 data_types={
                     "fips": sqltypes.String(255),
                     "state_code": sqltypes.String(255),
@@ -1033,7 +1041,7 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
         self.create_mock_bq_table(
             dataset_id="external_reference",
             table_id="county_resident_populations",
-            mock_schema=MockTableSchema(
+            mock_schema=PostgresTableSchema(
                 data_types={
                     "fips": sqltypes.String(255),
                     "year": sqltypes.Integer,
