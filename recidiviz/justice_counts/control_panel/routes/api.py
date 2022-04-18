@@ -17,7 +17,7 @@
 """Implements API routes for the Justice Counts Control Panel backend API."""
 from typing import Callable, Optional
 
-from flask import Blueprint, Response, jsonify, make_response, request
+from flask import Blueprint, Response, g, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
@@ -68,15 +68,13 @@ def get_api_blueprint(
     def get_reports() -> Response:
         request_dict = assert_type(request.args.to_dict(), dict)
         agency_id = int(assert_type(request_dict.get("agency_id"), str))
-        user_id = int(assert_type(request_dict.get("user_id"), str))
         if agency_id is None:
             return make_response("agency_id parameter is required", 500)
 
-        if user_id is None:
-            return make_response("user_id parameter is required", 500)
-
         reports = ReportInterface.get_reports_by_agency_id(
-            session=current_session, agency_id=agency_id, user_account_id=user_id
+            session=current_session,
+            agency_id=agency_id,
+            user_account_id=g.user_context.user_account.id,
         )
         report_json = jsonify(
             [
