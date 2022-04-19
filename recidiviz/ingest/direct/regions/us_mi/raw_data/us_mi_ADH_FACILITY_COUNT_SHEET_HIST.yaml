@@ -1,7 +1,7 @@
 file_tag: ADH_FACILITY_COUNT_SHEET_HIST
 file_description: |-
   TODO(#11282) fill out 
-data_classification: source
+data_classification: validation
 primary_key_cols: []
 columns:
   - name: facility_count_sheet_id
@@ -26,3 +26,4 @@ columns:
   - name: temperature
   - name: perm_temp_flg
   - name: visitor_flag
+always_historical_export: False
