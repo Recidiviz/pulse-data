@@ -135,6 +135,14 @@ function pre_deploy_configure_infrastructure {
     ulimit -n 1024 || exit_on_fail
     deploy_terraform_infrastructure ${PROJECT} ${COMMIT_HASH} ${DOCKER_IMAGE_TAG} || exit_on_fail
 
+    echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
+    # The remote migration execution script doesn't play nice with run_cmd
+    gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data \
+        && git fetch --all --tags --prune --prune-tags \
+        && git checkout $COMMIT_HASH \
+        && pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh $COMMIT_HASH $PROJECT"
+    exit_on_fail
+
     echo "Deploying cron.yaml"
     verify_hash $COMMIT_HASH
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
