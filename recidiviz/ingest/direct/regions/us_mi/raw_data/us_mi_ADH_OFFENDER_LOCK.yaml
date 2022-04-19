@@ -1,16 +1,31 @@
 file_tag: ADH_OFFENDER_LOCK
 file_description: |-
-  TODO(#11282) fill out 
+  For individuals who are incarcerated at MDOC facilities, this table contains information
+  regarding their unit in the correctional facility.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - offender_lock_id
 columns:
   - name: offender_lock_id
+    description: The OMNI-database generated ID for the lock row.
   - name: offender_id
+    description: The ID of the justice-involved individual to which this lock applies.
     is_pii: True
   - name: unit_lock_id
+    description: |-
+      The unit lock ID of the justice-involved person (as referenced by UNIT_LOCK table).
   - name: location_id
+    description: The location ID of the lock (referenced by LOCATION table).
   - name: date_in
+    description: When the person entered this lock unit.
+    is_datetime: True
+    datetime_sql_parsers: 
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
   - name: date_out
+    description: When the person exited this lock unit.
+    is_datetime: True
+    datetime_sql_parsers: 
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
   - name: permanent_temporary_flag
   - name: last_update_user
   - name: last_update_date

@@ -1,11 +1,17 @@
 file_tag: ADH_UNIT_LOCK
 file_description: |-
-  TODO(#11282) fill out
+  This table contains all of the units within facilities that accompany a person's movement 
+  while they are under jurisdiction in MIDOC.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - unit_lock_id
 columns:
   - name: unit_lock_id
+    description: The OMNI-database generated ID for the unit lock row.
   - name: security_level_id
+    description: |-
+      The ID indicating the security level for the unit, as indicated by the REFERENCE_CODE
+      table.
   - name: reporting_station_id
   - name: cell_type_id
   - name: cell_status_id
