@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     PO_REPORT_DATASET,
-    SESSIONS_DATASET,
+    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -56,9 +56,9 @@ CASE_TRIAGE_FEEDBACK_ACTIONS_QUERY_TEMPLATE = """
         ON district.officer_external_id = recipients.officer_external_id
         AND district.state_code = recipients.state_code
         AND DATE_TRUNC(DATE(actions.timestamp), MONTH) = DATE(district.year, district.month, 1)
-    LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` client
+    LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` client
         ON recipients.state_code = client.state_code
-        AND actions.person_external_id = client.prioritized_external_id
+        AND actions.person_external_id = client.external_id
 
     -- Do not include any feedback actions that were reverted within 3 days of the original action
     LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_person_action_removed` action_removed
@@ -75,10 +75,10 @@ CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_NAME,
     view_query_template=CASE_TRIAGE_FEEDBACK_ACTIONS_QUERY_TEMPLATE,
     description=CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
-    static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    po_report_dataset=PO_REPORT_DATASET,
     case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,
+    po_report_dataset=PO_REPORT_DATASET,
+    state_base_dataset=STATE_BASE_DATASET,
+    static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == "__main__":

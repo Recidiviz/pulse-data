@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Person level demographics - age, race, gender"""
+"""Person level demographics - age, race, gender, birthdate"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -28,72 +28,65 @@ from recidiviz.utils.metadata import local_project_id_override
 PERSON_DEMOGRAPHICS_VIEW_NAME = "person_demographics"
 
 PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION = (
-    """Person level demographics - age, race, gender, external ID"""
+    """Person level demographics - age, race, gender, birthdate"""
 )
 
-PERSON_DEMOGRAPHICS_PRIORITIZED_ID_TYPES = """('US_ID_DOC', 'US_ME_DOC', 'US_MO_DOC', 'US_ND_SID', 'US_PA_INMATE', 'US_TN_DOC')"""
-
 PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
-    /*{description}*/
-    WITH race_or_ethnicity_cte AS 
-    (
+/*{description}*/
+
+WITH race_or_ethnicity_cte AS  (
     SELECT 
         state_code,
         person_id,
         race as race_or_ethnicity,
-    FROM `{project_id}.{base_dataset}.state_person_race`
+    FROM
+        `{project_id}.{base_dataset}.state_person_race`
     UNION ALL
     SELECT 
         state_code,
         person_id,
         ethnicity as race_or_ethnicity,
-    FROM `{project_id}.{base_dataset}.state_person_ethnicity`
-    )
-    ,
-    prioritized_race_ethnicity_cte AS
-    (
+    FROM
+        `{project_id}.{base_dataset}.state_person_ethnicity`
+)
+    
+,  prioritized_race_ethnicity_cte AS (
     SELECT DISTINCT
         state_code,
         person_id,
-        FIRST_VALUE(race_or_ethnicity) OVER (PARTITION BY state_code, person_id ORDER BY COALESCE(representation_priority, 100)) as prioritized_race_or_ethnicity,
-    FROM race_or_ethnicity_cte
-    LEFT JOIN `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-            USING (state_code, race_or_ethnicity)
+        FIRST_VALUE(race_or_ethnicity) OVER (
+            PARTITION BY state_code, person_id ORDER BY IFNULL(representation_priority, 100)
+        ) AS prioritized_race_or_ethnicity,
+    FROM
+        race_or_ethnicity_cte
+    LEFT JOIN
+        `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
+    USING
+        (state_code, race_or_ethnicity)
     )
-    ,
-    prioritized_external_id_table AS
-    (
-    SELECT DISTINCT
-        state_code,
-        person_id,
-        external_id AS prioritized_external_id,
-    FROM `{project_id}.{base_dataset}.state_person_external_id`
-    WHERE id_type IN {prioritized_id_types}
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY external_id) = 1
-    )
-    SELECT 
-        state_code,
-        person_id,
-        birthdate,
-        gender,
-        prioritized_race_or_ethnicity,
-        prioritized_external_id,
-    FROM `{project_id}.{base_dataset}.state_person`
-    FULL OUTER JOIN prioritized_race_ethnicity_cte
-        USING(state_code, person_id) 
-    LEFT JOIN prioritized_external_id_table
-        USING(state_code, person_id) 
-    ORDER BY
-        state_code,
-        person_id
-    """
+
+SELECT 
+    state_code,
+    person_id,
+    birthdate,
+    gender,
+    prioritized_race_or_ethnicity,
+FROM
+    `{project_id}.{base_dataset}.state_person`
+FULL OUTER JOIN 
+    prioritized_race_ethnicity_cte
+USING
+    (state_code, person_id) 
+ORDER BY
+    state_code,
+    person_id
+"""
 
 PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=PERSON_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=PERSON_DEMOGRAPHICS_QUERY_TEMPLATE,
     description=PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    prioritized_id_types=PERSON_DEMOGRAPHICS_PRIORITIZED_ID_TYPES,
     base_dataset=STATE_BASE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     clustering_fields=["state_code"],
