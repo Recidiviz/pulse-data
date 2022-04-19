@@ -17,6 +17,8 @@
 
 import styled from "styled-components/macro";
 
+import { palette } from "../GlobalStyles/Palette";
+
 type HeaderCellProps = {
   textAlign?: "right" | "left";
 };
@@ -27,6 +29,10 @@ export const HeaderRow = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: fixed;
+  top: 0;
+  z-index: 1;
+  background: ${palette.solid.white};
   padding: 16px 22px;
 `;
 

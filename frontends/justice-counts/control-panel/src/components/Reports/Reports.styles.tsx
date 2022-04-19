@@ -20,6 +20,10 @@ import styled from "styled-components/macro";
 import { palette } from "../GlobalStyles";
 
 export const ReportsHeader = styled.div`
+  width: 100%;
+  background: ${palette.solid.white};
+  position: fixed;
+  top: 36px;
   padding: 0px 22px;
 `;
 
@@ -39,7 +43,7 @@ export const FilterBar = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
-  border-bottom: 1px solid ${palette.line.grey};
+  border-bottom: 1px solid ${palette.solid.grey};
 `;
 
 export const FilterBy = styled.div<{ selected?: boolean }>`
@@ -47,14 +51,14 @@ export const FilterBy = styled.div<{ selected?: boolean }>`
   padding: 20px 0;
   margin-right: 20px;
   color: ${({ selected }) =>
-    selected ? palette.text.darkgrey : palette.text.grey};
+    selected ? palette.solid.darkgrey : palette.highlight.grey6};
   border-bottom: ${({ selected }) =>
-    selected ? `3px solid ${palette.highlight.dark}` : `3px solid transparent`};
+    selected ? `3px solid ${palette.solid.blue}` : `3px solid transparent`};
   transition: color 0.3s ease;
 
   &:hover {
     cursor: pointer;
-    color: ${palette.text.darkgrey};
+    color: ${palette.solid.darkgrey};
   }
 `;
 
@@ -64,12 +68,10 @@ export const SortBy = styled.div`
 `;
 
 export const Table = styled.div`
-  height: calc(100% - 280px);
-  overflow: scroll;
+  padding: 235px 0 50px 0;
 `;
 
 export const Row = styled.div<{
-  published?: boolean;
   noHover?: boolean;
 }>`
   width: 100%;
@@ -78,15 +80,14 @@ export const Row = styled.div<{
   align-items: center;
   font-size: 0.85rem;
   padding: 10px 22px;
-  color: ${({ published }) =>
-    published ? palette.text.green : palette.text.darkgrey};
+  color: ${palette.solid.darkgrey};
   transition: 0.3s ease;
   &:hover {
     ${({ noHover }) =>
       noHover
         ? ``
         : `cursor: pointer;
-           background-color: ${palette.highlight.lightergrey};
+           background-color: ${palette.solid.lightgreen};
     `}
   }
 `;
@@ -160,22 +161,28 @@ export const Cell = styled.div<{ capitalize?: boolean }>`
   }
 `;
 
-export const Badge = styled.div<{ published?: boolean }>`
-  width: 77px;
+export const Badge = styled.div<{ status?: string }>`
   height: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: ${({ published }) =>
-    published ? palette.highlight.green : palette.highlight.lightgrey};
-  color: ${({ published }) =>
-    published ? palette.text.green : palette.text.grey};
-  border-radius: 3px;
+  background: ${({ status }) => {
+    if (status === "DRAFT") {
+      return palette.solid.orange;
+    }
+    if (status === "PUBLISHED") {
+      return palette.solid.green;
+    }
+    if (status === "NOT_STARTED") {
+      return palette.solid.red;
+    }
+  }};
+  color: ${palette.solid.white};
   padding: 4px 8px;
   margin-left: 10px;
   font-size: 0.7rem;
   font-weight: 600;
-  text-transform: uppercase;
+  text-transform: capitalize;
 `;
 
 export const ArrowDownIcon = styled.div`
@@ -183,7 +190,7 @@ export const ArrowDownIcon = styled.div`
   margin: auto 0 auto 10px;
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
-  border-top: 4px solid ${palette.highlight.dark};
+  border-top: 4px solid ${palette.solid.darkgrey};
 `;
 
 export const NoReportsDisplay = styled.div`

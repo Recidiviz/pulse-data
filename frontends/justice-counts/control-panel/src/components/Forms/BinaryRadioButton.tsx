@@ -41,16 +41,16 @@ export const RadioButtonElement = styled.input`
   opacity: 0;
 
   &:focus + label {
-    border: 1px solid rgba(23, 28, 43, 0.15);
+    border: 1px solid ${palette.highlight.grey3};
   }
 
   &:checked + label {
-    background-color: ${palette.text.blue};
-    border-color: ${palette.text.blue};
-    color: ${palette.white};
+    background-color: ${palette.solid.blue};
+    border-color: ${palette.solid.blue};
+    color: ${palette.solid.white};
   }
   &:checked + label:hover {
-    background-color: rgba(0, 86, 224, 1);
+    background-color: ${palette.solid.darkblue};
   }
 `;
 
@@ -61,10 +61,10 @@ export const RadioButtonLabel = styled.label`
   width: 100%;
   height: 56px;
 
-  background: ${palette.highlight.lightergrey};
+  background: ${palette.highlight.grey1};
   padding: 10px 20px;
   font-size: 16px;
-  border: 1px solid rgba(23, 28, 43, 0.15);
+  border: 1px solid ${palette.highlight.grey3};
   border-radius: 2px;
   transition: 0.2s ease;
 
@@ -72,7 +72,7 @@ export const RadioButtonLabel = styled.label`
 
   &:hover {
     cursor: pointer;
-    background: ${palette.highlight.lightgrey};
+    background: ${palette.highlight.grey2};
   }
 `;
 

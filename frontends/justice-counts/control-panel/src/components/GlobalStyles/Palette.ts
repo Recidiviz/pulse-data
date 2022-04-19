@@ -16,22 +16,27 @@
 // =============================================================================
 
 export const palette = {
-  white: `rgba(255,255,255)`,
-  text: {
-    darkgrey: `rgba(23, 28, 43, 1)`,
+  solid: {
+    white: `rgba(255,255,255, 1)`,
+    red: `rgba(221, 18, 18, 1)`,
+    orange: `rgba(255, 128, 0, 1)`,
     blue: `rgba(0, 115, 229, 1)`,
-    grey: `rgba(23, 28, 43, 0.6)`,
+    darkblue: `rgba(0, 86, 224, 1)`,
     green: `rgba(0, 117, 65, 1)`,
+    lightgreen: `rgba(239, 244, 245, 1)`,
+    grey: `rgba(119, 119, 119, 1)`,
+    darkgrey: `rgba(23, 28, 43, 1)`,
   },
   highlight: {
-    green: `rgba(0, 117, 65, 0.1)`,
-    lightblue: `rgba(0, 115, 229, 0.05)`,
+    red: `rgba(221, 18, 18, 0.05)`,
     blue: `rgba(0, 115, 229, 0.1)`,
-    lightgrey: `rgba(23, 28, 43, 0.1)`,
-    lightergrey: `rgba(23, 28, 43, 0.05)`,
-    dark: `rgba(23, 28, 43, 1)`,
-  },
-  line: {
-    grey: `rgba(119, 119, 119, 1)`,
+    lightblue: `rgba(0, 115, 229, 0.05)`,
+    green: `rgba(0, 117, 65, 0.1)`,
+    grey1: `rgba(23, 28, 43, 0.05)`,
+    grey2: `rgba(23, 28, 43, 0.1)`,
+    grey3: `rgba(23, 28, 43, 0.15)`,
+    grey4: `rgba(23, 28, 43, 0.3)`,
+    grey5: `rgba(23, 28, 43, 0.4)`,
+    grey6: `rgba(23, 28, 43, 0.6)`,
   },
 };

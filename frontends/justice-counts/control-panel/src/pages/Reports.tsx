@@ -53,9 +53,9 @@ enum ReportStatusFilterOption {
 
 const reportListColumnTitles = [
   "Report Period",
-  "Last Modified",
+  "Frequency",
   "Editors",
-  "Status",
+  "Last Modified",
 ];
 
 const Reports: React.FC = () => {
@@ -155,7 +155,7 @@ const Reports: React.FC = () => {
           filteredReportsMemoized.map(
             (report: ReportOverview, index: number) => (
               <Fragment key={report.id}>
-                <Row published={report.status === "PUBLISHED"}>
+                <Row>
                   {/* Report Period */}
                   <Cell id="report_period">
                     {printReportTitle(
@@ -163,17 +163,13 @@ const Reports: React.FC = () => {
                       report.year,
                       report.frequency
                     )}
-                    <Badge published={report.status === "PUBLISHED"}>
-                      {report.frequency}
+                    <Badge status={report.status}>
+                      {removeSnakeCase(report.status).toLowerCase()}
                     </Badge>
                   </Cell>
 
-                  {/* Last Modified */}
-                  <Cell>
-                    {!report.last_modified_at
-                      ? "-"
-                      : printElapsedDaysSinceDate(report.last_modified_at)}
-                  </Cell>
+                  {/* Status */}
+                  <Cell capitalize>{report.frequency.toLowerCase()}</Cell>
 
                   {/* Editors */}
                   <Cell>
@@ -182,9 +178,11 @@ const Reports: React.FC = () => {
                       : printCommaSeparatedList(report.editors)}
                   </Cell>
 
-                  {/* Status */}
-                  <Cell capitalize>
-                    {removeSnakeCase(report.status).toLowerCase()}
+                  {/* Last Modified */}
+                  <Cell>
+                    {!report.last_modified_at
+                      ? "-"
+                      : printElapsedDaysSinceDate(report.last_modified_at)}
                   </Cell>
                 </Row>
 
