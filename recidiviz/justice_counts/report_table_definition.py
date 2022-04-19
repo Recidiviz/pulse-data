@@ -33,6 +33,14 @@ class ReportTableDefinitionInterface:
     """Contains methods for working with ReportTableDefinitions."""
 
     @staticmethod
+    def get_by_ids(session: Session, ids: List[int]) -> List[ReportTableDefinition]:
+        return (
+            session.query(ReportTableDefinition)
+            .filter(ReportTableDefinition.id.in_(ids))
+            .all()
+        )
+
+    @staticmethod
     def build_entity(
         reported_metric: ReportedMetric,
         aggregated_dimension_identifier: Optional[str] = None,
@@ -97,9 +105,6 @@ class ReportTableDefinitionInterface:
          metric, and location properties of the agency.
         """
         filtered_dimensions = metric_definition.filtered_dimensions or []
-
-        # TODO(#12064) Add test for storing a ReportedMetric whose MetricDefinition
-        # has non-empty `filtered_dimensions`
         filtered_dimension_keys, filtered_dimension_values = [
             [
                 dimension.dimension.dimension_identifier()
@@ -113,7 +118,8 @@ class ReportTableDefinitionInterface:
             State.dimension_identifier(),
             County.dimension_identifier(),
         ]
-        # TODO(#11973): Add filtered_dimension values from report.source
+        # TODO(#11973): Add Country, State, and County values from report.source
+        # once we start saving location information on the Agency model
         filtered_dimension_values += []
 
         return filtered_dimension_keys, filtered_dimension_values
