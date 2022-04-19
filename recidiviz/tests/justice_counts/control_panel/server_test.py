@@ -24,6 +24,8 @@ from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
+    ReportingFrequency,
+    ReportStatus,
     Source,
     UserAccount,
 )
@@ -34,6 +36,7 @@ from recidiviz.tests.justice_counts.utils import (
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
+from recidiviz.utils.types import assert_type
 
 
 @pytest.mark.uses_db
@@ -88,20 +91,43 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response = self.client.get(f"/api/reports?agency_id={report.source_id}")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json,
-            [
-                {
-                    "editors": [],
-                    "frequency": "MONTHLY",
-                    "id": 1,
-                    "last_modified_at": None,
-                    "month": 6,
-                    "status": "NOT_STARTED",
-                    "year": 2022,
-                }
-            ],
+        response_list = assert_type(response.json, list)
+        self.assertEqual(len(response_list), 1)
+        response_json = assert_type(response_list[0], dict)
+        self.assertEqual(response_json["editors"], [])
+        self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
+        self.assertEqual(response_json["last_modified_at"], None)
+        self.assertEqual(response_json["month"], 6)
+        self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
+        self.assertEqual(response_json["year"], 2022)
+
+    def test_create_report(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add_all([agency, user])
+        self.session.commit()
+        assigned_user_id = self.session.query(UserAccount).one().id
+        assigned_agency_id = self.session.query(Agency).one().id
+        month = 3
+        year = 2022
+        response = self.client.post(
+            "/api/reports",
+            json={
+                "agency_id": assigned_agency_id,
+                "user_id": assigned_user_id,
+                "month": month,
+                "year": year,
+                "frequency": ReportingFrequency.MONTHLY.value,
+            },
         )
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["editors"], [])
+        self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
+        self.assertEqual(response_json["last_modified_at"], None)
+        self.assertEqual(response_json["month"], 3)
+        self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
+        self.assertEqual(response_json["year"], 2022)
 
     def test_create_user(self) -> None:
         email_address = "user@gmail.com"
@@ -117,18 +143,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             },
         )
         self.assertEqual(admin_response.status_code, 200)
-        self.assertEqual(
-            admin_response.json,
-            {
-                "agencies": [{"id": 1, "name": agency_name}],
-                "auth0_user_id": None,
-                "email_address": email_address,
-                "id": 1,
-                "name": name,
-            },
-        )
+        response_json = assert_type(admin_response.json, dict)
+        self.assertEqual(response_json["agencies"], [{"id": 1, "name": agency_name}])
+        self.assertEqual(response_json["email_address"], email_address)
+        self.assertEqual(response_json["auth0_user_id"], None)
+        self.assertEqual(response_json["name"], name)
         db_item = self.session.query(UserAccount).one_or_none()
-        self.assertEqual(db_item.to_json(), admin_response.json)
+        self.assertEqual(db_item.to_json(), response_json)
 
     def test_update_user(self) -> None:
         agency_name = "Agency Alpha"
@@ -145,18 +166,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             json={"email_address": email_address, "auth0_user_id": auth0_user_id},
         )
         self.assertEqual(user_response.status_code, 200)
-        self.assertEqual(
-            user_response.json,
-            {
-                "agencies": [{"id": 1, "name": agency_name}],
-                "auth0_user_id": auth0_user_id,
-                "email_address": email_address,
-                "id": 1,
-                "name": "Jane Doe",
-            },
-        )
-        db_items = self.session.query(UserAccount).all()
-        self.assertEqual(len(db_items), 1)
+        response_json = assert_type(user_response.json, dict)
+        self.assertEqual(response_json["agencies"], [{"id": 1, "name": agency_name}])
+        self.assertEqual(response_json["email_address"], email_address)
+        self.assertEqual(response_json["auth0_user_id"], auth0_user_id)
+        self.assertEqual(response_json["name"], "Jane Doe")
+        db_item = self.session.query(UserAccount).one_or_none()
+        self.assertEqual(db_item.to_json(), response_json)
 
     def test_session(self) -> None:
         # Add data
