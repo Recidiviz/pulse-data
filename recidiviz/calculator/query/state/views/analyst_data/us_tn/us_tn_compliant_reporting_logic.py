@@ -173,7 +173,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         -- While the policy technically states the test must have been passed within the last 12 months, increasing the lookback
         -- window allows us to include people on the margin of eligibility who may have received a negative drug screen
         -- just before the 12 month cutoff
-        WHERE DATE_DIFF(CURRENT_DATE,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE),DAY)<=395
+        WHERE DATE_DIFF(CURRENT_DATE,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE),DAY) <= 365
         AND ContactNoteType LIKE '%DRU%'
     ),
     -- This CTE calculates total drug screens and total negative screens in the past year
@@ -181,12 +181,28 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT Offender_ID, 
                 sum(drug_screen) AS total_screens_in_past_year,
                 sum(negative_drug_test) as sum_negative_tests_in_past_year, 
-                max(most_recent_test_negative) as most_recent_test_negative
+                max(is_most_recent_test_negative) as is_most_recent_test_negative,
+                max(most_recent_test_date) as most_recent_test_date,
+                max(most_recent_positive_test_date) as most_recent_positive_test_date,
+                
         FROM (
             SELECT *,
                 -- Since we've already limited to just drug screen contacts, this looks at whether the latest screen was a negative one 
-                CASE WHEN ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY CAST(CAST(contact_date AS datetime) AS DATE) DESC) = 1
-                     AND ContactNoteType IN ('DRUN','DRUX','DRUM') THEN 1 ELSE 0 END AS most_recent_test_negative
+                CASE WHEN ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY contact_date DESC) = 1
+                        AND ContactNoteType IN ('DRUN','DRUX','DRUM') THEN 1 
+                     WHEN ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY contact_date DESC) = 1
+                        AND ContactNoteType NOT IN ('DRUN','DRUX','DRUM') THEN 0                     
+                    END AS is_most_recent_test_negative,
+                -- Most recent test date
+                CASE WHEN ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY contact_date DESC) = 1
+                     THEN contact_date 
+                     END AS most_recent_test_date,
+                -- Most recent positive test date
+                CASE WHEN ContactNoteType NOT IN ('DRUN','DRUX','DRUM') 
+                    AND ROW_NUMBER() OVER(PARTITION BY Offender_ID
+                                            ORDER BY CASE WHEN ContactNoteType NOT IN ('DRUN','DRUX','DRUM') THEN 0 ELSE 1 END ASC, contact_date DESC) = 1
+                    THEN contact_date
+                    END AS most_recent_positive_test_date
             FROM contacts_cte 
         )
         GROUP BY 1    
@@ -531,32 +547,35 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             CASE WHEN total_screens_in_past_year IS NULL THEN 0 
                 ELSE total_screens_in_past_year END AS total_screens_in_past_year,
         -- Logic here: for non-drug-offense:
-        -- If there is no latest screen (i.e. no screen in the last ~16 months) they're eligible
-        -- If the latest screen is over a year old, they're eligible
-        -- If they latest screen is negative, they're eligible
-        -- If they have 1 negative test in the past year, they're eligible (this might catch people who have 1 negative test and therefore
-        -- meet the requirement, but their latest DRU type is positive)
-        CASE 
-            -- Potentially comment out
-            WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND Last_DRU_Note IS NULL THEN 1
-             -- Potentially comment out
-             WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND DATE_DIFF(CURRENT_DATE,Last_DRU_Note,MONTH)>= 12 THEN 1
-             WHEN COALESCE(drug_offense,drug_offense_ever) = 0 and Last_DRU_Type IN ('DRUN','DRUX','DRUM') THEN 1
-             -- Potentially comment out
-             WHEN COALESCE(drug_offense,drug_offense_ever) = 0 and sum_negative_tests_in_past_year >= 1 THEN 1
-             -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info
-             -- or where drug offense = 1 since there are separate flags for that
+            -- They must be 6 months or more past their latest positive test. This will be null for people with no positive test (or not tests at all) - for those, we assume they meet this condition
+            -- They must have at least 1 negative test in the past year OR they must be missing a recent screen (i.e. no screen in the last ~16 month)
+            -- About 20% of all people in the standards sheet are missing a recent drug screen. For people who don't have drug offenses, we think it's still worth surfacing them since drug screens are easy to do
+        CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 0 
+            AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 180 
+            AND (sum_negative_tests_in_past_year >= 1
+                OR Last_DRU_Note IS NULL
+                )
+            -- If someone has had a positive test, even if its more than 6 months old, we enforce that their most recent test is negative
+            AND (is_most_recent_test_negative = 1 OR most_recent_positive_test_date IS NULL)       
+             THEN 1
+            -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info or where drug offense = 1 since there are separate flags for that
              WHEN COALESCE(drug_offense,drug_offense_ever) IS NULL THEN NULL
              WHEN COALESCE(drug_offense,drug_offense_ever) = 1 THEN NULL
-             ELSE 0 END AS drug_screen_pass_flag_non_drug_offense,
+             ELSE 0 
+             END AS drug_screen_pass_flag_non_drug_offense,
         -- Logic here: for drug offenses
-        -- If there are 2 negative tests in the past year and the most recent test is negative, eligible
-        CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 1 and sum_negative_tests_in_past_year >= 2 and most_recent_test_negative = 1 THEN 1
+            -- If there are 2 negative tests in the past year, the most recent test is negative, and the most recent positive test (if it exists) is over 12 months old, they're eligible
+        CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 1 
+            AND sum_negative_tests_in_past_year >= 2 
+            AND is_most_recent_test_negative = 1 
+            AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 365
+            THEN 1
              -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info
              -- or where drug offense = 0 since there are separate flags for that
              WHEN COALESCE(drug_offense,drug_offense_ever) = 0 THEN NULL
              WHEN COALESCE(drug_offense,drug_offense_ever) IS NULL THEN NULL
-             ELSE 0 END AS drug_screen_pass_flag_drug_offense,
+             ELSE 0 
+             END AS drug_screen_pass_flag_drug_offense,
         -- Criteria: Special Conditions are up to date
         CASE WHEN SPE_Note_Due <= current_date('US/Eastern') THEN 0 ELSE 1 END AS spe_conditions_not_overdue_flag,
         -- Counties in JD 17 don't allow CR for probation cases
@@ -715,12 +734,14 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             docket_numbers,
             has_active_sentence,
             DRUN_array AS last_DRUN,
+            most_recent_positive_test_date,
             sanctions_in_last_year,
             board_conditions,
             arrests_past_year AS last_arr_check_past_year,
             zt_codes,
             Last_Sanctions_Type AS last_sanction,
             Last_DRU_Note AS last_drug_screen_date,
+            Last_DRU_Type AS last_drug_screen_result,
             Region as district,
             time_on_level_flag_adj,
             no_serious_sanctions_flag,
@@ -738,7 +759,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             drug_screen_pass_flag_non_drug_offense,
             COALESCE(drug_offense,drug_offense_ever) AS drug_offense,
             sum_negative_tests_in_past_year,
-            most_recent_test_negative,
+            is_most_recent_test_negative,
             total_screens_in_past_year,
             missing_sent_info,
             eligible_counties,
@@ -773,7 +794,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date >= latest_supervision_start_date THEN earliest_DRUN_date
                  WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date < COALESCE(latest_supervision_start_date, Plan_Start_Date) THEN COALESCE(Last_DRU_Note,'1900-01-01')
                   WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date IS NULL THEN '1900-01-01'
-                  WHEN COALESCE(drug_offense,drug_offense_ever) = 1 and sum_negative_tests_in_past_year >= 2 and most_recent_test_negative = 1 THEN Last_DRU_Note
+                  WHEN COALESCE(drug_offense,drug_offense_ever) = 1 and sum_negative_tests_in_past_year >= 2 and is_most_recent_test_negative = 1 THEN Last_DRU_Note
                   ELSE '9999-01-01'
                   END as date_drug_screen_eligible,
             CASE WHEN latest_cr_rejection_code_date IS NOT NULL THEN DATE_ADD(latest_cr_rejection_code_date, INTERVAL 3 MONTH)

@@ -51,6 +51,7 @@ US_TN_COMPLIANT_REPORTING_ELIGIBLE_QUERY_TEMPLATE = """
         lifetime_offenses_expired,
         past_offenses,
         last_DRUN,
+        most_recent_positive_test_date,
         sanctions_in_last_year,
         last_arr_check_past_year,
         Last_ARR_Note AS date_last_arr_check_past_year,
