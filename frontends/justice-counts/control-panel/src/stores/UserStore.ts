@@ -20,7 +20,7 @@ import { makeAutoObservable, runInAction, when } from "mobx";
 import { AuthStore } from "../components/Auth";
 import API from "./API";
 
-type UserAgencies = {
+type UserAgency = {
   name: string;
   id: number;
 };
@@ -35,7 +35,7 @@ class UserStore {
 
   auth0UserID: string | undefined;
 
-  userAgencies: UserAgencies[] | undefined;
+  userAgencies: UserAgency[] | undefined;
 
   userInfoLoaded: boolean;
 
@@ -57,6 +57,15 @@ class UserStore {
       () => api.isSessionInitialized,
       () => this.updateAndRetrieveUserInfo()
     );
+  }
+
+  get userAgency(): UserAgency | undefined {
+    if (this.userAgencies && this.userAgencies.length > 0) {
+      // attempting to access 0 index in the empty array leads to the mobx warning "[mobx] Out of bounds read: 0"
+      // so check the length of the array before accessing
+      return this.userAgencies[0];
+    }
+    return undefined;
   }
 
   async updateAndRetrieveUserInfo() {

@@ -23,7 +23,7 @@ import Reports from "../../pages/Reports";
 import { rootStore, StoreProvider } from "../../stores";
 
 beforeEach(() => {
-  rootStore.reportStore.reports = [];
+  rootStore.reportStore.reportOverviews = {};
 });
 
 test("displayed created reports", async () => {
@@ -34,8 +34,8 @@ test("displayed created reports", async () => {
   );
 
   await runInAction(() => {
-    rootStore.reportStore.reports = [
-      {
+    rootStore.reportStore.reportOverviews = {
+      0: {
         id: 0,
         month: 11,
         year: 2022,
@@ -44,7 +44,7 @@ test("displayed created reports", async () => {
         editors: ["Editor #1"],
         status: "NOT_STARTED",
       },
-    ];
+    };
   });
 
   const jan2022 = screen.getByText(/November 2022/i);
@@ -54,7 +54,7 @@ test("displayed created reports", async () => {
   expect(editor1).toBeInTheDocument();
 
   await runInAction(() => {
-    rootStore.reportStore.reports.push({
+    rootStore.reportStore.reportOverviews[1] = {
       id: 1,
       month: 11,
       year: 2020,
@@ -62,7 +62,7 @@ test("displayed created reports", async () => {
       last_modified_at: null,
       editors: ["Editor #2"],
       status: "NOT_STARTED",
-    });
+    };
   });
 
   const annualReport2020 = screen.getByText(/Annual Report 2020/i);

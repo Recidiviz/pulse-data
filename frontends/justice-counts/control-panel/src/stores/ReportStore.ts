@@ -30,6 +30,34 @@ export interface ReportOverview {
   status: "NOT_STARTED" | "DRAFT" | "PUBLISHED";
 }
 
+export interface Report extends ReportOverview {
+  metrics: Metric[];
+}
+
+export interface Metric {
+  key: string;
+  display_name: string;
+  description: string;
+  reporting_note: string;
+  value: string | undefined;
+  contexts: MetricContext[];
+  disaggregations: MetricDisaggregations[];
+}
+
+export interface MetricContext {
+  key: string;
+  description: string;
+  required: boolean;
+  value: string | undefined;
+}
+
+export interface MetricDisaggregations {
+  name: string;
+  dimensions: { [name: string]: string | number | boolean };
+  required: boolean;
+  should_sum_to_total: boolean;
+}
+
 export interface CreateReportFormValuesType extends Record<string, unknown> {
   month: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
   year: number;
@@ -41,38 +69,96 @@ class ReportStore {
 
   api: API;
 
-  reports: ReportOverview[];
+  reportOverviews: { [reportID: string]: ReportOverview }; // key by report ID
+
+  reportMetrics: { [reportID: string]: Metric[] }; // key by report ID
 
   constructor(userStore: UserStore, api: API) {
     makeAutoObservable(this);
 
     this.api = api;
     this.userStore = userStore;
-    this.reports = [];
+    this.reportOverviews = {};
+    this.reportMetrics = {};
   }
 
-  async getReports(): Promise<void | Error> {
-    try {
-      const { userID, userAgencies } = this.userStore;
+  get reportOverviewList(): ReportOverview[] {
+    return Object.values(this.reportOverviews).sort((a, b) => {
+      const dateA = new Date(a.year, a.month - 1);
+      const dateB = new Date(b.year, b.month - 1);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }
 
-      if (
-        userID !== undefined &&
-        userAgencies !== undefined &&
-        userAgencies.length > 0
-      ) {
+  async getReportOverviews(): Promise<void | Error> {
+    try {
+      const { userID, userAgency } = this.userStore;
+
+      if (userID !== undefined && userAgency !== undefined) {
         const response = (await this.api.request({
           // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
-          path: `/api/reports?agency_id=${userAgencies[0].id}`,
+          path: `/api/reports?agency_id=${userAgency.id}`,
           method: "GET",
         })) as Response;
         const allReports = await response.json();
 
         runInAction(() => {
-          this.reports = allReports;
+          allReports.forEach((report: ReportOverview) => {
+            this.reportOverviews[report.id] = report;
+          });
         });
       } else {
-        Promise.reject(new Error("No user or agency information initialized."));
+        throw new Error("No user or agency information initialized.");
       }
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async getReport(reportID: number): Promise<void | Error> {
+    try {
+      const { userID, userAgency } = this.userStore;
+
+      if (userID !== undefined && userAgency !== undefined) {
+        const response = (await this.api.request({
+          // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
+          path: `/api/reports/${reportID}?user_id=${userID}&agency_id=${userAgency.id}`,
+          method: "GET",
+        })) as Response;
+        const report = await response.json();
+
+        runInAction(() => {
+          const { metrics, ...info } = report;
+          this.reportOverviews[reportID] = info;
+          this.reportMetrics[reportID] = metrics;
+        });
+        return report;
+      }
+      throw new Error(
+        "Either invalid user/agency information or no user or agency information initialized."
+      );
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async updateReport(reportID: number, body: Partial<Report>) {
+    try {
+      const { userID, userAgency } = this.userStore;
+
+      if (userID !== undefined && userAgency !== undefined) {
+        const response = (await this.api.request({
+          path: `/api/reports/${reportID}`,
+          method: "PUT",
+          body: { user_id: userID, agency_id: userAgency.id, ...body },
+        })) as Response;
+
+        return response;
+      }
+
+      throw new Error(
+        "Either invalid user/agency information or no user or agency information initialized."
+      );
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }
@@ -82,15 +168,13 @@ class ReportStore {
     body: Record<string, unknown>
   ): Promise<Response | Error | undefined> {
     try {
-      const { userID, userAgencies } = this.userStore;
-      const agencyID =
-        userAgencies && userAgencies.length && userAgencies[0].id;
+      const { userID, userAgency } = this.userStore;
 
-      if (userID !== undefined && agencyID !== undefined) {
+      if (userID !== undefined && userAgency !== undefined) {
         const response = (await this.api.request({
           path: "/api/reports",
           method: "POST",
-          body: { user_id: userID, agency_id: agencyID, ...body },
+          body: { user_id: userID, agency_id: userAgency.id, ...body },
         })) as Response;
 
         return response;
