@@ -146,14 +146,6 @@ if [[ ! -z ${PROMOTE} ]]; then
 fi
 
 if [[ ! -z ${PROMOTE} ]]; then
-    echo "Running migrations for all staging instances on prod-data-client. You may be asked to provide an ssh passphrase."
-    # The remote migration execution script doesn't play nice with run_cmd
-    gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data && git fetch && git checkout $BRANCH_NAME \
-        && git pull && pipenv run ./recidiviz/tools/migrations/run_all_staging_migrations.sh $COMMIT_HASH"
-    exit_on_fail
-fi
-
-if [[ ! -z ${PROMOTE} ]]; then
     verify_hash $COMMIT_HASH
     pre_deploy_configure_infrastructure "$PROJECT_ID" "${DOCKER_IMAGE_TAG}" "$COMMIT_HASH"
 else

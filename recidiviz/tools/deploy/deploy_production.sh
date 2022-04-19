@@ -53,20 +53,12 @@ fi
 
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 
-echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
-# The remote migration execution script doesn't play nice with run_cmd
-gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data \
-    && git fetch --all --tags --prune --prune-tags \
-    && git checkout $COMMIT_HASH \
-    && pipenv run ./recidiviz/tools/migrations/run_all_prod_migrations.sh $COMMIT_HASH"
-exit_on_fail
-
 # Use rev-list to get the hash of the commit that the tag points to, rev-parse parse
 # returns the hash of the tag itself.
 TAG_COMMIT_HASH=$(git rev-list -n 1 $GIT_VERSION_TAG) || exit_on_fail
 
 echo "Updating configuration / infrastructure in preparation for deploy"
-verify_hash $TAG_COMMIT_HASH
+verify_hash "$TAG_COMMIT_HASH"
 pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
 
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
