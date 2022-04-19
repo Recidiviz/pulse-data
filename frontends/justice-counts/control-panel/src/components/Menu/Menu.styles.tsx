@@ -23,31 +23,31 @@ export const ExtendedDropdownToggle = styled(DropdownToggle)`
   padding: 0;
   font-size: 1rem;
   font-weight: 500;
-  color: ${palette.text.darkgrey};
+  color: ${palette.solid.darkgrey};
 
   &[aria-expanded="true"] {
-    color: #0073e5;
+    color: ${palette.solid.blue};
   }
 
   &:hover {
-    color: #0073e5;
+    color: ${palette.solid.blue};
   }
 
   &:focus {
-    color: ${palette.text.darkgrey};
+    color: ${palette.solid.darkgrey};
   }
 `;
 
 export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)`
-  color: ${palette.text.darkgrey};
+  color: ${palette.solid.darkgrey};
 
   &:focus {
     background-color: transparent;
-    color: ${palette.text.darkgrey};
+    color: ${palette.solid.darkgrey};
   }
 
   &:hover {
-    color: #0073e5;
-    background-color: rgba(0, 115, 229, 0.1);
+    color: ${palette.solid.blue};
+    background-color: ${palette.highlight.blue};
   }
 `;

@@ -41,8 +41,8 @@ const GlobalStyle = createGlobalStyle`
     font-family: "Inter", sans-serif;
     font-weight: 500;
     font-size: 16px;
-    background-color: ${palette.white};
-    color: ${palette.text.darkgrey};
+    background-color: ${palette.solid.white};
+    color: ${palette.solid.darkgrey};
   }
 `;
 

@@ -43,11 +43,11 @@ const formStyles = css`
   width: 100%;
   background: ${palette.highlight.lightblue};
   font-size: 1.5rem;
-  color: ${palette.text.blue};
+  color: ${palette.solid.blue};
   margin: 10px 0;
   padding: 20px 0 0 16px;
   border: none;
-  border-bottom: 1px solid ${palette.text.blue};
+  border-bottom: 1px solid ${palette.solid.blue};
 `;
 
 const DropdownSelection = styled.select`
@@ -70,10 +70,10 @@ export const Button = styled.button`
   width: 100%;
   height: 56px;
 
-  background: ${palette.highlight.lightergrey};
+  background: ${palette.highlight.grey1};
   padding: 10px 20px;
   font-size: 16px;
-  border: 1px solid rgba(23, 28, 43, 0.15);
+  border: 1px solid ${palette.highlight.grey3};
   border-radius: 2px;
   transition: 0.2s ease;
 
@@ -81,7 +81,7 @@ export const Button = styled.button`
 
   &:hover {
     cursor: pointer;
-    background: ${palette.highlight.lightgrey};
+    background: ${palette.highlight.grey2};
   }
 `;
 
