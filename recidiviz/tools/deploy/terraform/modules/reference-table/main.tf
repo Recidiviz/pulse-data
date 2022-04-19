@@ -24,7 +24,7 @@ resource "google_storage_bucket_object" "table_data" {
 resource "google_bigquery_table" "table" {
   dataset_id = var.dataset_id
   table_id   = var.table_name
-  deletion_protection = var.deletion_protection
+  deletion_protection = false
 
   schema = var.schema
 }

@@ -180,7 +180,6 @@ module "us_tn_supervision_facility_names_table" {
   bucket_name    = module.external_reference_tables_bucket.name
   dataset_id     = module.external_reference_dataset.dataset_id
   recidiviz_root = local.recidiviz_root
-  deletion_protection = false
 
   table_name = "us_tn_supervision_facility_names"
   schema     = <<EOF

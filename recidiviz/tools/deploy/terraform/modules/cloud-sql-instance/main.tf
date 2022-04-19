@@ -106,9 +106,10 @@ locals {
 
 
 resource "google_sql_database_instance" "data" {
-  name             = local.stripped_cloudsql_instance_id
-  database_version = var.database_version
-  region           = var.region
+  name                = local.stripped_cloudsql_instance_id
+  database_version    = var.database_version
+  region              = var.region
+  deletion_protection = false
 
   settings {
     disk_autoresize = true
