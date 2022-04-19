@@ -27,6 +27,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     SheriffBudgetType,
 )
+from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.reported_metric import (
@@ -138,6 +139,24 @@ class JusticeCountsSchemaTestObjects:
         )
         self.reported_calls_for_service_metric = (
             JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric()
+        )
+        self.reported_residents_metric = ReportedMetric(
+            key=law_enforcement.residents.key,
+            value=5000,
+            aggregated_dimensions=[
+                ReportedAggregatedDimension(
+                    dimension_to_value={
+                        RaceAndEthnicity.AMERICAN_INDIAN_ALASKAN_NATIVE: 100,
+                        RaceAndEthnicity.ASIAN: 100,
+                        RaceAndEthnicity.BLACK: 1000,
+                        RaceAndEthnicity.EXTERNAL_UNKNOWN: 0,
+                        RaceAndEthnicity.HISPANIC: 50,
+                        RaceAndEthnicity.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: 0,
+                        RaceAndEthnicity.OTHER: 100,
+                        RaceAndEthnicity.WHITE: 1000,
+                    }
+                )
+            ],
         )
 
     @staticmethod

@@ -126,7 +126,7 @@ class ReportedMetric:
             for context in self.metric_definition.contexts or []
             if context.required is True
         }
-        reported_context_keys = {context.key for context in value}
+        reported_context_keys = {context.key for context in value or []}
         missing_context_keys = required_context_keys.difference(reported_context_keys)
         if len(missing_context_keys) > 0:
             raise ValueError(

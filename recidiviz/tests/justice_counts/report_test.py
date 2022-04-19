@@ -20,6 +20,8 @@
 import datetime
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.dimensions.corrections import PopulationType
+from recidiviz.justice_counts.dimensions.location import Country, County, State
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -125,7 +127,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 new_annual_report.date_range_end, datetime.date(2023, 3, 1)
             )
 
-    def test_add_metric(self) -> None:
+    def test_add_budget_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             ReportInterface.add_or_update_metric(
                 session=session,
@@ -178,6 +180,44 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 disaggregated_cells[1].aggregated_dimension_values, ["DETENTION"]
             )
             self.assertEqual(disaggregated_cells[1].value, 66666)
+
+    def test_add_population_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                reported_metric=self.test_schema_objects.reported_residents_metric,
+            )
+
+            # We should have two definitions, one for aggregated (total) residents
+            # and one for residents disaggregated by race and ethnicity
+            queried_definitions = (
+                session.query(schema.ReportTableDefinition)
+                .order_by(schema.ReportTableDefinition.id)
+                .all()
+            )
+            self.assertEqual(len(queried_definitions), 2)
+
+            # Both of these definitions should have the same filtered dimensions:
+            # namely, filtered to the same location (country, state, and county)
+            # and to PopulationType.RESIDENTS
+            for definition in queried_definitions:
+                filtered_dimensions = definition.filtered_dimensions
+                filtered_dimension_values = definition.filtered_dimension_values
+                self.assertEqual(
+                    filtered_dimensions,
+                    [
+                        PopulationType.dimension_identifier(),
+                        Country.dimension_identifier(),
+                        State.dimension_identifier(),
+                        County.dimension_identifier(),
+                    ],
+                )
+                # TODO(#11973): Add Country, State, and County values from report.source
+                # once we start saving location information on the Agency model
+                self.assertEqual(
+                    filtered_dimension_values, [PopulationType.RESIDENTS.value]
+                )
 
     def test_update_metric_no_change(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
