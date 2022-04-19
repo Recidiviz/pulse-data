@@ -479,14 +479,13 @@ def pathways_state_specific_supervision_district_filter() -> str:
         CASE
             -- TODO(#12239): Remove this filtering once we figure out why there are DOC facilities in supervision periods
             WHEN state_code = "US_ME" THEN
-                district NOT IN (
+                UPPER(district) NOT IN (
                     -- Filter out unknown locations, using both the location mapping name and the external id
-                    "Non-Committed Adult",
                     "NON-COMMITTED ADULT",
                     "TEMP SOCIETY OUT ADULT",
-                    "Temp Society Out",
+                    "TEMP SOCIETY OUT",
                     -- Filter out DOC Facilities
-                    "MAINE CORRECTIONAL FACILITY",
+                    "MAINE CORRECTIONAL CENTER",
                     "MOUNTAIN VIEW CORRECTIONAL FACILITY",
                     "SOUTHERN MAINE WOMEN'S REENTRY CENTER",
                     "BOLDUC CORRECTIONAL FACILITY",
