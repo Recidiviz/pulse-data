@@ -32,8 +32,8 @@ const Header = () => {
       when(
         () => userStore.userInfoLoaded,
         () => {
-          if (userStore.userAgencies && userStore.userAgencies.length > 0) {
-            setAgencyName(userStore.userAgencies[0].name);
+          if (userStore.userAgency) {
+            setAgencyName(userStore.userAgency.name);
           }
         }
       ),

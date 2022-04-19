@@ -24,8 +24,23 @@ import Reports from "../pages/Reports";
 import { rootStore, StoreProvider } from ".";
 import { ReportOverview } from "./ReportStore";
 
+const mockUnorderedReportsMap: { [reportID: string]: ReportOverview } = {};
+(mockJSON.unorderedReports as ReportOverview[]).forEach((report) => {
+  mockUnorderedReportsMap[report.id] = report;
+});
+
 beforeEach(() => {
-  rootStore.reportStore.reports = [];
+  rootStore.reportStore.reportOverviews = {};
+});
+
+test("test sort in reportOverviewList", () => {
+  runInAction(() => {
+    rootStore.reportStore.reportOverviews = mockUnorderedReportsMap;
+  });
+
+  expect(JSON.stringify(rootStore.reportStore.reportOverviewList)).toEqual(
+    JSON.stringify(mockJSON.orderedReports)
+  );
 });
 
 test("displayed reports", () => {
@@ -36,7 +51,7 @@ test("displayed reports", () => {
   );
 
   runInAction(() => {
-    rootStore.reportStore.reports = mockJSON.reports as ReportOverview[];
+    rootStore.reportStore.reportOverviews = mockUnorderedReportsMap;
   });
 
   // Arbitrary report dates included in mockJSON

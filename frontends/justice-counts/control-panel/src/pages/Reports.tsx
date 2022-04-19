@@ -99,7 +99,7 @@ const Reports: React.FC = () => {
       // return when's disposer so it is cleaned up if it never runs
       when(
         () => userStore.userInfoLoaded,
-        () => reportStore.getReports()
+        () => reportStore.getReportOverviews()
       ),
     [reportStore, userStore]
   );
@@ -107,11 +107,11 @@ const Reports: React.FC = () => {
   const filteredReportsMemoized = React.useMemo(
     () =>
       reportsFilter === "allreports"
-        ? reportStore.reports
-        : reportStore.reports.filter(
+        ? reportStore.reportOverviewList
+        : reportStore.reportOverviewList.filter(
             (report) => normalizeString(report.status) === reportsFilter
           ),
-    [reportStore.reports, reportsFilter]
+    [reportStore.reportOverviewList, reportsFilter]
   );
 
   return (
