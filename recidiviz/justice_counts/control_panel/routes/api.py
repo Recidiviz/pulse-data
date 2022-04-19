@@ -84,4 +84,30 @@ def get_api_blueprint(
         )
         return make_response(report_json, 200)
 
+    @api_blueprint.route("/reports", methods=["POST"])
+    @auth_decorator
+    def create_report() -> Response:
+        try:
+            request_json = assert_type(request.json, dict)
+            agency_id = assert_type(request_json.get("agency_id"), int)
+            user_id = assert_type(request_json.get("user_id"), int)
+            month = assert_type(request_json.get("month"), int)
+            year = assert_type(request_json.get("year"), int)
+            frequency = assert_type(request_json.get("frequency"), str)
+        except ValueError:
+            return make_response("Missing required parameters", 500)
+
+        report = ReportInterface.create_report(
+            session=current_session,
+            agency_id=agency_id,
+            user_account_id=user_id,
+            month=month,
+            year=year,
+            frequency=frequency,
+        )
+        report_response = ReportInterface.to_json_response(
+            session=current_session, report=report
+        )
+        return make_response(report_response, 200)
+
     return api_blueprint
