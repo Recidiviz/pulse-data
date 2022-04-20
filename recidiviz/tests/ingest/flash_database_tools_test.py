@@ -26,7 +26,10 @@ from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.flash_database_tools import move_ingest_view_results_to_backup
+from recidiviz.ingest.flash_database_tools import (
+    move_ingest_view_results_to_backup,
+    move_ingest_view_results_between_instances,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
@@ -67,6 +70,7 @@ class FlashDatabaseToolsTest(unittest.TestCase):
 
         self.mock_bq_client.assert_has_calls(
             [
+                call.add_timestamp_suffix_to_dataset_id(dataset_id=source_id),
                 call.create_dataset_if_necessary(
                     dataset_ref=DatasetReference(self.project_id, destination_id),
                     default_table_expiration_ms=2592000000,
@@ -100,6 +104,7 @@ class FlashDatabaseToolsTest(unittest.TestCase):
 
         self.mock_bq_client.assert_has_calls(
             [
+                call.add_timestamp_suffix_to_dataset_id(dataset_id=source_id),
                 call.create_dataset_if_necessary(
                     dataset_ref=DatasetReference(self.project_id, destination_id),
                     default_table_expiration_ms=2592000000,
@@ -107,6 +112,74 @@ class FlashDatabaseToolsTest(unittest.TestCase):
                 call.copy_dataset_tables(
                     source_dataset_id=source_id,
                     destination_dataset_id=destination_id,
+                ),
+                call.delete_dataset(
+                    dataset_ref=DatasetReference(self.project_id, source_id),
+                    delete_contents=True,
+                ),
+            ]
+        )
+
+    def test_move_ingest_view_results_primary_instance_to_secondary(self) -> None:
+        move_to_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
+
+        source_id = "us_xx_ingest_view_results_primary"
+        destination_id = "us_xx_ingest_view_results_secondary"
+        self.mock_bq_client.add_timestamp_suffix_to_dataset_id.return_value = (
+            destination_id
+        )
+
+        with freeze_time(move_to_date):
+            move_ingest_view_results_between_instances(
+                state_code=self.region_code,
+                ingest_instance_source=DirectIngestInstance.PRIMARY,
+                ingest_instance_destination=DirectIngestInstance.SECONDARY,
+                big_query_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.assert_has_calls(
+            [
+                call.create_dataset_if_necessary(
+                    dataset_ref=DatasetReference(self.project_id, destination_id),
+                ),
+                call.copy_dataset_tables(
+                    source_dataset_id=source_id,
+                    destination_dataset_id=destination_id,
+                    overwrite_destination_tables=False,
+                ),
+                call.delete_dataset(
+                    dataset_ref=DatasetReference(self.project_id, source_id),
+                    delete_contents=True,
+                ),
+            ]
+        )
+
+    def test_move_ingest_view_results_secondary_instance_to_primary(self) -> None:
+        move_to_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
+
+        source_id = "us_xx_ingest_view_results_secondary"
+        destination_id = "us_xx_ingest_view_results_primary"
+        self.mock_bq_client.add_timestamp_suffix_to_dataset_id.return_value = (
+            destination_id
+        )
+
+        with freeze_time(move_to_date):
+            move_ingest_view_results_between_instances(
+                state_code=self.region_code,
+                ingest_instance_source=DirectIngestInstance.SECONDARY,
+                ingest_instance_destination=DirectIngestInstance.PRIMARY,
+                big_query_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.assert_has_calls(
+            [
+                call.create_dataset_if_necessary(
+                    dataset_ref=DatasetReference(self.project_id, destination_id),
+                ),
+                call.copy_dataset_tables(
+                    source_dataset_id=source_id,
+                    destination_dataset_id=destination_id,
+                    overwrite_destination_tables=False,
                 ),
                 call.delete_dataset(
                     dataset_ref=DatasetReference(self.project_id, source_id),
