@@ -1,0 +1,1266 @@
+file_tag: inmateprofile
+file_description: |-
+  This file contains a lot of person and some incarceration details.
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+columns:
+  - name : OFFENDERID
+    description : |-
+      This is a unique identifier assigned to each particular person, essentially a person ID.
+  - name : ADCNUMBER
+    description : |-
+      This is a unique agency issued identifier (DOCNO) assigned to each person.
+  - name : CURRCOMMITTEDSUFFIX
+    description : |-
+      All values of this field are null.
+  - name : INMATELASTNAME
+    description : |-
+      This is the surname of a person.
+  - name : INMATEFIRSTNAME
+    description : |-
+      This is the first name of a person.
+  - name : INMATEMIDDLENAME
+    description : |-
+      This is the middle name of a person.
+  - name : INMATENAMESUFFIX
+    description : |-
+      This is the suffix of a person's name; such as Jr., Sr., II, III, 7, Esq., etc.
+  - name : INMATESTATUSCODE
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: A
+        description: TODO(#12372)
+      - value: I
+        description: TODO(#12372)
+      - value: T
+        description:  TODO(#12372)
+      - value: O
+        description:  TODO(#12372)
+      - value: X
+        description:  TODO(#12372)
+  - name : INMATESEXCODE
+    description : |-
+      An abbreviation that represents the sex of a person. From the CDCLSEX code.
+    known_values:
+      - value: M
+        description: Male.
+      - value: F
+        description: Female.
+      - value: U
+        description: Uknown.
+  - name : INMATERACECODE
+    description : |-
+      A code from ACICRACE indicating the race of a person.
+    known_values:
+      - value: H
+        desciption: TODO(#12372)
+      - value: W
+        desciption: TODO(#12372)
+      - value: B
+        desciption: TODO(#12372)
+      - value: I
+        desciption: TODO(#12372)
+      - value: O
+        desciption: TODO(#12372)
+      - value: A
+        desciption: TODO(#12372)
+      - value: N
+        desciption: TODO(#12372)
+      - value: U
+        desciption: TODO(#12372)
+  - name : CULTURALETHNICAFFILIATION
+    description : |-
+      A number from CMETHNIC indicating the ehtnicity of a person.
+    known_values:
+      - value: 9
+        description: TODO(#12372)
+      - value: 4
+        description: TODO(#12372)
+      - value: 7
+        description: TODO(#12372)
+      - value: 99
+        description: TODO(#12372)
+      - value: 6
+        description: TODO(#12372)
+      - value: 8
+        description: TODO(#12372)
+      - value: 97
+        description: TODO(#12372)
+      - value: 41
+        description: TODO(#12372)
+      - value: 26
+        description: TODO(#12372)
+      - value: 50
+        description: TODO(#12372)
+      - value: 44
+        description: TODO(#12372)
+      - value: 45
+        description: TODO(#12372)
+      - value: 98
+        description: TODO(#12372)
+      - value: 46
+        description: TODO(#12372)
+  - name : INMATEDATEOFBIRTH
+    description : |-
+      The date on which a person was born.
+  - name : INMATEPHOTOFLAG
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: Y
+        description: Yes.
+      - value: N
+        description: No.
+  - name : CURRENTINCARCBEGINDATE
+    description : |-
+      TODO(#12372)
+  - name : INITMVMTTYPEOFCURINCARC
+    description : |-
+      A number from CIADMTYP indicating the Incarceration Type.
+    known_values:
+      - value: 6
+        description: TODO(#12372)
+      - value: 1
+        description: TODO(#12372)
+      - value: 7
+        description: TODO(#12372)
+      - value: 3
+        description: TODO(#12372)
+  - name : INMCURRENTUNIT
+    description : |-
+      Number sequence indicating current facility.
+    known_values:
+      - value: 100000028
+        description: TODO(#12372)
+      - value: 100000027
+        description: TODO(#12372)
+      - value: 100000080
+        description: TODO(#12372)
+      - value: 100000038
+        description: TODO(#12372)
+      - value: 009999999
+        description: TODO(#12372)
+      - value: 100000033
+        description: TODO(#12372)
+      - value: 090000905
+        description: TODO(#12372)
+      - value: 000002067
+        description: TODO(#12372)
+      - value: 100000049
+        description: TODO(#12372)
+      - value: 100000070
+        description: TODO(#12372)
+      - value: 000039003
+        description: TODO(#12372)
+      - value: 090000936
+        description: TODO(#12372)
+      - value: 000039013
+        description: TODO(#12372)
+      - value: 000039005
+        description: TODO(#12372)
+      - value: 000039008
+        description: TODO(#12372)
+      - value: 000039015
+        description: TODO(#12372)
+      - value: 000039012
+        description: TODO(#12372)
+      - value: 000039011
+        description: TODO(#12372)
+      - value: 100000013
+        description: TODO(#12372)
+      - value: 090000912
+        description: TODO(#12372)
+      - value: 100000106
+        description: TODO(#12372)
+      - value: 090000909
+        description: TODO(#12372)
+      - value: 090000902
+        description: TODO(#12372)
+      - value: 090000903
+        description: TODO(#12372)
+      - value: 090000901
+        description: TODO(#12372)
+      - value: 090000908
+        description: TODO(#12372)
+      - value: 090000904
+        description: TODO(#12372)
+      - value: 090000910
+        description: TODO(#12372)
+      - value: 090000906
+        description: TODO(#12372)
+      - value: 100000015
+        description: TODO(#12372)
+      - value: 100000100
+        description: TODO(#12372)
+      - value: 100000074
+        description: TODO(#12372)
+      - value: 100000081
+        description: TODO(#12372)
+      - value: 100000054
+        description: TODO(#12372)
+      - value: 090000907
+        description: TODO(#12372)
+      - value: 100000010
+        description: TODO(#12372)
+      - value: 100000017
+        description: TODO(#12372)
+      - value: 000039030
+        description: TODO(#12372)
+      - value: 100000007
+        description: TODO(#12372)
+      - value: 100000001
+        description: TODO(#12372)
+      - value: 100000071
+        description: TODO(#12372)
+      - value: 100000082
+        description: TODO(#12372)
+      - value: 100000030
+        description: TODO(#12372)
+      - value: 100000053
+        description: TODO(#12372)
+      - value: 100000009
+        description: TODO(#12372)
+      - value: 100000056
+        description: TODO(#12372)
+      - value: 100000037
+        description: TODO(#12372)
+      - value: 100000034
+        description: TODO(#12372)
+      - value: 100000022
+        description: TODO(#12372)
+      - value: 100000019
+        description: TODO(#12372)
+  - name : INMCURRLOCATION
+    description : |-
+      Number sequence indicating current facility.
+    known_values:
+      - value: 000005037
+        description: TODO(#12372)
+      - value: 000005030
+        description: TODO(#12372)
+      - value: 000005072
+        description: TODO(#12372)
+      - value: 000005053
+        description: TODO(#12372)
+      - value: 009999999
+        description: TODO(#12372)
+      - value: 000005042
+        description: TODO(#12372)
+      - value: 000006560
+        description: TODO(#12372)
+      - value: 000002069
+        description: TODO(#12372)
+      - value: 000007060
+        description: TODO(#12372)
+      - value: 000007021
+        description: TODO(#12372)
+      - value: 000007041
+        description: TODO(#12372)
+      - value: 000007002
+        description: TODO(#12372)
+      - value: 000002068
+        description: TODO(#12372)
+      - value: 000007024
+        description: TODO(#12372)
+      - value: 000007001
+        description: TODO(#12372)
+      - value: 000007005
+        description: TODO(#12372)
+      - value: 000007000
+        description: TODO(#12372)
+      - value: 000007071
+        description: TODO(#12372)
+      - value: 000007016
+        description: TODO(#12372)
+      - value: 000007044
+        description: TODO(#12372)
+      - value: 000007025
+        description: TODO(#12372)
+      - value: 000007018
+        description: TODO(#12372)
+      - value: 000007048
+        description: TODO(#12372)
+      - value: 000005041
+        description: TODO(#12372)
+      - value: 000006197
+        description: TODO(#12372)
+      - value: 000039003
+        description: TODO(#12372)
+      - value: 090000936
+        description: TODO(#12372)
+      - value: 000039013
+        description: TODO(#12372)
+      - value: 000039005
+        description: TODO(#12372)
+      - value: 000039008
+        description: TODO(#12372)
+      - value: 000039015
+        description: TODO(#12372)
+      - value: 000039012
+        description: TODO(#12372)
+      - value: 000039011
+        description: TODO(#12372)
+      - value: 100032549
+        description: TODO(#12372)
+      - value: 000006523
+        description: TODO(#12372)
+      - value: 000005084
+        description: TODO(#12372)
+      - value: 000005085
+        description: TODO(#12372)
+      - value: 000006551
+        description: TODO(#12372)
+      - value: 000006534
+        description: TODO(#12372)
+      - value: 000006555
+        description: TODO(#12372)
+      - value: 000006506
+        description: TODO(#12372)
+      - value: 000006612
+        description: TODO(#12372)
+      - value: 000006504
+        description: TODO(#12372)
+      - value: 000006510
+        description: TODO(#12372)
+      - value: 000006574
+        description: TODO(#12372)
+      - value: 000006547
+        description: TODO(#12372)
+      - value: 000006524
+        description: TODO(#12372)
+      - value: 000006527
+        description: TODO(#12372)
+      - value: 090000921
+        description: TODO(#12372)
+      - value: 000006520
+        description: TODO(#12372)
+  - name : INMATEHOUSINGAREAID
+    description : |-
+      Number and letter sequence indicating current housing unit.
+    known_values:
+      - value:  05L  3
+        description: TODO(#12372)
+      - value:  05L  2
+        description: TODO(#12372)
+      - value: E 7  1
+        description: TODO(#12372)
+      - value: 2RB  2
+        description: TODO(#12372)
+      - value: 05R  3
+        description: TODO(#12372)
+      - value: 05L  1
+        description: TODO(#12372)
+      - value: 1RA  1
+        description: TODO(#12372)
+      - value: 05R  1
+        description: TODO(#12372)
+      - value: 05R  2
+        description: TODO(#12372)
+      - value: U7S  3
+        description: TODO(#12372)
+      - value: UNK
+        description: TODO(#12372)
+      - value: 04B  3
+        description: TODO(#12372)
+      - value: 02B  2
+        description: TODO(#12372)
+      - value: 04B  2
+        description: TODO(#12372)
+      - value: 03B  1
+        description: TODO(#12372)
+      - value: 01A  3
+        description: TODO(#12372)
+      - value: 02A  1
+        description: TODO(#12372)
+      - value: 04A  2
+        description: TODO(#12372)
+      - value: 02A  3
+        description: TODO(#12372)
+      - value: 03B  3
+        description: TODO(#12372)
+      - value: 02B  1
+        description: TODO(#12372)
+      - value: 02A  2
+        description: TODO(#12372)
+      - value: 02B  3
+        description: TODO(#12372)
+      - value: 01B  1
+        description: TODO(#12372)
+      - value: 01B  2
+        description: TODO(#12372)
+      - value: 01A  1
+        description: TODO(#12372)
+      - value: 01A  2
+        description: TODO(#12372)
+      - value: 03B  2
+        description: TODO(#12372)
+      - value: 01B  3
+        description: TODO(#12372)
+      - value: 03A  3
+        description: TODO(#12372)
+      - value: 04B  1
+        description: TODO(#12372)
+      - value: 022  1
+        description: TODO(#12372)
+      - value: 011  1
+        description: TODO(#12372)
+      - value: 044  1
+        description: TODO(#12372)
+      - value: 033  1
+        description: TODO(#12372)
+      - value: L2L  1
+        description: TODO(#12372)
+      - value: 1AE  1
+        description: TODO(#12372)
+      - value: 1AW  1
+        description: TODO(#12372)
+      - value: C 4  1
+        description: TODO(#12372)
+      - value: 05A  1
+        description: TODO(#12372)
+      - value: 2LB  2
+        description: TODO(#12372)
+      - value: B 8  1
+        description: TODO(#12372)
+      - value: 05D  3
+        description: TODO(#12372)
+      - value: D 4  1
+        description: TODO(#12372)
+      - value: 08Q  2
+        description: TODO(#12372)
+      - value: 03N  3
+        description: TODO(#12372)
+      - value: 04A  1
+        description: TODO(#12372)
+      - value: 05E  1
+        description: TODO(#12372)
+      - value: D 1  1
+        description: TODO(#12372)
+      - value: 01R  2
+        description: TODO(#12372)
+  - name : INMATEBEDNUMBER
+    description : |-
+      Number and letter sequence indicating current housing unit.
+    known_values:
+      - value: 0000401S
+        description: TODO(#12372)
+      - value: 0001301S
+        description: TODO(#12372)
+      - value: 0000701S
+        description: TODO(#12372)
+      - value: 0001501S
+        description: TODO(#12372)
+      - value: 0000301S
+        description: TODO(#12372)
+      - value: 0004201S
+        description: TODO(#12372)
+      - value: 0002001S
+        description: TODO(#12372)
+      - value: 0001201S
+        description: TODO(#12372)
+      - value: 0003501S
+        description: TODO(#12372)
+      - value: 0000601L
+        description: TODO(#12372)
+      - value: 0000101S
+        description: TODO(#12372)
+      - value: 0001701S
+        description: TODO(#12372)
+      - value: 0001401S
+        description: TODO(#12372)
+      - value: 0001101S
+        description: TODO(#12372)
+      - value: 0000601S
+        description: TODO(#12372)
+      - value: 0000801S
+        description: TODO(#12372)
+      - value: 0000501S
+        description: TODO(#12372)
+      - value: 0000901S
+        description: TODO(#12372)
+      - value: 0031001U
+        description: TODO(#12372)
+      - value: 0001501L
+        description: TODO(#12372)
+      - value: 0001001S
+        description: TODO(#12372)
+      - value: 0000801U
+        description: TODO(#12372)
+      - value: 0001701L
+        description: TODO(#12372)
+      - value: 0000201S
+        description: TODO(#12372)
+      - value: 0001901S
+        description: TODO(#12372)
+      - value: 0001601S
+        description: TODO(#12372)
+      - value: 0001801S
+        description: TODO(#12372)
+      - value: 0001201L
+        description: TODO(#12372)
+      - value: 0000301L
+        description: TODO(#12372)
+      - value: 0001301L
+        description: TODO(#12372)
+      - value: 0000701L
+        description: TODO(#12372)
+      - value: 0000201L
+        description: TODO(#12372)
+      - value: 0000501L
+        description: TODO(#12372)
+      - value: 0000101L
+        description: TODO(#12372)
+      - value: 0001001L
+        description: TODO(#12372)
+      - value: 0000901L
+        description: TODO(#12372)
+      - value: UNK
+        description: TODO(#12372)
+      - value: 0031501U
+        description: TODO(#12372)
+      - value: 0021101S
+        description: TODO(#12372)
+      - value: 0020801L
+        description: TODO(#12372)
+      - value: 0021301S
+        description: TODO(#12372)
+      - value: 0010501U
+        description: TODO(#12372)
+      - value: 0031101S
+        description: TODO(#12372)
+      - value: 0031401L
+        description: TODO(#12372)
+      - value: 0011601S
+        description: TODO(#12372)
+      - value: 0020401U
+        description: TODO(#12372)
+      - value: 0030901S
+        description: TODO(#12372)
+      - value: 0031301L
+        description: TODO(#12372)
+      - value: 0031301S
+        description: TODO(#12372)
+      - value: 0010801S
+        description: TODO(#12372)
+  - name : PRIMARYBEDUSE
+    description : |-
+       TODO(#12372)
+    known_values:
+      - value: P
+        description: TODO(#12372)
+      - value: M
+        description: TODO(#12372)
+      - value: H
+        description: TODO(#12372)
+      - value: G
+        description: TODO(#12372)
+      - value: Z
+        description: TODO(#12372)
+      - value: J
+        description: TODO(#12372)
+      - value: F
+        description: TODO(#12372)
+      - value: L
+        description: TODO(#12372)
+      - value: A
+        description: TODO(#12372)
+      - value: S
+        description: TODO(#12372)
+      - value: X
+        description: TODO(#12372)
+      - value: I
+        description: TODO(#12372)
+      - value: N
+        description: TODO(#12372)
+      - value: U
+        description: TODO(#12372)
+      - value: K
+        description: TODO(#12372)
+      - value: R
+        description: TODO(#12372)
+      - value: O
+        description: TODO(#12372)
+  - name : DATEOFLASTINMATEMVMENT
+    description : |-
+       TODO(#12372)
+  - name : TYPEOFLASTINMATEMVMT
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: 30
+        description: TODO(#12372)
+      - value: 40
+        description: TODO(#12372)
+      - value: 83
+        description: TODO(#12372)
+      - value: 3A
+        description: TODO(#12372)
+      - value: 31
+        description: TODO(#12372)
+      - value: 52
+        description: TODO(#12372)
+      - value: 81
+        description: TODO(#12372)
+      - value: 10
+        description: TODO(#12372)
+      - value: 56
+        description: TODO(#12372)
+      - value: 2C
+        description: TODO(#12372)
+      - value: 74
+        description: TODO(#12372)
+      - value: 60
+        description: TODO(#12372)
+      - value: 78
+        description: TODO(#12372)
+      - value: 28
+        description: TODO(#12372)
+      - value: 33
+        description: TODO(#12372)
+      - value: 23
+        description: TODO(#12372)
+      - value: 20
+        description: TODO(#12372)
+      - value: 75
+        description: TODO(#12372)
+      - value: 21
+        description: TODO(#12372)
+      - value: 90
+        description: TODO(#12372)
+      - value: 32
+        description: TODO(#12372)
+      - value: 8D
+        description: TODO(#12372)
+      - value: 85
+        description: TODO(#12372)
+      - value: 8C
+        description: TODO(#12372)
+      - value: 26
+        description: TODO(#12372)
+      - value: 07
+        description: TODO(#12372)
+      - value: 63
+        description: TODO(#12372)
+      - value: 92
+        description: TODO(#12372)
+      - value: 86
+        description: TODO(#12372)
+      - value: 88
+        description: TODO(#12372)
+      - value: 80
+        description: TODO(#12372)
+      - value: 06
+        description: TODO(#12372)
+      - value: 77
+        description: TODO(#12372)
+      - value: 01
+        description: TODO(#12372)
+      - value: 13
+        description: TODO(#12372)
+      - value: 50
+        description: TODO(#12372)
+      - value: 79
+        description: TODO(#12372)
+      - value: 8E
+        description: TODO(#12372)
+  - name : REASONFORLASTMOVEMENT
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: 01
+        description: TODO(#12372)
+      - value: 03
+        description: TODO(#12372)
+      - value: 09
+        description: TODO(#12372)
+      - value: 12
+        description: TODO(#12372)
+      - value: 13
+        description: TODO(#12372)
+      - value: 14
+        description: TODO(#12372)
+      - value: 22
+        description: TODO(#12372)
+      - value: 24
+        description: TODO(#12372)
+      - value: 25
+        description: TODO(#12372)
+      - value: 28
+        description: TODO(#12372)
+      - value: 31
+        description: TODO(#12372)
+      - value: 34
+        description: TODO(#12372)
+      - value: 36
+        description: TODO(#12372)
+      - value: 37
+        description: TODO(#12372)
+      - value: 39
+        description: TODO(#12372)
+      - value: 43
+        description: TODO(#12372)
+      - value: 48
+        description: TODO(#12372)
+      - value: 49
+        description: TODO(#12372)
+      - value: 50
+        description: TODO(#12372)
+      - value: 51
+        description: TODO(#12372)
+      - value: 52
+        description: TODO(#12372)
+      - value: 54
+        description: TODO(#12372)
+      - value: 56
+        description: TODO(#12372)
+      - value: 59
+        description: TODO(#12372)
+      - value: 5D
+        description: TODO(#12372)
+      - value: 60
+        description: TODO(#12372)
+      - value: 73
+        description: TODO(#12372)
+      - value: 75
+        description: TODO(#12372)
+      - value: 81
+        description: TODO(#12372)
+      - value: 85
+        description: TODO(#12372)
+      - value: 93
+        description: TODO(#12372)
+      - value: 99
+        description: TODO(#12372)
+      - value: A9
+        description: TODO(#12372)
+      - value: AB
+        description: TODO(#12372)
+      - value: AE
+        description: TODO(#12372)
+      - value: AF
+        description: TODO(#12372)
+      - value: AG
+        description: TODO(#12372)
+      - value: AI
+        description: TODO(#12372)
+      - value: AN
+        description: TODO(#12372)
+      - value: AR
+        description: TODO(#12372)
+      - value: B1
+        description: TODO(#12372)
+      - value: B2
+        description: TODO(#12372)
+      - value: B6
+        description: TODO(#12372)
+      - value: BA
+        description: TODO(#12372)
+      - value: BB
+        description: TODO(#12372)
+      - value: BC
+        description: TODO(#12372)
+      - value: BE
+        description: TODO(#12372)
+      - value: BF
+        description: TODO(#12372)
+      - value: BH
+        description: TODO(#12372)
+      - value: C1
+        description: TODO(#12372)
+  - name : OTHERLOCATIONCODE
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: 000005020
+        description: TODO(#12372)
+      - value: 000005007
+        description: TODO(#12372)
+      - value: 000005031
+        description: TODO(#12372)
+      - value: 000005022
+        description: TODO(#12372)
+      - value: 000005061
+        description: TODO(#12372)
+      - value: 000005012
+        description: TODO(#12372)
+      - value: 000005073
+        description: TODO(#12372)
+      - value: 000005093
+        description: TODO(#12372)
+      - value: 000005042
+        description: TODO(#12372)
+      - value: 000005055
+        description: TODO(#12372)
+      - value: 000005058
+        description: TODO(#12372)
+      - value: 000005054
+        description: TODO(#12372)
+      - value: 000005018
+        description: TODO(#12372)
+      - value: 000005056
+        description: TODO(#12372)
+      - value: 000005002
+        description: TODO(#12372)
+      - value: 000005006
+        description: TODO(#12372)
+      - value: 090001166
+        description: TODO(#12372)
+      - value: 000002065
+        description: TODO(#12372)
+      - value: 000001147
+        description: TODO(#12372)
+      - value: 000001151
+        description: TODO(#12372)
+      - value: 009999999
+        description: TODO(#12372)
+      - value: 000007551
+        description: TODO(#12372)
+      - value: 000007537
+        description: TODO(#12372)
+      - value: 000007559
+        description: TODO(#12372)
+      - value: 000007567
+        description: TODO(#12372)
+      - value: 000001161
+        description: TODO(#12372)
+      - value: 000007038
+        description: TODO(#12372)
+      - value: 000007021
+        description: TODO(#12372)
+      - value: 000007016
+        description: TODO(#12372)
+      - value: 000007023
+        description: TODO(#12372)
+      - value: 000007006
+        description: TODO(#12372)
+      - value: 000007048
+        description: TODO(#12372)
+      - value: 000007071
+        description: TODO(#12372)
+      - value: 000007008
+        description: TODO(#12372)
+      - value: 000007000
+        description: TODO(#12372)
+      - value: 000007044
+        description: TODO(#12372)
+      - value: 000007002
+        description: TODO(#12372)
+      - value: 000007060
+        description: TODO(#12372)
+      - value: 000007018
+        description: TODO(#12372)
+      - value: 000007010
+        description: TODO(#12372)
+      - value: 000007007
+        description: TODO(#12372)
+      - value: 000007030
+        description: TODO(#12372)
+      - value: 000007011
+        description: TODO(#12372)
+      - value: 000007070
+        description: TODO(#12372)
+      - value: 000007068
+        description: TODO(#12372)
+      - value:  000007053
+        description: TODO(#12372)
+      - value: 000007045
+        description: TODO(#12372)
+      - value: 000002069
+        description: TODO(#12372)
+      - value: 000007051
+        description: TODO(#12372)
+      - value: 000007024
+        description: TODO(#12372)
+  - name : LATESTCLASSIFDATE
+    description : |-
+      TODO(#12372)
+  - name : CURRCUSTODYCLASSIFICATION
+    description : |-
+      Letter and/or number code indicating Custody/Security Code.
+    known_values:
+      - value: C2
+        description: TODO(#12372)
+      - value: C3
+        description: TODO(#12372)
+      - value: C6
+        description: TODO(#12372)
+      - value: C1
+        description: TODO(#12372)
+      - value: C7
+        description: TODO(#12372)
+      - value: UK
+        description: TODO(#12372)
+      - value: UN
+        description: TODO(#12372)
+  - name : CURRENTTOTALCUSTODYSCORE
+    description : |-
+      TODO(#12372)
+    known_values: []
+  - name : CURRENTGTEARNINGCLASS
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: IV
+        description: TODO(#12372)
+      - value: UN
+        description: TODO(#12372)
+  - name : JOBPGMCATEGORYAM
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: J
+        description: TODO(#12372)
+      - value: 07
+        description: TODO(#12372)
+      - value: U
+        description: TODO(#12372)
+  - name : WORKPGMASSIGNMNTAM
+    description : |-
+      TODO(#12372)
+  - name : JOBPGMCATEGORYPM
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: J
+        description: TODO(#12372)
+      - value: 07
+        description: TODO(#12372)
+      - value: U
+        description: TODO(#12372)
+  - name : WORKPGMASSIGNMNTPM
+    description : |-
+      TODO(#12372)
+    known_values: []
+  - name : OUTONGATEPASSFLAG
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: Y
+        description: TODO(#12372)
+      - value: N
+        description: TODO(#12372)
+  - name : PRECAUTIONSFLAG
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: Y
+        description: TODO(#12372)
+      - value: N
+        description: TODO(#12372)
+  - name : LATESTVIOLATIONDATE
+    description : |-
+      TODO(#12372)
+  - name : LATESTDISCIPLCODEVIOL
+    description : |-
+      All values in this field are null.
+  - name : LATESTDISCPLRULEVIOLATION
+    description : |-
+      All values in this field are null.
+  - name : LATESTDISCPLVERDICTCODE
+    description : |-
+      All values in this field are null.
+  - name : LATESTCONTROLACTION
+    description : |-
+      All values in this field are null.
+  - name : LATESTCTRLACTIONSTARTDATE
+    description : |-
+      TODO(#12372)
+  - name : LATESTCNTRLACTIONENDDATE
+    description : |-
+      TODO(#12372)
+  - name : LATESTDRUGTESTDATE
+    description : |-
+      TODO(#12372)
+  - name : CURRMEDICALCLASSIFCODE
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: M1
+        description: TODO(#12372)
+      - value: M2
+        description: TODO(#12372)
+      - value: M3
+        description: TODO(#12372)
+      - value: M4
+        description: TODO(#12372)
+      - value: UN
+        description: TODO(#12372)
+      - value: M5
+        description: TODO(#12372)
+  - name : PERMITTEDTOHANDLEFOOD
+    description : |-
+      A flag denoting if a person is allowed to handle food or not.
+    known_values:
+      - value: Y
+        description: Yes.
+      - value: N
+        description: No.
+  - name : INMATETOTALWRATSCORE
+    description : |-
+      All values in this field are null.
+  - name : INMATETOTALBETASCORE
+    description : |-
+      TODO(#12372)
+    known_values:
+      - value: 000
+        description: TODO(#12372)
+  - name : OLDESTCOMMIDCURINCARC
+    description : |-
+      TODO(#12372)
+    known_values: []
+  - name : OLDESTCOUNTOFCURINCARC
+    description : |-
+      Admission date of a person.
+    known_values: []
+  - name : CURRCOMMITCONVICTIONDT
+    description : |-
+      TODO(#12372)
+  - name : INMCNTYCNVCFCURCOMMIT
+    description : |-
+      TODO(#12372)
+  - name : PRIMARYOFFENSECURRINCAR
+    description : |-
+      TODO(#12372)
+  - name : TOTALSENTENCELENGTH
+    description : |-
+      TODO(#12372)
+  - name : MAXFLATRELEASEDATE
+    description : |-
+      TODO(#12372)
+  - name : CURRENTCOMMITMENTID
+    description : |-
+      TODO(#12372)
+  - name : CURRENTCOUNTNUMBER
+    description : |-
+      TODO(#12372)
+  - name : FINALMRCOMMITMENT
+    description : |-
+      TODO(#12372)
+  - name : FINALMRCOUNT
+    description : |-
+      TODO(#12372)
+  - name : PROJRELEASEDT
+    description : |-
+      The projected release date of a person.
+  - name : SGTLAWUSEDTOCALCMR
+    description : |-
+      TODO(#12372)
+  - name : DATEPRDLASTRECALC
+    description : |-
+      TODO(#12372)
+  - name : DATEOFLASTOUTTIME
+    description : |-
+      TODO(#12372)
+  - name : PAROLEELIGIBILITYSTATUS
+    description : |-
+      TODO(#12372)
+  - name : FINALPEDCOMMITMENT
+    description : |-
+      TODO(#12372)
+  - name : FINALPEDCOUNT
+    description : |-
+      TODO(#12372)
+  - name : PAROLEELIGIBILITYDATE
+    description : |-
+      TODO(#12372)
+  - name : SGTLAWUSEDTOCALCPED
+    description : |-
+      TODO(#12372)
+  - name : LATESTPAROLEBOARDHEARDT
+    description : |-
+      TODO(#12372)
+  - name : LATESTPAROLEBOARDHEARTYP
+    description : |-
+      TODO(#12372)
+  - name : LATESTPAROLEBOARDACTION
+    description : |-
+      TODO(#12372)
+  - name : DATELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : TIMELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : STAFFLASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : INMATETYPECODE
+    description : |-
+      Code from CIINMTYP like ICC, YOS, ISP, etc.
+    known_values:
+      - value: I
+        description: TODO(#12372)
+      - value: F
+        description: TODO(#12372)
+      - value: S
+        description: TODO(#12372)
+      - value: Y
+        description: TODO(#12372)
+      - value: P
+        description: TODO(#12372)
+      - value: C
+        description: TODO(#12372)
+  - name : VINESNOTIFICATIONCODE
+    description : |-
+      TODO(#12372)
+  - name : SCHEDULEDRELEASEDATE
+    description : |-
+      TODO(#12372)
+  - name : SCHEDULEDRELEASETYPE
+    description : |-
+      TODO(#12372)
+  - name : HSCONDITIONFLAG
+    description : |-
+      TODO(#12372)
+  - name : TOTALBONDAMOUNT
+    description : |-
+      TODO(#12372)
+  - name : INDIGENTINMATEINDICATOR
+    description : |-
+      TODO(#12372)
+  - name : INDIGENTCANTEENSALESBALANCE
+    description : |-
+      TODO(#12372)
+  - name : INDIGENTINMATERESETDATE
+    description : |-
+      TODO(#12372)
+  - name : LASTRISKASMTLEVEL
+    description : |-
+      TODO(#12372)
+  - name : STGAFFILIATIONCODE
+    description : |-
+      TODO(#12372)
+  - name : PHASEGROUP
+    description : |-
+      TODO(#12372)
+  - name : PROPOSEDPHASEGROUP
+    description : |-
+      TODO(#12372)
+  - name : TRANSFERHOLDEXISTSFLAG
+    description : |-
+      TODO(#12372)
+  - name : INMSTGASSOCIATIONFLAG
+    description : |-
+      TODO(#12372)
+  - name : INMSTGASSOCIATIONDATE
+    description : |-
+      TODO(#12372)
+  - name : ACTIVEDETAINERFLAG
+    description : |-
+      TODO(#12372)
+  - name : ACTIVESPNSEPARATIONFLAG
+    description : |-
+      TODO(#12372)
+  - name : PREARISKLEVEL
+    description : |-
+      TODO(#12372)
+  - name : INCARCERATIONNUMBER
+    description : |-
+      TODO(#12372)
+  - name : LEGACYCALCULATEDRELEASEDATE
+    description : |-
+      TODO(#12372)
+  - name : LEGACYSOTMPENROLLMENTDATE
+    description : |-
+      TODO(#12372)
+  - name : ACTIVEWARRANTFLAG
+    description : |-
+      TODO(#12372)
+  - name : CURRENTINCARCARRIVALDATE
+    description : |-
+      TODO(#12372)
+  - name : LATESTARRIVALMOVEMENT
+    description : |-
+      TODO(#12372)
+  - name : LATESTADMISSIONDATE
+    description : |-
+      TODO(#12372)
+  - name : HELDHOUSINGAREAID
+    description : |-
+      TODO(#12372)
+  - name : HELDBEDNUMBER
+    description : |-
+      TODO(#12372)
+  - name : FACLPOSITIONLOCATIONAM
+    description : |-
+      TODO(#12372)
+  - name : FACILITYPOSITIONNUMBERAM
+    description : |-
+      TODO(#12372)
+  - name : FACLPOSITIONLOCATIONPM
+    description : |-
+      TODO(#12372)
+  - name : FACILITYPOSITIONNUMBERPM
+    description : |-
+      TODO(#12372)
+  - name : LATESTREADINGSCORE
+    description : |-
+      TODO(#12372)
+  - name : LATESTMATHSCORE
+    description : |-
+      TODO(#12372)
+  - name : CURRENTCLSSPECIALIST
+    description : |-
+      TODO(#12372)
+  - name : COMMCORRAGENTNBR
+    description : |-
+      TODO(#12372)
+  - name : VICTIMENROLLED
+    description : |-
+      TODO(#12372)
+  - name : ICCINMATEFLAG
+    description : |-
+      TODO(#12372)
+  - name : HIGHPROFILECASEFLAG
+    description : |-
+      TODO(#12372)
+  - name : INMATEADAFLAG
+    description : |-
+      TODO(#12372)
+  - name : SEXUALAGGRESSIVEBEHAVIORLEVEL
+    description : |-
+      TODO(#12372)
+  - name : SEXUALVULNERABILITYRISKLEVEL
+    description : |-
+      TODO(#12372)
+  - name : TIMEPRDLASTRECALC
+    description : |-
+      TODO(#12372)
+  - name : PRIMARYSTATUTECODE
+    description : |-
+      TODO(#12372)
+  - name : GATEPASSREASONCODE
+    description : |-
+      TODO(#12372)
+  - name : NEXTHEARINGREVIEWMONTH
+    description : |-
+      TODO(#12372)
+  - name : NEXTHEARINGREVIEWYEAR
+    description : |-
+      TODO(#12372)
+  - name : LATESTINMATERISKASMTTOTALSCORE
+    description : |-
+      TODO(#12372)
+  - name : LATESTINMATERISKASMTDATE
+    description : |-
+      TODO(#12372)
+  - name : PAROLETERMINATIONDATE
+    description : |-
+      TODO(#12372)
+  - name : MAXFLATRELEASEDATEACTUAL
+    description : |-
+      TODO(#12372)
+  - name : PROJRELEASEDTACTUAL
+    description : |-
+      TODO(#12372)
+  - name : PAROLEELIGIBILITYDATEACTUAL
+    description : |-
+      TODO(#12372)
+  - name : PAROLETERMINATIONDATEACTUAL
+    description : |-
+      TODO(#12372)
+  - name : PERMANENTUNIT
+    description : |-
+      TODO(#12372)

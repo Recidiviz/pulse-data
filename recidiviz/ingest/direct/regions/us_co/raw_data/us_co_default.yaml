@@ -1,4 +1,4 @@
-default_encoding: UTF-8
-default_separator: ','
+default_encoding: windows-1252
+default_separator: ","
 default_ignore_quotes: False
 default_always_historical_export: False

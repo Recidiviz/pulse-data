@@ -1,0 +1,30 @@
+file_tag: ptyotherid
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name : PARTYID
+    description : |-
+      TODO(#12372)
+  - name : PTYIDTYPE
+    description : |-
+      TODO(#12372)
+  - name : PTYIDAGENCY
+    description : |-
+      TODO(#12372)
+  - name : OTHERID
+    description : |-
+      TODO(#12372)
+  - name : IDVERIFIEDDATE
+    description : |-
+      TODO(#12372)
+  - name : DATELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : TIMELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : STAFFLASTUPDATE
+    description : |-
+      TODO(#12372)
