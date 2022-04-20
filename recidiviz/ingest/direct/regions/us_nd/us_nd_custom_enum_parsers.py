@@ -25,7 +25,8 @@ my_enum_field:
 import datetime
 from typing import Dict, List, Type
 
-from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
+from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
@@ -145,7 +146,7 @@ POST_JULY_2017_PFI_RAW_TEXT_TO_ENUM_MAP: Dict[
 
 
 def _datetime_str_is_before_2017_custodial_authority_cutoff(
-    datetime_str: str, enum_type_being_parsed: Type[EntityEnum]
+    datetime_str: str, enum_type_being_parsed: Type[StateEntityEnum]
 ) -> bool:
     comparison_date = parse_datetime(datetime_str)
 

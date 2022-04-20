@@ -19,16 +19,16 @@
 from enum import unique
 from typing import Dict
 
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.state import (
     enum_canonical_strings as state_enum_strings,
 )
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateActingBodyType(EntityEnum, metaclass=EntityEnumMeta):
+class StateActingBodyType(StateEntityEnum):
     """Any person or persons who is taking an action."""
 
     COURT = state_enum_strings.state_acting_body_type_court
@@ -49,10 +49,10 @@ _STATE_ACTING_BODY_TYPE_MAP = {
 }
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
+class StateCustodialAuthority(StateEntityEnum):
     """The type of government entity directly responsible for the person on a period of incarceration or supervision.
     Generally the entity of the agent who is filling out the paperwork and making recommendations for the person. This
     is not necessarily the decision making authority on the period."""

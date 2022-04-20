@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateIncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationType(StateEntityEnum):
     COUNTY_JAIL = state_enum_strings.state_incarceration_type_county_jail
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FEDERAL_PRISON = state_enum_strings.state_incarceration_type_federal_prison

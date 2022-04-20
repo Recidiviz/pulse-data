@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionViolationResponseType(StateEntityEnum):
     CITATION = state_enum_strings.state_supervision_violation_response_type_citation
     VIOLATION_REPORT = (
         state_enum_strings.state_supervision_violation_response_type_violation_report
@@ -40,10 +40,10 @@ class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionViolationResponseDecision(StateEntityEnum):
     """Possible types of supervision violation responses."""
 
     COMMUNITY_SERVICE = (
@@ -105,13 +105,11 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 # TODO(#3108): Transition this enum to use StateActingBodyType
 @unique
-class StateSupervisionViolationResponseDecidingBodyType(
-    EntityEnum, metaclass=EntityEnumMeta
-):
+class StateSupervisionViolationResponseDecidingBodyType(StateEntityEnum):
     COURT = (
         state_enum_strings.state_supervision_violation_response_deciding_body_type_court
     )

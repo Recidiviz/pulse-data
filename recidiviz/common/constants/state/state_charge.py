@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict, Optional
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
+class StateChargeClassificationType(StateEntityEnum):
     CIVIL = state_enum_strings.state_charge_classification_type_civil
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FELONY = state_enum_strings.state_charge_classification_type_felony
@@ -39,9 +39,9 @@ class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_CHARGE_CLASSIFICATION_TYPE_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
-class StateChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
+class StateChargeStatus(StateEntityEnum):
     ACQUITTED = state_enum_strings.state_charge_status_acquitted
     ADJUDICATED = state_enum_strings.state_charge_status_adjudicated
     COMPLETED_SENTENCE = state_enum_strings.state_charge_status_completed

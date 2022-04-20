@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateProgramAssignmentParticipationStatus(EntityEnum, metaclass=EntityEnumMeta):
+class StateProgramAssignmentParticipationStatus(StateEntityEnum):
     DENIED = state_enum_strings.state_program_assignment_participation_status_denied
     DISCHARGED = (
         state_enum_strings.state_program_assignment_participation_status_discharged
@@ -56,7 +56,7 @@ _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
 
 
 @unique
-class StateProgramAssignmentDischargeReason(EntityEnum, metaclass=EntityEnumMeta):
+class StateProgramAssignmentDischargeReason(StateEntityEnum):
     ABSCONDED = state_enum_strings.state_program_assignment_discharge_reason_absconded
     ADVERSE_TERMINATION = (
         state_enum_strings.state_program_assignment_discharge_reason_adverse_termination
