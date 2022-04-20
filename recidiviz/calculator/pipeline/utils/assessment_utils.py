@@ -140,6 +140,7 @@ def assessment_score_bucket(
             if assessment_level:
                 return assessment_level.value
         elif assessment_type in [
+            StateAssessmentType.EXTERNAL_UNKNOWN,
             StateAssessmentType.INTERNAL_UNKNOWN,
             StateAssessmentType.ASI,
             StateAssessmentType.CSSM,

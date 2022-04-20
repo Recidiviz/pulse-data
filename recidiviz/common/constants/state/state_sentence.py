@@ -30,13 +30,11 @@ class StateSentenceStatus(StateEntityEnum):
     # Commuted means that the sentence has been shortened/lessened, all the way to today, but the judgment remains
     COMMUTED = state_enum_strings.state_sentence_status_commuted
     COMPLETED = state_enum_strings.state_sentence_status_completed
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     # Pardoned means that the executive branch has removed the conviction after the fact,
     # but the judgment may remain until expunged from the record in some cases
     PARDONED = state_enum_strings.state_sentence_status_pardoned
     # The trial or court order is still in progress
     PENDING = state_enum_strings.state_sentence_status_pending
-    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     # Revoked means someone was on probation and that probation sentence was revoked / turned into incarceration
     REVOKED = state_enum_strings.state_sentence_status_revoked
     # A court sanction was handed down that doesn't include any term to serve but may include, e.g. fines and fees
@@ -45,6 +43,9 @@ class StateSentenceStatus(StateEntityEnum):
     SUSPENDED = state_enum_strings.state_sentence_status_suspended
     # Vacated means that a previous judgment was voided by the judiciary - the judgment is completely undone
     VACATED = state_enum_strings.state_sentence_status_vacated
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSentenceStatus"]:
@@ -66,4 +67,5 @@ _STATE_SENTENCE_STATUS_MAP = {
     "SERVING": StateSentenceStatus.SERVING,
     "SUSPENDED": StateSentenceStatus.SUSPENDED,
     "VACATED": StateSentenceStatus.VACATED,
+    "INTERNAL UNKNOWN": StateSentenceStatus.INTERNAL_UNKNOWN,
 }

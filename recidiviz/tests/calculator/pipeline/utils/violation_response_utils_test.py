@@ -27,6 +27,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_viola
     UsXxViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
+    DECISION_SEVERITY_ORDER,
     identify_most_severe_response_decision,
     violation_responses_in_window,
 )
@@ -307,6 +308,10 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
 class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
     """Tests the identify_most_severe_response_decision function."""
+
+    def test_decision_severity_order_comprehension(self) -> None:
+        for decision in StateSupervisionViolationResponseDecision:
+            self.assertIn(decision, DECISION_SEVERITY_ORDER)
 
     def test_identify_most_severe_response_decision(self) -> None:
         decisions = [

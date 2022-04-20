@@ -35,6 +35,8 @@ class StateActingBodyType(StateEntityEnum):
     PAROLE_BOARD = state_enum_strings.state_acting_body_type_parole_board
     SUPERVISION_OFFICER = state_enum_strings.state_acting_body_type_supervision_officer
     SENTENCED_PERSON = state_enum_strings.state_acting_body_type_sentenced_person
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateActingBodyType"]:
@@ -46,6 +48,8 @@ _STATE_ACTING_BODY_TYPE_MAP = {
     "PAROLE BOARD": StateActingBodyType.PAROLE_BOARD,
     "SUPERVISION OFFICER": StateActingBodyType.SUPERVISION_OFFICER,
     "SENTENCED PERSON": StateActingBodyType.SENTENCED_PERSON,
+    "INTERNAL UNKNOWN": StateActingBodyType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateActingBodyType.EXTERNAL_UNKNOWN,
 }
 
 
@@ -58,15 +62,17 @@ class StateCustodialAuthority(StateEntityEnum):
     is not necessarily the decision making authority on the period."""
 
     COURT = state_enum_strings.state_custodial_authority_court
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
     FEDERAL = state_enum_strings.state_custodial_authority_federal
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+
     OTHER_COUNTRY = state_enum_strings.state_custodial_authority_other_country
     OTHER_STATE = state_enum_strings.state_custodial_authority_other_state
     SUPERVISION_AUTHORITY = (
         state_enum_strings.state_custodial_authority_supervision_authority
     )
     STATE_PRISON = state_enum_strings.state_custodial_authority_state_prison
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateCustodialAuthority"]:

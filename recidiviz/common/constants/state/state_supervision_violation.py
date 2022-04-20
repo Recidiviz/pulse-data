@@ -27,6 +27,8 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 #  migrated to v2 mappings.
 @unique
 class StateSupervisionViolationType(StateEntityEnum):
+    """The type of violation of a condition of supervision."""
+
     # A person has been written up for absconding (failing to appear for meetings or losing contact with PO)
     ABSCONDED = state_enum_strings.state_supervision_violation_type_absconded
 
@@ -52,6 +54,9 @@ class StateSupervisionViolationType(StateEntityEnum):
     # A person has committed a technical violation of one of their conditions of supervision
     TECHNICAL = state_enum_strings.state_supervision_violation_type_technical
 
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionViolationType"]:
         return _STATE_SUPERVISION_VIOLATION_TYPE_MAP
@@ -67,4 +72,6 @@ _STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
     "MISDEMEANOR": StateSupervisionViolationType.MISDEMEANOR,
     "MUNICIPAL": StateSupervisionViolationType.MUNICIPAL,
     "TECHNICAL": StateSupervisionViolationType.TECHNICAL,
+    "EXTERNAL UNKNOWN": StateSupervisionViolationType.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionViolationType.INTERNAL_UNKNOWN,
 }

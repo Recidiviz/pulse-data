@@ -37,6 +37,8 @@ class StateAssessmentClass(StateEntityEnum):
     SEX_OFFENSE = state_enum_strings.state_assessment_class_sex_offense
     SOCIAL = state_enum_strings.state_assessment_class_social
     SUBSTANCE_ABUSE = state_enum_strings.state_assessment_class_substance_abuse
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateAssessmentClass"]:
@@ -67,7 +69,6 @@ _STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 class StateAssessmentType(StateEntityEnum):
     """An enumeration of assessment types tracked in our schema."""
 
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     ASI = state_enum_strings.state_assessment_type_asi
     CSSM = state_enum_strings.state_assessment_type_cssm
     HIQ = state_enum_strings.state_assessment_type_hiq
@@ -106,6 +107,8 @@ class StateAssessmentType(StateEntityEnum):
     STATIC_99 = state_enum_strings.state_assessment_type_static_99
     STRONG_R = state_enum_strings.state_assessment_type_strong_r
     TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateAssessmentType"]:
@@ -116,7 +119,6 @@ class StateAssessmentType(StateEntityEnum):
 #  migrated to v2 mappings.
 @unique
 class StateAssessmentLevel(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     MINIMUM = state_enum_strings.state_assessment_level_minimum
     LOW = state_enum_strings.state_assessment_level_low
     LOW_MEDIUM = state_enum_strings.state_assessment_level_low_medium
@@ -126,6 +128,8 @@ class StateAssessmentLevel(StateEntityEnum):
     HIGH = state_enum_strings.state_assessment_level_high
     VERY_HIGH = state_enum_strings.state_assessment_level_very_high
     MAXIMUM = state_enum_strings.state_assessment_level_maximum
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateAssessmentLevel"]:
@@ -141,6 +145,8 @@ _STATE_ASSESSMENT_CLASS_MAP = {
     "SOCIAL": StateAssessmentClass.SOCIAL,
     "SUBSTANCE ABUSE": StateAssessmentClass.SUBSTANCE_ABUSE,
     "SUBSTANCE": StateAssessmentClass.SUBSTANCE_ABUSE,
+    "INTERNAL UNKNOWN": StateAssessmentClass.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateAssessmentClass.EXTERNAL_UNKNOWN,
 }
 
 
@@ -173,10 +179,10 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     "TCU": StateAssessmentType.TCU_DRUG_SCREEN,
     "TCU DRUG SCREEN": StateAssessmentType.TCU_DRUG_SCREEN,
     "INTERNAL UNKNOWN": StateAssessmentType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateAssessmentType.EXTERNAL_UNKNOWN,
 }
 
 _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
-    "EXTERNAL UNKNOWN": StateAssessmentLevel.EXTERNAL_UNKNOWN,
     "MINIMUM": StateAssessmentLevel.MINIMUM,
     "LOW": StateAssessmentLevel.LOW,
     "LOW MEDIUM": StateAssessmentLevel.LOW_MEDIUM,
@@ -186,4 +192,6 @@ _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
     "HIGH": StateAssessmentLevel.HIGH,
     "VERY HIGH": StateAssessmentLevel.VERY_HIGH,
     "MAXIMUM": StateAssessmentLevel.MAXIMUM,
+    "INTERNAL UNKNOWN": StateAssessmentLevel.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateAssessmentLevel.EXTERNAL_UNKNOWN,
 }

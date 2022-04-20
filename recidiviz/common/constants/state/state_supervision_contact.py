@@ -27,14 +27,13 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 #  migrated to v2 mappings.
 @unique
 class StateSupervisionContactType(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
     COLLATERAL = state_enum_strings.state_supervision_contact_type_collateral
     DIRECT = state_enum_strings.state_supervision_contact_type_direct
     BOTH_COLLATERAL_AND_DIRECT = (
         state_enum_strings.state_supervision_contact_type_both_collateral_and_direct
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactType"]:
@@ -45,15 +44,14 @@ class StateSupervisionContactType(StateEntityEnum):
 #  migrated to v2 mappings.
 @unique
 class StateSupervisionContactMethod(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
     TELEPHONE = state_enum_strings.state_supervision_contact_method_telephone
     WRITTEN_MESSAGE = (
         state_enum_strings.state_supervision_contact_method_written_message
     )
     VIRTUAL = state_enum_strings.state_supervision_contact_method_virtual
     IN_PERSON = state_enum_strings.state_supervision_contact_method_in_person
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactMethod"]:
@@ -64,9 +62,6 @@ class StateSupervisionContactMethod(StateEntityEnum):
 #  migrated to v2 mappings.
 @unique
 class StateSupervisionContactReason(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
     EMERGENCY_CONTACT = (
         state_enum_strings.state_supervision_contact_reason_emergency_contact
     )
@@ -76,6 +71,8 @@ class StateSupervisionContactReason(StateEntityEnum):
     INITIAL_CONTACT = (
         state_enum_strings.state_supervision_contact_reason_initial_contact
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactReason"]:
@@ -86,11 +83,10 @@ class StateSupervisionContactReason(StateEntityEnum):
 #  migrated to v2 mappings.
 @unique
 class StateSupervisionContactStatus(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
     ATTEMPTED = state_enum_strings.state_supervision_contact_status_attempted
     COMPLETED = state_enum_strings.state_supervision_contact_status_completed
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactStatus"]:
@@ -99,9 +95,6 @@ class StateSupervisionContactStatus(StateEntityEnum):
 
 @unique
 class StateSupervisionContactLocation(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
     COURT = state_enum_strings.state_supervision_contact_location_court
     FIELD = state_enum_strings.state_supervision_contact_location_field
     JAIL = state_enum_strings.state_supervision_contact_location_jail
@@ -124,6 +117,8 @@ class StateSupervisionContactLocation(StateEntityEnum):
     ALTERNATIVE_WORK_SITE = (
         state_enum_strings.state_supervision_contact_location_alternative_work_site
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactLocation"]:

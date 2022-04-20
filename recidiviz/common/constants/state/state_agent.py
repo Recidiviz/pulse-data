@@ -37,6 +37,7 @@ class StateAgentType(StateEntityEnum):
     SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
     UNIT_SUPERVISOR = state_enum_strings.state_agent_unit_supervisor
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateAgentType"]:
@@ -52,4 +53,5 @@ _STATE_AGENT_TYPE_MAP = {
     "SUPERVISION OFFICER": StateAgentType.SUPERVISION_OFFICER,
     "UNIT SUPERVISOR": StateAgentType.UNIT_SUPERVISOR,
     "INTERNAL UNKNOWN": StateAgentType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateAgentType.EXTERNAL_UNKNOWN,
 }

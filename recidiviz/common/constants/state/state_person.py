@@ -25,13 +25,14 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
 class StateGender(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FEMALE = state_enum_strings.state_gender_female
     MALE = state_enum_strings.state_gender_male
     OTHER = state_enum_strings.state_gender_other
     TRANS = state_enum_strings.state_gender_trans
     TRANS_FEMALE = state_enum_strings.state_gender_trans_female
     TRANS_MALE = state_enum_strings.state_gender_trans_male
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, Optional["StateGender"]]:
@@ -44,10 +45,11 @@ class StateRace(StateEntityEnum):
     AMERICAN_INDIAN_ALASKAN_NATIVE = state_enum_strings.state_race_american_indian
     ASIAN = state_enum_strings.state_race_asian
     BLACK = state_enum_strings.state_race_black
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     NATIVE_HAWAIIAN_PACIFIC_ISLANDER = state_enum_strings.state_race_hawaiian
     OTHER = state_enum_strings.state_race_other
     WHITE = state_enum_strings.state_race_white
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateRace"]:
@@ -57,9 +59,10 @@ class StateRace(StateEntityEnum):
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
 class StateEthnicity(StateEntityEnum):
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     HISPANIC = state_enum_strings.state_ethnicity_hispanic
     NOT_HISPANIC = state_enum_strings.state_ethnicity_not_hispanic
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateEthnicity"]:
@@ -72,6 +75,8 @@ class StateResidencyStatus(StateEntityEnum):
     HOMELESS = state_enum_strings.state_residency_status_homeless
     PERMANENT = state_enum_strings.state_residency_status_permanent
     TRANSIENT = state_enum_strings.state_residency_status_transient
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateResidencyStatus"]:
@@ -94,6 +99,7 @@ _STATE_GENDER_MAP = {
     "TRANS MALE TRANS MAN": StateGender.TRANS_MALE,
     "U": StateGender.EXTERNAL_UNKNOWN,
     "UNKNOWN": StateGender.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateGender.INTERNAL_UNKNOWN,
 }
 
 
@@ -163,6 +169,7 @@ _STATE_RACE_MAP = {
     "WHITE EURP N AFR": StateRace.WHITE,
     "WHITE EURP N AFR MID EAS": StateRace.WHITE,
     "WHITE OR HISPANIC": StateRace.WHITE,
+    "INTERNAL UNKNOWN": StateRace.INTERNAL_UNKNOWN,
 }
 
 
@@ -181,10 +188,13 @@ STATE_ETHNICITY_MAP = {
     "REFUSED": StateEthnicity.EXTERNAL_UNKNOWN,
     "U": StateEthnicity.EXTERNAL_UNKNOWN,
     "UNKNOWN": StateEthnicity.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateEthnicity.INTERNAL_UNKNOWN,
 }
 
 STATE_RESIDENCY_STATUS_SUBSTRING_MAP = {
     "HOMELESS": StateResidencyStatus.HOMELESS,
     "PERMANENT": StateResidencyStatus.PERMANENT,
     "TRANSIENT": StateResidencyStatus.TRANSIENT,
+    "INTERNAL UNKNOWN": StateResidencyStatus.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateResidencyStatus.EXTERNAL_UNKNOWN,
 }

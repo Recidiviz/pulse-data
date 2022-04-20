@@ -31,13 +31,14 @@ class StateProgramAssignmentParticipationStatus(StateEntityEnum):
     DISCHARGED = (
         state_enum_strings.state_program_assignment_participation_status_discharged
     )
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     IN_PROGRESS = (
         state_enum_strings.state_program_assignment_participation_status_in_progress
     )
     PENDING = state_enum_strings.state_program_assignment_participation_status_pending
-    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     REFUSED = state_enum_strings.state_program_assignment_participation_status_refused
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateProgramAssignmentParticipationStatus"]:
@@ -52,6 +53,7 @@ _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
     "PENDING": StateProgramAssignmentParticipationStatus.PENDING,
     "PRESENT WITHOUT INFO": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
     "REFUSED": StateProgramAssignmentParticipationStatus.REFUSED,
+    "INTERNAL UNKNOWN": StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN,
 }
 
 
@@ -62,7 +64,6 @@ class StateProgramAssignmentDischargeReason(StateEntityEnum):
         state_enum_strings.state_program_assignment_discharge_reason_adverse_termination
     )
     COMPLETED = state_enum_strings.state_program_assignment_discharge_reason_completed
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     MOVED = state_enum_strings.state_program_assignment_discharge_reason_moved
     OPTED_OUT = state_enum_strings.state_program_assignment_discharge_reason_opted_out
     PROGRAM_TRANSFER = (
@@ -71,6 +72,8 @@ class StateProgramAssignmentDischargeReason(StateEntityEnum):
     REINCARCERATED = (
         state_enum_strings.state_program_assignment_discharge_reason_reincarcerated
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateProgramAssignmentDischargeReason"]:
@@ -86,4 +89,5 @@ _STATE_PROGRAM_ASSIGNMENT_DISCHARGE_REASON_MAP = {
     "OPTED OUT": StateProgramAssignmentDischargeReason.OPTED_OUT,
     "PROGRAM TRANSFER": StateProgramAssignmentDischargeReason.PROGRAM_TRANSFER,
     "REINCARCERATED": StateProgramAssignmentDischargeReason.REINCARCERATED,
+    "INTERNAL UNKNOWN": StateProgramAssignmentDischargeReason.INTERNAL_UNKNOWN,
 }

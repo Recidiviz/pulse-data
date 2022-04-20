@@ -32,6 +32,8 @@ class StatePersonAliasType(StateEntityEnum):
     GIVEN_NAME = state_enum_strings.state_person_alias_alias_type_given_name
     MAIDEN_NAME = state_enum_strings.state_person_alias_alias_type_maiden_name
     NICKNAME = state_enum_strings.state_person_alias_alias_type_nickname
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StatePersonAliasType"]:
@@ -47,4 +49,6 @@ _ALIAS_TYPE_MAP = {
     "MAIDEN": StatePersonAliasType.MAIDEN_NAME,
     "MAIDEN NAME": StatePersonAliasType.MAIDEN_NAME,
     "NICKNAME": StatePersonAliasType.NICKNAME,
+    "INTERNAL UNKNOWN": StatePersonAliasType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StatePersonAliasType.EXTERNAL_UNKNOWN,
 }

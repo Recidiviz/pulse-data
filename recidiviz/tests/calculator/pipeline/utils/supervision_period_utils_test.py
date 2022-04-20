@@ -46,6 +46,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_del
     UsPaSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    CASE_TYPE_SEVERITY_ORDER,
     get_post_incarceration_supervision_type,
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
@@ -73,6 +74,10 @@ from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalizatio
 
 class TestIdentifyMostSevereCaseType(unittest.TestCase):
     """Tests the _identify_most_severe_case_type function."""
+
+    def test_case_type_severity_order_comprehensive(self) -> None:
+        for case_type in StateSupervisionCaseType:
+            self.assertIn(case_type, CASE_TYPE_SEVERITY_ORDER)
 
     def test_identify_most_severe_case_type(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(

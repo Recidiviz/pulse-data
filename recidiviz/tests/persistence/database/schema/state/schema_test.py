@@ -23,6 +23,7 @@ import sqlalchemy
 from parameterized import parameterized
 
 from recidiviz.common.constants.state import (
+    enum_canonical_strings,
     state_agent,
     state_assessment,
     state_charge,
@@ -83,7 +84,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
     # Test case ensuring enum values match between persistence layer enums and
     # schema enums
 
-    def testPersistenceAndSchemaEnumsMatch(self):
+    def testPersistenceAndSchemaEnumsMatch(self) -> None:
         # Mapping between name of schema enum and persistence layer enum. This
         # map controls which pairs of enums are tested.
         #
@@ -136,9 +137,14 @@ class TestStateSchemaEnums(TestSchemaEnums):
 
         self.check_persistence_and_schema_enums_match(state_enums_mapping, schema)
 
-    def testAllEnumNamesPrefixedWithState(self):
+    def testAllEnumNamesPrefixedWithState(self) -> None:
         for enum in self._get_all_sqlalchemy_enums_in_module(schema):
             self.assertTrue(enum.name.startswith("state_"))
+
+    def testAllEnumsHaveUnknownValues(self) -> None:
+        for enum in self._get_all_sqlalchemy_enums_in_module(schema):
+            self.assertIn(enum_canonical_strings.internal_unknown, enum.enums)
+            self.assertIn(enum_canonical_strings.external_unknown, enum.enums)
 
 
 class TestStateSchemaTableConsistency(TestSchemaTableConsistency):
