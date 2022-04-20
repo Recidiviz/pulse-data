@@ -57,7 +57,10 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     get_unprocessed_raw_files_in_bucket,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.flash_database_tools import move_ingest_view_results_to_backup
+from recidiviz.ingest.flash_database_tools import (
+    move_ingest_view_results_to_backup,
+    move_ingest_view_results_between_instances,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
@@ -489,6 +492,40 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         try:
             move_ingest_view_results_to_backup(
                 state_code, ingest_instance, BigQueryClientImpl()
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/move_ingest_view_results_between_instances",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _move_ingest_view_results_between_instances() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance_source = DirectIngestInstance(
+                request_json["srcIngestInstance"].upper()
+            )
+            ingest_instance_destination = DirectIngestInstance(
+                request_json["destIngestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            move_ingest_view_results_between_instances(
+                state_code=state_code,
+                ingest_instance_source=ingest_instance_source,
+                ingest_instance_destination=ingest_instance_destination,
+                big_query_client=BigQueryClientImpl(),
             )
             return (
                 "",

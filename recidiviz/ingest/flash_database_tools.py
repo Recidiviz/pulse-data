@@ -64,3 +64,47 @@ def move_ingest_view_results_to_backup(
         dataset_ref=big_query_client.dataset_ref_for_id(dataset_id=source_dataset_id),
         delete_contents=True,
     )
+
+
+def move_ingest_view_results_between_instances(
+    state_code: StateCode,
+    ingest_instance_source: DirectIngestInstance,
+    ingest_instance_destination: DirectIngestInstance,
+    big_query_client: BigQueryClient,
+) -> None:
+    """Move ingest view data for a single ingest instance to a BQ dataset that is the opposite ingest instance
+    with no expiration date, deletes source dataset"""
+
+    source_ingest_view_contents = InstanceIngestViewContents(
+        big_query_client=big_query_client,
+        region_code=state_code.value,
+        ingest_instance=ingest_instance_source,
+        dataset_prefix=None,
+    )
+    source_dataset_id = source_ingest_view_contents.results_dataset()
+
+    destination_ingest_view_contents = InstanceIngestViewContents(
+        big_query_client=big_query_client,
+        region_code=state_code.value,
+        ingest_instance=ingest_instance_destination,
+        dataset_prefix=None,
+    )
+    destination_dataset_id = destination_ingest_view_contents.results_dataset()
+
+    destination_dataset_ref = big_query_client.dataset_ref_for_id(
+        dataset_id=destination_dataset_id
+    )
+    big_query_client.create_dataset_if_necessary(
+        dataset_ref=destination_dataset_ref,
+    )
+
+    big_query_client.copy_dataset_tables(
+        source_dataset_id=source_dataset_id,
+        destination_dataset_id=destination_dataset_id,
+        overwrite_destination_tables=False,
+    )
+
+    big_query_client.delete_dataset(
+        dataset_ref=big_query_client.dataset_ref_for_id(dataset_id=source_dataset_id),
+        delete_contents=True,
+    )
