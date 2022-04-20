@@ -138,10 +138,6 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
     def dimension_identifier(cls) -> str:
         return "global/race_and_ethnicity"
 
-    @property
-    def dimension_value(self) -> str:
-        return self.value
-
 
 @attr.s(frozen=True)
 class Gender(Dimension):

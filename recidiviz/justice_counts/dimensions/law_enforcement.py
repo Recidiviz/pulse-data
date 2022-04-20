@@ -29,10 +29,6 @@ class SheriffBudgetType(DimensionBase, enum.Enum):
     def dimension_identifier(cls) -> str:
         return "metric/law_enforcement/budget/type"
 
-    @property
-    def dimension_value(self) -> str:
-        return self.value
-
 
 class CallType(DimensionBase, enum.Enum):
     EMERGENCY = "EMERGENCY"
@@ -42,7 +38,3 @@ class CallType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/law_enforcement/calls_for_service/type"
-
-    @property
-    def dimension_value(self) -> str:
-        return self.value

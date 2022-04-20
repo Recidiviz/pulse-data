@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains base Dimension classes."""
 
+import enum
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Optional, Type, TypeVar
 
@@ -56,13 +57,18 @@ class DimensionBase:
                 Example: facilities specific to a particular state
         """
 
+    def to_enum(self) -> enum.Enum:
+        if not isinstance(self, enum.Enum):
+            raise ValueError("Subclasses of DimensionBase must also subclass Enum.")
+        return self
+
     @property
-    @abstractmethod
     def dimension_value(self) -> str:
         """The value of this dimension instance.
 
         E.g. 'FEMALE' is a potential value for an instance of the 'global/raw/gender' dimension.
         """
+        return self.to_enum().value
 
 
 class Dimension(DimensionBase):
