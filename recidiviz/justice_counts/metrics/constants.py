@@ -17,10 +17,32 @@
 """Constants needed across multiple Justice Counts Metric files."""
 
 import enum
+from typing import Any, Dict, Tuple, Type
 
 
 class ContextKey(enum.Enum):
+    """Uniquely identifies Contexts that are required for metrics."""
+
     PRIMARY_FUNDING_SOURCE = "PRIMARY_FUNDING_SOURCE"
     JURISDICTION_AREA = "JURISDICTION_AREA"
     ALL_CALLS_OR_CALLS_RESPONDED = "ALL_CALLS_OR_CALLS_RESPONDED"
     AGENCIES_AVAILABLE_FOR_RESPONSE = "AGENCIES_AVAILABLE_FOR_RESPONSE"
+
+
+class ContextType(enum.Enum):
+    """Different Context input types."""
+
+    TEXT = "TEXT"
+    NUMBER = "NUMBER"
+    BOOLEAN = "BOOLEAN"
+
+    @classmethod
+    def context_type_to_python_type(cls) -> Dict[str, Tuple[Type[Any], ...]]:
+        return {
+            "TEXT": (str,),
+            "NUMBER": (int, float),
+            "BOOLEAN": (bool,),
+        }
+
+    def python_type(self) -> Tuple[Type[Any], ...]:
+        return ContextType.context_type_to_python_type()[self.value]

@@ -189,9 +189,7 @@ class JusticeCountsSchemaTestObjects:
             key=law_enforcement.calls_for_service.key,
             value=100,
             contexts=[
-                ReportedContext(
-                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
-                )
+                ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True)
             ],
             aggregated_dimensions=[
                 ReportedAggregatedDimension(
