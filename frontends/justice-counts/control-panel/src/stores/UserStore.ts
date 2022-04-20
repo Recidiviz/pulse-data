@@ -41,6 +41,8 @@ class UserStore {
 
   hasSeenOnboarding: boolean;
 
+  permissions: string[];
+
   constructor(authStore: AuthStore, api: API) {
     makeAutoObservable(this);
 
@@ -52,6 +54,7 @@ class UserStore {
     this.userAgencies = undefined;
     this.userInfoLoaded = false;
     this.hasSeenOnboarding = true;
+    this.permissions = [];
 
     when(
       () => api.isSessionInitialized,
@@ -90,6 +93,7 @@ class UserStore {
         id: userID,
         auth0_user_id: auth0UserID,
         agencies: userAgencies,
+        permissions,
         has_seen_onboarding: hasSeenOnboarding, // will be used in future
       } = await response.json();
 
@@ -98,6 +102,7 @@ class UserStore {
         this.userID = userID;
         this.auth0UserID = auth0UserID;
         this.userAgencies = userAgencies;
+        this.permissions = permissions;
         this.hasSeenOnboarding = hasSeenOnboarding; // will be used in future
 
         if (this.userID && this.userAgencies) {

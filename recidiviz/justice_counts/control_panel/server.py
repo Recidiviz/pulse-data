@@ -23,6 +23,9 @@ from flask import Blueprint, Flask, Response, send_from_directory
 from flask_wtf.csrf import CSRFProtect
 
 from recidiviz.justice_counts.control_panel.config import Config
+from recidiviz.justice_counts.control_panel.error_handlers import (
+    register_error_handlers,
+)
 from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
@@ -89,6 +92,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
     )
 
     CSRFProtect(app)
+    register_error_handlers(app)
 
     @app.route("/health")
     def health() -> Tuple[str, HTTPStatus]:

@@ -24,6 +24,7 @@ from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
 from recidiviz.utils.auth.auth0 import (
     AuthorizationError,
     TokenClaims,
+    get_permissions_from_token,
     update_session_with_user_info,
 )
 from recidiviz.utils.environment import in_development
@@ -50,4 +51,7 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
             session["user_info"] = {}
         raise e
 
-    g.user_context = UserContext(auth0_user_id=session["jwt_sub"])
+    session["user_permissions"] = get_permissions_from_token(jwt_claims)
+    g.user_context = UserContext(
+        auth0_user_id=session["jwt_sub"], permissions=session["user_permissions"]
+    )
