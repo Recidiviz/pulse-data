@@ -27,8 +27,8 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.standard_enum_overrides import (
-    get_standard_enum_overrides,
+from recidiviz.common.constants.state.standard_enum_overrides import (
+    legacy_mappings_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -247,7 +247,7 @@ def generate_enum_overrides() -> EnumOverrides:
 
     ignore_predicates: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
-    base_overrides = get_standard_enum_overrides()
+    base_overrides = legacy_mappings_standard_enum_overrides()
     return update_overrides_from_maps(
         base_overrides, overrides, IGNORES, override_mappers, ignore_predicates
     )

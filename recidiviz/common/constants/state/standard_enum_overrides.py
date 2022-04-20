@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,25 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Function for accessing a set of overrides that are used in all
-data parsing, i.e. both scrapers and direct ingest controllers.
+"""Function for accessing a set of overrides that are used in state direct ingest
+controllers.
 """
 
-from typing import Optional, cast
+from typing import cast
 
-from recidiviz.common.constants.county.bond import BondStatus, BondType
-from recidiviz.common.constants.county.charge import ChargeClass
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    ETHNICITY_MAP,
-    Ethnicity,
-    Race,
+from recidiviz.common.constants.state.state_person import (
+    STATE_ETHNICITY_MAP,
+    StateEthnicity,
+    StateRace,
 )
 
 
-# TODO(#2056): Move this logic into the converters themselves.
-def get_standard_enum_overrides() -> EnumOverrides:
+# TODO(#8905): Delete once all state ingest views have been migrated to v2 mappings.
+def legacy_mappings_standard_enum_overrides() -> EnumOverrides:
     """
     Returns a dict that contains all string to enum mappings that are region specific. These overrides have a higher
     precedence than the global mappings in ingest/constants.
@@ -41,20 +38,11 @@ def get_standard_enum_overrides() -> EnumOverrides:
     mappings instead.
     """
     overrides_builder = EnumOverrides.Builder()
-    for ethnicity_string, ethnicity in ETHNICITY_MAP.items():
+    for ethnicity_string, ethnicity in STATE_ETHNICITY_MAP.items():
         # mypy is unable to correctly type the EntityEnums in constants.person. See
         # https://github.com/python/mypy/issues/3327
-        ethnicity_enum = cast(Ethnicity, ethnicity)
-        if ethnicity_enum is Ethnicity.HISPANIC:
-            overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
-
-    overrides_builder.add("OUT ON BOND", BondStatus.POSTED, BondType)
-    overrides_builder.add_mapper_fn(_felony_mapper, ChargeClass, ChargeStatus)
+        ethnicity_enum = cast(StateEthnicity, ethnicity)
+        if ethnicity_enum is StateEthnicity.HISPANIC:
+            overrides_builder.add(ethnicity_string, ethnicity_enum, StateRace)
 
     return overrides_builder.build()
-
-
-def _felony_mapper(status: str) -> Optional[ChargeClass]:
-    if "FELONY" in status or "MURDER" in status:
-        return ChargeClass.FELONY
-    return None

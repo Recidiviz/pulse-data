@@ -19,7 +19,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.common.constants.enum_canonical_strings import (
+from recidiviz.common.constants.county.enum_canonical_strings import (
     bond_status_posted,
     bond_status_revoked,
     bond_type_denied,

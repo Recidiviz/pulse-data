@@ -27,10 +27,10 @@ from datetime import datetime
 import requests
 import urllib3
 
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.standard_enum_overrides import (
+from recidiviz.common.constants.county.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import constants, scraper_utils, sessions, tracker
 from recidiviz.ingest.scrape.constants import BATCH_PUBSUB_TYPE

@@ -24,7 +24,7 @@ from mock import Mock, patch
 from more_itertools import one
 
 from recidiviz.common import str_field_utils
-from recidiviz.common.constants.shared_enums.person_characteristics import (
+from recidiviz.common.constants.county.person_characteristics import (
     Ethnicity,
     Gender,
     Race,

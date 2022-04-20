@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -31,13 +30,13 @@ class StateSentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     # Commuted means that the sentence has been shortened/lessened, all the way to today, but the judgment remains
     COMMUTED = state_enum_strings.state_sentence_status_commuted
     COMPLETED = state_enum_strings.state_sentence_status_completed
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     # Pardoned means that the executive branch has removed the conviction after the fact,
     # but the judgment may remain until expunged from the record in some cases
     PARDONED = state_enum_strings.state_sentence_status_pardoned
     # The trial or court order is still in progress
     PENDING = state_enum_strings.state_sentence_status_pending
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     # Revoked means someone was on probation and that probation sentence was revoked / turned into incarceration
     REVOKED = state_enum_strings.state_sentence_status_revoked
     # A court sanction was handed down that doesn't include any term to serve but may include, e.g. fines and fees

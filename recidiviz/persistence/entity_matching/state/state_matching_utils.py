@@ -20,7 +20,7 @@ from enum import Enum
 from typing import List, Optional, Sequence, Set, Type, cast
 
 from recidiviz.common.common_utils import check_all_objs_have_type
-from recidiviz.common.constants import enum_canonical_strings
+from recidiviz.common.constants.state import enum_canonical_strings
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType

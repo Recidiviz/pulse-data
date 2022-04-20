@@ -26,10 +26,6 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
-from recidiviz.common.constants.state.shared_enums import (
-    StateActingBodyType,
-    StateCustodialAuthority,
-)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -72,6 +68,10 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_shared_enums import (
+    StateActingBodyType,
+    StateCustodialAuthority,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactReason,

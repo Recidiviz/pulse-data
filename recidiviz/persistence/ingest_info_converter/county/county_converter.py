@@ -22,7 +22,7 @@ from typing import List
 
 import more_itertools
 
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
+from recidiviz.common.constants.county.charge import ChargeStatus
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.common.str_field_utils import parse_int
 from recidiviz.ingest.models import ingest_info_pb2

@@ -16,7 +16,14 @@
 # =============================================================================
 """Tests for county-specific SQLAlchemy enums."""
 
-from recidiviz.common.constants.county import booking, sentence, charge, hold
+from recidiviz.common.constants.county import (
+    bond,
+    booking,
+    charge,
+    hold,
+    person_characteristics,
+    sentence,
+)
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 
@@ -41,8 +48,14 @@ class TestCountySchemaEnums(TestSchemaEnums):
             "sentence_status": sentence.SentenceStatus,
             "sentence_relationship_type": None,
             "charge_class": charge.ChargeClass,
+            "gender": person_characteristics.Gender,
+            "race": person_characteristics.Race,
+            "ethnicity": person_characteristics.Ethnicity,
+            "residency_status": person_characteristics.ResidencyStatus,
+            "bond_type": bond.BondType,
+            "bond_status": bond.BondStatus,
+            "degree": charge.ChargeDegree,
+            "charge_status": charge.ChargeStatus,
         }
 
-        merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING, **county_enums_mapping}
-
-        self.check_persistence_and_schema_enums_match(merged_mapping, schema)
+        self.check_persistence_and_schema_enums_match(county_enums_mapping, schema)

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for aggregate-specific SQLAlchemy enums."""
+from recidiviz.common.constants.county import person_characteristics
 from recidiviz.persistence.database.schema.aggregate import schema
 from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 
@@ -30,8 +31,12 @@ class TestAggregateSchemaEnums(TestSchemaEnums):
         #
         # If a schema enum does not correspond to a persistence layer enum,
         # it should be mapped to None.
-        aggregate_enums_mapping = {"time_granularity": None, "facility_type_wv": None}
+        aggregate_enums_mapping = {
+            "time_granularity": None,
+            "facility_type_wv": None,
+            "gender": person_characteristics.Gender,
+            "race": person_characteristics.Race,
+            "ethnicity": person_characteristics.Ethnicity,
+        }
 
-        merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING, **aggregate_enums_mapping}
-
-        self.check_persistence_and_schema_enums_match(merged_mapping, schema)
+        self.check_persistence_and_schema_enums_match(aggregate_enums_mapping, schema)

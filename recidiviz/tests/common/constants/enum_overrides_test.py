@@ -20,11 +20,8 @@ import unittest
 
 from recidiviz.common.constants.county.bond import BondStatus, BondType
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
+from recidiviz.common.constants.county.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Race,
-)
 
 
 class EnumOverridesTest(unittest.TestCase):

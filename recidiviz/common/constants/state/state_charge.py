@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict, Optional
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -29,7 +28,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 @unique
 class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL = state_enum_strings.state_charge_classification_type_civil
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FELONY = state_enum_strings.state_charge_classification_type_felony
     INFRACTION = state_enum_strings.state_charge_classification_type_infraction
     MISDEMEANOR = state_enum_strings.state_charge_classification_type_misdemeanor
@@ -48,13 +47,12 @@ class StateChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
     COMPLETED_SENTENCE = state_enum_strings.state_charge_status_completed
     CONVICTED = state_enum_strings.state_charge_status_convicted
     DROPPED = state_enum_strings.state_charge_status_dropped
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INFERRED_DROPPED = state_enum_strings.state_charge_status_inferred_dropped
     PENDING = state_enum_strings.state_charge_status_pending
     PRETRIAL = state_enum_strings.state_charge_status_pretrial
     SENTENCED = state_enum_strings.state_charge_status_sentenced
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     TRANSFERRED_AWAY = state_enum_strings.state_charge_status_transferred_away
 
     @staticmethod
@@ -262,7 +260,6 @@ _STATE_CHARGE_STATUS_MAP = {
     "RELEASED TIME SERVED": StateChargeStatus.COMPLETED_SENTENCE,
     "RELEASED THIS CASE ONLY": StateChargeStatus.DROPPED,
     "RELEASE TO WORK RELEASE": StateChargeStatus.SENTENCED,
-    "REMOVED WITHOUT INFO": StateChargeStatus.REMOVED_WITHOUT_INFO,
     "REPORT IN": StateChargeStatus.SENTENCED,
     "RESCINDED": StateChargeStatus.DROPPED,
     "REVOKED": StateChargeStatus.SENTENCED,

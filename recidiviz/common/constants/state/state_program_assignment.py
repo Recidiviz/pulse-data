@@ -20,7 +20,6 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -32,12 +31,12 @@ class StateProgramAssignmentParticipationStatus(EntityEnum, metaclass=EntityEnum
     DISCHARGED = (
         state_enum_strings.state_program_assignment_participation_status_discharged
     )
-    EXTERNAL_UNKNOWN = enum_canonical_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     IN_PROGRESS = (
         state_enum_strings.state_program_assignment_participation_status_in_progress
     )
     PENDING = state_enum_strings.state_program_assignment_participation_status_pending
-    PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     REFUSED = state_enum_strings.state_program_assignment_participation_status_refused
 
     @staticmethod
@@ -63,7 +62,7 @@ class StateProgramAssignmentDischargeReason(EntityEnum, metaclass=EntityEnumMeta
         state_enum_strings.state_program_assignment_discharge_reason_adverse_termination
     )
     COMPLETED = state_enum_strings.state_program_assignment_discharge_reason_completed
-    EXTERNAL_UNKNOWN = enum_canonical_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     MOVED = state_enum_strings.state_program_assignment_discharge_reason_moved
     OPTED_OUT = state_enum_strings.state_program_assignment_discharge_reason_opted_out
     PROGRAM_TRANSFER = (

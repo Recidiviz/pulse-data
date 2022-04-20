@@ -25,7 +25,7 @@ from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings imp
 from recidiviz.calculator.query.county.views.vera.county_names import (
     COUNTY_NAMES_VIEW_BUILDER,
 )
-from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
+from recidiviz.common.constants.county.enum_canonical_strings import bond_type_denied
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

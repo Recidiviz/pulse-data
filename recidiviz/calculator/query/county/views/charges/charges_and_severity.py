@@ -22,7 +22,7 @@ from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import (
     CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER,
 )
-from recidiviz.common.constants.enum_canonical_strings import external_unknown
+from recidiviz.common.constants.county.enum_canonical_strings import external_unknown
 from recidiviz.persistence.database.schema.county.schema import Charge
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

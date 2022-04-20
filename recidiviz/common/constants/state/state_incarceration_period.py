@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict, Optional
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -51,8 +50,8 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
     ADMITTED_FROM_SUPERVISION = (
         state_enum_strings.state_incarceration_period_admission_reason_admitted_from_supervision
     )
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     NEW_ADMISSION = (
         state_enum_strings.state_incarceration_period_admission_reason_new_admission
     )
@@ -108,9 +107,9 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
     )
     DEATH = state_enum_strings.state_incarceration_period_release_reason_death
     ESCAPE = state_enum_strings.state_incarceration_period_release_reason_escape
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     EXECUTION = state_enum_strings.state_incarceration_period_release_reason_execution
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     PARDONED = state_enum_strings.state_incarceration_period_release_reason_pardoned
     RELEASED_FROM_ERRONEOUS_ADMISSION = (
         state_enum_strings.state_incarceration_period_release_reason_released_from_erroneous_admission
@@ -155,9 +154,9 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
 class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMeta):
     """Specialized purposes for a period of incarceration"""
 
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     GENERAL = state_enum_strings.state_specialized_purpose_for_incarceration_general
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     PAROLE_BOARD_HOLD = (
         state_enum_strings.state_specialized_purpose_for_incarceration_parole_board_hold
     )

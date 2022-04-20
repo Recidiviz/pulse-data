@@ -22,7 +22,6 @@ import pytest
 import sqlalchemy
 from parameterized import parameterized
 
-import recidiviz.common.constants.state.shared_enums
 from recidiviz.common.constants.state import (
     state_agent,
     state_assessment,
@@ -35,6 +34,7 @@ from recidiviz.common.constants.state import (
     state_person_alias,
     state_program_assignment,
     state_sentence,
+    state_shared_enums,
     state_supervision_contact,
     state_supervision_period,
     state_supervision_sentence,
@@ -45,7 +45,6 @@ from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
 )
-from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
@@ -98,8 +97,8 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_charge_status": state_charge.StateChargeStatus,
             "state_sentence_status": state_sentence.StateSentenceStatus,
             "state_supervision_sentence_supervision_type": state_supervision_sentence.StateSupervisionSentenceSupervisionType,
-            "state_acting_body_type": recidiviz.common.constants.state.shared_enums.StateActingBodyType,
-            "state_custodial_authority": recidiviz.common.constants.state.shared_enums.StateCustodialAuthority,
+            "state_acting_body_type": state_shared_enums.StateActingBodyType,
+            "state_custodial_authority": state_shared_enums.StateCustodialAuthority,
             "state_early_discharge_decision": StateEarlyDischargeDecision,
             "state_early_discharge_decision_status": StateEarlyDischargeDecisionStatus,
             "state_incarceration_type": state_incarceration.StateIncarcerationType,
@@ -135,18 +134,10 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_violation_response_deciding_body_type": state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,
         }
 
-        merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING, **state_enums_mapping}
-
-        self.check_persistence_and_schema_enums_match(merged_mapping, schema)
+        self.check_persistence_and_schema_enums_match(state_enums_mapping, schema)
 
     def testAllEnumNamesPrefixedWithState(self):
-        shared_enum_ids = [
-            id(enum) for enum in self._get_all_sqlalchemy_enums_in_module(shared_enums)
-        ]
-
         for enum in self._get_all_sqlalchemy_enums_in_module(schema):
-            if id(enum) in shared_enum_ids:
-                continue
             self.assertTrue(enum.name.startswith("state_"))
 
 

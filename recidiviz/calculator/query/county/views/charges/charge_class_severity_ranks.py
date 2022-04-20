@@ -26,9 +26,8 @@ from recidiviz.common.constants.county.enum_canonical_strings import (
     charge_class_other,
     charge_class_parole_violation,
     charge_class_probation_violation,
+    external_unknown,
 )
-from recidiviz.common.constants.enum_canonical_strings import external_unknown
-
 
 # Charge classes by severity.
 # Must be ranked from highest to lowest severity.

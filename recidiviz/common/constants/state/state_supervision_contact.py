@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -28,8 +27,8 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
     COLLATERAL = state_enum_strings.state_supervision_contact_type_collateral
     DIRECT = state_enum_strings.state_supervision_contact_type_direct
@@ -46,8 +45,8 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionContactMethod(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
     TELEPHONE = state_enum_strings.state_supervision_contact_method_telephone
     WRITTEN_MESSAGE = (
@@ -65,8 +64,8 @@ class StateSupervisionContactMethod(EntityEnum, metaclass=EntityEnumMeta):
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
     EMERGENCY_CONTACT = (
         state_enum_strings.state_supervision_contact_reason_emergency_contact
@@ -87,8 +86,8 @@ class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionContactStatus(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
     ATTEMPTED = state_enum_strings.state_supervision_contact_status_attempted
     COMPLETED = state_enum_strings.state_supervision_contact_status_completed
@@ -100,8 +99,8 @@ class StateSupervisionContactStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 @unique
 class StateSupervisionContactLocation(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
     COURT = state_enum_strings.state_supervision_contact_location_court
     FIELD = state_enum_strings.state_supervision_contact_location_field

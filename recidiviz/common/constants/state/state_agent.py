@@ -20,7 +20,6 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -28,7 +27,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
-    PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     CORRECTIONAL_OFFICER = state_enum_strings.state_agent_correctional_officer
     JUDGE = state_enum_strings.state_agent_judge
     JUSTICE = state_enum_strings.state_agent_justice
@@ -36,7 +35,7 @@ class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     # A parole/probation officer (PO)
     SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
     UNIT_SUPERVISOR = state_enum_strings.state_agent_unit_supervisor
-    INTERNAL_UNKNOWN = enum_canonical_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateAgentType"]:

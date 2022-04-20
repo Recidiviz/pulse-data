@@ -28,10 +28,10 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.standard_enum_overrides import (
-    get_standard_enum_overrides,
-)
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC
+from recidiviz.common.constants.state.standard_enum_overrides import (
+    legacy_mappings_standard_enum_overrides,
+)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
@@ -575,7 +575,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     @classmethod
     def generate_enum_overrides(cls) -> EnumOverrides:
         """Provides Missouri-specific overrides for enum mappings."""
-        base_overrides = get_standard_enum_overrides()
+        base_overrides = legacy_mappings_standard_enum_overrides()
         return update_overrides_from_maps(
             base_overrides,
             cls.ENUM_OVERRIDES,

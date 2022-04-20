@@ -26,10 +26,10 @@ import datetime
 from typing import Dict, List, Type
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.str_field_utils import parse_datetime
 
 OTHER_STATE_FACILITY = "OOS"

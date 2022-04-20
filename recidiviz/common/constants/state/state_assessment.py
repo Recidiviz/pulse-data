@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -50,7 +49,7 @@ class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
 class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     """An enumeration of assessment types tracked in our schema."""
 
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     ASI = state_enum_strings.state_assessment_type_asi
     CSSM = state_enum_strings.state_assessment_type_cssm
     HIQ = state_enum_strings.state_assessment_type_hiq
@@ -99,7 +98,7 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     MINIMUM = state_enum_strings.state_assessment_level_minimum
     LOW = state_enum_strings.state_assessment_level_low
     LOW_MEDIUM = state_enum_strings.state_assessment_level_low_medium

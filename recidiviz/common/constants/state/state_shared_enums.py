@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.state import (
     enum_canonical_strings as state_enum_strings,
@@ -59,9 +58,9 @@ class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
     is not necessarily the decision making authority on the period."""
 
     COURT = state_enum_strings.state_custodial_authority_court
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FEDERAL = state_enum_strings.state_custodial_authority_federal
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     OTHER_COUNTRY = state_enum_strings.state_custodial_authority_other_country
     OTHER_STATE = state_enum_strings.state_custodial_authority_other_state
     SUPERVISION_AUTHORITY = (

@@ -24,10 +24,10 @@ from sqlalchemy.sql import text
 
 from recidiviz.common.constants.county.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.common.constants.county.charge import ChargeStatus
+from recidiviz.common.constants.county.person_characteristics import Race
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
-from recidiviz.common.constants.shared_enums.person_characteristics import Race
 from recidiviz.persistence.database import database
 from recidiviz.persistence.database.schema.county import dao as county_dao
 from recidiviz.persistence.database.schema.county import schema as county_schema

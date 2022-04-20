@@ -21,7 +21,6 @@ from typing import Dict
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
-from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -29,8 +28,8 @@ class SentenceStatus(EntityEnum, metaclass=EntityEnumMeta):
     COMMUTED = county_enum_strings.sentence_status_commuted
     COMPLETED = county_enum_strings.sentence_status_completed
     SERVING = county_enum_strings.sentence_status_serving
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
+    PRESENT_WITHOUT_INFO = county_enum_strings.present_without_info
+    REMOVED_WITHOUT_INFO = county_enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map() -> Dict[str, "SentenceStatus"]:

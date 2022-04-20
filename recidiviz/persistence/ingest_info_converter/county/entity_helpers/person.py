@@ -19,7 +19,7 @@
 import re
 from typing import Optional
 
-from recidiviz.common.constants.shared_enums.person_characteristics import (
+from recidiviz.common.constants.county.person_characteristics import (
     RESIDENCY_STATUS_SUBSTRING_MAP,
     Ethnicity,
     Gender,

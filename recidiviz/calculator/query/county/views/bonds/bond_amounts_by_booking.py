@@ -22,7 +22,7 @@ from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied import (
     BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER,
 )
-from recidiviz.common.constants.enum_canonical_strings import bond_type_denied
+from recidiviz.common.constants.county.enum_canonical_strings import bond_type_denied
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

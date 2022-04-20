@@ -21,7 +21,6 @@ from typing import Dict, List, Optional
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
-from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -41,7 +40,7 @@ class AdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
 
 
 class Classification(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = county_enum_strings.external_unknown
     HIGH = county_enum_strings.classification_high
     LOW = county_enum_strings.classification_low
     MAXIMUM = county_enum_strings.classification_maximum
@@ -60,8 +59,8 @@ class CustodyStatus(EntityEnum, metaclass=EntityEnumMeta):
     IN_CUSTODY = county_enum_strings.custody_status_in_custody
     RELEASED = county_enum_strings.custody_status_released
     INFERRED_RELEASE = county_enum_strings.custody_status_inferred_release
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
+    PRESENT_WITHOUT_INFO = county_enum_strings.present_without_info
+    REMOVED_WITHOUT_INFO = county_enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map() -> Dict[str, "CustodyStatus"]:
@@ -87,7 +86,7 @@ class ReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
     DEATH = county_enum_strings.release_reason_death
     ESCAPE = county_enum_strings.release_reason_escape
     EXPIRATION_OF_SENTENCE = county_enum_strings.release_reason_expiration
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = county_enum_strings.external_unknown
     OWN_RECOGNIZANCE = county_enum_strings.release_reason_recognizance
     PAROLE = county_enum_strings.release_reason_parole
     PROBATION = county_enum_strings.release_reason_probation

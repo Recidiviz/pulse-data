@@ -24,12 +24,12 @@ from typing import Generic, List
 
 import attr
 
-from recidiviz.common.constants.entity_enum import EnumParsingError
-from recidiviz.common.constants.shared_enums.person_characteristics import (
+from recidiviz.common.constants.county.person_characteristics import (
     Ethnicity,
     Gender,
     Race,
 )
+from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
     StateGender,
