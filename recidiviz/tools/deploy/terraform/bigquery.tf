@@ -30,9 +30,10 @@ module "validation_results_dataset" {
 }
 
 resource "google_bigquery_table" "validation_results" {
-  dataset_id  = module.validation_results_dataset.dataset_id
-  table_id    = "validation_results"
-  description = "This table contains the results from data validation runs."
+  dataset_id          = module.validation_results_dataset.dataset_id
+  table_id            = "validation_results"
+  description         = "This table contains the results from data validation runs."
+  deletion_protection = false
 
   schema = <<EOF
 [
@@ -115,4 +116,58 @@ module "supplemental_generated_dataset" {
   source      = "./modules/big_query_dataset"
   dataset_id  = "supplemental_data"
   description = "This dataset contains tables with generated data that does not go through the traditional ingest and calc pipelines."
+}
+
+module "export_archives_dataset" {
+  source      = "./modules/big_query_dataset"
+  dataset_id  = "export_archives"
+  description = "This dataset contains tables that archive the contents of daily exports."
+}
+
+resource "google_bigquery_table" "workflows_client_record_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "workflows_client_record_archive"
+  description         = "This table contains daily archives of the client_record export for Workflows, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    # while archives do also exist in production, we have been using staging exports
+    # as the sole data source for Workflows in production; for consistency we are doing
+    # the same with this table
+    source_uris = ["gs://recidiviz-staging-practices-etl-data-archive/*/client_record.json"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "person_external_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "pseudonymized_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "district",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "compliant_reporting_eligible",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "officer_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    }
+]
+EOF
+
 }
