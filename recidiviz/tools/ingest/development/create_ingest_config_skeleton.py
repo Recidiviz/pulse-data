@@ -19,15 +19,15 @@
 
 Usage:
     python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state [US_XX] \
-    --delimiter <field separator> (--file|--folder) [path_to_raw_table(s)] \
-    [--allow-overwrite] [--initialize-state] [--add-description-placeholders]
+    --delimiter <field separator> --classification (source|validation) (--file|--folder) [path_to_raw_table(s)] \
+    [--allow-overwrite] [--initialize-state] [--add-description-placeholders] [--encoding]
 
 Example:
     python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
-    --delimiter '|' --file Xxandland/db/historical/filename
+    --delimiter '|' --file Xxandland/db/historical/filename --classification source --encoding utf-16
 
     python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
-    --delimiter ',' --folder Xxandland/db/historical/ --add-description-placeholders True
+    --delimiter ',' --folder Xxandland/db/historical/ --classification source --add-description-placeholders True
 """
 import argparse
 import logging
