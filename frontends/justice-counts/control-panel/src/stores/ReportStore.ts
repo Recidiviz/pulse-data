@@ -122,7 +122,7 @@ class ReportStore {
       if (userID !== undefined && userAgency !== undefined) {
         const response = (await this.api.request({
           // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
-          path: `/api/reports/${reportID}?user_id=${userID}&agency_id=${userAgency.id}`,
+          path: `/api/reports/${reportID}?agency_id=${userAgency.id}`,
           method: "GET",
         })) as Response;
         const report = await response.json();
@@ -150,7 +150,7 @@ class ReportStore {
         const response = (await this.api.request({
           path: `/api/reports/${reportID}`,
           method: "PUT",
-          body: { user_id: userID, agency_id: userAgency.id, ...body },
+          body: { agency_id: userAgency.id, ...body },
         })) as Response;
 
         return response;
@@ -174,7 +174,7 @@ class ReportStore {
         const response = (await this.api.request({
           path: "/api/reports",
           method: "POST",
-          body: { user_id: userID, agency_id: userAgency.id, ...body },
+          body: { agency_id: userAgency.id, ...body },
         })) as Response;
 
         return response;

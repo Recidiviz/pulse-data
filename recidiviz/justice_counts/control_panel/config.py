@@ -22,7 +22,7 @@ from typing import Callable, Optional
 
 import attr
 
-from recidiviz.justice_counts.auth_utils import on_successful_authorization
+from recidiviz.justice_counts.control_panel.utils import on_successful_authorization
 from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey

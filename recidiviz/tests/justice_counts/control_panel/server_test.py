@@ -108,20 +108,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         agency = self.test_schema_objects.test_agency_A
         self.session.add_all([agency, user])
         self.session.commit()
-        assigned_user_id = self.session.query(UserAccount).one().id
-        assigned_agency_id = self.session.query(Agency).one().id
         month = 3
         year = 2022
-        response = self.client.post(
-            "/api/reports",
-            json={
-                "agency_id": assigned_agency_id,
-                "user_id": assigned_user_id,
-                "month": month,
-                "year": year,
-                "frequency": ReportingFrequency.MONTHLY.value,
-            },
-        )
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.post(
+                "/api/reports",
+                json={
+                    "agency_id": agency.id,
+                    "month": month,
+                    "year": year,
+                    "frequency": ReportingFrequency.MONTHLY.value,
+                },
+            )
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
         self.assertEqual(response_json["editors"], [])

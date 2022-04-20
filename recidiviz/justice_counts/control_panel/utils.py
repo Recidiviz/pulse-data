@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for Justice Counts"""
+"""Utils for Justice Counts Control Panel"""
 import logging
+from typing import Any, Dict
 
 from flask import g, session
 
@@ -49,9 +50,29 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
                 "assuming this is an M2M client-credentials grant."
             )
             session["user_info"] = {}
+            return
         raise e
 
     session["user_permissions"] = get_permissions_from_token(jwt_claims)
     g.user_context = UserContext(
         auth0_user_id=session["jwt_sub"], permissions=session["user_permissions"]
     )
+
+
+def get_user_account_id(request_dict: Dict[str, Any]) -> int:
+    """If we are not in development, we do not allow passing in `user_id` to a request.
+    Doing so would allow users to pretend to be other users. Instead, we infer the `user_id`
+    from the Authorization header and store it on the global user context in our authorization
+    callback. If we are in development, we do allow passing in `user_id` for testing purposes.
+    """
+    if "user_context" in g:
+        return g.user_context.user_account.id
+
+    if not in_development():
+        raise ValueError("No UserContext found.")
+
+    user_id = request_dict.get("user_id")
+    if user_id is None:
+        raise ValueError("Missing required parameter user_id.")
+
+    return user_id
