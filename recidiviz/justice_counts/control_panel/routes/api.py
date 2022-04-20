@@ -21,6 +21,7 @@ from flask import Blueprint, Response, g, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
+from recidiviz.justice_counts.control_panel.utils import get_user_account_id
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
@@ -69,13 +70,12 @@ def get_api_blueprint(
     def get_reports() -> Response:
         request_dict = assert_type(request.args.to_dict(), dict)
         agency_id = int(assert_type(request_dict.get("agency_id"), str))
-        if agency_id is None:
-            return make_response("agency_id parameter is required", 500)
+        user_id = get_user_account_id(request_dict=request_dict)
 
         reports = ReportInterface.get_reports_by_agency_id(
             session=current_session,
             agency_id=agency_id,
-            user_account_id=g.user_context.user_account.id,
+            user_account_id=user_id,
         )
         report_json = jsonify(
             [
@@ -88,15 +88,12 @@ def get_api_blueprint(
     @api_blueprint.route("/reports", methods=["POST"])
     @auth_decorator
     def create_report() -> Response:
-        try:
-            request_json = assert_type(request.json, dict)
-            agency_id = assert_type(request_json.get("agency_id"), int)
-            user_id = assert_type(request_json.get("user_id"), int)
-            month = assert_type(request_json.get("month"), int)
-            year = assert_type(request_json.get("year"), int)
-            frequency = assert_type(request_json.get("frequency"), str)
-        except ValueError:
-            return make_response("Missing required parameters", 500)
+        request_json = assert_type(request.json, dict)
+        agency_id = assert_type(request_json.get("agency_id"), int)
+        month = assert_type(request_json.get("month"), int)
+        year = assert_type(request_json.get("year"), int)
+        frequency = assert_type(request_json.get("frequency"), str)
+        user_id = get_user_account_id(request_dict=request_json)
 
         report = ReportInterface.create_report(
             session=current_session,
