@@ -80,7 +80,7 @@ invalid_lines=$(${changed_files_cmd} \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e '\.pylintrc' \
     | grep --invert-match -e '/templates/' \
-    | xargs grep -n -e 'TODO' \
+    | xargs grep -n -e '[^A-Za-z]TODO' \
     | grep --invert-match -e 'TODO(\(\(.*#[0-9]\+\)\|\(http.*\)\))')
 
 if [[ -n ${invalid_lines} ]]
