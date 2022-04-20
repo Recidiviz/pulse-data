@@ -28,11 +28,12 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 @unique
 class StateChargeClassificationType(StateEntityEnum):
     CIVIL = state_enum_strings.state_charge_classification_type_civil
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FELONY = state_enum_strings.state_charge_classification_type_felony
     INFRACTION = state_enum_strings.state_charge_classification_type_infraction
     MISDEMEANOR = state_enum_strings.state_charge_classification_type_misdemeanor
     OTHER = state_enum_strings.state_charge_classification_type_other
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, Optional["StateChargeClassificationType"]]:
@@ -47,13 +48,14 @@ class StateChargeStatus(StateEntityEnum):
     COMPLETED_SENTENCE = state_enum_strings.state_charge_status_completed
     CONVICTED = state_enum_strings.state_charge_status_convicted
     DROPPED = state_enum_strings.state_charge_status_dropped
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INFERRED_DROPPED = state_enum_strings.state_charge_status_inferred_dropped
     PENDING = state_enum_strings.state_charge_status_pending
     PRETRIAL = state_enum_strings.state_charge_status_pretrial
     SENTENCED = state_enum_strings.state_charge_status_sentenced
-    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     TRANSFERRED_AWAY = state_enum_strings.state_charge_status_transferred_away
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, Optional["StateChargeStatus"]]:
@@ -96,6 +98,7 @@ _STATE_CHARGE_CLASSIFICATION_TYPE_MAP = {
     "SUMMONS": StateChargeClassificationType.INFRACTION,
     "U": StateChargeClassificationType.EXTERNAL_UNKNOWN,
     "UNKNOWN": StateChargeClassificationType.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateChargeClassificationType.INTERNAL_UNKNOWN,
 }
 
 
@@ -312,4 +315,5 @@ _STATE_CHARGE_STATUS_MAP = {
     "WRIT OF HABEAS CORPUS": None,
     "WRONG PERSON BOOKED": StateChargeStatus.DROPPED,
     "UNSPECIFIED": StateChargeStatus.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateChargeStatus.INTERNAL_UNKNOWN,
 }

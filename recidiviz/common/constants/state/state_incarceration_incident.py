@@ -39,6 +39,8 @@ class StateIncarcerationIncidentType(StateEntityEnum):
     POSITIVE = state_enum_strings.state_incarceration_incident_type_positive
     REPORT = state_enum_strings.state_incarceration_incident_type_report
     VIOLENCE = state_enum_strings.state_incarceration_incident_type_violence
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateIncarcerationIncidentType"]:
@@ -83,6 +85,8 @@ class StateIncarcerationIncidentOutcomeType(StateEntityEnum):
     SOLITARY = state_enum_strings.state_incarceration_incident_outcome_solitary
     TREATMENT = state_enum_strings.state_incarceration_incident_outcome_treatment
     WARNING = state_enum_strings.state_incarceration_incident_outcome_warning
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateIncarcerationIncidentOutcomeType"]:
@@ -103,6 +107,8 @@ _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
     "REPORT": StateIncarcerationIncidentType.REPORT,
     "VIOLENT": StateIncarcerationIncidentType.VIOLENCE,
     "VIOLENCE": StateIncarcerationIncidentType.VIOLENCE,
+    "INTERNAL UNKNOWN": StateIncarcerationIncidentType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateIncarcerationIncidentType.EXTERNAL_UNKNOWN,
 }
 
 
@@ -122,4 +128,6 @@ _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
     "SOLITARY CONFINEMENT": StateIncarcerationIncidentOutcomeType.SOLITARY,
     "TREATMENT": StateIncarcerationIncidentOutcomeType.TREATMENT,
     "WARNING": StateIncarcerationIncidentOutcomeType.WARNING,
+    "INTERNAL UNKNOWN": StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateIncarcerationIncidentOutcomeType.EXTERNAL_UNKNOWN,
 }

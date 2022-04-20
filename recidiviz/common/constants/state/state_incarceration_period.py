@@ -30,6 +30,8 @@ class StateIncarcerationFacilitySecurityLevel(StateEntityEnum):
     MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
     MEDIUM = state_enum_strings.state_incarceration_facility_security_level_medium
     MINIMUM = state_enum_strings.state_incarceration_facility_security_level_minimum
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateIncarcerationFacilitySecurityLevel"]:
@@ -50,8 +52,6 @@ class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     ADMITTED_FROM_SUPERVISION = (
         state_enum_strings.state_incarceration_period_admission_reason_admitted_from_supervision
     )
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     NEW_ADMISSION = (
         state_enum_strings.state_incarceration_period_admission_reason_new_admission
     )
@@ -81,6 +81,8 @@ class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     TRANSFER_FROM_OTHER_JURISDICTION = (
         state_enum_strings.state_incarceration_period_admission_reason_transfer_from_other_jurisdiction
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateIncarcerationPeriodAdmissionReason"]:
@@ -107,9 +109,7 @@ class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
     )
     DEATH = state_enum_strings.state_incarceration_period_release_reason_death
     ESCAPE = state_enum_strings.state_incarceration_period_release_reason_escape
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     EXECUTION = state_enum_strings.state_incarceration_period_release_reason_execution
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     PARDONED = state_enum_strings.state_incarceration_period_release_reason_pardoned
     RELEASED_FROM_ERRONEOUS_ADMISSION = (
         state_enum_strings.state_incarceration_period_release_reason_released_from_erroneous_admission
@@ -141,6 +141,8 @@ class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
         state_enum_strings.state_incarceration_period_release_reason_transfer_to_other_jurisdiction
     )
     VACATED = state_enum_strings.state_incarceration_period_release_reason_vacated
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateIncarcerationPeriodReleaseReason"]:
@@ -154,9 +156,7 @@ class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
 class StateSpecializedPurposeForIncarceration(StateEntityEnum):
     """Specialized purposes for a period of incarceration"""
 
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     GENERAL = state_enum_strings.state_specialized_purpose_for_incarceration_general
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     PAROLE_BOARD_HOLD = (
         state_enum_strings.state_specialized_purpose_for_incarceration_parole_board_hold
     )
@@ -174,6 +174,8 @@ class StateSpecializedPurposeForIncarceration(StateEntityEnum):
     WEEKEND_CONFINEMENT = (
         state_enum_strings.state_specialized_purpose_for_incarceration_weekend_confinement
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSpecializedPurposeForIncarceration"]:
@@ -412,6 +414,8 @@ _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
     "MED": StateIncarcerationFacilitySecurityLevel.MEDIUM,
     "MINIMUM": StateIncarcerationFacilitySecurityLevel.MINIMUM,
     "MIN": StateIncarcerationFacilitySecurityLevel.MINIMUM,
+    "INTERNAL UNKNOWN": StateIncarcerationFacilitySecurityLevel.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateIncarcerationFacilitySecurityLevel.EXTERNAL_UNKNOWN,
 }
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {

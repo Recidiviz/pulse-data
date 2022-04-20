@@ -111,6 +111,8 @@ state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_sex_offense,
     state_enum_strings.state_assessment_class_social,
     state_enum_strings.state_assessment_class_substance_abuse,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_assessment_class",
 )
 
@@ -142,11 +144,11 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_oras_static,
     state_enum_strings.state_assessment_type_oras_supplemental_reentry,
     state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_assessment_type",
 )
 
 state_assessment_level = Enum(
-    state_enum_strings.external_unknown,
     state_enum_strings.state_assessment_level_minimum,
     state_enum_strings.state_assessment_level_low,
     state_enum_strings.state_assessment_level_low_medium,
@@ -156,34 +158,37 @@ state_assessment_level = Enum(
     state_enum_strings.state_assessment_level_high,
     state_enum_strings.state_assessment_level_very_high,
     state_enum_strings.state_assessment_level_maximum,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_assessment_level",
 )
 
 state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_commuted,
     state_enum_strings.state_sentence_status_completed,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_sentence_status_pardoned,
     state_enum_strings.state_sentence_status_pending,
-    state_enum_strings.present_without_info,
     state_enum_strings.state_sentence_status_sanctioned,
     state_enum_strings.state_sentence_status_serving,
     state_enum_strings.state_sentence_status_suspended,
     state_enum_strings.state_sentence_status_revoked,
     state_enum_strings.state_sentence_status_vacated,
+    state_enum_strings.present_without_info,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_sentence_status",
 )
 
 state_supervision_sentence_supervision_type = Enum(
     state_enum_strings.state_supervision_sentence_supervision_type_civil_commitment,
     state_enum_strings.state_supervision_sentence_supervision_type_community_corrections,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_supervision_sentence_supervision_type_halfway_house,
     state_enum_strings.state_supervision_sentence_supervision_type_parole,
     state_enum_strings.state_supervision_sentence_supervision_type_post_confinement,
     state_enum_strings.state_supervision_sentence_supervision_type_pre_confinement,
     state_enum_strings.state_supervision_sentence_supervision_type_probation,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_sentence_supervision_type",
 )
 
@@ -197,16 +202,19 @@ state_supervision_case_type = Enum(
     state_enum_strings.state_supervision_case_type_serious_mental_illness,
     state_enum_strings.state_supervision_case_type_sex_offense,
     state_enum_strings.state_supervision_case_type_veterans_court,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_case_type",
 )
 
 state_charge_classification_type = Enum(
     state_enum_strings.state_charge_classification_type_civil,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_charge_classification_type_felony,
     state_enum_strings.state_charge_classification_type_infraction,
     state_enum_strings.state_charge_classification_type_misdemeanor,
     state_enum_strings.state_charge_classification_type_other,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_charge_classification_type",
 )
 
@@ -217,25 +225,28 @@ state_charge_status = Enum(
     state_enum_strings.state_charge_status_convicted,
     state_enum_strings.state_charge_status_dropped,
     state_enum_strings.state_charge_status_inferred_dropped,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_charge_status_pending,
     state_enum_strings.state_charge_status_pretrial,
     state_enum_strings.state_charge_status_sentenced,
     state_enum_strings.state_charge_status_transferred_away,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     state_enum_strings.present_without_info,
     name="state_charge_status",
 )
 
 state_incarceration_type = Enum(
-    state_enum_strings.external_unknown,
     state_enum_strings.state_incarceration_type_county_jail,
     state_enum_strings.state_incarceration_type_federal_prison,
     state_enum_strings.state_incarceration_type_out_of_state,
     state_enum_strings.state_incarceration_type_state_prison,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_incarceration_type",
 )
 
 state_court_case_status = Enum(
+    state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     state_enum_strings.present_without_info,
     name="state_court_case_status",
@@ -243,6 +254,8 @@ state_court_case_status = Enum(
 
 state_court_type = Enum(
     state_enum_strings.present_without_info,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_court_type",
 )
 
@@ -255,6 +268,7 @@ state_agent_type = Enum(
     state_enum_strings.state_agent_supervision_officer,
     state_enum_strings.state_agent_unit_supervisor,
     state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_agent_type",
 )
 
@@ -264,17 +278,20 @@ state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_given_name,
     state_enum_strings.state_person_alias_alias_type_maiden_name,
     state_enum_strings.state_person_alias_alias_type_nickname,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_person_alias_type",
 )
 
 state_gender = Enum(
-    state_enum_strings.external_unknown,
     state_enum_strings.state_gender_female,
     state_enum_strings.state_gender_male,
     state_enum_strings.state_gender_other,
     state_enum_strings.state_gender_trans,
     state_enum_strings.state_gender_trans_female,
     state_enum_strings.state_gender_trans_male,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_gender",
 )
 
@@ -282,17 +299,19 @@ state_race = Enum(
     state_enum_strings.state_race_american_indian,
     state_enum_strings.state_race_asian,
     state_enum_strings.state_race_black,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_race_hawaiian,
     state_enum_strings.state_race_other,
     state_enum_strings.state_race_white,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_race",
 )
 
 state_ethnicity = Enum(
-    state_enum_strings.external_unknown,
     state_enum_strings.state_ethnicity_hispanic,
     state_enum_strings.state_ethnicity_not_hispanic,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_ethnicity",
 )
 
@@ -300,6 +319,8 @@ state_residency_status = Enum(
     state_enum_strings.state_residency_status_homeless,
     state_enum_strings.state_residency_status_permanent,
     state_enum_strings.state_residency_status_transient,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_residency_status",
 )
 
@@ -307,14 +328,14 @@ state_incarceration_facility_security_level = Enum(
     state_enum_strings.state_incarceration_facility_security_level_maximum,
     state_enum_strings.state_incarceration_facility_security_level_medium,
     state_enum_strings.state_incarceration_facility_security_level_minimum,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_incarceration_facility_security_level",
 )
 
 state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_admitted_in_error,
     state_enum_strings.state_incarceration_period_admission_reason_admitted_from_supervision,
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_incarceration_period_admission_reason_new_admission,
     state_enum_strings.state_incarceration_period_admission_reason_revocation,
     state_enum_strings.state_incarceration_period_admission_reason_sanction_admission,
@@ -325,6 +346,8 @@ state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_transfer,
     state_enum_strings.state_incarceration_period_admission_reason_transfer_from_other_jurisdiction,
     state_enum_strings.state_incarceration_period_admission_reason_status_change,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_incarceration_period_admission_reason",
 )
 
@@ -336,8 +359,6 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_death,
     state_enum_strings.state_incarceration_period_release_reason_escape,
     state_enum_strings.state_incarceration_period_release_reason_execution,
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_incarceration_period_release_reason_pardoned,
     state_enum_strings.state_incarceration_period_release_reason_released_from_erroneous_admission,
     state_enum_strings.state_incarceration_period_release_reason_released_from_temporary_custody,
@@ -349,12 +370,12 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_transfer_to_other_jurisdiction,
     state_enum_strings.state_incarceration_period_release_reason_vacated,
     state_enum_strings.state_incarceration_period_release_reason_status_change,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_incarceration_period_release_reason",
 )
 
 state_supervision_period_admission_reason = Enum(
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_supervision_period_admission_reason_absconsion,
     state_enum_strings.state_supervision_period_admission_reason_conditional_release,
     state_enum_strings.state_supervision_period_admission_reason_court_sentence,
@@ -363,13 +384,12 @@ state_supervision_period_admission_reason = Enum(
     state_enum_strings.state_supervision_period_admission_reason_transfer_within_state,
     state_enum_strings.state_supervision_period_admission_reason_return_from_absconsion,
     state_enum_strings.state_supervision_period_admission_reason_return_from_suspension,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_period_admission_reason",
 )
 
 state_supervision_level = Enum(
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.present_without_info,
     state_enum_strings.state_supervision_period_supervision_level_minimum,
     state_enum_strings.state_supervision_period_supervision_level_medium,
     state_enum_strings.state_supervision_period_supervision_level_high,
@@ -382,12 +402,13 @@ state_supervision_level = Enum(
     state_enum_strings.state_supervision_period_supervision_level_electronic_monitoring_only,
     state_enum_strings.state_supervision_period_supervision_level_unsupervised,
     state_enum_strings.state_supervision_period_supervision_level_unassigned,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    state_enum_strings.present_without_info,
     name="state_supervision_level",
 )
 
 state_supervision_period_termination_reason = Enum(
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_supervision_period_termination_reason_absconsion,
     state_enum_strings.state_supervision_period_termination_reason_commuted,
     state_enum_strings.state_supervision_period_termination_reason_death,
@@ -402,12 +423,12 @@ state_supervision_period_termination_reason = Enum(
     state_enum_strings.state_supervision_period_termination_reason_return_to_incarceration,
     state_enum_strings.state_supervision_period_termination_reason_revocation,
     state_enum_strings.state_supervision_period_termination_reason_suspension,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_period_termination_reason",
 )
 
 state_supervision_period_supervision_type = Enum(
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_supervision_period_supervision_type_informal_probation,
     state_enum_strings.state_supervision_period_supervision_type_investigation,
     state_enum_strings.state_supervision_period_supervision_type_parole,
@@ -415,6 +436,8 @@ state_supervision_period_supervision_type = Enum(
     state_enum_strings.state_supervision_period_supervision_type_dual,
     state_enum_strings.state_supervision_period_supervision_type_community_confinement,
     state_enum_strings.state_supervision_period_supervision_type_bench_warrant,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_period_supervision_type",
 )
 
@@ -427,6 +450,8 @@ state_incarceration_incident_type = Enum(
     state_enum_strings.state_incarceration_incident_type_positive,
     state_enum_strings.state_incarceration_incident_type_report,
     state_enum_strings.state_incarceration_incident_type_violence,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_incarceration_incident_type",
 )
 
@@ -444,6 +469,8 @@ state_incarceration_incident_outcome_type = Enum(
     state_enum_strings.state_incarceration_incident_outcome_solitary,
     state_enum_strings.state_incarceration_incident_outcome_treatment,
     state_enum_strings.state_incarceration_incident_outcome_warning,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_incarceration_incident_outcome_type",
 )
 
@@ -455,6 +482,8 @@ state_supervision_violation_type = Enum(
     state_enum_strings.state_supervision_violation_type_misdemeanor,
     state_enum_strings.state_supervision_violation_type_municipal,
     state_enum_strings.state_supervision_violation_type_technical,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_violation_type",
 )
 
@@ -462,6 +491,8 @@ state_supervision_violation_response_type = Enum(
     state_enum_strings.state_supervision_violation_response_type_citation,
     state_enum_strings.state_supervision_violation_response_type_violation_report,
     state_enum_strings.state_supervision_violation_response_type_permanent_decision,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_violation_response_type",
 )
 
@@ -470,7 +501,6 @@ state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_continuance,
     state_enum_strings.state_supervision_violation_response_decision_delayed_action,
     state_enum_strings.state_supervision_violation_response_decision_extension,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_supervision_violation_response_decision_new_conditions,
     state_enum_strings.state_supervision_violation_response_decision_no_sanction,
     state_enum_strings.state_supervision_violation_response_decision_other,
@@ -485,6 +515,8 @@ state_supervision_violation_response_decision = Enum(
     state_enum_strings.state_supervision_violation_response_decision_violation_unfounded,
     state_enum_strings.state_supervision_violation_response_decision_warning,
     state_enum_strings.state_supervision_violation_response_decision_warrant_issued,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_violation_response_decision",
 )
 
@@ -492,22 +524,24 @@ state_supervision_violation_response_deciding_body_type = Enum(
     state_enum_strings.state_supervision_violation_response_deciding_body_type_court,
     state_enum_strings.state_supervision_violation_response_deciding_body_parole_board,
     state_enum_strings.state_supervision_violation_response_deciding_body_type_supervision_officer,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_violation_response_deciding_body_type",
 )
 
 state_program_assignment_participation_status = Enum(
-    state_enum_strings.external_unknown,
     state_enum_strings.present_without_info,
     state_enum_strings.state_program_assignment_participation_status_denied,
     state_enum_strings.state_program_assignment_participation_status_discharged,
     state_enum_strings.state_program_assignment_participation_status_in_progress,
     state_enum_strings.state_program_assignment_participation_status_pending,
     state_enum_strings.state_program_assignment_participation_status_refused,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_program_assignment_participation_status",
 )
 
 state_program_assignment_discharge_reason = Enum(
-    state_enum_strings.external_unknown,
     state_enum_strings.state_program_assignment_discharge_reason_absconded,
     state_enum_strings.state_program_assignment_discharge_reason_adverse_termination,
     state_enum_strings.state_program_assignment_discharge_reason_completed,
@@ -515,18 +549,20 @@ state_program_assignment_discharge_reason = Enum(
     state_enum_strings.state_program_assignment_discharge_reason_opted_out,
     state_enum_strings.state_program_assignment_discharge_reason_program_transfer,
     state_enum_strings.state_program_assignment_discharge_reason_reincarcerated,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_program_assignment_discharge_reason",
 )
 
 state_specialized_purpose_for_incarceration = Enum(
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_specialized_purpose_for_incarceration_general,
     state_enum_strings.state_specialized_purpose_for_incarceration_parole_board_hold,
     state_enum_strings.state_specialized_purpose_for_incarceration_shock_incarceration,
     state_enum_strings.state_specialized_purpose_for_incarceration_treatment_in_prison,
     state_enum_strings.state_specialized_purpose_for_incarceration_temporary_custody,
     state_enum_strings.state_specialized_purpose_for_incarceration_weekend_confinement,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_specialized_purpose_for_incarceration",
 )
 
@@ -534,6 +570,8 @@ state_early_discharge_decision = Enum(
     state_enum_strings.state_early_discharge_decision_request_denied,
     state_enum_strings.state_early_discharge_decision_sentence_termination_granted,
     state_enum_strings.state_early_discharge_decision_unsupervised_probation_granted,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_early_discharge_decision",
 )
 
@@ -541,6 +579,8 @@ state_early_discharge_decision_status = Enum(
     state_enum_strings.state_early_discharge_decision_status_pending,
     state_enum_strings.state_early_discharge_decision_status_decided,
     state_enum_strings.state_early_discharge_decision_status_invalid,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_early_discharge_decision_status",
 )
 
@@ -549,24 +589,24 @@ state_acting_body_type = Enum(
     state_enum_strings.state_acting_body_type_parole_board,
     state_enum_strings.state_acting_body_type_sentenced_person,
     state_enum_strings.state_acting_body_type_supervision_officer,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_acting_body_type",
 )
 
 state_custodial_authority = Enum(
     state_enum_strings.state_custodial_authority_court,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_custodial_authority_federal,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_custodial_authority_other_country,
     state_enum_strings.state_custodial_authority_other_state,
     state_enum_strings.state_custodial_authority_supervision_authority,
     state_enum_strings.state_custodial_authority_state_prison,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_custodial_authority",
 )
 
 state_supervision_contact_location = Enum(
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_supervision_contact_location_court,
     state_enum_strings.state_supervision_contact_location_field,
     state_enum_strings.state_supervision_contact_location_jail,
@@ -577,42 +617,44 @@ state_supervision_contact_location = Enum(
     state_enum_strings.state_supervision_contact_location_law_enforcement_agency,
     state_enum_strings.state_supervision_contact_location_parole_commission,
     state_enum_strings.state_supervision_contact_location_alternative_work_site,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_contact_location",
 )
 
 state_supervision_contact_status = Enum(
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_supervision_contact_status_attempted,
     state_enum_strings.state_supervision_contact_status_completed,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_contact_status",
 )
 
 state_supervision_contact_reason = Enum(
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_supervision_contact_reason_emergency_contact,
     state_enum_strings.state_supervision_contact_reason_general_contact,
     state_enum_strings.state_supervision_contact_reason_initial_contact,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_contact_reason",
 )
 
 state_supervision_contact_type = Enum(
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
     state_enum_strings.state_supervision_contact_type_collateral,
     state_enum_strings.state_supervision_contact_type_direct,
     state_enum_strings.state_supervision_contact_type_both_collateral_and_direct,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_contact_type",
 )
 
 state_supervision_contact_method = Enum(
-    state_enum_strings.external_unknown,
-    state_enum_strings.internal_unknown,
     state_enum_strings.state_supervision_contact_method_in_person,
     state_enum_strings.state_supervision_contact_method_telephone,
     state_enum_strings.state_supervision_contact_method_virtual,
     state_enum_strings.state_supervision_contact_method_written_message,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
     name="state_supervision_contact_method",
 )
 

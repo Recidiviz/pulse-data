@@ -42,11 +42,12 @@ DECISION_SEVERITY_ORDER = [
     StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
     StateSupervisionViolationResponseDecision.DELAYED_ACTION,
     StateSupervisionViolationResponseDecision.OTHER,
-    StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
     StateSupervisionViolationResponseDecision.WARNING,
     StateSupervisionViolationResponseDecision.CONTINUANCE,
     StateSupervisionViolationResponseDecision.NO_SANCTION,
     StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED,
+    StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+    StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
 ]
 
 StateSupervisionViolationResponseT = TypeVar(

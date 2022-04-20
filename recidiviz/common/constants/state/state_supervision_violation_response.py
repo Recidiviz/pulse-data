@@ -34,6 +34,8 @@ class StateSupervisionViolationResponseType(StateEntityEnum):
     PERMANENT_DECISION = (
         state_enum_strings.state_supervision_violation_response_type_permanent_decision
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseType"]:
@@ -58,7 +60,6 @@ class StateSupervisionViolationResponseDecision(StateEntityEnum):
     EXTENSION = (
         state_enum_strings.state_supervision_violation_response_decision_extension
     )
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     NEW_CONDITIONS = (
         state_enum_strings.state_supervision_violation_response_decision_new_conditions
     )
@@ -99,6 +100,8 @@ class StateSupervisionViolationResponseDecision(StateEntityEnum):
     WARRANT_ISSUED = (
         state_enum_strings.state_supervision_violation_response_decision_warrant_issued
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseDecision"]:
@@ -120,6 +123,8 @@ class StateSupervisionViolationResponseDecidingBodyType(StateEntityEnum):
     SUPERVISION_OFFICER = (
         state_enum_strings.state_supervision_violation_response_deciding_body_type_supervision_officer
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[
@@ -132,6 +137,8 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP = {
     "CITATION": StateSupervisionViolationResponseType.CITATION,
     "VIOLATION REPORT": StateSupervisionViolationResponseType.VIOLATION_REPORT,
     "PERMANENT DECISION": StateSupervisionViolationResponseType.PERMANENT_DECISION,
+    "EXTERNAL UNKNOWN": StateSupervisionViolationResponseType.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
@@ -154,10 +161,13 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     "VIOLATION UNFOUNDED": StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED,
     "WARNING": StateSupervisionViolationResponseDecision.WARNING,
     "WARRANT ISSUED": StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
+    "EXTERNAL UNKNOWN": StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP = {
     "COURT": StateSupervisionViolationResponseDecidingBodyType.COURT,
     "PAROLE BOARD": StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
     "SUPERVISION OFFICER": StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
+    "EXTERNAL UNKNOWN": StateSupervisionViolationResponseDecidingBodyType.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionViolationResponseDecidingBodyType.INTERNAL_UNKNOWN,
 }

@@ -28,10 +28,11 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 @unique
 class StateIncarcerationType(StateEntityEnum):
     COUNTY_JAIL = state_enum_strings.state_incarceration_type_county_jail
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FEDERAL_PRISON = state_enum_strings.state_incarceration_type_federal_prison
     OUT_OF_STATE = state_enum_strings.state_incarceration_type_out_of_state
     STATE_PRISON = state_enum_strings.state_incarceration_type_state_prison
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateIncarcerationType"]:
@@ -46,4 +47,5 @@ _STATE_INCARCERATION_TYPE_MAP: Dict[str, StateIncarcerationType] = {
     "OUT OF STATE": StateIncarcerationType.OUT_OF_STATE,
     "PRISON": StateIncarcerationType.STATE_PRISON,
     "STATE PRISON": StateIncarcerationType.STATE_PRISON,
+    "INTERNAL UNKNOWN": StateIncarcerationType.INTERNAL_UNKNOWN,
 }

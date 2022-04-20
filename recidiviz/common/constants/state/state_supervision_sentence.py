@@ -34,8 +34,6 @@ class StateSupervisionSentenceSupervisionType(StateEntityEnum):
     COMMUNITY_CORRECTIONS = (
         state_enum_strings.state_supervision_sentence_supervision_type_community_corrections
     )
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     HALFWAY_HOUSE = (
         state_enum_strings.state_supervision_sentence_supervision_type_halfway_house
     )
@@ -47,6 +45,8 @@ class StateSupervisionSentenceSupervisionType(StateEntityEnum):
         state_enum_strings.state_supervision_sentence_supervision_type_pre_confinement
     )
     PROBATION = state_enum_strings.state_supervision_sentence_supervision_type_probation
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionSentenceSupervisionType"]:

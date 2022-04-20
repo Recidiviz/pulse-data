@@ -374,6 +374,8 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             "ESCAPED",
             "SUBSTANCE_ABUSE",
             "TECHNICAL",
+            "INTERNAL_UNKNOWN",
+            "EXTERNAL_UNKNOWN",
         }
         self.assertEqual(supported_violation_subtypes, expected_violation_subtypes)
 

@@ -28,6 +28,8 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 @unique
 class StateCourtType(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateCourtType"]:
@@ -38,6 +40,7 @@ class StateCourtType(StateEntityEnum):
 #  migrated to v2 mappings.
 @unique
 class StateCourtCaseStatus(StateEntityEnum):
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
 
@@ -48,9 +51,12 @@ class StateCourtCaseStatus(StateEntityEnum):
 
 _STATE_COURT_TYPE_MAP: Dict[str, StateCourtType] = {
     "PRESENT WITHOUT INFO": StateCourtType.PRESENT_WITHOUT_INFO,
+    "INTERNAL UNKNOWN": StateCourtType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateCourtType.EXTERNAL_UNKNOWN,
 }
 
 _STATE_COURT_CASE_STATUS_MAP: Dict[str, StateCourtCaseStatus] = {
     "EXTERNAL UNKNOWN": StateCourtCaseStatus.EXTERNAL_UNKNOWN,
     "PRESENT WITHOUT INFO": StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
+    "INTERNAL UNKNOWN": StateCourtCaseStatus.INTERNAL_UNKNOWN,
 }

@@ -126,7 +126,7 @@ class MigrationsTestBase(TestCase):
         self.assertEqual(len(migration_enums), len(schema_enums))
         for enum_name, migration_values in migration_enums.items():
             schema_values = schema_enums[enum_name]
-            self.assertCountEqual(migration_values, schema_values)
+            self.assertCountEqual(migration_values, schema_values, f"{enum_name}")
 
         # Cleanup needed for this method.
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)

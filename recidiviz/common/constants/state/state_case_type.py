@@ -41,6 +41,8 @@ class StateSupervisionCaseType(StateEntityEnum):
     )
     SEX_OFFENSE = state_enum_strings.state_supervision_case_type_sex_offense
     VETERANS_COURT = state_enum_strings.state_supervision_case_type_veterans_court
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionCaseType"]:
@@ -57,4 +59,6 @@ _STATE_CASE_TYPE_MAP = {
     "SERIOUS MENTAL ILLNESS": StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
     "SEX OFFENSE": StateSupervisionCaseType.SEX_OFFENSE,
     "VETERANS COURT": StateSupervisionCaseType.VETERANS_COURT,
+    "INTERNAL UNKNOWN": StateSupervisionCaseType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateSupervisionCaseType.EXTERNAL_UNKNOWN,
 }

@@ -79,6 +79,16 @@ _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[
         StateSupervisionViolationType.TECHNICAL.value,
         "tech",
     ),
+    (
+        StateSupervisionViolationType.INTERNAL_UNKNOWN,
+        StateSupervisionViolationType.INTERNAL_UNKNOWN.value,
+        "unknown",
+    ),
+    (
+        StateSupervisionViolationType.EXTERNAL_UNKNOWN,
+        StateSupervisionViolationType.EXTERNAL_UNKNOWN.value,
+        "unknown",
+    ),
 ]
 
 

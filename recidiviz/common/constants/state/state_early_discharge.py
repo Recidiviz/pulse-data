@@ -34,6 +34,8 @@ class StateEarlyDischargeDecision(StateEntityEnum):
     UNSUPERVISED_PROBATION_GRANTED = (
         state_enum_strings.state_early_discharge_decision_unsupervised_probation_granted
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateEarlyDischargeDecision"]:
@@ -47,6 +49,8 @@ class StateEarlyDischargeDecisionStatus(StateEntityEnum):
     PENDING = state_enum_strings.state_early_discharge_decision_status_pending
     DECIDED = state_enum_strings.state_early_discharge_decision_status_decided
     INVALID = state_enum_strings.state_early_discharge_decision_status_invalid
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateEarlyDischargeDecisionStatus"]:
@@ -57,6 +61,8 @@ _STATE_EARLY_DISCHARGE_DECISION_MAP = {
     "REQUEST DENIED": StateEarlyDischargeDecision.REQUEST_DENIED,
     "SENTENCE TERMINATION GRANTED": StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED,
     "UNSUPERVISED PROBATION GRANTED": StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED,
+    "INTERNAL UNKNOWN": StateEarlyDischargeDecision.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateEarlyDischargeDecision.EXTERNAL_UNKNOWN,
 }
 
 
@@ -64,4 +70,6 @@ _STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP = {
     "PENDING": StateEarlyDischargeDecisionStatus.PENDING,
     "DECIDED": StateEarlyDischargeDecisionStatus.DECIDED,
     "INVALID": StateEarlyDischargeDecisionStatus.INVALID,
+    "INTERNAL UNKNOWN": StateEarlyDischargeDecisionStatus.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateEarlyDischargeDecisionStatus.EXTERNAL_UNKNOWN,
 }

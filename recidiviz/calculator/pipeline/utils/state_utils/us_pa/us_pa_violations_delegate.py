@@ -41,6 +41,8 @@ _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES = [
     StateSupervisionViolationType.FELONY.value,
     StateSupervisionViolationType.MISDEMEANOR.value,
     StateSupervisionViolationType.MUNICIPAL.value,
+    StateSupervisionViolationType.INTERNAL_UNKNOWN.value,
+    StateSupervisionViolationType.EXTERNAL_UNKNOWN.value,
     # We expect all violations of type TECHNICAL to have expected special subtypes
     StateSupervisionViolationType.TECHNICAL.value,
 ]

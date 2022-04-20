@@ -40,6 +40,8 @@ DEFAULT_VIOLATION_TYPE_SEVERITY_ORDER: List[StateSupervisionViolationType] = [
     StateSupervisionViolationType.MUNICIPAL,
     StateSupervisionViolationType.ESCAPED,
     StateSupervisionViolationType.TECHNICAL,
+    StateSupervisionViolationType.INTERNAL_UNKNOWN,
+    StateSupervisionViolationType.EXTERNAL_UNKNOWN,
 ]
 
 

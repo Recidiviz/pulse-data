@@ -57,6 +57,9 @@ CASE_TYPE_SEVERITY_ORDER = [
     # End Diversionary courts
     StateSupervisionCaseType.ALCOHOL_DRUG,
     StateSupervisionCaseType.GENERAL,
+    # Unknown values
+    StateSupervisionCaseType.INTERNAL_UNKNOWN,
+    StateSupervisionCaseType.EXTERNAL_UNKNOWN,
 ]
 
 POST_RELEASE_LOOKFORWARD_DAYS = 30

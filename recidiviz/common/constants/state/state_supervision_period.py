@@ -57,7 +57,6 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     # modeled with just one supervision period if the PO is the same. In this case,
     # the supervision period supervision type is DUAL.
     DUAL = state_enum_strings.state_supervision_period_supervision_type_dual
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     # A type of supervision where the person is not formally supervised and does not
     # have to regularly report to a PO. The person does have certain conditions
     # associated with their supervision, that when violated can lead to revocations.
@@ -65,12 +64,13 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     INFORMAL_PROBATION = (
         state_enum_strings.state_supervision_period_supervision_type_informal_probation
     )
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     INVESTIGATION = (
         state_enum_strings.state_supervision_period_supervision_type_investigation
     )
     PAROLE = state_enum_strings.state_supervision_period_supervision_type_parole
     PROBATION = state_enum_strings.state_supervision_period_supervision_type_probation
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionPeriodSupervisionType"]:
@@ -92,8 +92,6 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     COURT_SENTENCE = (
         state_enum_strings.state_supervision_period_admission_reason_court_sentence
     )
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     # TODO(#3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriodSupervisionType for Investigation
     INVESTIGATION = (
@@ -111,6 +109,8 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     RETURN_FROM_SUSPENSION = (
         state_enum_strings.state_supervision_period_admission_reason_return_from_suspension
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionPeriodAdmissionReason"]:
@@ -209,7 +209,6 @@ class StateSupervisionLevel(StateEntityEnum):
 class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     """Termination reasons for StateSupervisionPeriod"""
 
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     ABSCONSION = (
         state_enum_strings.state_supervision_period_termination_reason_absconsion
     )
@@ -224,7 +223,7 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     EXPIRATION = (
         state_enum_strings.state_supervision_period_termination_reason_expiration
     )
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+
     # TODO(#3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriodSupervisionType for Investigation
     INVESTIGATION = (
@@ -250,6 +249,8 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     SUSPENSION = (
         state_enum_strings.state_supervision_period_termination_reason_suspension
     )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionPeriodTerminationReason"]:
