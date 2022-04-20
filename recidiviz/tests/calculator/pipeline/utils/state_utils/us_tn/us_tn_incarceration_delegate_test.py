@@ -21,12 +21,12 @@ from datetime import date
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_delegate import (
     UsTnIncarcerationDelegate,
 )
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 

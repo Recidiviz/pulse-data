@@ -21,12 +21,12 @@ from unittest import TestCase
 from mock import patch
 from more_itertools import one
 
-from recidiviz.common.constants.entity_enum import EnumParsingError
-from recidiviz.common.constants.shared_enums.person_characteristics import (
+from recidiviz.common.constants.county.person_characteristics import (
     Ethnicity,
     Gender,
     Race,
 )
+from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.persistence.database.schema.aggregate.schema import SingleCountAggregate
 from recidiviz.persistence.database.schema_utils import SchemaType

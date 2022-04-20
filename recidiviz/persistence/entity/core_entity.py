@@ -21,7 +21,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import Any, List, Optional, Type
 
-from recidiviz.common.constants import enum_canonical_strings
+from recidiviz.common.constants.state import enum_canonical_strings
 from recidiviz.common.str_field_utils import to_snake_case
 
 

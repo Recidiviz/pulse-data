@@ -19,7 +19,7 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -27,7 +27,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateCourtType"]:
@@ -38,8 +38,8 @@ class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateCourtCaseStatus"]:

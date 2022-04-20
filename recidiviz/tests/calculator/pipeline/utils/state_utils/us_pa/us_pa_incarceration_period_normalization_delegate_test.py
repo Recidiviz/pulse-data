@@ -44,13 +44,13 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_p
     SHOCK_INCARCERATION_UNDER_6_MONTHS,
     UsPaIncarcerationNormalizationDelegate,
 )
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,

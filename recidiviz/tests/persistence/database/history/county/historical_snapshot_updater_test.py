@@ -26,16 +26,19 @@ from recidiviz.common.constants.county.booking import (
     CustodyStatus,
     ReleaseReason,
 )
-from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
+from recidiviz.common.constants.county.charge import (
+    ChargeClass,
+    ChargeDegree,
+    ChargeStatus,
+)
 from recidiviz.common.constants.county.hold import HoldStatus
-from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
-from recidiviz.common.constants.shared_enums.person_characteristics import (
+from recidiviz.common.constants.county.person_characteristics import (
     Ethnicity,
     Gender,
     Race,
     ResidencyStatus,
 )
+from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.county import schema as county_schema

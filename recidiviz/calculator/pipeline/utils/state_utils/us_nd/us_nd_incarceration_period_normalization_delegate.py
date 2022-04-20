@@ -35,13 +35,13 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_on_or_before_date,
 )
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
     is_commitment_from_supervision,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,

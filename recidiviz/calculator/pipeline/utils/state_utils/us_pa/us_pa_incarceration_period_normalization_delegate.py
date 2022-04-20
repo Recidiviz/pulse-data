@@ -35,12 +35,12 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervi
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     responses_on_most_recent_response_date,
 )
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
     is_commitment_from_supervision,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,

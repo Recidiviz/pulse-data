@@ -18,7 +18,6 @@
 
 from typing import Dict, Optional
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -28,7 +27,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
 class StateGender(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FEMALE = state_enum_strings.state_gender_female
     MALE = state_enum_strings.state_gender_male
     OTHER = state_enum_strings.state_gender_other
@@ -48,7 +47,7 @@ class StateRace(EntityEnum, metaclass=EntityEnumMeta):
     AMERICAN_INDIAN_ALASKAN_NATIVE = state_enum_strings.state_race_american_indian
     ASIAN = state_enum_strings.state_race_asian
     BLACK = state_enum_strings.state_race_black
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     NATIVE_HAWAIIAN_PACIFIC_ISLANDER = state_enum_strings.state_race_hawaiian
     OTHER = state_enum_strings.state_race_other
     WHITE = state_enum_strings.state_race_white
@@ -62,7 +61,7 @@ class StateRace(EntityEnum, metaclass=EntityEnumMeta):
 #  all state ingest views have been migrated to v2 mappings.
 # TODO(#12203): Change superclass to StateEntityEnums
 class StateEthnicity(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     HISPANIC = state_enum_strings.state_ethnicity_hispanic
     NOT_HISPANIC = state_enum_strings.state_ethnicity_not_hispanic
 

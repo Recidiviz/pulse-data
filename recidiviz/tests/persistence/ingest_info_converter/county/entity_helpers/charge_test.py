@@ -18,9 +18,12 @@
 
 import unittest
 
-from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
+from recidiviz.common.constants.county.charge import (
+    ChargeClass,
+    ChargeDegree,
+    ChargeStatus,
+)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.county.entity_helpers import charge

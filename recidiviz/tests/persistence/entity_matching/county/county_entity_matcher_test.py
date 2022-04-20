@@ -24,9 +24,9 @@ import attr
 
 from recidiviz.common.constants.county.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.common.constants.county.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
+from recidiviz.common.constants.county.person_characteristics import Gender
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.schema.county import schema
 from recidiviz.persistence.database.schema_entity_converter import (

@@ -20,7 +20,7 @@ Constants related to a bond shared between county and state schemas.
 """
 from typing import Dict, Optional
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+import recidiviz.common.constants.county.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 

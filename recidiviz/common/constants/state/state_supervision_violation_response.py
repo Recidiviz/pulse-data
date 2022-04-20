@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -59,7 +58,7 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
     EXTENSION = (
         state_enum_strings.state_supervision_violation_response_decision_extension
     )
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     NEW_CONDITIONS = (
         state_enum_strings.state_supervision_violation_response_decision_new_conditions
     )

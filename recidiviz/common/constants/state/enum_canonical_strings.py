@@ -28,6 +28,22 @@ them by their values here allows us to structure the application layer code any 
 database to be updated when an enum value is created or removed.
 """
 
+# Shared
+
+# This value should be used ONLY in cases where the external data source
+# explicitly specifies a value as "unknown". It should NOT be treated as a
+# default value for enums that are not provided (which should be represented
+# with None/NULL).
+external_unknown = "EXTERNAL_UNKNOWN"
+# This value is used by status enums to denote that no status for an entity was
+# provided by the source, but the entity itself was found in the source.
+present_without_info = "PRESENT_WITHOUT_INFO"
+# This value is used when the external data source specifies a known value for
+# an enum field, but we internally don't have an enum value that it should map
+# to. This should NOT be treated as a default value for enums fields that are
+# not provided.
+internal_unknown = "INTERNAL_UNKNOWN"
+
 # state_agent.py
 state_agent_correctional_officer = "CORRECTIONAL_OFFICER"
 state_agent_judge = "JUDGE"
@@ -428,7 +444,7 @@ state_supervision_contact_location_law_enforcement_agency = "LAW_ENFORCEMENT_AGE
 state_supervision_contact_location_parole_commission = "PAROLE_COMMISSION"
 state_supervision_contact_location_alternative_work_site = "ALTERNATIVE_WORK_SITE"
 
-# shared_enums.py
+# state_shared_enums.py
 
 state_acting_body_type_court = "COURT"
 state_acting_body_type_parole_board = "PAROLE_BOARD"

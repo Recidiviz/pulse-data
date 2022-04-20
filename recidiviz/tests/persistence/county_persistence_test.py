@@ -29,9 +29,9 @@ from psycopg2.errorcodes import NOT_NULL_VIOLATION, SERIALIZATION_FAILURE
 
 from recidiviz.common.constants.county.bond import BondStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.common.constants.county.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import Charge
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo as IngestInfoProto

@@ -21,7 +21,6 @@ from recidiviz.common import common_utils
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
@@ -29,6 +28,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state import entities

@@ -23,9 +23,9 @@ from collections import defaultdict
 from typing import Dict, List, Set, Tuple, cast
 
 from recidiviz.common.constants.county.bond import BondStatus
+from recidiviz.common.constants.county.charge import ChargeStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.constants.shared_enums.charge import ChargeStatus
 from recidiviz.persistence.database.schema.county import dao
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,

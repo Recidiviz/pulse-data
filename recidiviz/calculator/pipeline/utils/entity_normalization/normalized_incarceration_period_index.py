@@ -35,13 +35,13 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
     is_official_admission,
     is_official_release,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 

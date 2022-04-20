@@ -19,6 +19,11 @@
 import unittest
 from typing import Dict, Optional
 
+from recidiviz.common.constants.county.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+)
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
@@ -28,11 +33,6 @@ from recidiviz.common.constants.entity_enum import (
     EnumParsingError,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-)
 
 
 class _MyEntityEnum(EntityEnum, metaclass=EntityEnumMeta):

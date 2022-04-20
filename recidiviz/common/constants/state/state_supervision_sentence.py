@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -35,8 +34,8 @@ class StateSupervisionSentenceSupervisionType(EntityEnum, metaclass=EntityEnumMe
     COMMUNITY_CORRECTIONS = (
         state_enum_strings.state_supervision_sentence_supervision_type_community_corrections
     )
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     HALFWAY_HOUSE = (
         state_enum_strings.state_supervision_sentence_supervision_type_halfway_house
     )

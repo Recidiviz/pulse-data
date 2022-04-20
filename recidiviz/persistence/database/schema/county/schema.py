@@ -49,7 +49,6 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship, validates
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
@@ -57,16 +56,47 @@ from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
 )
-from recidiviz.persistence.database.schema.shared_enums import (
-    charge_status,
-    ethnicity,
-    gender,
-    race,
-    residency_status,
-)
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the primary and historical tables for each entity.
+
+# Person
+
+gender = Enum(
+    county_enum_strings.external_unknown,
+    county_enum_strings.gender_female,
+    county_enum_strings.gender_male,
+    county_enum_strings.gender_other,
+    county_enum_strings.gender_trans,
+    county_enum_strings.gender_trans_female,
+    county_enum_strings.gender_trans_male,
+    name="gender",
+)
+
+race = Enum(
+    county_enum_strings.race_american_indian,
+    county_enum_strings.race_asian,
+    county_enum_strings.race_black,
+    county_enum_strings.external_unknown,
+    county_enum_strings.race_hawaiian,
+    county_enum_strings.race_other,
+    county_enum_strings.race_white,
+    name="race",
+)
+
+ethnicity = Enum(
+    county_enum_strings.external_unknown,
+    county_enum_strings.ethnicity_hispanic,
+    county_enum_strings.ethnicity_not_hispanic,
+    name="ethnicity",
+)
+
+residency_status = Enum(
+    county_enum_strings.residency_status_homeless,
+    county_enum_strings.residency_status_permanent,
+    county_enum_strings.residency_status_transient,
+    name="residency_status",
+)
 
 # Booking
 
@@ -87,7 +117,7 @@ release_reason = Enum(
     county_enum_strings.release_reason_death,
     county_enum_strings.release_reason_escape,
     county_enum_strings.release_reason_expiration,
-    enum_strings.external_unknown,
+    county_enum_strings.external_unknown,
     county_enum_strings.release_reason_recognizance,
     county_enum_strings.release_reason_parole,
     county_enum_strings.release_reason_probation,
@@ -101,13 +131,13 @@ custody_status = Enum(
     county_enum_strings.custody_status_in_custody,
     county_enum_strings.custody_status_inferred_release,
     county_enum_strings.custody_status_released,
-    enum_strings.present_without_info,
-    enum_strings.removed_without_info,
+    county_enum_strings.present_without_info,
+    county_enum_strings.removed_without_info,
     name="custody_status",
 )
 
 classification = Enum(
-    enum_strings.external_unknown,
+    county_enum_strings.external_unknown,
     county_enum_strings.classification_high,
     county_enum_strings.classification_low,
     county_enum_strings.classification_maximum,
@@ -123,8 +153,8 @@ hold_status = Enum(
     county_enum_strings.hold_status_active,
     county_enum_strings.hold_status_inactive,
     county_enum_strings.hold_status_inferred_dropped,
-    enum_strings.present_without_info,
-    enum_strings.removed_without_info,
+    county_enum_strings.present_without_info,
+    county_enum_strings.removed_without_info,
     name="hold_status",
 )
 
@@ -134,8 +164,8 @@ sentence_status = Enum(
     county_enum_strings.sentence_status_commuted,
     county_enum_strings.sentence_status_completed,
     county_enum_strings.sentence_status_serving,
-    enum_strings.present_without_info,
-    enum_strings.removed_without_info,
+    county_enum_strings.present_without_info,
+    county_enum_strings.removed_without_info,
     name="sentence_status",
 )
 
@@ -149,7 +179,7 @@ sentence_relationship_type = Enum(
 
 charge_class = Enum(
     county_enum_strings.charge_class_civil,
-    enum_strings.external_unknown,
+    county_enum_strings.external_unknown,
     county_enum_strings.charge_class_felony,
     county_enum_strings.charge_class_infraction,
     county_enum_strings.charge_class_misdemeanor,
@@ -161,7 +191,7 @@ charge_class = Enum(
 )
 
 degree = Enum(
-    enum_strings.external_unknown,
+    county_enum_strings.external_unknown,
     county_enum_strings.degree_first,
     county_enum_strings.degree_fourth,
     county_enum_strings.degree_second,
@@ -169,26 +199,43 @@ degree = Enum(
     name="degree",
 )
 
+charge_status = Enum(
+    county_enum_strings.charge_status_acquitted,
+    county_enum_strings.charge_status_adjudicated,
+    county_enum_strings.charge_status_completed,
+    county_enum_strings.charge_status_convicted,
+    county_enum_strings.charge_status_dropped,
+    county_enum_strings.charge_status_inferred_dropped,
+    county_enum_strings.external_unknown,
+    county_enum_strings.charge_status_pending,
+    county_enum_strings.charge_status_pretrial,
+    county_enum_strings.charge_status_sentenced,
+    county_enum_strings.charge_status_transferred_away,
+    county_enum_strings.present_without_info,
+    county_enum_strings.removed_without_info,
+    name="charge_status",
+)
+
 # Bond
 
 bond_type = Enum(
-    enum_strings.bond_type_cash,
-    enum_strings.external_unknown,
-    enum_strings.bond_type_denied,
-    enum_strings.bond_type_not_required,
-    enum_strings.bond_type_partial_cash,
-    enum_strings.bond_type_secured,
-    enum_strings.bond_type_unsecured,
+    county_enum_strings.bond_type_cash,
+    county_enum_strings.external_unknown,
+    county_enum_strings.bond_type_denied,
+    county_enum_strings.bond_type_not_required,
+    county_enum_strings.bond_type_partial_cash,
+    county_enum_strings.bond_type_secured,
+    county_enum_strings.bond_type_unsecured,
     name="bond_type",
 )
 
 bond_status = Enum(
-    enum_strings.bond_status_pending,
-    enum_strings.bond_status_posted,
-    enum_strings.present_without_info,
-    enum_strings.removed_without_info,
-    enum_strings.bond_status_revoked,
-    enum_strings.bond_status_set,
+    county_enum_strings.bond_status_pending,
+    county_enum_strings.bond_status_posted,
+    county_enum_strings.present_without_info,
+    county_enum_strings.removed_without_info,
+    county_enum_strings.bond_status_revoked,
+    county_enum_strings.bond_status_set,
     name="bond_status",
 )
 

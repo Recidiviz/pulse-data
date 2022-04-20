@@ -24,11 +24,7 @@ from unittest import TestCase
 
 import sqlalchemy
 
-import recidiviz.common.constants.county.charge
-from recidiviz.common.constants.county import bond
-from recidiviz.common.constants.shared_enums import charge, person_characteristics
 from recidiviz.persistence.database.reserved_words import RESERVED_WORDS
-from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -43,31 +39,6 @@ ALL_SCHEMA_MODULES = [county_schema, state_schema, aggregate_schema]
 
 class TestSchemaEnums(TestCase):
     """Base test class for validating schema enums are defined correctly"""
-
-    # Mapping between name of schema enum and persistence layer enum. This
-    # map controls which pairs of enums are tested.
-    #
-    # If a schema enum does not correspond to a persistence layer enum,
-    # it should be mapped to None.
-    SHARED_ENUMS_TEST_MAPPING = {
-        "gender": person_characteristics.Gender,
-        "race": person_characteristics.Race,
-        "ethnicity": person_characteristics.Ethnicity,
-        "residency_status": person_characteristics.ResidencyStatus,
-        "bond_type": bond.BondType,
-        "bond_status": bond.BondStatus,
-        "degree": recidiviz.common.constants.county.charge.ChargeDegree,
-        "charge_status": charge.ChargeStatus,
-    }
-
-    # Test case ensuring enum values match between persistence layer enums and
-    # schema enums
-    def testPersistenceAndSchemaEnumsMatch(self):
-        """Test case ensuring enum values match between persistence layer enums
-        and schema enums."""
-        self.check_persistence_and_schema_enums_match(
-            self.SHARED_ENUMS_TEST_MAPPING, shared_enums
-        )
 
     def testNoOverlappingEnumPostgresNames(self):
         postgres_names_set = set()

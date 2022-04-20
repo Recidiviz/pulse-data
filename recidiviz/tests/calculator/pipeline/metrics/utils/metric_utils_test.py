@@ -59,7 +59,7 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     json_serializable_dict,
 )
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
+from recidiviz.common.constants.county.person_characteristics import Gender
 
 
 class TestJsonSerializableMetricKey(unittest.TestCase):

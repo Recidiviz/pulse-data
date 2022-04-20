@@ -22,9 +22,9 @@ from typing import Dict, List, Optional, Type
 
 import attr
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+import recidiviz.common.constants.county.enum_canonical_strings as enum_strings
+from recidiviz.common.constants.county import person_characteristics
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums import person_characteristics
 from recidiviz.justice_counts.dimensions.base import Dimension, DimensionBase
 from recidiviz.justice_counts.dimensions.helpers import (
     assert_no_overrides,

@@ -21,7 +21,6 @@ from typing import Dict
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
-from recidiviz.common.constants import enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
@@ -29,8 +28,8 @@ class HoldStatus(EntityEnum, metaclass=EntityEnumMeta):
     ACTIVE = county_enum_strings.hold_status_active
     INACTIVE = county_enum_strings.hold_status_inactive
     INFERRED_DROPPED = county_enum_strings.hold_status_inferred_dropped
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
+    PRESENT_WITHOUT_INFO = county_enum_strings.present_without_info
+    REMOVED_WITHOUT_INFO = county_enum_strings.removed_without_info
 
     @staticmethod
     def _get_default_map() -> Dict[str, "HoldStatus"]:

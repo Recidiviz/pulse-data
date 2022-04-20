@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -29,7 +28,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 @unique
 class StateIncarcerationType(EntityEnum, metaclass=EntityEnumMeta):
     COUNTY_JAIL = state_enum_strings.state_incarceration_type_county_jail
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FEDERAL_PRISON = state_enum_strings.state_incarceration_type_federal_prison
     OUT_OF_STATE = state_enum_strings.state_incarceration_type_out_of_state
     STATE_PRISON = state_enum_strings.state_incarceration_type_state_prison

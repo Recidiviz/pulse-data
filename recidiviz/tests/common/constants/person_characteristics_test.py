@@ -19,9 +19,9 @@
 import datetime
 from unittest import TestCase
 
+from recidiviz.common.constants.county.person_characteristics import Gender
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.shared_enums.person_characteristics import Gender
 
 _NOW = datetime.datetime(2000, 1, 1)
 

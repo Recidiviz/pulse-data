@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict, Optional, Set
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -58,7 +57,7 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
     # modeled with just one supervision period if the PO is the same. In this case,
     # the supervision period supervision type is DUAL.
     DUAL = state_enum_strings.state_supervision_period_supervision_type_dual
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     # A type of supervision where the person is not formally supervised and does not
     # have to regularly report to a PO. The person does have certain conditions
     # associated with their supervision, that when violated can lead to revocations.
@@ -66,7 +65,7 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
     INFORMAL_PROBATION = (
         state_enum_strings.state_supervision_period_supervision_type_informal_probation
     )
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     INVESTIGATION = (
         state_enum_strings.state_supervision_period_supervision_type_investigation
     )
@@ -93,8 +92,8 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
     COURT_SENTENCE = (
         state_enum_strings.state_supervision_period_admission_reason_court_sentence
     )
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     # TODO(#3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriodSupervisionType for Investigation
     INVESTIGATION = (
@@ -124,9 +123,9 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     """Possible supervision levels that a person can be supervised at."""
 
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
     # TODO(#9421): Re-evaluate the use of this value when we standardize the
     #  representation of community centers
@@ -210,7 +209,7 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
 class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMeta):
     """Termination reasons for StateSupervisionPeriod"""
 
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     ABSCONSION = (
         state_enum_strings.state_supervision_period_termination_reason_absconsion
     )
@@ -225,7 +224,7 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     EXPIRATION = (
         state_enum_strings.state_supervision_period_termination_reason_expiration
     )
-    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     # TODO(#3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriodSupervisionType for Investigation
     INVESTIGATION = (

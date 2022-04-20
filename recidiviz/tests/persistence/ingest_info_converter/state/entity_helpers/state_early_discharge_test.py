@@ -19,11 +19,11 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (

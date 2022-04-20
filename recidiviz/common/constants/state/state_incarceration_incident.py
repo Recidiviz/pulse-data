@@ -19,7 +19,6 @@
 from enum import unique
 from typing import Dict
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
@@ -30,7 +29,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident types."""
 
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     CONTRABAND = state_enum_strings.state_incarceration_incident_type_contraband
     DISORDERLY_CONDUCT = (
         state_enum_strings.state_incarceration_incident_type_disorderly_conduct

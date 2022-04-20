@@ -24,7 +24,6 @@ from enum import Enum
 from types import ModuleType
 from typing import Callable, Dict, List, Optional, Type
 
-from recidiviz.common.constants import shared_enums
 from recidiviz.common.constants import state as state_constants
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
@@ -169,7 +168,12 @@ class IngestViewResultsParserDelegateImpl(
 
     def _get_enums_modules(self) -> List[ModuleType]:
         if self.schema_type == SchemaType.STATE:
-            return [shared_enums, state_constants]
+            return [state_constants]
+        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+
+    def _get_enum_submodule_prefix_filter(self) -> str:
+        if self.schema_type == SchemaType.STATE:
+            return "state"
         raise ValueError(f"Unexpected schema type [{self.schema_type}]")
 
     def get_entity_factory_class(self, entity_cls_name: str) -> Type[EntityFactory]:
@@ -203,7 +207,8 @@ class IngestViewResultsParserDelegateImpl(
 
         for enums_root_module in enums_root_modules:
             enum_file_modules = ModuleCollectorMixin.get_submodules(
-                enums_root_module, submodule_name_prefix_filter=None
+                enums_root_module,
+                submodule_name_prefix_filter=self._get_enum_submodule_prefix_filter(),
             )
             for enum_module in enum_file_modules:
                 for enum_cls in get_all_enum_classes_in_module(enum_module):
