@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionSentenceSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionSentenceSupervisionType(StateEntityEnum):
     CIVIL_COMMITMENT = (
         state_enum_strings.state_supervision_sentence_supervision_type_civil_commitment
     )

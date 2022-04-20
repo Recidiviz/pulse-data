@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict, Optional
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateIncarcerationFacilitySecurityLevel(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationFacilitySecurityLevel(StateEntityEnum):
     MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
     MEDIUM = state_enum_strings.state_incarceration_facility_security_level_medium
     MINIMUM = state_enum_strings.state_incarceration_facility_security_level_minimum
@@ -36,10 +36,10 @@ class StateIncarcerationFacilitySecurityLevel(EntityEnum, metaclass=EntityEnumMe
         return _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     """Reasons for admission to a period of incarceration."""
 
     ADMITTED_IN_ERROR = (
@@ -87,10 +87,10 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
         return _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
     """Reasons for release from a period of incarceration."""
 
     COMMUTED = state_enum_strings.state_incarceration_period_release_reason_commuted
@@ -147,11 +147,11 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 # TODO(#3275): Update enum name to `StatePurposeForIncarceration` now that there is a 'GENERAL' option
 @unique
-class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMeta):
+class StateSpecializedPurposeForIncarceration(StateEntityEnum):
     """Specialized purposes for a period of incarceration"""
 
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown

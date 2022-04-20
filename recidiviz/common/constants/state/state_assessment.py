@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
+class StateAssessmentClass(StateEntityEnum):
     """An enumeration of assessment classifications tracked in our schema."""
 
     MENTAL_HEALTH = state_enum_strings.state_assessment_class_mental_health
@@ -43,10 +43,10 @@ class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_ASSESSMENT_CLASS_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
+class StateAssessmentType(StateEntityEnum):
     """An enumeration of assessment types tracked in our schema."""
 
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
@@ -94,10 +94,10 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_ASSESSMENT_TYPE_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
+class StateAssessmentLevel(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     MINIMUM = state_enum_strings.state_assessment_level_minimum
     LOW = state_enum_strings.state_assessment_level_low

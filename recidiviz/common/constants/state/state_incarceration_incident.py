@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationIncidentType(StateEntityEnum):
     """Possible State Incarceration Incident types."""
 
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
@@ -45,10 +45,10 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateIncarcerationIncidentOutcomeType(EntityEnum, metaclass=EntityEnumMeta):
+class StateIncarcerationIncidentOutcomeType(StateEntityEnum):
     """Possible State Incarceration Incident outcome types."""
 
     # A form of confinement when a person cannot generally leave their own cell, regardless of who else occupies it

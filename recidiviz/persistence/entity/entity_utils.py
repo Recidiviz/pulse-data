@@ -53,6 +53,7 @@ from recidiviz.common.attr_utils import (
 )
 from recidiviz.common.common_utils import pairwise
 from recidiviz.common.constants.entity_enum import EntityEnum
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -273,6 +274,7 @@ def get_all_enum_classes_in_module(enums_module: ModuleType) -> Set[Type[Enum]]:
             if (
                 attribute is not Enum
                 and attribute is not EntityEnum
+                and attribute is not StateEntityEnum
                 and issubclass(attribute, Enum)
             ):
                 enum_classes.add(attribute)

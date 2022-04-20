@@ -20,13 +20,14 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
-class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
+class StateAgentType(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     CORRECTIONAL_OFFICER = state_enum_strings.state_agent_correctional_officer
     JUDGE = state_enum_strings.state_agent_judge

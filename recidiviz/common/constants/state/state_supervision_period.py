@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict, Optional, Set
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     """Enum that denotes what type of supervision someone is serving at a moment in
     time."""
 
@@ -77,10 +77,10 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     """Admission reasons for StateSupervisionPeriod"""
 
     ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_absconsion
@@ -117,10 +117,10 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_ADMISSION_TYPE_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionLevel(StateEntityEnum):
     """Possible supervision levels that a person can be supervised at."""
 
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
@@ -203,10 +203,10 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_LEVEL_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     """Termination reasons for StateSupervisionPeriod"""
 
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown

@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
+class StateEarlyDischargeDecision(StateEntityEnum):
     REQUEST_DENIED = state_enum_strings.state_early_discharge_decision_request_denied
     SENTENCE_TERMINATION_GRANTED = (
         state_enum_strings.state_early_discharge_decision_sentence_termination_granted
@@ -40,10 +40,10 @@ class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_EARLY_DISCHARGE_DECISION_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateEarlyDischargeDecisionStatus(EntityEnum, metaclass=EntityEnumMeta):
+class StateEarlyDischargeDecisionStatus(StateEntityEnum):
     PENDING = state_enum_strings.state_early_discharge_decision_status_pending
     DECIDED = state_enum_strings.state_early_discharge_decision_status_decided
     INVALID = state_enum_strings.state_early_discharge_decision_status_invalid

@@ -20,7 +20,7 @@ import unittest
 from typing import List, Type
 
 import recidiviz.common.constants.state as state_constants
-from recidiviz.common.constants.entity_enum import EntityEnum
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.entity.entity_utils import get_all_enum_classes_in_module
@@ -32,7 +32,7 @@ class StateEnumsTest(unittest.TestCase):
     """General tests for state schema enums."""
 
     @staticmethod
-    def _get_all_state_enum_classes() -> List[Type[EntityEnum]]:
+    def _get_all_state_enum_classes() -> List[Type[StateEntityEnum]]:
         enum_file_modules = ModuleCollectorMixin.get_submodules(
             state_constants, submodule_name_prefix_filter=None
         )
@@ -40,7 +40,7 @@ class StateEnumsTest(unittest.TestCase):
         for enum_file_module in enum_file_modules:
             enum_classes = get_all_enum_classes_in_module(enum_file_module)
             for enum_cls in enum_classes:
-                if not issubclass(enum_cls, EntityEnum):
+                if not issubclass(enum_cls, StateEntityEnum):
                     raise ValueError(f"Unexpected class type: {enum_cls}")
                 result.append(enum_cls)
         return result

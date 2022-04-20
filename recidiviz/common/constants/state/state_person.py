@@ -19,14 +19,12 @@
 from typing import Dict, Optional
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-
-# TODO(#8905): Remove EntityEnumMeta metaclass, and delete _get_default_map() once
-#  all state ingest views have been migrated to v2 mappings.
-# TODO(#12203): Change superclass to StateEntityEnums
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-class StateGender(EntityEnum, metaclass=EntityEnumMeta):
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
+class StateGender(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     FEMALE = state_enum_strings.state_gender_female
     MALE = state_enum_strings.state_gender_male
@@ -40,10 +38,9 @@ class StateGender(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_GENDER_MAP
 
 
-# TODO(#8905): Remove EntityEnumMeta metaclass, and delete _get_default_map() once
-#  all state ingest views have been migrated to v2 mappings.
-# TODO(#12203): Change superclass to StateEntityEnums
-class StateRace(EntityEnum, metaclass=EntityEnumMeta):
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
+class StateRace(StateEntityEnum):
     AMERICAN_INDIAN_ALASKAN_NATIVE = state_enum_strings.state_race_american_indian
     ASIAN = state_enum_strings.state_race_asian
     BLACK = state_enum_strings.state_race_black
@@ -57,10 +54,9 @@ class StateRace(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_RACE_MAP
 
 
-# TODO(#8905): Remove EntityEnumMeta metaclass, and delete _get_default_map() once
-#  all state ingest views have been migrated to v2 mappings.
-# TODO(#12203): Change superclass to StateEntityEnums
-class StateEthnicity(EntityEnum, metaclass=EntityEnumMeta):
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
+class StateEthnicity(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     HISPANIC = state_enum_strings.state_ethnicity_hispanic
     NOT_HISPANIC = state_enum_strings.state_ethnicity_not_hispanic
@@ -70,10 +66,9 @@ class StateEthnicity(EntityEnum, metaclass=EntityEnumMeta):
         return STATE_ETHNICITY_MAP
 
 
-# TODO(#8905): Remove EntityEnumMeta metaclass, and delete _get_default_map() once
-#  all state ingest views have been migrated to v2 mappings.
-# TODO(#12203): Change superclass to StateEntityEnums
-class StateResidencyStatus(EntityEnum, metaclass=EntityEnumMeta):
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
+class StateResidencyStatus(StateEntityEnum):
     HOMELESS = state_enum_strings.state_residency_status_homeless
     PERMANENT = state_enum_strings.state_residency_status_permanent
     TRANSIENT = state_enum_strings.state_residency_status_transient

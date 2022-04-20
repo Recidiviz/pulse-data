@@ -20,13 +20,13 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionContactType(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
@@ -41,10 +41,10 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_CONTACT_TYPE_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionContactMethod(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionContactMethod(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
@@ -60,10 +60,10 @@ class StateSupervisionContactMethod(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_CONTACT_METHOD_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionContactReason(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
@@ -82,10 +82,10 @@ class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_CONTACT_REASON_MAP
 
 
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
+# TODO(#8905): Delete _get_default_map() once all state ingest views have been
+#  migrated to v2 mappings.
 @unique
-class StateSupervisionContactStatus(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionContactStatus(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
@@ -98,7 +98,7 @@ class StateSupervisionContactStatus(EntityEnum, metaclass=EntityEnumMeta):
 
 
 @unique
-class StateSupervisionContactLocation(EntityEnum, metaclass=EntityEnumMeta):
+class StateSupervisionContactLocation(StateEntityEnum):
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
