@@ -1,0 +1,54 @@
+file_tag: ofnrelatedaddress
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name : OFFENDERID
+    description : |-
+      TODO(#12372)
+  - name : ADDREFFECTIVEDATE
+    description : |-
+      TODO(#12372)
+  - name : ADDRESSTYPE
+    description : |-
+      TODO(#12372)
+  - name : ADDRESSID
+    description : |-
+      TODO(#12372)
+  - name : ADDRENDDATE
+    description : |-
+      TODO(#12372)
+  - name : OFFICERCONTROLNUM
+    description : |-
+      TODO(#12372)
+  - name : ADDRVERIFYDATE
+    description : |-
+      TODO(#12372)
+  - name : OFNADDRCOMMENTS
+    description : |-
+      TODO(#12372)
+  - name : TRAVELDIRECTIONS
+    description : |-
+      TODO(#12372)
+  - name : DATELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : TIMELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : STAFFLASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : ADDRESSVERIFYINGAGENCY
+    description : |-
+      TODO(#12372)
+  - name : ADDRESSVERIFYINGNAME
+    description : |-
+      TODO(#12372)
+  - name : OFFNISHOMELESS
+    description : |-
+      TODO(#12372)
+  - name : LIVESWITH
+    description : |-
+      TODO(#12372)

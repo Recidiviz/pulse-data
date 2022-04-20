@@ -1,0 +1,44 @@
+file_tag: commitmentsummary
+file_description: |-
+  TODO(#12372): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name : OFFENDERID
+  - name : COMMITMENTPREFIX
+  - name : TYPEORDER
+  - name : OTHSTATE
+  - name : COURTCASETYPE
+  - name : COUNTYOFCONVICTION
+  - name : DOCKETNUMBER
+  - name : CURRCOMMITCONVICTIONDT
+  - name : SENTENCEIMPOSEDDATE
+  - name : SENTENCEEFFECTIVEDATE
+  - name : JUDGENAME
+  - name : DEFENSEATTORNEYNAME
+  - name : STATEATTORNEYNAME
+  - name : SEXVLNTPRED
+  - name : OVERALLFINDING
+  - name : INCARCERATIONSTART
+  - name : EARLIESTSENTENCEBEGINDATE
+  - name : PAROLETERMINMONTHS
+  - name : JAILTIME
+  - name : JAILCREDITS
+  - name : COMMITMENTSTATUS
+  - name : COMMSTATUSDATE
+  - name : COURTCMTCOMMENTS
+  - name : CJISCOMMENTS
+  - name : DATELASTUPDATE
+  - name : TIMELASTUPDATE
+  - name : STAFFLASTUPDATE
+  - name : MAXIMUMPRISONTERM
+  - name : SENTENCINGDATACONDITION
+  - name : AMENDEDDATAFROMCJIS
+  - name : OBLIGATIONSFLAG
+  - name : COURTID
+  - name : INTAKEDATE
+  - name : COUNTYOFSENTENCING
+  - name : OFFENDERVERSIONOFCRIME
+  - name : CODEFENDANTNAME
+  - name : OVERALLPLEA
+  - name : CO_MITT_SRL

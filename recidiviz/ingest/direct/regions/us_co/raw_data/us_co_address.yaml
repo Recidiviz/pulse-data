@@ -1,0 +1,72 @@
+file_tag: address
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name : ADDRESSID
+    description : |-
+      TODO(#12372)
+  - name : STREETNUMBER
+    description : |-
+      TODO(#12372)
+  - name : STREETDIRECTION
+    description : |-
+      TODO(#12372)
+  - name : STREETNAME
+    description : |-
+      TODO(#12372)
+  - name : STREETTYPE
+    description : |-
+      TODO(#12372)
+  - name : SUITENUMBER
+    description : |-
+      TODO(#12372)
+  - name : APARTMENTNUM
+    description : |-
+      TODO(#12372)
+  - name : POBOX
+    description : |-
+      TODO(#12372)
+  - name : RURALROUTE
+    description : |-
+      TODO(#12372)
+  - name : RURALBOXNUM
+    description : |-
+      TODO(#12372)
+  - name : ADDRESSOTHER
+    description : |-
+      TODO(#12372)
+  - name : CITY
+    description : |-
+      TODO(#12372)
+  - name : STATE
+    description : |-
+      TODO(#12372)
+  - name : ZIPCODE
+    description : |-
+      TODO(#12372)
+  - name : COUNTY
+    description : |-
+      TODO(#12372)
+  - name : COUNTRY
+    description : |-
+      TODO(#12372)
+  - name : DATELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : TIMELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : STAFFLASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : STREETDIRECTIONSUFFIX
+    description : |-
+      TODO(#12372)
+  - name : ADDRESSEDITBYPASSED
+    description : |-
+      TODO(#12372)
+  - name : GEOCODEID
+    description : |-
+      TODO(#12372)

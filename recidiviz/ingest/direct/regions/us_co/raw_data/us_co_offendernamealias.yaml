@@ -1,0 +1,45 @@
+file_tag: offendernamealias
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name : OFFENDERID
+    description : |-
+      TODO(#12372)
+  - name : OFFNNAMETYPE
+    description : |-
+      TODO(#12372)
+  - name : OFFNLASTNAME
+    description : |-
+      TODO(#12372)
+  - name : OFFNFIRSTNAME
+    description : |-
+      TODO(#12372)
+  - name : OFFNMIDDLENAME
+    description : |-
+      TODO(#12372)
+  - name : OFFNNAMESUFFIX
+    description : |-
+      TODO(#12372)
+  - name : COMMITMENTPREFIX
+    description : |-
+      TODO(#12372)
+  - name : OFFNSOUNDEXCODE
+    description : |-
+      TODO(#12372)
+  - name : CURRENTCOMMNAME
+    description : |-
+      TODO(#12372)
+  - name : DATELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : TIMELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : STAFFLASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : CURRENTCOMMDOCNAME
+    description : |-
+      TODO(#12372)

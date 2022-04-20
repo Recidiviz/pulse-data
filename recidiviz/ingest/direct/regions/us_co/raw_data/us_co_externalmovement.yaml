@@ -1,0 +1,99 @@
+file_tag: externalmovement
+file_description: |-
+  TODO(#12372): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name : OFFENDERID
+    description : |-
+      TODO(#12372)
+  - name : EXTERNALMOVEMENTDATE
+    description : |-
+      TODO(#12372)
+  - name : EXTERNALMOVEMENTTIME
+    description : |-
+      TODO(#12372)
+  - name : LOCATIONREPORTMOVEMENT
+    description : |-
+      TODO(#12372)
+  - name : EXTERNALMOVEMENTCODE
+    description : |-
+      TODO(#12372)
+  - name : OTHERLOCATIONCODE
+    description : |-
+      TODO(#12372)
+  - name : REASONFORMOVEMENT
+    description : |-
+      TODO(#12372)
+  - name : EXTERNALMVMTCOMMENTS
+    description : |-
+      TODO(#12372)
+  - name : DATELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : TIMELASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : STAFFLASTUPDATE
+    description : |-
+      TODO(#12372)
+  - name : INMMOVEMENTESCORT
+    description : |-
+      TODO(#12372)
+  - name : JURISDICTIONALAGENCY
+    description : |-
+      TODO(#12372)
+  - name : BODYSEARCHCONDUCTED
+    description : |-
+      TODO(#12372)
+  - name : LEGALFILEJACKETSENT
+    description : |-
+      TODO(#12372)
+  - name : SOCIALSRVFILEJACKETSENT
+    description : |-
+      TODO(#12372)
+  - name : EDUCATIONFILEJACKETSENT
+    description : |-
+      TODO(#12372)
+  - name : MEDICALFILEJACKETSENT
+    description : |-
+      TODO(#12372)
+  - name : PSYCSRVFILEJACKETSENT
+    description : |-
+      TODO(#12372)
+  - name : BOXESOFPROPERTY
+    description : |-
+      TODO(#12372)
+  - name : DATEFIRSTCREATED
+    description : |-
+      TODO(#12372)
+  - name : TIMEFIRSTCREATED
+    description : |-
+      TODO(#12372)
+  - name : HOLDBEDFLAG
+    description : |-
+      TODO(#12372)
+  - name : REASSIGNHELDBEDFLAG
+    description : |-
+      TODO(#12372)
+  - name : COUNTYOFRESIDENCE
+    description : |-
+      TODO(#12372)
+  - name : MOVESERIALNUMBER
+    description : |-
+      TODO(#12372)
+  - name : INCARCERATIONNUMBER
+    description : |-
+      TODO(#12372)
+  - name : MOVE_TYP
+    description : |-
+      TODO(#12372)
+  - name : CO_FAC_CD
+    description : |-
+      TODO(#12372)
+  - name : CO_LU_CD
+    description : |-
+      TODO(#12372)
+  - name : CO_LOC_CD
+    description : |-
+      TODO(#12372)
