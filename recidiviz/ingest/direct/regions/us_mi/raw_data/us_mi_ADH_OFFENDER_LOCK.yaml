@@ -27,6 +27,14 @@ columns:
     datetime_sql_parsers: 
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
   - name: permanent_temporary_flag
+    description: |-
+      Whether the person is staying in the lock unit permanently or temporarily (e.g. in transit
+      between transfers of facilities).
+    known_values:
+      - value: '1'
+        description: Permanent
+      - value: '0'
+        description: Temporary
   - name: last_update_user
   - name: last_update_date
   - name: last_update_node

@@ -12,6 +12,21 @@ columns:
     description: |-
       The ID indicating the security level for the unit, as indicated by the REFERENCE_CODE
       table.
+    known_values:
+      - value: '11539'
+        description: SECURITY_LEVEL_I
+      - value: '11538'
+        description: SECURITY_LEVEL_II
+      - value: '11537'
+        description: SECURITY_LEVEL_III
+      - value: '11536'
+        description: SECURITY_LEVEL_IV
+      - value: '11535'
+        description: SECURITY_LEVEL_V
+      - value: '11540'
+        description: SECURITY_LEVEL_VI
+      - value: '12551'
+        description: SECURITY_LEVEL_IS
   - name: reporting_station_id
   - name: cell_type_id
   - name: cell_status_id
