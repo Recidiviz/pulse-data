@@ -42,6 +42,24 @@ class StateAssessmentClass(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateAssessmentClass"]:
         return _STATE_ASSESSMENT_CLASS_MAP
 
+    @staticmethod
+    def get_enum_description() -> str:
+        return "TODO(#12127): Add enum description"
+
+    @staticmethod
+    def get_value_descriptions() -> Dict["StateEntityEnum", str]:
+        return _STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS
+
+
+_STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentClass.MENTAL_HEALTH: "TODO(#12127): Add enum value description",
+    StateAssessmentClass.RISK: "TODO(#12127): Add enum value description",
+    StateAssessmentClass.SECURITY_CLASSIFICATION: "TODO(#12127): Add enum value description",
+    StateAssessmentClass.SEX_OFFENSE: "TODO(#12127): Add enum value description",
+    StateAssessmentClass.SOCIAL: "TODO(#12127): Add enum value description",
+    StateAssessmentClass.SUBSTANCE_ABUSE: "TODO(#12127): Add enum value description",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
