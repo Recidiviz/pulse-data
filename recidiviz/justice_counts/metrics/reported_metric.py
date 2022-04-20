@@ -33,7 +33,7 @@ class ReportedContext:
     """
 
     key: ContextKey
-    value: str
+    value: Any
 
 
 @attr.define()
@@ -120,18 +120,26 @@ class ReportedMetric:
 
     @contexts.validator
     def validate_contexts(self, _attribute: attr.Attribute, value: Any) -> None:
-        # Validate that all required contexts have been reported
-        required_context_keys = {
-            context.key
-            for context in self.metric_definition.contexts or []
-            if context.required is True
+        # Validate that any reported context is of the right type, and that
+        # all required contexts have been reported
+        context_key_to_reported_context = {
+            context.key: context for context in value or []
         }
-        reported_context_keys = {context.key for context in value or []}
-        missing_context_keys = required_context_keys.difference(reported_context_keys)
-        if len(missing_context_keys) > 0:
-            raise ValueError(
-                f"The following required contexts are missing: {missing_context_keys}"
-            )
+        for context in self.metric_definition.contexts or []:
+            reported_context = context_key_to_reported_context.get(context.key)
+
+            if not reported_context:
+                if context.required:
+                    raise ValueError(f"The required context {context.key} is missing.")
+                continue
+
+            if not isinstance(
+                reported_context.value, context.context_type.python_type()
+            ):
+                raise ValueError(
+                    f"The context {context.key} is reported as a {type(reported_context.value)} "
+                    f"but typed as a {context.context_type.python_type()}."
+                )
 
     @aggregated_dimensions.validator
     def validate_aggregate_dimensions(

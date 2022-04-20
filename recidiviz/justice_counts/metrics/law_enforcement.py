@@ -22,7 +22,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     SheriffBudgetType,
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
-from recidiviz.justice_counts.metrics.constants import ContextKey
+from recidiviz.justice_counts.metrics.constants import ContextKey, ContextType
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
@@ -50,6 +50,7 @@ annual_budget = MetricDefinition(
     contexts=[
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
+            context_type=ContextType.TEXT,
             label="Primary funding source.",
             required=False,
         )
@@ -72,6 +73,7 @@ residents = MetricDefinition(
     contexts=[
         Context(
             key=ContextKey.JURISDICTION_AREA,
+            context_type=ContextType.NUMBER,
             label="The land size (area) of the jurisdiction",
             required=False,
         )
@@ -104,11 +106,13 @@ calls_for_service = MetricDefinition(
     contexts=[
         Context(
             key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
+            context_type=ContextType.BOOLEAN,
             label="Whether number includes all calls or just calls responded to.",
             required=True,
         ),
         Context(
             key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,
+            context_type=ContextType.TEXT,
             label="All agencies available for response.",
             required=False,
         ),

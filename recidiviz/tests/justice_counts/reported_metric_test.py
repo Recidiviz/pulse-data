@@ -98,12 +98,27 @@ class TestJusticeCountsMetricDefinition(TestCase):
     def test_context_validation(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "The following required contexts are missing: {<ContextKey.ALL_CALLS_OR_CALLS_RESPONDED",
+            "The required context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is missing",
         ):
             ReportedMetric(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[],
+                aggregated_dimensions=[],
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"The context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is reported as a <class 'str'> but typed as a \(<class 'bool'>,\).",
+        ):
+            ReportedMetric(
+                key=law_enforcement.calls_for_service.key,
+                value=100000,
+                contexts=[
+                    ReportedContext(
+                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
+                    )
+                ],
                 aggregated_dimensions=[],
             )
 
@@ -117,7 +132,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
                 value=100000,
                 contexts=[
                     ReportedContext(
-                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
+                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True
                     )
                 ],
                 aggregated_dimensions=[],

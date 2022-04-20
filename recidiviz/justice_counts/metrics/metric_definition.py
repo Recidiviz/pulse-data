@@ -22,7 +22,7 @@ from typing import List, Optional, Type
 import attr
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
-from recidiviz.justice_counts.metrics.constants import ContextKey
+from recidiviz.justice_counts.metrics.constants import ContextKey, ContextType
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -43,11 +43,13 @@ class MetricCategory(enum.Enum):
 @attr.define()
 class Context:
     """Additional context that the agency is required to report on this metric.
-    The `key` should be a unique identifier; the `label` should be a human-readable
-    explanation; and `required` indicates if this context is required or requested.
+    The `key` should be a unique identifier; `context_type` is the input type,
+    `label` should be a human-readable explanation, and `required` indicates if
+    this context is required or requested.
     """
 
     key: ContextKey
+    context_type: ContextType
     label: str
     required: bool
 
