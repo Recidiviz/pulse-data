@@ -212,6 +212,14 @@ def get_userinfo_from_token(claims: TokenClaims) -> Dict[str, str]:
         ) from e
 
 
+def get_permissions_from_token(claims: TokenClaims) -> Any:
+    """See https://auth0.com/docs/get-started/apis/enable-role-based-access-control-for-apis
+    If the RBAC is enabled and "Add Permissions in the Access Token toggle" is checked,
+    all permissions assigned to the user will be included in the permissions claim of the access token.
+    """
+    return claims.get("permissions")
+
+
 def passthrough_authorization_decorator() -> Callable:
     def decorated(route: Callable) -> Callable:
         @wraps(route)

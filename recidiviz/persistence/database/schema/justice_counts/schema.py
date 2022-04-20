@@ -29,7 +29,7 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 """
 
 import enum
-from typing import Any, Dict, TypeVar
+from typing import Any, Dict, List, Optional, TypeVar
 
 from sqlalchemy import ForeignKey, Table
 from sqlalchemy.orm import relationship
@@ -220,13 +220,14 @@ class UserAccount(JusticeCountsBase):
         ]
     )
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self, permissions: Optional[List[str]] = None) -> Dict[str, Any]:
         return {
             "id": self.id,
             "auth0_user_id": self.auth0_user_id,
             "email_address": self.email_address,
             "name": self.name,
             "agencies": [agency.to_json() for agency in self.agencies],
+            "permissions": permissions,
         }
 
 

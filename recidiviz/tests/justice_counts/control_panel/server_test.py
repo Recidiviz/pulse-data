@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
+from http import HTTPStatus
+
 import pytest
 from flask import g, session
 from sqlalchemy.engine import Engine
@@ -129,11 +131,24 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
         self.assertEqual(response_json["year"], 2022)
 
+    def test_cannot_get_another_users_reports(self) -> None:
+        user_B = self.test_schema_objects.test_user_B
+        report = self.test_schema_objects.test_report_monthly
+        self.session.add_all([report, user_B])
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_B.auth0_user_id)
+            response = self.client.get(f"/api/reports?agency_id={report.source_id}")
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
     def test_create_user(self) -> None:
         email_address = "user@gmail.com"
         agency_name = "Agency Alpha"
         name = "John Doe"
         self.session.add(Agency(name=agency_name, id=1))
+
         admin_response = self.client.post(
             "/api/users",
             json={
@@ -148,6 +163,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["email_address"], email_address)
         self.assertEqual(response_json["auth0_user_id"], None)
         self.assertEqual(response_json["name"], name)
+        self.assertEqual(response_json["permissions"], None)
         db_item = self.session.query(UserAccount).one_or_none()
         self.assertEqual(db_item.to_json(), response_json)
 
@@ -171,8 +187,33 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["email_address"], email_address)
         self.assertEqual(response_json["auth0_user_id"], auth0_user_id)
         self.assertEqual(response_json["name"], "Jane Doe")
+        self.assertEqual(response_json["permissions"], None)
         db_item = self.session.query(UserAccount).one_or_none()
         self.assertEqual(db_item.to_json(), response_json)
+
+    def test_user_permissions(self) -> None:
+        user_account = self.test_schema_objects.test_user_A
+        self.session.add(user_account)
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user_account.auth0_user_id,
+                permissions=["read:reports:all"],
+            )
+            user_response = self.client.post(
+                "/api/users",
+                json={
+                    "email_address": user_account.email_address,
+                    "auth0_user_id": user_account.auth0_user_id,
+                },
+            )
+        self.assertEqual(user_response.status_code, 200)
+        self.assertIsNotNone(user_response.json)
+        self.assertEqual(
+            user_response.json["permissions"] if user_response.json else [],
+            ["read:reports:all"],
+        )
 
     def test_session(self) -> None:
         # Add data

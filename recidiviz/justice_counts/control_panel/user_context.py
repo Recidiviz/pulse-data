@@ -17,6 +17,8 @@
 """Class to sotre information about the currently logged in user of the Justice Counts Control Panel."""
 
 
+from typing import List, Optional
+
 import attr
 from flask_sqlalchemy_session import current_session
 
@@ -30,6 +32,7 @@ class UserContext:
 
     auth0_user_id: str
     user_account: schema.UserAccount = attr.field()
+    permissions: Optional[List[str]] = None
 
     @user_account.default
     def _user_account_factory(self) -> schema.UserAccount:
