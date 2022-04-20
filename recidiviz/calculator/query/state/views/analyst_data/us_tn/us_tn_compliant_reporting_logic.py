@@ -547,19 +547,16 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             CASE WHEN total_screens_in_past_year IS NULL THEN 0 
                 ELSE total_screens_in_past_year END AS total_screens_in_past_year,
         -- Logic here: for non-drug-offense:
-            -- They must be 6 months or more past their latest positive test. This will be null for people with no positive test (or not tests at all) - for those, we assume they meet this condition
-            -- They must have at least 1 negative test in the past year OR they must be missing a recent screen (i.e. no screen in the last ~16 month)
-            -- About 20% of all people in the standards sheet are missing a recent drug screen. For people who don't have drug offenses, we think it's still worth surfacing them since drug screens are easy to do
+            -- They must be 6 months or more past their latest positive test. This will be null for people with no positive test - for those, we assume they meet this condition
+            -- They must have at least 1 negative test in the past year 
         CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 0 
             AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 180 
-            AND (sum_negative_tests_in_past_year >= 1
-                OR Last_DRU_Note IS NULL
-                )
+            AND sum_negative_tests_in_past_year >= 1
             -- If someone has had a positive test, even if its more than 6 months old, we enforce that their most recent test is negative
-            AND (is_most_recent_test_negative = 1 OR most_recent_positive_test_date IS NULL)       
+            AND is_most_recent_test_negative = 1        
              THEN 1
             -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info or where drug offense = 1 since there are separate flags for that
-             WHEN COALESCE(drug_offense,drug_offense_ever) IS NULL THEN NULL
+             WHEN COALESCE(drug_offense,drug_offense_ever) IS NULL AND sum_negative_tests_in_past_year >= 1 AND is_most_recent_test_negative = 1  THEN NULL
              WHEN COALESCE(drug_offense,drug_offense_ever) = 1 THEN NULL
              ELSE 0 
              END AS drug_screen_pass_flag_non_drug_offense,
