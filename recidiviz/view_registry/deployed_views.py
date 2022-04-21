@@ -37,7 +37,7 @@ from recidiviz.case_triage.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS,
 )
 from recidiviz.ingest.direct.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as DIRECT_INGEST_VIEW_BUILDERS,
+    get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
 )
 from recidiviz.ingest.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
@@ -59,7 +59,7 @@ def get_deployed_view_builders_by_namespace() -> Dict[
     return {
         BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
         BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
-        BigQueryViewNamespace.DIRECT_INGEST: DIRECT_INGEST_VIEW_BUILDERS,
+        BigQueryViewNamespace.DIRECT_INGEST: get_direct_ingest_view_builders(),
         BigQueryViewNamespace.EXPERIMENTS: EXPERIMENTS_VIEW_BUILDERS,
         BigQueryViewNamespace.EXTERNALLY_SHARED_VIEWS: EXTERNALLY_SHARED_VIEW_BUILDERS,
         BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,

@@ -26,17 +26,22 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewCollector,
 )
 
-DIRECT_INGEST_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
-    itertools.chain.from_iterable(
-        # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw
-        # table in all regions
-        DirectIngestRawDataTableLatestViewCollector(
-            region_code=region_code, src_raw_tables_sandbox_dataset_prefix=None
-        ).collect_view_builders()
-        for region_code in get_existing_region_dir_names()
-    )
-)
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[
-    BigQueryViewBuilder
-] = DIRECT_INGEST_VIEW_BUILDERS
+# In the past, this was a constant, but that caused this to actually execute upon
+# import, which was slowing down the endpoint documentation generator. Don't change
+# it (or the below function) back to a constant without profiling it first!
+def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
+    return list(
+        itertools.chain.from_iterable(
+            # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw
+            # table in all regions
+            DirectIngestRawDataTableLatestViewCollector(
+                region_code=region_code, src_raw_tables_sandbox_dataset_prefix=None
+            ).collect_view_builders()
+            for region_code in get_existing_region_dir_names()
+        )
+    )
+
+
+def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
+    return get_direct_ingest_view_builders()
