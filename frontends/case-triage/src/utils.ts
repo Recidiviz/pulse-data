@@ -95,3 +95,7 @@ export const captureExceptionWithLogs = (error: Error): void => {
     Sentry.captureException(error);
   }
 };
+
+export function isIE11(): boolean {
+  return window.navigator.userAgent.indexOf("Trident/") > 0;
+}

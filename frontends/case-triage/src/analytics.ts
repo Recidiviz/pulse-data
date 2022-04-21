@@ -17,6 +17,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Client } from "./stores/ClientsStore";
 import { CaseUpdateActionType } from "./stores/CaseUpdatesStore/CaseUpdates";
+import { isIE11 } from "./utils";
 
 const sessionId = uuidv4();
 
@@ -30,6 +31,7 @@ export const identify = (
   fullMetadata.integrations = {
     Intercom: {
       user_hash: userHash,
+      hideDefaultLauncher: isIE11(),
     },
   };
 
