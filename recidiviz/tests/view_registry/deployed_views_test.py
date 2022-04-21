@@ -64,8 +64,11 @@ class DeployedViewsTest(unittest.TestCase):
         self.assertLessEqual(len(prod_view_builders), len(all_view_builders))
 
     def test_build_all_views_perf(self) -> None:
-        start = datetime.datetime.now()
         all_view_builders = all_deployed_view_builders()
+        # some view builders are constants (which run logic on import, which happens before the test starts)
+        # and others are functions (which will run during the test itself), so don't start the timer until
+        # after we've collected all the view builders
+        start = datetime.datetime.now()
         for builder in all_view_builders:
             builder.build()
 
