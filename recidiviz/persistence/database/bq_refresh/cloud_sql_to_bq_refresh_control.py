@@ -19,12 +19,17 @@ import json
 import logging
 import uuid
 from http import HTTPStatus
-from typing import Optional, Tuple
+from typing import Tuple
 
 import flask
 from flask import request
 
 from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
+from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
+    PIPELINE_RUN_TYPE_NONE_VALUE,
+    PIPELINE_RUN_TYPE_REQUEST_ARG,
+    UPDATE_MANAGED_VIEWS_REQUEST_ARG,
+)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
@@ -72,14 +77,17 @@ def wait_for_ingest_to_create_tasks(
             HTTPStatus.BAD_REQUEST,
         )
 
-    pipeline_run_type_arg = get_pipeline_run_type_arg()
+    pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG, "")
+    update_managed_views_arg = get_value_from_request(
+        UPDATE_MANAGED_VIEWS_REQUEST_ARG, ""
+    )
 
     if not pipeline_run_type_arg and schema_type == SchemaType.STATE:
         # If no pipeline_run_type_arg is specified for the STATE schema, then we default
         # to the incremental run type
         pipeline_run_type_arg = MetricPipelineRunType.INCREMENTAL.value
 
-    if pipeline_run_type_arg:
+    if pipeline_run_type_arg and pipeline_run_type_arg != PIPELINE_RUN_TYPE_NONE_VALUE:
         try:
             _ = MetricPipelineRunType(pipeline_run_type_arg.upper())
         except ValueError:
@@ -88,7 +96,7 @@ def wait_for_ingest_to_create_tasks(
                 HTTPStatus.BAD_REQUEST,
             )
 
-    lock_id = get_or_create_lock_id()
+    lock_id = get_value_from_request("lock_id", str(uuid.uuid4()))
     logging.info("Request lock id: %s", lock_id)
 
     lock_manager = CloudSqlToBQLockManager()
@@ -98,12 +106,19 @@ def wait_for_ingest_to_create_tasks(
     if not lock_manager.can_proceed(schema_type):
         logging.info("Regions running, re-enqueuing this task.")
         task_manager.create_reattempt_create_refresh_tasks_task(
-            lock_id=lock_id, schema=schema_arg, pipeline_run_type=pipeline_run_type_arg
+            lock_id=lock_id,
+            schema=schema_arg,
+            pipeline_run_type=pipeline_run_type_arg,
+            update_managed_views=update_managed_views_arg,
         )
         return "", HTTPStatus.OK
 
     logging.info("No regions running, triggering BQ refresh.")
-    body = {"pipeline_run_type": pipeline_run_type_arg} if pipeline_run_type_arg else {}
+    body = (
+        {PIPELINE_RUN_TYPE_REQUEST_ARG: pipeline_run_type_arg}
+        if pipeline_run_type_arg
+        else {}
+    )
     task_manager.create_refresh_bq_schema_task(
         schema_type=schema_type,
         body=body,
@@ -156,9 +171,24 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     federated_bq_schema_refresh(schema_type=schema_type)
 
     if schema_type is SchemaType.STATE:
-        pipeline_run_type_arg = get_pipeline_run_type_arg()
+        update_managed_views_arg = get_value_from_request(
+            UPDATE_MANAGED_VIEWS_REQUEST_ARG, ""
+        )
 
-        if pipeline_run_type_arg:
+        if update_managed_views_arg:
+            # TODO(#11437): Hitting this endpoint here is a **temporary** solution,
+            #  and will be deleted once we put the BigQuery view update into the DAG.
+            task_manager = BQRefreshCloudTaskManager()
+            task_manager.create_update_managed_views_task()
+
+        pipeline_run_type_arg = get_value_from_request(
+            PIPELINE_RUN_TYPE_REQUEST_ARG, ""
+        )
+
+        if (
+            pipeline_run_type_arg
+            and pipeline_run_type_arg != PIPELINE_RUN_TYPE_NONE_VALUE
+        ):
             logging.info("Triggering %s pipeline DAG.", pipeline_run_type_arg)
 
             pubsub_helper.publish_message_to_topic(
@@ -180,29 +210,11 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-def get_or_create_lock_id() -> str:
+def get_value_from_request(key: str, default_value: str) -> str:
     json_data_text = request.get_data(as_text=True)
     try:
         json_data = json.loads(json_data_text)
     except (TypeError, json.decoder.JSONDecodeError):
         json_data = {}
-    if "lock_id" not in json_data:
-        lock_id = str(uuid.uuid4())
-    else:
-        lock_id = json_data["lock_id"]
 
-    return lock_id
-
-
-def get_pipeline_run_type_arg() -> Optional[str]:
-    json_data_text = request.get_data(as_text=True)
-    try:
-        json_data = json.loads(json_data_text)
-    except (TypeError, json.decoder.JSONDecodeError):
-        json_data = {}
-    if "pipeline_run_type" not in json_data:
-        pipeline_run_type = None
-    else:
-        pipeline_run_type = json_data["pipeline_run_type"]
-
-    return pipeline_run_type
+    return json_data.get(key, default_value)

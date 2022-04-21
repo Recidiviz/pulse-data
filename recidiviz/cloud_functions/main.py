@@ -16,24 +16,30 @@
 # =============================================================================
 """This file contains all of the relevant cloud functions"""
 import json
-import logging
 import os
 from base64 import b64decode
 from http import HTTPStatus
 from typing import Any, Dict, Optional, Tuple, TypeVar
 from urllib.parse import urlencode
 
+# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'"
+# ignored here because cloud functions require that imports are declared relative to
+# the cloud functions package itself. In general, we should avoid shipping complex
+# code in cloud functions. The function itself should call an API endpoint that can
+# live in an external package with proper import resolution.
 from cloud_function_utils import (  # type: ignore[import]
     GCP_PROJECT_ID_KEY,
     IAP_CLIENT_ID,
+    cloud_functions_log,
     make_iap_request,
     trigger_dag,
 )
-
-# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
-# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
-# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
-# with proper import resolution.
+from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
+    PIPELINE_RUN_TYPE_HISTORICAL_VALUE,
+    PIPELINE_RUN_TYPE_NONE_VALUE,
+    PIPELINE_RUN_TYPE_REQUEST_ARG,
+    TRIGGER_HISTORICAL_DAG_FLAG,
+)
 from direct_ingest_bucket_name_utils import (  # type: ignore[import]
     get_region_code_from_direct_ingest_bucket,
 )
@@ -80,11 +86,10 @@ def parse_state_aggregate(
     bucket = data["bucket"]
     state, filename = data["name"].split("/")
     project_id = os.environ[GCP_PROJECT_ID_KEY]
-    logging.info(
-        "Running cloud function for bucket %s, state %s, filename %s",
-        bucket,
-        state,
-        filename,
+    cloud_functions_log(
+        severity="INFO",
+        message=f"Running cloud function for bucket [{bucket}], state [{state}], filename"
+        f" [{filename}]",
     )
     url = _build_url(
         project_id,
@@ -94,7 +99,9 @@ def parse_state_aggregate(
     # Hit the cloud function backend, which persists the table data to our
     # database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The response status is %s", response.status_code)
+    cloud_functions_log(
+        severity="INFO", message=f"The response status is {response.status_code}"
+    )
     return "", HTTPStatus(response.status_code)
 
 
@@ -109,7 +116,7 @@ def normalize_raw_file_path(
         error_str = (
             "No project id set for call to direct ingest cloud function, returning."
         )
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     bucket = data["bucket"]
@@ -124,12 +131,14 @@ def normalize_raw_file_path(
         },
     )
 
-    logging.info("Calling URL: %s", url)
+    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
 
     # Hit the cloud function backend, which will schedule jobs to parse
     # data for unprocessed files in this bucket and persist to our database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The response status is %s", response.status_code)
+    cloud_functions_log(
+        severity="INFO", message=f"The response status is " f"{response.status_code}."
+    )
     return "", HTTPStatus(response.status_code)
 
 
@@ -175,12 +184,15 @@ def handle_new_case_triage_etl(
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error("No project id set for call to update auth0 users, returning.")
+        cloud_functions_log(
+            severity="ERROR",
+            message="No project id set for call to update auth0 users, returning.",
+        )
         return "", HTTPStatus.BAD_REQUEST
 
     filename = data["name"]
     if not filename.startswith("etl_") or not filename.endswith(".csv"):
-        logging.info("Ignoring file %s", filename)
+        cloud_functions_log(severity="INFO", message=f"Ignoring file {filename}")
         return "", HTTPStatus.OK
 
     import_url = _build_url(
@@ -210,15 +222,20 @@ def handle_state_dashboard_user_restrictions_file(
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error("No project id set for call to update auth0 users, returning.")
+        cloud_functions_log(
+            severity="ERROR",
+            message="No project id set for call to update auth0 users, returning.",
+        )
         return "", HTTPStatus.BAD_REQUEST
 
     filepath = data["name"].split("/")
 
     # Expected file path structure is US_XX/dashboard_user_restrictions.csv
     if len(filepath) != 2:
-        logging.info(
-            "Skipping filepath, incorrect number of nested directories: %s", filepath
+        cloud_functions_log(
+            severity="INFO",
+            message=f"Skipping filepath, incorrect "
+            f"number of nested directories: {filepath}",
         )
         return "", HTTPStatus.OK
 
@@ -231,16 +248,17 @@ def handle_state_dashboard_user_restrictions_file(
             _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH,
             {"region_code": region_code},
         )
-        logging.info("Calling URL: %s", import_user_restrictions_url)
+        cloud_functions_log(
+            severity="INFO", message=f"Calling URL: {import_user_restrictions_url}"
+        )
 
         # Hit the App Engine endpoint `auth/import_user_restrictions_csv_to_sql`.
         response = make_iap_request(
             import_user_restrictions_url, IAP_CLIENT_ID[project_id]
         )
-        logging.info(
-            "The %s response status is %s",
-            import_user_restrictions_url,
-            response.status_code,
+        cloud_functions_log(
+            severity="INFO",
+            message=f"The {import_user_restrictions_url} response status is {response.status_code}",
         )
 
     return "", HTTPStatus.OK
@@ -256,7 +274,7 @@ def _handle_state_direct_ingest_file(
         error_str = (
             "No project id set for call to direct ingest cloud function, returning."
         )
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     bucket = data["bucket"]
@@ -264,7 +282,7 @@ def _handle_state_direct_ingest_file(
     region_code = get_region_code_from_direct_ingest_bucket(bucket)
     if not region_code:
         error_str = f"Cannot parse region code from bucket {bucket}, returning."
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     url = _build_url(
@@ -278,12 +296,14 @@ def _handle_state_direct_ingest_file(
         },
     )
 
-    logging.info("Calling URL: %s", url)
+    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
 
     # Hit the cloud function backend, which will schedule jobs to parse
     # data for unprocessed files in this bucket and persist to our database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The response status is %s", response.status_code)
+    cloud_functions_log(
+        severity="INFO", message=f"The response status is {response.status_code}"
+    )
     return "", HTTPStatus(response.status_code)
 
 
@@ -296,11 +316,11 @@ def export_metric_view_data(
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         error_str = "No project id set for call to export view data, returning."
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     if "data" in event:
-        logging.info("data found")
+        cloud_functions_log(severity="INFO", message="data found")
         url = _build_url(
             project_id,
             _METRIC_VIEW_EXPORT_PATH,
@@ -308,15 +328,17 @@ def export_metric_view_data(
         )
     else:
         error_str = "Missing required export_job_filter in data of the Pub/Sub message."
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    logging.info("project_id: %s", project_id)
-    logging.info("Calling URL: %s", url)
+    cloud_functions_log(severity="INFO", message=f"project_id: {project_id}")
+    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
 
     # Hit the cloud function backend, which exports view data to their assigned cloud storage bucket
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The response status is %s", response.status_code)
+    cloud_functions_log(
+        severity="INFO", message=f"The response status is {response.status_code}"
+    )
     return "", HTTPStatus(response.status_code)
 
 
@@ -331,31 +353,34 @@ def trigger_calculation_pipeline_dag(
         error_str = (
             "No project id set for call to run the calculation pipelines, returning."
         )
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     airflow_uri = os.environ.get("AIRFLOW_URI")
     if not airflow_uri:
         error_str = "The environment variable 'AIRFLOW_URI' is not set"
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     pipeline_dag_type = os.environ.get("PIPELINE_DAG_TYPE")
     if not pipeline_dag_type:
         error_str = "The environment variable 'PIPELINE_DAG_TYPE' is not set"
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_{pipeline_dag_type}_calculation_pipeline_dag"
 
     monitor_response = trigger_dag(airflow_uri, dag_name, data)
-    logging.info("The monitoring Airflow response is %s", monitor_response)
+    cloud_functions_log(
+        severity="INFO",
+        message=f"The monitoring Airflow response is {monitor_response}",
+    )
     return "", HTTPStatus(monitor_response.status_code)
 
 
 def trigger_post_deploy_cloudsql_to_bq_refresh(
-    _data: Dict[str, Any], _context: ContextType
+    event: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event to begin the refresh of BigQuery
     data for a given schema, pulling data from the appropriate CloudSQL Postgres
@@ -364,13 +389,13 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         error_str = "No project id set for call to refresh BigQuery data, returning."
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     schema = os.environ.get("SCHEMA")
     if not schema:
         error_str = "The schema variable 'SCHEMA' is not set."
-        logging.error(error_str)
+        cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
     url = _build_url(
@@ -379,17 +404,40 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
         params=None,
     )
 
-    data = {"pipeline_run_type": "historical"} if schema.upper() == "STATE" else {}
+    trigger_historical_dag: bool = False
 
-    logging.info("project_id: %s", project_id)
-    logging.info("Calling URL: %s", url)
+    if "data" in event:
+        if b64decode(event["data"]).decode("utf-8") == TRIGGER_HISTORICAL_DAG_FLAG:
+            trigger_historical_dag = True
+
+    data = {}
+
+    if schema.upper() == "STATE":
+        # Always update managed views when refreshing the state schema after a deploy
+        # TODO(#10905): Uncomment this line once we stop deploying the views during
+        #  the app deploy process
+        # data[UPDATE_MANAGED_VIEWS_REQUEST_ARG] = "true"
+
+        if trigger_historical_dag:
+            cloud_functions_log(
+                severity="INFO",
+                message="Historical DAG will be triggered after refresh.",
+            )
+            data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_HISTORICAL_VALUE
+        else:
+            data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_NONE_VALUE
+
+    cloud_functions_log(severity="INFO", message=f"project_id: {project_id}")
+    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
 
     # Hit the cloud function backend, which starts the post-deploy refresh of the
     # given schema
     response = make_iap_request(
         url, IAP_CLIENT_ID[project_id], method="POST", data=json.dumps(data).encode()
     )
-    logging.info("The response status is %s", response.status_code)
+    cloud_functions_log(
+        severity="INFO", message=f"The response status is {response.status_code}"
+    )
     return "", HTTPStatus(response.status_code)
 
 
@@ -401,8 +449,9 @@ def archive_practices_etl_data(
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        logging.error(
-            "No project id set for call to archive Practices ETL data, returning."
+        cloud_functions_log(
+            severity="ERROR",
+            message="No project id set for call to archive Practices ETL data, returning.",
         )
         return "", HTTPStatus.BAD_REQUEST
 

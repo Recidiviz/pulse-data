@@ -19,6 +19,7 @@
 import datetime
 import json
 import unittest
+from typing import Dict
 
 import mock
 from freezegun import freeze_time
@@ -74,10 +75,12 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         task_id = "reenqueue_wait_task-2019-04-13-random-uuid"
         task_path = f"{queue_path}/{task_id}"
         pipeline_run_type = MetricPipelineRunType.INCREMENTAL.value
+        update_managed_views = "true"
 
         body = {
             "lock_id": lock_id,
             "pipeline_run_type": pipeline_run_type,
+            "update_managed_views": update_managed_views,
         }
 
         mock_client.return_value.task_path.return_value = task_path
@@ -87,6 +90,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         BQRefreshCloudTaskManager().create_reattempt_create_refresh_tasks_task(
             schema=schema,
             pipeline_run_type=pipeline_run_type,
+            update_managed_views=update_managed_views,
             lock_id=lock_id,
         )
 
@@ -149,6 +153,47 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         BQRefreshCloudTaskManager().create_refresh_bq_schema_task(
             schema_type=SchemaType.STATE, body=body
         )
+
+        # Assert
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, CLOUD_SQL_TO_BQ_REFRESH_QUEUE
+        )
+        mock_client.return_value.task_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, CLOUD_SQL_TO_BQ_REFRESH_QUEUE, task_id
+        )
+        mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=task
+        )
+
+    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    @freeze_time("2019-04-12")
+    def test_create_update_managed_views_task(
+        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
+    ) -> None:
+        # Arrange
+        uuid = "random-uuid"
+        mock_uuid.uuid4.return_value = uuid
+
+        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
+        task_id = "update-all-managed-views-2019-04-12-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
+        body: Dict[str, str] = {}
+
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_path,
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": "/view_update/update_all_managed_views",
+                "body": json.dumps(body).encode(),
+            },
+        )
+
+        mock_client.return_value.task_path.return_value = task_path
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        BQRefreshCloudTaskManager().create_update_managed_views_task()
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(

@@ -20,6 +20,7 @@
 Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
+import json
 import urllib.parse
 from typing import Any, List
 
@@ -236,3 +237,17 @@ def trigger_dag(web_server_url: str, dag_id: str, data: dict) -> requests.Respon
             f"{response.headers} / {response.text}"
         )
     return response
+
+
+def cloud_functions_log(severity: str, message: str) -> None:
+    # TODO(https://issuetracker.google.com/issues/124403972?pli=1): Workaround until
+    #  built-in logging is fixed for Python cloud functions
+    # Complete a structured log entry.
+    entry = dict(
+        severity=severity,
+        message=message,
+        # Log viewer accesses 'component' as jsonPayload.component'.
+        component="arbitrary-property",
+    )
+
+    print(json.dumps(entry))
