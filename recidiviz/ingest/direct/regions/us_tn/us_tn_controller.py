@@ -39,37 +39,32 @@ class UsTnController(BaseDirectIngestController):
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """
-        tags = []
-        # TODO(#10740): Remove gating once ingest views are ready to be launched in prod.
-        if not environment.in_gcp_production():
+        tags = [
+            "OffenderName",
+            "OffenderMovementIncarcerationPeriod",
+            "AssignedStaffSupervisionPeriod_v2",
+            "VantagePointAssessments",
+            "SentencesChargesAndCourtCases",
+        ]
+
+        # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes faster than current infra allows.
+        if not environment.in_gcp():
             tags.extend(
                 [
-                    "OffenderName",
-                    "OffenderMovementIncarcerationPeriod",
-                    "AssignedStaffSupervisionPeriod_v2",
-                    "VantagePointAssessments",
-                    "SentencesChargesAndCourtCases",
+                    "SupervisionContactsPre1990",
+                    "SupervisionContacts1990to1995",
+                    "SupervisionContacts1995to1997",
+                    "SupervisionContacts1997to2000",
+                    "SupervisionContacts2000to2003",
+                    "SupervisionContacts2003to2005",
+                    "SupervisionContacts2005to2007",
+                    "SupervisionContacts2007to2010",
+                    "SupervisionContacts2010to2013",
+                    "SupervisionContacts2013to2015",
+                    "SupervisionContacts2015to2017",
+                    "SupervisionContacts2017to2020",
+                    "SupervisionContactsPost2020",
                 ]
             )
-
-            # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes faster than current infra allows.
-            if not environment.in_gcp():
-                tags.extend(
-                    [
-                        "SupervisionContactsPre1990",
-                        "SupervisionContacts1990to1995",
-                        "SupervisionContacts1995to1997",
-                        "SupervisionContacts1997to2000",
-                        "SupervisionContacts2000to2003",
-                        "SupervisionContacts2003to2005",
-                        "SupervisionContacts2005to2007",
-                        "SupervisionContacts2007to2010",
-                        "SupervisionContacts2010to2013",
-                        "SupervisionContacts2013to2015",
-                        "SupervisionContacts2015to2017",
-                        "SupervisionContacts2017to2020",
-                        "SupervisionContactsPost2020",
-                    ]
-                )
 
         return tags
