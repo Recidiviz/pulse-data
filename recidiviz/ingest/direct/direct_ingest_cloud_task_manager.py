@@ -811,7 +811,6 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
                 "ingest_instance": task_args.ingest_instance.value.lower(),
                 "ingest_view_name": task_args.ingest_view_name,
             }
-            # TODO(#9717): Actually implement this endpoint and write tests for it.
             relative_uri = f"/direct/materialize_ingest_view?{urlencode(params)}"
         else:
             raise ValueError(f"Unexpected args type: [{type(task_args)}]")

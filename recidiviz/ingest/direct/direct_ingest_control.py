@@ -62,6 +62,7 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
     DownloadFilesFromSftpController,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
     CloudTaskArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
@@ -417,6 +418,8 @@ def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+# TODO(#11424): Delete this endpoint entirely once all traffic has been directed to
+#  the new /direct/materialize_ingest_view endpoint.
 @direct_ingest_control.route("/ingest_view_export", methods=["POST"])
 @requires_gae_auth
 def ingest_view_export() -> Tuple[str, HTTPStatus]:
@@ -482,6 +485,91 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
                 raise e
 
             controller.do_ingest_view_materialization(ingest_view_export_args)
+    return "", HTTPStatus.OK
+
+
+@direct_ingest_control.route("/materialize_ingest_view", methods=["POST"])
+@requires_gae_auth
+def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
+    """Generates results for an ingest view that changed between two dates and writes
+    those results to the appropriate `ux_xx_ingest_view_results` table so that they
+    can be processed via the /direct/extract_and_merge endpoint.
+    """
+    logging.info(
+        "Received request to do ingest view materialization: [%s]", request.values
+    )
+    region_code = get_str_param_value("region", request.values)
+    ingest_instance_str = get_str_param_value("ingest_instance", request.values)
+    ingest_view_name = get_str_param_value(
+        "ingest_view_name", request.values, preserve_case=True
+    )
+
+    if not region_code or not ingest_instance_str or not ingest_view_name:
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
+
+    try:
+        ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
+    except ValueError:
+        response = f"Bad ingest instance value [{ingest_instance_str}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
+
+    with monitoring.push_region_tag(region_code, ingest_instance=ingest_instance.value):
+        json_data = request.get_data(as_text=True)
+        args = _parse_cloud_task_args(json_data)
+
+        if not args:
+            raise DirectIngestError(
+                msg="materialize_ingest_view was called with no IngestViewMaterializationArgs.",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
+        if not isinstance(args, BQIngestViewMaterializationArgs):
+            raise DirectIngestError(
+                msg=f"materialize_ingest_view was called with incorrect args type [{type(args)}].",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
+        if ingest_instance != args.ingest_instance:
+            raise DirectIngestError(
+                msg=f"Different ingest instances were passed in the url and request body\n"
+                f"url: {ingest_instance}\n"
+                f"body: {args.ingest_instance}",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
+        if ingest_view_name != args.ingest_view_name:
+            raise DirectIngestError(
+                msg=f"Different ingest view names were passed in the url and request body\n"
+                f"url: {ingest_view_name}\n"
+                f"body: {args.ingest_view_name}",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
+        with monitoring.push_tags(
+            {TagKey.INGEST_VIEW_MATERIALIZATION_TAG: args.task_id_tag()}
+        ):
+            try:
+                ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+                    region_code=region_code,
+                    system_level=SystemLevel.for_region(
+                        _region_for_region_code(region_code)
+                    ),
+                    ingest_instance=ingest_instance,
+                )
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_bucket,
+                    allow_unlaunched=False,
+                )
+            except DirectIngestError as e:
+                if e.is_bad_request():
+                    logging.error(str(e))
+                    return str(e), HTTPStatus.BAD_REQUEST
+                raise e
+
+            controller.do_ingest_view_materialization(args)
     return "", HTTPStatus.OK
 
 
