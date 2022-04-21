@@ -18,6 +18,7 @@
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   ArrowDownIcon,
@@ -60,6 +61,7 @@ const reportListColumnTitles = [
 
 const Reports: React.FC = () => {
   const { reportStore, userStore } = useStore();
+  const navigate = useNavigate();
 
   const [reportsFilter, setReportsFilter] = useState<string>("allreports");
 
@@ -155,7 +157,11 @@ const Reports: React.FC = () => {
           filteredReportsMemoized.map(
             (report: ReportOverview, index: number) => (
               <Fragment key={report.id}>
-                <Row>
+                <Row
+                  onClick={() => {
+                    navigate(`/reports/${report.id}`);
+                  }}
+                >
                   {/* Report Period */}
                   <Cell id="report_period">
                     {printReportTitle(

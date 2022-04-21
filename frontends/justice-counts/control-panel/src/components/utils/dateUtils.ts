@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { ReportFrequency } from "../../stores";
+
 export const monthsByName = [
   "January",
   "February",
@@ -40,7 +42,7 @@ export const printDateAsMonthYear = (month: number, year: number): string => {
 export const printReportTitle = (
   month: number,
   year: number,
-  frequency: "MONTHLY" | "ANNUAL"
+  frequency: ReportFrequency
 ): string => {
   if (frequency === "ANNUAL") {
     return `Annual Report ${year}`;
