@@ -17,17 +17,22 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 
+import mockReport from "../mocks/mockReport";
 import API from "./API";
 import UserStore from "./UserStore";
+
+export type ReportFrequency = "MONTHLY" | "ANNUAL";
+
+export type ReportStatus = "NOT_STARTED" | "DRAFT" | "PUBLISHED";
 
 export interface ReportOverview {
   id: number;
   month: number;
   year: number;
-  frequency: "MONTHLY" | "ANNUAL";
+  frequency: ReportFrequency;
   last_modified_at: string | null;
   editors: string[];
-  status: "NOT_STARTED" | "DRAFT" | "PUBLISHED";
+  status: ReportStatus;
 }
 
 export interface Report extends ReportOverview {
@@ -39,23 +44,42 @@ export interface Metric {
   display_name: string;
   description: string;
   reporting_note: string;
-  value: string | undefined;
+  value: string | number | boolean | null | undefined;
+  unit: string;
+  category: string;
+  label: string;
+  definitions: MetricDefinition[];
   contexts: MetricContext[];
   disaggregations: MetricDisaggregations[];
 }
 
+export interface MetricDefinition {
+  term: string;
+  definition: string;
+}
+
 export interface MetricContext {
   key: string;
-  description: string;
+  display_name: string | null | undefined;
+  reporting_note: string | null | undefined;
   required: boolean;
-  value: string | undefined;
+  type: string;
+  value: string | number | boolean | null | undefined;
 }
 
 export interface MetricDisaggregations {
-  name: string;
-  dimensions: { [name: string]: string | number | boolean };
+  key: string;
+  display_name: string;
+  dimensions: MetricDisaggregationDimensions[];
   required: boolean;
-  should_sum_to_total: boolean;
+  helper_text: string | null | undefined;
+}
+
+export interface MetricDisaggregationDimensions {
+  key: string;
+  label: string;
+  value: string | number | boolean | null | undefined;
+  reporting_note: string;
 }
 
 export interface CreateReportFormValuesType extends Record<string, unknown> {
@@ -92,9 +116,9 @@ class ReportStore {
 
   async getReportOverviews(): Promise<void | Error> {
     try {
-      const { userID, userAgency } = this.userStore;
+      const { userAgency } = this.userStore;
 
-      if (userID !== undefined && userAgency !== undefined) {
+      if (userAgency !== undefined) {
         const response = (await this.api.request({
           // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
           path: `/api/reports?agency_id=${userAgency.id}`,
@@ -115,62 +139,30 @@ class ReportStore {
     }
   }
 
-  async getReport(reportID: number): Promise<void | Error> {
-    try {
-      const { userID, userAgency } = this.userStore;
+  async mockGetReport(reportID: number): Promise<void | Error> {
+    // TODO(#12189): endpoint not yet implemented, return a mock response for development
 
-      if (userID !== undefined && userAgency !== undefined) {
-        const response = (await this.api.request({
-          // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
-          path: `/api/reports/${reportID}?agency_id=${userAgency.id}`,
-          method: "GET",
-        })) as Response;
-        const report = await response.json();
-
-        runInAction(() => {
-          const { metrics, ...info } = report;
-          this.reportOverviews[reportID] = info;
-          this.reportMetrics[reportID] = metrics;
-        });
-        return report;
-      }
-      throw new Error(
-        "Either invalid user/agency information or no user or agency information initialized."
-      );
-    } catch (error) {
-      if (error instanceof Error) return new Error(error.message);
-    }
+    // run getReportOverviews to make sure we have overview information for the report
+    this.getReportOverviews();
+    const { metrics } = mockReport;
+    runInAction(() => {
+      // when we un-mock getReport, we also should set this.reportOverviews[reportID]
+      this.reportMetrics[reportID] = metrics;
+    });
   }
 
-  async updateReport(reportID: number, body: Partial<Report>) {
-    try {
-      const { userID, userAgency } = this.userStore;
-
-      if (userID !== undefined && userAgency !== undefined) {
-        const response = (await this.api.request({
-          path: `/api/reports/${reportID}`,
-          method: "PUT",
-          body: { agency_id: userAgency.id, ...body },
-        })) as Response;
-
-        return response;
-      }
-
-      throw new Error(
-        "Either invalid user/agency information or no user or agency information initialized."
-      );
-    } catch (error) {
-      if (error instanceof Error) return new Error(error.message);
-    }
-  }
+  // TODO(#12358): Decide on API for this request
+  // async updateReport(reportID: number, body: Partial<Report>) {
+  // ...
+  // }
 
   async createReport(
     body: Record<string, unknown>
   ): Promise<Response | Error | undefined> {
     try {
-      const { userID, userAgency } = this.userStore;
+      const { userAgency } = this.userStore;
 
-      if (userID !== undefined && userAgency !== undefined) {
+      if (userAgency !== undefined) {
         const response = (await this.api.request({
           path: "/api/reports",
           method: "POST",

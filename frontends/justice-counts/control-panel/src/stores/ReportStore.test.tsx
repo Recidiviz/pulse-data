@@ -19,7 +19,7 @@ import { render, screen } from "@testing-library/react";
 import { runInAction } from "mobx";
 import React from "react";
 
-import mockJSON from "../../public/mocks/reports.json";
+import mockJSON from "../mocks/reportOverviews.json";
 import Reports from "../pages/Reports";
 import { rootStore, StoreProvider } from ".";
 import { ReportOverview } from "./ReportStore";
@@ -29,11 +29,17 @@ const mockUnorderedReportsMap: { [reportID: string]: ReportOverview } = {};
   mockUnorderedReportsMap[report.id] = report;
 });
 
+const mockedUsedNavigate = jest.fn();
+jest.mock("react-router-dom", () => ({
+  ...jest.requireActual("react-router-dom"),
+  useNavigate: () => mockedUsedNavigate,
+}));
+
 beforeEach(() => {
   rootStore.reportStore.reportOverviews = {};
 });
 
-test("test sort in reportOverviewList", () => {
+test("sort in reportOverviewList", () => {
   runInAction(() => {
     rootStore.reportStore.reportOverviews = mockUnorderedReportsMap;
   });
