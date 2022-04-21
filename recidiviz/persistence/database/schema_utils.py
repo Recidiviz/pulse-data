@@ -120,6 +120,10 @@ def is_association_table(table_name: str) -> bool:
     return table_name.endswith("_association")
 
 
+def is_history_table(table_name: str) -> bool:
+    return table_name.endswith("_history")
+
+
 def get_all_table_classes_in_module(module: ModuleType) -> Iterator[Type[Table]]:
     all_members_in_current_module = inspect.getmembers(sys.modules[module.__name__])
     for _, member in all_members_in_current_module:
@@ -148,6 +152,14 @@ def get_justice_counts_table_classes() -> Iterator[Table]:
 
 def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
+
+
+# TODO(#12393): Delete this function once we have deprecated the _history tables for
+#  the state schema
+def get_non_history_state_table_classes() -> Iterator[Table]:
+    for table in get_state_table_classes():
+        if not is_history_table(table.name):
+            yield table
 
 
 def get_state_entity_names() -> Iterator[str]:

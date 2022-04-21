@@ -86,6 +86,7 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_table_class_by_name,
+    is_history_table,
     schema_type_to_schema_base,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -292,7 +293,7 @@ class CloudSqlToBQConfig:
             return list(
                 table
                 for table in self.sorted_tables
-                if "history" in table.name
+                if is_history_table(table.name)
                 and table.name not in self.history_tables_to_include
             )
 
