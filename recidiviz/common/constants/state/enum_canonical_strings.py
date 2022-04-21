@@ -28,6 +28,8 @@ them by their values here allows us to structure the application layer code any 
 database to be updated when an enum value is created or removed.
 """
 
+from typing import Dict
+
 # Shared
 
 # This value should be used ONLY in cases where the external data source
@@ -43,6 +45,14 @@ present_without_info = "PRESENT_WITHOUT_INFO"
 # to. This should NOT be treated as a default value for enums fields that are
 # not provided.
 internal_unknown = "INTERNAL_UNKNOWN"
+
+
+SHARED_ENUM_VALUE_DESCRIPTIONS: Dict[str, str] = {
+    internal_unknown: """This value is used when the external data source specifies a known value for an enum field, but we internally don't have an enum value that it should map to. This should NOT be treated as a default value for enums fields that are not provided.""",
+    external_unknown: """This value is used ONLY in cases where the external data source explicitly specifies a value as "unknown". It should NOT be treated as a default value for enums that are not provided (which should be represented with None/NULL).""",
+    present_without_info: """This value is used by status enums to denote that no status for an entity was provided by the source, but the entity itself was found in the source.""",
+}
+
 
 # state_agent.py
 state_agent_correctional_officer = "CORRECTIONAL_OFFICER"

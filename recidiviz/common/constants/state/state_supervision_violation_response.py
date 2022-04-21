@@ -41,6 +41,39 @@ class StateSupervisionViolationResponseType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseType"]:
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The response type of an actor responding to a person violating a "
+            "condition of their supervision."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateSupervisionViolationResponseType.CITATION: "A form completed by a "
+    "supervision officer documenting an instance of a person violating a condition "
+    "of their supervision. Typically used in cases where the violating behavior is not "
+    "severe enough to warrant filing a violation report, per state policy.",
+    StateSupervisionViolationResponseType.PERMANENT_DECISION: "Describes an "
+    "authoritative body making a final decision about the consequences of the person "
+    "violating a condition of their supervision. Used to model the record of the "
+    "decision that is made. Should always be used in conjunction with "
+    "`StateSupervisionViolationResponseDecision` entries to describe the contents of "
+    "the decision.",
+    StateSupervisionViolationResponseType.VIOLATION_REPORT: "A report submitted by a "
+    "supervision officer documenting an instance of a person violating a condition of "
+    "their supervision. Violation reports are typically sent to the judge who "
+    "sentenced the case (for probation cases), and may result in a revocation hearing "
+    "by the court or parole board. May include recommendations from the officer on "
+    "appropriate consequences for the violating behavior.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -63,6 +96,8 @@ class StateSupervisionViolationResponseDecision(StateEntityEnum):
     NEW_CONDITIONS = (
         state_enum_strings.state_supervision_violation_response_decision_new_conditions
     )
+    # TODO(#12346): Migrate all usages of `NO_SANCTION` to `CONTINUANCE` and delete
+    #  this value.
     # Though a violation was officially found/recorded, no particular sanction has been levied in response
     NO_SANCTION = (
         state_enum_strings.state_supervision_violation_response_decision_no_sanction
@@ -107,6 +142,72 @@ class StateSupervisionViolationResponseDecision(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseDecision"]:
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The decision that is made by an actor following a person violating a "
+            "condition of their supervision. For `StateSupervisionViolationResponses` "
+            "with a `response_type` of "
+            "`StateSupervisionViolationResponseType.PERMANENT_DECISION`, this "
+            "describes the final decision that was made (e.g. the parole board "
+            "deciding to revoke someone’s parole). For other types of responses "
+            "(e.g. `StateSupervisionViolationResponseType.CITATION` and "
+            "`StateSupervisionViolationResponseType.VIOLATION_REPORT`), this describes "
+            "the recommendation of the supervising officer to the authoritative body "
+            "that will be making the final decision (e.g. an officer recommending to "
+            "the court that a person is mandated to complete treatment in the field "
+            "in response to a substance use violation)."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE: "Mandating the "
+    "completion of some form of community service.",
+    StateSupervisionViolationResponseDecision.CONTINUANCE: "Keeping the person on "
+    "supervision without a sanction or change to their supervision conditions.",
+    StateSupervisionViolationResponseDecision.DELAYED_ACTION: "Delaying any further "
+    "responses to the violation until further notice (e.g. waiting until more "
+    "information is found after an investigation is completed before issuing a "
+    "warrant).",
+    StateSupervisionViolationResponseDecision.EXTENSION: "Extending the person’s "
+    "supervision past their current discharge date.",
+    StateSupervisionViolationResponseDecision.NEW_CONDITIONS: "Adding new conditions "
+    "to the person’s supervision.",
+    StateSupervisionViolationResponseDecision.NO_SANCTION: "Duplicate of "
+    "`CONTINUANCE`. #TODO(#12346): Migrate all usages to `CONTINUANCE` and delete "
+    "this value.",
+    StateSupervisionViolationResponseDecision.OTHER: "Describes a decision that is "
+    "explicitly labeled as `Other` by the state.",
+    StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED: "Revoking "
+    "privileges previously granted to the person on supervision.",
+    StateSupervisionViolationResponseDecision.REVOCATION: "Revoking the person’s "
+    "supervision.",
+    StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: "Terminating the "
+    "person’s supervision.",
+    StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: "Mandating that the "
+    "person spend a distinct amount of time (e.g. 9 months) in incarceration.",
+    StateSupervisionViolationResponseDecision.SPECIALIZED_COURT: "Diverting the "
+    "person’s case to a specialized court (e.g. Drug Court or Domestic Violence Court).",
+    StateSupervisionViolationResponseDecision.SUSPENSION: "Suspending the person’s "
+    "supervision.",
+    StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD: "Mandating that the "
+    "person complete some form of treatment program in the community.",
+    StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON: "Mandating that "
+    "the person complete some form of treatment program in incarceration.",
+    StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED: "Withdrawing the "
+    "report of the violation entirely.",
+    StateSupervisionViolationResponseDecision.WARNING: "Issuing a warning to the "
+    "person without other sanctions or changes to their supervision.",
+    StateSupervisionViolationResponseDecision.WARRANT_ISSUED: "Issuing a warrant for "
+    "the person’s arrest.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -131,6 +232,41 @@ class StateSupervisionViolationResponseDecidingBodyType(StateEntityEnum):
         str, "StateSupervisionViolationResponseDecidingBodyType"
     ]:
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The type of actor that is making a decision in response to a person "
+            "violating a condition of their supervision."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return (
+            _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_VALUE_DESCRIPTIONS
+        )
+
+
+_STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateSupervisionViolationResponseDecidingBodyType.COURT: "The court, typically the "
+    "judge who initially sentenced the person. This is used on "
+    "`StateSupervisionViolationResponses` that represent the court "
+    "making a decision about the consequences of the person violating a condition "
+    "of their supervision. Should be used in conjunction with a "
+    "`StateSupervisionViolationResponseType.PERMANENT_DECISION`.",
+    StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD: "The parole board "
+    "of the state. This is used on `StateSupervisionViolationResponses` that represent "
+    "the parole board making a decision about the consequences of the person violating "
+    "a condition of their supervision. Should be used in conjunction with a "
+    "`StateSupervisionViolationResponseType.PERMANENT_DECISION`.",
+    StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER: "A "
+    "supervision officer (e.g. a probation or parole officer), typically the officer "
+    "assigned to supervise the person on supervision. Typically used in conjunction "
+    "with `StateSupervisionViolationResponseType.CITATION` or "
+    "`StateSupervisionViolationResponseType.VIOLATION_REPORT`.",
+}
 
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP = {

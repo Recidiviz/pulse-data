@@ -385,11 +385,16 @@ def to_snake_case(capital_case_name: str) -> str:
     return _ALL_CAP_REGEX.sub(r"\1_\2", s1).lower()
 
 
-def snake_to_camel(s: str) -> str:
+def snake_to_camel(s: str, capitalize_first_letter: bool = False) -> str:
     """Converts a snake case string (e.g. "given_names") to a camel case string
     (e.g. "givenNames")."""
     parts = iter(s.split("_"))
-    return next(parts) + "".join(i.title() for i in parts)
+    camel = next(parts) + "".join(i.title() for i in parts)
+
+    if capitalize_first_letter:
+        camel = camel[0].upper() + camel[1:]
+
+    return camel
 
 
 # https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch06s09.html

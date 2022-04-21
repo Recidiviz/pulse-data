@@ -24,6 +24,7 @@ Can be run on-demand via:
 
 import logging
 import os
+import re
 import sys
 from functools import lru_cache
 from typing import List, Set, Type
@@ -31,14 +32,14 @@ from typing import List, Set, Type
 import sqlalchemy
 from pytablewriter import MarkdownTableWriter
 
-import recidiviz
+from recidiviz.common.constants.state.enum_canonical_strings import (
+    SHARED_ENUM_VALUE_DESCRIPTIONS,
+)
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
-from recidiviz.common.str_field_utils import snake_to_camel
-from recidiviz.persistence.database.base_schema import StateBase
-
-# This is needed in order to get the full list of schema tables.
-# pylint: disable=unused-import
-from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
+from recidiviz.persistence.database.schema_utils import (
+    get_non_history_state_table_classes,
+)
 from recidiviz.persistence.entity.entity_utils import get_all_enum_classes_in_module
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.tools.docs.enum_documentation_config import ENUMS_WITH_INCOMPLETE_DOCS
@@ -83,8 +84,7 @@ def generate_entity_documentation() -> bool:
 
     def _camel_case_enum_name_from_field(field: sqlalchemy.Column) -> str:
         field_name = field.type.name
-        camel_name = snake_to_camel(field_name)
-        enum_name = camel_name[0].upper() + camel_name[1:]
+        enum_name = snake_to_camel(field_name, capitalize_first_letter=True)
 
         if enum_name not in all_enum_names:
             raise ValueError(f"Enum not found in list of state enums: {enum_name}")
@@ -138,7 +138,7 @@ def generate_entity_documentation() -> bool:
     old_file_names = set(os.listdir(ENTITY_DOCS_ROOT))
     generated_file_names = set()
     anything_modified = False
-    for t in StateBase.metadata.sorted_tables:
+    for t in get_non_history_state_table_classes():
         if t.comment is None:
             raise ValueError(
                 f"Every entity must have an associated comment. "
@@ -160,6 +160,48 @@ def generate_entity_documentation() -> bool:
     return anything_modified
 
 
+def _add_entity_and_enum_links_to_enum_description(
+    text: str, all_enum_names: List[str], all_entity_names: List[str]
+) -> str:
+    """Updates the provided |text| string to have hyperlinks to other enum and entity
+    docs for any enum/entity references in the string. Handles references in the
+    following formats:
+        - `StateEntityEnum.VALUE`
+        - `StateEntityEnum`
+        - `StateEntityExample`
+        - `StateEntityExamples`
+    """
+    enum_refs = re.findall(r"`(State[a-zA-Z]*)\.([A-Z_]*)`", text)
+
+    for enum_ref in enum_refs:
+        if enum_ref[0] not in all_enum_names:
+            # Not a reference to an enum class
+            continue
+
+        enum_ref_string = f"`{enum_ref[0]}.{enum_ref[1]}`"
+        text = text.replace(enum_ref_string, f"[{enum_ref_string}]({enum_ref[0]}.md)")
+
+    other_refs = re.findall(r"`(State[a-zA-Z]*)`", text)
+
+    for ref in other_refs:
+        if ref in all_enum_names:
+            file_path = ref
+        elif ref.endswith("s") and ref[:-1] in all_enum_names:
+            file_path = f"{ref[:-1]}"
+        elif ref in all_entity_names:
+            file_path = f"../{ENTITIES_PACKAGE_NAME}/{to_snake_case(ref)}"
+        elif ref.endswith("s") and ref[:-1] in all_entity_names:
+            file_path = f"../{ENTITIES_PACKAGE_NAME}/{to_snake_case(ref[:-1])}"
+        else:
+            # Not a reference to an enum or entity class
+            continue
+
+        ref_string = f"`{ref}`"
+        text = text.replace(ref_string, f"[{ref_string}]({file_path}.md)")
+
+    return text
+
+
 def generate_enum_documentation() -> bool:
     """
     Parses enum files to produce documentation. Overwrites or creates the
@@ -167,11 +209,24 @@ def generate_enum_documentation() -> bool:
 
     Returns True if files were modified, False otherwise.
     """
+    all_enum_classes = _get_all_entity_enum_classes()
+    all_enum_names = [enum_class.__name__ for enum_class in all_enum_classes]
+    all_entity_names = [
+        snake_to_camel(t.name, capitalize_first_letter=True)
+        for t in get_non_history_state_table_classes()
+    ]
 
     def _get_value_descriptions(enum_type: Type[StateEntityEnum]) -> str:
         table_matrix = []
 
-        enum_descriptions = enum_type.get_value_descriptions()
+        enum_descriptions = {
+            **enum_type.get_value_descriptions(),
+            **{
+                enum_value: SHARED_ENUM_VALUE_DESCRIPTIONS[enum_value.value]
+                for enum_value in enum_type
+                if SHARED_ENUM_VALUE_DESCRIPTIONS.get(enum_value.value)
+            },
+        }
 
         sorted_values: List[StateEntityEnum] = sorted(
             list(enum_type), key=lambda e: e.value
@@ -182,6 +237,15 @@ def generate_enum_documentation() -> bool:
             #  description for an enum value once all enums are documented
             try:
                 enum_value_description = enum_descriptions[enum_value]
+
+                if (
+                    enum_value.value not in SHARED_ENUM_VALUE_DESCRIPTIONS
+                    and enum_type in ENUMS_WITH_INCOMPLETE_DOCS
+                ):
+                    raise ValueError(
+                        f"Enum {enum_type.__name__} has complete docs and should be "
+                        f"removed from the ENUMS_WITH_INCOMPLETE_DOCS list."
+                    )
             except KeyError as e:
                 if enum_type not in ENUMS_WITH_INCOMPLETE_DOCS:
                     raise KeyError(
@@ -191,6 +255,10 @@ def generate_enum_documentation() -> bool:
                         f"value: [{enum_value}]."
                     ) from e
                 enum_value_description = "TODO(#12127): Add enum value description"
+
+            enum_value_description = _add_entity_and_enum_links_to_enum_description(
+                enum_value_description, all_enum_names, all_entity_names
+            )
 
             table_row = [enum_value.value, enum_value_description]
             table_matrix.append(table_row)
@@ -212,7 +280,7 @@ def generate_enum_documentation() -> bool:
     anything_modified = False
     for enum_class in _get_all_entity_enum_classes():
         documentation = f"## {enum_class.__name__}\n\n"
-        documentation += f"{enum_class.get_enum_description()}\n\n"
+        documentation += f"{_add_entity_and_enum_links_to_enum_description(enum_class.get_enum_description(),all_enum_names, all_entity_names)}\n\n"
         documentation += f"{_get_value_descriptions(enum_class)}\n\n"
         markdown_file_name = f"{enum_class.__name__}.md"
         markdown_file_path = os.path.join(ENUM_DOCS_ROOT, markdown_file_name)
@@ -234,7 +302,7 @@ def main() -> int:
         list_of_tables: str = "\n".join(
             sorted(
                 f"\t - [{entity_table}](schema/{ENTITIES_PACKAGE_NAME}/{entity_table}.md)"
-                for entity_table in StateBase.metadata.sorted_tables
+                for entity_table in get_non_history_state_table_classes()
             )
         )
         list_of_tables += "\n"
