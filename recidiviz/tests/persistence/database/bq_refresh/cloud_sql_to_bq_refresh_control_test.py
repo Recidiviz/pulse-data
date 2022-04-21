@@ -26,6 +26,12 @@ import flask
 from mock import Mock, create_autospec
 
 from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
+from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
+    PIPELINE_RUN_TYPE_HISTORICAL_VALUE,
+    PIPELINE_RUN_TYPE_NONE_VALUE,
+    PIPELINE_RUN_TYPE_REQUEST_ARG,
+    UPDATE_MANAGED_VIEWS_REQUEST_ARG,
+)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_control
@@ -129,7 +135,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         module = SchemaType.STATE.value
         route = f"/refresh_bq_schema/{module}"
         data = json.dumps(
-            {"pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value}
+            {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value}
         )
 
         response = self.mock_flask_client.post(
@@ -170,7 +176,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         module = SchemaType.STATE.value
         route = f"/refresh_bq_schema/{module}"
-        data = json.dumps({"pipeline_run_type": MetricPipelineRunType.HISTORICAL.value})
+        data = json.dumps(
+            {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
+        )
 
         response = self.mock_flask_client.post(
             route,
@@ -183,6 +191,97 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.mock_pubsub_helper.publish_message_to_topic.assert_called_with(
             message=mock.ANY, topic="v1.calculator.trigger_historical_pipelines"
         )
+        self.mock_task_manager.create_update_managed_views_task.assert_not_called()
+        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
+        mock_kick_all_schedulers.assert_called()
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_refresh_bq_schema_state_update_managed_views(
+        self,
+        mock_federated_refresh: mock.MagicMock,
+        mock_kick_all_schedulers: mock.MagicMock,
+    ) -> None:
+        # Grab lock, just like the /create_tasks... endpoint does
+        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+
+        def mock_federated_refresh_fn(
+            # pylint: disable=unused-argument
+            schema_type: SchemaType,
+            dataset_override_prefix: Optional[str] = None,
+        ) -> None:
+            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
+            # At the moment the federated refresh is called, the state schema should
+            # be locked.
+            self.assertIsOnlySchemaLocked(SchemaType.STATE)
+
+        mock_federated_refresh.side_effect = mock_federated_refresh_fn
+
+        module = SchemaType.STATE.value
+        route = f"/refresh_bq_schema/{module}"
+        data = json.dumps(
+            {
+                UPDATE_MANAGED_VIEWS_REQUEST_ARG: "true",
+                PIPELINE_RUN_TYPE_REQUEST_ARG: PIPELINE_RUN_TYPE_NONE_VALUE,
+            }
+        )
+
+        response = self.mock_flask_client.post(
+            route,
+            data=data,
+            content_type="application/json",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
+        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
+        self.mock_task_manager.create_update_managed_views_task.assert_called()
+        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
+        mock_kick_all_schedulers.assert_called()
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_refresh_bq_schema_state_update_managed_views_trigger_historical(
+        self,
+        mock_federated_refresh: mock.MagicMock,
+        mock_kick_all_schedulers: mock.MagicMock,
+    ) -> None:
+        # Grab lock, just like the /create_tasks... endpoint does
+        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+
+        def mock_federated_refresh_fn(
+            # pylint: disable=unused-argument
+            schema_type: SchemaType,
+            dataset_override_prefix: Optional[str] = None,
+        ) -> None:
+            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
+            # At the moment the federated refresh is called, the state schema should
+            # be locked.
+            self.assertIsOnlySchemaLocked(SchemaType.STATE)
+
+        mock_federated_refresh.side_effect = mock_federated_refresh_fn
+
+        module = SchemaType.STATE.value
+        route = f"/refresh_bq_schema/{module}"
+        data = json.dumps(
+            {
+                UPDATE_MANAGED_VIEWS_REQUEST_ARG: "true",
+                PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value,
+            }
+        )
+
+        response = self.mock_flask_client.post(
+            route,
+            data=data,
+            content_type="application/json",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
+        self.mock_pubsub_helper.publish_message_to_topic.assert_called_with(
+            message=mock.ANY, topic="v1.calculator.trigger_historical_pipelines"
+        )
+        self.mock_task_manager.create_update_managed_views_task.assert_called()
         self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
         mock_kick_all_schedulers.assert_called()
 
@@ -357,7 +456,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             route = f"/refresh_bq_schema/{SchemaType.STATE.value}"
 
             data = json.dumps(
-                {"pipeline_run_type": MetricPipelineRunType.HISTORICAL.value}
+                {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
             )
 
             response = self.mock_flask_client.post(
@@ -379,7 +478,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self,
     ) -> None:
         # Act
-        body = {"pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value}
+        body = {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value}
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(
@@ -411,7 +510,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
 
         expected_task_body = {
-            "pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value
+            PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value
         }
 
         # Assert
@@ -431,7 +530,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self,
     ) -> None:
         # Act
-        body = {"pipeline_run_type": MetricPipelineRunType.HISTORICAL.value}
+        body = {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(
@@ -457,7 +556,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self,
     ) -> None:
         # Act
-        body = {"pipeline_run_type": "GARBAGE"}
+        body = {PIPELINE_RUN_TYPE_REQUEST_ARG: "GARBAGE"}
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(
@@ -523,3 +622,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.mock_task_manager.create_refresh_bq_schema_task.assert_not_called()
+
+    def test_pipeline_run_type_historical_value(self) -> None:
+        self.assertEqual(
+            PIPELINE_RUN_TYPE_HISTORICAL_VALUE,
+            MetricPipelineRunType.HISTORICAL.value.lower(),
+        )

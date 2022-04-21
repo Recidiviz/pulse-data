@@ -54,7 +54,11 @@ class BQRefreshCloudTaskManager:
         return self.bq_cloud_task_queue_manager.get_queue_info()
 
     def create_reattempt_create_refresh_tasks_task(
-        self, schema: str, lock_id: str, pipeline_run_type: Optional[str]
+        self,
+        schema: str,
+        lock_id: str,
+        pipeline_run_type: Optional[str],
+        update_managed_views: Optional[str],
     ) -> None:
         """Schedules a task that will reattempt to create BQ refresh tasks in 1 minute.
 
@@ -63,6 +67,8 @@ class BQRefreshCloudTaskManager:
             schema: Which schema the export is for
             pipeline_run_type: Which pipeline run should be triggered after the
                 refresh, if any
+            update_managed_views: Whether the managed views should be updated after
+                the refresh
         """
         task_id = "-".join(
             [
@@ -74,6 +80,8 @@ class BQRefreshCloudTaskManager:
         body = {"lock_id": lock_id}
         if pipeline_run_type:
             body["pipeline_run_type"] = pipeline_run_type
+        if update_managed_views:
+            body["update_managed_views"] = update_managed_views
 
         self.job_monitor_cloud_task_queue_manager.create_task(
             task_id=task_id,
@@ -105,4 +113,22 @@ class BQRefreshCloudTaskManager:
             task_id=task_id,
             relative_uri=f"/cloud_sql_to_bq/refresh_bq_schema/{schema_type.value}",
             body=body,
+        )
+
+    # TODO(#11437): Support for this type of task here is a **temporary** solution,
+    #  and will be deleted once we put the BigQuery view update into the DAG.
+    def create_update_managed_views_task(self) -> None:
+        """Queues a task to update all managed views in BigQuery."""
+        task_id = "-".join(
+            [
+                "update-all-managed-views",
+                str(datetime.datetime.now(tz=pytz.UTC).date()),
+                str(uuid.uuid4()),
+            ]
+        )
+
+        self.bq_cloud_task_queue_manager.create_task(
+            task_id=task_id,
+            relative_uri="/view_update/update_all_managed_views",
+            body={},
         )
