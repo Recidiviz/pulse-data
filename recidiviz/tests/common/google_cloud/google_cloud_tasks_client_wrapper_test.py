@@ -185,7 +185,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
     def test_create_anonymous_task(self) -> None:
         self.client_wrapper.create_task(
-            queue_name=self.QUEUE_NAME, relative_uri="/process_job?region=us_mo"
+            queue_name=self.QUEUE_NAME, relative_uri="/my_endpoint?region=us_mo"
         )
 
         self.mock_client.create_task.assert_called_with(
@@ -193,7 +193,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             task=tasks_v2.types.task_pb2.Task(
                 app_engine_http_request={
                     "http_method": "POST",
-                    "relative_uri": "/process_job?region=us_mo",
+                    "relative_uri": "/my_endpoint?region=us_mo",
                     "body": b"{}",
                 },
             ),
@@ -203,7 +203,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.client_wrapper.create_task(
             task_id="us_mo-file_name_1-123456",
             queue_name=self.QUEUE_NAME,
-            relative_uri="/process_job?region=us_mo",
+            relative_uri="/my_endpoint?region=us_mo",
             body={"arg1": "arg1-val", "arg2": 123},
         )
 
@@ -214,7 +214,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                 "queue-name/tasks/us_mo-file_name_1-123456",
                 app_engine_http_request={
                     "http_method": "POST",
-                    "relative_uri": "/process_job?region=us_mo",
+                    "relative_uri": "/my_endpoint?region=us_mo",
                     "body": b'{"arg1": "arg1-val", "arg2": 123}',
                 },
             ),
@@ -227,7 +227,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.client_wrapper.create_task(
             task_id="us_mo-file_name_1-123456",
             queue_name=self.QUEUE_NAME,
-            relative_uri="/process_job?region=us_mo",
+            relative_uri="/my_endpoint?region=us_mo",
             body={},
             schedule_delay_seconds=3,
         )
@@ -239,7 +239,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                 "queue-name/tasks/us_mo-file_name_1-123456",
                 app_engine_http_request={
                     "http_method": "POST",
-                    "relative_uri": "/process_job?region=us_mo",
+                    "relative_uri": "/my_endpoint?region=us_mo",
                     "body": b"{}",
                 },
                 schedule_time=timestamp_pb2.Timestamp(seconds=(now_timestamp_sec + 3)),

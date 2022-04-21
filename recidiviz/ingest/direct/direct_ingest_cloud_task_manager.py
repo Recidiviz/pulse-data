@@ -675,6 +675,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         task_id = build_extract_and_merge_task_id(region, task_args)
 
         if isinstance(task_args, LegacyExtractAndMergeArgs):
+            # TODO(#11424): Delete this block once all traffic has been directed to the
+            #  new /direct/extract_and_merge endpoint.
             if is_bq_materialization_enabled:
                 raise ValueError(
                     "Cannot pass LegacyExtractAndMergeArgs if "
@@ -696,7 +698,6 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
                 "ingest_instance": task_args.ingest_instance.value.lower(),
                 "ingest_view_name": task_args.ingest_view_name,
             }
-            # TODO(#9717): Actually implement this endpoint and write tests for it.
             relative_uri = f"/direct/extract_and_merge?{urlencode(params)}"
         else:
             raise ValueError(f"Unexpected args type: [{type(task_args)}]")
