@@ -31,7 +31,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-# TODO(#9717): Write unittests for InstanceIngestViewContents that use a FakeBigQueryDatabase
 class InstanceIngestViewContentsTest(unittest.TestCase):
     """Tests for InstanceIngestViewContents."""
 

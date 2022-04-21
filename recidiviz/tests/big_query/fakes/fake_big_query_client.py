@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A fake implementation of BigQueryClient for use in tests.
-TODO(#9717): Implement functionality in this class more fully by using a
-  FakeBigQueryDatabase that talks to Postgres.
-"""
+"""A fake implementation of BigQueryClient for use in tests."""
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pandas as pd
@@ -92,10 +89,7 @@ class FakeQueryJob:
 
 
 class FakeBigQueryClient(BigQueryClient):
-    """A fake implementation of BigQueryClient for use in tests.
-    TODO(#9717): Implement functionality in this class more fully by using a
-      FakeBigQueryDatabase that talks to Postgres.
-    """
+    """A fake implementation of BigQueryClient for use in tests."""
 
     def __init__(
         self,

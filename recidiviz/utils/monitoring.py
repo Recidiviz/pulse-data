@@ -134,6 +134,7 @@ class TagKey:
     INGEST_INSTANCE = "ingest_instance"
     INGEST_TASK_TAG = "ingest_task_tag"
     INGEST_VIEW_EXPORT_TAG = "ingest_view_export_tag"
+    INGEST_VIEW_MATERIALIZATION_TAG = "ingest_view_materialization_tag"
     RAW_DATA_IMPORT_TAG = "raw_data_import_tag"
 
     # Bigquery related tags

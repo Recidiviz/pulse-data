@@ -78,6 +78,7 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
     SftpAuth,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
     LegacyExtractAndMergeArgs,
@@ -1092,6 +1093,52 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
         mock_controller.do_ingest_view_materialization.assert_called_with(export_args)
+
+    @patch("recidiviz.utils.regions.get_region")
+    def test_materialize_ingest_view(
+        self,
+        mock_region: mock.MagicMock,
+    ) -> None:
+
+        region_code = "us_xx"
+
+        mock_controller = create_autospec(BaseDirectIngestController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        mock_region.return_value = fake_region(
+            region_code=region_code, environment="staging"
+        )
+
+        ingest_view_name = "my_ingest_view"
+        materialization_args = BQIngestViewMaterializationArgs(
+            ingest_view_name=ingest_view_name,
+            ingest_instance_=DirectIngestInstance.PRIMARY,
+            lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
+            upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
+        )
+
+        request_args = {
+            "region": region_code,
+            "ingest_view_name": ingest_view_name,
+            "ingest_instance": "primary",
+        }
+        body = {
+            "cloud_task_args": materialization_args.to_serializable(),
+            "args_type": "BQIngestViewMaterializationArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = APP_ENGINE_HEADERS
+
+        response = self.client.post(
+            "/materialize_ingest_view",
+            query_string=request_args,
+            headers=headers,
+            data=body_encoded,
+        )
+        self.assertEqual(200, response.status_code)
+        mock_controller.do_ingest_view_materialization.assert_called_with(
+            materialization_args
+        )
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch("recidiviz.utils.environment.get_gcp_environment")
