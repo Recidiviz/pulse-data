@@ -62,7 +62,7 @@ WITH date_array AS (
         date_array
     ON
         date = end_date
-    LEFT JOIN
+    INNER JOIN
         `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` officers
     USING
         (state_code, person_id, end_date)
@@ -86,7 +86,7 @@ WITH date_array AS (
     ON
         date = ed.request_date
     # Join with overlapping session to get supervision officer-office at time of request
-    LEFT JOIN
+    INNER JOIN
         `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
     ON
         ed.state_code = b.state_code
@@ -111,7 +111,7 @@ WITH date_array AS (
         date_array
     ON
         date = levels.start_date
-    LEFT JOIN
+    INNER JOIN
         `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
     ON
         levels.state_code = b.state_code
@@ -137,7 +137,7 @@ WITH date_array AS (
         date_array
     ON
         date = response_date
-    LEFT JOIN
+    INNER JOIN
         `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
     ON
         violations.state_code = b.state_code
@@ -161,7 +161,7 @@ WITH date_array AS (
         date_array
     ON
         date = DATE_ADD(a.end_date, INTERVAL 1 DAY)
-    LEFT JOIN
+    INNER JOIN
         `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
     ON
         a.state_code = b.state_code
@@ -171,6 +171,37 @@ WITH date_array AS (
         compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
         AND outflow_to_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE")
 )
+# TODO(#12368): Refactor to build employment metrics from state-agnostic views instead of ID-specific view.
+, employment_changes AS (
+  SELECT DISTINCT
+        a.state_code,
+        a.person_id,
+        supervising_officer_external_id,
+        district,
+        office,
+        date,
+        is_employed,
+    FROM
+        `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` a
+    INNER JOIN
+        date_array
+    ON
+        date = a.employment_status_start_date
+    INNER JOIN
+        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
+    ON
+        a.state_code = b.state_code
+        AND a.person_id = b.person_id
+        AND a.employment_status_start_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+    QUALIFY 
+        # only keep dates where the person gained or lost employment
+        # edge case: treat jobs at supervision start as employment gains
+        # but no job at supervision start is not an employment loss
+        is_employed != IFNULL(LAG(is_employed) OVER (
+            PARTITION BY person_id, supervising_officer_external_id, district, office, date
+            ORDER BY employment_status_start_date
+        ), FALSE)
+)
 
 # skip revocations for now because the lag from temporary hold to actual revocation 
 # makes it challenging to associate revocation with an officer
@@ -179,8 +210,8 @@ WITH date_array AS (
 # Person statuses
 #################
 
-# days incarcerated over year following initial assignment to officer-office
-, days_incarcerated AS (
+# Calculates days in status (incarcerated, employed) over year following initial assignment to officer-office
+, days_in_status AS (
     SELECT
         sss.supervision_super_session_id,
         a.state_code,
@@ -198,8 +229,25 @@ WITH date_array AS (
             )
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
-            supervising_officer_external_id, district, office
+            supervising_officer_external_id, district, office, date
         ) AS days_incarcerated_1yr,
+        SUM(
+            CASE WHEN is_employed
+            THEN DATE_DIFF(
+                LEAST(
+                    IFNULL(d.employment_status_end_date, "9999-01-01"), 
+                    DATE_ADD(a.start_date, INTERVAL 365 DAY)
+                ), 
+                GREATEST(
+                    d.employment_status_start_date, 
+                    a.start_date
+                ), DAY
+            )
+            WHEN is_employed = FALSE THEN 0 END
+        ) OVER (
+            PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
+            supervising_officer_external_id, district, office, date
+        ) AS days_employed_1yr,
         
     # first date client associated with officer-office during SSS
     FROM
@@ -215,7 +263,7 @@ WITH date_array AS (
         AND sss.person_id = a.person_id
         AND a.start_date BETWEEN sss.start_date AND IFNULL(sss.end_date, "9999-01-01")
         
-    # join cl1_SSs for calculating days incarcerated
+    # join compartment level 1 super sessions for calculating days incarcerated
     LEFT JOIN
         `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` c
     ON
@@ -225,12 +273,22 @@ WITH date_array AS (
         AND c.start_date BETWEEN a.start_date AND
             DATE_ADD(a.start_date, INTERVAL 365 DAY)
         AND c.compartment_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE")
+
+    # join employment sessions for calculating days employed
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` d
+    ON
+        a.state_code = d.state_code
+        AND a.person_id = d.person_id
+        # count days incarcerated in year following officer assignment
+        AND IFNULL(d.employment_status_end_date, "9999-01-01") > a.start_date 
+        AND d.employment_status_start_date < LEAST(DATE_ADD(a.start_date, INTERVAL 365 DAY), IFNULL(a.end_date, "9999-01-01"))
         
     # Keep first assignment of officer-office to client within SSS only
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY sss.supervision_super_session_id, a.state_code, 
             a.person_id, supervising_officer_external_id, district, office 
-            ORDER BY a.start_date
+            ORDER BY date
         ) = 1
 )
 
@@ -284,6 +342,7 @@ WITH date_array AS (
         COUNT(IF(assessment_level IS NULL OR assessment_level LIKE "%UNKNOWN",
             score.person_id, NULL)) AS caseload_unknown_risk_level,
         AVG(DATE_DIFF(date, birthdate, DAY) / 365.25) AS avg_age,
+        COUNT(IF(is_employed, e.person_id, NULL)) AS caseload_is_employed,
     FROM
         date_array d
     INNER JOIN
@@ -316,6 +375,12 @@ WITH date_array AS (
         AND score.person_id = c.person_id
         AND date BETWEEN assessment_date AND IFNULL(score_end_date, "9999-01-01")
         AND assessment_type = "LSIR"
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` e
+    ON 
+        e.state_code = c.state_code
+        AND e.person_id = c.person_id
+        AND date BETWEEN employment_status_start_date AND IFNULL(employment_status_end_date, "9999-01-01")
     LEFT JOIN
         `{project_id}.{sessions_dataset}.person_demographics_materialized` bday
     ON
@@ -371,13 +436,20 @@ LEFT JOIN (
             AS incarcerations_temporary,
         COUNT(incarcerations.person_id) AS incarcerations_all,
         
-        # days_incarcerated
-        COUNT(days_incarcerated.person_id) AS new_clients_assigned,
-        IFNULL(SUM(days_incarcerated.days_incarcerated_1yr), 0) AS days_incarcerated_1yr,
-        COUNT(days_incarcerated.person_id) * 
+        # employment starts (transitions from unemployed to employed)
+        COUNT(IF(is_employed, employment_changes.person_id, NULL)) AS gained_employment,
+        
+        # employment ends (transitions from employed to unemployed)
+        COUNT(IF(NOT is_employed, employment_changes.person_id, NULL)) AS lost_employment,
+        
+        # status since initial officer assignment
+        SUM(days_in_status.days_employed_1yr) AS days_employed_1yr,
+        COUNT(days_in_status.person_id) AS new_clients_assigned,
+        IFNULL(SUM(days_in_status.days_incarcerated_1yr), 0) AS days_incarcerated_1yr,
+        COUNT(days_in_status.person_id) * 
             DATE_DIFF(LEAST(
                 CURRENT_DATE("US/Eastern"),
-                DATE_ADD(date, INTERVAL 1 YEAR)
+                DATE_ADD(date, INTERVAL 365 DAY)
             ), date, DAY) AS days_since_assignment_1yr,
 
     FROM
@@ -392,7 +464,9 @@ LEFT JOIN (
         district, office, date)
     LEFT JOIN incarcerations USING(state_code, supervising_officer_external_id,
         district, office, date)       
-    LEFT JOIN days_incarcerated USING(state_code, supervising_officer_external_id,
+    LEFT JOIN days_in_status USING(state_code, supervising_officer_external_id,
+        district, office, date) 
+    LEFT JOIN employment_changes USING(state_code, supervising_officer_external_id,
         district, office, date) 
 
     GROUP BY 1, 2, 3, 4, 5

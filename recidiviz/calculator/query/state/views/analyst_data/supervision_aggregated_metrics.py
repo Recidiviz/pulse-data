@@ -104,7 +104,7 @@ WITH date_range AS (
     SELECT DISTINCT
         "MONTH" AS period,
         DATE_TRUNC(date, MONTH) AS start_date,
-        DATE_ADD(DATE_TRUNC(date, MONTH), INTERVAL 1 MONTH) AS end_date,
+        DATE_SUB(DATE_ADD(DATE_TRUNC(date, MONTH), INTERVAL 1 MONTH), INTERVAL 1 DAY) AS end_date,
     FROM
         date_range 
         
@@ -113,7 +113,7 @@ WITH date_range AS (
     SELECT DISTINCT
         "QUARTER" AS period,
         DATE_TRUNC(date, QUARTER) AS start_date,
-        DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 QUARTER) AS end_date,
+        DATE_SUB(DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 QUARTER), INTERVAL 1 DAY) AS end_date,
     FROM
         date_range 
         
@@ -122,7 +122,7 @@ WITH date_range AS (
     SELECT DISTINCT
         "YEAR" AS period,
         DATE_TRUNC(date, YEAR) AS start_date,
-        DATE_ADD(DATE_TRUNC(date, YEAR), INTERVAL 1 YEAR) AS end_date,
+        DATE_ADD(DATE_TRUNC(date, YEAR), INTERVAL 364 DAY) AS end_date,
     FROM
         date_range 
 )
@@ -184,6 +184,7 @@ WITH date_range AS (
         SUM(caseload_high_risk_level) AS caseload_high_risk_level,
         SUM(caseload_unknown_risk_level) AS caseload_unknown_risk_level,
         SAFE_DIVIDE(SUM(avg_age * caseload_all), SUM(caseload_all)) AS avg_age,
+        SUM(caseload_is_employed) AS caseload_is_employed,
         SUM(successful_completions) AS successful_completions,
         SUM(earned_discharge_requests) AS earned_discharge_requests,
         SUM(supervision_downgrades) AS supervision_downgrades,
@@ -193,9 +194,12 @@ WITH date_range AS (
         SUM(violations_technical) AS violations_technical,
         SUM(incarcerations_temporary) AS incarcerations_temporary,
         SUM(incarcerations_all) AS incarcerations_all,
+        SUM(gained_employment) AS gained_employment,
+        SUM(lost_employment) AS lost_employment,
         SUM(new_clients_assigned) AS new_clients_assigned,
-        SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
         SUM(days_since_assignment_1yr) AS days_since_assignment_1yr,
+        SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
+        SUM(days_employed_1yr) AS days_employed_1yr,
     FROM
         `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized`
     GROUP BY 1, 2, 3{", 4" if level == "office" else ""}
@@ -232,6 +236,7 @@ SELECT
     AVG(caseload_high_risk_level) AS avg_caseload_high_risk_level,
     AVG(caseload_unknown_risk_level) AS avg_caseload_unknown_risk_level,
     AVG(avg_age) AS avg_age,
+    AVG(caseload_is_employed) AS avg_caseload_is_employed,
     
     # caseload events/statuses, summed across days
     SUM(successful_completions) AS successful_completions,
@@ -243,9 +248,12 @@ SELECT
     SUM(violations_technical) AS violations_technical,
     SUM(incarcerations_temporary) AS incarcerations_temporary,
     SUM(incarcerations_all) AS incarcerations_all,
+    SUM(gained_employment) AS gained_employment,
+    SUM(lost_employment) AS lost_employment,
     SUM(new_clients_assigned) AS new_clients_assigned,
-    SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
     SUM(days_since_assignment_1yr) AS days_since_assignment_1yr,
+    SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
+    SUM(days_employed_1yr) AS days_employed_1yr,
 FROM 
     {level}_level_metrics a
 INNER JOIN
