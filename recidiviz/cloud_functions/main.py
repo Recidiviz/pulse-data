@@ -39,6 +39,7 @@ from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
     PIPELINE_RUN_TYPE_NONE_VALUE,
     PIPELINE_RUN_TYPE_REQUEST_ARG,
     TRIGGER_HISTORICAL_DAG_FLAG,
+    UPDATE_MANAGED_VIEWS_REQUEST_ARG,
 )
 from direct_ingest_bucket_name_utils import (  # type: ignore[import]
     get_region_code_from_direct_ingest_bucket,
@@ -414,9 +415,7 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
 
     if schema.upper() == "STATE":
         # Always update managed views when refreshing the state schema after a deploy
-        # TODO(#10905): Uncomment this line once we stop deploying the views during
-        #  the app deploy process
-        # data[UPDATE_MANAGED_VIEWS_REQUEST_ARG] = "true"
+        data[UPDATE_MANAGED_VIEWS_REQUEST_ARG] = "true"
 
         if trigger_historical_dag:
             cloud_functions_log(

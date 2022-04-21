@@ -161,9 +161,15 @@ function pre_deploy_configure_infrastructure {
     verify_hash $COMMIT_HASH
     run_cmd pipenv run python -m recidiviz.calculator.dataflow_output_table_manager --project_id ${PROJECT}
 
-    echo "Updating all BigQuery views"
+    echo "Deploying views to test schema"
     verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id ${PROJECT}
+    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id ${PROJECT} --test-schema-only
+
+    # TODO(#11437): Remove this step once we have view updates in the DAG. Instead,
+    #  update all reference views before pipelines run.
+    echo "Deploying reference_views and ancestors"
+    verify_hash $COMMIT_HASH
+    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id ${PROJECT} --dataset-ids-to-load reference_views
 
     echo "Deploying calculation pipelines to templates in ${PROJECT}."
     deploy_pipeline_templates ${PROJECT} || exit_on_fail
