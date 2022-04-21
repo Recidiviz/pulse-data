@@ -1,7 +1,8 @@
 file_tag: elite_offendersentences
 file_description: |-
-  Each row represents a single sentence of incarceration handed down to a particular person. This includes date
-  information about the terms of the sentence as well as metadata about how this sentence relates to other sentences.
+  Each row represents a single sentence of incarceration handed down to a particular person as part of some booking.
+  This includes date information outlining when the sentence is to be served and for how long as well as metadata about
+  how this sentence relates to other sentences. There is a one-to-many relationship from bookings to sentences.
 data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID

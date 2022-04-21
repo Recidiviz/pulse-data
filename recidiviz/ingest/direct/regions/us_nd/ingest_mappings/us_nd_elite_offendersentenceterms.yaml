@@ -13,7 +13,6 @@ input_columns:
   - TERM_SEQ
   - SENTENCE_TERM_CODE
 unused_columns:
-  - START_DATE # No apparent use for these at the moment
   - END_DATE # No apparent use for these at the moment
   - TERM_SEQ
   - CREATE_DATETIME # No apparent use for these at the moment
@@ -51,6 +50,7 @@ output:
                           $args:
                             dec_str: OFFENDER_BOOK_ID
                       - SENTENCE_SEQ
+                date_imposed: START_DATE
                 max_length_days:
                   $custom:
                     $function: us_nd_custom_parsers.max_length_days_from_ymd
