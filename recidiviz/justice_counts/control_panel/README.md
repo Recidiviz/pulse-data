@@ -80,8 +80,9 @@ pipenv run fixtures-jc
 
 ```bash
 # python -m recidiviz.tools.justice_counts.control_panel.request_api <endpoint name> <params>`
-python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0}'
-python -m recidiviz.tools.justice_counts.control_panel.request_api users '{"email_address":"jsmith@gmail.com"}'
+python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0}' get
+python -m recidiviz.tools.justice_counts.control_panel.request_api users '{"email_address":"jsmith@gmail.com"}' post
+python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0, "month": 3, "year": 2022, "frequency": "MONTHLY"}' post
 ```
 
 Note that if you make changes to any of the fixtures .csv files, you'll have to re-run the `pipenv run fixtures` script.
