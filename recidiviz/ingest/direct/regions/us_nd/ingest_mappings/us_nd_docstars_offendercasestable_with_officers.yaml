@@ -178,6 +178,7 @@ output:
                    - "IC Probation"
                    - "Suspended"
                  StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT: "Pre-Trial"
+          date_imposed: PAROLE_FR
           start_date: PAROLE_FR
           projected_completion_date: PAROLE_TO
           completion_date: TERM_DATE
