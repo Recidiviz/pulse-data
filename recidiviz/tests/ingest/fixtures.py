@@ -17,7 +17,6 @@
 
 """Utilities for working with fixture data in ingest unit testing."""
 
-import inspect
 import json
 import os
 from typing import Any, Dict
@@ -25,6 +24,8 @@ from xml.etree import ElementTree
 
 import html5lib
 from lxml import html
+
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 
 
 def as_string(region_directory: str, filename: str) -> str:
@@ -94,19 +95,7 @@ def as_filepath(filename: str, subdir: str = "fixtures") -> str:
     Assumes the |filename| is in the |subdir| subdirectory relative to the
     caller's directory.
     """
-    frame = inspect.stack()[1]
-    module = inspect.getmodule(frame[0])
-
-    if module is None:
-        raise ValueError("Module is unexpectedly None")
-
-    caller_filepath = module.__file__
-    assert caller_filepath is not None
-
-    if caller_filepath is None:
-        raise ValueError(f"No file associated with {module}.")
-
-    return os.path.abspath(os.path.join(caller_filepath, "..", subdir, filename))
+    return filepath_relative_to_caller(filename, subdir, caller_depth=2)
 
 
 def as_html(

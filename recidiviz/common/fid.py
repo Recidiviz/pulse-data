@@ -25,8 +25,7 @@ to facility_id.
 
 import pandas as pd
 
-from recidiviz.tests.ingest.fixtures import as_filepath
-
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 
 _FID: pd.DataFrame = None
 
@@ -36,7 +35,8 @@ def _get_FID() -> pd.DataFrame:
 
     if _FID is None:
         _FID = pd.read_csv(
-            as_filepath("fid.csv", subdir="data_sets"), dtype={"vera_jid": str}
+            filepath_relative_to_caller("fid.csv", relative_subdir="data_sets"),
+            dtype={"vera_jid": str},
         )
 
     return _FID

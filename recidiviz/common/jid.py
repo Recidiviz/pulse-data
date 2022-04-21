@@ -36,7 +36,7 @@ from more_itertools import one
 from recidiviz.common.errors import FipsMergingError
 from recidiviz.common.fips import get_fips_for
 from recidiviz.common.fips_fuzzy_matching import best_match
-from recidiviz.tests.ingest.fixtures import as_filepath
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
@@ -50,7 +50,8 @@ def _get_JID() -> pd.DataFrame:
 
     if _JID is None:
         _JID = pd.read_csv(
-            as_filepath("jid.csv", subdir="data_sets"), dtype={"fips": str}
+            filepath_relative_to_caller("jid.csv", relative_subdir="data_sets"),
+            dtype={"fips": str},
         )
 
     return _JID

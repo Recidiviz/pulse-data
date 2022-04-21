@@ -37,7 +37,7 @@ import us
 
 from recidiviz.common.errors import FipsMergingError
 from recidiviz.common.fips_fuzzy_matching import fuzzy_join
-from recidiviz.tests.ingest.fixtures import as_filepath
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 
 # Float between [0, 1] which sets the required fuzzy matching certainty
 _FUZZY_MATCH_CUTOFF = 0.75
@@ -54,7 +54,8 @@ def _get_FIPS() -> pd.DataFrame:
 
     if _FIPS is None:
         _FIPS = pd.read_csv(
-            as_filepath("fips.csv", subdir="data_sets"), dtype={"fips": str}
+            filepath_relative_to_caller("fips.csv", relative_subdir="data_sets"),
+            dtype={"fips": str},
         )
 
     return _FIPS

@@ -302,8 +302,6 @@ def main() -> int:
                 "recidiviz.reporting",
                 "recidiviz.server_blueprint_registry",
                 "recidiviz.server_config",
-                # TODO(#6795): Get rid of this dependency
-                "recidiviz.tests.ingest.fixtures",
                 # TODO(#4472): Refactor justice counts code out of the tools directory
                 "recidiviz.tools.justice_counts.manual_upload",
                 "recidiviz.utils",
@@ -343,8 +341,6 @@ def main() -> int:
                 "recidiviz.utils",
                 "recidiviz.reporting",
                 "recidiviz.cloud_storage",
-                # TODO(#6795): Get rid of this dependency
-                "recidiviz.tests.ingest.fixtures",
             }
         ),
     )

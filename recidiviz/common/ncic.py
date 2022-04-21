@@ -38,7 +38,7 @@ from typing import Dict, List, Optional
 import attr
 
 from recidiviz.common.attr_mixins import DefaultableAttr
-from recidiviz.tests.ingest.fixtures import as_filepath
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 
 
 @attr.s(frozen=True)
@@ -48,7 +48,9 @@ class NcicCode(DefaultableAttr):
     is_violent: bool = attr.ib()
 
 
-_NCIC_FILEPATH: str = as_filepath("ncic.csv", subdir="data_sets")
+_NCIC_FILEPATH: str = filepath_relative_to_caller(
+    "ncic.csv", relative_subdir="data_sets"
+)
 _NCIC: Dict[str, NcicCode] = {}
 
 
