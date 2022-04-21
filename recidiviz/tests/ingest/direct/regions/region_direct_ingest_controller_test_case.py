@@ -93,7 +93,7 @@ FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 @pytest.mark.uses_db
 @freeze_time("2019-09-27")
-class BaseDirectIngestControllerTests(unittest.TestCase):
+class RegionDirectIngestControllerTestCase(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
     BaseDirectIngestControllers.
     """
