@@ -39,9 +39,10 @@ from recidiviz.utils.secrets import get_secret_from_local_directory
 
 LOCALHOST_URL = "http://localhost:5000/api/"
 
-endpoint_to_request_type = {
-    "reports": HttpMethod.GET,
-    "users": HttpMethod.POST,
+
+request_string_to_request_type = {
+    "get": HttpMethod.GET,
+    "post": HttpMethod.POST,
 }
 
 local_path = os.path.join(
@@ -51,11 +52,14 @@ local_path = os.path.join(
 )
 
 
-def make_request_to_api(endpoint: str, body: Dict[str, str]) -> None:
+def make_request_to_api(
+    endpoint: str, body: Dict[str, str], request_type_str: str
+) -> None:
     """Make a request to the Justice Counts Control Panel API using Client Credentials authorization.
     More details: https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow
     """
-    request_type = endpoint_to_request_type.get(endpoint)
+    request_type = request_string_to_request_type.get(request_type_str)
+
     if not request_type:
         raise ValueError(
             "Register the {endpoint} method in `endpoint_to_request_type`."
@@ -72,7 +76,6 @@ def make_request_to_api(endpoint: str, body: Dict[str, str]) -> None:
     client_secret = get_secret_from_local_directory(
         local_path, "justice_counts_m2m_client_secret"
     )
-
     # First obtain an access_token via a client_credientials grant
     # More details: https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow
     data = {
@@ -81,11 +84,11 @@ def make_request_to_api(endpoint: str, body: Dict[str, str]) -> None:
         "audience": audience,
         "grant_type": "client_credentials",
     }
+
     response = requests.post(f"https://{domain}/oauth/token", data=data)
     token = response.json()["access_token"]
 
     s = requests.session()
-
     # Next get a valid CSRF token
     headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
     response = s.get(LOCALHOST_URL + "init", headers=headers)
@@ -112,5 +115,12 @@ if __name__ == "__main__":
         help="A JSON formatted string of params or data "
         + 'to pass to the endpoint, e.g. \'{"user_id":0,"agency_id": 1}\'',
     )
+    parser.add_argument(
+        "request_type_str", help="The name of the request type, e.g post"
+    )
     args = parser.parse_args()
-    make_request_to_api(endpoint=args.endpoint, body=json.loads(args.body))
+    make_request_to_api(
+        endpoint=args.endpoint,
+        body=json.loads(args.body),
+        request_type_str=args.request_type_str,
+    )
