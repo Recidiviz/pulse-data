@@ -30,10 +30,10 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
-from recidiviz.justice_counts.metrics.reported_metric import (
+from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
     ReportedContext,
-    ReportedMetric,
+    ReportMetric,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -140,7 +140,7 @@ class JusticeCountsSchemaTestObjects:
         self.reported_calls_for_service_metric = (
             JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric()
         )
-        self.reported_residents_metric = ReportedMetric(
+        self.reported_residents_metric = ReportMetric(
             key=law_enforcement.residents.key,
             value=5000,
             aggregated_dimensions=[
@@ -162,8 +162,8 @@ class JusticeCountsSchemaTestObjects:
     @staticmethod
     def get_reported_budget_metric(
         value: int = 100000, include_disaggregations: bool = True
-    ) -> ReportedMetric:
-        return ReportedMetric(
+    ) -> ReportMetric:
+        return ReportMetric(
             key=law_enforcement.annual_budget.key,
             value=value,
             contexts=[
@@ -184,8 +184,8 @@ class JusticeCountsSchemaTestObjects:
         )
 
     @staticmethod
-    def get_reported_calls_for_service_metric() -> ReportedMetric:
-        return ReportedMetric(
+    def get_reported_calls_for_service_metric() -> ReportMetric:
+        return ReportMetric(
             key=law_enforcement.calls_for_service.key,
             value=100,
             contexts=[

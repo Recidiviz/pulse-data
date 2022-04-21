@@ -71,7 +71,7 @@ class ReportedAggregatedDimension:
 
 
 @attr.define()
-class ReportedMetric:
+class ReportMetric:
     """Represents an agency's reported values for a Justice Counts metric."""
 
     # The key of the metric (i.e. `MetricDefinition.key`) that is being reported
@@ -160,5 +160,5 @@ class ReportedMetric:
 
     @property
     def metric_definition(self) -> MetricDefinition:
-        # MetricDefinition that this ReportedMetric corresponds to
+        # MetricDefinition that this ReportMetric corresponds to
         return METRIC_KEY_TO_METRIC[self.key]
