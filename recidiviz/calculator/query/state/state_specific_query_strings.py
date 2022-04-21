@@ -199,6 +199,8 @@ def state_specific_external_id_type(state_code_table_prefix: str) -> str:
           THEN 'US_ND_SID'
           WHEN {state_code_table_prefix}.state_code = 'US_TN'
           THEN 'US_TN_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_ME'
+          THEN 'US_ME_DOC'
         END
     """
 
