@@ -66,6 +66,7 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
     LegacyExtractAndMergeArgs,
+    NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -484,6 +485,8 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+# TODO(#11424): Delete this endpoint entirely once all traffic has been directed to
+#  the new /direct/extract_and_merge endpoint.
 @direct_ingest_control.route("/process_job", methods=["POST"])
 @requires_gae_auth
 def process_job() -> Tuple[str, HTTPStatus]:
@@ -534,6 +537,96 @@ def process_job() -> Tuple[str, HTTPStatus]:
             try:
                 controller = DirectIngestControllerFactory.build(
                     ingest_bucket_path=ingest_args.file_path.bucket_path,
+                    allow_unlaunched=False,
+                )
+            except DirectIngestError as e:
+                if e.is_bad_request():
+                    logging.error(str(e))
+                    return str(e), HTTPStatus.BAD_REQUEST
+                raise e
+
+            try:
+                controller.run_extract_and_merge_job_and_kick_scheduler_on_completion(
+                    ingest_args
+                )
+            except GCSPseudoLockAlreadyExists as e:
+                logging.warning(str(e))
+                return str(e), HTTPStatus.CONFLICT
+    return "", HTTPStatus.OK
+
+
+@direct_ingest_control.route("/extract_and_merge", methods=["POST"])
+@requires_gae_auth
+def extract_and_merge() -> Tuple[str, HTTPStatus]:
+    """Reads a chunk of ingest view results, parses them into schema objects, then
+    commits those results to our Postgres database.
+    """
+    logging.info(
+        "Received request to run ingest extract and merge job: [%s]", request.values
+    )
+    region_code = get_str_param_value("region", request.values)
+    ingest_instance_str = get_str_param_value("ingest_instance", request.values)
+    ingest_view_name = get_str_param_value(
+        "ingest_view_name", request.values, preserve_case=True
+    )
+    if not region_code or not ingest_instance_str or not ingest_view_name:
+        response = f"Bad parameters [{request.values}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
+
+    try:
+        ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
+    except ValueError:
+        response = f"Bad ingest instance value [{ingest_instance_str}]"
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
+
+    with monitoring.push_region_tag(
+        region_code,
+        ingest_instance=ingest_instance.value,
+    ):
+        json_data = request.get_data(as_text=True)
+        ingest_args = _parse_cloud_task_args(json_data)
+
+        if not ingest_args:
+            response = "/extract_and_merge was called with no ExtractAndMergeArgs."
+            logging.error(response)
+            return response, HTTPStatus.BAD_REQUEST
+
+        if not isinstance(ingest_args, NewExtractAndMergeArgs):
+            response = f"/extract_and_merge was called with incorrect args type [{type(ingest_args)}]."
+            logging.error(response)
+            return response, HTTPStatus.BAD_REQUEST
+
+        if ingest_instance != ingest_args.ingest_instance:
+            response = (
+                f"Different ingest instances were passed in the url and request body\n"
+                f"url: {ingest_instance}\n"
+                f"body: {ingest_args.ingest_instance}"
+            )
+            logging.error(response)
+            return response, HTTPStatus.BAD_REQUEST
+
+        if ingest_view_name != ingest_args.ingest_view_name:
+            response = (
+                f"Different ingest view names were passed in the url and request body\n"
+                f"url: {ingest_view_name}\n"
+                f"body: {ingest_args.ingest_view_name}"
+            )
+            logging.error(response)
+            return response, HTTPStatus.BAD_REQUEST
+
+        with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
+            try:
+                ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+                    region_code=region_code,
+                    system_level=SystemLevel.for_region(
+                        _region_for_region_code(region_code)
+                    ),
+                    ingest_instance=ingest_instance,
+                )
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=ingest_bucket,
                     allow_unlaunched=False,
                 )
             except DirectIngestError as e:

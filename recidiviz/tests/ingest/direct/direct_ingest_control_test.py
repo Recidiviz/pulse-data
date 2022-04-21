@@ -81,6 +81,7 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
     LegacyExtractAndMergeArgs,
+    NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
@@ -230,6 +231,8 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         mock_controller.schedule_next_ingest_task.assert_not_called()
 
+    # TODO(#11424): Delete this test once all traffic has been directed to the new
+    #  /direct/extract_and_merge endpoint.
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_process_job(
@@ -278,6 +281,8 @@ class TestDirectIngestControl(unittest.TestCase):
             ingest_args
         )
 
+    # TODO(#11424): Delete this test once all traffic has been directed to the new
+    #  /direct/extract_and_merge endpoint.
     @patch("recidiviz.utils.environment.get_gcp_environment")
     def test_process_job_unlaunched_region(
         self,
@@ -326,6 +331,216 @@ class TestDirectIngestControl(unittest.TestCase):
             response.get_data().decode(),
             "Test bad input error",
         )
+
+    @patch("recidiviz.utils.regions.get_region")
+    def test_extract_and_merge(self, mock_region: mock.MagicMock) -> None:
+        mock_controller = create_autospec(BaseDirectIngestController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        mock_region.return_value = fake_region(
+            region_code=self.region_code, environment="staging"
+        )
+
+        dt = datetime.datetime(year=2019, month=6, day=20)
+        ingest_view_name = "myIngestViewName"
+        ingest_args = NewExtractAndMergeArgs(
+            ingest_time=datetime.datetime(year=2019, month=7, day=20),
+            ingest_view_name=ingest_view_name,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            upper_bound_datetime_inclusive=dt,
+            batch_number=2,
+        )
+        request_args = {
+            "region": self.region_code,
+            "ingest_view_name": ingest_view_name,
+            "ingest_instance": "primary",
+        }
+        body = {
+            "cloud_task_args": ingest_args.to_serializable(),
+            "args_type": "NewExtractAndMergeArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = APP_ENGINE_HEADERS
+
+        response = self.client.post(
+            "/extract_and_merge",
+            query_string=request_args,
+            headers=headers,
+            data=body_encoded,
+        )
+        self.assertEqual(200, response.status_code)
+        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_called_with(
+            ingest_args
+        )
+
+    # TODO(#11424): Delete this test once all traffic has been directed to the new
+    #  /direct/extract_and_merge endpoint.
+    def test_extract_and_merge_unlaunched_region(self) -> None:
+        self.mock_controller_factory.build.side_effect = DirectIngestError(
+            msg="Test bad input error",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        )
+
+        dt = datetime.datetime(year=2019, month=6, day=20)
+        ingest_view_name = "myIngestViewName"
+        ingest_args = NewExtractAndMergeArgs(
+            ingest_time=datetime.datetime(year=2019, month=7, day=20),
+            ingest_view_name=ingest_view_name,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            upper_bound_datetime_inclusive=dt,
+            batch_number=2,
+        )
+        request_args = {
+            "region": self.region_code,
+            "ingest_view_name": ingest_view_name,
+            "ingest_instance": "primary",
+        }
+        body = {
+            "cloud_task_args": ingest_args.to_serializable(),
+            "args_type": "NewExtractAndMergeArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = APP_ENGINE_HEADERS
+
+        response = self.client.post(
+            "/extract_and_merge",
+            query_string=request_args,
+            headers=headers,
+            data=body_encoded,
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            response.get_data().decode(),
+            "Test bad input error",
+        )
+
+    @patch("recidiviz.utils.regions.get_region")
+    def test_extract_and_merge_mismatch_instance(
+        self, mock_region: mock.MagicMock
+    ) -> None:
+        mock_controller = create_autospec(BaseDirectIngestController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        mock_region.return_value = fake_region(
+            region_code=self.region_code, environment="staging"
+        )
+
+        dt = datetime.datetime(year=2019, month=6, day=20)
+        ingest_view_name = "myIngestViewName"
+        ingest_args = NewExtractAndMergeArgs(
+            ingest_time=datetime.datetime(year=2019, month=7, day=20),
+            ingest_view_name=ingest_view_name,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            upper_bound_datetime_inclusive=dt,
+            batch_number=2,
+        )
+        request_args = {
+            "region": self.region_code,
+            "ingest_view_name": ingest_view_name,
+            "ingest_instance": "secondary",
+        }
+        body = {
+            "cloud_task_args": ingest_args.to_serializable(),
+            "args_type": "NewExtractAndMergeArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = APP_ENGINE_HEADERS
+
+        response = self.client.post(
+            "/extract_and_merge",
+            query_string=request_args,
+            headers=headers,
+            data=body_encoded,
+        )
+        self.assertEqual(400, response.status_code)
+        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_not_called()
+
+    @patch("recidiviz.utils.regions.get_region")
+    def test_extract_and_merge_mismatch_ingest_view(
+        self, mock_region: mock.MagicMock
+    ) -> None:
+        mock_controller = create_autospec(BaseDirectIngestController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        mock_region.return_value = fake_region(
+            region_code=self.region_code, environment="staging"
+        )
+
+        dt = datetime.datetime(year=2019, month=6, day=20)
+        ingest_view_name = "myIngestViewName"
+        ingest_args = NewExtractAndMergeArgs(
+            ingest_time=datetime.datetime(year=2019, month=7, day=20),
+            ingest_view_name=ingest_view_name,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            upper_bound_datetime_inclusive=dt,
+            batch_number=2,
+        )
+        request_args = {
+            "region": self.region_code,
+            "ingest_view_name": "another_ingest_view_name",
+            "ingest_instance": "primary",
+        }
+        body = {
+            "cloud_task_args": ingest_args.to_serializable(),
+            "args_type": "NewExtractAndMergeArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = APP_ENGINE_HEADERS
+
+        response = self.client.post(
+            "/extract_and_merge",
+            query_string=request_args,
+            headers=headers,
+            data=body_encoded,
+        )
+        self.assertEqual(400, response.status_code)
+        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_not_called()
+
+    @patch("recidiviz.utils.regions.get_region")
+    def test_extract_and_merge_bad_args_type(self, mock_region: mock.MagicMock) -> None:
+        mock_controller = create_autospec(BaseDirectIngestController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        mock_region.return_value = fake_region(
+            region_code=self.region_code, environment="staging"
+        )
+
+        bucket_name = build_ingest_bucket_name(
+            project_id="recidiviz-xxx",
+            region_code=self.region_code,
+            system_level_str="state",
+            suffix="",
+        )
+
+        file_path = to_normalized_unprocessed_file_path(
+            f"{bucket_name}/ingest_view_name.csv",
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+        )
+        ingest_args = LegacyExtractAndMergeArgs(
+            datetime.datetime(year=2019, month=7, day=20),
+            file_path=GcsfsFilePath.from_absolute_path(file_path),
+        )
+        request_args = {
+            "region": self.region_code,
+            "ingest_view_name": "ingest_view_name",
+            "ingest_instance": "primary",
+        }
+        body = {
+            "cloud_task_args": ingest_args.to_serializable(),
+            "args_type": "LegacyExtractAndMergeArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = APP_ENGINE_HEADERS
+
+        response = self.client.post(
+            "/extract_and_merge",
+            query_string=request_args,
+            headers=headers,
+            data=body_encoded,
+        )
+        self.assertEqual(400, response.status_code)
+        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_not_called()
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
@@ -423,7 +638,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         # Even though the region isn't supported, we don't crash - the
         # controller handles not starting ingest, and if it does by accident,
-        # the actual schedule/process_job endpoints handle the unlaunched
+        # the actual schedule/extract_and_merge endpoints handle the unlaunched
         # region check.
         self.assertEqual(200, response.status_code)
 
