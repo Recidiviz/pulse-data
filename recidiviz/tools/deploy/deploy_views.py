@@ -44,10 +44,7 @@ from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    deployed_view_builders,
-)
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 # If deploying the views against empty source tables starts to take over an hour, this
 # will break. We set this to a short period of time because it creates a *lot* of
@@ -150,7 +147,8 @@ def deploy_views(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         view_builders_to_update=view_builders_to_update,
         address_overrides=test_address_overrides,
-        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        # This script does not do any clean up of previously managed views
+        historically_managed_datasets_to_clean=None,
         default_table_expiration_for_new_datasets=table_expiration,
     )
 
