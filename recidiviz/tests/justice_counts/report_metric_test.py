@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""This class implements tests for Justice Counts ReportedMetric class."""
+"""This class implements tests for Justice Counts ReportMetric class."""
 
 from unittest import TestCase
 
@@ -22,16 +22,16 @@ from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetTyp
 from recidiviz.justice_counts.dimensions.person import Gender
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
-from recidiviz.justice_counts.metrics.reported_metric import (
+from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
     ReportedContext,
-    ReportedMetric,
+    ReportMetric,
 )
 from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 
 
 class TestJusticeCountsMetricDefinition(TestCase):
-    """Implements tests for the Justice Counts ReportedMetric class."""
+    """Implements tests for the Justice Counts ReportMetric class."""
 
     def setUp(self) -> None:
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
@@ -49,7 +49,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
         with self.assertRaisesRegex(
             ValueError, "Not all dimension instances belong to the same class"
         ):
-            ReportedMetric(
+            ReportMetric(
                 key=law_enforcement.annual_budget.key,
                 value=100000,
                 aggregated_dimensions=[
@@ -66,7 +66,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
             ValueError,
             "Not all members of the dimension enum have a reported value",
         ):
-            ReportedMetric(
+            ReportMetric(
                 key=law_enforcement.annual_budget.key,
                 value=100000,
                 aggregated_dimensions=[
@@ -82,7 +82,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
             ValueError,
             "Sums across dimension metric/law_enforcement/budget/type do not equal the total",
         ):
-            ReportedMetric(
+            ReportMetric(
                 key=law_enforcement.annual_budget.key,
                 value=100000,
                 aggregated_dimensions=[
@@ -100,7 +100,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
             ValueError,
             "The required context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is missing",
         ):
-            ReportedMetric(
+            ReportMetric(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[],
@@ -111,7 +111,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
             ValueError,
             r"The context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is reported as a <class 'str'> but typed as a \(<class 'bool'>,\).",
         ):
-            ReportedMetric(
+            ReportMetric(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[
@@ -127,7 +127,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
             ValueError,
             "The following required dimensions are missing: {'metric/law_enforcement/calls_for_service/type'}",
         ):
-            ReportedMetric(
+            ReportMetric(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[

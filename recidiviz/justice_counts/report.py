@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.exceptions import JusticeCountsPermissionError
 from recidiviz.justice_counts.metrics.metric_definition import ReportingFrequency
-from recidiviz.justice_counts.metrics.reported_metric import ReportedMetric
+from recidiviz.justice_counts.metrics.report_metric import ReportMetric
 from recidiviz.justice_counts.report_table_definition import (
     ReportTableDefinitionInterface,
 )
@@ -136,9 +136,9 @@ class ReportInterface:
 
     @staticmethod
     def add_or_update_metric(
-        session: Session, report: schema.Report, reported_metric: ReportedMetric
+        session: Session, report: schema.Report, reported_metric: ReportMetric
     ) -> None:
-        """Given a Report and a ReportedMetric, either add this metric
+        """Given a Report and a ReportMetric, either add this metric
         to the report, or if the metric already exists on the report,
         update the existing metric in-place.
 

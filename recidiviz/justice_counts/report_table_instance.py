@@ -20,9 +20,9 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from recidiviz.justice_counts.metrics.reported_metric import (
+from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
-    ReportedMetric,
+    ReportMetric,
 )
 from recidiviz.justice_counts.utils.persistence_utils import (
     delete_existing,
@@ -44,10 +44,10 @@ class ReportTableInstanceInterface:
         session: Session,
         report: Report,
         report_table_definition: ReportTableDefinition,
-        reported_metric: ReportedMetric,
+        reported_metric: ReportMetric,
         aggregated_dimension: Optional[ReportedAggregatedDimension] = None,
     ) -> ReportTableDefinition:
-        """Given a Report, a ReportTableDefinition, a ReportedMetric, and an
+        """Given a Report, a ReportTableDefinition, a ReportMetric, and an
         (optional) aggregated dimension, create (or update) the corresponding
         ReportTableInstances and Cells.
         """

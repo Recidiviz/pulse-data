@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.dimensions.location import Country, County, State
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
-from recidiviz.justice_counts.metrics.reported_metric import ReportedMetric
+from recidiviz.justice_counts.metrics.report_metric import ReportMetric
 from recidiviz.justice_counts.utils.persistence_utils import update_existing_or_create
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportTableDefinition,
@@ -42,10 +42,10 @@ class ReportTableDefinitionInterface:
 
     @staticmethod
     def build_entity(
-        reported_metric: ReportedMetric,
+        reported_metric: ReportMetric,
         aggregated_dimension_identifier: Optional[str] = None,
     ) -> ReportTableDefinition:
-        """Given a Report, a ReportedMetric, and an (optional) aggregated dimension,
+        """Given a Report, a ReportMetric, and an (optional) aggregated dimension,
         build a corresponding ReportTableDefinition object.
         """
         metric_definition = reported_metric.metric_definition
@@ -72,10 +72,10 @@ class ReportTableDefinitionInterface:
     @staticmethod
     def create_or_update_from_reported_metric(
         session: Session,
-        reported_metric: ReportedMetric,
+        reported_metric: ReportMetric,
         aggregated_dimension_identifier: Optional[str] = None,
     ) -> ReportTableDefinition:
-        """Given a Report, a ReportedMetric, and an (optional) aggregated dimension,
+        """Given a Report, a ReportMetric, and an (optional) aggregated dimension,
         create (or update) a corresponding ReportTableDefinition.
         """
         report_table_definition = ReportTableDefinitionInterface.build_entity(
