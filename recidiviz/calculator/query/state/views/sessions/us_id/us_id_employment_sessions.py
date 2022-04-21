@@ -63,7 +63,9 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
       LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_codeemploymentreasonleft_latest` AS l
       ON e.codeemploymentreasonleftid = l.id
       LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` person
-      ON o.offendernumber = person.external_id ),
+      ON o.offendernumber = person.external_id
+      AND person.state_code = 'US_ID'
+    ),
       employment_daily AS (
       /* Unnests employment periods into daily employment data per person and employment */
       SELECT
@@ -89,6 +91,7 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
       ON d.supervision_date BETWEEN e.employment_start_date AND COALESCE(e.employment_end_date, CURRENT_DATE('US/Eastern'))
         AND s.person_id = e.person_id
         AND s.state_code = e.state_code
+      WHERE s.state_code = 'US_ID'
       ),
       dedup_employment_daily AS (
       /* De-duplicates employment data to a single row per person and date, and aggregates multiple job titles/employers
