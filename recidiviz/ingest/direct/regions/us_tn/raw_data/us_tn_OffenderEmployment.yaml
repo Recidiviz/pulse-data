@@ -1,0 +1,96 @@
+file_tag: OffenderEmployment
+file_description: |-
+  This table contains at least one occurrence of each employment period for a person on supervision.
+data_classification: source
+primary_key_cols:
+  - OffenderID
+  - SequenceNumber
+columns:
+  - name: OffenderID
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+  - name: SequenceNumber
+    description: |-
+      Uniquely identifies various DB2 tables.
+  - name: EmployerName
+    description: |-
+      The last name, first name, and middle initial of an employer. It is 25 characters instead of 40.
+  - name: AddressLine1
+    description: |-
+      The first street address line.
+  - name: AddressLine2
+    description: |-
+      The second street address line.
+  - name: City
+    description: |-
+      The city for an address.
+  - name: State
+    description: |-
+      The state for an address.
+  - name: Zip
+    description: |-
+      The zip code for an address.
+  - name: PhoneNumber
+    description: |-
+      The number at which someone can be reached.
+  - name: EmployerContactName
+    description: |-
+      The name of the person to contact to verify an offender's employment status.
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      The date on which an inmate begins a job, class or program.
+  - name: VerifiedStartDate
+    is_datetime: True
+    description: |-
+      The verified date on which an inmate begins a job, class or program according to the verification letter response.
+  - name: EndDate
+    is_datetime: True
+    description: |-
+      The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
+  - name: VerifiedEndDate
+    is_datetime: True
+    description: |-
+      The verified date a program, job, or class assignment ended according to the verification letter response.
+  - name: TerminationReason
+    description: |-
+      The reason for an offender's termination from a job.
+  - name: VerifiedTerminationReason
+    description: |-
+      The verified reason for an offender's termination from a job based on confirmation from the employer.
+  - name: PayRate
+    description: |-
+      The rate at which an individual is paid for a job.
+  - name: VerifiedPayRate
+    description: |-
+      The verified rate at which an individual is paid for a job based on the verification letter response.
+  - name: PayPeriod
+    description: |-
+      The code of the pay period of an offender for a job in the free world.
+  - name: VerifiedPayPeriod
+    description: |-
+      The code of the pay period of an offender for a job in the free world verified in the verification letter process.
+  - name: Occupation
+    description: |-
+      The type of work an offender performed in the free world. Also, the type of work an offender family member does.
+  - name: VerifiedOccupation
+    description: |-
+      The verified type of work an offender performed in the free world. The verified type of work an offender family member does. These occupations are verified through the letter verification process.
+  - name: VerifiedStatus
+    description: |-
+      The status of the verification of information obtained from the offender during the pre-sentence investigation.
+  - name: SortStartDate
+    is_datetime: True
+    description: |-
+      The start date used to sort records.
+  - name: SortEndDate
+    is_datetime: True
+    description: |-
+      The end date used to sort records.
+  - name: LastUpdateUserID
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    is_datetime: True
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
