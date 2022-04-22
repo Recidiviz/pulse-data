@@ -19,10 +19,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled, { css } from "styled-components/macro";
 
-import { CreateReportFormValuesType, useStore } from "../../stores";
+import { CreateReportFormValuesType } from "../../shared/types";
+import { useStore } from "../../stores";
+import { monthsByName } from "../../utils";
 import { BinaryRadioButton, BinaryRadioGroupContainer } from "../Forms";
 import { palette } from "../GlobalStyles";
-import { monthsByName } from "../utils";
 
 // Temporary Placeholder Styles
 

@@ -36,14 +36,15 @@ import {
   SortBy,
   Table,
 } from "../components/Reports";
+import { ReportOverview } from "../shared/types";
+import { useStore } from "../stores";
 import {
   normalizeString,
   printCommaSeparatedList,
   printElapsedDaysSinceDate,
   printReportTitle,
   removeSnakeCase,
-} from "../components/utils";
-import { ReportOverview, useStore } from "../stores";
+} from "../utils";
 
 enum ReportStatusFilterOption {
   AllReports = "All Reports",

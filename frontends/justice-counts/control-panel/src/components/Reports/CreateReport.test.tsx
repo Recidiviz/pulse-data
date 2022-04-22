@@ -15,12 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { runInAction } from "mobx";
 import React from "react";
+import { BrowserRouter } from "react-router-dom";
 
 import Reports from "../../pages/Reports";
 import { rootStore, StoreProvider } from "../../stores";
+import Menu from "../Menu";
 
 const mockedUsedNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
@@ -78,4 +80,58 @@ test("displayed created reports", async () => {
   expect(editor2).toBeInTheDocument();
 
   expect.hasAssertions();
+});
+
+describe("test create report button", () => {
+  test("created reports button should not be displayed if user does not have permission", () => {
+    render(
+      <StoreProvider>
+        <BrowserRouter>
+          <Menu />
+        </BrowserRouter>
+      </StoreProvider>
+    );
+    const menuButton = screen.getByRole("button");
+
+    fireEvent(
+      menuButton,
+      new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+
+    runInAction(() => {
+      rootStore.userStore.permissions = [""];
+    });
+
+    const createReportButton = screen.queryByText(/Create Report/i);
+    expect(createReportButton).not.toBeInTheDocument();
+  });
+
+  test("created reports button should be displayed if user has permission", () => {
+    render(
+      <StoreProvider>
+        <BrowserRouter>
+          <Menu />
+        </BrowserRouter>
+      </StoreProvider>
+    );
+    const menuButton = screen.getByRole("button");
+
+    fireEvent(
+      menuButton,
+      new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+
+    runInAction(() => {
+      rootStore.userStore.permissions = ["create:report:all"];
+    });
+
+    const createReportButton = screen.queryByText(/Create Report/i);
+    expect(createReportButton).toBeInTheDocument();
+  });
 });

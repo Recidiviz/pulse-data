@@ -21,8 +21,8 @@ import React from "react";
 
 import mockJSON from "../mocks/reportOverviews.json";
 import Reports from "../pages/Reports";
+import { ReportOverview } from "../shared/types";
 import { rootStore, StoreProvider } from ".";
-import { ReportOverview } from "./ReportStore";
 
 const mockUnorderedReportsMap: { [reportID: string]: ReportOverview } = {};
 (mockJSON.unorderedReports as ReportOverview[]).forEach((report) => {

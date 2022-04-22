@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { ReportFrequency } from "../../stores";
+import { ReportFrequency } from "../shared/types";
 
 export const monthsByName = [
   "January",
