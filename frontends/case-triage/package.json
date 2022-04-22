@@ -24,7 +24,7 @@
     "mobx": "^6.1.4",
     "mobx-react-lite": "^3.2.0",
     "mobx-utils": "^6.0.4",
-    "moment": "^2.29.1",
+    "moment": "^2.29.2",
     "param-case": "^3.0.4",
     "polished": "^4.1.0",
     "prop-types": "^15.7.2",
