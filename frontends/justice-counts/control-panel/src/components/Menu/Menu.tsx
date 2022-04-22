@@ -19,11 +19,12 @@ import { observer } from "mobx-react-lite";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
+import { Permission } from "../../shared/types";
 import { useStore } from "../../stores";
 import { ExtendedDropdownMenuItem, ExtendedDropdownToggle } from ".";
 
 const Menu = () => {
-  const { authStore, api } = useStore();
+  const { authStore, api, userStore } = useStore();
   const navigate = useNavigate();
 
   const logout = async (): Promise<void | string> => {
@@ -59,9 +60,15 @@ const Menu = () => {
       </ExtendedDropdownToggle>
 
       <DropdownMenu alignment="right">
-        <ExtendedDropdownMenuItem onClick={() => navigate("/reports/create")}>
-          Create Report
-        </ExtendedDropdownMenuItem>
+        <>
+          {userStore.permissions.includes(Permission.CREATE_REPORT) && (
+            <ExtendedDropdownMenuItem
+              onClick={() => navigate("/reports/create")}
+            >
+              Create Report
+            </ExtendedDropdownMenuItem>
+          )}
+        </>
         <ExtendedDropdownMenuItem onClick={() => navigate("/")}>
           Reports
         </ExtendedDropdownMenuItem>
