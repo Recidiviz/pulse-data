@@ -153,13 +153,46 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         LEFT JOIN supervision_plan_3 
             USING(Offender_ID)
     ),
+    -- For ISC folks, pull in supervision level higher than minimum for current system session 
+    sup_levels AS (
+        SELECT * 
+        FROM (
+            SELECT person_id,
+                end_date,
+                supervision_level,
+                previous_supervision_level,
+                MAX(CASE WHEN supervision_level IN ("IN_CUSTODY", "MAXIMUM", "HIGH", "MEDIUM") THEN start_date END) OVER(PARTITION BY person_id) AS latest_start_higher_sup_level,
+            FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
+            WHERE state_code = 'US_TN'
+        )
+        WHERE end_date IS NULL
+    ),
     -- Joins together sentences and standards sheet
     sentences_join AS (
-        SELECT *, 
-            CASE WHEN sentence_put_together.Offender_ID IS NULL THEN 1 ELSE 0 END AS missing_sent_info
+        SELECT  sup_plan_standards.*, 
+                sentence_put_together.* EXCEPT(Offender_ID),
+                sl.previous_supervision_level,
+                latest_start_higher_sup_level,
+                CASE WHEN sentence_put_together.Offender_ID IS NULL THEN 1 ELSE 0 END AS missing_sent_info,
+                -- Criteria: For people on ISC (interstate compact) who are currently on minimum, were assigned to minimum right after supervision intake
+                -- (unassigned supervision level) and haven't had a higher supervision level during this system session, we mark them as automatically
+                -- eligible for compliant reporting
+                CASE WHEN sl.previous_supervision_level = 'UNASSIGNED'
+                        AND sl.supervision_level = 'MINIMUM'
+                        AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
+                        THEN 'Eligible'
+                    -- For people where the previous supervision level is not Intake (Unassigned) but could be Limited (Compliant Reporting), Unknown, Null, etc
+                    -- but who are on minimum without a higher level this system session, we flag them as eligible pending review
+                     WHEN COALESCE(sl.previous_supervision_level,'MISSING') != 'UNASSIGNED'
+                        AND sl.supervision_level = 'MINIMUM' 
+                        AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
+                        THEN 'Needs Review'
+                    END AS no_sup_level_higher_than_mininmum
         FROM sup_plan_standards
         LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_sentence_logic_materialized` sentence_put_together
             USING(Offender_ID)
+        LEFT JOIN sup_levels sl
+            ON sl.person_id = sup_plan_standards.person_id
     ),
     -- This CTE pulls information on drug contacts to understand who satisfies the criteria for drug screens
     contacts_cte AS (
@@ -713,6 +746,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             Supervision_Level AS supervision_level,
             eligible_level_start,
             Plan_Start_Date AS supervision_level_start,
+            no_sup_level_higher_than_mininmum,
+            previous_supervision_level,
+            latest_start_higher_sup_level,
             -- Current offenses is just active offenses. If someone is missing an active sentence, this is null
             active_offenses AS current_offenses,
             -- These are prior offenses that make someone ineligible, but that expired 10+ years ago
@@ -956,16 +992,58 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 date_drug_screen_eligible,
                 date_cr_rejection_eligible) AS greatest_date_eligible,
         CASE 
-             WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c1'
-             WHEN all_eligible_and_offense_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c2'
-             WHEN all_eligible_and_offense_and_zt_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 'c3'
              -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting
-             WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 'c4'
+             WHEN supervision_type LIKE '%ISC%' 
+                AND supervision_level LIKE '%MINIMUM%' 
+                AND has_TN_sentence = 0 
+                AND no_lifetime_flag = 1 
+                AND no_sup_level_higher_than_mininmum in ('Eligible')
+                THEN 'c4'
+             WHEN all_eligible = 1 
+                AND overdue_for_discharge_no_case_closure = 0 
+                AND overdue_for_discharge_within_90 = 0 
+                THEN 'c1'
+             WHEN all_eligible_and_offense_discretion = 1 
+                AND overdue_for_discharge_no_case_closure = 0 
+                AND overdue_for_discharge_within_90 = 0 
+                THEN 'c2'
+             WHEN all_eligible_and_offense_and_zt_discretion = 1 
+                AND overdue_for_discharge_no_case_closure = 0 
+                AND overdue_for_discharge_within_90 = 0 
+                THEN 'c3' 
              END AS compliant_reporting_eligible,
-        CASE WHEN supervision_type LIKE '%ISC%' AND supervision_level LIKE '%MINIMUM%' AND has_TN_sentence = 0 AND no_lifetime_flag = 1 THEN 1 ELSE 0 END AS eligible_c4,
-            CASE WHEN all_eligible = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c1,
-        CASE WHEN all_eligible_and_offense_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c2,
-        CASE WHEN all_eligible_and_offense_and_zt_discretion = 1 AND overdue_for_discharge_no_case_closure = 0 AND overdue_for_discharge_within_90 = 0 THEN 1 ELSE 0 END AS eligible_c3
+        
+        CASE WHEN supervision_type LIKE '%ISC%' 
+            AND supervision_level LIKE '%MINIMUM%' 
+            AND has_TN_sentence = 0 
+            AND no_lifetime_flag = 1
+            AND no_sup_level_higher_than_mininmum in ('Eligible') 
+            THEN 1 
+        ELSE 0 END AS eligible_c4,
+        
+        CASE WHEN supervision_type LIKE '%ISC%' 
+            AND supervision_level LIKE '%MINIMUM%' 
+            AND has_TN_sentence = 0 
+            AND no_lifetime_flag = 1
+            AND no_sup_level_higher_than_mininmum in ('Needs Review') 
+            THEN 1 
+        ELSE 0 END AS eligible_c4_review,
+        
+        CASE WHEN all_eligible = 1 
+            AND overdue_for_discharge_no_case_closure = 0 
+            AND overdue_for_discharge_within_90 = 0 
+            THEN 1 
+        ELSE 0 END AS eligible_c1,
+        CASE WHEN all_eligible_and_offense_discretion = 1 
+            AND overdue_for_discharge_no_case_closure = 0 
+            AND overdue_for_discharge_within_90 = 0 
+            THEN 1 
+        ELSE 0 END AS eligible_c2,
+        CASE WHEN all_eligible_and_offense_and_zt_discretion = 1 
+            AND overdue_for_discharge_no_case_closure = 0 
+            AND overdue_for_discharge_within_90 = 0 
+            THEN 1 
+        ELSE 0 END AS eligible_c3
     FROM add_more_flags_2
 """
 
