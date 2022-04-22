@@ -53,3 +53,9 @@ repos:
         language: system
         files: ^recidiviz/ingest/direct/ingest_mappings/yaml_schema/|^docs/engineering/ingest_mapping_schema/
         require_serial: true
+      - id: update_terraform_lock_file
+        name: update_terraform_lock_file
+        entry: recidiviz/tools/deploy/update_terraform_lock.sh
+        language: script
+        files: ^recidiviz/tools/deploy/terraform/
+        require_serial: true
