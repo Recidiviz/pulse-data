@@ -57,11 +57,13 @@ in the year following assignment.
         COUNT(DISTINCT office) AS officer_office_count,
         MIN(officer_tenure_days) AS officer_tenure_days,"""
         officer_attributes = """
-    MAX(primary_offices.district) AS primary_district,
-    MAX(primary_offices.office) AS primary_office,
+    MAX(primary_officer_count.district) AS primary_district,
+    MAX(primary_officer_count.office) AS primary_office,
     AVG(officer_district_count) AS avg_district_count,
     AVG(officer_office_count) AS avg_office_count,
     MIN(officer_tenure_days) AS officer_tenure_days_start,"""
+        primary_officer_count = """
+    SELECT * FROM primary_offices"""
 
     else:
         if level == "office":
@@ -75,10 +77,21 @@ in the year following assignment.
         SAFE_DIVIDE(SUM(officer_tenure_days * caseload_all), SUM(caseload_all))
             AS client_weighted_officer_tenure_days,"""
         officer_attributes = """
-    COUNT(DISTINCT primary_offices.supervising_officer_external_id) AS distinct_primary_officers,
+    AVG(distinct_primary_officers) AS distinct_primary_officers,
     AVG(officer_count) AS avg_officer_count,
     AVG(officer_tenure_days) AS avg_officer_tenure_days,
     AVG(client_weighted_officer_tenure_days) AS avg_client_weighted_officer_tenure_days,"""
+        primary_officer_count = f"""
+    SELECT
+        state_code,
+        {index_cols},
+        period,
+        start_date,
+        end_date,
+        COUNT(DISTINCT supervising_officer_external_id) AS distinct_primary_officers,
+    FROM
+        primary_offices
+    GROUP BY 1, 2, 3, 4, 5{", 6" if level == "office" else ""}"""
 
     query_template = f"""
 /*{{description}}*/
@@ -149,6 +162,10 @@ WITH date_range AS (
             period, start_date, end_date 
             ORDER BY avg_daily_caseload_primary DESC, district, office
         ) = 1
+)
+
+, primary_officer_count AS (
+    {primary_officer_count}
 )
 
 # {level}-day
@@ -261,7 +278,7 @@ INNER JOIN
 ON
     a.date BETWEEN b.start_date AND b.end_date
 LEFT JOIN
-    primary_offices
+    primary_officer_count
 USING
     (state_code, {index_cols}, period, start_date, end_date)
 GROUP BY 1, 2, 3, 4, 5{", 6" if level == "office" else ""}
