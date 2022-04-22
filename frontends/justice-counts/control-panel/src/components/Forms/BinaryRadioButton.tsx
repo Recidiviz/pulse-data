@@ -18,20 +18,35 @@
 import React, { InputHTMLAttributes } from "react";
 import styled from "styled-components/macro";
 
+import { rem } from "../../utils";
 import { palette } from "../GlobalStyles";
 
 export const BinaryRadioGroupContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+export const BinaryRadioGroupWrapper = styled.div`
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
 `;
 
+export const BinaryRadioGroupQuestion = styled.div`
+  margin-top: 22px;
+  font-size: ${rem("20px")};
+  line-height: 32px;
+  color: ${palette.solid.darkgrey};
+`;
+
 export const RadioButtonWrapper = styled.div`
-  width: 100%;
+  display: flex;
+  flex: 1 1 auto;
+  margin: 15px 0 0 0;
 
   &:first-child {
-    margin: 0 10px 0 0;
+    margin: 15px 10px 0 0;
   }
 `;
 
@@ -41,7 +56,7 @@ export const RadioButtonElement = styled.input`
   opacity: 0;
 
   &:focus + label {
-    border: 1px solid ${palette.highlight.grey3};
+    border: 1px solid ${palette.highlight.grey5};
   }
 
   &:checked + label {
@@ -49,30 +64,41 @@ export const RadioButtonElement = styled.input`
     border-color: ${palette.solid.blue};
     color: ${palette.solid.white};
   }
+
   &:checked + label:hover {
     background-color: ${palette.solid.darkblue};
   }
 `;
 
 export const RadioButtonLabel = styled.label`
+  width: 100%;
+  height: 56px;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 56px;
-
   background: ${palette.highlight.grey1};
-  padding: 10px 20px;
-  font-size: 16px;
+  padding: 16px 24px;
   border: 1px solid ${palette.highlight.grey3};
   border-radius: 2px;
+  font-size: ${rem("18px")};
+  line-height: 24px;
   transition: 0.2s ease;
-
-  margin: 10px 0;
 
   &:hover {
     cursor: pointer;
     background: ${palette.highlight.grey2};
+  }
+`;
+
+export const BinaryRadioGroupClearButton = styled.div`
+  margin-top: 14px;
+  font-size: ${rem("12px")};
+  line-height: 16px;
+  color: ${palette.solid.red};
+  text-decoration: underline;
+
+  &:hover {
+    cursor: pointer;
   }
 `;
 
@@ -81,6 +107,7 @@ interface RadioButtonProps extends InputHTMLAttributes<HTMLInputElement> {
   context?: string;
 }
 
+/** Single radio button in the style of a regular button */
 export const BinaryRadioButton: React.FC<RadioButtonProps> = ({
   label,
   context,
