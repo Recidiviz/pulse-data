@@ -35,8 +35,8 @@ def get_view_strings_by_level(level: str) -> Tuple[str, str, str]:
     3. query template
     """
 
-    if level not in ["officer", "office", "district"]:
-        raise ValueError("`level` must be 'officer', 'office', or 'district'.")
+    if level not in ["officer", "office", "district", "state"]:
+        raise ValueError("`level` must be 'officer', 'office', 'district', or 'state'.")
 
     view_id = f"supervision_{level}_metrics"
 
@@ -50,7 +50,7 @@ in the year following assignment.
 
     # level-dependent columns/metrics
     if level == "officer":
-        index_cols = "supervising_officer_external_id"
+        index_cols = "state_code, supervising_officer_external_id"
         level_dependent_metrics = """
         # Officer-specific metrics
         COUNT(DISTINCT district) AS officer_district_count,
@@ -67,12 +67,14 @@ in the year following assignment.
 
     else:
         if level == "office":
-            index_cols = "district, office"
+            index_cols = "state_code, district, office"
+        elif level == "district":
+            index_cols = "state_code, district"
         else:
-            index_cols = "district"
+            index_cols = "state_code"
         level_dependent_metrics = f"""
         # count/avg/sum across officers with any clients in that {level}
-        COUNT(supervising_officer_external_id) AS officer_count,
+        COUNT(DISTINCT supervising_officer_external_id) AS officer_count,
         AVG(officer_tenure_days) AS officer_tenure_days,
         SAFE_DIVIDE(SUM(officer_tenure_days * caseload_all), SUM(caseload_all))
             AS client_weighted_officer_tenure_days,"""
@@ -83,7 +85,6 @@ in the year following assignment.
     AVG(client_weighted_officer_tenure_days) AS avg_client_weighted_officer_tenure_days,"""
         primary_officer_count = f"""
     SELECT
-        state_code,
         {index_cols},
         period,
         start_date,
@@ -91,7 +92,7 @@ in the year following assignment.
         COUNT(DISTINCT supervising_officer_external_id) AS distinct_primary_officers,
     FROM
         primary_offices
-    GROUP BY 1, 2, 3, 4, 5{", 6" if level == "office" else ""}"""
+    GROUP BY {index_cols}, period, start_date, end_date"""
 
     query_template = f"""
 /*{{description}}*/
@@ -172,7 +173,6 @@ WITH date_range AS (
 , {level}_level_metrics AS (
     SELECT
         # index
-        state_code,
         {index_cols},
         date,
         {level_dependent_metrics}
@@ -219,13 +219,12 @@ WITH date_range AS (
         SUM(days_employed_1yr) AS days_employed_1yr,
     FROM
         `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized`
-    GROUP BY 1, 2, 3{", 4" if level == "office" else ""}
+    GROUP BY {index_cols}, date
 )
 
 # {level}-period
 SELECT
     # index
-    state_code,
     {index_cols},
     period,
     start_date,
@@ -280,9 +279,9 @@ ON
 LEFT JOIN
     primary_officer_count
 USING
-    (state_code, {index_cols}, period, start_date, end_date)
-GROUP BY 1, 2, 3, 4, 5{", 6" if level == "office" else ""}
-ORDER BY 1, 2, 3, 4{", 5" if level == "office" else ""}
+    ({index_cols}, period, start_date, end_date)
+GROUP BY {index_cols}, period, start_date, end_date
+ORDER BY {index_cols}, period, start_date DESC
 """
     return view_id, view_description, query_template
 
@@ -291,11 +290,13 @@ ORDER BY 1, 2, 3, 4{", 5" if level == "office" else ""}
 SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = []
 
 # iteratively add each builder to list
-for lev in ["officer", "office", "district"]:
+for lev in ["officer", "office", "district", "state"]:
     name, description, template = get_view_strings_by_level(lev)
 
     clustering_fields = ["state_code"]
-    if lev == "officer":
+    if lev == "state":
+        pass
+    elif lev == "officer":
         clustering_fields.append("supervising_officer_external_id")
     else:
         clustering_fields.append(lev)
