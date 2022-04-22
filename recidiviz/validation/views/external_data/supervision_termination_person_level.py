@@ -26,6 +26,8 @@ _QUERY_TEMPLATE = """
 SELECT * FROM `{project_id}.{us_id_validation_dataset}.supervision_termination_person_level_raw`
 UNION ALL
 SELECT * FROM `{project_id}.{us_pa_validation_dataset}.supervision_termination_person_level_raw`
+UNION ALL
+SELECT * FROM `{project_id}.{us_me_validation_dataset}.supervision_termination_person_level_raw`
 """
 
 SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -40,6 +42,9 @@ SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_PA
+    ),
+    us_me_validation_dataset=dataset_config.validation_dataset_for_state(
+        StateCode.US_ME
     ),
 )
 
