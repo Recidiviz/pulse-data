@@ -1221,9 +1221,6 @@ The following views have less restrictive projects_to_deploy than their parents:
                 table_id="release_termination_reason_dedup_priority",
             ),
             BigQueryAddress(
-                dataset_id="sessions", table_id="violation_type_dedup_priority"
-            ),
-            BigQueryAddress(
                 dataset_id="sessions", table_id="supervision_level_dedup_priority"
             ),
             BigQueryAddress(
