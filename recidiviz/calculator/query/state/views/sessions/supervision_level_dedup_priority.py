@@ -15,17 +15,62 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Dedup priority for supervision levels"""
+from typing import Dict
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_NAME = "supervision_level_dedup_priority"
 
-SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_DESCRIPTION = (
-    """Dedup priority for supervision levels"""
-)
+SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_DESCRIPTION = """
+This view defines a prioritized ranking for supervision levels. This view is ultimately used to deduplicate 
+supervision periods so that there is only one level per person per day
+"""
+
+
+# TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
+class TemporaryStateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
+    """Temporary supervision levels used for the TN pathways launch."""
+
+    ABSCONDED = "ABSCONDED"
+    DETAINER = "DETAINER"
+    WARRANT = "WARRANT"
+
+    @staticmethod
+    def _get_default_map() -> Dict[str, "TemporaryStateSupervisionLevel"]:
+        return {
+            "ABSCONDED": TemporaryStateSupervisionLevel.ABSCONDED,
+            "DETAINER": TemporaryStateSupervisionLevel.DETAINER,
+            "WARRANT": TemporaryStateSupervisionLevel.WARRANT,
+        }
+
+
+SUPERVISION_LEVEL_ORDERED_PRIORITY = [
+    StateSupervisionLevel.INCARCERATED,
+    StateSupervisionLevel.IN_CUSTODY,
+    TemporaryStateSupervisionLevel.ABSCONDED,
+    TemporaryStateSupervisionLevel.DETAINER,
+    TemporaryStateSupervisionLevel.WARRANT,
+    StateSupervisionLevel.MAXIMUM,
+    StateSupervisionLevel.HIGH,
+    StateSupervisionLevel.MEDIUM,
+    StateSupervisionLevel.MINIMUM,
+    StateSupervisionLevel.LIMITED,
+    StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
+    StateSupervisionLevel.INTERSTATE_COMPACT,
+    StateSupervisionLevel.UNSUPERVISED,
+    StateSupervisionLevel.DIVERSION,
+    StateSupervisionLevel.UNASSIGNED,
+    StateSupervisionLevel.INTERNAL_UNKNOWN,
+    StateSupervisionLevel.PRESENT_WITHOUT_INFO,
+    StateSupervisionLevel.EXTERNAL_UNKNOWN,
+]
 
 SUPERVISION_LEVEL_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     /*{description}*/
@@ -34,19 +79,8 @@ SUPERVISION_LEVEL_DEDUP_PRIORITY_QUERY_TEMPLATE = """
         correctional_level_priority,
         -- Indicator for whether supervision level can be assigned based on risk level/PO discretion, to determine inclusion in downgrade/upgrade counts
         correctional_level IN ('MAXIMUM', 'HIGH', 'MEDIUM', 'MINIMUM', 'LIMITED') AS is_discretionary_level
-    FROM UNNEST([
-        'INCARCERATED',
-        'IN CUSTODY',
-        'MAXIMUM',
-        'HIGH',
-        'MEDIUM',
-        'MINIMUM',
-        'LIMITED',
-        'UNSUPERVISED',
-        'DIVERSION',
-        'INTERNAL_UNKNOWN',
-        'EXTERNAL_UNKNOWN']) AS correctional_level
-    WITH OFFSET AS correctional_level_priority 
+    FROM UNNEST([{prioritized_supervision_levels}]) AS correctional_level
+    WITH OFFSET AS correctional_level_priority
     """
 
 SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -55,6 +89,9 @@ SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_LEVEL_DEDUP_PRIORITY_QUERY_TEMPLATE,
     description=SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_DESCRIPTION,
     should_materialize=False,
+    prioritized_supervision_levels=(
+        "\n,".join([f"'{level.value}'" for level in SUPERVISION_LEVEL_ORDERED_PRIORITY])
+    ),
 )
 
 if __name__ == "__main__":
