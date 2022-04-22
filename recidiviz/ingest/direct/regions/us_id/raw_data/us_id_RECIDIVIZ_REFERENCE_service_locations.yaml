@@ -1,0 +1,36 @@
+file_tag: RECIDIVIZ_REFERENCE_service_locations
+file_description: |-
+  Recidiviz-generated list of service providers in Idaho, including address and lat/lon location.
+  This list is publicly available data from https://www.corizonreentry.com/id
+data_classification: source
+primary_key_cols:
+  - service_location_id
+columns:
+  - name: service_location_id
+    description: Primary key, arbitrary.
+  - name: name
+    description: Name of service provider/agency.
+  - name: address
+    description: Street address of provider, as listed in online directory.
+  - name: phone_number
+    description: Phone number of provider.
+  - name: hours_of_operation
+    description: Days and hours of operation of provider.
+  - name: email_address
+    description: Email address of provider.
+  - name: web_address
+    description: URL of provider.
+  - name: notes
+    description: Narrative description of services provided or special instructions for contacting the provider.
+  - name: languages
+    description: Languages (besides English) that services can be provided in.
+  - name: categories
+    description: The types of services provided by the agency.
+  - name: cleaned_address
+    description: Recidiviz-generated. Geocoded and standardized address.
+  - name: x
+    description: Recidiviz-generated. Latitude of provider.
+  - name: "y"
+    description: Recidiviz-generated. Longitude of provider.
+separator: ","
+encoding: utf-8
