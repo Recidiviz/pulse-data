@@ -51,6 +51,8 @@ FROM (
     UNION ALL
     SELECT control_number, move_dt_std FROM `{project_id}.{us_pa_validation_dataset}.2022_01_incarceration_releases`
 )
+UNION ALL
+SELECT * FROM `{project_id}.{us_me_validation_dataset}.incarceration_release_person_level_raw`
 """
 
 INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -65,6 +67,9 @@ INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_PA
+    ),
+    us_me_validation_dataset=dataset_config.validation_dataset_for_state(
+        StateCode.US_ME
     ),
 )
 
