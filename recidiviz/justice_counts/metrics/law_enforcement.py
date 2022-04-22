@@ -19,9 +19,15 @@
 from recidiviz.justice_counts.dimensions.corrections import PopulationType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
+    ForceType,
+    OffenseType,
     SheriffBudgetType,
 )
-from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.person import (
+    Gender,
+    RaceAndEthnicity,
+    StaffType,
+)
 from recidiviz.justice_counts.metrics.constants import ContextKey, ContextType
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -118,4 +124,99 @@ calls_for_service = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[AggregatedDimension(dimension=CallType, required=True)],
+)
+
+police_officers = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.TOTAL_STAFF,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Total police officers in the agency's jurisdictions",
+    description="Measures the number of police officers in the agency's jurisdiction.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    filtered_dimensions=[FilteredDimension(dimension=StaffType.POLICE_OFFICERS)],
+)
+
+reported_crime = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.REPORTED_CRIME,
+    category=MetricCategory.POPULATIONS,
+    display_name="The number of crimes reported to the agency,",
+    description="Measures the number of crimes reported to the agency, by offense type.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    aggregated_dimensions=[AggregatedDimension(dimension=OffenseType, required=True)],
+)
+
+total_arrests = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.ARRESTS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Total arrests made by the agency.",
+    description="Measures the number of arrests made by the agency, by offense type.",
+    contexts=[
+        Context(
+            key=ContextKey.JURISDICTION_DEFINITION_OF_ARREST,
+            context_type=ContextType.TEXT,
+            label="The jurisdiction definition of arrest",
+            required=True,
+        )
+    ],
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    aggregated_dimensions=[AggregatedDimension(dimension=OffenseType, required=True)],
+)
+
+arrests_by_race_and_ethnicity = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.ARRESTS,
+    category=MetricCategory.EQUITY,
+    display_name="Total arrests made by the agency, by race and ethnicity.",
+    description="Measures the number of arrests for each race/ethnic group.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    aggregated_dimensions=[
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True)
+    ],
+)
+
+arrests_by_gender = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.ARRESTS,
+    category=MetricCategory.EQUITY,
+    display_name="Total arrests made by the agency, by gender.",
+    description="Measures the number of arrests for each gender.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    aggregated_dimensions=[AggregatedDimension(dimension=Gender, required=True)],
+)
+
+officer_use_of_force_incidents = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.USE_OF_FORCE_INCIDENTS,
+    category=MetricCategory.PUBLIC_SAFETY,
+    display_name="Total use of force incidents documented by the agency.",
+    description="Measures the number use of force incidents.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    contexts=[
+        Context(
+            key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
+            context_type=ContextType.TEXT,
+            label="The jurisdiction definition of use of force",
+            required=True,
+        )
+    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=ForceType, required=True)],
+)
+
+civilian_complaints_sustained = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.COMPLAINTS_SUSTAINED,
+    category=MetricCategory.FAIRNESS,
+    reporting_note="Disclaimer: Many factors can lead to a complaint being filed, and to a final decision on the complaint. These factors may also vary by agency and jurisdiction.",
+    display_name="Total number of complaints filed against officers in the agency that were ultimately sustained.",
+    description="Measures the number of complaints filed against officers in the agency that were ultimately sustained.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
 )

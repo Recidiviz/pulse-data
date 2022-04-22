@@ -38,3 +38,26 @@ class CallType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/law_enforcement/calls_for_service/type"
+
+
+class OffenseType(DimensionBase, enum.Enum):
+    PERSON = "PERSON"
+    PROPERTY = "PROPERTY"
+    DRUG = "DRUG"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/law_enforcement/reported_crime/type"
+
+
+class ForceType(DimensionBase, enum.Enum):
+    PHYSICAL = "PHYSICAL"
+    RESTRAINT = "RESTRAINT"
+    VERBAL = "VERBAL"
+    WEAPON = "WEAPON"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/law_enforcement/officer_use_of_force_incidents/type"

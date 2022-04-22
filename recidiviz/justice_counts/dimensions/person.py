@@ -223,3 +223,12 @@ class Age(Dimension):
     @property
     def dimension_value(self) -> str:
         return self.value
+
+
+class StaffType(DimensionBase, enum.Enum):
+    POLICE_OFFICERS = "POLICE OFFICERS"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/staff/type"
