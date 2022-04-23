@@ -28,6 +28,9 @@ from werkzeug.exceptions import ServiceUnavailable
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.admin_panel.models.validation_pb2 import (
+    ComparisonValue as ComparisonValue_pb2,
+)
+from recidiviz.admin_panel.models.validation_pb2 import (
     ExistenceValidationResultDetails as ExistenceValidationResultDetails_pb2,
 )
 from recidiviz.admin_panel.models.validation_pb2 import ResultRow as ResultRow_pb2
@@ -231,7 +234,10 @@ def _convert_result_details(
                 SamenessPerRowValidationResultDetails_pb2.RowWithError(
                     row=ResultRow_pb2(
                         label_values=row[0].label_values,
-                        comparison_values=row[0].comparison_values,
+                        comparison_values=[
+                            ComparisonValue_pb2(value=value)
+                            for value in row[0].comparison_values
+                        ],
                     ),
                     error=row[1],
                 )

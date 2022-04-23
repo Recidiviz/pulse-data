@@ -352,9 +352,9 @@ class TestSamenessValidationCheckers(TestCase):
                 ),
             )
 
-    def test_sameness_check_numbers_values_all_none(self) -> None:
+    def test_sameness_check_numbers_one_none(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": None, "b": None, "c": None}
+            {"a": 3, "b": 3, "c": None, "error_rate": 1.0, "error_type": "hard"}
         ]
 
         job = DataValidationJob(
@@ -374,37 +374,26 @@ class TestSamenessValidationCheckers(TestCase):
             ),
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Unexpected None value for column \[a\] in validation \[test_view\]\.$",
-        ):
-            _ = job.validation.get_checker().run_check(job)
+        result = job.validation.get_checker().run_check(job)
 
-    def test_sameness_check_numbers_one_none(self) -> None:
-        self.mock_client.run_query_async.return_value = [{"a": 3, "b": 3, "c": None}]
-
-        job = DataValidationJob(
-            region_code="US_XX",
-            validation=SamenessDataValidationCheck(
-                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
-                validation_type=ValidationCheckType.SAMENESS,
-                comparison_columns=["a", "b", "c"],
-                sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-                view_builder=SimpleBigQueryViewBuilder(
-                    dataset_id="my_dataset",
-                    view_id="test_view",
-                    description="test_view description",
-                    view_query_template="select * from literally_anything",
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job,
+                result_details=SamenessPerRowValidationResultDetails(
+                    failed_rows=[
+                        (
+                            ResultRow(
+                                label_values=(), comparison_values=(3.0, 3.0, None)
+                            ),
+                            1.0,
+                        )
+                    ],
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                 ),
-                region_configs={},
             ),
         )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Unexpected None value for column \[c\] in validation \[test_view\]\.$",
-        ):
-            _ = job.validation.get_checker().run_check(job)
 
     def test_sameness_check_strings_different_values_no_allowed_error(self) -> None:
         self.mock_client.run_query_async.return_value = [
@@ -876,6 +865,108 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             dtype=int,
         )
         expected = expected.set_index(["label"])
+        assert_frame_equal(expected, result, check_dtype=False)
+
+    def test_sameness_check_numbers_one_null_value(self) -> None:
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "label": sqltypes.Integer(),
+                    "a": sqltypes.Integer(),
+                    "b": sqltypes.Integer(),
+                    "c": sqltypes.Integer(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [[0, 10, None, 10]], columns=["label", "a", "b", "c"]
+            ),
+        )
+
+        validation = SamenessDataValidationCheck(
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            validation_type=ValidationCheckType.SAMENESS,
+            comparison_columns=["a", "b", "c"],
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+            view_builder=SimpleBigQueryViewBuilder(
+                dataset_id="my_dataset",
+                view_id="test_view",
+                description="test_view description",
+                view_query_template="select * from `{project_id}.my_dataset.test_data`",
+            ),
+            region_configs={},
+        )
+
+        result = self.query_view_for_builder(
+            validation.error_view_builder,
+            None,
+            ["label"],
+        )
+
+        # need to drop since Postgres doesn't properly remove columns with EXCEPT
+        result = result.drop(
+            ["potential_max_value", "potential_min_value", "max_value", "min_value"],
+            axis=1,
+        )
+
+        expected = pd.DataFrame(
+            [[0, 10, "", 10, 1, "hard"]],
+            columns=["label", "a", "b", "c", "error_rate", "error_type"],
+        )
+        expected = expected.set_index(["label"])
+        assert_frame_equal(expected, result, check_dtype=False, check_column_type=False)
+
+    def test_sameness_check_numbers_null_values(self) -> None:
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "label": sqltypes.Integer(),
+                    "a": sqltypes.Integer(),
+                    "b": sqltypes.Integer(),
+                    "c": sqltypes.Integer(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [[0, None, None, None]], columns=["label", "a", "b", "c"]
+            ),
+        )
+
+        validation = SamenessDataValidationCheck(
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            validation_type=ValidationCheckType.SAMENESS,
+            comparison_columns=["a", "b", "c"],
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+            view_builder=SimpleBigQueryViewBuilder(
+                dataset_id="my_dataset",
+                view_id="test_view",
+                description="test_view description",
+                view_query_template="select * from `{project_id}.my_dataset.test_data`",
+            ),
+            region_configs={},
+        )
+
+        result = self.query_view_for_builder(
+            validation.error_view_builder,
+            {"label": int, "a": int, "b": int, "c": int},
+            ["label"],
+        )
+
+        # need to drop since Postgres doesn't properly remove columns with EXCEPT
+        result = result.drop(
+            ["potential_max_value", "potential_min_value", "max_value", "min_value"],
+            axis=1,
+        )
+
+        expected = pd.DataFrame(
+            [],
+            columns=["label", "a", "b", "c", "error_rate", "error_type"],
+            dtype=int,
+        )
+        expected = expected.set_index(["label"])
+
         assert_frame_equal(expected, result, check_dtype=False)
 
     def test_sameness_check_numbers_soft_failure(self) -> None:

@@ -220,7 +220,7 @@ class ResultRow:
     label_values: Tuple[str, ...] = attr.ib()
 
     # Values from the comparison columns
-    comparison_values: Tuple[float, ...] = attr.ib()
+    comparison_values: Tuple[Optional[float], ...] = attr.ib()
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -439,25 +439,23 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
         row: Row
         for row in error_query_job:
             label_values: List[str] = []
-            comparison_values: List[float] = []
+            comparison_values: List[Optional[float]] = []
 
             for column, value in row.items():
                 if column in ["error_rate", "error_type"]:
                     continue
                 if column in comparison_columns:
                     if value is None:
-                        raise ValueError(
-                            f"Unexpected None value for column [{column}] in validation "
-                            f"[{validation.validation_name}]."
-                        )
-                    try:
-                        float_value = float(value)
-                    except ValueError as e:
-                        raise ValueError(
-                            f"Could not cast value [{value}] in column [{column}] to a float in validation "
-                            f"[{validation.validation_name}]."
-                        ) from e
-                    comparison_values.append(float_value)
+                        comparison_values.append(None)
+                    else:
+                        try:
+                            float_value = float(value)
+                        except ValueError as e:
+                            raise ValueError(
+                                f"Could not cast value [{value}] in column [{column}] to a float in validation "
+                                f"[{validation.validation_name}]."
+                            ) from e
+                        comparison_values.append(float_value)
                 else:
                     label_values.append(str(value))
 
@@ -490,6 +488,16 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
         It takes into account region code soft max allowed error overrides and only returns rows that exceed the max."""
 
         comparison_str = ", ".join(validation_check.comparison_columns)
+
+        # If all comparison column rows are null, it won't be considered a hard failure since they are the same.
+        includes_one_non_null_value = " OR ".join(
+            [f"{column} IS NOT NULL" for column in validation_check.comparison_columns]
+        )
+        # If one or more (but not all) comparison columns are null, it should be considered a hard failure.
+        includes_one_null_value = " OR ".join(
+            [f"{column} IS NULL" for column in validation_check.comparison_columns]
+        )
+
         error_rate_filters: List[str] = []
         set_config_error_types: List[str] = []
         region_code_with_filter_overrides: List[str] = []
@@ -536,7 +544,8 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
     validations_potential_min_max as (
         SELECT *, ABS(GREATEST({comparison_str})) as potential_max_value,
         ABS(LEAST({comparison_str})) as potential_min_value,
-        FROM validation
+        FROM validation 
+        WHERE {includes_one_non_null_value}
     ),
     validations_min_max as (
         -- Get true min and max values accounting for negative numbers
@@ -547,10 +556,11 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
     ),
     validations_error_rate as (
         SELECT * EXCEPT(max_value, min_value),
-        IF(max_value = 0 AND min_value = 0, CAST(0 as FLOAT64), (max_value - min_value) / CAST(max_value AS FLOAT64)) as error_rate,
+        IF({includes_one_null_value}, CAST(1 as FLOAT64), IF(max_value = 0 AND min_value = 0, CAST(0 as FLOAT64), (max_value - min_value) / CAST(max_value AS FLOAT64))) as error_rate,
         FROM validations_min_max
     )
-    SELECT *, {set_error_type_str}
+    SELECT *,
+    {set_error_type_str}
     FROM validations_error_rate
     WHERE {error_rate_filters_str}
     """

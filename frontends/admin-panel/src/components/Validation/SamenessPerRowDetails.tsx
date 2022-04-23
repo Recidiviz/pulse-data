@@ -75,12 +75,12 @@ const SamenessPerRowDetails: React.FC<SamenessPerRowDetailsProps> = ({
         children: firstRow
           .getRow()
           ?.getComparisonValuesList()
-          .map((value: number, index: number) => ({
+          .map((__, index: number) => ({
             key: `value-${index}`,
             render: (
-              _: string,
+              _,
               item: SamenessPerRowValidationResultDetails.RowWithError
-            ) => item.getRow()?.getComparisonValuesList()[index],
+            ) => item.getRow()?.getComparisonValuesList()[index].getValue(),
           })),
       },
       {
