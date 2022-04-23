@@ -3,6 +3,29 @@
 
 import * as jspb from "google-protobuf";
 import * as google_protobuf_timestamp_pb from "google-protobuf/google/protobuf/timestamp_pb";
+import * as google_protobuf_any_pb from "google-protobuf/google/protobuf/any_pb";
+
+export class ComparisonValue extends jspb.Message {
+  hasValue(): boolean;
+  clearValue(): void;
+  getValue(): number | undefined;
+  setValue(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ComparisonValue.AsObject;
+  static toObject(includeInstance: boolean, msg: ComparisonValue): ComparisonValue.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ComparisonValue, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ComparisonValue;
+  static deserializeBinaryFromReader(message: ComparisonValue, reader: jspb.BinaryReader): ComparisonValue;
+}
+
+export namespace ComparisonValue {
+  export type AsObject = {
+    value?: number,
+  }
+}
 
 export class ResultRow extends jspb.Message {
   clearLabelValuesList(): void;
@@ -11,9 +34,9 @@ export class ResultRow extends jspb.Message {
   addLabelValues(value: string, index?: number): string;
 
   clearComparisonValuesList(): void;
-  getComparisonValuesList(): Array<number>;
-  setComparisonValuesList(value: Array<number>): void;
-  addComparisonValues(value: number, index?: number): number;
+  getComparisonValuesList(): Array<ComparisonValue>;
+  setComparisonValuesList(value: Array<ComparisonValue>): void;
+  addComparisonValues(value?: ComparisonValue, index?: number): ComparisonValue;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ResultRow.AsObject;
@@ -28,7 +51,7 @@ export class ResultRow extends jspb.Message {
 export namespace ResultRow {
   export type AsObject = {
     labelValuesList: Array<string>,
-    comparisonValuesList: Array<number>,
+    comparisonValuesList: Array<ComparisonValue.AsObject>,
   }
 }
 

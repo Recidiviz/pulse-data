@@ -13,7 +13,7 @@ import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
-class ResultRow(google.protobuf.message.Message):
+class ComparisonValue(google.protobuf.message.Message):
     """These mirror the `DataValidationJobResultDetails` objects but are trimmed to contain
     any information that is specific to the child class. Information that is common to
     all classes or in the interface (e.g. `error_amount`) is instead a first class field
@@ -21,6 +21,24 @@ class ResultRow(google.protobuf.message.Message):
 
     """
 
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    VALUE_FIELD_NUMBER: builtins.int
+    value: builtins.float = ...
+    def __init__(
+        self,
+        *,
+        value: typing.Optional[builtins.float] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["value", b"value"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["value", b"value"]
+    ) -> None: ...
+
+global___ComparisonValue = ComparisonValue
+
+class ResultRow(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     LABEL_VALUES_FIELD_NUMBER: builtins.int
     COMPARISON_VALUES_FIELD_NUMBER: builtins.int
@@ -33,14 +51,16 @@ class ResultRow(google.protobuf.message.Message):
     @property
     def comparison_values(
         self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        builtins.float
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ComparisonValue
     ]: ...
     def __init__(
         self,
         *,
         label_values: typing.Optional[typing.Iterable[typing.Text]] = ...,
-        comparison_values: typing.Optional[typing.Iterable[builtins.float]] = ...,
+        comparison_values: typing.Optional[
+            typing.Iterable[global___ComparisonValue]
+        ] = ...,
     ) -> None: ...
     def ClearField(
         self,
@@ -83,6 +103,7 @@ class SamenessPerRowValidationResultDetails(google.protobuf.message.Message):
             self,
             field_name: typing_extensions.Literal["error", b"error", "row", b"row"],
         ) -> None: ...
+
     FAILED_ROWS_FIELD_NUMBER: builtins.int
     @property
     def failed_rows(
@@ -129,6 +150,7 @@ class SamenessPerViewValidationResultDetails(google.protobuf.message.Message):
                 self,
                 field_name: typing_extensions.Literal["key", b"key", "value", b"value"],
             ) -> None: ...
+
         PARTITION_LABELS_FIELD_NUMBER: builtins.int
         COLUMN_COUNTS_FIELD_NUMBER: builtins.int
         @property
@@ -160,6 +182,7 @@ class SamenessPerViewValidationResultDetails(google.protobuf.message.Message):
                 b"partition_labels",
             ],
         ) -> None: ...
+
     NUM_ERROR_ROWS_FIELD_NUMBER: builtins.int
     TOTAL_NUM_ROWS_FIELD_NUMBER: builtins.int
     NON_NULL_COUNTS_PER_COLUMN_PER_PARTITION_FIELD_NUMBER: builtins.int
@@ -278,6 +301,7 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     LAST_BETTER_STATUS_RUN_RESULT_STATUS_FIELD_NUMBER: builtins.int
     run_id: typing.Text = ...
     """These apply to this entire valdiation run (i.e. whole /validate request)"""
+
     @property
     def run_datetime(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     system_version: typing.Text = ...
@@ -313,6 +337,7 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     If no prior run meets the above criteria (a failure with no prior, better status)
     then the fields will be null.
     """
+
     @property
     def last_better_status_run_datetime(
         self,

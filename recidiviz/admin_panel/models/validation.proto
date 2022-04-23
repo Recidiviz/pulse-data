@@ -47,15 +47,20 @@ package recidiviz.admin_panel.models;
 // https://developers.google.com/protocol-buffers/docs/reference/javascript-generated
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
 
 // These mirror the `DataValidationJobResultDetails` objects but are trimmed to contain
 // any information that is specific to the child class. Information that is common to
 // all classes or in the interface (e.g. `error_amount`) is instead a first class field
 // of `ValidationStatusRecord`.
 
+message ComparisonValue {
+    optional float value = 1;
+}
+
 message ResultRow {
     repeated string label_values = 1;
-    repeated float comparison_values = 2;
+    repeated ComparisonValue comparison_values = 2;
 }
 
 message ExistenceValidationResultDetails {}
