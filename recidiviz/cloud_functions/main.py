@@ -414,6 +414,10 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
     data = {}
 
     if schema.upper() == "STATE":
+        cloud_functions_log(
+            severity="INFO",
+            message="Managed views will be deployed after refresh.",
+        )
         # Always update managed views when refreshing the state schema after a deploy
         data[UPDATE_MANAGED_VIEWS_REQUEST_ARG] = "true"
 
@@ -425,6 +429,11 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
             data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_HISTORICAL_VALUE
         else:
             data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_NONE_VALUE
+
+    cloud_functions_log(
+        severity="INFO",
+        message=f"Data sent to request: {data}.",
+    )
 
     cloud_functions_log(severity="INFO", message=f"project_id: {project_id}")
     cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")

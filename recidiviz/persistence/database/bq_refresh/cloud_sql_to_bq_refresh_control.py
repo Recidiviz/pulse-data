@@ -82,6 +82,8 @@ def wait_for_ingest_to_create_tasks(
         UPDATE_MANAGED_VIEWS_REQUEST_ARG, ""
     )
 
+    logging.info("Update managed views arg in request: [%s]", update_managed_views_arg)
+
     if not pipeline_run_type_arg and schema_type == SchemaType.STATE:
         # If no pipeline_run_type_arg is specified for the STATE schema, then we default
         # to the incremental run type
@@ -175,7 +177,15 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
             UPDATE_MANAGED_VIEWS_REQUEST_ARG, ""
         )
 
+        json_data_text = request.get_data(as_text=True)
+        logging.info("Request data: %s", json_data_text)
+        logging.info("Update managed views arg: [%s]", update_managed_views_arg)
+
         if update_managed_views_arg:
+            logging.info(
+                "Creating task to hit /view_update/update_all_managed_views endpoint."
+            )
+
             # TODO(#11437): Hitting this endpoint here is a **temporary** solution,
             #  and will be deleted once we put the BigQuery view update into the DAG.
             task_manager = BQRefreshCloudTaskManager()
