@@ -43,8 +43,7 @@ from recidiviz.common.local_file_paths import filepath_relative_to_caller
 _FUZZY_MATCH_CUTOFF = 0.75
 
 _FIPS: pd.DataFrame = None
-
-_SANITIZED_COUNTIES = None
+_SANITIZED_COUNTY_NAMES = None
 
 _FIPS_MAPPING = None
 
@@ -104,7 +103,7 @@ def validate_county_code(county_code: str) -> None:
     if cleaned_county_code in {"carter_vendengine"}:
         return
 
-    if cleaned_county_code not in _get_valid_counties():
+    if cleaned_county_code not in _get_valid_county_names():
         raise ValueError(
             f"county_code does could not be found in sanitized fips: {county_code}"
         )
@@ -156,12 +155,11 @@ def sanitize_county_name(county_name: str) -> str:
     return county
 
 
-def _get_valid_counties() -> Set[str]:
-    global _SANITIZED_COUNTIES
-    if _SANITIZED_COUNTIES is None:
-        _SANITIZED_COUNTIES = {
+def _get_valid_county_names() -> Set[str]:
+    global _SANITIZED_COUNTY_NAMES
+    if _SANITIZED_COUNTY_NAMES is None:
+        _SANITIZED_COUNTY_NAMES = {
             sanitize_county_name(row["county_name"])
             for _, row in _get_FIPS().iterrows()
         }
-
-    return _SANITIZED_COUNTIES
+    return _SANITIZED_COUNTY_NAMES

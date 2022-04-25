@@ -121,3 +121,29 @@ class TestSchema(TestCase):
                 schema.Project.JUSTICE_COUNTS_DATA_SCAN,
                 project,
             )
+
+    def testSchema_agency_location_info(self):
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            with pytest.raises(ValueError, match="Agency state_code is not valid"):
+                agency = schema.Agency(
+                    name="Test Agency",
+                    state_code="INVALID STATE CODE",
+                    fips_county_code="us_ak_anchorage",  # valid county code
+                )
+                assert_session.add(agency)
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            with pytest.raises(
+                ValueError,
+                match="county_code does could not be found in sanitized fips",
+            ):
+                agency = schema.Agency(
+                    name="Test Agency",
+                    state_code="US_TX",  # valid state code
+                    fips_county_code="INVALID COUNTY CODE",
+                )
+                assert_session.add(agency)

@@ -32,7 +32,7 @@ import enum
 from typing import Any, Dict, List, Optional, TypeVar
 
 from sqlalchemy import ForeignKey, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql.schema import (
     Column,
     ForeignKeyConstraint,
@@ -49,6 +49,8 @@ from sqlalchemy.sql.sqltypes import (
     String,
 )
 
+from recidiviz.common import fips
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 
 
@@ -169,6 +171,22 @@ class Agency(Source):
 
     All Agencies are Sources, but not all Sources are Agencies.
     """
+
+    system = Column(Enum(System))
+    state_code = Column(String(255))
+    fips_county_code = Column(String(255))
+
+    @validates("state_code")
+    def validate_state_code(self, _: Any, state_code: str) -> str:
+        if not StateCode.is_valid(state_code):
+            raise ValueError("Agency state_code is not valid")
+        return state_code
+
+    @validates("fips_county_code")
+    def validate_fips_county_code(self, _: Any, fips_county_code: str) -> str:
+        # fips.validate_country_code raises a Value Error if the county_code is invalid.
+        fips.validate_county_code(fips_county_code)
+        return fips_county_code
 
     user_accounts = relationship(
         "UserAccount",
