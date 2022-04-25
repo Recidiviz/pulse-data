@@ -330,7 +330,9 @@ class ReportTableDefinition(JusticeCountsBase):
     # combination of values for the aggregated dimensions. Dimensions are sorted deterministically within the array.
     aggregated_dimensions = Column(ARRAY(String(255)), nullable=False)
 
-    # The label of the table within the report, if provided.
+    # Either the label of the table within the report (if the source of the report is the data scan),
+    # or the unique key of the corresponding MetricDefinition (if the source of the report is the
+    # Control Panel)
     label = Column(String(255), nullable=False)
 
     __table_args__ = tuple(

@@ -42,7 +42,7 @@ class ReportedAggregatedDimension:
     dictionary should map `Dimension` enum values to numeric values.
     """
 
-    dimension_to_value: Dict[DimensionBase, float] = attr.field()
+    dimension_to_value: Dict[DimensionBase, Optional[float]] = attr.field()
 
     @dimension_to_value.validator
     def validate(self, _attribute: attr.Attribute, value: Any) -> None:
@@ -72,13 +72,15 @@ class ReportedAggregatedDimension:
 
 @attr.define()
 class ReportMetric:
-    """Represents an agency's reported values for a Justice Counts metric."""
+    """Represents an agency's reported values for a Justice Counts metric.
+    If the agency has not filled out a field yet, the value will be None.
+    """
 
     # The key of the metric (i.e. `MetricDefinition.key`) that is being reported
     key: str
     # The value entered for the metric. If the metric has breakdowns, this is the
     # total, aggregate value summed across all dimensions.
-    value: float = attr.field()
+    value: Optional[float] = attr.field()
 
     # Additional context that the agency reported on this metric
     contexts: Optional[List[ReportedContext]] = attr.field(default=None)
@@ -87,29 +89,27 @@ class ReportMetric:
         default=None
     )
 
+    # Whether or not to enforce that required fields are populated.
+    # Typically we will validate when a report is published, but not before, because
+    # we want to allow agencies to submit reports in an unfinished, draft state.
+    # TODO(#12418) [Backend] Figure out when/when not to validate ReportMetrics
+    enforce_required_fields: Optional[bool] = False
+
     @value.validator
     def validate_value(self, _attribute: attr.Attribute, value: Any) -> None:
-        # Validate that all required breakdowns have been reported and that
-        # for each reported aggregate dimension for which sum_to_total = True,
+        # Validate that for each reported aggregate dimension for which sum_to_total = True,
         # the reported values for this aggregate dimension sum to the total value metric
         dimension_identifier_to_reported_dimension = {
             dimension.dimension_identifier(): dimension
             for dimension in self.aggregated_dimensions or {}
         }
         for dimension_definition in self.metric_definition.aggregated_dimensions or []:
-            if not dimension_definition.should_sum_to_total:
-                continue
-
             dimension_identifier = dimension_definition.dimension_identifier()
             reported_dimension = dimension_identifier_to_reported_dimension.get(
                 dimension_identifier
             )
-            if not reported_dimension:
-                if dimension_definition.required:
-                    raise ValueError(
-                        f"The following required disaggregation is missing: {dimension_identifier}"
-                    )
-                return
+            if not reported_dimension or not dimension_definition.should_sum_to_total:
+                continue
 
             reported_dimension_values = reported_dimension.dimension_to_value.values()
             if sum(reported_dimension_values) != value:
@@ -128,8 +128,8 @@ class ReportMetric:
         for context in self.metric_definition.contexts or []:
             reported_context = context_key_to_reported_context.get(context.key)
 
-            if not reported_context:
-                if context.required:
+            if not reported_context or not reported_context.value:
+                if context.required and self.enforce_required_fields:
                     raise ValueError(f"The required context {context.key} is missing.")
                 continue
 
@@ -145,6 +145,9 @@ class ReportMetric:
     def validate_aggregate_dimensions(
         self, _attribute: attr.Attribute, value: Any
     ) -> None:
+        if not self.enforce_required_fields:
+            return
+
         # Validate that all required aggregated dimensions have been reported
         required_dimensions = {
             dimension.dimension_identifier()

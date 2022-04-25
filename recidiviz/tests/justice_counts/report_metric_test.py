@@ -30,7 +30,7 @@ from recidiviz.justice_counts.metrics.report_metric import (
 from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 
 
-class TestJusticeCountsMetricDefinition(TestCase):
+class TestJusticeCountsReportMetric(TestCase):
     """Implements tests for the Justice Counts ReportMetric class."""
 
     def setUp(self) -> None:
@@ -105,6 +105,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
                 value=100000,
                 contexts=[],
                 aggregated_dimensions=[],
+                enforce_required_fields=True,
             )
 
         with self.assertRaisesRegex(
@@ -136,4 +137,5 @@ class TestJusticeCountsMetricDefinition(TestCase):
                     )
                 ],
                 aggregated_dimensions=[],
+                enforce_required_fields=True,
             )

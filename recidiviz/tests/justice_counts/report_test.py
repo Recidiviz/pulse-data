@@ -145,7 +145,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(queried_definitions), 2)
             self.assertEqual(
                 queried_definitions[0].label,
-                "LAW_ENFORCEMENT_BUDGET__metric/law_enforcement/budget/type_AGGREGATED",
+                "LAW_ENFORCEMENT_BUDGET__metric/law_enforcement/budget/type",
             )
             self.assertEqual(
                 queried_definitions[1].label,
@@ -309,3 +309,71 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             queried_instances = session.query(schema.Cell).all()
             self.assertEqual(len(queried_instances), 1)
+
+    def test_get_metrics_for_empty_report(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_report_monthly)
+            session.flush()
+            report_id = self.test_schema_objects.test_report_monthly.id
+
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report_id(
+                    session=session, report_id=report_id
+                ),
+                key=lambda x: x.key,
+            )
+            calls_for_service = metrics[0]
+            population = metrics[1]
+
+            # Population metric should be blank
+            self.assertEqual(population.value, None)
+
+            # Calls for service metric should be blank
+            self.assertEqual(calls_for_service.value, None)
+
+    def test_get_metrics_for_nonempty_report(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_report_monthly)
+            session.flush()
+            report_id = self.test_schema_objects.test_report_monthly.id
+
+            report = ReportInterface.get_report_by_id(
+                session=session, report_id=report_id
+            )
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=report,
+                reported_metric=self.test_schema_objects.reported_calls_for_service_metric,
+            )
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report_id(
+                    session=session, report_id=report_id
+                ),
+                key=lambda x: x.key,
+            )
+            calls_for_service = metrics[0]
+            population = metrics[1]
+
+            # Should have two metrics: population and calls for service
+            self.assertEqual(len(metrics), 2)
+            self.assertEqual(
+                calls_for_service.key,
+                "LAW_ENFORCEMENT_CALLS_FOR_SERVICE__metric/law_enforcement/calls_for_service/type",
+            )
+            self.assertEqual(
+                population.key,
+                "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/race_and_ethnicity",
+            )
+
+            # Population metric should be blank
+            self.assertEqual(population.value, None)
+
+            # Calls for service metric should be populated
+            self.assertEqual(
+                calls_for_service.value,
+                self.test_schema_objects.reported_calls_for_service_metric.value,
+            )
+            self.assertEqual(
+                calls_for_service.aggregated_dimensions,
+                self.test_schema_objects.reported_calls_for_service_metric.aggregated_dimensions,
+            )

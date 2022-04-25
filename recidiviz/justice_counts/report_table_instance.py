@@ -28,12 +28,7 @@ from recidiviz.justice_counts.utils.persistence_utils import (
     delete_existing,
     update_existing_or_create,
 )
-from recidiviz.persistence.database.schema.justice_counts.schema import (
-    Cell,
-    Report,
-    ReportTableDefinition,
-    ReportTableInstance,
-)
+from recidiviz.persistence.database.schema.justice_counts import schema
 
 
 class ReportTableInstanceInterface:
@@ -42,17 +37,17 @@ class ReportTableInstanceInterface:
     @staticmethod
     def create_or_update_from_reported_metric(
         session: Session,
-        report: Report,
-        report_table_definition: ReportTableDefinition,
+        report: schema.Report,
+        report_table_definition: schema.ReportTableDefinition,
         reported_metric: ReportMetric,
         aggregated_dimension: Optional[ReportedAggregatedDimension] = None,
-    ) -> ReportTableDefinition:
+    ) -> schema.ReportTableDefinition:
         """Given a Report, a ReportTableDefinition, a ReportMetric, and an
         (optional) aggregated dimension, create (or update) the corresponding
         ReportTableInstances and Cells.
         """
         table_instance = update_existing_or_create(
-            ReportTableInstance(
+            schema.ReportTableInstance(
                 report=report,
                 report_table_definition=report_table_definition,
                 time_window_start=report.date_range_start,
@@ -66,7 +61,7 @@ class ReportTableInstanceInterface:
         if not aggregated_dimension:
             cells = [
                 update_existing_or_create(
-                    Cell(
+                    schema.Cell(
                         value=reported_metric.value,
                         aggregated_dimension_values=[],
                         report_table_instance=table_instance,
@@ -78,7 +73,7 @@ class ReportTableInstanceInterface:
         else:
             cells = [
                 update_existing_or_create(
-                    Cell(
+                    schema.Cell(
                         value=value,
                         aggregated_dimension_values=[key.dimension_value],
                         report_table_instance=table_instance,
@@ -93,16 +88,16 @@ class ReportTableInstanceInterface:
     @staticmethod
     def delete_from_reported_metric(
         session: Session,
-        report: Report,
-        report_table_definition: ReportTableDefinition,
+        report: schema.Report,
+        report_table_definition: schema.ReportTableDefinition,
     ) -> None:
         delete_existing(
             session,
-            ReportTableInstance(
+            schema.ReportTableInstance(
                 report=report,
                 report_table_definition=report_table_definition,
                 time_window_start=report.date_range_start,
                 time_window_end=report.date_range_end,
             ),
-            ReportTableInstance,
+            schema.ReportTableInstance,
         )
