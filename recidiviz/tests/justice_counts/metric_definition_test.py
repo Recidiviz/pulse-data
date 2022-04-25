@@ -19,7 +19,9 @@
 from unittest import TestCase
 
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_registry import METRICS
+from recidiviz.utils.types import assert_type
 
 
 class TestJusticeCountsMetricDefinition(TestCase):
@@ -37,4 +39,19 @@ class TestJusticeCountsMetricDefinition(TestCase):
         self.assertEqual(
             law_enforcement.residents.key,
             "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/race_and_ethnicity",
+        )
+
+    def test_additional_context(self) -> None:
+        self.assertEqual(len(law_enforcement.annual_budget.contexts), 2)
+        requested_metrics = assert_type(
+            law_enforcement.annual_budget.specified_contexts, list
+        )
+        self.assertEqual(len(requested_metrics), 1)
+        self.assertEqual(
+            law_enforcement.annual_budget.contexts[0].key,
+            requested_metrics[0].key,
+        )
+        self.assertEqual(
+            law_enforcement.annual_budget.contexts[1].key,
+            ContextKey.ADDITIONAL_CONTEXT,
         )

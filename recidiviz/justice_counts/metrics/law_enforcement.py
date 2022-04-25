@@ -53,7 +53,7 @@ annual_budget = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     reporting_note="Sheriff offices report on budget for patrol and detention separately",
-    contexts=[
+    specified_contexts=[
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
             context_type=ContextType.TEXT,
@@ -76,7 +76,7 @@ residents = MetricDefinition(
     description="Measures the number of residents in the agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
-    contexts=[
+    specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_AREA,
             context_type=ContextType.NUMBER,
@@ -109,7 +109,7 @@ calls_for_service = MetricDefinition(
             whether an underlying incident report was filed.""",
         )
     ],
-    contexts=[
+    specified_contexts=[
         Context(
             key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
             context_type=ContextType.BOOLEAN,
@@ -154,7 +154,7 @@ total_arrests = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Total arrests made by the agency.",
     description="Measures the number of arrests made by the agency, by offense type.",
-    contexts=[
+    specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_ARREST,
             context_type=ContextType.TEXT,
@@ -199,7 +199,7 @@ officer_use_of_force_incidents = MetricDefinition(
     description="Measures the number use of force incidents.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    contexts=[
+    specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
             context_type=ContextType.TEXT,
