@@ -421,6 +421,47 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             len(unprocessed_paths),
             self.raw_metadata_manager.get_num_unprocessed_raw_files(),
         )
+        self.assertEqual(0, self.raw_metadata_manager.get_num_processed_raw_files())
+
+        # Act
+        self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path_1)
+
+        # Assert
+        self.assertEqual(1, self.raw_metadata_manager.get_num_unprocessed_raw_files())
+        self.assertEqual(1, self.raw_metadata_manager.get_num_processed_raw_files())
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_get_num_unprocessed_raw_files_multi_region(self) -> None:
+        # Arrange
+        raw_unprocessed_path_1 = _make_unprocessed_path(
+            "bucket/file_tag.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        raw_unprocessed_path_2 = _make_unprocessed_path(
+            "bucket/file_tag2.csv",
+            GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        # Act
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+        self.raw_metadata_manager_other_region.mark_raw_file_as_discovered(
+            raw_unprocessed_path_2
+        )
+
+        # Assert
+        self.assertEqual(
+            1,
+            self.raw_metadata_manager.get_num_unprocessed_raw_files(),
+        )
+        self.assertEqual(0, self.raw_metadata_manager.get_num_processed_raw_files())
+
+        # Act
+        self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path_1)
+
+        # Assert
+        self.assertEqual(0, self.raw_metadata_manager.get_num_unprocessed_raw_files())
+        self.assertEqual(1, self.raw_metadata_manager.get_num_processed_raw_files())
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_num_unprocessed_raw_files_when_no_files(self) -> None:
@@ -1326,17 +1367,35 @@ class PostgresDirectIngestIngestFileMetadataManagerTest(unittest.TestCase):
             ingest_view_unprocessed_path,
         )
 
-        unprocessed_paths = [ingest_view_unprocessed_path]
-
         # Assert
+        self.assertEqual(1, self.metadata_manager.get_num_unprocessed_ingest_files())
+        self.assertEqual(0, self.metadata_manager.get_num_processed_ingest_files())
+
         self.assertEqual(
-            len(unprocessed_paths),
-            self.metadata_manager.get_num_unprocessed_ingest_files(),
+            1, self.metadata_manager_secondary.get_num_unprocessed_ingest_files()
+        )
+        self.assertEqual(
+            0, self.metadata_manager_secondary.get_num_processed_ingest_files()
         )
 
+        # Act
+        self.metadata_manager.mark_ingest_view_exported(metadata_entity)
+        self.metadata_manager.mark_ingest_view_file_as_discovered(
+            ingest_view_unprocessed_path
+        )
+        self.metadata_manager.mark_ingest_view_file_as_processed(
+            ingest_view_unprocessed_path
+        )
+
+        # Assert
+        self.assertEqual(0, self.metadata_manager.get_num_unprocessed_ingest_files())
+        self.assertEqual(1, self.metadata_manager.get_num_processed_ingest_files())
+
         self.assertEqual(
-            len(unprocessed_paths),
-            self.metadata_manager_secondary.get_num_unprocessed_ingest_files(),
+            1, self.metadata_manager_secondary.get_num_unprocessed_ingest_files()
+        )
+        self.assertEqual(
+            0, self.metadata_manager_secondary.get_num_processed_ingest_files()
         )
 
     def test_get_date_of_earliest_unprocessed_ingest_file(self) -> None:

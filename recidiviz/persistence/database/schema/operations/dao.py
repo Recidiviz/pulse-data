@@ -212,19 +212,26 @@ def get_metadata_for_raw_files_discovered_after_datetime(
     return query.all()
 
 
-def get_date_sorted_unprocessed_raw_files_for_region(
-    session: Session,
-    region_code: str,
-) -> List[schema.DirectIngestRawFileMetadata]:
-    """Returns metadata for all raw files that do not have a processed_time from earliest to latest"""
-    return (
-        session.query(schema.DirectIngestRawFileMetadata)
-        .filter_by(region_code=region_code.upper(), processed_time=None)
-        .order_by(
-            schema.DirectIngestRawFileMetadata.datetimes_contained_upper_bound_inclusive.asc()
-        )
-        .all()
+def get_raw_file_rows_count_for_region(
+    session: Session, region_code: str, is_processed: bool
+) -> int:
+    """Counts all operations DB raw file metadata rows for the given region.
+    If is_processed is True, returns the count of processed files. If it is False,
+    returns the count of unprocessed files.
+    """
+    query = session.query(schema.DirectIngestRawFileMetadata.file_id).filter_by(
+        region_code=region_code.upper()
     )
+    if is_processed:
+        query = query.filter(
+            schema.DirectIngestRawFileMetadata.processed_time.isnot(None),
+        )
+    else:
+        query = query.filter(
+            schema.DirectIngestRawFileMetadata.processed_time.is_(None),
+        )
+
+    return query.count()
 
 
 def get_date_sorted_unprocessed_ingest_view_files_for_region(
@@ -246,3 +253,28 @@ def get_date_sorted_unprocessed_ingest_view_files_for_region(
         )
         .all()
     )
+
+
+def get_ingest_view_file_rows_count_for_region(
+    session: Session, region_code: str, ingest_database_name: str, is_processed: bool
+) -> int:
+    """Counts all operations DB ingest view file metadata rows for the given ingest
+    instance. If is_processed is True, returns the count of processed files. If it is
+    False, returns the count of unprocessed files.
+    """
+    query = session.query(schema.DirectIngestIngestFileMetadata.file_id).filter_by(
+        region_code=region_code.upper(),
+        ingest_database_name=ingest_database_name,
+        is_invalidated=False,
+    )
+
+    if is_processed:
+        query = query.filter(
+            schema.DirectIngestIngestFileMetadata.processed_time.isnot(None),
+        )
+    else:
+        query = query.filter(
+            schema.DirectIngestIngestFileMetadata.processed_time.is_(None),
+        )
+
+    return query.count()
