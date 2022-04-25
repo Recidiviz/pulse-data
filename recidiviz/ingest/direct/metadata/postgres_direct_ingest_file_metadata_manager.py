@@ -243,12 +243,25 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            unprocessed_raw_files = (
-                dao.get_date_sorted_unprocessed_raw_files_for_region(
-                    session, self.region_code
-                )
+            return dao.get_raw_file_rows_count_for_region(
+                session, self.region_code, is_processed=False
             )
-            return len(unprocessed_raw_files)
+
+    def get_num_processed_raw_files(self) -> int:
+        """Returns the number of processed raw files in the operations table for this region"""
+        if "secondary" in self.ingest_database_name:
+            raise DirectIngestInstanceError(
+                f"Invalid ingest database name [{self.ingest_database_name}] provided."
+                f"Raw files should only be processed in a primary ingest instance,"
+                f"not the secondary instance. "
+            )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            return dao.get_raw_file_rows_count_for_region(
+                session, self.region_code, is_processed=True
+            )
 
 
 # TODO(#11424): Delete this class once all states have been migrated to use BQ-based
@@ -495,12 +508,20 @@ class PostgresDirectIngestIngestFileMetadataManager(
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            unprocessed_ingest_files = (
-                dao.get_date_sorted_unprocessed_ingest_view_files_for_region(
-                    session, self.region_code, self.ingest_database_name
-                )
+            return dao.get_ingest_view_file_rows_count_for_region(
+                session, self.region_code, self.ingest_database_name, is_processed=False
             )
-            return len(unprocessed_ingest_files)
+
+    def get_num_processed_ingest_files(self) -> int:
+        """Returns the number of processed ingest files in the operations table for this
+        region.
+        """
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            return dao.get_ingest_view_file_rows_count_for_region(
+                session, self.region_code, self.ingest_database_name, is_processed=True
+            )
 
     def get_date_of_earliest_unprocessed_ingest_file(
         self,

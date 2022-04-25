@@ -325,7 +325,9 @@ class IngestOperationsStore(AdminPanelStore):
             return {
                 "isPaused": False,
                 "unprocessedFilesRaw": -1,
-                "unprocessedFilesIngestView": -2,
+                "processedFilesRaw": -2,
+                "unprocessedFilesIngestView": -3,
+                "processedFilesIngestView": -4,
                 "dateOfEarliestUnprocessedIngestView": datetime(2021, 4, 28),
             }
 
@@ -350,6 +352,7 @@ class IngestOperationsStore(AdminPanelStore):
             num_unprocessed_raw_files = (
                 raw_file_metadata_manager.get_num_unprocessed_raw_files()
             )
+            raw_file_metadata_manager.get_num_unprocessed_raw_files()
         except DirectIngestInstanceError as _:
             num_unprocessed_raw_files = 0
 
@@ -361,6 +364,8 @@ class IngestOperationsStore(AdminPanelStore):
         return {
             "isPaused": is_paused,
             "unprocessedFilesRaw": num_unprocessed_raw_files,
+            "processedFilesRaw": raw_file_metadata_manager.get_num_processed_raw_files(),
             "unprocessedFilesIngestView": ingest_file_metadata_manager.get_num_unprocessed_ingest_files(),
+            "processedFilesIngestView": ingest_file_metadata_manager.get_num_processed_ingest_files(),
             "dateOfEarliestUnprocessedIngestView": ingest_file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
         }
