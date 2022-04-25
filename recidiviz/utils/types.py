@@ -51,5 +51,7 @@ def assert_type(v: Optional[Any], expected_type: Type[T]) -> T:
     """Asserts that the type of a value is a particular type, throwing if it is not."""
     non_optional_v: Any = non_optional(v)
     if not isinstance(non_optional_v, expected_type):
-        raise ValueError(f"Expected type [{expected_type}], found [{v}].")
+        raise ValueError(
+            f"Expected type [{expected_type}], found [{v}] with type [{type(v)}]."
+        )
     return non_optional_v

@@ -17,12 +17,14 @@
 """Provides an interface for I/O to the ingest view results tables for a given
 region's ingest instance.
 """
-
+import abc
 import datetime
 import uuid
-from typing import Any, Optional
+from typing import Any, Dict, Iterable, Optional
 
+import attr
 from google.cloud import bigquery
+from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
@@ -35,6 +37,7 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 _UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"
 _LOWER_BOUND_DATETIME_COL_NAME = "__lower_bound_datetime_exclusive"
@@ -78,6 +81,19 @@ FROM
     `{{project_id}}.{{temp_results_dataset}}.{{temp_results_table}}`;
 """
 
+
+HIGHEST_PRIORITY_ROW_FOR_VIEW_TEMPLATE = f"""
+SELECT
+  {_UPPER_BOUND_DATETIME_COL_NAME},
+  {_BATCH_NUMBER_COL_NAME}
+FROM
+  `{{project_id}}.{{results_dataset}}.{{results_table}}`
+WHERE
+  {_PROCESSED_TIME_COL_NAME} IS NULL
+ORDER BY {_UPPER_BOUND_DATETIME_COL_NAME}, {_BATCH_NUMBER_COL_NAME}
+LIMIT 1;
+"""
+
 _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 
 
@@ -95,10 +111,78 @@ def to_string_value_converter(
     raise ValueError(f"Unexpected value type [{type(value)}]: {value}")
 
 
+@attr.define(frozen=True, kw_only=True)
+class ResultsBatchInfo:
+    ingest_view_name: str
+    upper_bound_datetime_inclusive: datetime.datetime
+    batch_number: int
+
+
 class InstanceIngestViewContents:
     """Provides an interface for I/O to the ingest view results tables for a given
     region's ingest instance.
     """
+
+    @abc.abstractmethod
+    def results_dataset(self) -> str:
+        """Returns the dataset of the results tables for this ingest instance."""
+
+    @property
+    @abc.abstractmethod
+    def temp_results_dataset(self) -> str:
+        """Returns the dataset where results are staged before they are copied to their
+        final destination (returned by results_dataset())."""
+
+    @abc.abstractmethod
+    def save_query_results(
+        self,
+        *,
+        ingest_view_name: str,
+        upper_bound_datetime_inclusive: datetime.datetime,
+        lower_bound_datetime_exclusive: Optional[datetime.datetime],
+        query_str: str,
+        order_by_cols_str: str,
+        batch_size: int = _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
+    ) -> None:
+        """Runs the provided ingest view query and saves the results to the appropriate
+        BigQuery table, augmenting with relevant metadata. Will create the ingest view
+        results dataset if it does not yet exist.
+        """
+
+    @abc.abstractmethod
+    def get_unprocessed_rows_for_batch(
+        self,
+        *,
+        ingest_view_name: str,
+        upper_bound_datetime_inclusive: datetime.datetime,
+        batch_number: int,
+    ) -> BigQueryResultsContentsHandle:
+        """Returns all ingest view result rows in a given back that have not yet been
+        processed via the extract and merge step of ingest (i.e. committed to Postgres).
+        """
+
+    @abc.abstractmethod
+    def get_next_unprocessed_batch_info(
+        self, ingest_view_name: str
+    ) -> Optional[ResultsBatchInfo]:
+        """Returns info about the next unprocessed batch of ingest view results for the
+        given ingest view. This first looks for batches with the earliest file date,
+        then chooses the lowest batch number among batches with the same date.
+        """
+
+    @abc.abstractmethod
+    def mark_rows_as_processed(
+        self,
+        *,
+        ingest_view_name: str,
+        upper_bound_datetime_inclusive: datetime.datetime,
+        batch_number: int,
+    ) -> None:
+        """Marks all ingest view results rows in a given batch as processed."""
+
+
+class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
+    """Production implementation of InstanceIngestViewContents."""
 
     _ADDITIONAL_METADATA_SCHEMA_FIELDS = [
         bigquery.SchemaField(
@@ -171,11 +255,6 @@ class InstanceIngestViewContents:
         order_by_cols_str: str,
         batch_size: int = _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
     ) -> None:
-        """Runs the provided ingest view query and saves the results to the appropriate
-        BigQuery table, augmenting with relevant metadata. Will create the ingest view
-        results dataset if it does not yet exist.
-        """
-
         # First, load results into a temporary table
         intermediate_table_address = BigQueryAddress(
             dataset_id=self.temp_results_dataset,
@@ -243,12 +322,6 @@ class InstanceIngestViewContents:
         table_address: BigQueryAddress,
         intermediate_table_address: BigQueryAddress,
     ) -> None:
-        """Using the ingest view results stored at |intermediate_table_address|, creates
-        a new, empty table whose schema includes all the columns in
-        |intermediate_table_address|, plus metadata columns necessary for managing
-        the ingest view results. If the ingest view results table exists already, does
-        nothing.
-        """
         self.big_query_client.create_dataset_if_necessary(
             self.big_query_client.dataset_ref_for_id(table_address.dataset_id),
             default_table_expiration_ms=(
@@ -287,9 +360,6 @@ class InstanceIngestViewContents:
         upper_bound_datetime_inclusive: datetime.datetime,
         batch_number: int,
     ) -> BigQueryResultsContentsHandle:
-        """Returns all ingest view result rows in a given back that have not yet been
-        processed via the extract and merge step of ingest (i.e. committed to Postgres).
-        """
         results_address = self._ingest_view_results_address(ingest_view_name)
 
         query_job = self.big_query_client.run_query_async(
@@ -309,6 +379,33 @@ class InstanceIngestViewContents:
             query_job, value_converter=to_string_value_converter
         )
 
+    def get_next_unprocessed_batch_info(
+        self, ingest_view_name: str
+    ) -> Optional[ResultsBatchInfo]:
+        results_address = self._ingest_view_results_address(ingest_view_name)
+        query_job = self.big_query_client.run_query_async(
+            query_str=StrictStringFormatter().format(
+                HIGHEST_PRIORITY_ROW_FOR_VIEW_TEMPLATE,
+                project_id=metadata.project_id(),
+                results_dataset=results_address.dataset_id,
+                results_table=results_address.table_id,
+            )
+        )
+        rows: Iterable[Dict[str, Any]] = peekable(
+            BigQueryResultsContentsHandle(query_job).get_contents_iterator()
+        )
+        if not rows:
+            return None
+        row = one(rows)
+
+        return ResultsBatchInfo(
+            ingest_view_name=ingest_view_name,
+            upper_bound_datetime_inclusive=assert_type(
+                row[_UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
+            ),
+            batch_number=assert_type(row[_BATCH_NUMBER_COL_NAME], int),
+        )
+
     def mark_rows_as_processed(
         self,
         *,
@@ -316,7 +413,6 @@ class InstanceIngestViewContents:
         upper_bound_datetime_inclusive: datetime.datetime,
         batch_number: int,
     ) -> None:
-        """Marks all ingest view results rows in a given batch as processed."""
         results_address = self._ingest_view_results_address(ingest_view_name)
         query_str = StrictStringFormatter().format(
             _MARK_PROCESSED_QUERY_TEMPLATE,
@@ -335,15 +431,26 @@ class InstanceIngestViewContents:
 
 # Run this script if you are making changes to this file. It should produce the
 # following output:
-# Found [2500] unprocessed rows in batch [0]
-# Marking batch [0] rows as processed
-# Found [0] unprocessed rows in batch [0]
-# Found [2500] unprocessed rows in batch [1]
-# Marking batch [1] rows as processed
-# Found [0] unprocessed rows in batch [1]
-# Found [5] unprocessed rows in batch [2]
-# Marking batch [2] rows as processed
-# Found [0] unprocessed rows in batch [2]
+# Found next batch: date=[2021-07-01T00:00:00], batch_num=[0]
+# Found [2500] unprocessed rows in batch [0] for date [2021-07-01T00:00:00]
+# Marking batch rows as processed
+# Found [0] unprocessed rows in batch [0] for date [2021-07-01T00:00:00]
+# Found next batch: date=[2021-07-01T00:00:00], batch_num=[1]
+# Found [2500] unprocessed rows in batch [1] for date [2021-07-01T00:00:00]
+# Marking batch rows as processed
+# Found [0] unprocessed rows in batch [1] for date [2021-07-01T00:00:00]
+# Found next batch: date=[2021-07-01T00:00:00], batch_num=[2]
+# Found [5] unprocessed rows in batch [2] for date [2021-07-01T00:00:00]
+# Marking batch rows as processed
+# Found [0] unprocessed rows in batch [2] for date [2021-07-01T00:00:00]
+# Found next batch: date=[2021-07-21T00:00:00], batch_num=[0]
+# Found [2500] unprocessed rows in batch [0] for date [2021-07-21T00:00:00]
+# Marking batch rows as processed
+# Found [0] unprocessed rows in batch [0] for date [2021-07-21T00:00:00]
+# Found next batch: date=[2021-07-21T00:00:00], batch_num=[1]
+# Found [500] unprocessed rows in batch [1] for date [2021-07-21T00:00:00]
+# Marking batch rows as processed
+# Found [0] unprocessed rows in batch [1] for date [2021-07-21T00:00:00]
 if __name__ == "__main__":
     import logging
 
@@ -353,7 +460,7 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override("recidiviz-staging"):
         big_query_client_ = BigQueryClientImpl()
-        contents_ = InstanceIngestViewContents(
+        contents_ = InstanceIngestViewContentsImpl(
             big_query_client=big_query_client_,
             region_code="us_pa",
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -361,12 +468,13 @@ if __name__ == "__main__":
         )
 
         ingest_view_name_ = "my_fake_view"
-        upper_bound_datetime_inclusive_ = datetime.datetime(
-            year=2021, month=4, day=14, hour=12, minute=31, second=0
-        )
+
+        # Save a batch of results from 2021-07-01T00:00:00
         contents_.save_query_results(
             ingest_view_name=ingest_view_name_,
-            upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
+            upper_bound_datetime_inclusive=datetime.datetime(
+                year=2021, month=7, day=1, hour=0, minute=0, second=0
+            ),
             lower_bound_datetime_exclusive=None,
             query_str=(
                 "SELECT * "
@@ -376,32 +484,58 @@ if __name__ == "__main__":
             order_by_cols_str="ParoleNumber",
         )
 
-        for batch_number_ in range(3):
+        # Save a batch of results from 2021-07-21T00:00:00
+        contents_.save_query_results(
+            ingest_view_name=ingest_view_name_,
+            upper_bound_datetime_inclusive=datetime.datetime(
+                year=2021, month=7, day=21, hour=0, minute=0, second=0
+            ),
+            lower_bound_datetime_exclusive=None,
+            query_str=(
+                "SELECT * "
+                "FROM `recidiviz-staging.us_pa_raw_data.dbo_BdActionType` "
+                "WHERE update_datetime = '2021-07-21T00:00:00' LIMIT 3000;"
+            ),
+            order_by_cols_str="ParoleNumber",
+        )
+
+        while next_batch_info := contents_.get_next_unprocessed_batch_info(
+            ingest_view_name=ingest_view_name_
+        ):
+            print(
+                f"Found next batch: "
+                f"date=[{next_batch_info.upper_bound_datetime_inclusive.isoformat()}], "
+                f"batch_num=[{next_batch_info.batch_number}]"
+            )
             handle = contents_.get_unprocessed_rows_for_batch(
                 ingest_view_name=ingest_view_name_,
-                upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
-                batch_number=batch_number_,
+                upper_bound_datetime_inclusive=next_batch_info.upper_bound_datetime_inclusive,
+                batch_number=next_batch_info.batch_number,
             )
             batch_results = list(handle.get_contents_iterator())
 
             print(
-                f"Found [{len(batch_results)}] unprocessed rows in batch [{batch_number_}]"
+                f"Found [{len(batch_results)}] unprocessed rows in batch "
+                f"[{next_batch_info.batch_number}] for date "
+                f"[{next_batch_info.upper_bound_datetime_inclusive.isoformat()}]"
             )
 
-            print(f"Marking batch [{batch_number_}] rows as processed")
+            print("Marking batch rows as processed")
             contents_.mark_rows_as_processed(
                 ingest_view_name=ingest_view_name_,
-                upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
-                batch_number=batch_number_,
+                upper_bound_datetime_inclusive=next_batch_info.upper_bound_datetime_inclusive,
+                batch_number=next_batch_info.batch_number,
             )
 
             handle = contents_.get_unprocessed_rows_for_batch(
                 ingest_view_name=ingest_view_name_,
-                upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
-                batch_number=batch_number_,
+                upper_bound_datetime_inclusive=next_batch_info.upper_bound_datetime_inclusive,
+                batch_number=next_batch_info.batch_number,
             )
             batch_results = list(handle.get_contents_iterator())
 
             print(
-                f"Found [{len(batch_results)}] unprocessed rows in batch [{batch_number_}]"
+                f"Found [{len(batch_results)}] unprocessed rows in batch "
+                f"[{next_batch_info.batch_number}] for date "
+                f"[{next_batch_info.upper_bound_datetime_inclusive.isoformat()}]"
             )

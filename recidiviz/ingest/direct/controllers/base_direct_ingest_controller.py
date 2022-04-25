@@ -114,6 +114,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContents,
+    InstanceIngestViewContentsImpl,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
@@ -310,7 +311,7 @@ class BaseDirectIngestController:
                 bq_client=big_query_client,
                 ingest_view_rank_list=self.get_ingest_view_rank_list(),
             )
-            self.ingest_view_contents = InstanceIngestViewContents(
+            self.ingest_view_contents = InstanceIngestViewContentsImpl(
                 big_query_client=big_query_client,
                 region_code=self.region_code(),
                 ingest_instance=self.ingest_instance,
