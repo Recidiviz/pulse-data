@@ -1,72 +1,103 @@
 file_tag: address
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This file contains address details for a person.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - ADDRESSID
 columns:
-  - name : ADDRESSID
-    description : |-
+  - name: ADDRESSID
+    description: |-
+      A unique identifier for each address.
+    is_pii: True
+  - name: STREETNUMBER
+    description: |-
+      The number of a house/unit on the street.
+    is_pii: True
+  - name: STREETDIRECTION
+    description: |-
+      The direction of street ie E Houston vs. W Houston.
+    is_pii: True
+  - name: STREETNAME
+    description: |-
+      The name of a street.
+    is_pii: True
+  - name: STREETTYPE
+    description: |-
+      The type classification of a street ie parkway, drive, terrace, etc.
+    is_pii: True
+  - name: SUITENUMBER
+    description: |-
+      The unit or suite number of an address.
+    is_pii: True
+  - name: APARTMENTNUM
+    description: |-
+      The unit or appartment number of an address.
+    is_pii: True
+  - name: POBOX
+    description: |-
+      A person's P.O. Box number, if applicable.
+    is_pii: True
+  - name: RURALROUTE
+    description: |-
+      Rural route number, most values in this field are null.
+    is_pii: True
+  - name: RURALBOXNUM
+    description: |-
+      Box number of a rural address.
+    is_pii: True
+  - name: ADDRESSOTHER
+    description: |-
+      Additional address details like unit/suit/apt number.
+    is_pii: True
+  - name: CITY
+    description: |-
+      The city the address is within.
+  - name: STATE
+    description: |-
+      The state the address is in.
+  - name: ZIPCODE
+    description: |-
+      The zipcode of an address.
+    is_pii: True
+  - name: COUNTY
+    description: |-
+      The county a persons address is in.
+    is_pii: True
+  - name: COUNTRY
+    description: |-
+      The country a person resides in.
+  - name: DATELASTUPDATE
+    description: |-
+      Date the given address was last updated.
+  - name: TIMELASTUPDATE
+    description: |-
+      The time an address was last updated.
+  - name: STAFFLASTUPDATE
+    description: |-
       TODO(#12372)
-  - name : STREETNUMBER
-    description : |-
+  - name: STREETDIRECTIONSUFFIX
+    description: |-
+      The direction a street is in.
+    known_values:
+      - value: E
+        description: East
+      - value: N
+        description: North
+      - value: NE
+        description: Northeast
+      - value: NW
+        description: Northwest
+      - value: S
+        description: South
+      - value: SE
+        description: Southeast
+      - value: SW
+        description: Southwest
+      - value: W
+        description: West
+  - name: ADDRESSEDITBYPASSED
+    description: |-
       TODO(#12372)
-  - name : STREETDIRECTION
-    description : |-
-      TODO(#12372)
-  - name : STREETNAME
-    description : |-
-      TODO(#12372)
-  - name : STREETTYPE
-    description : |-
-      TODO(#12372)
-  - name : SUITENUMBER
-    description : |-
-      TODO(#12372)
-  - name : APARTMENTNUM
-    description : |-
-      TODO(#12372)
-  - name : POBOX
-    description : |-
-      TODO(#12372)
-  - name : RURALROUTE
-    description : |-
-      TODO(#12372)
-  - name : RURALBOXNUM
-    description : |-
-      TODO(#12372)
-  - name : ADDRESSOTHER
-    description : |-
-      TODO(#12372)
-  - name : CITY
-    description : |-
-      TODO(#12372)
-  - name : STATE
-    description : |-
-      TODO(#12372)
-  - name : ZIPCODE
-    description : |-
-      TODO(#12372)
-  - name : COUNTY
-    description : |-
-      TODO(#12372)
-  - name : COUNTRY
-    description : |-
-      TODO(#12372)
-  - name : DATELASTUPDATE
-    description : |-
-      TODO(#12372)
-  - name : TIMELASTUPDATE
-    description : |-
-      TODO(#12372)
-  - name : STAFFLASTUPDATE
-    description : |-
-      TODO(#12372)
-  - name : STREETDIRECTIONSUFFIX
-    description : |-
-      TODO(#12372)
-  - name : ADDRESSEDITBYPASSED
-    description : |-
-      TODO(#12372)
-  - name : GEOCODEID
-    description : |-
-      TODO(#12372)
+  - name: GEOCODEID
+    description: |-
+      All values are null. 
