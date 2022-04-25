@@ -21,7 +21,9 @@ from flask import Blueprint, Response, g, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
+from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import get_user_account_id
+from recidiviz.justice_counts.exceptions import JusticeCountsPermissionError
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
@@ -94,6 +96,15 @@ def get_api_blueprint(
         year = assert_type(request_json.get("year"), int)
         frequency = assert_type(request_json.get("frequency"), str)
         user_id = get_user_account_id(request_dict=request_json)
+        permissions = g.user_context.permissions
+        if (
+            not permissions
+            or ControlPanelPermission.CREATE_REPORT.value not in permissions
+        ):
+            raise JusticeCountsPermissionError(
+                code="justice_counts_create_report_permission",
+                description=f"User (user_id: {user_id}) does not have permission to create reports for current agency (agency_id: {agency_id}).",
+            )
 
         report = ReportInterface.create_report(
             session=current_session,

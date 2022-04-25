@@ -22,6 +22,7 @@ from flask import g, session
 from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.control_panel.config import Config
+from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -103,7 +104,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
         self.assertEqual(response_json["year"], 2022)
 
-    def test_create_report(self) -> None:
+    def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_A
         self.session.add_all([agency, user])
@@ -112,6 +113,30 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         year = 2022
         with self.app.test_request_context():
             g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.post(
+                "/api/reports",
+                json={
+                    "agency_id": agency.id,
+                    "month": month,
+                    "year": year,
+                    "frequency": ReportingFrequency.MONTHLY.value,
+                },
+            )
+        self.assertEqual(response.status_code, 401)
+
+    def test_create_report(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add_all([agency, user])
+        self.session.commit()
+        month = 3
+        year = 2022
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                permissions=[ControlPanelPermission.CREATE_REPORT.value],
+            )
+
             response = self.client.post(
                 "/api/reports",
                 json={
@@ -198,7 +223,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user_account.auth0_user_id,
-                permissions=["read:reports:all"],
+                permissions=[ControlPanelPermission.READ_REPORTS.value],
             )
             user_response = self.client.post(
                 "/api/users",
@@ -211,7 +236,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertIsNotNone(user_response.json)
         self.assertEqual(
             user_response.json["permissions"] if user_response.json else [],
-            ["read:reports:all"],
+            [ControlPanelPermission.READ_REPORTS.value],
         )
 
     def test_session(self) -> None:
