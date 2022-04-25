@@ -64,6 +64,7 @@ local_path = os.path.join(
 )
 # Sentry setup
 if in_gcp():
+    # pylint: disable=abstract-class-instantiated
     sentry_sdk.init(
         # not a secret!
         dsn="https://1aa10e823cad49d9a662d71cedb3365b@o432474.ingest.sentry.io/5623757",

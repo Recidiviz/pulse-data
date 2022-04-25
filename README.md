@@ -47,9 +47,9 @@ If you are contributing to this repository regularly for an extended period of t
 
 ##### Option 1: Local Python installation
 
-If you can install `python3.8` locally, do so. For local Python development, you will also need to install the `libpq` PostgreSQL client library and `openssl`.
+If you can install `python3.9` locally, do so. For local Python development, you will also need to install the `libpq` PostgreSQL client library and `openssl`.
 
-On a Mac with [Homebrew](https://brew.sh/), you can install `python3.8` by first installing `pyenv` with:
+On a Mac with [Homebrew](https://brew.sh/), you can install `python3.9` by first installing `pyenv` with:
 
 ```bash
 brew install pyenv
@@ -68,13 +68,16 @@ fi
 
 Then run:
 
+Note: The patch may no longer be necessary. Try without it and if it succeeds, please
+remove it from the docs!
+
 ```
-pyenv install 3.8.8
+pyenv install 3.9.12
 if [[ $(arch) = "arm64" ]]; then
   # See https://github.com/pyenv/pyenv/issues/1768
-  pyenv install --patch 3.8.8 <<(curl -sSL https://raw.githubusercontent.com/Homebrew/formula-patches/master/python/3.8.7.patch)
+  pyenv install --patch 3.9.12 <<(curl -sSL https://raw.githubusercontent.com/Homebrew/formula-patches/master/python/3.8.7.patch)
 fi
-pyenv global 3.8.8
+pyenv global 3.9.12
 ```
 
 Verify that you have the correct version of python across contexts by opening a new terminal window and running:
@@ -90,17 +93,18 @@ $ brew install postgresql@13 openssl
 ```
 
 and add the following to your `~/.zshrc` (or equivalent):
+
 ```
 export PATH="/opt/homebrew/opt/postgresql@13/bin:$PATH"
 ```
 
-On Ubuntu 18.04,`openssl` is installed by default, you can install `python3.8` and `libpq` with:
+On Ubuntu 18.04,`openssl` is installed by default, you can install `python3.9` and `libpq` with:
 
 ```bash
-$ apt update -y && apt install -y python3.8-dev python3-pip libpq-dev
+$ apt update -y && apt install -y python3.9-dev python3-pip libpq-dev
 ```
 
-You do not need to change your default python version, as `pipenv` will look for 3.8.
+You do not need to change your default python version, as `pipenv` will look for 3.9.
 
 Upgrade your `pip` to the latest version:
 
@@ -202,7 +206,7 @@ $ pytest --ignore=recidiviz/tests/ingest/aggregate
 
 ##### Option 2: Docker container
 
-If you can't install `python3.8` locally, you can use Docker instead.
+If you can't install `python3.9` locally, you can use Docker instead.
 
 See [below](#docker) for installation instructions. Once Docker is installed, [fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone it locally, and enter its directory:
 
@@ -278,12 +282,14 @@ Now the code run in the above context will interact directly with our staging se
 #### Terraform
 
 Run the following to install Terraform:
+
 ```
 brew tap hashicorp/tap
 brew install hashicorp/tap/terraform
 ```
 
 To test your installation, run:
+
 ```
 terraform -chdir=recidiviz/tools/deploy/terraform init -backend-config "bucket=recidiviz-staging-tf-state"
 recidiviz/tools/deploy/terraform_plan.sh recidiviz-staging

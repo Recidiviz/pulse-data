@@ -198,4 +198,4 @@ WTForms= "==2.3.3"
 zipp= "==3.6.0"
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"
