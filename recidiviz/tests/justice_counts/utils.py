@@ -90,8 +90,16 @@ class JusticeCountsSchemaTestObjects:
 
     def __init__(self) -> None:
         # Agencies
-        self.test_agency_A = schema.Agency(name="Agency Alpha")
-        self.test_agency_B = schema.Agency(name="Agency Beta")
+        self.test_agency_A = schema.Agency(
+            name="Agency Alpha",
+            state_code="US_XX",
+            fips_county_code="us_ak_anchorage",
+        )
+        self.test_agency_B = schema.Agency(
+            name="Agency Beta",
+            state_code="US_XX",
+            fips_county_code="us_ca_san_francisco",
+        )
 
         # Users
         self.test_user_A = schema.UserAccount(
