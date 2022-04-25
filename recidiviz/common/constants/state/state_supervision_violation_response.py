@@ -96,12 +96,6 @@ class StateSupervisionViolationResponseDecision(StateEntityEnum):
     NEW_CONDITIONS = (
         state_enum_strings.state_supervision_violation_response_decision_new_conditions
     )
-    # TODO(#12346): Migrate all usages of `NO_SANCTION` to `CONTINUANCE` and delete
-    #  this value.
-    # Though a violation was officially found/recorded, no particular sanction has been levied in response
-    NO_SANCTION = (
-        state_enum_strings.state_supervision_violation_response_decision_no_sanction
-    )
     OTHER = state_enum_strings.state_supervision_violation_response_decision_other
     REVOCATION = (
         state_enum_strings.state_supervision_violation_response_decision_revocation
@@ -179,9 +173,6 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_VALUE_DESCRIPTIONS: Dict[
     "supervision past their current discharge date.",
     StateSupervisionViolationResponseDecision.NEW_CONDITIONS: "Adding new conditions "
     "to the person’s supervision.",
-    StateSupervisionViolationResponseDecision.NO_SANCTION: "Duplicate of "
-    "`CONTINUANCE`. #TODO(#12346): Migrate all usages to `CONTINUANCE` and delete "
-    "this value.",
     StateSupervisionViolationResponseDecision.OTHER: "Describes a decision that is "
     "explicitly labeled as `Other` by the state.",
     StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED: "Revoking "
@@ -284,7 +275,6 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     "EXTENSION": StateSupervisionViolationResponseDecision.EXTENSION,
     "INTERNAL UNKNOWN": StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
     "NEW CONDITIONS": StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
-    "NO SANCTION": StateSupervisionViolationResponseDecision.NO_SANCTION,
     "OTHER": StateSupervisionViolationResponseDecision.OTHER,
     "PRIVILEGES REVOKED": StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
     "REVOCATION": StateSupervisionViolationResponseDecision.REVOCATION,
