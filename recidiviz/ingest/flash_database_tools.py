@@ -22,10 +22,10 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContents,
+    InstanceIngestViewContentsImpl,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 def move_ingest_view_results_to_backup(
@@ -35,7 +35,7 @@ def move_ingest_view_results_to_backup(
 ) -> None:
     """Copies ingest view data for a single ingest instance to a backup BQ dataset, deletes source dataset"""
 
-    ingest_view_contents = InstanceIngestViewContents(
+    ingest_view_contents = InstanceIngestViewContentsImpl(
         big_query_client=big_query_client,
         region_code=state_code.value,
         ingest_instance=ingest_instance,
@@ -75,7 +75,7 @@ def move_ingest_view_results_between_instances(
     """Move ingest view data for a single ingest instance to a BQ dataset that is the opposite ingest instance
     with no expiration date, deletes source dataset"""
 
-    source_ingest_view_contents = InstanceIngestViewContents(
+    source_ingest_view_contents = InstanceIngestViewContentsImpl(
         big_query_client=big_query_client,
         region_code=state_code.value,
         ingest_instance=ingest_instance_source,
@@ -83,7 +83,7 @@ def move_ingest_view_results_between_instances(
     )
     source_dataset_id = source_ingest_view_contents.results_dataset()
 
-    destination_ingest_view_contents = InstanceIngestViewContents(
+    destination_ingest_view_contents = InstanceIngestViewContentsImpl(
         big_query_client=big_query_client,
         region_code=state_code.value,
         ingest_instance=ingest_instance_destination,

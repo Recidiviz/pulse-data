@@ -26,7 +26,8 @@ from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContents,
+    InstanceIngestViewContentsImpl,
+    ResultsBatchInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -66,7 +67,7 @@ class InstanceIngestViewContentsTest(unittest.TestCase):
         save_results_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
         input_query = "SELECT * FROM `recidiviz-456.my_dataset.foo`;"
         with freeze_time(save_results_date):
-            ingest_view_contents = InstanceIngestViewContents(
+            ingest_view_contents = InstanceIngestViewContentsImpl(
                 big_query_client=self.mock_bq_client,
                 region_code=self.region_code,
                 ingest_instance=DirectIngestInstance.PRIMARY,
@@ -160,7 +161,7 @@ FROM
     def test_get_unprocessed_rows_for_batch(self) -> None:
         get_rows_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
         with freeze_time(get_rows_date):
-            ingest_view_contents = InstanceIngestViewContents(
+            ingest_view_contents = InstanceIngestViewContentsImpl(
                 big_query_client=self.mock_bq_client,
                 region_code=self.region_code,
                 ingest_instance=DirectIngestInstance.PRIMARY,
@@ -184,10 +185,95 @@ WHERE
             self.mock_bq_client.mock_calls,
         )
 
+    def test_get_next_unprocessed_batch_info_no_batches_returned(self) -> None:
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+
+        self.mock_bq_client.run_query_async.return_value = iter([])
+
+        batch_info = ingest_view_contents.get_next_unprocessed_batch_info(
+            ingest_view_name=self.ingest_view_name
+        )
+
+        self.assertIsNone(batch_info)
+
+        expected_query = """
+SELECT
+  __upper_bound_datetime_inclusive,
+  __extract_and_merge_batch
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
+WHERE
+  __processed_time IS NULL
+ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+LIMIT 1;
+"""
+
+        self.assertEqual(
+            [call.run_query_async(query_str=expected_query)],
+            self.mock_bq_client.mock_calls,
+        )
+
+    def test_get_next_unprocessed_batch_info(self) -> None:
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+
+        batch_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
+        batch_number = 10
+        self.mock_bq_client.run_query_async.return_value = iter(
+            [
+                bigquery.table.Row(
+                    [batch_date, batch_number],
+                    {
+                        "__upper_bound_datetime_inclusive": 0,
+                        "__extract_and_merge_batch": 1,
+                    },
+                )
+            ]
+        )
+
+        batch_info = ingest_view_contents.get_next_unprocessed_batch_info(
+            ingest_view_name=self.ingest_view_name
+        )
+
+        self.assertEqual(
+            ResultsBatchInfo(
+                ingest_view_name=self.ingest_view_name,
+                upper_bound_datetime_inclusive=batch_date,
+                batch_number=10,
+            ),
+            batch_info,
+        )
+
+        expected_query = """
+SELECT
+  __upper_bound_datetime_inclusive,
+  __extract_and_merge_batch
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
+WHERE
+  __processed_time IS NULL
+ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+LIMIT 1;
+"""
+
+        self.assertEqual(
+            [call.run_query_async(query_str=expected_query)],
+            self.mock_bq_client.mock_calls,
+        )
+
     def test_mark_rows_as_processed(self) -> None:
         mark_processed_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
         with freeze_time(mark_processed_date):
-            ingest_view_contents = InstanceIngestViewContents(
+            ingest_view_contents = InstanceIngestViewContentsImpl(
                 big_query_client=self.mock_bq_client,
                 region_code=self.region_code,
                 ingest_instance=DirectIngestInstance.PRIMARY,
