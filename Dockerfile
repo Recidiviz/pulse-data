@@ -61,7 +61,7 @@ RUN apt update -y && \
     locales \
     git \
     libxml2-dev libxslt1-dev \
-    python3.8-dev python3.8-distutils python3-pip \
+    python3.9-dev python3.9-distutils python3-pip \
     default-jre \
     libpq-dev \
     curl

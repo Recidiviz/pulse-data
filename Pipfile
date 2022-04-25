@@ -188,7 +188,7 @@ werkzeug = "<2.1.0"
 pysftp = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"
 
 [scripts] 
 # Run via `pipenv run <name>`
