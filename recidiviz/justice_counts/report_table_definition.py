@@ -42,18 +42,19 @@ class ReportTableDefinitionInterface:
 
     @staticmethod
     def build_entity(
-        reported_metric: ReportMetric,
+        report_metric: ReportMetric,
+        report: schema.Report,
         aggregated_dimension_identifier: Optional[str] = None,
     ) -> schema.ReportTableDefinition:
         """Given a Report, a ReportMetric, and an (optional) aggregated dimension,
         build a corresponding ReportTableDefinition object.
         """
-        metric_definition = reported_metric.metric_definition
+        metric_definition = report_metric.metric_definition
         (
             filtered_dimensions,
             filtered_dimension_values,
         ) = ReportTableDefinitionInterface.get_filtered_dimensions(
-            metric_definition=metric_definition
+            metric_definition=metric_definition, report=report
         )
 
         return schema.ReportTableDefinition(
@@ -65,21 +66,23 @@ class ReportTableDefinitionInterface:
             aggregated_dimensions=[aggregated_dimension_identifier]
             if aggregated_dimension_identifier
             else [],
-            label=reported_metric.metric_definition.key,
+            label=report_metric.metric_definition.key,
         )
 
     @staticmethod
-    def create_or_update_from_reported_metric(
+    def create_or_update_from_report_metric(
         session: Session,
-        reported_metric: ReportMetric,
+        report_metric: ReportMetric,
+        report: schema.Report,
         aggregated_dimension_identifier: Optional[str] = None,
     ) -> schema.ReportTableDefinition:
         """Given a Report, a ReportMetric, and an (optional) aggregated dimension,
         create (or update) a corresponding ReportTableDefinition.
         """
         report_table_definition = ReportTableDefinitionInterface.build_entity(
-            reported_metric=reported_metric,
+            report_metric=report_metric,
             aggregated_dimension_identifier=aggregated_dimension_identifier,
+            report=report,
         )
 
         return update_existing_or_create(
@@ -97,7 +100,7 @@ class ReportTableDefinitionInterface:
 
     @staticmethod
     def get_filtered_dimensions(
-        metric_definition: MetricDefinition,
+        metric_definition: MetricDefinition, report: schema.Report
     ) -> Tuple[List[str], List[str]]:
         """Returns a tuple of filtered dimension keys and filtered dimension values.
         Filtered dimensions are a combination of the filtered dimensions defined on the
@@ -117,8 +120,10 @@ class ReportTableDefinitionInterface:
             State.dimension_identifier(),
             County.dimension_identifier(),
         ]
-        # TODO(#11973): Add Country, State, and County values from report.source
-        # once we start saving location information on the Agency model
-        filtered_dimension_values += []
+        filtered_dimension_values += [
+            Country.US.value,
+            report.source.state_code,
+            report.source.fips_county_code,
+        ]
 
         return filtered_dimension_keys, filtered_dimension_values

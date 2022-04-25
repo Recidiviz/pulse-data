@@ -132,7 +132,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                reported_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.reported_budget_metric,
             )
 
             # We should have two definitions, one for the aggregated Law Enforcement budget
@@ -183,10 +183,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_add_population_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            report = self.test_schema_objects.test_report_monthly
             ReportInterface.add_or_update_metric(
                 session=session,
-                report=self.test_schema_objects.test_report_monthly,
-                reported_metric=self.test_schema_objects.reported_residents_metric,
+                report=report,
+                report_metric=self.test_schema_objects.reported_residents_metric,
             )
 
             # We should have two definitions, one for aggregated (total) residents
@@ -213,10 +214,14 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                         County.dimension_identifier(),
                     ],
                 )
-                # TODO(#11973): Add Country, State, and County values from report.source
-                # once we start saving location information on the Agency model
                 self.assertEqual(
-                    filtered_dimension_values, [PopulationType.RESIDENTS.value]
+                    filtered_dimension_values,
+                    [
+                        PopulationType.RESIDENTS.value,
+                        Country.US.value,
+                        report.source.state_code,
+                        report.source.fips_county_code,
+                    ],
                 )
 
     def test_update_metric_no_change(self) -> None:
@@ -224,7 +229,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                reported_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.reported_budget_metric,
             )
 
             # This should be a no-op, because the metric definition is the same
@@ -233,7 +238,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                reported_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.reported_budget_metric,
             )
 
             queried_definitions = session.query(schema.ReportTableDefinition).all()
@@ -247,17 +252,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                reported_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.reported_budget_metric,
             )
 
             # This should result in an update to the existing database objects
-            reported_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
                 value=1000
             )
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                reported_metric=reported_metric,
+                report_metric=report_metric,
             )
 
             queried_instances = (
@@ -289,17 +294,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                reported_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.reported_budget_metric,
             )
 
             # User decides they don't want to report the disaggregation
-            reported_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
                 include_disaggregations=False
             )
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                reported_metric=reported_metric,
+                report_metric=report_metric,
             )
 
             # Should only have one instance and cell in the db
@@ -343,7 +348,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=report,
-                reported_metric=self.test_schema_objects.reported_calls_for_service_metric,
+                report_metric=self.test_schema_objects.reported_calls_for_service_metric,
             )
             metrics = sorted(
                 ReportInterface.get_metrics_by_report_id(

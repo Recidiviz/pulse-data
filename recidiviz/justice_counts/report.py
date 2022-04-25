@@ -150,7 +150,7 @@ class ReportInterface:
 
     @staticmethod
     def add_or_update_metric(
-        session: Session, report: schema.Report, reported_metric: ReportMetric
+        session: Session, report: schema.Report, report_metric: ReportMetric
     ) -> None:
         """Given a Report and a ReportMetric, either add this metric
         to the report, or if the metric already exists on the report,
@@ -179,32 +179,33 @@ class ReportInterface:
         # First, define a ReportTableDefinition + Instance + Cells for the
         # aggregate metric value (summed across all dimensions).
         report_table_definition = (
-            ReportTableDefinitionInterface.create_or_update_from_reported_metric(
-                session=session, reported_metric=reported_metric
+            ReportTableDefinitionInterface.create_or_update_from_report_metric(
+                session=session, report=report, report_metric=report_metric
             )
         )
-        ReportTableInstanceInterface.create_or_update_from_reported_metric(
+        ReportTableInstanceInterface.create_or_update_from_report_metric(
             session=session,
             report=report,
             report_table_definition=report_table_definition,
-            reported_metric=reported_metric,
+            report_metric=report_metric,
         )
 
         # Next, define a ReportTableDefinition + Instance + Cells for
         # each disaggregated dimension of the metric.
-        for dimension in reported_metric.aggregated_dimensions or []:
+        for dimension in report_metric.aggregated_dimensions or []:
             report_table_definition = (
-                ReportTableDefinitionInterface.create_or_update_from_reported_metric(
+                ReportTableDefinitionInterface.create_or_update_from_report_metric(
                     session=session,
-                    reported_metric=reported_metric,
+                    report_metric=report_metric,
                     aggregated_dimension_identifier=dimension.dimension_identifier(),
+                    report=report,
                 )
             )
-            ReportTableInstanceInterface.create_or_update_from_reported_metric(
+            ReportTableInstanceInterface.create_or_update_from_report_metric(
                 session=session,
                 report=report,
                 report_table_definition=report_table_definition,
-                reported_metric=reported_metric,
+                report_metric=report_metric,
                 aggregated_dimension=dimension,
             )
 
@@ -213,12 +214,11 @@ class ReportInterface:
         # decided to remove them, so delete them from the DB
         definition_dimension_identifiers = {
             dimension.dimension_identifier()
-            for dimension in reported_metric.metric_definition.aggregated_dimensions
-            or []
+            for dimension in report_metric.metric_definition.aggregated_dimensions or []
         }
         reported_dimension_identifiers = {
             dimension.dimension_identifier()
-            for dimension in reported_metric.aggregated_dimensions or []
+            for dimension in report_metric.aggregated_dimensions or []
         }
         dimension_identifiers_to_delete = (
             definition_dimension_identifiers - reported_dimension_identifiers
@@ -229,8 +229,9 @@ class ReportInterface:
             # (which will also delete all child Cell objects too)
             report_table_definition_row = get_existing_entity(
                 ingested_entity=ReportTableDefinitionInterface.build_entity(
-                    reported_metric=reported_metric,
+                    report_metric=report_metric,
                     aggregated_dimension_identifier=dimension_identifier,
+                    report=report,
                 ),
                 session=session,
             )

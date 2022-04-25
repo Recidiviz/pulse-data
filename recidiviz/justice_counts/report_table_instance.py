@@ -35,11 +35,11 @@ class ReportTableInstanceInterface:
     """Contains methods for working with ReportTableInstances."""
 
     @staticmethod
-    def create_or_update_from_reported_metric(
+    def create_or_update_from_report_metric(
         session: Session,
         report: schema.Report,
         report_table_definition: schema.ReportTableDefinition,
-        reported_metric: ReportMetric,
+        report_metric: ReportMetric,
         aggregated_dimension: Optional[ReportedAggregatedDimension] = None,
     ) -> schema.ReportTableDefinition:
         """Given a Report, a ReportTableDefinition, a ReportMetric, and an
@@ -62,7 +62,7 @@ class ReportTableInstanceInterface:
             cells = [
                 update_existing_or_create(
                     schema.Cell(
-                        value=reported_metric.value,
+                        value=report_metric.value,
                         aggregated_dimension_values=[],
                         report_table_instance=table_instance,
                     ),
