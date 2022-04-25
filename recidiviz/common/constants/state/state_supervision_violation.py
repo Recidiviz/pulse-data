@@ -61,6 +61,47 @@ class StateSupervisionViolationType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionViolationType"]:
         return _STATE_SUPERVISION_VIOLATION_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The category of a person’s behavior that violated a condition of "
+            "their supervision."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_VIOLATION_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_VIOLATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionViolationType.ABSCONDED: "A person has been reported by their "
+    "supervision officer for absconding, which is a violation of their supervision. "
+    "A person is absconding when their whereabouts are unknown. This is used "
+    "when the person has stopped reporting to their supervising officer, and the "
+    "officer cannot contact or locate them.",
+    StateSupervisionViolationType.ESCAPED: "A person has been reported for "
+    "having escaped from some sort of non-prison facility (e.g. a treatment center or "
+    "community corrections center).",
+    StateSupervisionViolationType.FELONY: "A person has been reported by their "
+    "supervising officer for having committed a felony offense. This does not "
+    "necessarily mean this person was charged or sentenced for the offense.",
+    StateSupervisionViolationType.LAW: "A person has been reported by their "
+    "supervising officer for having committed a criminal offense. This does not "
+    "necessarily mean this person was charged or sentenced for the offense. This is "
+    "typically used in states that do not have more granular offense violation "
+    "categories (e.g. `FELONY` and `MISDEMEANOR`).",
+    StateSupervisionViolationType.MISDEMEANOR: "A person has been reported by their "
+    "supervising officer for having committed a misdemeanor offense. This does not "
+    "necessarily mean this person was charged or sentenced for the offense.",
+    StateSupervisionViolationType.MUNICIPAL: "A person has been reported by their "
+    "supervising officer for having violated a municipal ordinance (a local law "
+    "enacted by a city or town).",
+    StateSupervisionViolationType.TECHNICAL: "A person has been reported for behavior "
+    "that violates a condition of their supervision, where that behavior is not by "
+    "itself a criminal offense. Used when there is failure to comply with a "
+    "condition of supervision.",
+}
+
 
 _STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
     "ABSCOND": StateSupervisionViolationType.ABSCONDED,

@@ -82,9 +82,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
 
 ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
     StateActingBodyType,
@@ -125,5 +122,4 @@ ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
     StateSupervisionSentenceSupervisionType,
-    StateSupervisionViolationType,
 ]
