@@ -36,7 +36,7 @@ import argparse
 import logging
 import re
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     import_raw_files_to_bq_sandbox,
@@ -84,7 +84,7 @@ def do_sandbox_raw_file_import(
     )
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments(argv: List[str]) -> argparse.Namespace:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 
@@ -109,7 +109,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument(
         "--source_bucket",
         type=str,
-        default=True,
+        required=True,
         help="A sandbox GCS bucket where raw files live. Files in this bucket must "
         "already have normalized file names.",
     )
@@ -122,12 +122,19 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         "contain a match to this regex.",
     )
 
-    return parser.parse_known_args(argv)
+    parser.add_argument(
+        "--upload_chunk_size",
+        type=int,
+        default=None,
+        help="Overrides the number of rows per chunk when uploading the files.",
+    )
+
+    return parser.parse_args(argv)
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
+    known_args = parse_arguments(sys.argv)
     with local_project_id_override(GCP_PROJECT_STAGING):
         do_sandbox_raw_file_import(
             state_code=StateCode(known_args.state_code),

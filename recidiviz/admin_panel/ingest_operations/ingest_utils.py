@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 
 import attr
 import cattr
+import google_crc32c
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
@@ -41,6 +42,19 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.regions import get_region
+
+
+def _id_for_file(state_code: StateCode, file_name: str) -> int:
+    """Create an id for the file based on the file name.
+
+    In production, the file id is an automatically incremented id created by Postgres.
+    Here we generate one by hashing the state code and file name, which are the
+    components of the primary key in the Postgres table.
+    """
+    checksum = google_crc32c.Checksum()
+    checksum.update(state_code.value.encode())
+    checksum.update(file_name.encode())
+    return int.from_bytes(checksum.digest(), byteorder="big")
 
 
 def check_is_valid_sandbox_bucket(bucket: GcsfsBucketPath) -> None:
@@ -120,7 +134,7 @@ def import_raw_files_to_bq_sandbox(
 
     failures_by_exception = defaultdict(list)
 
-    for i, file_path in enumerate(raw_files_to_import):
+    for file_path in raw_files_to_import:
         parts = filename_parts_from_path(file_path)
         if file_tag_filters is not None and parts.file_tag not in file_tag_filters:
             file_status_list.append(
@@ -139,7 +153,7 @@ def import_raw_files_to_bq_sandbox(
             import_manager.import_raw_file_to_big_query(
                 file_path,
                 DirectIngestRawFileMetadata(
-                    file_id=i,
+                    file_id=_id_for_file(state_code, file_path.file_name),
                     region_code=state_code.value,
                     file_tag=parts.file_tag,
                     processed_time=None,
