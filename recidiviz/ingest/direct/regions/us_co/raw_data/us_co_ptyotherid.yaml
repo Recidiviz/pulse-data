@@ -2,20 +2,89 @@ file_tag: ptyotherid
 file_description: |-
   TODO(#12372)(): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - PARTYID
+  - PTYIDTYPE
+  - PTYIDAGENCY
+  - OTHERID
 columns:
   - name : PARTYID
     description : |-
-      TODO(#12372)
+      Identifier used to link external movements table on LOCATIONREPORTMOVEMENT or OTHERLOCATIONCODE.
   - name : PTYIDTYPE
     description : |-
-      TODO(#12372)
+      PTYIDTYPE code identifying the ID type.
+    known_values:
+      - value: '03'
+        description: Manually Entered ID
+      - value: '11'
+        description: Clinician Code
+      - value: '13'
+        description: Provider Code
+      - value: '14'
+        description: Practice Code
+      - value: '27'
+        description: Badge Number (LE)
+      - value: '34'
+        description: Staff User Serial Number
+      - value: '35'
+        description: Badge Number (DOC)
+      - value: '36'
+        description: Staff (Employee) User ID
+      - value: '41'
+        description: Provider License Number
+      - value: '43'
+        description: DEA Number
+      - value: '45'
+        description: COVID-NDC
+      - value: '46'
+        description: COVID PARTYPE
+      - value: '47'
+        description: COVID-Dose
+      - value: '49'
+        description: Ascend Facility Code
+      - value: '52'
+        description: DCIS DOC Facility Code
+      - value: '54'
+        description: Hospital Code
+      - value: '55'
+        description: DCIS Location Code
+      - value: '56'
+        description: Stock Med Room
+      - value: '59'
+        description: Judicial District
+      - value: '5A'
+        description: SCHDMOVE FROMFAC_CD
+      - value: '5B'
+        description: SCHDMOVE TOFAC_CD
+      - value: '5C'
+        description: Realtime Move Equivalent
+      - value: '5D'
+        description: Alternate Intake Facility
+      - value: '5E'
+        description: District Attorney Office Code
+      - value: '60'
+        description: Facility and Living Unit (CO Conversion)
+      - value: '61'
+        description: Facility AM Med-Line Time
+      - value: '62'
+        description: Facility Noon Med-Line Time
+      - value: '63'
+        description: Facility PM Med-Line Time
+      - value: '64'
+        description: Facility HS (Bedtime) Med-Line Time
+      - value: '84'
+        description: No Co-pay Facility for MH Encounters
+      - value: '86'
+        description: No Co-pay Facility for Nursing MH Crisis Encounter
+      - value: '87'
+        description: Allow P Code Manual Override Facility
   - name : PTYIDAGENCY
     description : |-
-      TODO(#12372)
+      State codes ie MA, KY, etc.
   - name : OTHERID
     description : |-
-      TODO(#12372)
+      To and From Facility IDs.
   - name : IDVERIFIEDDATE
     description : |-
       TODO(#12372)

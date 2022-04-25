@@ -1,54 +1,77 @@
 file_tag: ofnrelatedaddress
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This file contains address information and details for a person.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDERID
+  - ADDREFFECTIVEDATE
+  - ADDRESSTYPE
 columns:
-  - name : OFFENDERID
-    description : |-
+  - name: OFFENDERID
+    description: |-
+      A unique identifier for each person.
+    is_pii: True
+  - name: ADDREFFECTIVEDATE
+    description: |-
+      The date a current address becomes effective.
+  - name: ADDRESSTYPE
+    description: |-
+      The type of address given i.e. permanent, planned, temporary, mailing, etc.
+    known_values:
+      - value: A
+        description: ACIC Mailing (SOSRA)
+      - value: B
+        description: ACIC Physical (SOSRA)
+      - value: M
+        description: Mailing
+      - value: N
+        description: Planned (after release)
+      - value: P
+        description: Physical (Home)
+      - value: 'T'
+        description: Temporary
+  - name: ADDRESSID
+    description: |-
+      An ID given to each unique address.
+    is_pii: True
+  - name: ADDRENDDATE
+    description: |-
       TODO(#12372)
-  - name : ADDREFFECTIVEDATE
-    description : |-
+  - name: OFFICERCONTROLNUM
+    description: |-
+      All values are null.
+  - name: ADDRVERIFYDATE
+    description: |-
+      The date a current address was verified.
+  - name: OFNADDRCOMMENTS
+    description: |-
+      Free text comments on the adress provided.
+  - name: TRAVELDIRECTIONS
+    description: |-
+      Free text notes.
+  - name: DATELASTUPDATE
+    description: |-
+      The date an address was last updated.
+  - name: TIMELASTUPDATE
+    description: |-
+      The time an address was last updated.
+  - name: STAFFLASTUPDATE
+    description: |-
       TODO(#12372)
-  - name : ADDRESSTYPE
-    description : |-
-      TODO(#12372)
-  - name : ADDRESSID
-    description : |-
-      TODO(#12372)
-  - name : ADDRENDDATE
-    description : |-
-      TODO(#12372)
-  - name : OFFICERCONTROLNUM
-    description : |-
-      TODO(#12372)
-  - name : ADDRVERIFYDATE
-    description : |-
-      TODO(#12372)
-  - name : OFNADDRCOMMENTS
-    description : |-
-      TODO(#12372)
-  - name : TRAVELDIRECTIONS
-    description : |-
-      TODO(#12372)
-  - name : DATELASTUPDATE
-    description : |-
-      TODO(#12372)
-  - name : TIMELASTUPDATE
-    description : |-
-      TODO(#12372)
-  - name : STAFFLASTUPDATE
-    description : |-
-      TODO(#12372)
-  - name : ADDRESSVERIFYINGAGENCY
-    description : |-
-      TODO(#12372)
-  - name : ADDRESSVERIFYINGNAME
-    description : |-
-      TODO(#12372)
-  - name : OFFNISHOMELESS
-    description : |-
-      TODO(#12372)
-  - name : LIVESWITH
-    description : |-
-      TODO(#12372)
+  - name: ADDRESSVERIFYINGAGENCY
+    description: |-
+      All values are null.
+  - name: ADDRESSVERIFYINGNAME
+    description: |-
+      All values are null.
+  - name: OFFNISHOMELESS
+    description: |-
+      Indicates whethere a person is homeless or not.
+    known_values:
+      - value: 'N'
+        description: "No"
+      - value: 'Y'
+        description: "Yes"
+  - name: LIVESWITH
+    description: |-
+      All fields are null.

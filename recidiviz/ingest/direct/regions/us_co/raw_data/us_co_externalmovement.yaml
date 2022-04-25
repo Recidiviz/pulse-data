@@ -1,99 +1,568 @@
 file_tag: externalmovement
 file_description: |-
-  TODO(#12372): Fill in the file description
+  This file contains information about a persons movements.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDERID
+  - EXTERNALMOVEMENTDATE
+  - EXTERNALMOVEMENTTIME
 columns:
-  - name : OFFENDERID
-    description : |-
+  - name: OFFENDERID
+    description: |-
+      This is a unique identifier assigned to each particular person.
+  - name: EXTERNALMOVEMENTDATE
+    description: |-
+      Date of external movement.
+  - name: EXTERNALMOVEMENTTIME
+    description: |-
+      Time of external movement.
+  - name: LOCATIONREPORTMOVEMENT
+    description: |-
+      Location where the movement was recorded.
+  - name: EXTERNALMOVEMENTCODE
+    description: |-
+      A CIMOVCOD code indicating the type of movement.
+    known_values:
+      - value: '01'
+        description: New CO Commitment
+      - value: '03'
+        description: YOS Commitment
+      - value: '06'
+        description: Recommitment
+      - value: '07'
+        description: ICC Commitment
+      - value: '10'
+        description: Returned from Parole
+      - value: '11'
+        description: Returned as Parolee in Prison
+      - value: '13'
+        description: Terminated from ISP-I
+      - value: '20'
+        description: Returned from Escape
+      - value: '21'
+        description: Returned from Court
+      - value: '22'
+        description: Returned from Escorted Leave
+      - value: '23'
+        description: Returned from Hospital
+      - value: '24'
+        description: Returned from Bond
+      - value: '25'
+        description: Returned from ICC
+      - value: '26'
+        description: Returned from Furlough
+      - value: '28'
+        description: Returned from Abscond
+      - value: '2B'
+        description: Returned from Work Crew
+      - value: '2C'
+        description: Returned from AWOL
+      - value: '2D'
+        description: Returned from Other Jurisdiction
+      - value: '30'
+        description: Received at DOC Facility
+      - value: '31'
+        description:  Received at Community Center
+      - value: '32'
+        description: Received at County/City Jail
+      - value: '33'
+        description: Escapee In Custody - Other Jurisdiction
+      - value: '36'
+        description: Offender Situation Changed
+      - value: '37'
+        description: Halfway-In (at CCC)
+      - value: '39'
+        description: Day Trip (to)
+      - value: '3A'
+        description: Reassigned to another Facility
+      - value: '40'
+        description: Discharged
+      - value: '50'
+        description: Commutation
+      - value: '52'
+        description: Released by Court
+      - value: '55'
+        description: Released after Erroneous Admission
+      - value: '56'
+        description: Unauthorized Release
+      - value: '60'
+        description: Paroled
+      - value: '63'
+        description: To Intensive Supervision Program (ISP)
+      - value: '74'
+        description: Transferred Interstate
+      - value: '75'
+        description: Death
+      - value: '77'
+        description: Execution
+      - value: '78'
+        description: Returned to Parole
+      - value: '79'
+        description: Returned to  ISP-I
+      - value: '80'
+        description: Escaped
+      - value: '81'
+        description: Out To Court
+      - value: '82'
+        description: Out on Escorted Leave
+      - value: '83'
+        description: Out to Hospital
+      - value: '84'
+        description: Out on Bond
+      - value: '85'
+        description: Transferred Out-of-State (ICC)
+      - value: '86'
+        description: Out on Furlough
+      - value: '88'
+        description: Absconded from Parole
+      - value: '8B'
+        description: Out on Work Crew
+      - value: '8C'
+        description: Absent without Leave (AWOL)
+      - value: '8D'
+        description: Out to Other Jurisdiction
+      - value: '8E'
+        description: AWOL from ISP-I
+      - value: '90'
+        description: Transferred to DOC Facility
+      - value: '91'
+        description: Transferred to Community Center
+      - value: '92'
+        description: Transferred to County/City Jail
+  - name: OTHERLOCATIONCODE
+    description: |-
       TODO(#12372)
-  - name : EXTERNALMOVEMENTDATE
-    description : |-
+  - name: REASONFORMOVEMENT
+    description: |-
+      CITRREAS code indicating the reason for movement.
+    known_values:
+      - value: '01'
+        description: Approved Transfer Request
+      - value: '02'
+        description: Closer To Home
+      - value: '03'
+        description: To ICE Custody
+      - value: '04'
+        description: Spend Time in Quarantine
+      - value: '07'
+        description: Custody Change
+      - value: '08'
+        description: Discipline Problem
+      - value: '09'
+        description: Emergency
+      - value: '11'
+        description: Voluntarily Returned
+      - value: '12'
+        description: Placed in Jaill Temporarily
+      - value: '13'
+        description: Initial Classification
+      - value: '14'
+        description: Returned to Sending State
+      - value: '16'
+        description:  Close Status
+      - value: '17'
+        description: Program Placement
+      - value: '19'
+        description: GP Placement
+      - value: '20'
+        description: YOS Placement
+      - value: '21'
+        description: Work Assignment
+      - value: '22'
+        description: Progression
+      - value: '23'
+        description: Regressive
+      - value: '24'
+        description: Lateral
+      - value: '25'
+        description: Community Placement
+      - value: '26'
+        description: Off-site Appointment
+      - value: '28'
+        description: Posted Bond
+      - value: '31'
+        description: Court Appearance
+      - value: '32'
+        description: Completed
+      - value: '33'
+        description: Court Trial
+      - value: '34'
+        description: Governor's Order
+      - value: '35'
+        description: New Charge
+      - value: '36'
+        description: New Charge/Short Term
+      - value: '37'
+        description: Released In Error
+      - value: '39'
+        description: Arrested and Placed in Jail
+      - value: '43'
+        description: Sentence Vacated
+      - value: '48'
+        description: Early Parole Discharge
+      - value: '49'
+        description: Released to Probation
+      - value: '50'
+        description: To Detainer/Warrant
+      - value: '51'
+        description: In State Supervision
+      - value: '52'
+        description: Out Of State Parole Supervision
+      - value: '53'
+        description: Parole Violator
+      - value: '54'
+        description: Parole Reinstated
+      - value: '55'
+        description: Technical Parole Violator
+      - value: '56'
+        description: Absconder in Custody In-State
+      - value: '58'
+        description: Jail Treatment
+      - value: '59'
+        description: Finished serving Sentence
+      - value: '5C'
+        description: Escapee in Custody in State
+      - value: '5D'
+        description: Escapee in Custody Out of State
+      - value: '5M'
+        description: Enroute to Another Institution
+      - value: '60'
+        description: Accidental
+      - value: '70'
+        description: Completed Treatment
+      - value: '71'
+        description: Dental Needs
+      - value: '72'
+        description: Improved Health
+      - value: '73'
+        description: Medical Needs
+      - value: '74'
+        description: Mental Health Needs
+      - value: '75'
+        description: Bed Assignment (between Facilities in same Complex)
+      - value: '79'
+        description: Escape without Violence
+      - value: '81'
+        description: Escaped from CDOC
+      - value: '82'
+        description: PC Movement
+      - value: '85'
+        description: Temp. Move - Out-to-Court
+      - value: '86'
+        description: Temp. Move - Return from Court
+      - value: '87'
+        description: Temp. Move - Out to Infirmary
+      - value: '88'
+        description: Temp. Move - Return from Infirmary
+      - value: '89'
+        description: Temp. Move - Other
+      - value: '90'
+        description: Temp. Move - Return from Other
+      - value: '93'
+        description: Recaptured
+      - value: '99'
+        description: Not Specified
+      - value: 'A1'
+        description: CO Discharge Return
+      - value: 'A2'
+        description: CO Discharge Return with NC
+      - value: 'A4'
+        description: Probation Violator
+      - value: 'A5'
+        description: Returned from Bond
+      - value: 'A7'
+        description: Probation Violator with NC
+      - value: 'A8'
+        description: New Conviction
+      - value: 'A9'
+        description: Possible Parole Violator (PPV)
+      - value: 'AB'
+        description: YOS Offender
+      - value: 'AE'
+        description: Adult Offender Commitment
+      - value: 'AF'
+        description: Court Order Return
+      - value: 'AG'
+        description: Dual Commitment
+      - value: 'AH'
+        description: Meets Criteria for Placement
+      - value: 'AI'
+        description: Community Center Regression
+      - value: 'AJ'
+        description: ISP-I Violator
+      - value: 'AN'
+        description: Community Transition
+      - value: 'AP'
+        description: YOS Failure/NC
+      - value: 'AQ'
+        description: CO State Hospital Hold
+      - value: 'AR'
+        description: To Probation
+      - value: 'AT'
+        description: Unauthorized Release
+      - value: 'AW'
+        description: Regress from Comm. Center
+      - value: 'AX'
+        description: Resume Supervision in CO Facility
+      - value: 'B1'
+        description: Discretionary Parole
+      - value: 'B2'
+        description: Discretionary - Weekend
+      - value: 'B6'
+        description: Discretionary - SB 03-252
+      - value: 'BA'
+        description: Mandatory Parole
+      - value: 'BB'
+        description: Mandatory Parole - Weekend
+      - value: 'BC'
+        description: Mandatory Parole - HB1351 ERT
+      - value: 'BE'
+        description: Mandatory Reparole
+      - value: 'BF'
+        description: Mandatory Reparole - Weekend
+      - value: 'BH'
+        description: INS Detainer (ICE)
+      - value: 'BJ'
+        description: INS Deportation (ICE)
+      - value: 'C1'
+        description: Mandatory Release - per Martin Cooper
+      - value: 'C2'
+        description: Sentence Discharge - 1087
+      - value: 'C3'
+        description: Appeal Bond
+      - value: 'C5'
+        description: Federal Bureau Of Prisons
+      - value: 'C6'
+        description: Inactivated
+      - value: 'CX'
+        description: CCC - Return to Parole
+      - value: 'D1'
+        description: Other Jails
+      - value: 'D2'
+        description: Federal Detainer
+      - value: 'D3'
+        description: Absconder - Mandatory Discharge
+      - value: 'D4'
+        description: Interstate Compact
+      - value: 'D5'
+        description: Interstate Violation Case Closed
+      - value: 'D6'
+        description: Regular or Medical
+      - value: 'D7'
+        description: YOS Failure
+      - value: 'D9'
+        description: Fire Crew Deployment
+      - value: 'DA'
+        description: Heavy Equipment Crew Deployment
+      - value: 'DB'
+        description: Parolee Serving Time in another State D
+      - value: 'DC'
+        description: Out-of-State Detainer
+      - value: 'DD'
+        description: U.S. Marshall Custody
+      - value: 'DE'
+        description: U.S. Immigration and Naturalization
+      - value: 'DF'
+        description: In Custody - Other than Revocation Process
+      - value: 'DG'
+        description: Colorado Detainer
+      - value: 'DH'
+        description: Discharge to Charges
+      - value: 'DI'
+        description: To another State
+      - value: 'DK'
+        description: Parole to Charges
+      - value: 'DL'
+        description: Other State Detainer
+      - value: 'DN'
+        description: Community Supervision Offender
+      - value: 'DP'
+        description: United States Marshal
+      - value: 'DX'
+        description: DWCF - Return to Parole
+      - value: 'DZ'
+        description: Parolee Transfer to CCC
+      - value: 'JB'
+        description: Jail Backlog
+      - value: 'P1'
+        description: Awaiting Transfer from Parole to Jail
+      - value: 'P2'
+        description: Parolee at non-CDOC Facility (see movement comments)
+      - value: 'P3'
+        description: Parole Revocation to Comm. Return to Custody
+      - value: 'P6'
+        description: Parole Revocation to Comm. Return to Custody Regress
+      - value: 'P7'
+        description: See External Movement Comments
+      - value: 'P8'
+        description: Community  Regressive - Awaiting Transfer to Facility
+      - value: 'P9'
+        description: Special Custody
+      - value: 'PA'
+        description: Technical Parolee Awaiting Transfer to Facility
+      - value: 'PB'
+        description: Parole Revocation Back to Jail
+      - value: 'PC'
+        description: Parole Revocation to Community Center
+      - value: 'PD'
+        description: Awaiting Transportation to a Facility
+      - value: 'PE'
+        description: Returned to Parole from Abscond
+      - value: 'PF'
+        description: Jail Backlog Awaiting Discharge
+      - value: 'PG'
+        description: ISP - Inmate
+      - value: 'PH'
+        description: Parolee in Prison
+      - value: 'PJ'
+        description: ISP - Parolee
+      - value: 'PK'
+        description: Community Jail Transfer
+      - value: 'T1'
+        description: DAY TRIP / STERLING REGIONAL MEDICAL CENTER
+      - value: 'T2'
+        description: DAY TRIP TO BUENA VISTA MINIMUM CENTER
+      - value: 'T3'
+        description: DAY TRIP BVCF MEDICAL
+      - value: 'T4'
+        description: DAY TRIP TRINIDAD
+      - value: 'T5'
+        description: DAY TRIP - BRUSH MEDICAL
+      - value: 'T6'
+        description: DAY TRIP CASTLEROCK
+      - value: 'T7'
+        description: DAY TRIP ROCKY MOUNTAIN ORTHO/FT. COLLINS
+      - value: 'TA'
+        description: DAY TRIP AURORA
+      - value: 'TB'
+        description: DAY TRIP CANON CITY
+      - value: 'TC'
+        description: DAY TRIP CEDARIDGEs
+      - value: 'TD'
+        description: DAY TRIP COLORADO SPRINGS
+      - value: 'TE'
+        description: DAY TRIP DELTA
+      - value: 'TF'
+        description: DAY TRIP DENVER
+      - value: 'TG'
+        description: DAY TRIP GLENWOOD SPRINGS
+      - value: 'TH'
+        description: DAY TRIP HUGO
+      - value: 'TI'
+        description: DAY TRIP LA JUNTA
+      - value: 'TJ'
+        description: DAY TRIP LAKEWOOD
+      - value: 'TK'
+        description: DAY TRIP LEADVILLE
+      - value: 'TL'
+        description: DAY TRIP LIMON
+      - value: 'TM'
+        description: DAY TRIP MONTROSE
+      - value: 'TN'
+        description: DAY TRIP PUEBLO
+      - value: 'TO'
+        description: DAY TRIP RIFLE
+      - value: 'TP'
+        description: DAY TRIP SALIDA
+      - value: 'TQ'
+        description: DAY TRIP RANGELY
+      - value: 'TR'
+        description: DAY TRIP TO BUENA VISTA
+      - value: 'TS'
+        description: DAY TRIP TO AVCF
+      - value: 'TT'
+        description: DAY TRIP TO ARKANSAS VALLEY REGIONAL MEDICAL CENTR
+      - value: 'TU'
+        description: DAY TRIP TO SANCARLOS
+      - value: 'TV'
+        description: DAY TRIP TO FREMONT CORRECTIONAL FACILITY
+      - value: 'TW'
+        description: DAY TRIP TO CTCF INFIRMARY
+      - value: 'TX'
+        description: DAY TRIP TO DRDC INFIRMARY
+      - value: 'TY'
+        description: DAY TRIP TO COLORADO MENTAL HEALTH INST IN PUEBLO
+      - value: 'TZ'
+        description: DAY TRIP/LAS ANIMAS
+      - value: 'V1'
+        description: From Jail
+      - value: 'V2'
+        description: From Hospital
+      - value: 'V3'
+        description: From ICC
+      - value: 'V4'
+        description: From Other Jurisdiction
+      - value: 'V5'
+        description: From ISP-I
+  - name: EXTERNALMVMTCOMMENTS
+    description: |-
       TODO(#12372)
-  - name : EXTERNALMOVEMENTTIME
-    description : |-
+  - name: DATELASTUPDATE
+    description: |-
       TODO(#12372)
-  - name : LOCATIONREPORTMOVEMENT
-    description : |-
+  - name: TIMELASTUPDATE
+    description: |-
       TODO(#12372)
-  - name : EXTERNALMOVEMENTCODE
-    description : |-
+  - name: STAFFLASTUPDATE
+    description: |-
       TODO(#12372)
-  - name : OTHERLOCATIONCODE
-    description : |-
+  - name: INMMOVEMENTESCORT
+    description: |-
       TODO(#12372)
-  - name : REASONFORMOVEMENT
-    description : |-
+  - name: JURISDICTIONALAGENCY
+    description: |-
       TODO(#12372)
-  - name : EXTERNALMVMTCOMMENTS
-    description : |-
+  - name: BODYSEARCHCONDUCTED
+    description: |-
       TODO(#12372)
-  - name : DATELASTUPDATE
-    description : |-
+  - name: LEGALFILEJACKETSENT
+    description: |-
       TODO(#12372)
-  - name : TIMELASTUPDATE
-    description : |-
+  - name: SOCIALSRVFILEJACKETSENT
+    description: |-
       TODO(#12372)
-  - name : STAFFLASTUPDATE
-    description : |-
+  - name: EDUCATIONFILEJACKETSENT
+    description: |-
       TODO(#12372)
-  - name : INMMOVEMENTESCORT
-    description : |-
+  - name: MEDICALFILEJACKETSENT
+    description: |-
       TODO(#12372)
-  - name : JURISDICTIONALAGENCY
-    description : |-
+  - name: PSYCSRVFILEJACKETSENT
+    description: |-
       TODO(#12372)
-  - name : BODYSEARCHCONDUCTED
-    description : |-
+  - name: BOXESOFPROPERTY
+    description: |-
       TODO(#12372)
-  - name : LEGALFILEJACKETSENT
-    description : |-
+  - name: DATEFIRSTCREATED
+    description: |-
       TODO(#12372)
-  - name : SOCIALSRVFILEJACKETSENT
-    description : |-
+  - name: TIMEFIRSTCREATED
+    description: |-
       TODO(#12372)
-  - name : EDUCATIONFILEJACKETSENT
-    description : |-
+  - name: HOLDBEDFLAG
+    description: |-
       TODO(#12372)
-  - name : MEDICALFILEJACKETSENT
-    description : |-
+  - name: REASSIGNHELDBEDFLAG
+    description: |-
       TODO(#12372)
-  - name : PSYCSRVFILEJACKETSENT
-    description : |-
+  - name: COUNTYOFRESIDENCE
+    description: |-
       TODO(#12372)
-  - name : BOXESOFPROPERTY
-    description : |-
+  - name: MOVESERIALNUMBER
+    description: |-
       TODO(#12372)
-  - name : DATEFIRSTCREATED
-    description : |-
+  - name: INCARCERATIONNUMBER
+    description: |-
       TODO(#12372)
-  - name : TIMEFIRSTCREATED
-    description : |-
+  - name: MOVE_TYP
+    description: |-
       TODO(#12372)
-  - name : HOLDBEDFLAG
-    description : |-
+  - name: CO_FAC_CD
+    description: |-
       TODO(#12372)
-  - name : REASSIGNHELDBEDFLAG
-    description : |-
+  - name: CO_LU_CD
+    description: |-
       TODO(#12372)
-  - name : COUNTYOFRESIDENCE
-    description : |-
-      TODO(#12372)
-  - name : MOVESERIALNUMBER
-    description : |-
-      TODO(#12372)
-  - name : INCARCERATIONNUMBER
-    description : |-
-      TODO(#12372)
-  - name : MOVE_TYP
-    description : |-
-      TODO(#12372)
-  - name : CO_FAC_CD
-    description : |-
-      TODO(#12372)
-  - name : CO_LU_CD
-    description : |-
-      TODO(#12372)
-  - name : CO_LOC_CD
-    description : |-
+  - name: CO_LOC_CD
+    description: |-
       TODO(#12372)
