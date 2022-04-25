@@ -302,7 +302,7 @@ def parse_supervision_violation_response_decision(
         return StateSupervisionViolationResponseDecision.NEW_CONDITIONS
 
     if disposition_description == "VIOLATION FOUND - NO SANCTION":
-        return StateSupervisionViolationResponseDecision.CONTINUANCE
+        return StateSupervisionViolationResponseDecision.NO_SANCTION
 
     if violation_finding_description == "WARNING BY OFFICER":
         return StateSupervisionViolationResponseDecision.WARNING
