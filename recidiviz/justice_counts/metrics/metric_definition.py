@@ -114,7 +114,7 @@ class MetricDefinition:
     # Note to agencies about how to report this metric (i.e. the ideal methodology)
     reporting_note: Optional[str] = None
     # Additional context that the agency is required to report on this metric
-    contexts: Optional[List[Context]] = None
+    specified_contexts: Optional[List[Context]] = None
     # Definitions provided to the agency to help them report this metric
     definitions: Optional[List[Definition]] = None
 
@@ -150,4 +150,25 @@ class MetricDefinition:
                 filtered_dimension_key,
                 aggregated_dimension_key,
             ],
+        )
+
+    @property
+    def contexts(self) -> List[Context]:
+        """Returns the list of contexts associated with the metric.
+        Appends an additional context to the list of required/requested contexts. Returns
+        only a list containing the additional contexts if no contexts are associated with the metric.
+        """
+        additional_context: List[Context] = [
+            Context(
+                key=ContextKey.ADDITIONAL_CONTEXT,
+                context_type=ContextType.TEXT,
+                label="Additional context",
+                required=False,
+            )
+        ]
+
+        return (
+            self.specified_contexts + additional_context
+            if self.specified_contexts is not None
+            else additional_context
         )
