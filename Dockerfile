@@ -39,7 +39,7 @@ COPY ./frontends/justice-counts/control-panel/public /usr/justice-counts/control
 
 RUN yarn build
 
-FROM ubuntu:focal
+FROM ubuntu:jammy
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -51,12 +51,17 @@ ENV DEBIAN_FRONTEND noninteractive
 # unideal.
 ENV TZ America/New_York
 
+# Add a package repo to get archived python versions.
+RUN apt update -y && \
+    apt install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa
+
 RUN apt update -y && \
     apt install -y \
     locales \
     git \
     libxml2-dev libxslt1-dev \
-    python3.8-dev python3-pip \
+    python3.8-dev python3.8-distutils python3-pip \
     default-jre \
     libpq-dev \
     curl
