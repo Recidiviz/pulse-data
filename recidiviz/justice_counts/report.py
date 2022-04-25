@@ -16,13 +16,23 @@
 # =============================================================================
 """Interface for working with the Reports model."""
 import datetime
-from typing import Any, Dict, List
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, cast
 
 from sqlalchemy.orm import Session
 
+from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.exceptions import JusticeCountsPermissionError
-from recidiviz.justice_counts.metrics.metric_definition import ReportingFrequency
-from recidiviz.justice_counts.metrics.report_metric import ReportMetric
+from recidiviz.justice_counts.metrics.metric_definition import (
+    AggregatedDimension,
+    ReportingFrequency,
+)
+from recidiviz.justice_counts.metrics.metric_registry import METRICS
+from recidiviz.justice_counts.metrics.report_metric import (
+    ReportedAggregatedDimension,
+    ReportedContext,
+    ReportMetric,
+)
 from recidiviz.justice_counts.report_table_definition import (
     ReportTableDefinitionInterface,
 )
@@ -47,6 +57,10 @@ class ReportInterface:
                 code="justice_counts_agency_permission",
                 description=f"User (user_id: {user_account_id}) does not have access to reports from current agency (agency_id: {agency_id}).",
             )
+
+    @staticmethod
+    def get_report_by_id(session: Session, report_id: int) -> schema.Report:
+        return session.query(schema.Report).filter(schema.Report.id == report_id).one()
 
     @staticmethod
     def get_reports_by_agency_id(
@@ -232,3 +246,194 @@ class ReportInterface:
                 report=report,
                 report_table_definition=report_table_definition,
             )
+
+    @staticmethod
+    def get_metrics_by_report_id(
+        session: Session,
+        report_id: int,
+    ) -> List[ReportMetric]:
+        """Given a report_id, determine all MetricDefinitions that must be populated
+        on this report, and convert them to ReportMetrics. If the agency has already
+        started filling out the report, populate the ReportMetrics with those values.
+        This method will be used to send a list of Metrics to the frontend to render
+        the report form in the Control Panel.
+
+        This involves the following logic:
+        1. Filter the MetricDefinitions in our registry to just those that are applicable
+           to this report, i.e. those that belong to the same criminal justice system pillar
+           as the reporting agency, and those that match the reporting frequency of
+           the given report.
+        2. Look up data that already exists on the report that is stored in the
+           ReportTableDefinition and ReportTableInstance models.
+        3. Perform matching between the MetricDefinitions and the existing data.
+        4. Return a list of ReportMetrics. If the agency has not filled out data for a
+           metric, its values will be None; otherwise they will be populated from the data
+           already stored in our database.
+        """
+        report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
+
+        # We determine which metrics to include on this report based on:
+        #   - Agency system (e.g. only law enforcement)
+        #   - Report frequency (e.g. only annual metrics)
+        metric_definitions = [
+            metric
+            for metric in METRICS
+            # TODO(#11973): Add system field to `Agency` model and remove this System.LAW_ENFORCEMENT placeholder
+            if metric.system == schema.System.LAW_ENFORCEMENT
+            and report.type in {freq.value for freq in metric.reporting_frequencies}
+        ]
+
+        # If data has already been reported for some metrics on this report,
+        # then `report.report_table_instances` will be non-empty.
+        # For each reported metric, there will be one definition/instance pair for the
+        # aggregated metric value, and another definition/instance pair for each
+        # reported disaggregated dimension.
+        table_definition_instance_pairs = [
+            (instance.report_table_definition, instance)
+            for instance in report.report_table_instances
+        ]
+
+        # Group the reported metrics (if there are any) by MetricDefinitions.
+        # One MetricDefinition will correspond to multiple ReportTableDefinitions;
+        # one for the aggregate value and one for each disaggregated dimension.
+        # ReportTableDefinition.label should match MetricDefinition.key, and is
+        # the means by which we connect these two objects.
+        metric_key_to_table_definition_instance_pairs = defaultdict(list)
+        for pair in table_definition_instance_pairs:
+            metric_key_to_table_definition_instance_pairs[pair[0].label].append(pair)
+
+        report_metrics = []
+        # For each metric that should be filled out on this report,
+        # construct a ReportMetric object
+        for metric_definition in metric_definitions:
+            table_definition_instance_pairs = (
+                metric_key_to_table_definition_instance_pairs[metric_definition.key]
+            )
+
+            # First see if aggregate data has been reported
+            reported_aggregated_value = ReportInterface._get_aggregate_value(
+                table_definition_instance_pairs=table_definition_instance_pairs,
+            )
+
+            # Then check if data has been reported for each disaggregated dimension
+            reported_aggregated_dimensions = ReportInterface._get_aggregated_dimensions(
+                aggregated_dimensions=metric_definition.aggregated_dimensions or [],
+                table_definition_instance_pairs=table_definition_instance_pairs,
+            )
+
+            # TODO(#12050) Store ReportedContexts in the methodology column
+            reported_contexts = [
+                ReportedContext(key=context.key, value=None)
+                for context in metric_definition.contexts or []
+            ]
+
+            report_metrics.append(
+                ReportMetric(
+                    key=metric_definition.key,
+                    value=reported_aggregated_value,
+                    contexts=reported_contexts,
+                    aggregated_dimensions=reported_aggregated_dimensions,
+                )
+            )
+
+        return report_metrics
+
+    @staticmethod
+    def _get_aggregate_value(
+        table_definition_instance_pairs: List[
+            Tuple[schema.ReportTableDefinition, schema.ReportTableInstance]
+        ]
+    ) -> Optional[int]:
+        """Given a list of ReportTableDefinitions from the database, find the
+        one without aggregated dimensions (which therefore corresponds to the
+        aggregate metric value). Pull its corresponding ReportTableInstance,
+        and extract the aggregate metric value from its Cell.
+        """
+        aggregated_pair = [
+            p for p in table_definition_instance_pairs if not p[0].aggregated_dimensions
+        ]
+        if not aggregated_pair:
+            return None
+        if len(aggregated_pair) > 1:
+            raise ValueError(
+                "More than one ReportTableDefinition found with no aggregated dimensions."
+            )
+
+        aggregated_instance = aggregated_pair[0][1]
+        if len(aggregated_instance.cells) != 1:
+            raise ValueError(
+                "More than one cell found on a ReportTableInstance with no aggregated dimensions."
+            )
+        return aggregated_instance.cells[0].value
+
+    @staticmethod
+    def _get_aggregated_dimensions(
+        aggregated_dimensions: List[AggregatedDimension],
+        table_definition_instance_pairs: List[
+            Tuple[schema.ReportTableDefinition, schema.ReportTableInstance]
+        ],
+    ) -> List[ReportedAggregatedDimension]:
+        """Given a list of AggregatedDimensions that are expected for a metric,
+        and a list of ReportTableDefinitions from the database, iterate through
+        each AggregateDimension and find the corresponding ReportTableDefinition.
+        Pull its corresponding ReportTableInstance, and extract a dictionary of
+        dimension instances to metric values from its cells.
+        """
+        reported_aggregated_dimensions: List[ReportedAggregatedDimension] = []
+        for dimension in aggregated_dimensions:
+            # e.g. dimension = AggregatedDimension(dimension=RaceAndEthnicity)
+            #      disaggregated_definition = [ReportTableDefinition(aggregated_dimensions=["global/race_and_ethnicity"])]
+            disaggregated_pair = [
+                p
+                for p in table_definition_instance_pairs
+                if dimension.dimension_identifier() in p[0].aggregated_dimensions
+            ]
+
+            # dimension.dimension is an Enum class, e.g. Gender or Populationtype
+            # You can iterate over Enum classes to yield their instances, e.g.
+            # list(Gender) -> [Gender.FEMALE, Gender.MALE]
+            # This is hard to do properly with mypy, though
+            iterable_dimension_enum_class = cast(
+                Iterable[DimensionBase], dimension.dimension
+            )
+            # dimension_to_value will be a dict like {Gender.FEMALE: None, Gender.MALE: None, etc}
+            dimension_to_value: Dict[DimensionBase, Optional[float]] = {
+                d: None for d in iterable_dimension_enum_class
+            }
+            if not disaggregated_pair:
+                # If no matching ReportTableDefinition exists in the database, the agency must
+                # not have reported it yet. In this case, return a dictionary with null values,
+                reported_aggregated_dimensions.append(
+                    ReportedAggregatedDimension(dimension_to_value=dimension_to_value)
+                )
+                continue
+
+            if len(disaggregated_pair) > 1:
+                raise ValueError(
+                    "More than one ReportTableDefinition found with "
+                    f"aggregated dimension: {dimension.dimension_identifier()}."
+                )
+
+            disaggregated_instance = disaggregated_pair[0][1]
+            # The logic below iterates through the Cells in the database, each of which corresponds
+            # to one category (White, Asian, etc), converts the cell.aggregated_dimension_value
+            # (which will be a string like "WHITE") to an instance of the dimension enum
+            # (e.g. RaceAndEthnicity.WHITE), and populates a dictionary mapping the dimension instance
+            # to the cell values, e.g. {RaceAndEthnicity.WHITE: 100, RaceAndEthnicity.ASIAN: 25, etc}
+            dimension_to_value = {}
+            for cell in disaggregated_instance.cells:
+                # dimension.dimension is an Enum class, e.g. Gender or Populationtype
+                # You can index Enum classes with a string to get the corresponding index, e.g.
+                # Gender["MALE"] -> Gender.MALE
+                # This is hard to do properly with mypy, though
+                indexable_dimension_enum_class = cast(
+                    Mapping[str, DimensionBase], dimension.dimension
+                )
+                _dimension = indexable_dimension_enum_class[
+                    cell.aggregated_dimension_values[0]
+                ]
+                dimension_to_value[_dimension] = cell.value
+            reported_aggregated_dimensions.append(
+                ReportedAggregatedDimension(dimension_to_value=dimension_to_value)
+            )
+        return reported_aggregated_dimensions
