@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Fake raw data migrations for test file file_tag_second in fixture region us_xx."""
+"""Fake raw data migrations for test file tagBasicData in fixture region us_xx."""
 
 import datetime
 from typing import List

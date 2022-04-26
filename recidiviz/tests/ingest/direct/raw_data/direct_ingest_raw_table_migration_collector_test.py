@@ -54,7 +54,7 @@ WHERE STRUCT(column_1a, update_datetime) IN (
     STRUCT(\"00000000\", \"2020-09-21T00:00:00\")
 );"""
 
-        tagC_query_1 = """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
+        tagBasicData_query_1 = """UPDATE `recidiviz-456.us_xx_raw_data.tagBasicData` original
 SET COL1 = updates.new__COL1
 FROM (SELECT * FROM UNNEST([
     STRUCT('123' AS COL1, CAST('2020-06-10T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1),
@@ -62,14 +62,14 @@ FROM (SELECT * FROM UNNEST([
 ])) updates
 WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"""
 
-        tagC_query_2 = """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
+        tagBasicData_query_2 = """DELETE FROM `recidiviz-456.us_xx_raw_data.tagBasicData`
 WHERE STRUCT(COL1) IN (
     STRUCT(\"789\")
 );"""
 
         expected_queries_map = {
             "file_tag_first": [file_tag_first_query_1, file_tag_first_query_2],
-            "tagC": [tagC_query_1, tagC_query_2],
+            "tagBasicData": [tagBasicData_query_1, tagBasicData_query_2],
         }
 
         self.assertEqual(expected_queries_map, queries_map)
@@ -95,7 +95,7 @@ WHERE STRUCT(column_1a, update_datetime) IN (
     STRUCT(\"00000000\", \"2020-09-21T00:00:00\")
 );"""
 
-        tagC_query_1 = """UPDATE `recidiviz-456.my_prefix_us_xx_raw_data.tagC` original
+        tagBasicData_query_1 = """UPDATE `recidiviz-456.my_prefix_us_xx_raw_data.tagBasicData` original
 SET COL1 = updates.new__COL1
 FROM (SELECT * FROM UNNEST([
     STRUCT('123' AS COL1, CAST('2020-06-10T00:00:00' AS DATETIME) AS update_datetime, '456' AS new__COL1),
@@ -103,14 +103,14 @@ FROM (SELECT * FROM UNNEST([
 ])) updates
 WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"""
 
-        tagC_query_2 = """DELETE FROM `recidiviz-456.my_prefix_us_xx_raw_data.tagC`
+        tagBasicData_query_2 = """DELETE FROM `recidiviz-456.my_prefix_us_xx_raw_data.tagBasicData`
 WHERE STRUCT(COL1) IN (
     STRUCT(\"789\")
 );"""
 
         expected_queries_map = {
             "file_tag_first": [file_tag_first_query_1, file_tag_first_query_2],
-            "tagC": [tagC_query_1, tagC_query_2],
+            "tagBasicData": [tagBasicData_query_1, tagBasicData_query_2],
         }
 
         self.assertEqual(expected_queries_map, queries_map)
