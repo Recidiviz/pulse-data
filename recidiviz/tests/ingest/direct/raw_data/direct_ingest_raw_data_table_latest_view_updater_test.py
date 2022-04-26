@@ -245,6 +245,7 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
                 "tagFullyEmptyFile_latest",
                 "tagHeadersNoContents_latest",
                 "tagBasicData_latest",
+                "tagMoreBasicData_latest",
                 "tagWeDoNotIngest_latest",
             ],
             found_view_ids,
