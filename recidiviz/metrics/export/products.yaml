@@ -112,6 +112,8 @@ products:
         environment: staging
       - state_code: US_ME
         environment: production
+      - state_code: US_MO
+        environment: staging
   - name: Pathways With Population Projections
     description: Prison and Supervision populations and transitions over time including prison and supervsion population projections. Also see PATHWAYS for Pathways exports that do not include projections.
     exports:
