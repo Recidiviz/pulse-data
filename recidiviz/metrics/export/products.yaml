@@ -86,6 +86,8 @@ products:
     states:
       - state_code: US_ID
         environment: staging
+      - state_code: US_ME
+        environment: staging
       - state_code: US_ND
         environment: production
       - state_code: US_PA
