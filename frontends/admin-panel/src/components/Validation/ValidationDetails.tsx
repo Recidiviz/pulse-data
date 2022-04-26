@@ -26,6 +26,7 @@ import {
   Tooltip,
 } from "antd";
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   fetchValidationDetails,
   fetchValidationDescription,
@@ -36,6 +37,7 @@ import {
   ValidationStatusRecord,
   ValidationStatusRecords,
 } from "../../recidiviz/admin_panel/models/validation_pb";
+import { gcpEnvironment } from "../Utilities/EnvironmentUtilities";
 import {
   RecordStatus,
   ValidationDetailsProps,
@@ -70,6 +72,20 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   const { loading: errorTableLoading, data: errorTable } =
     useFetchedDataJSON<ValidationErrorTableData>(fetchErrorTable);
 
+  const getValidationLogLink = (traceId?: string) => {
+    if (!traceId) {
+      // Needs to have traceId to locate correct log
+      return;
+    }
+
+    const queryEnv = gcpEnvironment.isProduction
+      ? "recidiviz-123"
+      : "recidiviz-staging";
+
+    // Time range is set to 5 days which should be fine since ValidationDetails is focusing on the most recent runs.
+    return `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2F${queryEnv}%2Flogs%2Fapp%22%0Atrace%3D%22projects%2F${queryEnv}%2Ftraces%2F${traceId}%22%0A%22${validationName}%22%0A%22${stateInfo.code}%22;timeRange=P5D?project=${queryEnv}`;
+  };
+
   // TODO(#9480): Allow user to see more than last 14 days.
   const fetchResults = React.useCallback(async () => {
     const r = await fetchValidationDescription(validationName);
@@ -80,10 +96,8 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
       setValidationDescription(text);
     }
 
-    fetchErrorTable();
-
     return fetchValidationDetails(validationName, stateInfo.code);
-  }, [validationName, stateInfo, fetchErrorTable]);
+  }, [validationName, stateInfo]);
 
   const validationFetched = useFetchedDataProtobuf<ValidationStatusRecords>(
     fetchResults,
@@ -96,6 +110,8 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   const latestRecord = records && records[0];
   const latestResultStatus =
     (latestRecord && getRecordStatus(latestRecord)) || RecordStatus.UNKNOWN;
+  const validationLogLink =
+    latestRecord && getValidationLogLink(latestRecord.getTraceId());
 
   return (
     <>
@@ -145,6 +161,18 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
             <Descriptions.Item label="Description" span={3}>
               {validationDescription}
             </Descriptions.Item>
+            {validationLogLink && (
+              <Descriptions.Item label="Log" span={3}>
+                <Link to={{ pathname: validationLogLink }} target="_blank">
+                  Log Explorer
+                </Link>
+              </Descriptions.Item>
+            )}
+            {latestRecord?.getErrorLog() && (
+              <Descriptions.Item label="Error Details" span={3}>
+                {latestRecord.getErrorLog()}
+              </Descriptions.Item>
+            )}
           </Descriptions>
         )}
       </Card>

@@ -256,6 +256,16 @@ export class ValidationStatusRecord extends jspb.Message {
   getFailureDescription(): string | undefined;
   setFailureDescription(value: string): void;
 
+  hasTraceId(): boolean;
+  clearTraceId(): void;
+  getTraceId(): string | undefined;
+  setTraceId(value: string): void;
+
+  hasErrorLog(): boolean;
+  clearErrorLog(): void;
+  getErrorLog(): string | undefined;
+  setErrorLog(value: string): void;
+
   hasExistence(): boolean;
   clearExistence(): void;
   getExistence(): ExistenceValidationResultDetails | undefined;
@@ -314,6 +324,8 @@ export namespace ValidationStatusRecord {
     resultStatus?: ValidationStatusRecord.ValidationResultStatusMap[keyof ValidationStatusRecord.ValidationResultStatusMap],
     errorAmount?: number,
     failureDescription?: string,
+    traceId?: string,
+    errorLog?: string,
     existence?: ExistenceValidationResultDetails.AsObject,
     samenessPerRow?: SamenessPerRowValidationResultDetails.AsObject,
     samenessPerView?: SamenessPerViewValidationResultDetails.AsObject,

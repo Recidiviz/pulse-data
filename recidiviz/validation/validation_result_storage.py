@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, cast
 
 import attr
 import cattr
+from opencensus.trace import execution_context
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -52,12 +53,21 @@ class ValidationResultForStorage:
     region_code: str = attr.ib()
 
     did_run: bool = attr.ib()
+
+    # The OpenCensus trace_id that can be used to track the request this job was performed in
+    trace_id: str = attr.ib()
+
     validation_result_status: Optional[ValidationResultStatus] = attr.ib()
     failure_description: Optional[str] = attr.ib()
     result_details_type: Optional[str] = attr.ib()
     result_details: Optional[DataValidationJobResultDetails] = attr.ib()
 
     validation_category: Optional[ValidationCategory] = attr.ib()
+    exception_log: Optional[Exception] = attr.ib()
+
+    @trace_id.default
+    def _trace_id_factory(self) -> str:
+        return execution_context.get_opencensus_tracer().span_context.trace_id
 
     def __attrs_post_init__(self) -> None:
         if self.run_date != self.run_datetime.date():
@@ -86,6 +96,7 @@ class ValidationResultForStorage:
             result_details_type=result.result_details.__class__.__name__,
             result_details=result.result_details,
             validation_category=result.validation_job.validation.validation_category,
+            exception_log=None,
         )
 
     @classmethod
@@ -94,6 +105,7 @@ class ValidationResultForStorage:
         run_id: str,
         run_datetime: datetime.datetime,
         job: DataValidationJob,
+        exception_log: Optional[Exception],
     ) -> "ValidationResultForStorage":
         return cls(
             run_id=run_id,
@@ -109,6 +121,7 @@ class ValidationResultForStorage:
             result_details_type=None,
             result_details=None,
             validation_category=job.validation.validation_category,
+            exception_log=exception_log,
         )
 
     def to_serializable(self) -> Dict[str, Any]:

@@ -1562,6 +1562,8 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.toObject = function(in
     resultStatus: (f = jspb.Message.getField(msg, 12)) == null ? undefined : f,
     errorAmount: (f = jspb.Message.getOptionalFloatingPointField(msg, 13)) == null ? undefined : f,
     failureDescription: (f = jspb.Message.getField(msg, 14)) == null ? undefined : f,
+    traceId: (f = jspb.Message.getField(msg, 22)) == null ? undefined : f,
+    errorLog: (f = jspb.Message.getField(msg, 23)) == null ? undefined : f,
     existence: (f = msg.getExistence()) && proto.recidiviz.admin_panel.models.ExistenceValidationResultDetails.toObject(includeInstance, f),
     samenessPerRow: (f = msg.getSamenessPerRow()) && proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.toObject(includeInstance, f),
     samenessPerView: (f = msg.getSamenessPerView()) && proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.toObject(includeInstance, f),
@@ -1664,6 +1666,14 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.deserializeBinaryFromR
     case 14:
       var value = /** @type {string} */ (reader.readString());
       msg.setFailureDescription(value);
+      break;
+    case 22:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setTraceId(value);
+      break;
+    case 23:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setErrorLog(value);
       break;
     case 15:
       var value = new proto.recidiviz.admin_panel.models.ExistenceValidationResultDetails;
@@ -1825,6 +1835,20 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.serializeBinaryToWrite
   if (f != null) {
     writer.writeString(
       14,
+      f
+    );
+  }
+  f = /** @type {string} */ (jspb.Message.getField(message, 22));
+  if (f != null) {
+    writer.writeString(
+      22,
+      f
+    );
+  }
+  f = /** @type {string} */ (jspb.Message.getField(message, 23));
+  if (f != null) {
+    writer.writeString(
+      23,
       f
     );
   }
@@ -2435,6 +2459,78 @@ proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearFailure
  */
 proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasFailureDescription = function() {
   return jspb.Message.getField(this, 14) != null;
+};
+
+
+/**
+ * optional string trace_id = 22;
+ * @return {string}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.getTraceId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 22, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.setTraceId = function(value) {
+  return jspb.Message.setField(this, 22, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearTraceId = function() {
+  return jspb.Message.setField(this, 22, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasTraceId = function() {
+  return jspb.Message.getField(this, 22) != null;
+};
+
+
+/**
+ * optional string error_log = 23;
+ * @return {string}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.getErrorLog = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 23, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.setErrorLog = function(value) {
+  return jspb.Message.setField(this, 23, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.recidiviz.admin_panel.models.ValidationStatusRecord} returns this
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.clearErrorLog = function() {
+  return jspb.Message.setField(this, 23, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.ValidationStatusRecord.prototype.hasErrorLog = function() {
+  return jspb.Message.getField(this, 23) != null;
 };
 
 

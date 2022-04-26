@@ -293,6 +293,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     RESULT_STATUS_FIELD_NUMBER: builtins.int
     ERROR_AMOUNT_FIELD_NUMBER: builtins.int
     FAILURE_DESCRIPTION_FIELD_NUMBER: builtins.int
+    TRACE_ID_FIELD_NUMBER: builtins.int
+    ERROR_LOG_FIELD_NUMBER: builtins.int
     EXISTENCE_FIELD_NUMBER: builtins.int
     SAMENESS_PER_ROW_FIELD_NUMBER: builtins.int
     SAMENESS_PER_VIEW_FIELD_NUMBER: builtins.int
@@ -323,6 +325,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
     result_status: global___ValidationStatusRecord.ValidationResultStatus.V = ...
     error_amount: builtins.float = ...
     failure_description: typing.Text = ...
+    trace_id: typing.Text = ...
+    error_log: typing.Text = ...
     @property
     def existence(self) -> global___ExistenceValidationResultDetails: ...
     @property
@@ -367,6 +371,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
         ] = ...,
         error_amount: typing.Optional[builtins.float] = ...,
         failure_description: typing.Optional[typing.Text] = ...,
+        trace_id: typing.Optional[typing.Text] = ...,
+        error_log: typing.Optional[typing.Text] = ...,
         existence: typing.Optional[global___ExistenceValidationResultDetails] = ...,
         sameness_per_row: typing.Optional[
             global___SamenessPerRowValidationResultDetails
@@ -393,6 +399,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
             b"did_run",
             "error_amount",
             b"error_amount",
+            "error_log",
+            b"error_log",
             "existence",
             b"existence",
             "failure_description",
@@ -429,6 +437,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
             b"state_code",
             "system_version",
             b"system_version",
+            "trace_id",
+            b"trace_id",
         ],
     ) -> builtins.bool: ...
     def ClearField(
@@ -442,6 +452,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
             b"did_run",
             "error_amount",
             b"error_amount",
+            "error_log",
+            b"error_log",
             "existence",
             b"existence",
             "failure_description",
@@ -478,6 +490,8 @@ class ValidationStatusRecord(google.protobuf.message.Message):
             b"state_code",
             "system_version",
             b"system_version",
+            "trace_id",
+            b"trace_id",
         ],
     ) -> None: ...
     def WhichOneof(
