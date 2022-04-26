@@ -80,6 +80,9 @@ from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
 )
+from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
+    FakeInstanceIngestViewContents,
+)
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
@@ -437,6 +440,9 @@ def build_fake_direct_ingest_controller(
     ), patch(
         f"{BaseDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector",
         view_collector_cls,
+    ), patch(
+        f"{BaseDirectIngestController.__module__}.InstanceIngestViewContentsImpl",
+        FakeInstanceIngestViewContents,
     ):
         task_manager = (
             FakeAsyncDirectIngestCloudTaskManager()
