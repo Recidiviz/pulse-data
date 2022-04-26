@@ -177,14 +177,16 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertListEqual(
-            result.successes,
+            sorted(result.successes),
             [
-                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
             ],
         )
         resulting_content_types = [file.content_type for file in mock_fs.files.values()]
-        self.assertListEqual(resulting_content_types, ["text/plain", "text/csv"])
+        self.assertListEqual(
+            sorted(resulting_content_types), ["text/csv", "text/plain"]
+        )
         self.assertFalse(self.us_xx_primary_manager.is_instance_paused())
         self.assertFalse(self.us_xx_secondary_manager.is_instance_paused())
 
