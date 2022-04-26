@@ -166,14 +166,14 @@ tagPrimaryKeyColsMissing file description
     ) -> None:
         mock_config_fn.return_value = FakeDirectIngestRegionRawFileConfig("US_XX")
         documentation_generator = DirectIngestDocumentationGenerator()
-        tags = ["tagA", "tagB", "tagC"]
+        tags = ["tagFullyEmptyFile", "tagHeadersNoContents", "tagBasicData"]
         my_collector = FakeDirectIngestPreProcessedIngestViewCollector(
             region=fake_region(), controller_ingest_view_rank_list=tags
         )
         expected_referencing_views = {
-            "tagA": ["tagA", "gatedTagNotInTagsList"],
-            "tagB": ["tagB", "gatedTagNotInTagsList"],
-            "tagC": ["tagC"],
+            "tagFullyEmptyFile": ["tagFullyEmptyFile"],
+            "tagHeadersNoContents": ["tagHeadersNoContents"],
+            "tagBasicData": ["tagBasicData", "gatedTagNotInTagsList"],
         }
         self.assertEqual(
             documentation_generator.get_referencing_views(

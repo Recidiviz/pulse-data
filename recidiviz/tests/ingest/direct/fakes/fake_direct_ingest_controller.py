@@ -103,9 +103,9 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
 class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
     def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         return {
-            "tagA": DirectIngestRawFileConfig(
-                file_tag="tagA",
-                file_path="path/to/tagA.yaml",
+            "tagFullyEmptyFile": DirectIngestRawFileConfig(
+                file_tag="tagFullyEmptyFile",
+                file_path="path/to/tagFullyEmptyFile.yaml",
                 file_description="file description",
                 data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["mockKey"],
@@ -126,9 +126,9 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
             ),
-            "tagB": DirectIngestRawFileConfig(
-                file_tag="tagB",
-                file_path="path/to/tagB.yaml",
+            "tagHeadersNoContents": DirectIngestRawFileConfig(
+                file_tag="tagHeadersNoContents",
+                file_path="path/to/tagHeadersNoContents.yaml",
                 file_description="file description",
                 data_classification=RawDataClassification.SOURCE,
                 primary_key_cols=["mockKey"],
@@ -149,9 +149,9 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
             ),
-            "tagC": DirectIngestRawFileConfig(
-                file_tag="tagC",
-                file_path="path/to/tagC.yaml",
+            "tagBasicData": DirectIngestRawFileConfig(
+                file_tag="tagBasicData",
+                file_path="path/to/tagBasicData.yaml",
                 file_description="file description",
                 data_classification=RawDataClassification.VALIDATION,
                 primary_key_cols=["mockKey"],
@@ -242,7 +242,7 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
             DirectIngestPreProcessedIngestViewBuilder(
                 ingest_view_name="gatedTagNotInTagsList",
                 region=self.region.region_code,
-                view_query_template="SELECT * FROM {tagA} LEFT OUTER JOIN {tagB} USING (col);",
+                view_query_template="SELECT * FROM {tagBasicData} LEFT OUTER JOIN {tagBasicData} USING (col);",
                 order_by_cols="",
             )
         )

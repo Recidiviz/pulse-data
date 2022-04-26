@@ -241,6 +241,11 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
                 self.assertEqual(expected_output_dataset, view.dataset_id)
 
         self.assertEqual(
-            ["tagA_latest", "tagB_latest", "tagC_latest", "tagWeDoNotIngest_latest"],
+            [
+                "tagFullyEmptyFile_latest",
+                "tagHeadersNoContents_latest",
+                "tagBasicData_latest",
+                "tagWeDoNotIngest_latest",
+            ],
             found_view_ids,
         )
