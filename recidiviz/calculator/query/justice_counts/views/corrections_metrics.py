@@ -322,7 +322,7 @@ SELECT {aggregated_dimension_columns},
        value - compare_value as value_change,
        -- Note: This can return NULL in the case of divide by zero
        SAFE_DIVIDE((value - compare_value), compare_value) as percentage_change
-FROM `{project_id}.{input_dataset}.{input_table}`
+FROM `{project_id}.{input_dataset}.{input_table}` input
 JOIN `{project_id}.{base_dataset}.source_materialized` source
   ON source_id = source.id
 JOIN `{project_id}.{base_dataset}.report_materialized` report
@@ -343,7 +343,7 @@ class CorrectionsOutputViewBuilder(SimpleBigQueryViewBuilder):
         view_id_suffix: Optional[str] = None,
     ):
         aggregated_dimension_columns = ", ".join(
-            metric_to_calculate.aggregated_dimensions
+            f"input.{column}" for column in metric_to_calculate.aggregated_dimensions
         )
 
         super().__init__(
