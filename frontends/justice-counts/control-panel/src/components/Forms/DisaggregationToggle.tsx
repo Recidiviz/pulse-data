@@ -15,19 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { InputHTMLAttributes, useEffect, useRef, useState } from "react";
+import React, { InputHTMLAttributes, useState } from "react";
 import styled from "styled-components/macro";
 
 import { rem } from "../../utils";
 import { palette } from "../GlobalStyles";
 
-export const AdditionalContextContent = styled.div`
+export const DisaggregationContent = styled.div`
   border-left: 1px solid black;
   padding-left: 25px;
   margin-top: 15px;
 `;
 
-export const AdditionalContextContentHelperText = styled.div`
+export const DisaggregationContentHelperText = styled.div`
   font-size: ${rem("15px")};
   line-height: 24px;
 `;
@@ -94,63 +94,24 @@ const ToggleSwitchLabel = styled.span`
   margin-left: 10px;
 `;
 
-interface AdditionalContextToggleProps
+interface DisaggregationToggleProps
   extends InputHTMLAttributes<HTMLInputElement> {
   description?: string;
-  resetField?: (name: string[]) => void;
 }
 
 /**
  * Wraps input form elements and delivers a switch to toggle the visibility of those elements.
- * When toggled off, the `resetField` callback is triggered to clear the field and update the form.
  */
-export const AdditionalContextToggle: React.FC<
-  AdditionalContextToggleProps
-> = ({ description, children, resetField }): JSX.Element => {
+export const DisaggregationToggle: React.FC<DisaggregationToggleProps> = ({
+  description,
+  children,
+}): JSX.Element => {
   const [open, setOpen] = useState(false);
-  const [uniqueNames, setUniqueNames] = useState<string[]>([]);
-  const toggleSwitchRef: React.RefObject<HTMLDivElement> = useRef(null);
 
   const toggleOpen = () => setOpen(!open);
 
-  /**
-   * Note: The reset field on toggle off has not been finalized yet - this behavior may be removed or adjusted.
-   */
-  useEffect(() => {
-    if (open) {
-      /**
-       * When toggled open, gather all of the children input element `name` properties in an array
-       * to use when the `resetField` callback is triggered.
-       */
-      const allToggledInputs = Array.from(
-        toggleSwitchRef.current?.querySelectorAll(
-          `input`
-        ) as ArrayLike<HTMLInputElement>
-      ).filter((input) => input.name);
-      const allToggledInputUniqueNames: { [key: string]: boolean } = {};
-
-      allToggledInputs.forEach((input) => {
-        if (!allToggledInputUniqueNames[input.name]) {
-          allToggledInputUniqueNames[input.name] = true;
-        }
-      });
-
-      setUniqueNames(Object.keys(allToggledInputUniqueNames));
-    } else if (!open && resetField) {
-      resetField(uniqueNames);
-    }
-
-    /**
-     * Consciously (and with a lot of careful consideration) surpressing the dependency array warning.
-     * as this effect should ONLY be dependent on whether or not the toggle is open. It should not
-     * be dependent on `resetField`, `uniqueNames`, nor any other properties.
-     */
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   return (
-    <ToggleSwitchContainer ref={toggleSwitchRef}>
+    <ToggleSwitchContainer>
       {/* Toggle Switch */}
       <ToggleSwitchWrapper>
         <ToggleSwitch>
@@ -167,7 +128,7 @@ export const AdditionalContextToggle: React.FC<
       </ToggleSwitchWrapper>
 
       {/* Additional Context Content (form elements) */}
-      <AdditionalContextContent>{open && children}</AdditionalContextContent>
+      <DisaggregationContent>{open && children}</DisaggregationContent>
     </ToggleSwitchContainer>
   );
 };

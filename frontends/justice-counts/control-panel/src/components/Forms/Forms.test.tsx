@@ -20,14 +20,13 @@ import React from "react";
 
 import { TextInput } from ".";
 
-test("Optional input label without value expected to be default position, font-size and color", async () => {
+test("Optional input label without value expected to be default position, font-size and color", () => {
   render(
     <TextInput
       type="text"
       label="Total Staff"
       valueLabel="People"
       context="Measures the number of full-time staff employed by the agency."
-      error=""
       value=""
       readOnly
     />
@@ -42,14 +41,13 @@ test("Optional input label without value expected to be default position, font-s
   expect.hasAssertions();
 });
 
-test("Required input label with value expected to shrink position, font-size and change color", async () => {
+test("Required input label with value expected to shrink position, font-size and change color", () => {
   render(
     <TextInput
       type="text"
       label="Total Staff"
       valueLabel="People"
       context="Measures the number of full-time staff employed by the agency."
-      error=""
       value="100"
       readOnly
       required
@@ -61,6 +59,28 @@ test("Required input label with value expected to shrink position, font-size and
   expect(window.getComputedStyle(label).top).toBe("12px");
   expect(window.getComputedStyle(label).fontSize).toBe("0.75rem");
   expect(window.getComputedStyle(label).color).toBe("rgb(0, 115, 229)");
+
+  expect.hasAssertions();
+});
+
+test("Context description appears in document", () => {
+  render(
+    <TextInput
+      type="text"
+      label="Total Staff"
+      valueLabel="People"
+      context="Measures the number of full-time staff employed by the agency."
+      value="100"
+      readOnly
+      required
+    />
+  );
+
+  const inputContext = screen.getByText(
+    /Measures the number of full-time staff employed by the agency./i
+  );
+
+  expect(inputContext).toBeInTheDocument();
 
   expect.hasAssertions();
 });

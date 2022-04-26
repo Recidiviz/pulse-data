@@ -19,9 +19,13 @@ import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import styled from "styled-components/macro";
 
+import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
+import { PageWrapper } from "../Forms";
+import DataEntryForm from "./DataEntryForm";
+import PublishDataPanel from "./PublishDataPanel";
+import ReportSummaryPanel from "./ReportSummaryPanel";
 
 const ReportDataEntry = () => {
   const { reportStore, userStore } = useStore();
@@ -39,21 +43,22 @@ const ReportDataEntry = () => {
     []
   );
 
-  const reportOverview = reportStore.reportOverviews[reportID];
+  const reportOverview = reportStore.reportOverviews[reportID] as Report;
   const reportMetrics = reportStore.reportMetrics[reportID];
-  const Container = styled.div`
-    padding: 100px;
-  `;
 
   if (!reportMetrics || !reportOverview) {
-    return <Container>Loading...</Container>;
+    return <PageWrapper>Loading...</PageWrapper>;
   }
 
   return (
-    <Container>
-      <Container>Report Overview: {JSON.stringify(reportOverview)}</Container>
-      <Container>Report Metrics: {JSON.stringify(reportMetrics)}</Container>
-    </Container>
+    <PageWrapper>
+      <ReportSummaryPanel reportMetrics={reportMetrics} />
+      <DataEntryForm
+        reportOverview={reportOverview}
+        reportMetrics={reportMetrics}
+      />
+      <PublishDataPanel reportOverview={reportOverview} />
+    </PageWrapper>
   );
 };
 

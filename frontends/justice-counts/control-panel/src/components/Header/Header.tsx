@@ -43,8 +43,8 @@ const Header = () => {
   return (
     <HeaderRow>
       <HeaderCell>Justice Counts Data Publisher</HeaderCell>
-      <HeaderCell>{agencyName}</HeaderCell>
       <HeaderCell />
+      <HeaderCell>{agencyName}</HeaderCell>
       <HeaderCell textAlign="right">
         <Menu />
       </HeaderCell>
