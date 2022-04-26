@@ -18,16 +18,14 @@
 module "case_triage_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id             = var.project_id
-  instance_key           = "case_triage"
-  base_secret_name       = "case_triage"
-  region                 = var.region
-  zone                   = var.zone
-  tier                   = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
-  has_readonly_user      = true
-  require_ssl_connection = true
+  project_id        = var.project_id
+  instance_key      = "case_triage"
+  base_secret_name  = "case_triage"
+  region            = var.region
+  zone              = var.zone
+  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
+  has_readonly_user = true
 }
-
 
 module "jails_database_v2" {
   source = "./modules/cloud-sql-instance"
@@ -35,13 +33,11 @@ module "jails_database_v2" {
   project_id        = var.project_id
   instance_key      = "jails_v2"
   base_secret_name  = "jails_v2"
-  database_version  = "POSTGRES_13"
   region            = "us-east4"
   zone              = "us-east4-b"
   tier              = coalesce(var.default_sql_tier, "db-custom-4-15360") # 4 vCPU, 15GB Memory
   has_readonly_user = true
 }
-
 
 module "justice_counts_database" {
   source = "./modules/cloud-sql-instance"
@@ -62,7 +58,6 @@ module "operations_database_v2" {
   project_id        = var.project_id
   instance_key      = "operations_v2"
   base_secret_name  = "operations_v2"
-  database_version  = "POSTGRES_13"
   region            = "us-east1"
   zone              = "us-east1-b"
   tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
@@ -76,10 +71,21 @@ module "state_database_v2" {
   project_id        = var.project_id
   instance_key      = "state_v2"
   base_secret_name  = "state_v2"
-  database_version  = "POSTGRES_13"
   region            = "us-east1"
   zone              = "us-east1-c"
   tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
+  has_readonly_user = true
+}
+
+module "pathways_database" {
+  source = "./modules/cloud-sql-instance"
+
+  project_id        = var.project_id
+  instance_key      = "pathways"
+  base_secret_name  = "pathways"
+  region            = var.region
+  zone              = var.zone
+  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user = true
 }
 
@@ -89,6 +95,7 @@ locals {
     [
       module.case_triage_database.connection_name,
       module.justice_counts_database.connection_name,
+      module.pathways_database.connection_name,
       # v2 modules
       module.jails_database_v2.connection_name,
       module.operations_database_v2.connection_name,
