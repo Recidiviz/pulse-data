@@ -307,15 +307,15 @@ class BaseDirectIngestController:
                     ingest_instance=self.ingest_instance,
                 )
             )
-            self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
-                bq_client=big_query_client,
-                ingest_view_rank_list=self.get_ingest_view_rank_list(),
-            )
             self.ingest_view_contents = InstanceIngestViewContentsImpl(
                 big_query_client=big_query_client,
                 region_code=self.region_code(),
                 ingest_instance=self.ingest_instance,
                 dataset_prefix=None,
+            )
+            self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
+                ingest_view_contents=self.ingest_view_contents,
+                ingest_view_rank_list=self.get_ingest_view_rank_list(),
             )
             materializer_delegate = BQBasedMaterializerDelegate(
                 metadata_manager=self.view_materialization_metadata_manager,

@@ -18,10 +18,18 @@
 merge job should run next given the desired data import ordering.
 """
 import abc
+from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
 
-from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
+import pytz
+
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    InstanceIngestViewContents,
+)
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    ExtractAndMergeArgs,
+    NewExtractAndMergeArgs,
+)
 
 ExtractAndMergeArgsT = TypeVar("ExtractAndMergeArgsT", bound=ExtractAndMergeArgs)
 
@@ -38,9 +46,8 @@ class ExtractAndMergeJobPrioritizer(Generic[ExtractAndMergeArgsT]):
         """Returns a set of args defining the next chunk of data to process."""
 
 
-# TODO(#9717): Write tests for this class.
 class ExtractAndMergeJobPrioritizerImpl(
-    ExtractAndMergeJobPrioritizer[ExtractAndMergeArgs]
+    ExtractAndMergeJobPrioritizer[NewExtractAndMergeArgs]
 ):
     """Implementation of the ExtractAndMergeJobPrioritizer interface, for use in
     regions where BQ-based ingest view materialization is enabled.
@@ -48,15 +55,42 @@ class ExtractAndMergeJobPrioritizerImpl(
 
     def __init__(
         self,
-        bq_client: BigQueryClient,
+        ingest_view_contents: InstanceIngestViewContents,
         ingest_view_rank_list: List[str],
     ):
-        self.bq_client = bq_client
+        self.ingest_view_contents = ingest_view_contents
         self.ingest_view_rank_list = ingest_view_rank_list
 
     def get_next_job_args(
         self,
-    ) -> Optional[ExtractAndMergeArgs]:
-        raise NotImplementedError(
-            "TODO(#9717): BQ-based job prioritization not yet implemented."
+    ) -> Optional[NewExtractAndMergeArgs]:
+
+        highest_pri_batch = None
+
+        # Iterate over ingest view names in the order that they should be processed
+        # *within* a given date.
+        for ingest_view_name in self.ingest_view_rank_list:
+            next_batch_for_view = (
+                self.ingest_view_contents.get_next_unprocessed_batch_info(
+                    ingest_view_name
+                )
+            )
+            if next_batch_for_view is None:
+                continue
+
+            if highest_pri_batch is None or (
+                next_batch_for_view.upper_bound_datetime_inclusive.date()
+                < highest_pri_batch.upper_bound_datetime_inclusive.date()
+            ):
+                highest_pri_batch = next_batch_for_view
+
+        if not highest_pri_batch:
+            return None
+
+        return NewExtractAndMergeArgs(
+            ingest_time=datetime.now(tz=pytz.UTC),
+            ingest_instance=self.ingest_view_contents.ingest_instance,
+            ingest_view_name=highest_pri_batch.ingest_view_name,
+            upper_bound_datetime_inclusive=highest_pri_batch.upper_bound_datetime_inclusive,
+            batch_number=highest_pri_batch.batch_number,
         )
