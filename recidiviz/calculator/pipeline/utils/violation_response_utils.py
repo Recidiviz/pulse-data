@@ -44,7 +44,6 @@ DECISION_SEVERITY_ORDER = [
     StateSupervisionViolationResponseDecision.OTHER,
     StateSupervisionViolationResponseDecision.WARNING,
     StateSupervisionViolationResponseDecision.CONTINUANCE,
-    StateSupervisionViolationResponseDecision.NO_SANCTION,
     StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED,
     StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
     StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
