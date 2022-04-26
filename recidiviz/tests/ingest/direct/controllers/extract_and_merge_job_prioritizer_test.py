@@ -17,95 +17,20 @@
 """Tests for the ExtractAndMergeJobPrioritizer."""
 import datetime
 import unittest
-from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import List
+from unittest.mock import create_autospec
 
-from recidiviz.big_query.big_query_results_contents_handle import (
-    BigQueryResultsContentsHandle,
-)
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer import (
     ExtractAndMergeJobPrioritizerImpl,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContents,
     ResultsBatchInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-
-
-class _FakeInstanceIngestViewContents(InstanceIngestViewContents):
-    """Fake implementation of InstanceIngestViewContents that just tracks outstanding
-    batches.
-    """
-
-    def __init__(self) -> None:
-        self.batches_by_view: Dict[str, List[ResultsBatchInfo]] = defaultdict(list)
-
-    @property
-    def ingest_instance(self) -> DirectIngestInstance:
-        return DirectIngestInstance.PRIMARY
-
-    def results_dataset(self) -> str:
-        raise ValueError("Unexpected call to results_dataset().")
-
-    @property
-    def temp_results_dataset(self) -> str:
-        raise ValueError("Unexpected call to temp_results_dataset.")
-
-    def save_query_results(
-        self,
-        *,
-        ingest_view_name: str,
-        upper_bound_datetime_inclusive: datetime.datetime,
-        lower_bound_datetime_exclusive: Optional[datetime.datetime],
-        query_str: str,
-        order_by_cols_str: str,
-        batch_size: int = 100,
-    ) -> None:
-        raise ValueError("Unexpected call to save_query_results().")
-
-    def get_unprocessed_rows_for_batch(
-        self,
-        *,
-        ingest_view_name: str,
-        upper_bound_datetime_inclusive: datetime.datetime,
-        batch_number: int,
-    ) -> BigQueryResultsContentsHandle:
-        raise ValueError("Unexpected call to get_unprocessed_rows_for_batch().")
-
-    def get_next_unprocessed_batch_info(
-        self, ingest_view_name: str
-    ) -> Optional[ResultsBatchInfo]:
-        if ingest_view_name not in self.batches_by_view:
-            return None
-        if not self.batches_by_view[ingest_view_name]:
-            return None
-        return self.batches_by_view[ingest_view_name][0]
-
-    def mark_rows_as_processed(
-        self,
-        *,
-        ingest_view_name: str,
-        upper_bound_datetime_inclusive: datetime.datetime,
-        batch_number: int,
-    ) -> None:
-        info = self.batches_by_view[ingest_view_name].pop(0)
-        batch_to_mark_processed = ResultsBatchInfo(
-            ingest_view_name=ingest_view_name,
-            upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
-            batch_number=batch_number,
-        )
-        if batch_to_mark_processed != info:
-            raise ValueError(
-                f"Should only be marking the highest priority batch [{info}] as "
-                f"processed, found: {batch_to_mark_processed}."
-            )
-
-    def test_add_batch(self, batch: ResultsBatchInfo) -> None:
-        self.batches_by_view[batch.ingest_view_name].append(batch)
-        self.batches_by_view[batch.ingest_view_name].sort(
-            key=lambda info: (info.upper_bound_datetime_inclusive, info.batch_number)
-        )
+from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
+    FakeInstanceIngestViewContents,
+)
 
 
 class ExtractAndMergeJobPrioritizerTest(unittest.TestCase):
@@ -170,7 +95,12 @@ class ExtractAndMergeJobPrioritizerTest(unittest.TestCase):
     _DAY_2 = _DAY_2_TIME_1.date()
 
     def setUp(self) -> None:
-        self.fake_ingest_view_contents = _FakeInstanceIngestViewContents()
+        self.fake_ingest_view_contents = FakeInstanceIngestViewContents(
+            big_query_client=create_autospec(BigQueryClient),
+            region_code="us_xx",
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
         self.prioritizer = ExtractAndMergeJobPrioritizerImpl(
             self.fake_ingest_view_contents,
             ["tagA", "tagB"],
