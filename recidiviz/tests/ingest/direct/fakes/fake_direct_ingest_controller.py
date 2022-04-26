@@ -172,6 +172,29 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
             ),
+            "tagMoreBasicData": DirectIngestRawFileConfig(
+                file_tag="tagMoreBasicData",
+                file_path="path/to/tagMoreBasicData.yaml",
+                file_description="file description",
+                data_classification=RawDataClassification.VALIDATION,
+                primary_key_cols=["mockKey"],
+                columns=[
+                    RawTableColumnInfo(
+                        name="mockKey",
+                        description="mockKey description",
+                        is_datetime=False,
+                        is_pii=False,
+                    )
+                ],
+                supplemental_order_by_clause="",
+                encoding="UTF-8",
+                separator=",",
+                custom_line_terminator=None,
+                ignore_quotes=False,
+                always_historical_export=False,
+                import_chunk_size_rows=10,
+                infer_columns_from_config=False,
+            ),
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
                 file_tag="tagWeDoNotIngest",
                 file_path="path/to/tagWeDoNotIngest.yaml",

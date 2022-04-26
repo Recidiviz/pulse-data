@@ -1,0 +1,10 @@
+file_tag: tagMoreBasicData
+file_description: |-
+  tagMoreBasicData file description
+data_classification: source
+primary_key_cols:
+  - COL4
+columns:
+  - name: COL4
+  - name: COL5
+  - name: COL6
