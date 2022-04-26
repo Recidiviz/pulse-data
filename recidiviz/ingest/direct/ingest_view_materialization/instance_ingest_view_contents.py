@@ -123,6 +123,11 @@ class InstanceIngestViewContents:
     region's ingest instance.
     """
 
+    @property
+    @abc.abstractmethod
+    def ingest_instance(self) -> DirectIngestInstance:
+        """Instance the results belong to."""
+
     @abc.abstractmethod
     def results_dataset(self) -> str:
         """Returns the dataset of the results tables for this ingest instance."""
@@ -219,17 +224,21 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         ingest_instance: DirectIngestInstance,
         dataset_prefix: Optional[str],
     ):
-        self.big_query_client = big_query_client
-        self.region_code_lower = region_code.lower()
-        self.ingest_instance = ingest_instance
-        self.dataset_prefix = dataset_prefix
+        self._big_query_client = big_query_client
+        self._region_code_lower = region_code.lower()
+        self._ingest_instance = ingest_instance
+        self._dataset_prefix = dataset_prefix
         self._temp_results_dataset = self._build_temp_results_dataset()
+
+    @property
+    def ingest_instance(self) -> DirectIngestInstance:
+        return self._ingest_instance
 
     def results_dataset(self) -> str:
         """Returns the dataset of the results tables for this ingest instance."""
-        dataset_prefix = f"{self.dataset_prefix}_" if self.dataset_prefix else ""
+        dataset_prefix = f"{self._dataset_prefix}_" if self._dataset_prefix else ""
         return (
-            f"{dataset_prefix}{self.region_code_lower}_ingest_view_results_"
+            f"{dataset_prefix}{self._region_code_lower}_ingest_view_results_"
             f"{self.ingest_instance.value.lower()}"
         )
 
@@ -260,13 +269,13 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             dataset_id=self.temp_results_dataset,
             table_id=f"{ingest_view_name}_{str(uuid.uuid4())}",
         )
-        self.big_query_client.create_dataset_if_necessary(
-            self.big_query_client.dataset_ref_for_id(
+        self._big_query_client.create_dataset_if_necessary(
+            self._big_query_client.dataset_ref_for_id(
                 intermediate_table_address.dataset_id
             ),
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
-        query_job = self.big_query_client.insert_into_table_from_query_async(
+        query_job = self._big_query_client.insert_into_table_from_query_async(
             destination_dataset_id=intermediate_table_address.dataset_id,
             destination_table_id=intermediate_table_address.table_id,
             query=query_str,
@@ -301,7 +310,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             order_by_cols=order_by_cols_str,
         )
 
-        query_job = self.big_query_client.insert_into_table_from_query_async(
+        query_job = self._big_query_client.insert_into_table_from_query_async(
             destination_dataset_id=final_address.dataset_id,
             destination_table_id=final_address.table_id,
             query=final_query,
@@ -322,23 +331,23 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         table_address: BigQueryAddress,
         intermediate_table_address: BigQueryAddress,
     ) -> None:
-        self.big_query_client.create_dataset_if_necessary(
-            self.big_query_client.dataset_ref_for_id(table_address.dataset_id),
+        self._big_query_client.create_dataset_if_necessary(
+            self._big_query_client.dataset_ref_for_id(table_address.dataset_id),
             default_table_expiration_ms=(
                 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if self.dataset_prefix
+                if self._dataset_prefix
                 else None
             ),
         )
 
-        if self.big_query_client.table_exists(
-            self.big_query_client.dataset_ref_for_id(table_address.dataset_id),
+        if self._big_query_client.table_exists(
+            self._big_query_client.dataset_ref_for_id(table_address.dataset_id),
             table_address.table_id,
         ):
             return
 
-        intermediate_table = self.big_query_client.get_table(
-            self.big_query_client.dataset_ref_for_id(
+        intermediate_table = self._big_query_client.get_table(
+            self._big_query_client.dataset_ref_for_id(
                 intermediate_table_address.dataset_id
             ),
             intermediate_table_address.table_id,
@@ -346,7 +355,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         final_table_schema = (
             intermediate_table.schema.copy() + self._ADDITIONAL_METADATA_SCHEMA_FIELDS
         )
-        self.big_query_client.create_table_with_schema(
+        self._big_query_client.create_table_with_schema(
             table_address.dataset_id,
             table_address.table_id,
             schema_fields=final_table_schema,
@@ -362,7 +371,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
     ) -> BigQueryResultsContentsHandle:
         results_address = self._ingest_view_results_address(ingest_view_name)
 
-        query_job = self.big_query_client.run_query_async(
+        query_job = self._big_query_client.run_query_async(
             query_str=StrictStringFormatter().format(
                 _INGEST_VIEW_RESULTS_BATCH_QUERY_TEMPLATE,
                 project_id=metadata.project_id(),
@@ -383,7 +392,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         self, ingest_view_name: str
     ) -> Optional[ResultsBatchInfo]:
         results_address = self._ingest_view_results_address(ingest_view_name)
-        query_job = self.big_query_client.run_query_async(
+        query_job = self._big_query_client.run_query_async(
             query_str=StrictStringFormatter().format(
                 HIGHEST_PRIORITY_ROW_FOR_VIEW_TEMPLATE,
                 project_id=metadata.project_id(),
@@ -425,7 +434,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             processed_time=self._datetime_clause(datetime.datetime.utcnow()),
             batch_number=batch_number,
         )
-        query_job = self.big_query_client.run_query_async(query_str=query_str)
+        query_job = self._big_query_client.run_query_async(query_str=query_str)
         query_job.result()
 
 

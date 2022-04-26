@@ -36,8 +36,8 @@ from recidiviz.tests.ingest.direct import fixture_util
 _NO_FIXTURES_REGION = "us_ab"
 
 
-# TODO(#9717): Replace these tests with tests for the new BQ-based implementation of
-#  the ExtractAndMergeJobPrioritizer.
+# TODO(#11424): Delete these tests when BQ ingest view materialization is shipped to all
+#  states.
 class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
     """Tests for the GcsfsDirectIngestJobPrioritizer."""
 
