@@ -74,14 +74,6 @@ const Reports: React.FC = () => {
     setReportsFilter(normalizedID);
   };
 
-  /*
-   * In a given listen of reports, we sort it in descending order (for now) and go one by one,
-   * comparing the current `report.year` and the next `report.year` on the list and print a stateless
-   * row of the next `report.year` on the reports list.
-   * e.g. (in descending order) compare [current report year: 2022] and [next report year: 2021],
-   * then print `2021` (because the following list of reports will be for the year 2021)
-   */
-
   const renderReportYearRow = (
     filteredReports: ReportOverview[],
     currentIndex: number,

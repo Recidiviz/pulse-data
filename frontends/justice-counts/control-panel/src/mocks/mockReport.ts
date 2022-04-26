@@ -15,17 +15,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-const mockOverview = {
+export const mockOverview = {
   id: 0,
   year: 2022,
   month: 4,
   frequency: "MONTHLY",
-  last_modified_at: "1648771200000",
+  last_modified_at: "April 12 2022",
   editors: ["Editor #1", "Editor #2"],
   status: "DRAFT",
 };
 
-const mockMetrics = [
+export const mockMetrics = [
   {
     key: "PROSECUTION_STAFF",
     display_name: "Staff",
@@ -96,9 +96,79 @@ const mockMetrics = [
       },
     ],
   },
+  {
+    key: "PROSECUTION_STAFF2",
+    display_name: "Staff2",
+    description:
+      "Measures the number of full-time staff employed by the agency.",
+    reporting_note: "DOCs report only correctional institution staff.",
+    value: 1000,
+    unit: "people",
+    category: "CAPACITY_AND_COST",
+    label: "Total Staff",
+    definitions: [
+      {
+        term: "full-time staff",
+        definition: "definition of full-time staff",
+      },
+    ],
+    contexts: [
+      {
+        key: "PROGRAMMATIC_OR_MEDICAL_STAFF2",
+        display_name: "Does this include programmatic or medical staff? ",
+        reporting_note: null,
+        required: false,
+        type: "BOOLEAN",
+        value: null,
+      },
+      {
+        key: "ADDITIONAL_CONTEXT",
+        display_name: "Additional Context",
+        reporting_note:
+          "Add any additional context that you would like to provide here.",
+        required: false,
+        type: "TEXT",
+        value: null,
+      },
+    ],
+    disaggregations: [
+      {
+        key: "PROSECUTION_STAFF_TYPE2",
+        display_name: "Staff Types",
+        dimensions: [
+          {
+            key: "SUPPORT2",
+            label: "Support",
+            value: null,
+            reporting_note: "Staff: Support",
+          },
+          {
+            key: "SECURITY2",
+            label: "Security",
+            value: null,
+            reporting_note: "Staff: Security",
+          },
+          {
+            key: "OTHER2",
+            label: "Other",
+            value: null,
+            reporting_note: "Staff: Other",
+          },
+          {
+            key: "UNKNOWN2",
+            label: "Unknown",
+            value: null,
+            reporting_note: "Staff: Unknown",
+          },
+        ],
+        required: false,
+        helper_text: "Break down the metric by NIBRS offense types.",
+      },
+    ],
+  },
 ];
 
-const mockReport = {
+export const mockReport = {
   ...mockOverview,
   metrics: mockMetrics,
 };

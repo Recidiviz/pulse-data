@@ -173,7 +173,6 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   valueLabel?: string;
   additionalContext?: boolean;
-  resetField?: (name: string) => void;
 }
 
 export const TextInput: React.FC<TextInputProps> = ({

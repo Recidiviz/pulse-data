@@ -32,6 +32,10 @@ export const monthsByName = [
   "December",
 ];
 
+/**
+ * @returns the month and year as a string
+ * @example "March 2022"
+ */
 export const printDateAsMonthYear = (month: number, year: number): string => {
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
@@ -39,6 +43,10 @@ export const printDateAsMonthYear = (month: number, year: number): string => {
   }).format(Date.UTC(year, month, -15));
 };
 
+/**
+ * @returns either "Annual Report [YEAR]" or "[MONTH] [YEAR]" as a string depending on frequency
+ * @example "Annual Report 2022" or "March 2022"
+ */
 export const printReportTitle = (
   month: number,
   year: number,
@@ -51,6 +59,10 @@ export const printReportTitle = (
   return printDateAsMonthYear(month, year);
 };
 
+/**
+ * @returns elapsed number of days since a provided date as a string
+ * @example '1 day ago', '0 days ago', '365 days ago'
+ */
 export const printElapsedDaysSinceDate = (date: string): string => {
   const now = +new Date(Date.now());
   const stringDateToNumber = +new Date(date);
@@ -58,5 +70,5 @@ export const printElapsedDaysSinceDate = (date: string): string => {
     (now - stringDateToNumber) / (1000 * 60 * 60 * 24)
   );
 
-  return `${daysLapsed} day${daysLapsed !== 1 ? "s" : ""} ago`; // '1 day ago', '0 days ago', '365 days ago'
+  return `${daysLapsed} day${daysLapsed !== 1 ? "s" : ""} ago`;
 };
