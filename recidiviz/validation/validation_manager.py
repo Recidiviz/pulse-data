@@ -175,6 +175,7 @@ def execute_validation(
                         run_id=run_id,
                         run_datetime=run_datetime,
                         job=job,
+                        exception_log=e,
                     )
                 )
                 failed_to_run_validations.append(job)

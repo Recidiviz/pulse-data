@@ -104,6 +104,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     soft_max_allowed_error=0.0,
                 ),
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+                exception_log=None,
             ),
             result,
         )
@@ -122,6 +123,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 "result_details_type": "SamenessPerRowValidationResultDetails",
                 "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
                 "validation_category": "EXTERNAL_AGGREGATE",
+                "exception_log": None,
+                "trace_id": result.trace_id,
             },
             result.to_serializable(),
         )
@@ -180,6 +183,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details_type="SamenessPerViewValidationResultDetails",
                 result_details=result_details,
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
+                exception_log=None,
             ),
             result,
         )
@@ -198,6 +202,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 "result_details_type": "SamenessPerViewValidationResultDetails",
                 "result_details": '{"num_error_rows": 0, "total_num_rows": 5, "hard_max_allowed_error": 0.5, "soft_max_allowed_error": 0.5, "dev_mode": false, "non_null_counts_per_column_per_partition": [[["US_XX", "2020-12-01"], {"internal": 5, "external": 5}]]}',
                 "validation_category": "EXTERNAL_INDIVIDUAL",
+                "exception_log": None,
+                "trace_id": result.trace_id,
             },
             result.to_serializable(),
         )
@@ -258,6 +264,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details_type="SamenessPerRowValidationResultDetails",
                 result_details=result_details,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+                exception_log=None,
             ),
             result,
         )
@@ -284,6 +291,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 '0.0, "dev_mode": false}',
                 "result_details_type": "SamenessPerRowValidationResultDetails",
                 "validation_category": "EXTERNAL_AGGREGATE",
+                "trace_id": result.trace_id,
+                "exception_log": None,
             },
             result.to_serializable(),
         )
@@ -312,6 +321,7 @@ class TestValidationResultStorage(unittest.TestCase):
             run_id="abc123",
             run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             job=validation_job,
+            exception_log=None,
         )
 
         # Assert
@@ -329,6 +339,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 failure_description=None,
                 result_details_type=None,
                 result_details=None,
+                exception_log=None,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             ),
             result,
@@ -347,6 +358,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 "failure_description": None,
                 "result_details_type": None,
                 "result_details": None,
+                "exception_log": None,
+                "trace_id": result.trace_id,
                 "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
@@ -385,6 +398,7 @@ class TestValidationResultStorage(unittest.TestCase):
                         soft_max_allowed_error=0.0,
                     ),
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+                    exception_log=None,
                 ),
             ]
         )
@@ -400,77 +414,76 @@ class TestValidationResultStorage(unittest.TestCase):
         mock_bigquery_client.insert_rows.return_value = []
         mock_bigquery_client.get_table.return_value = "table_object"
 
+        storage_result_1 = ValidationResultForStorage(
+            run_id="abc123",
+            run_date=datetime.date(2000, 1, 1),
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            system_version="v1.0.0",
+            check_type=ValidationCheckType.SAMENESS,
+            validation_name="test_view",
+            region_code="US_XX",
+            did_run=True,
+            validation_result_status=ValidationResultStatus.SUCCESS,
+            failure_description=None,
+            result_details_type="SamenessPerRowValidationResultDetails",
+            result_details=SamenessPerRowValidationResultDetails(
+                failed_rows=[],
+                hard_max_allowed_error=0.0,
+                soft_max_allowed_error=0.0,
+            ),
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            exception_log=None,
+        )
+        storage_result_2 = ValidationResultForStorage(
+            run_id="abc123",
+            run_date=datetime.date(2000, 1, 1),
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            system_version="v1.0.0",
+            check_type=ValidationCheckType.SAMENESS,
+            validation_name="test_view",
+            region_code="US_XX",
+            did_run=True,
+            validation_result_status=ValidationResultStatus.FAIL_HARD,
+            failure_description="1 row(s) had unacceptable margins of error. The "
+            "acceptable margin of error is only 0.0, but the validation returned "
+            "rows with errors as high as 0.5.",
+            result_details_type="SamenessPerRowValidationResultDetails",
+            result_details=SamenessPerRowValidationResultDetails(
+                failed_rows=[
+                    (
+                        ResultRow(label_values=("US_XX",), comparison_values=(5, 10)),
+                        0.5,
+                    )
+                ],
+                hard_max_allowed_error=0.0,
+                soft_max_allowed_error=0.0,
+            ),
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            exception_log=None,
+        )
+        storage_result_3 = ValidationResultForStorage(
+            run_id="abc123",
+            run_date=datetime.date(2000, 1, 1),
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            system_version="v1.0.0",
+            check_type=ValidationCheckType.SAMENESS,
+            validation_name="test_view",
+            region_code="US_XX",
+            did_run=False,
+            validation_result_status=None,
+            failure_description=None,
+            result_details_type=None,
+            result_details=None,
+            validation_category=ValidationCategory.CONSISTENCY,
+            exception_log=None,
+        )
+
         # Act
         store_validation_results_in_big_query(
             [
-                ValidationResultForStorage(
-                    run_id="abc123",
-                    run_date=datetime.date(2000, 1, 1),
-                    run_datetime=datetime.datetime(
-                        2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
-                    ),
-                    system_version="v1.0.0",
-                    check_type=ValidationCheckType.SAMENESS,
-                    validation_name="test_view",
-                    region_code="US_XX",
-                    did_run=True,
-                    validation_result_status=ValidationResultStatus.SUCCESS,
-                    failure_description=None,
-                    result_details_type="SamenessPerRowValidationResultDetails",
-                    result_details=SamenessPerRowValidationResultDetails(
-                        failed_rows=[],
-                        hard_max_allowed_error=0.0,
-                        soft_max_allowed_error=0.0,
-                    ),
-                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
-                ),
-                ValidationResultForStorage(
-                    run_id="abc123",
-                    run_date=datetime.date(2000, 1, 1),
-                    run_datetime=datetime.datetime(
-                        2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
-                    ),
-                    system_version="v1.0.0",
-                    check_type=ValidationCheckType.SAMENESS,
-                    validation_name="test_view",
-                    region_code="US_XX",
-                    did_run=True,
-                    validation_result_status=ValidationResultStatus.FAIL_HARD,
-                    failure_description="1 row(s) had unacceptable margins of error. The "
-                    "acceptable margin of error is only 0.0, but the validation returned "
-                    "rows with errors as high as 0.5.",
-                    result_details_type="SamenessPerRowValidationResultDetails",
-                    result_details=SamenessPerRowValidationResultDetails(
-                        failed_rows=[
-                            (
-                                ResultRow(
-                                    label_values=("US_XX",), comparison_values=(5, 10)
-                                ),
-                                0.5,
-                            )
-                        ],
-                        hard_max_allowed_error=0.0,
-                        soft_max_allowed_error=0.0,
-                    ),
-                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
-                ),
-                ValidationResultForStorage(
-                    run_id="abc123",
-                    run_date=datetime.date(2000, 1, 1),
-                    run_datetime=datetime.datetime(
-                        2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
-                    ),
-                    system_version="v1.0.0",
-                    check_type=ValidationCheckType.SAMENESS,
-                    validation_name="test_view",
-                    region_code="US_XX",
-                    did_run=False,
-                    validation_result_status=None,
-                    failure_description=None,
-                    result_details_type=None,
-                    result_details=None,
-                    validation_category=ValidationCategory.CONSISTENCY,
-                ),
+                storage_result_1,
+                storage_result_2,
+                storage_result_3,
             ]
         )
 
@@ -492,6 +505,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     "result_details_type": "SamenessPerRowValidationResultDetails",
                     "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
                     "validation_category": "EXTERNAL_AGGREGATE",
+                    "exception_log": None,
+                    "trace_id": storage_result_1.trace_id,
                 },
                 {
                     "run_id": "abc123",
@@ -507,6 +522,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     "result_details_type": "SamenessPerRowValidationResultDetails",
                     "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
                     "validation_category": "EXTERNAL_AGGREGATE",
+                    "exception_log": None,
+                    "trace_id": storage_result_2.trace_id,
                 },
                 {
                     "run_id": "abc123",
@@ -522,6 +539,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     "result_details_type": None,
                     "result_details": None,
                     "validation_category": "CONSISTENCY",
+                    "exception_log": None,
+                    "trace_id": storage_result_3.trace_id,
                 },
             ],
         )

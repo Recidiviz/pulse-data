@@ -103,6 +103,16 @@ resource "google_bigquery_table" "validation_results" {
         "mode": "NULLABLE"
     },
     {
+        "name": "trace_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "error_log",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
         "name": "failure_description",
         "type": "STRING",
         "mode": "NULLABLE"

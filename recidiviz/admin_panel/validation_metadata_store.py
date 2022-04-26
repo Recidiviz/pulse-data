@@ -110,6 +110,8 @@ SELECT
     last_better_status_run_id,
     last_better_status_run_datetime,
     last_better_status_run_result_status,
+    trace_id,
+    exception_log,
 FROM (
     SELECT
     result.*,
@@ -367,6 +369,8 @@ def _validation_status_record_from_row(row: Row) -> ValidationStatusRecord_pb2:
         last_better_status_run_id=last_better_status_run_id,
         last_better_status_run_datetime=last_better_status_run_datetime,
         last_better_status_run_result_status=last_better_status_run_result_status,
+        trace_id=row.get("trace_id"),
+        error_log=row.get("exception_log"),
     )
 
 

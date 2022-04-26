@@ -123,6 +123,8 @@ message ValidationStatusRecord {
     optional ValidationResultStatus result_status = 12;
     optional float error_amount = 13;
     optional string failure_description = 14;
+    optional string trace_id = 22;
+    optional string error_log = 23;
 
     oneof result_details {
         ExistenceValidationResultDetails existence = 15;
