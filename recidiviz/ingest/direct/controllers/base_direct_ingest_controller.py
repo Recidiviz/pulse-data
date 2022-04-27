@@ -930,8 +930,8 @@ class BaseDirectIngestController:
         handle.
         """
         for _ in contents_handle.get_contents_iterator():
-            return True
-        return False
+            return False
+        return True
 
     def _do_cleanup(self, args: ExtractAndMergeArgs) -> None:
         """Does necessary cleanup once ingest view contents have been successfully

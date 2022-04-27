@@ -20,7 +20,7 @@ batches.
 import datetime
 from collections import defaultdict
 from math import ceil
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 import attr
 import numpy as np
@@ -204,3 +204,17 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
                 info.batch_info.batch_number,
             )
         )
+
+    def test_clear_data(self) -> None:
+        """Clear all batches from the contents cache. Mimics what might happen to
+        when data is invalidated.
+        """
+        self._batches_by_view.clear()
+
+    def test_get_batches(self) -> Iterable[_MockBatchData]:
+        """Returns all batch data in the contents cache."""
+        return [
+            batch_data
+            for batch_data_list in self._batches_by_view.values()
+            for batch_data in batch_data_list
+        ]

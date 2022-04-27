@@ -41,11 +41,7 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    IngestViewMaterializationArgs,
-    LegacyExtractAndMergeArgs,
-    NewExtractAndMergeArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.database.base_schema import StateBase
@@ -72,7 +68,6 @@ from recidiviz.persistence.persistence import (
     OVERALL_THRESHOLD,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     ingest_args_for_fixture_file,
     run_task_queues_to_empty,
@@ -248,6 +243,12 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
     ) -> IngestInfo:
         """Runs a test that reads and parses a given fixture file. Returns the
         parsed IngestInfo object for tests to run further validations."""
+
+        if not self.controller.region.is_ingest_launched_in_env():
+            raise ValueError(
+                "This function is only for use in legacy states where ingest is fully launched."
+            )
+
         args = ingest_args_for_fixture_file(self.controller, f"{fixture_file_name}.csv")
 
         if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -257,34 +258,19 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
                 f"type [{type(self.controller.fs.gcs_file_system)}]"
             )
 
-        if self.controller.region.is_ingest_launched_in_env():
-            now = datetime.datetime.now()
-            yesterday = now - datetime.timedelta(days=1)
+        now = datetime.datetime.now()
+        yesterday = now - datetime.timedelta(days=1)
 
-            materialization_job_args = self._register_materialization_job(
-                controller=self.controller,
-                ingest_view_name=fixture_file_name,
-                upper_bound_datetime=now,
-                lower_bound_datetime=yesterday,
-            )
+        materialization_job_args = self._register_materialization_job(
+            controller=self.controller,
+            ingest_view_name=fixture_file_name,
+            upper_bound_datetime=now,
+            lower_bound_datetime=yesterday,
+        )
 
-            self.controller.ingest_view_materializer.materialize_view_for_args(
-                materialization_job_args
-            )
-
-        else:
-            if isinstance(args, LegacyExtractAndMergeArgs):
-                fixture_util.add_direct_ingest_path(
-                    self.controller.fs.gcs_file_system,
-                    args.file_path,
-                    region_code=self.controller.region_code(),
-                )
-            elif isinstance(args, NewExtractAndMergeArgs):
-                raise NotImplementedError(
-                    "TODO(#9717): Implement for BQ-based extract and merge args."
-                )
-            else:
-                raise ValueError(f"Unexpected args type: [{type(args)}]")
+        self.controller.ingest_view_materializer.materialize_view_for_args(
+            materialization_job_args
+        )
 
         # pylint:disable=protected-access
         fixture_contents_handle = self.controller._get_contents_handle(args)

@@ -40,6 +40,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
+from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
+    BQBasedMaterializerDelegate,
+)
 from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer_delegate import (
     FileBasedMaterializerDelegate,
 )
@@ -88,8 +91,10 @@ from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_ta
 )
 from recidiviz.tests.ingest.direct.fixture_util import (
     _get_fixture_for_direct_ingest_path,
+    direct_ingest_fixture_path,
 )
 from recidiviz.utils.regions import Region
+from recidiviz.utils.types import assert_type
 
 
 class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
@@ -319,10 +324,8 @@ states:
    #  controller tests.
    SECONDARY: FILE
 - US_XX:
-   PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   PRIMARY: BQ
+   SECONDARY: BQ
 """
 
 
@@ -366,6 +369,8 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         self.delegate.prepare_for_job(ingest_view_materialization_args)
 
         if isinstance(self.delegate, FileBasedMaterializerDelegate):
+            # TODO(#11424): Delete this whole block once BQ materialization is shipped
+            #  to all states.
             if not isinstance(
                 ingest_view_materialization_args, GcsfsIngestViewExportArgs
             ):
@@ -382,9 +387,18 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
                 raise ValueError("No support yet for actually running export queries")
             self.fs.test_add_path(export_path, data_local_path)
         else:
-            # TODO(#9717): Will need to replicate this logic for new materialization
-            raise NotImplementedError(
-                "TODO(#9717): Will need to fake materialization logic for BQ materialization."
+            data_local_path = direct_ingest_fixture_path(
+                region_code=self.region.region_code,
+                file_name=f"{ingest_view_materialization_args.ingest_view_name}.csv",
+            )
+            delegate = assert_type(self.delegate, BQBasedMaterializerDelegate)
+            ingest_view_contents = assert_type(
+                delegate.ingest_view_contents, FakeInstanceIngestViewContents
+            )
+            ingest_view_contents.test_add_batches_for_data(
+                ingest_view_name=ingest_view_materialization_args.ingest_view_name,
+                upper_bound_datetime_inclusive=ingest_view_materialization_args.upper_bound_datetime_inclusive,
+                data_local_path=data_local_path,
             )
 
         self.delegate.mark_job_complete(ingest_view_materialization_args)
@@ -403,6 +417,9 @@ def build_fake_direct_ingest_controller(
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
+    # TODO(#11424): Delete this arg once all states have been migrated to BQ-based
+    #  ingest view materialization.
+    materialization_config_yaml: str = MATERIALIZATION_CONFIG_YAML,
 ) -> BaseDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal
     classes mocked properly.
@@ -416,7 +433,7 @@ def build_fake_direct_ingest_controller(
     #  ingest view materialization.
     fake_fs.upload_from_string(
         path=IngestViewMaterializationGatingContext.gating_config_path(),
-        contents=MATERIALIZATION_CONFIG_YAML,
+        contents=materialization_config_yaml,
         content_type="text/yaml",
     )
 
