@@ -28,6 +28,7 @@ from more_itertools import one
 
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
+    IngestViewMaterializationSummary,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
@@ -294,7 +295,9 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
             upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
         )
 
-        self.run_materialization_job_progression(args_2, self.metadata_manager)
+        self.run_materialization_job_progression(
+            args_2, self.metadata_manager, num_previous_jobs_completed_for_view=1
+        )
 
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -317,6 +320,7 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         self,
         job_args: BQIngestViewMaterializationArgs,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
+        num_previous_jobs_completed_for_view: int = 0,
     ) -> None:
         """Runs through the full progression of operations we expect to run on an
         individual ingest view materialization job.
@@ -359,6 +363,23 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         self.assertEqual(
             datetime.datetime(2015, 1, 2, 3, 6, 6),
             metadata_manager.get_job_completion_time_for_args(job_args),
+        )
+
+        summaries = metadata_manager.get_instance_summaries()
+        if job_args.ingest_view_name not in summaries:
+            raise ValueError(
+                f"Expected value for [{job_args.ingest_view_name}] in the summaries"
+            )
+
+        self.assertEqual(
+            IngestViewMaterializationSummary(
+                ingest_view_name=job_args.ingest_view_name,
+                num_pending_jobs=0,
+                num_completed_jobs=num_previous_jobs_completed_for_view + 1,
+                completed_jobs_max_datetime=job_args.upper_bound_datetime_inclusive,
+                pending_jobs_min_datetime=None,
+            ),
+            summaries[job_args.ingest_view_name],
         )
 
     def test_get_most_recent_registered_job_no_jobs(self) -> None:
@@ -1228,3 +1249,76 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
             self.assertEqual(
                 expected_secondary_metadata, convert_schema_object_to_entity(metadata)
             )
+
+    def test_get_instance_summary(self) -> None:
+        self.assertEqual({}, self.metadata_manager.get_instance_summaries())
+        self.assertEqual({}, self.metadata_manager_secondary.get_instance_summaries())
+
+        view_1_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+        )
+        view_1_args_2 = BQIngestViewMaterializationArgs(
+            ingest_view_name="ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=datetime.datetime(2015, 1, 2, 2, 2, 2, 2),
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 3, 3, 3, 3, 3),
+        )
+        view_2_args = BQIngestViewMaterializationArgs(
+            ingest_view_name="other_ingest_view_name",
+            ingest_instance_=self.metadata_manager.ingest_instance,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=datetime.datetime(2015, 1, 4, 4, 4, 4, 4),
+        )
+
+        with freeze_time("2015-01-02T03:05:05"):
+            for args in [view_1_args, view_1_args_2, view_2_args]:
+                self.metadata_manager.register_ingest_materialization_job(args)
+
+        self.assertEqual(
+            {
+                "ingest_view_name": IngestViewMaterializationSummary(
+                    ingest_view_name="ingest_view_name",
+                    num_pending_jobs=2,
+                    num_completed_jobs=0,
+                    completed_jobs_max_datetime=None,
+                    pending_jobs_min_datetime=view_1_args.upper_bound_datetime_inclusive,
+                ),
+                "other_ingest_view_name": IngestViewMaterializationSummary(
+                    ingest_view_name="other_ingest_view_name",
+                    num_pending_jobs=1,
+                    num_completed_jobs=0,
+                    completed_jobs_max_datetime=None,
+                    pending_jobs_min_datetime=view_2_args.upper_bound_datetime_inclusive,
+                ),
+            },
+            self.metadata_manager.get_instance_summaries(),
+        )
+        self.assertEqual({}, self.metadata_manager_secondary.get_instance_summaries())
+
+        with freeze_time("2015-01-02T03:06:06"):
+            for args in [view_1_args, view_2_args]:
+                self.metadata_manager.mark_ingest_view_materialized(args)
+
+        self.assertEqual(
+            {
+                "ingest_view_name": IngestViewMaterializationSummary(
+                    ingest_view_name="ingest_view_name",
+                    num_pending_jobs=1,
+                    num_completed_jobs=1,
+                    completed_jobs_max_datetime=view_1_args.upper_bound_datetime_inclusive,
+                    pending_jobs_min_datetime=view_1_args_2.upper_bound_datetime_inclusive,
+                ),
+                "other_ingest_view_name": IngestViewMaterializationSummary(
+                    ingest_view_name="other_ingest_view_name",
+                    num_pending_jobs=0,
+                    num_completed_jobs=1,
+                    completed_jobs_max_datetime=view_2_args.upper_bound_datetime_inclusive,
+                    pending_jobs_min_datetime=None,
+                ),
+            },
+            self.metadata_manager.get_instance_summaries(),
+        )
+        self.assertEqual({}, self.metadata_manager_secondary.get_instance_summaries())

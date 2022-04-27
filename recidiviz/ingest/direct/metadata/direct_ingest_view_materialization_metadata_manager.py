@@ -19,10 +19,11 @@ completed ingest view materialization jobs to disk.
 """
 
 import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 
+import attr
 import pytz
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -37,6 +38,46 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestViewMaterializationMetadata,
 )
 from recidiviz.utils import environment
+
+SUMMARY_INGEST_VIEW_NAME_COL = "ingest_view_name"
+SUMMARY_NUM_PENDING_JOBS_COL = "num_pending_jobs"
+SUMMARY_NUM_COMPLETED_JOBS_COL = "num_completed_jobs"
+SUMMARY_COMPLETED_JOBS_MAX_DATETIME_COL = "completed_jobs_max_datetime"
+SUMMARY_PENDING_JOBS_MIN_DATETIME_COL = "pending_jobs_min_datetime"
+
+
+@attr.define(frozen=True, kw_only=True)
+class IngestViewMaterializationSummary:
+    """Returns a map with a summary of the status of pending / completed
+    materialization jobs for a given ingest view.
+    """
+
+    # The name of the ingest view this summary is about
+    ingest_view_name: str
+
+    # Number of raw data upload dates without materialized results
+    num_pending_jobs: int
+
+    # Number of raw data upload dates with materialized results
+    num_completed_jobs: int
+
+    # Max raw data datetime among completed materialization jobs
+    completed_jobs_max_datetime: Optional[datetime.datetime]
+
+    # Min raw data datetime among pending materialization jobs
+    pending_jobs_min_datetime: Optional[datetime.datetime]
+
+    def as_api_dict(self) -> Dict[str, Union[str, int, Optional[datetime.datetime]]]:
+        """Serializes this class into a dictionary that can be transmitted via an API
+        to the frontend.
+        """
+        return {
+            "ingestViewName": self.ingest_view_name,
+            "numPendingJobs": self.num_pending_jobs,
+            "numCompletedJobs": self.num_completed_jobs,
+            "completedJobsMaxDatetime": self.completed_jobs_max_datetime,
+            "pendingJobsMinDatetime": self.pending_jobs_min_datetime,
+        }
 
 
 class DirectIngestViewMaterializationMetadataManager:
@@ -273,3 +314,68 @@ class DirectIngestViewMaterializationMetadataManager:
                 )
             )
             session.execute(update_query)
+
+    def get_instance_summaries(self) -> Dict[str, IngestViewMaterializationSummary]:
+        """Returns a map with a summary of the status of pending / completed
+        materialization jobs for each ingest view.
+        """
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            materialization_time_col = (
+                schema.DirectIngestViewMaterializationMetadata.materialization_time
+            )
+            upper_bound_datetime_col = (
+                schema.DirectIngestViewMaterializationMetadata.upper_bound_datetime_inclusive
+            )
+            result = (
+                session.query(
+                    schema.DirectIngestViewMaterializationMetadata.ingest_view_name,
+                    (
+                        func.count(1)
+                        .filter(materialization_time_col.is_(None))
+                        .label(SUMMARY_NUM_PENDING_JOBS_COL)
+                    ),
+                    (
+                        func.count(1)
+                        .filter(materialization_time_col.isnot(None))
+                        .label(SUMMARY_NUM_COMPLETED_JOBS_COL)
+                    ),
+                    (
+                        func.max(upper_bound_datetime_col)
+                        .filter(materialization_time_col.isnot(None))
+                        .label(SUMMARY_COMPLETED_JOBS_MAX_DATETIME_COL)
+                    ),
+                    (
+                        func.min(upper_bound_datetime_col)
+                        .filter(materialization_time_col.is_(None))
+                        .label(SUMMARY_PENDING_JOBS_MIN_DATETIME_COL)
+                    ),
+                )
+                .filter_by(
+                    region_code=self.region_code.upper(),
+                    instance=self.ingest_instance.value,
+                    is_invalidated=False,
+                )
+                .group_by(
+                    schema.DirectIngestViewMaterializationMetadata.ingest_view_name
+                )
+                .all()
+            )
+
+            summary = {}
+            for row in result:
+                ingest_view_name = row[SUMMARY_INGEST_VIEW_NAME_COL]
+                summary[ingest_view_name] = IngestViewMaterializationSummary(
+                    ingest_view_name=ingest_view_name,
+                    num_pending_jobs=row[SUMMARY_NUM_PENDING_JOBS_COL],
+                    num_completed_jobs=row[SUMMARY_NUM_COMPLETED_JOBS_COL],
+                    completed_jobs_max_datetime=row[
+                        SUMMARY_COMPLETED_JOBS_MAX_DATETIME_COL
+                    ],
+                    pending_jobs_min_datetime=row[
+                        SUMMARY_PENDING_JOBS_MIN_DATETIME_COL
+                    ],
+                )
+
+            return summary

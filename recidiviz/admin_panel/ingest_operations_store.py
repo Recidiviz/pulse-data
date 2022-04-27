@@ -44,6 +44,10 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
+    DirectIngestViewMaterializationMetadataManager,
+    IngestViewMaterializationSummary,
+)
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestIngestFileMetadataManager,
     PostgresDirectIngestRawFileMetadataManager,
@@ -310,22 +314,52 @@ class IngestOperationsStore(AdminPanelStore):
     @staticmethod
     def _get_operations_db_metadata(
         state_code: StateCode, ingest_instance: DirectIngestInstance
-    ) -> Dict[str, Union[int, Optional[datetime]]]:
+    ) -> Dict[
+        str,
+        Union[
+            int,
+            Optional[datetime],
+            List[Dict[str, Union[str, int, Optional[datetime]]]],
+        ],
+    ]:
         """Returns the following dictionary with information about the operations database for the state:
         {
             isPaused: <bool>
             unprocessedFilesRaw: <int>
+            processedFilesRaw: <int>
             unprocessedFilesIngestView: <int>
+            processedFilesIngestView: <int>
             dateOfEarliestUnprocessedIngestView: <datetime>
+            ingestViewMaterializationSummaries: [
+                {
+                    ingestViewName: <str>
+                    numPendingJobs: <int>
+                    numCompletedJobs: <int>
+                    completedJobsMaxDatetime: <datetime>
+                    pendingJobsMinDatetime: <datetime>
+                }
+            ]
         }
 
-        If running locally, this does not hit the live DB instance and only returns fake data.
+        If running locally, this does not hit the live DB instance and only returns fake
+        data.
         """
         if in_development():
             return {
                 "isPaused": False,
                 "unprocessedFilesRaw": -1,
                 "processedFilesRaw": -2,
+                "ingestViewMaterializationSummaries": [
+                    IngestViewMaterializationSummary(
+                        ingest_view_name="some_view",
+                        num_pending_jobs=-5,
+                        num_completed_jobs=-6,
+                        completed_jobs_max_datetime=datetime(2000, 1, 1, 1, 1, 1, 1),
+                        pending_jobs_min_datetime=datetime(2000, 2, 2, 2, 2, 2, 2),
+                    ).as_api_dict()
+                ],
+                # TODO(#11424): Delete these three fields once BQ materialization
+                #  migration is complete.
                 "unprocessedFilesIngestView": -3,
                 "processedFilesIngestView": -4,
                 "dateOfEarliestUnprocessedIngestView": datetime(2021, 4, 28),
@@ -361,10 +395,20 @@ class IngestOperationsStore(AdminPanelStore):
         )
         is_paused = ingest_instance_status_manager.is_instance_paused()
 
+        materialization_job_summaries = DirectIngestViewMaterializationMetadataManager(
+            state_code.value, ingest_instance
+        ).get_instance_summaries()
+
         return {
             "isPaused": is_paused,
             "unprocessedFilesRaw": num_unprocessed_raw_files,
             "processedFilesRaw": raw_file_metadata_manager.get_num_processed_raw_files(),
+            "ingestViewMaterializationSummaries": [
+                summary.as_api_dict()
+                for summary in materialization_job_summaries.values()
+            ],
+            # TODO(#11424): Delete these three fields once BQ materialization
+            #  migration is complete.
             "unprocessedFilesIngestView": ingest_file_metadata_manager.get_num_unprocessed_ingest_files(),
             "processedFilesIngestView": ingest_file_metadata_manager.get_num_processed_ingest_files(),
             "dateOfEarliestUnprocessedIngestView": ingest_file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
