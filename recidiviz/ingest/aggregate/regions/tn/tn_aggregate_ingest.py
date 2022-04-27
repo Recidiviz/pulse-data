@@ -173,7 +173,7 @@ def _parse_date(filename: str) -> datetime.date:
     # However, if there are slashes because user is running locally
     # it can also handle it.
     base_filename = filename.split("/")[-1]
-    base_filename = filename.split("_")[-1]
+    base_filename = base_filename.split("_")[-1]
     base_filename = base_filename.replace("female", "")
     end = base_filename.index(".pdf")
     start = 4
