@@ -26,6 +26,7 @@ from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    IngestViewContentsSummary,
     InstanceIngestViewContentsImpl,
     ResultsBatchInfo,
 )
@@ -298,6 +299,79 @@ WHERE
             [
                 call.run_query_async(query_str=expected_query),
                 call.run_query_async().result(),
+            ],
+            self.mock_bq_client.mock_calls,
+        )
+
+    def test_get_view_contents_summary_table_does_not_exist(self) -> None:
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+        self.mock_bq_client.table_exists.return_value = False
+        self.assertIsNone(
+            ingest_view_contents.get_ingest_view_contents_summary(
+                ingest_view_name=self.ingest_view_name
+            )
+        )
+
+        self.mock_bq_client.run_query_async.assert_not_called()
+
+    def test_get_view_contents_summary_table(self) -> None:
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+        self.mock_bq_client.table_exists.return_value = True
+        self.mock_bq_client.run_query_async.return_value = iter(
+            [
+                bigquery.table.Row(
+                    [0, None, 10, datetime.datetime(2022, 1, 1, 0, 0, 0, 0)],
+                    {
+                        "num_processed_rows": 0,
+                        "processed_rows_max_datetime": 1,
+                        "num_unprocessed_rows": 2,
+                        "unprocessed_rows_min_datetime": 3,
+                    },
+                )
+            ]
+        )
+
+        self.assertEqual(
+            IngestViewContentsSummary(
+                ingest_view_name=self.ingest_view_name,
+                num_processed_rows=0,
+                processed_rows_max_datetime=None,
+                unprocessed_rows_min_datetime=datetime.datetime(2022, 1, 1, 0, 0, 0, 0),
+                num_unprocessed_rows=10,
+            ),
+            ingest_view_contents.get_ingest_view_contents_summary(
+                ingest_view_name=self.ingest_view_name
+            ),
+        )
+
+        expected_query = """
+SELECT
+  COUNTIF(__processed_time IS NULL) AS num_unprocessed_rows,
+  MIN(
+    IF(__processed_time IS NULL, __upper_bound_datetime_inclusive, NULL)
+  ) AS unprocessed_rows_min_datetime,
+  COUNTIF(__processed_time IS NOT NULL) AS num_processed_rows,
+  MAX(
+    IF(__processed_time IS NOT NULL, __upper_bound_datetime_inclusive, NULL)
+  ) AS processed_rows_max_datetime
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
+"""
+
+        self.assertEqual(
+            [
+                call.table_exists(mock.ANY, self.ingest_view_name),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )

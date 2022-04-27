@@ -19,8 +19,9 @@ region's ingest instance.
 """
 import abc
 import datetime
+import pprint
 import uuid
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, Union
 
 import attr
 from google.cloud import bigquery
@@ -94,6 +95,20 @@ ORDER BY {_UPPER_BOUND_DATETIME_COL_NAME}, {_BATCH_NUMBER_COL_NAME}
 LIMIT 1;
 """
 
+SUMMARY_FOR_VIEW_TEMPLATE = f"""
+SELECT
+  COUNTIF({_PROCESSED_TIME_COL_NAME} IS NULL) AS num_unprocessed_rows,
+  MIN(
+    IF({_PROCESSED_TIME_COL_NAME} IS NULL, {_UPPER_BOUND_DATETIME_COL_NAME}, NULL)
+  ) AS unprocessed_rows_min_datetime,
+  COUNTIF({_PROCESSED_TIME_COL_NAME} IS NOT NULL) AS num_processed_rows,
+  MAX(
+    IF({_PROCESSED_TIME_COL_NAME} IS NOT NULL, {_UPPER_BOUND_DATETIME_COL_NAME}, NULL)
+  ) AS processed_rows_max_datetime
+FROM
+  `{{project_id}}.{{results_dataset}}.{{results_table}}`
+"""
+
 _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 
 
@@ -116,6 +131,36 @@ class ResultsBatchInfo:
     ingest_view_name: str
     upper_bound_datetime_inclusive: datetime.datetime
     batch_number: int
+
+
+@attr.define(frozen=True, kw_only=True)
+class IngestViewContentsSummary:
+    ingest_view_name: str
+    num_unprocessed_rows: int
+    unprocessed_rows_min_datetime: Optional[datetime.datetime]
+    num_processed_rows: int
+    processed_rows_max_datetime: Optional[datetime.datetime]
+
+    def __str__(self) -> str:
+        return pprint.pformat(
+            {
+                field_name: getattr(self, field_name)
+                for field_name in attr.fields_dict(self.__class__)
+            },
+            indent=2,
+        )
+
+    def as_api_dict(self) -> Dict[str, Union[str, int, Optional[datetime.datetime]]]:
+        """Serializes this class into a dictionary that can be transmitted via an API
+        to the frontend.
+        """
+        return {
+            "ingestViewName": self.ingest_view_name,
+            "numUnprocessedRows": self.num_unprocessed_rows,
+            "unprocessedRowsMinDatetime": self.unprocessed_rows_min_datetime,
+            "numProcessedRows": self.num_processed_rows,
+            "processedRowsMaxDatetime": self.processed_rows_max_datetime,
+        }
 
 
 class InstanceIngestViewContents:
@@ -437,29 +482,101 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         query_job = self._big_query_client.run_query_async(query_str=query_str)
         query_job.result()
 
+    def get_ingest_view_contents_summary(
+        self, ingest_view_name: str
+    ) -> Optional[IngestViewContentsSummary]:
+        """Returns a summary of processed / unprocessed rows for a given ingest view."""
+        results_address = self._ingest_view_results_address(ingest_view_name)
+
+        if not self._big_query_client.table_exists(
+            self._big_query_client.dataset_ref_for_id(results_address.dataset_id),
+            results_address.table_id,
+        ):
+            return None
+
+        query_job = self._big_query_client.run_query_async(
+            query_str=StrictStringFormatter().format(
+                SUMMARY_FOR_VIEW_TEMPLATE,
+                project_id=metadata.project_id(),
+                results_dataset=results_address.dataset_id,
+                results_table=results_address.table_id,
+            )
+        )
+        rows: Iterable[Dict[str, Any]] = peekable(
+            BigQueryResultsContentsHandle(query_job).get_contents_iterator()
+        )
+        row = one(rows)
+
+        return IngestViewContentsSummary(
+            ingest_view_name=ingest_view_name,
+            num_unprocessed_rows=row["num_unprocessed_rows"],
+            unprocessed_rows_min_datetime=row["unprocessed_rows_min_datetime"],
+            num_processed_rows=row["num_processed_rows"],
+            processed_rows_max_datetime=row["processed_rows_max_datetime"],
+        )
+
 
 # Run this script if you are making changes to this file. It should produce the
 # following output:
+# Summary for [my_fake_view]: None
+# ... logs from for inserting data
+# Summary for [my_fake_view]:
+# { 'ingest_view_name': 'my_fake_view',
+#   'num_processed_rows': 0,
+#   'num_unprocessed_rows': 8005,
+#   'processed_rows_max_datetime': None,
+#   'unprocessed_rows_min_datetime': datetime.datetime(2021, 7, 1, 0, 0)}
 # Found next batch: date=[2021-07-01T00:00:00], batch_num=[0]
 # Found [2500] unprocessed rows in batch [0] for date [2021-07-01T00:00:00]
 # Marking batch rows as processed
 # Found [0] unprocessed rows in batch [0] for date [2021-07-01T00:00:00]
+# Summary for [my_fake_view]:
+# { 'ingest_view_name': 'my_fake_view',
+#   'num_processed_rows': 2500,
+#   'num_unprocessed_rows': 5505,
+#   'processed_rows_max_datetime': datetime.datetime(2021, 7, 1, 0, 0),
+#   'unprocessed_rows_min_datetime': datetime.datetime(2021, 7, 1, 0, 0)}
 # Found next batch: date=[2021-07-01T00:00:00], batch_num=[1]
 # Found [2500] unprocessed rows in batch [1] for date [2021-07-01T00:00:00]
 # Marking batch rows as processed
 # Found [0] unprocessed rows in batch [1] for date [2021-07-01T00:00:00]
+# Summary for [my_fake_view]:
+# { 'ingest_view_name': 'my_fake_view',
+#   'num_processed_rows': 5000,
+#   'num_unprocessed_rows': 3005,
+#   'processed_rows_max_datetime': datetime.datetime(2021, 7, 1, 0, 0),
+#   'unprocessed_rows_min_datetime': datetime.datetime(2021, 7, 1, 0, 0)}
 # Found next batch: date=[2021-07-01T00:00:00], batch_num=[2]
 # Found [5] unprocessed rows in batch [2] for date [2021-07-01T00:00:00]
 # Marking batch rows as processed
 # Found [0] unprocessed rows in batch [2] for date [2021-07-01T00:00:00]
+# Summary for [my_fake_view]:
+# { 'ingest_view_name': 'my_fake_view',
+#   'num_processed_rows': 5005,
+#   'num_unprocessed_rows': 3000,
+#   'processed_rows_max_datetime': datetime.datetime(2021, 7, 1, 0, 0),
+#   'unprocessed_rows_min_datetime': datetime.datetime(2021, 7, 21, 0, 0)}
 # Found next batch: date=[2021-07-21T00:00:00], batch_num=[0]
 # Found [2500] unprocessed rows in batch [0] for date [2021-07-21T00:00:00]
 # Marking batch rows as processed
 # Found [0] unprocessed rows in batch [0] for date [2021-07-21T00:00:00]
+# Summary for [my_fake_view]:
+# { 'ingest_view_name': 'my_fake_view',
+#   'num_processed_rows': 7505,
+#   'num_unprocessed_rows': 500,
+#   'processed_rows_max_datetime': datetime.datetime(2021, 7, 21, 0, 0),
+#   'unprocessed_rows_min_datetime': datetime.datetime(2021, 7, 21, 0, 0)}
 # Found next batch: date=[2021-07-21T00:00:00], batch_num=[1]
 # Found [500] unprocessed rows in batch [1] for date [2021-07-21T00:00:00]
 # Marking batch rows as processed
 # Found [0] unprocessed rows in batch [1] for date [2021-07-21T00:00:00]
+# Summary for [my_fake_view]:
+# { 'ingest_view_name': 'my_fake_view',
+#   'num_processed_rows': 8005,
+#   'num_unprocessed_rows': 0,
+#   'processed_rows_max_datetime': datetime.datetime(2021, 7, 21, 0, 0),
+#   'unprocessed_rows_min_datetime': None}
+
 if __name__ == "__main__":
     import logging
 
@@ -477,6 +594,10 @@ if __name__ == "__main__":
         )
 
         ingest_view_name_ = "my_fake_view"
+
+        print(
+            f"Summary for [{ingest_view_name_}]: {contents_.get_ingest_view_contents_summary(ingest_view_name_)}"
+        )
 
         # Save a batch of results from 2021-07-01T00:00:00
         contents_.save_query_results(
@@ -508,6 +629,10 @@ if __name__ == "__main__":
             order_by_cols_str="ParoleNumber",
         )
 
+        print(
+            f"Summary for [{ingest_view_name_}]:\n"
+            f"{contents_.get_ingest_view_contents_summary(ingest_view_name_)}"
+        )
         while next_batch_info := contents_.get_next_unprocessed_batch_info(
             ingest_view_name=ingest_view_name_
         ):
@@ -547,4 +672,8 @@ if __name__ == "__main__":
                 f"Found [{len(batch_results)}] unprocessed rows in batch "
                 f"[{next_batch_info.batch_number}] for date "
                 f"[{next_batch_info.upper_bound_datetime_inclusive.isoformat()}]"
+            )
+            print(
+                f"Summary for [{ingest_view_name_}]:\n"
+                f"{contents_.get_ingest_view_contents_summary(ingest_view_name_)}"
             )
