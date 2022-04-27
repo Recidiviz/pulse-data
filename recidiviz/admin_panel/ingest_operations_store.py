@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Union
 from google.cloud import tasks_v2
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
@@ -40,6 +41,10 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    IngestViewContentsSummary,
+    InstanceIngestViewContentsImpl,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
@@ -358,6 +363,15 @@ class IngestOperationsStore(AdminPanelStore):
                         pending_jobs_min_datetime=datetime(2000, 2, 2, 2, 2, 2, 2),
                     ).as_api_dict()
                 ],
+                "ingestViewContentsSummaries": [
+                    IngestViewContentsSummary(
+                        ingest_view_name="some_view",
+                        num_processed_rows=0,
+                        processed_rows_max_datetime=None,
+                        unprocessed_rows_min_datetime=datetime(2000, 3, 3, 3, 3, 3, 3),
+                        num_unprocessed_rows=10,
+                    ).as_api_dict()
+                ],
                 # TODO(#11424): Delete these three fields once BQ materialization
                 #  migration is complete.
                 "unprocessedFilesIngestView": -3,
@@ -372,8 +386,8 @@ class IngestOperationsStore(AdminPanelStore):
             ).db_name,
         )
 
-        # TODO(#9717): Update to send info for BQ-materialization launched states
-        #  from new materialization metadata table.
+        # TODO(#11424): Remove this reference to the legacy metadata manager once
+        #  BQ materialization migration has completed.
         ingest_file_metadata_manager = PostgresDirectIngestIngestFileMetadataManager(
             region_code=state_code.value,
             ingest_database_name=ingest_instance.database_key_for_state(
@@ -399,6 +413,17 @@ class IngestOperationsStore(AdminPanelStore):
             state_code.value, ingest_instance
         ).get_instance_summaries()
 
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=BigQueryClientImpl(),
+            region_code=state_code.value,
+            ingest_instance=ingest_instance,
+            dataset_prefix=None,
+        )
+        contents_summaries = [
+            ingest_view_contents.get_ingest_view_contents_summary(ingest_view_name)
+            for ingest_view_name, summary in materialization_job_summaries.items()
+        ]
+
         return {
             "isPaused": is_paused,
             "unprocessedFilesRaw": num_unprocessed_raw_files,
@@ -406,6 +431,11 @@ class IngestOperationsStore(AdminPanelStore):
             "ingestViewMaterializationSummaries": [
                 summary.as_api_dict()
                 for summary in materialization_job_summaries.values()
+            ],
+            "ingestViewContentsSummaries": [
+                summary.as_api_dict()
+                for summary in contents_summaries
+                if summary is not None
             ],
             # TODO(#11424): Delete these three fields once BQ materialization
             #  migration is complete.
