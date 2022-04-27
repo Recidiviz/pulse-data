@@ -20,6 +20,7 @@
 from typing import List, Optional
 
 import attr
+import sqlalchemy
 from flask_sqlalchemy_session import current_session
 
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -31,11 +32,14 @@ class UserContext:
     """Stores information about the currently logged in user."""
 
     auth0_user_id: str
-    user_account: schema.UserAccount = attr.field()
+    user_account: Optional[schema.UserAccount] = attr.field()
     permissions: Optional[List[str]] = None
 
     @user_account.default
-    def _user_account_factory(self) -> schema.UserAccount:
-        return UserAccountInterface.get_user_by_auth0_user_id(
-            current_session, auth0_user_id=self.auth0_user_id
-        )
+    def _user_account_factory(self) -> Optional[schema.UserAccount]:
+        try:
+            return UserAccountInterface.get_user_by_auth0_user_id(
+                current_session, auth0_user_id=self.auth0_user_id
+            )
+        except sqlalchemy.orm.exc.NoResultFound:
+            return None
