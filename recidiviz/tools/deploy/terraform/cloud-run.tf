@@ -118,8 +118,8 @@ resource "google_cloud_run_service" "case-triage" {
       # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
       # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
       # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
-      # between attempts #1 and #2. For this reason, we also include the git hash in the service name.
-      name = "case-triage-web-${replace(var.docker_image_tag, ".", "-")}-${var.git_hash}"
+      # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
+      name = "case-triage-web-${var.git_hash}"
     }
   }
 
@@ -171,7 +171,12 @@ resource "google_cloud_run_service" "justice-counts" {
         "run.googleapis.com/cloudsql-instances" = module.justice_counts_database.connection_name
       }
 
-      name = "justice-counts-web-${replace(var.docker_image_tag, ".", "-")}"
+      # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
+      # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
+      # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
+      # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
+      # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
+      name = "justice-counts-web-${var.git_hash}"
     }
   }
 
