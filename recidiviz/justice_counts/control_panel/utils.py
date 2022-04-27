@@ -65,11 +65,14 @@ def get_user_account_id(request_dict: Dict[str, Any]) -> int:
     from the Authorization header and store it on the global user context in our authorization
     callback. If we are in development, we do allow passing in `user_id` for testing purposes.
     """
-    if "user_context" in g:
+    if "user_context" in g and g.user_context.user_account is not None:
         return g.user_context.user_account.id
 
     if not in_development():
-        raise ValueError("No UserContext found.")
+        raise ValueError(
+            "Either no UserContext was found on the session, "
+            "or no UserAccount was stored on the UserContext."
+        )
 
     user_id = request_dict.get("user_id")
     if user_id is None:
