@@ -87,12 +87,25 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
         <Descriptions.Item label="Status" span={3}>
           {data.operations.isPaused ? "PAUSED" : "UNPAUSED"}
         </Descriptions.Item>
-        <Descriptions.Item label="Ingest Bucket" span={3}>
-          <NewTabLink href={baseBucketUrl.concat(data.ingest.name)}>
-            {data.ingest.name}
-          </NewTabLink>
-        </Descriptions.Item>
-        <Descriptions.Item label="Raw Data Files" span={3}>
+      </Descriptions>
+      <br />
+      <h1>Raw data</h1>
+      <p>
+        The counts from each section below should be the same. Reasons why they
+        may differ:
+        <ul>
+          <li>
+            There are raw files in the ingest bucket for which a corresponding
+            raw file YAML has not been deployed.
+          </li>
+          <li>
+            Some sort of cleanup was botched in the GCS bucket or operations DB
+            and we should investigate the differences.
+          </li>
+        </ul>
+      </p>
+      <Descriptions bordered>
+        <Descriptions.Item label="GCS file metadata" span={3}>
           <Row gutter={16}>
             <Col span={12}>
               <Statistic
@@ -108,7 +121,32 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
             </Col>
           </Row>
         </Descriptions.Item>
-        <Descriptions.Item label="Ingest View Files" span={3}>
+        <Descriptions.Item label="Operations DB file metadata" span={3}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Statistic
+                title="Unprocessed"
+                value={data.operations.unprocessedFilesRaw}
+              />
+            </Col>
+            <Col span={12}>
+              <Statistic
+                title="Processed"
+                value={data.operations.processedFilesRaw}
+              />
+            </Col>
+          </Row>
+        </Descriptions.Item>
+      </Descriptions>
+      <br />
+      <h1>Ingest views</h1>
+      <p>
+        The counts from each section below should be the same. If they are not,
+        sort of cleanup operation was botched and we should investigate the
+        differences.
+      </p>
+      <Descriptions bordered>
+        <Descriptions.Item label="GCS files" span={3}>
           <Row gutter={16}>
             <Col span={12}>
               <Statistic
@@ -124,29 +162,18 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
             </Col>
           </Row>
         </Descriptions.Item>
-        <Descriptions.Item label="Storage Bucket" span={3}>
-          <NewTabLink href={baseBucketUrl.concat(data.storage)}>
-            {data.storage}
-          </NewTabLink>
-        </Descriptions.Item>
-        <Descriptions.Item label="Database" span={3}>
-          {data.dbName}
-        </Descriptions.Item>
-      </Descriptions>
-      <br />
-      <Descriptions title="Operations Database" bordered>
-        <Descriptions.Item label="Unprocessed Files" span={3}>
+        <Descriptions.Item label="Operations DB metadata" span={3}>
           <Row gutter={16}>
             <Col span={12}>
               <Statistic
-                title="Raw"
-                value={data.operations.unprocessedFilesRaw}
+                title="Unprocessed"
+                value={data.operations.unprocessedFilesIngestView}
               />
             </Col>
             <Col span={12}>
               <Statistic
-                title="Ingest View"
-                value={data.operations.unprocessedFilesIngestView}
+                title="Processed"
+                value={data.operations.processedFilesIngestView}
               />
             </Col>
           </Row>
@@ -159,7 +186,25 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
         </Descriptions.Item>
       </Descriptions>
       <br />
-      <Descriptions title="Logs" bordered>
+      <h1>Resources</h1>
+      <Descriptions bordered>
+        <Descriptions.Item label="Ingest Bucket" span={3}>
+          <NewTabLink href={baseBucketUrl.concat(data.ingest.name)}>
+            {data.ingest.name}
+          </NewTabLink>
+        </Descriptions.Item>
+        <Descriptions.Item label="Storage Bucket" span={3}>
+          <NewTabLink href={baseBucketUrl.concat(data.storage)}>
+            {data.storage}
+          </NewTabLink>
+        </Descriptions.Item>
+        <Descriptions.Item label="Postgres database" span={3}>
+          {data.dbName}
+        </Descriptions.Item>
+      </Descriptions>
+      <br />
+      <h1>Logs</h1>
+      <Descriptions bordered>
         <Descriptions.Item label="Logs Explorer" span={3}>
           <NewTabLink href={logsUrl}>{logsUrl}</NewTabLink>
         </Descriptions.Item>
