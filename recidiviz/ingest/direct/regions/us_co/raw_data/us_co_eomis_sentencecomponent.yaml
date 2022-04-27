@@ -1,0 +1,216 @@
+file_tag: eomis_sentencecomponent
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OFFENDERID
+    description: |-
+      TODO(#12372)
+  - name: COMMITMENTPREFIX
+    description: |-
+      TODO(#12372)
+  - name: SENTENCECOMPONENT
+    description: |-
+      TODO(#12372)
+  - name: CJISCHARGECOUNT
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEFINDINGFLAG
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEFINDINGDATE
+    description: |-
+      TODO(#12372)
+  - name: GUILTYPLEAFLAG
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEPLEADATE
+    description: |-
+      TODO(#12372)
+  - name: JAILTIME
+    description: |-
+      TODO(#12372)
+  - name: JAILCREDITS
+    description: |-
+      TODO(#12372)
+  - name: SENTENCETYPE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCETYPE2
+    description: |-
+      TODO(#12372)
+  - name: SENTENCETYPE3
+    description: |-
+      TODO(#12372)
+  - name: SENTENCETYPE4
+    description: |-
+      TODO(#12372)
+  - name: OFFENSEDATE
+    description: |-
+      TODO(#12372)
+  - name: OFFENSEDATE2
+    description: |-
+      TODO(#12372)
+  - name: CJISSTATUTECODE
+    description: |-
+      TODO(#12372)
+  - name: CJISSTATUTEDESC
+    description: |-
+      TODO(#12372)
+  - name: STATUTE1
+    description: |-
+      TODO(#12372)
+  - name: STATUTE2
+    description: |-
+      TODO(#12372)
+  - name: STATUTE3
+    description: |-
+      TODO(#12372)
+  - name: STATUTE4
+    description: |-
+      TODO(#12372)
+  - name: CRIMECATEGORY
+    description: |-
+      TODO(#12372)
+  - name: CRIMECODE
+    description: |-
+      TODO(#12372)
+  - name: FELONYCLASS
+    description: |-
+      TODO(#12372)
+  - name: DOCOFFENSECODE
+    description: |-
+      TODO(#12372)
+  - name: MINPRISONTERMY
+    description: |-
+      TODO(#12372)
+  - name: MINPRISONTERMM
+    description: |-
+      TODO(#12372)
+  - name: MINPRISONTERMD
+    description: |-
+      TODO(#12372)
+  - name: MAXPRISONTERMY
+    description: |-
+      TODO(#12372)
+  - name: MAXPRISONTERMM
+    description: |-
+      TODO(#12372)
+  - name: MAXPRISONTERMD
+    description: |-
+      TODO(#12372)
+  - name: ILLOGICALFLAG
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEINCHOATEFLAG
+    description: |-
+      TODO(#12372)
+  - name: PRIORVIOLENTCOUNT
+    description: |-
+      TODO(#12372)
+  - name: OFFENSESPECIALID
+    description: |-
+      TODO(#12372)
+  - name: OFFENSESPECIALID2
+    description: |-
+      TODO(#12372)
+  - name: OFFENSESPECIALID3
+    description: |-
+      TODO(#12372)
+  - name: LIFESENTENCETYPE
+    description: |-
+      TODO(#12372)
+  - name: MANDATORYVIOLENTSENTENCEFLAG
+    description: |-
+      TODO(#12372)
+  - name: VIOLENTTODOCSTAFF
+    description: |-
+      TODO(#12372)
+  - name: MARTINCOOPERFLAG
+    description: |-
+      TODO(#12372)
+  - name: PAROLEEARNEDTIMEFLAG
+    description: |-
+      TODO(#12372)
+  - name: GALLEGOSFLAG
+    description: |-
+      TODO(#12372)
+  - name: SEXCRIMEFLAG
+    description: |-
+      TODO(#12372)
+  - name: OFFENSEENHANCEMENTCODE
+    description: |-
+      TODO(#12372)
+  - name: OFFENSEENHANCEMENTCODE2
+    description: |-
+      TODO(#12372)
+  - name: OFFENSEENHANCEMENTCODE3
+    description: |-
+      TODO(#12372)
+  - name: SENTENCELAWCODE
+    description: |-
+      TODO(#12372)
+  - name: COMPSTATUSCODE
+    description: |-
+      TODO(#12372)
+  - name: COMPSTATUSDATE
+    description: |-
+      TODO(#12372)
+  - name: SENTCOMPCOMMENTS
+    description: |-
+      TODO(#12372)
+  - name: CJISCOMMENTS
+    description: |-
+      TODO(#12372)
+  - name: DATEFIRSTCREATED
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCINGDATACONDITION
+    description: |-
+      TODO(#12372)
+  - name: COMPUTEDFLAG
+    description: |-
+      TODO(#12372)
+  - name: SENTENCECOUNT
+    description: |-
+      TODO(#12372)
+  - name: AMENDEDDATAFROMCJIS
+    description: |-
+      TODO(#12372)
+  - name: COMPONENTEFFECTIVEDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMECOMPFLAG
+    description: |-
+      TODO(#12372)
+  - name: PROBATIONTERMY
+    description: |-
+      TODO(#12372)
+  - name: PROBATIONTERMM
+    description: |-
+      TODO(#12372)
+  - name: PROBATIONTERMD
+    description: |-
+      TODO(#12372)
+  - name: OFFICIALVERSIONOFCRIME
+    description: |-
+      TODO(#12372)
+  - name: HOWSERVEDSUMMARY
+    description: |-
+      TODO(#12372)
+  - name: CO_SENT_SRL
+    description: |-
+      TODO(#12372)
+  - name: CO_CRIME_SRL
+    description: |-
+      TODO(#12372)

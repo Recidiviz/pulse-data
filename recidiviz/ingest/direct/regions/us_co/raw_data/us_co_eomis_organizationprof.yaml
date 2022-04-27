@@ -1,0 +1,32 @@
+file_tag: eomis_organizationprof
+file_description: |-
+  This provides details on all of the organizations and locations in the state. The
+  primary use here is for identifying DOC facilities, but it contains details on others
+  as well including sheriff's departments, county jails, judicial districts, etc.
+data_classification: source
+primary_key_cols:
+  - PARTYID
+columns:
+  - name: PARTYID
+  - name: ORGANIZATIONNAME
+  - name: ORGANIZATIONTYPE
+  - name: ORGANIZATIONSTATUS
+  - name: ORGSTATUSDATE
+  - name: ORGCOMMONID
+  - name: ORGDEPTCODE
+  - name: ORGREGIONCODE
+  - name: ORGAREACODE
+  - name: ORGCONTACT
+  - name: ORGCONTACTTITLE
+  - name: HANDICAPACCESS
+  - name: RELEASENOTIFFLAG
+  - name: ORGCOUNTYCODE
+  - name: CLASS1CITY
+  - name: ORGANIZATIONCOMMENTS
+  - name: DATELASTUPDATE
+  - name: TIMELASTUPDATE
+  - name: STAFFLASTUPDATE
+  - name: CLSCOUNASSIGNMETHOD
+  - name: CASEANALYSTASSIGNMETHOD
+  - name: CASERCDSTECHASSIGNMETHOD
+  - name: WORKRELEASEEMPLOYER
