@@ -23,6 +23,8 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 )
 
 
+# TODO(#12407): Delete this controller / region and fully deprecate support for county
+#  regions in direct ingest.
 class UsTxBrazosController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_TX_BRAZOS."""
 

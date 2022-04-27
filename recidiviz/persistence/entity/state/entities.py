@@ -798,10 +798,12 @@ class StateIncarcerationPeriod(
         default=None, validator=attr_validators.is_opt_str
     )
 
+    # TODO(#12405): This field is unused and should be deleted
     projected_release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(
         default=None,
         validator=attr_validators.is_opt(StateIncarcerationPeriodReleaseReason),
     )
+    # TODO(#12405): This field is unused and should be deleted
     projected_release_reason_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
