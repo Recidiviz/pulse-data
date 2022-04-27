@@ -3,6 +3,10 @@
 # Script for deploying tagged versions to production. Must be run within the pipenv shell.
 #
 
+# Used to track total time required to deploy to production.
+# See how this works at https://stackoverflow.com/questions/8903239/how-to-calculate-time-elapsed-in-bash-script.
+SECONDS=0
+
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 source ${BASH_SOURCE_DIR}/deploy_helpers.sh
@@ -93,4 +97,5 @@ post_deploy_triggers 'recidiviz-123' $CALC_CHANGES_SINCE_LAST_DEPLOY
 
 script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist/ ?"
 
-echo "Production deploy complete."
+duration=$SECONDS
+echo "Production deploy completed in $(($duration / 60)) minutes. Add to go/deploy-duration-tracker."
