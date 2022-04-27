@@ -1,4 +1,4 @@
-file_tag: address
+file_tag: eomis_address
 file_description: |-
   This file contains address details for a person.
 data_classification: source
@@ -100,4 +100,4 @@ columns:
       TODO(#12372)
   - name: GEOCODEID
     description: |-
-      All values are null. 
+      All values are null.

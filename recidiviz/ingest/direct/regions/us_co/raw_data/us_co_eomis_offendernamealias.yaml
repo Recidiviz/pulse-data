@@ -1,4 +1,4 @@
-file_tag: offendernamealias
+file_tag: eomis_offendernamealias
 file_description: |-
   This file contains known aliases of a person.
 data_classification: source
@@ -18,23 +18,23 @@ columns:
     description: |-
       Description of their name type from CMALCODE i.e. Maiden, Alias, Nickname, etc.
     known_values:
-      - value: '1'
+      - value: "1"
         description: Committed
-      - value: '2'
+      - value: "2"
         description: Alias
-      - value: '3'
+      - value: "3"
         description: Maiden Name
-      - value: '4'
+      - value: "4"
         description: Nickname
-      - value: '5'
+      - value: "5"
         description: Marital
-      - value: '6'
+      - value: "6"
         description: Adopted
-      - value: '7'
+      - value: "7"
         description: "True"
-      - value: '8'
+      - value: "8"
         description: Moniker
-      - value: 'A'
+      - value: "A"
         description: Relgious
   - name: OFFNLASTNAME
     description: |-
@@ -54,119 +54,119 @@ columns:
     description: |-
       TODO(#12372)
     known_values:
-      - value: '00'
+      - value: "00"
         description: TODO(#12372)
-      - value: '99'
+      - value: "99"
         description: TODO(#12372)
-      - value: 'AA'
+      - value: "AA"
         description: TODO(#12372)
-      - value: 'AB'
+      - value: "AB"
         description: TODO(#12372)
-      - value: 'AC'
+      - value: "AC"
         description: TODO(#12372)
-      - value: 'AD'
+      - value: "AD"
         description: TODO(#12372)
-      - value: 'AE'
+      - value: "AE"
         description: TODO(#12372)
-      - value: 'AF'
+      - value: "AF"
         description: TODO(#12372)
-      - value: 'AG'
+      - value: "AG"
         description: TODO(#12372)
-      - value: 'AH'
+      - value: "AH"
         description: TODO(#12372)
-      - value: 'AI'
+      - value: "AI"
         description: TODO(#12372)
-      - value: 'AJ'
+      - value: "AJ"
         description: TODO(#12372)
-      - value: 'AK'
+      - value: "AK"
         description: TODO(#12372)
-      - value: 'AL'
+      - value: "AL"
         description: TODO(#12372)
-      - value: 'AM'
+      - value: "AM"
         description: TODO(#12372)
-      - value: 'AN'
+      - value: "AN"
         description: TODO(#12372)
-      - value: 'AO'
+      - value: "AO"
         description: TODO(#12372)
-      - value: 'AP'
+      - value: "AP"
         description: TODO(#12372)
-      - value: 'AQ'
+      - value: "AQ"
         description: TODO(#12372)
-      - value: 'BA'
+      - value: "BA"
         description: TODO(#12372)
-      - value: 'BB'
+      - value: "BB"
         description: TODO(#12372)
-      - value: 'BC'
+      - value: "BC"
         description: TODO(#12372)
-      - value: 'BD'
+      - value: "BD"
         description: TODO(#12372)
-      - value: 'BE'
+      - value: "BE"
         description: TODO(#12372)
-      - value: 'BF'
+      - value: "BF"
         description: TODO(#12372)
-      - value: 'BG'
+      - value: "BG"
         description: TODO(#12372)
-      - value: 'BH'
+      - value: "BH"
         description: TODO(#12372)
-      - value: 'BI'
+      - value: "BI"
         description: TODO(#12372)
-      - value: 'CA'
+      - value: "CA"
         description: TODO(#12372)
-      - value: 'CB'
+      - value: "CB"
         description: TODO(#12372)
-      - value: 'CC'
+      - value: "CC"
         description: TODO(#12372)
-      - value: 'CD'
+      - value: "CD"
         description: TODO(#12372)
-      - value: 'CE'
+      - value: "CE"
         description: TODO(#12372)
-      - value: 'CF'
+      - value: "CF"
         description: TODO(#12372)
-      - value: 'CG'
+      - value: "CG"
         description: TODO(#12372)
-      - value: 'CH'
+      - value: "CH"
         description: TODO(#12372)
-      - value: 'DA'
+      - value: "DA"
         description: TODO(#12372)
-      - value: 'DB'
+      - value: "DB"
         description: TODO(#12372)
-      - value: 'DC'
+      - value: "DC"
         description: TODO(#12372)
-      - value: 'DD'
+      - value: "DD"
         description: TODO(#12372)
-      - value: 'DF'
+      - value: "DF"
         description: TODO(#12372)
-      - value: 'DI'
+      - value: "DI"
         description: TODO(#12372)
-      - value: 'EA'
+      - value: "EA"
         description: TODO(#12372)
-      - value: 'EB'
+      - value: "EB"
         description: TODO(#12372)
-      - value: 'EC'
+      - value: "EC"
         description: TODO(#12372)
-      - value: 'ED'
+      - value: "ED"
         description: TODO(#12372)
-      - value: 'FA'
+      - value: "FA"
         description: TODO(#12372)
-      - value: 'FB'
+      - value: "FB"
         description: TODO(#12372)
-      - value: 'FC'
+      - value: "FC"
         description: TODO(#12372)
-      - value: 'FD'
+      - value: "FD"
         description: TODO(#12372)
-      - value: 'FE'
+      - value: "FE"
         description: TODO(#12372)
-      - value: 'FF'
+      - value: "FF"
         description: TODO(#12372)
-      - value: 'GA'
+      - value: "GA"
         description: TODO(#12372)
-      - value: 'HD'
+      - value: "HD"
         description: TODO(#12372)
-      - value: 'HE'
+      - value: "HE"
         description: TODO(#12372)
-      - value: 'HF'
+      - value: "HF"
         description: TODO(#12372)
-      - value: 'HG'
+      - value: "HG"
         description: TODO(#12372)
   - name: OFFNSOUNDEXCODE
     description: |-
@@ -175,9 +175,9 @@ columns:
     description: |-
       A field indicating if the alias is a persons current common name or not.
     known_values:
-      - value: 'N'
+      - value: "N"
         description: "No"
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"
   - name: DATELASTUPDATE
     description: |-
@@ -192,7 +192,7 @@ columns:
     description: |-
       A field indicating if the alias is a persons current DOC common name or not.
     known_values:
-      - value: 'N'
+      - value: "N"
         description: "No"
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"

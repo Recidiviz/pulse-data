@@ -1,4 +1,4 @@
-file_tag: inmateprofile
+file_tag: eomis_inmateprofile
 file_description: |-
   This file contains a lot of person and some incarceration details.
 data_classification: source
@@ -79,43 +79,43 @@ columns:
     description: |-
       A number from CMETHNIC indicating the ehtnicity of a person.
     known_values:
-      - value: '04'
+      - value: "04"
         description: Caucasian
-      - value: '06'
+      - value: "06"
         description: Native American Indian
-      - value: '07'
+      - value: "07"
         description: African American
-      - value: '08'
+      - value: "08"
         description: Asian
-      - value: '09'
+      - value: "09"
         description: Hispanic or Latino
-      - value: '26'
+      - value: "26"
         description: Pacific Islander
-      - value: '4'
+      - value: "4"
         description: Caucasian
-      - value: '41'
+      - value: "41"
         description: Cambodian
-      - value: '44'
+      - value: "44"
         description: Cuban
-      - value: '45'
+      - value: "45"
         description: Guamanian
-      - value: '46'
+      - value: "46"
         description: Guatemalan
-      - value: '50'
+      - value: "50"
         description: Other Asian
-      - value: '6'
+      - value: "6"
         description: Native American Indian
-      - value: '7'
+      - value: "7"
         description: African American
-      - value: '8'
+      - value: "8"
         description: Asian
-      - value: '9'
+      - value: "9"
         description: Hispanic or Latino
-      - value: '97'
+      - value: "97"
         description: Unknown (conversion)
-      - value: '98'
+      - value: "98"
         description: Declined to specify
-      - value: '99'
+      - value: "99"
         description: Other
   - name: INMATEDATEOFBIRTH
     description: |-
@@ -125,9 +125,9 @@ columns:
     description: |-
       TODO(#12372)
     known_values:
-      - value: 'N'
+      - value: "N"
         description: "No"
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"
   - name: CURRENTINCARCBEGINDATE
     description: |-
@@ -136,21 +136,21 @@ columns:
     description: |-
       A number from CIADMTYP indicating the Incarceration Type.
     known_values:
-      - value: '01'
+      - value: "01"
         description: New Commitment
-      - value: '03'
+      - value: "03"
         description: YOS Commitment
-      - value: '06'
+      - value: "06"
         description: Recommitment
-      - value: '07'
+      - value: "07"
         description: ICC Commitment
-      - value: '1'
+      - value: "1"
         description: New Commitment
-      - value: '3'
+      - value: "3"
         description: YOS Commitment
-      - value: '6'
+      - value: "6"
         description: Recommitment
-      - value: '7'
+      - value: "7"
         description: ICC Commitment
   - name: DATEPAROLEVIOLATORRETURN
     description: |-
@@ -212,241 +212,241 @@ columns:
     description: |-
       CIMOVCOD code indicating the type of last movement.
     known_values:
-      - value: '01'
+      - value: "01"
         description: New CO Commitment
-      - value: '06'
+      - value: "06"
         description: Recommitment
-      - value: '07'
+      - value: "07"
         description: ICC Commitment
-      - value: '1'
+      - value: "1"
         description: New CO Commitment
-      - value: '10'
+      - value: "10"
         description: Returned from Parole
-      - value: '13'
+      - value: "13"
         description: Terminated from ISP-I
-      - value: '20'
+      - value: "20"
         description: Returned from Escape
-      - value: '21'
+      - value: "21"
         description: Returned from Court
-      - value: '23'
+      - value: "23"
         description: Returned from Hospital
-      - value: '26'
+      - value: "26"
         description: Returned from Furlough
-      - value: '28'
+      - value: "28"
         description: Returned from Abscond
-      - value: '2C'
+      - value: "2C"
         description: Returned from AWOL
-      - value: '30'
+      - value: "30"
         description: Received at DOC Facility
-      - value: '31'
+      - value: "31"
         description: Received at Community Center
-      - value: '32'
+      - value: "32"
         description: Received at County/City Jail
-      - value: '33'
+      - value: "33"
         description: Escapee In Custody - Other Jurisdiction
-      - value: '3A'
+      - value: "3A"
         description: Reassigned to another Facility
-      - value: '40'
+      - value: "40"
         description: Discharged
-      - value: '50'
+      - value: "50"
         description: Commutation
-      - value: '52'
+      - value: "52"
         description: Released by Court
-      - value: '56'
+      - value: "56"
         description: Unauthorized Release
-      - value: '6'
+      - value: "6"
         description: Recommitment
-      - value: '60'
+      - value: "60"
         description: Paroled
-      - value: '63'
+      - value: "63"
         description: To Intensive Supervision Program (ISP)
-      - value: '7'
+      - value: "7"
         description: ICC Commitment
-      - value: '74'
+      - value: "74"
         description: Transferred Interstate
-      - value: '75'
+      - value: "75"
         description: Death
-      - value: '77'
+      - value: "77"
         description: Execution
-      - value: '78'
+      - value: "78"
         description: Returned to Parole
-      - value: '79'
+      - value: "79"
         description: Returned to  ISP-I
-      - value: '80'
+      - value: "80"
         description: Escaped
-      - value: '81'
+      - value: "81"
         description: Out To Court
-      - value: '83'
+      - value: "83"
         description: Out to Hospital
-      - value: '85'
+      - value: "85"
         description: Transferred Out-of-State (ICC)
-      - value: '86'
+      - value: "86"
         description: Out on Furlough
-      - value: '88'
+      - value: "88"
         description: Absconded from Parole
-      - value: '8C'
+      - value: "8C"
         description: Absent without Leave (AWOL)
-      - value: '8D'
+      - value: "8D"
         description: Out to Other Jurisdiction
-      - value: '8E'
+      - value: "8E"
         description: AWOL from ISP-I
-      - value: '90'
+      - value: "90"
         description: Transferred to DOC Facility
-      - value: '92'
+      - value: "92"
         description: Transferred to County/City Jail
   - name: REASONFORLASTMOVEMENT
     description: |-
       CITRREAS code indicating reason for persons last movement.
     known_values:
-      - value: '01'
+      - value: "01"
         description: Approved Transfer Request
-      - value: '03'
+      - value: "03"
         description: To ICE Custody
-      - value: '09'
+      - value: "09"
         description: Emergency
-      - value: '12'
+      - value: "12"
         description: Placed in Jaill Temporarily
-      - value: '13'
+      - value: "13"
         description: Initial Classification
-      - value: '14'
+      - value: "14"
         description: Returned to Sending State
-      - value: '22'
+      - value: "22"
         description: Progression
-      - value: '24'
+      - value: "24"
         description: Lateral
-      - value: '25'
+      - value: "25"
         description: Community Placement
-      - value: '28'
+      - value: "28"
         description: Posted Bond
-      - value: '31'
+      - value: "31"
         description: Court Appearance
-      - value: '34'
+      - value: "34"
         description: Governor's Order
-      - value: '36'
+      - value: "36"
         description: New Charge/Short Term
-      - value: '37'
+      - value: "37"
         description: Released In Error
-      - value: '39'
+      - value: "39"
         description: Arrested and Placed in Jail
-      - value: '43'
+      - value: "43"
         description: Sentence Vacated
-      - value: '48'
+      - value: "48"
         description: Early Parole Discharge
-      - value: '49'
+      - value: "49"
         description: Released to Probation
-      - value: '50'
+      - value: "50"
         description: To Detainer/Warrant
-      - value: '51'
+      - value: "51"
         description: In State Supervision
-      - value: '52'
+      - value: "52"
         description: Out Of State Parole Supervision
-      - value: '54'
+      - value: "54"
         description: Parole Reinstated
-      - value: '56'
+      - value: "56"
         description: Absconder in Custody In-State
-      - value: '59'
+      - value: "59"
         description: Finished serving Sentence
-      - value: '5D'
+      - value: "5D"
         description: Escapee in Custody Out of State
-      - value: '60'
+      - value: "60"
         description: Accidental
-      - value: '73'
+      - value: "73"
         description: Medical Needs
-      - value: '75'
+      - value: "75"
         description: Bed Assignment (between Facilities in same Complex)
-      - value: '81'
+      - value: "81"
         description: Escaped from CDOC
-      - value: '85'
+      - value: "85"
         description: Temp. Move - Out-to-Court
-      - value: '93'
+      - value: "93"
         description: Recaptured
-      - value: '99'
+      - value: "99"
         description: Not Specified
-      - value: 'A9'
+      - value: "A9"
         description: Possible Parole Violator (PPV)
-      - value: 'AB'
+      - value: "AB"
         description: YOS Offender
-      - value: 'AE'
+      - value: "AE"
         description: Adult Offender Commitment
-      - value: 'AF'
+      - value: "AF"
         description: Court Order Return
-      - value: 'AG'
+      - value: "AG"
         description: Dual Commitment
-      - value: 'AI'
+      - value: "AI"
         description: Community Center Regression
-      - value: 'AN'
+      - value: "AN"
         description: Community Transition
-      - value: 'AR'
+      - value: "AR"
         description: To Probation
-      - value: 'B1'
+      - value: "B1"
         description: Discretionary Parole
-      - value: 'B2'
+      - value: "B2"
         description: Discretionary - Weekend
-      - value: 'B6'
+      - value: "B6"
         description: Discretionary - SB 03-252
-      - value: 'BA'
+      - value: "BA"
         description: Mandatory Parole
-      - value: 'BB'
+      - value: "BB"
         description: Mandatory Parole - Weekend
-      - value: 'BC'
+      - value: "BC"
         description: Mandatory Parole - HB1351 ERT
-      - value: 'BE'
+      - value: "BE"
         description: Mandatory Reparole
-      - value: 'BF'
+      - value: "BF"
         description: Mandatory Reparole - Weekend
-      - value: 'BH'
+      - value: "BH"
         description: INS Detainer (ICE)
-      - value: 'C1'
+      - value: "C1"
         description: Mandatory Release - per Martin Cooper
-      - value: 'C2'
+      - value: "C2"
         description: Sentence Discharge - 1087
-      - value: 'C3'
+      - value: "C3"
         description: Appeal Bond
-      - value: 'C6'
+      - value: "C6"
         description: Inactivated
-      - value: 'CX'
+      - value: "CX"
         description: CCC - Return to Parole
-      - value: 'D3'
+      - value: "D3"
         description: Absconder - Mandatory Discharge
-      - value: 'D4'
+      - value: "D4"
         description: Interstate Compact
-      - value: 'D5'
+      - value: "D5"
         description: Interstate Violation Case Closed
-      - value: 'D6'
+      - value: "D6"
         description: Regular or Medical
-      - value: 'D7'
+      - value: "D7"
         description: YOS Failure
-      - value: 'DH'
+      - value: "DH"
         description: Discharge to Charges
-      - value: 'DI'
+      - value: "DI"
         description: To another State
-      - value: 'DK'
+      - value: "DK"
         description: Parole to Charges
-      - value: 'DL'
+      - value: "DL"
         description: Other State Detainer
-      - value: 'DP'
+      - value: "DP"
         description: United States Marshal
-      - value: 'DX'
+      - value: "DX"
         description: DWCF - Return to Parole
-      - value: 'DZ'
+      - value: "DZ"
         description: Parolee Transfer to CCC
-      - value: 'JB'
+      - value: "JB"
         description: Jail Backlog
-      - value: 'P2'
+      - value: "P2"
         description: Parolee at non-CDOC Facility (see movement comments)
-      - value: 'P7'
+      - value: "P7"
         description: See External Movement Comments
-      - value: 'P8'
+      - value: "P8"
         description: Community  Regressive - Awaiting Transfer to Facility
-      - value: 'P9'
+      - value: "P9"
         description: Special Custody
-      - value: 'PF'
+      - value: "PF"
         description: Jail Backlog Awaiting Discharge
-      - value: 'PG'
+      - value: "PG"
         description: ISP - Inmate
-      - value: 'PJ'
+      - value: "PJ"
         description: ISP - Parolee
-      - value: 'PK'
+      - value: "PK"
         description: Community Jail Transfer
   - name: OTHERLOCATIONCODE
     description: |-
@@ -458,19 +458,19 @@ columns:
     description: |-
       Letter and/or number code indicating Custody/Security Code.
     known_values:
-      - value: 'C1'
+      - value: "C1"
         description: Minimum (MIN)
-      - value: 'C2'
+      - value: "C2"
         description: Minimum-Restrictive (MIN-R)
-      - value: 'C3'
+      - value: "C3"
         description: Medium (MED)
-      - value: 'C6'
+      - value: "C6"
         description: Close
-      - value: 'C7'
+      - value: "C7"
         description: Maximum
-      - value: 'UK'
+      - value: "UK"
         description: Unknown
-      - value: 'UN'
+      - value: "UN"
         description: TODO(#12372)
   - name: CURRENTTOTALCUSTODYSCORE
     description: |-
@@ -479,19 +479,19 @@ columns:
     description: |-
       TODO(#12372)
     known_values:
-      - value: 'IV'
+      - value: "IV"
         description: TODO(#12372)
-      - value: 'UN'
+      - value: "UN"
         description: TODO(#12372)
   - name: JOBPGMCATEGORYAM
     description: |-
       TODO(#12372)
     known_values:
-      - value: '07'
+      - value: "07"
         description: TODO(#12372)
-      - value: 'J'
+      - value: "J"
         description: TODO(#12372)
-      - value: 'U'
+      - value: "U"
         description: TODO(#12372)
   - name: WORKPGMASSIGNMNTAM
     description: |-
@@ -500,11 +500,11 @@ columns:
     description: |-
       TODO(#12372)
     known_values:
-      - value: '07'
+      - value: "07"
         description: TODO(#12372)
-      - value: 'J'
+      - value: "J"
         description: TODO(#12372)
-      - value: 'U'
+      - value: "U"
         description: TODO(#12372)
   - name: WORKPGMASSIGNMNTPM
     description: |-
@@ -513,17 +513,17 @@ columns:
     description: |-
       TODO(#12372)
     known_values:
-      - value: 'N'
+      - value: "N"
         description: "No"
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"
   - name: PRECAUTIONSFLAG
     description: |-
       TODO(#12372)
     known_values:
-      - value: 'N'
+      - value: "N"
         description: "No"
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"
   - name: LATESTVIOLATIONDATE
     description: |-
@@ -553,25 +553,25 @@ columns:
     description: |-
       TODO(#12372)
     known_values:
-      - value: 'M1'
+      - value: "M1"
         description: TODO(#12372)
-      - value: 'M2'
+      - value: "M2"
         description: TODO(#12372)
-      - value: 'M3'
+      - value: "M3"
         description: TODO(#12372)
-      - value: 'M4'
+      - value: "M4"
         description: TODO(#12372)
-      - value: 'M5'
+      - value: "M5"
         description: TODO(#12372)
-      - value: 'UN'
+      - value: "UN"
         description: TODO(#12372)
   - name: PERMITTEDTOHANDLEFOOD
     description: |-
       A flag denoting if a person is allowed to handle food or not.
     known_values:
-      - value: 'N'
+      - value: "N"
         description: "No"
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"
   - name: INMATETOTALWRATSCORE
     description: |-

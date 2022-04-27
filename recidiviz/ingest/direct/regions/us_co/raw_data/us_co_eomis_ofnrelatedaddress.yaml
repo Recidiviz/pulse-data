@@ -1,4 +1,4 @@
-file_tag: ofnrelatedaddress
+file_tag: eomis_ofnrelatedaddress
 file_description: |-
   This file contains address information and details for a person.
 data_classification: source
@@ -28,7 +28,7 @@ columns:
         description: Planned (after release)
       - value: P
         description: Physical (Home)
-      - value: 'T'
+      - value: "T"
         description: Temporary
   - name: ADDRESSID
     description: |-
@@ -68,9 +68,9 @@ columns:
     description: |-
       Indicates whethere a person is homeless or not.
     known_values:
-      - value: 'N'
+      - value: "N"
         description: "No"
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"
   - name: LIVESWITH
     description: |-
