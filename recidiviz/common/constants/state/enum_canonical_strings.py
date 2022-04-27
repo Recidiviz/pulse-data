@@ -263,6 +263,7 @@ state_supervision_sentence_supervision_type_pre_confinement = "PRE_CONFINEMENT"
 state_supervision_sentence_supervision_type_probation = "PROBATION"
 
 # state_supervision_period.py
+state_supervision_period_supervision_type_absconsion = "ABSCONSION"
 state_supervision_period_supervision_type_informal_probation = "INFORMAL_PROBATION"
 state_supervision_period_supervision_type_investigation = "INVESTIGATION"
 state_supervision_period_supervision_type_parole = "PAROLE"

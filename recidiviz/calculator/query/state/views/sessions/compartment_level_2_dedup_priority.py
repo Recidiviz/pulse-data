@@ -22,7 +22,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -38,7 +37,6 @@ meaning that a person could in theory have both a supervision compartment and in
 Deduplication across incarceration and supervision is handled based on a join condition to deduplicated population metrics
 """
 
-# TODO(#7912): Add sessions compartment_level_2 enums to the state schema
 SUPERVISION_TYPE_ORDERED_PRIORITY = [
     StateSupervisionPeriodSupervisionType.DUAL,
     StateSupervisionPeriodSupervisionType.PAROLE,
@@ -46,7 +44,7 @@ SUPERVISION_TYPE_ORDERED_PRIORITY = [
     StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
     StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
-    StateSupervisionPeriodAdmissionReason.ABSCONSION,
+    StateSupervisionPeriodSupervisionType.ABSCONSION,
     StateSupervisionPeriodSupervisionType.INVESTIGATION,
     StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
     StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
@@ -61,7 +59,7 @@ SPECIALIZED_PURPOSE_FOR_INCARCERATION_ORDERED_PRIORITY = [
     # Used for ND's CPP sessions
     StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT,
-    StateSupervisionPeriodAdmissionReason.ABSCONSION,
+    StateSupervisionPeriodSupervisionType.ABSCONSION,
     StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
     StateSpecializedPurposeForIncarceration.EXTERNAL_UNKNOWN,
 ]

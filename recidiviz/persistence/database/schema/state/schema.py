@@ -429,6 +429,7 @@ state_supervision_period_termination_reason = Enum(
 )
 
 state_supervision_period_supervision_type = Enum(
+    state_enum_strings.state_supervision_period_supervision_type_absconsion,
     state_enum_strings.state_supervision_period_supervision_type_informal_probation,
     state_enum_strings.state_supervision_period_supervision_type_investigation,
     state_enum_strings.state_supervision_period_supervision_type_parole,
