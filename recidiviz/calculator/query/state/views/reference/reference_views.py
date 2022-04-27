@@ -36,6 +36,9 @@ from recidiviz.calculator.query.state.views.reference.incarceration_location_ids
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.normalized_supervision_period_to_agent_association import (
+    NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
@@ -72,4 +75,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
+    NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
 ]
