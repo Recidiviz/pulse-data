@@ -28,6 +28,10 @@ from google.protobuf import timestamp_pb2
 from mock import patch
 
 from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
+from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
+    PIPELINE_RUN_TYPE_REQUEST_ARG,
+    UPDATE_MANAGED_VIEWS_REQUEST_ARG,
+)
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
@@ -135,14 +139,17 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
         task_id = f"{schema_type}-2019-04-12-random-uuid"
         task_path = f"{queue_path}/{task_id}"
-        body = {"pipeline_run_type": MetricPipelineRunType.INCREMENTAL.value}
+        expected_body = {
+            PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value,
+            UPDATE_MANAGED_VIEWS_REQUEST_ARG: "true",
+        }
 
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
                 "http_method": "POST",
                 "relative_uri": "/cloud_sql_to_bq/refresh_bq_schema/STATE",
-                "body": json.dumps(body).encode(),
+                "body": json.dumps(expected_body).encode(),
             },
         )
 
@@ -151,7 +158,9 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
         # Act
         BQRefreshCloudTaskManager().create_refresh_bq_schema_task(
-            schema_type=SchemaType.STATE, body=body
+            schema_type=SchemaType.STATE,
+            pipeline_run_type=MetricPipelineRunType.INCREMENTAL.value,
+            update_managed_views="true",
         )
 
         # Assert

@@ -19,7 +19,7 @@ import json
 import logging
 import uuid
 from http import HTTPStatus
-from typing import Tuple
+from typing import Optional, Tuple
 
 import flask
 from flask import request
@@ -77,10 +77,8 @@ def wait_for_ingest_to_create_tasks(
             HTTPStatus.BAD_REQUEST,
         )
 
-    pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG, "")
-    update_managed_views_arg = get_value_from_request(
-        UPDATE_MANAGED_VIEWS_REQUEST_ARG, ""
-    )
+    pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG)
+    update_managed_views_arg = get_value_from_request(UPDATE_MANAGED_VIEWS_REQUEST_ARG)
 
     logging.info("Update managed views arg in request: [%s]", update_managed_views_arg)
 
@@ -99,6 +97,11 @@ def wait_for_ingest_to_create_tasks(
             )
 
     lock_id = get_value_from_request("lock_id", str(uuid.uuid4()))
+    if not lock_id:
+        raise ValueError(
+            "Response from get_value_from_request() should not return "
+            "None when provided with a default value."
+        )
     logging.info("Request lock id: %s", lock_id)
 
     lock_manager = CloudSqlToBQLockManager()
@@ -116,14 +119,10 @@ def wait_for_ingest_to_create_tasks(
         return "", HTTPStatus.OK
 
     logging.info("No regions running, triggering BQ refresh.")
-    body = (
-        {PIPELINE_RUN_TYPE_REQUEST_ARG: pipeline_run_type_arg}
-        if pipeline_run_type_arg
-        else {}
-    )
     task_manager.create_refresh_bq_schema_task(
         schema_type=schema_type,
-        body=body,
+        pipeline_run_type=pipeline_run_type_arg,
+        update_managed_views=update_managed_views_arg,
     )
     return "", HTTPStatus.OK
 
@@ -174,7 +173,7 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
 
     if schema_type is SchemaType.STATE:
         update_managed_views_arg = get_value_from_request(
-            UPDATE_MANAGED_VIEWS_REQUEST_ARG, ""
+            UPDATE_MANAGED_VIEWS_REQUEST_ARG
         )
 
         json_data_text = request.get_data(as_text=True)
@@ -191,9 +190,7 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
             task_manager = BQRefreshCloudTaskManager()
             task_manager.create_update_managed_views_task()
 
-        pipeline_run_type_arg = get_value_from_request(
-            PIPELINE_RUN_TYPE_REQUEST_ARG, ""
-        )
+        pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG)
 
         if (
             pipeline_run_type_arg
@@ -220,7 +217,9 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-def get_value_from_request(key: str, default_value: str) -> str:
+def get_value_from_request(
+    key: str, default_value: Optional[str] = None
+) -> Optional[str]:
     json_data_text = request.get_data(as_text=True)
     try:
         json_data = json.loads(json_data_text)
