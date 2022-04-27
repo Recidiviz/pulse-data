@@ -1,0 +1,69 @@
+file_tag: LBAKRDTA_TAK065
+file_description: |-
+  Institution History. Column prefix: CS.
+data_classification: source
+primary_key_cols:
+  - CS_DOC
+  - CS_CYC
+  - CS_OLC
+columns:
+  - name: CS_DOC
+    description: |-
+      DOC ID Number
+  - name: CS_CYC
+    description: |-
+      Cycle Number
+  - name: CS_OLC
+    description: |-
+      Person Assigned Location
+  - name: CS_OLA
+    description: |-
+      Person Assigned Place Name
+  - name: CS_PLC
+    description: |-
+      Person Previous Assigned Location
+  - name: CS_PLA
+    description: |-
+      Person Previous Assigned Place Name
+  - name: CS_FLC
+    description: |-
+      Person Future Assigned Location
+  - name: CS_FLA
+    description: |-
+      Person Future Location Name
+  - name: CS_LTR
+    description: |-
+      Last Transfer Remarks
+  - name: CS_REA
+    description: |-
+      Transfer Comments
+  - name: CS_AV
+    description: |-
+      Institutional Transfer Approval Date
+  - name: CS_NM
+    description: |-
+      Transfer Arrival Date
+  - name: CS_DD
+    description: |-
+      Transfer Departure Date
+  - name: CS_TAT
+    description: |-
+      Transfer Arrival Time
+  - name: CS_TDT
+    description: |-
+      Transfer Departure Time
+  - name: CS_DCR
+    description: |-
+      Row Creation Date
+  - name: CS_TCR
+    description: |-
+      Row Creation Time
+  - name: CS_DLU
+    description: |-
+      Row Modify Date
+  - name: CS_TLU
+    description: |-
+      Row Modify Time
+  - name: CS_UID
+    description: |-
+      User Identification
