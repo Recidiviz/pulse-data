@@ -23,6 +23,8 @@ import {
   IngestActions,
   IngestInstanceSummary,
 } from "./constants";
+import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
+import LegacyInstanceIngestViewMetadata from "./LegacyIntanceIngestViewMetadata";
 
 interface IngestInstanceCardProps {
   data: IngestInstanceSummary;
@@ -140,51 +142,13 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       </Descriptions>
       <br />
       <h1>Ingest views</h1>
-      <p>
-        The counts from each section below should be the same. If they are not,
-        sort of cleanup operation was botched and we should investigate the
-        differences.
-      </p>
-      <Descriptions bordered>
-        <Descriptions.Item label="GCS files" span={3}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Statistic
-                title="Unprocessed"
-                value={data.ingest.unprocessedFilesIngestView}
-              />
-            </Col>
-            <Col span={12}>
-              <Statistic
-                title="Processed"
-                value={data.ingest.processedFilesIngestView}
-              />
-            </Col>
-          </Row>
-        </Descriptions.Item>
-        <Descriptions.Item label="Operations DB metadata" span={3}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Statistic
-                title="Unprocessed"
-                value={data.operations.unprocessedFilesIngestView}
-              />
-            </Col>
-            <Col span={12}>
-              <Statistic
-                title="Processed"
-                value={data.operations.processedFilesIngestView}
-              />
-            </Col>
-          </Row>
-        </Descriptions.Item>
-        <Descriptions.Item
-          label="Date of Earliest Unprocessed Ingest File"
-          span={3}
-        >
-          {data.operations.dateOfEarliestUnprocessedIngestView}
-        </Descriptions.Item>
-      </Descriptions>
+      {/* TODO(#11424): Update to always return InstanceIngestViewMetadata once we have migrated
+          all states to BQ // ingest view materialization. */}
+      {data.isBQMaterializationEnabled ? (
+        <InstanceIngestViewMetadata data={data} />
+      ) : (
+        <LegacyInstanceIngestViewMetadata data={data} />
+      )}
       <br />
       <h1>Resources</h1>
       <Descriptions bordered>
