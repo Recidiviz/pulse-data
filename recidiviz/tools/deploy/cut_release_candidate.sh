@@ -4,6 +4,10 @@ BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
+# Used to track total time required to cut release candidate.
+# See how this works at https://stackoverflow.com/questions/8903239/how-to-calculate-time-elapsed-in-bash-script.
+SECONDS=0
+
 FORCE_PROMOTE=''
 
 function print_usage {
@@ -104,4 +108,5 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
     run_cmd git push --set-upstream origin ${NEW_RELEASE_BRANCH}
 fi
 
-echo "Release candidate staging deploy complete."
+duration=$SECONDS
+echo "Release candidate staging deploy completed in $(($duration / 60)) minutes. Add to go/deploy-duration-tracker."
