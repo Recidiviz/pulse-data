@@ -135,6 +135,8 @@ class SupervisionLevelDedupPriorityEnumCoverageTest(unittest.TestCase):
                     f"This may happen if there is a new enum that needs to be added to SUPERVISION_LEVEL_ORDERED_PRIORITY."
                 )
         # TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
+        # TODO(#7912): Add full enum coverage tests once the temporary supervision
+        #  level enums have been added to the state schema
         # for level in SUPERVISION_LEVEL_ORDERED_PRIORITY:
         #     if level not in StateSupervisionLevel:
         #         raise ValueError(
@@ -157,19 +159,18 @@ class CompartmentLevel2DedupPriorityEnumCoverageTest(unittest.TestCase):
                     f"This may happen if there is a new enum that needs to be added to SUPERVISION_TYPE_ORDERED_PRIORITY."
                 )
 
-        # TODO(#7912): Add enum coverage for compartment_level_2 dedup priority view
-        # for compartment_level_2_priority in SUPERVISION_TYPE_ORDERED_PRIORITY:
-        #     if (
-        #         compartment_level_2_priority
-        #         not in StateSupervisionPeriodSupervisionType
-        #         and compartment_level_2_priority
-        #         not in StateSupervisionPeriodAdmissionReason
-        #     ):
-        #         raise ValueError(
-        #             f"Missing {compartment_level_2_priority} in "
-        #             f"StateSupervisionPeriodSupervisionType."
-        #             f"This may happen if sessions has an unsupported enum. This enum needs to be added to the state schema before it is used in sessions."
-        #         )
+        for compartment_level_2_priority in SUPERVISION_TYPE_ORDERED_PRIORITY:
+            if (
+                compartment_level_2_priority
+                not in StateSupervisionPeriodSupervisionType
+            ):
+                raise ValueError(
+                    f"Missing {compartment_level_2_priority} in "
+                    f"StateSupervisionPeriodSupervisionType. "
+                    f"This may happen if sessions has an unsupported enum. "
+                    f"This enum needs to be added to the state schema before it is "
+                    f"used in sessions."
+                )
 
     def test_specialized_purpose_for_incarceration(self) -> None:
         for compartment_level_2_type in StateSpecializedPurposeForIncarceration:
@@ -182,18 +183,17 @@ class CompartmentLevel2DedupPriorityEnumCoverageTest(unittest.TestCase):
                     f"SPECIALIZED_PURPOSE_FOR_INCARCERATION_ORDERED_PRIORITY."
                     f"This may happen if there is a new enum that needs to be added to SPECIALIZED_PURPOSE_FOR_INCARCERATION_ORDERED_PRIORITY."
                 )
-        # TODO(#7912): Add enum coverage for compartment_level_2 dedup priority view
-        # for (
-        #     compartment_level_2_priority
-        # ) in SPECIALIZED_PURPOSE_FOR_INCARCERATION_ORDERED_PRIORITY:
-        #     if (
-        #         compartment_level_2_priority
-        #         not in StateSpecializedPurposeForIncarceration
-        #         and compartment_level_2_priority
-        #         not in StateSupervisionPeriodSupervisionType
-        #     ):
-        #         raise ValueError(
-        #             f"Missing {compartment_level_2_priority} in "
-        #             f"StateSpecializedPurposeForIncarceration."
-        #             f"This may happen if sessions has an unsupported enum. This enum needs to be added to the state schema before it is used in sessions."
-        #         )
+        for (
+            compartment_level_2_priority
+        ) in SPECIALIZED_PURPOSE_FOR_INCARCERATION_ORDERED_PRIORITY:
+            if (
+                compartment_level_2_priority
+                not in StateSpecializedPurposeForIncarceration
+                and compartment_level_2_priority
+                not in StateSupervisionPeriodSupervisionType
+            ):
+                raise ValueError(
+                    f"Missing {compartment_level_2_priority} in "
+                    f"StateSpecializedPurposeForIncarceration."
+                    f"This may happen if sessions has an unsupported enum. This enum needs to be added to the state schema before it is used in sessions."
+                )

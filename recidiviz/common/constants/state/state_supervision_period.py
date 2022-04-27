@@ -30,6 +30,11 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     """Enum that denotes what type of supervision someone is serving at a moment in
     time."""
 
+    # Used when a person is in an active period of absconsion (when the person on
+    # supervision has stopped reporting to their supervising officer, and the officer
+    # cannot contact or locate them).
+    ABSCONSION = state_enum_strings.state_supervision_period_supervision_type_absconsion
+
     # A judge can issue a bench warrant when an individual violates the rules of the
     # court, most often when they fail to show up to court. The police can treat this
     # similar to an open arrest warrant and use it to bring an individual back in front
@@ -258,6 +263,7 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
 
 
 _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
+    "ABSCONSION": StateSupervisionPeriodSupervisionType.ABSCONSION,
     "BENCH WARRANT": StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
     "COMMUNITY CONFINEMENT": StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     "DUAL": StateSupervisionPeriodSupervisionType.DUAL,
@@ -363,6 +369,8 @@ def get_most_relevant_supervision_type(
         return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
     if StateSupervisionPeriodSupervisionType.BENCH_WARRANT in supervision_types:
         return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
+    if StateSupervisionPeriodSupervisionType.ABSCONSION in supervision_types:
+        return StateSupervisionPeriodSupervisionType.ABSCONSION
     if StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
         return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
     if StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN in supervision_types:

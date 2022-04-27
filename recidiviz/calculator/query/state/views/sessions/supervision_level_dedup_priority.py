@@ -51,6 +51,7 @@ class TemporaryStateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
         }
 
 
+# TODO(#7912): Add temporary supervision level enums to the state schema
 SUPERVISION_LEVEL_ORDERED_PRIORITY = [
     StateSupervisionLevel.INCARCERATED,
     StateSupervisionLevel.IN_CUSTODY,
