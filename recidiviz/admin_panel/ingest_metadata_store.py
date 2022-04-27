@@ -23,6 +23,10 @@ from typing import Dict, List, Union
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -64,16 +68,31 @@ class IngestDataFreshnessStore(AdminPanelStore):
         )
         latest_upper_bounds = []
 
+        ingest_view_materialization_gating_context = (
+            IngestViewMaterializationGatingContext.load_from_gcs()
+        )
+
         for line in latest_upper_bounds_json.splitlines():
             line = line.strip()
             if not line:
                 continue
             struct = json.loads(line)
+
+            state_code = struct["state_code"]
+
+            # Check PRIMARY for bq materialization since that is where BQ is exported to.
+            if ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
+                state_code, DirectIngestInstance.PRIMARY
+            ):
+                raise ValueError(
+                    f"Ingest view materialization enabled for state: {state_code}"
+                )
+
             latest_upper_bounds.append(
                 {
-                    "state": struct["state_code"],
+                    "state": state_code,
                     "date": struct.get("processed_date"),
-                    "ingestPaused": struct["state_code"] in regions_paused,
+                    "ingestPaused": state_code in regions_paused,
                 }
             )
         self.data_freshness_results = latest_upper_bounds
