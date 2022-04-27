@@ -20,10 +20,14 @@ exports.
 
 import datetime
 import uuid
-from typing import Dict, Optional
+from typing import Optional
 
 import pytz
 
+from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
+    PIPELINE_RUN_TYPE_REQUEST_ARG,
+    UPDATE_MANAGED_VIEWS_REQUEST_ARG,
+)
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
@@ -79,9 +83,9 @@ class BQRefreshCloudTaskManager:
         )
         body = {"lock_id": lock_id}
         if pipeline_run_type:
-            body["pipeline_run_type"] = pipeline_run_type
+            body[PIPELINE_RUN_TYPE_REQUEST_ARG] = pipeline_run_type
         if update_managed_views:
-            body["update_managed_views"] = update_managed_views
+            body[UPDATE_MANAGED_VIEWS_REQUEST_ARG] = update_managed_views
 
         self.job_monitor_cloud_task_queue_manager.create_task(
             task_id=task_id,
@@ -93,13 +97,17 @@ class BQRefreshCloudTaskManager:
     def create_refresh_bq_schema_task(
         self,
         schema_type: SchemaType,
-        body: Dict[str, str],
+        pipeline_run_type: Optional[str],
+        update_managed_views: Optional[str],
     ) -> None:
         """Queues a task to refresh the given schema in BQ.
 
         Args:
             schema_type: The SchemaType of the table being exported.
-            body: The body of the request
+            pipeline_run_type: Which pipeline run should be triggered after the
+                refresh, if any
+            update_managed_views: Whether the managed views should be updated after
+                the refresh
         """
         task_id = "-".join(
             [
@@ -108,6 +116,12 @@ class BQRefreshCloudTaskManager:
                 str(uuid.uuid4()),
             ]
         )
+
+        body = {}
+        if pipeline_run_type:
+            body[PIPELINE_RUN_TYPE_REQUEST_ARG] = pipeline_run_type
+        if update_managed_views:
+            body[UPDATE_MANAGED_VIEWS_REQUEST_ARG] = update_managed_views
 
         self.bq_cloud_task_queue_manager.create_task(
             task_id=task_id,

@@ -492,8 +492,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_task_manager.create_refresh_bq_schema_task.assert_called_with(
-            SchemaType.STATE,
-            body,
+            SchemaType.STATE, MetricPipelineRunType.INCREMENTAL.value, None
         )
 
     @mock.patch(
@@ -509,17 +508,12 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
-        expected_task_body = {
-            PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value
-        }
-
         # Assert
         self.assertIsOnlySchemaLocked(SchemaType.STATE)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_task_manager.create_refresh_bq_schema_task.assert_called_with(
-            SchemaType.STATE,
-            expected_task_body,
+            SchemaType.STATE, MetricPipelineRunType.INCREMENTAL.value, None
         )
 
     @mock.patch(
@@ -544,8 +538,35 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_task_manager.create_refresh_bq_schema_task.assert_called_with(
-            SchemaType.STATE,
-            body,
+            SchemaType.STATE, MetricPipelineRunType.HISTORICAL.value, None
+        )
+
+    @mock.patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
+    def test_create_refresh_bq_schema_task_state_historical_update_views(
+        self,
+    ) -> None:
+        # Act
+        body = {
+            PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value,
+            UPDATE_MANAGED_VIEWS_REQUEST_ARG: "true",
+        }
+        data = json.dumps(body)
+
+        response = self.mock_flask_client.get(
+            "/create_refresh_bq_schema_task/state",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            data=data,
+        )
+
+        # Assert
+        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.mock_task_manager.create_refresh_bq_schema_task.assert_called_with(
+            SchemaType.STATE, MetricPipelineRunType.HISTORICAL.value, "true"
         )
 
     @mock.patch(
