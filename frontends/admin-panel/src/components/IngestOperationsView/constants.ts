@@ -67,6 +67,10 @@ export type IngestInstanceSummary = {
   ingest: IngestBucketSummary;
   dbName: string;
   operations: OperationsDbInfo;
+  // TODO(#11424): Delete this flag once BQ materialization has been fully
+  //  shipped to all states and admin panel frontend no longer references
+  //  this value.
+  isBQMaterializationEnabled: boolean;
 };
 
 export type OperationsDbInfo = {
