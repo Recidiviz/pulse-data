@@ -156,6 +156,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentence_summar
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_preprocessed import (
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_supervision_population_metrics_preprocessed import (
+    US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.violations_sessions import (
     VIOLATIONS_SESSIONS_VIEW_BUILDER,
 )
@@ -206,6 +209,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
     US_TN_SENTENCE_RELATIONSHIP_VIEW_BUILDER,
+    US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     VIOLATIONS_SESSIONS_VIEW_BUILDER,
     US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 ]

@@ -244,9 +244,6 @@ def deduped_supervision_sessions(where_clause: Optional[str] = "") -> str:
         UNNEST(GENERATE_DATE_ARRAY(DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH), 
             CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)) as date_of_supervision,
         UNNEST (session_attributes) session_attributes
-        # TODO(#12046): Remove this join clause when we remove the TN-specific mappings in BQ
-        LEFT JOIN `{{project_id}}.{{metrics_dataset}}.most_recent_supervision_population_metrics_materialized` metrics
-        USING (state_code, person_id, date_of_supervision)
         LEFT JOIN `{{project_id}}.{{dashboards_dataset}}.pathways_supervision_location_name_map` name_map
             ON s.state_code = name_map.state_code
             AND session_attributes.supervision_office = name_map.location_id
@@ -266,3 +263,9 @@ def deduped_supervision_sessions(where_clause: Optional[str] = "") -> str:
             NULLIF(session_attributes.judicial_district_code, 'EXTERNAL_UNKNOWN') NULLS LAST
         ) = 1
     """
+
+
+def non_active_supervision_levels() -> str:
+    return (
+        '("EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN", "IN_CUSTODY", "WARRANT", "ABSCONDED")'
+    )

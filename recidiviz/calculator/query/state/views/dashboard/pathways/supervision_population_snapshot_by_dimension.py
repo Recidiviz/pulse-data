@@ -29,7 +29,6 @@ from recidiviz.calculator.query.state import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DASHBOARD_VIEWS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
@@ -68,8 +67,8 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = f"""
             IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
             {{state_specific_supervision_level}} AS supervision_level,
         FROM {deduped_supervision_sessions('AND end_date IS NULL')}
-    ),
-    filtered_rows AS (
+    )
+    , filtered_rows AS (
         SELECT *
         FROM cte
         WHERE {{state_specific_district_filter}}
@@ -113,7 +112,6 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
     ),
     dashboards_dataset=DASHBOARD_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=ENABLED_STATES
@@ -121,7 +119,6 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "s.state_code",
         "session_attributes.correctional_level",
-        "metrics.supervision_level_raw_text",
     ),
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
