@@ -57,7 +57,6 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks i
     IngestGatingContext,
     copy_name_to_alias,
     gen_convert_person_ids_to_external_id_objects,
-    gen_label_single_external_id_hook,
     gen_normalize_county_codes_posthook,
     gen_set_agent_type,
     gen_set_is_life_sentence_hook,
@@ -91,7 +90,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonEthnicity,
     StatePersonExternalId,
     StateProgramAssignment,
-    StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
@@ -148,16 +146,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._set_punishment_length_days,
                 self._set_location_within_facility,
                 self._set_incident_outcome_id,
-            ],
-            "docstars_offenders": [
-                # For a person we are seeing in Docstars with an ITAGROOT_ID referencing a corresponding record in
-                # Elite, mark that external id as having type ELITE.
-                gen_label_single_external_id_hook(US_ND_ELITE),
-                self._enrich_addresses,
-                self._enrich_sorac_assessments,
-                copy_name_to_alias,
-                self._add_supervising_officer,
-                self._add_case_type_external_id,
             ],
             "docstars_offensestable": [
                 self._parse_docstars_charge_classification,
@@ -348,44 +336,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 extracted_object.location = code_str
 
     @staticmethod
-    def _add_supervising_officer(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds the current supervising officer onto the extracted person."""
-        supervising_officer_id = row.get("AGENT")
-        if not supervising_officer_id:
-            return
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StatePerson):
-                agent_to_create = StateAgent(
-                    state_agent_id=supervising_officer_id,
-                    agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-                )
-                create_if_not_exists(
-                    agent_to_create, extracted_object, "supervising_officer"
-                )
-
-    @staticmethod
-    def _add_case_type_external_id(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds the person external_id to the extracted supervision case type."""
-        external_id = row.get("SID")
-        if not external_id:
-            raise ValueError(
-                f"File [{_gating_context.ingest_view_name}] is missing an SID external id"
-            )
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSupervisionCaseTypeEntry):
-                extracted_object.state_supervision_case_type_entry_id = external_id
-
-    @staticmethod
     def _rationalize_race_and_ethnicity(
         _gating_context: IngestGatingContext,
         _ingest_info: IngestInfo,
@@ -442,37 +392,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     extracted_object,
                     "state_person_external_ids",
                 )
-
-    @staticmethod
-    def _enrich_addresses(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Concatenate address, city, state, and zip information."""
-        city = row.get("CITY", None)
-        state = row.get("STATE", None)
-        postal = row.get("ZIP", None)
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StatePerson):
-                address = extracted_object.current_address
-                full_address = ", ".join(filter(None, [address, city, state, postal]))
-                extracted_object.__setattr__("current_address", full_address)
-
-    @staticmethod
-    def _enrich_sorac_assessments(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """For SORAC assessments in Docstars' incoming person data, add metadata we can infer from context."""
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateAssessment):
-                extracted_object.assessment_class = StateAssessmentClass.RISK.value
-                extracted_object.assessment_type = StateAssessmentType.SORAC.value
 
     @staticmethod
     def _process_lsir_assessments(
