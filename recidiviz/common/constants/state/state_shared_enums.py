@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 #  migrated to v2 mappings.
 @unique
 class StateActingBodyType(StateEntityEnum):
-    """Any person or persons who is taking an action."""
+    """A type of actor or authoritative body within the criminal justice system."""
 
     COURT = state_enum_strings.state_acting_body_type_court
     PAROLE_BOARD = state_enum_strings.state_acting_body_type_parole_board
@@ -42,6 +42,31 @@ class StateActingBodyType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateActingBodyType"]:
         return _STATE_ACTING_BODY_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "A type of actor or authoritative body within the criminal justice system."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_ACTING_BODY_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_ACTING_BODY_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateActingBodyType.COURT: "A government entity authorized to resolve legal "
+    "disputes. This term is often used to describe a single judge.",
+    StateActingBodyType.PAROLE_BOARD: "A panel of people who decide whether an "
+    "incarcerated individual should be released from prison onto parole after serving "
+    "at least a minimum portion of their sentence as prescribed by the sentencing "
+    "judge. This authoritative body also determines the conditions of one’s parole, "
+    "and decides the outcomes of revocation hearings for individuals on parole.",
+    StateActingBodyType.SENTENCED_PERSON: "An individual who is in the criminal "
+    "justice system because they have been sentenced to some form of incarceration "
+    "or supervision following a criminal conviction.",
+    StateActingBodyType.SUPERVISION_OFFICER: "An official who oversees someone while "
+    "they are on supervision. Also referred to as a probation/parole officer.",
+}
 
 _STATE_ACTING_BODY_TYPE_MAP = {
     "COURT": StateActingBodyType.COURT,
@@ -57,9 +82,10 @@ _STATE_ACTING_BODY_TYPE_MAP = {
 #  migrated to v2 mappings.
 @unique
 class StateCustodialAuthority(StateEntityEnum):
-    """The type of government entity directly responsible for the person on a period of incarceration or supervision.
-    Generally the entity of the agent who is filling out the paperwork and making recommendations for the person. This
-    is not necessarily the decision making authority on the period."""
+    """The type of government entity directly responsible for the person on a period
+    of incarceration or supervision. Generally the entity of the agent who is filling \
+    out the paperwork and making recommendations for the person. This is not
+    necessarily the decision-making authority on the period."""
 
     COURT = state_enum_strings.state_custodial_authority_court
 
