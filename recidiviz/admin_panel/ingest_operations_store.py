@@ -61,7 +61,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.regions import get_region
@@ -351,7 +350,7 @@ class IngestOperationsStore(AdminPanelStore):
         """
         if in_development():
             return {
-                "isPaused": False,
+                "isPaused": ingest_instance == DirectIngestInstance.SECONDARY,
                 "unprocessedFilesRaw": -1,
                 "processedFilesRaw": -2,
                 "ingestViewMaterializationSummaries": [
@@ -395,14 +394,21 @@ class IngestOperationsStore(AdminPanelStore):
             ).db_name,
         )
 
-        try:
-            # Raw files are processed in the primary instance, not secondary
+        if ingest_instance == DirectIngestInstance.PRIMARY:
             num_unprocessed_raw_files = (
                 raw_file_metadata_manager.get_num_unprocessed_raw_files()
             )
-            raw_file_metadata_manager.get_num_unprocessed_raw_files()
-        except DirectIngestInstanceError as _:
+            num_processed_raw_files = (
+                raw_file_metadata_manager.get_num_processed_raw_files()
+            )
+        elif ingest_instance == DirectIngestInstance.SECONDARY:
+            # TODO(##12387): Raw files are currently processed in the primary instance
+            #  only, not secondary. This logic will need to change once we enable
+            #  raw data imports in secondary.
             num_unprocessed_raw_files = 0
+            num_processed_raw_files = 0
+        else:
+            raise ValueError(f"Unexpected ingest instance: [{ingest_instance}]")
 
         ingest_instance_status_manager = DirectIngestInstanceStatusManager(
             state_code.value, ingest_instance
@@ -427,7 +433,7 @@ class IngestOperationsStore(AdminPanelStore):
         return {
             "isPaused": is_paused,
             "unprocessedFilesRaw": num_unprocessed_raw_files,
-            "processedFilesRaw": raw_file_metadata_manager.get_num_processed_raw_files(),
+            "processedFilesRaw": num_processed_raw_files,
             "ingestViewMaterializationSummaries": [
                 summary.as_api_dict()
                 for summary in materialization_job_summaries.values()
