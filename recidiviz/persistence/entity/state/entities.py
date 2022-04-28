@@ -780,12 +780,14 @@ class StateIncarcerationPeriod(
     )
 
     #   - What
+    # TODO(#12542): Delete this entirely unused field
     facility_security_level: Optional[
         StateIncarcerationFacilitySecurityLevel
     ] = attr.ib(
         default=None,
         validator=attr_validators.is_opt(StateIncarcerationFacilitySecurityLevel),
     )
+    # TODO(#12542): Delete this entirely unused field
     facility_security_level_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
