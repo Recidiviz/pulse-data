@@ -25,6 +25,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
+# TODO(#12542): Delete this entirely unused enum
 @unique
 class StateIncarcerationFacilitySecurityLevel(StateEntityEnum):
     MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
@@ -88,6 +89,72 @@ class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateIncarcerationPeriodAdmissionReason"]:
         return _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The reason the person is being admitted to a facility."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_PERIOD_ADMISSION_REASON_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION: "This is an "
+    "ingest-only enum, and should only be used as a placeholder at ingest time if we "
+    "are unable to determine whether an admission from supervision to prison is a "
+    "sanction, revocation, or temporary custody admission. All periods with this "
+    "value must be updated by the state’s IP normalization process to set the "
+    "accurate admission reason.",
+    StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: "Used when a person "
+    "has been admitted into a facility erroneously.",
+    StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: "Describes admissions into "
+    "prison to serve a new sentence because of a new commitment from the court.",
+    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: "Used when "
+    "a person is admitted after having been released, where the person was "
+    "unintentionally released.",
+    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: "Used when a person "
+    "returns to a facility after having escaped.",
+    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE: "Describes "
+    "returns to a facility from any kind of temporary release (e.g. work release, "
+    "furlough, etc.), where there is an understanding of when the person will be "
+    "returning to the facility.",
+    StateIncarcerationPeriodAdmissionReason.REVOCATION: "Used when a person is "
+    "admitted to prison because their supervision was revoked by the court or by the "
+    "parole board.",
+    StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION: "A non-revocation "
+    "admission from supervision to prison as a sanction response to a person "
+    "violating conditions of their supervision. When used with the "
+    "`StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION` value, describes "
+    "being mandated by either the court or the parole board to spend a distinct, "
+    "“short” period of time in prison (known as “shock incarceration”). When used "
+    "with the `StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON` value, "
+    "describes being mandated by either the court or the parole board to complete a "
+    "treatment program in prison.<br><br>Some examples include being mandated by the "
+    "parole board to complete in-facility drug treatment after failing to complete "
+    "treatment in the community, or being mandated by the court to spend exactly "
+    "120 days in prison as a penalty for violating conditions of one’s supervision.",
+    StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE: "Used when something about "
+    "a person’s incarceration has changed from a classification-standpoint. For "
+    "example, this is used when the `specialized_purpose_for_incarceration` value "
+    "on an IP changes, denoting that the “reason” the person is in prison has changed.",
+    StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY: "Describes “temporary” "
+    "admissions to a facility, where the release date is determined by something "
+    "other than the person’s sentence end date. Used on all admissions to parole "
+    "board holds (with `StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD`), "
+    "which is a temporary situation in which a person on parole is incarcerated while "
+    "awaiting a decision from the parole board as to whether they will have to remain "
+    "in prison (for treatment, shock incarceration, or to serve out the rest of "
+    "their sentence). Used also when a person is brought into a county jail "
+    "temporarily after a probation revocation while the state determines the prison "
+    "into which they will be admitted.",
+    StateIncarcerationPeriodAdmissionReason.TRANSFER: "Used when a person is "
+    "transferred between two facilities within the state.",
+    StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: "Used "
+    "when a person is transferred from a different jurisdiction. Used when a person "
+    "is transferred from another state, or from federal custody.",
+}
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -148,6 +215,89 @@ class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateIncarcerationPeriodReleaseReason"]:
         return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The reason the person is being released from a facility."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_PERIOD_RELEASE_REASON_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateIncarcerationPeriodReleaseReason.COMMUTED: "Describes a person being "
+    "released from a facility because their sentence has been commuted. “Commutation” "
+    "is a reduction of a sentence to a lesser period of time. This is different "
+    "than `PARDONED` because the conviction has not been cleared from the person’s "
+    "record.",
+    StateIncarcerationPeriodReleaseReason.COMPASSIONATE: "Used when a person has been "
+    "granted early release from prison because of special circumstances (defined "
+    "as “extraordinary and compelling reasons” by the U.S. Sentencing Commission). "
+    "Compassionate release is very rarely used, but can describe cases such as an "
+    "individual being granted early release because they have a terminal illness.",
+    StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: "Describes a person "
+    "being released through the process of being granted parole by the parole board. "
+    "The term “conditional” represents the fact that the person’s privilege of "
+    "serving the rest of their sentence in the community is conditional on them "
+    "following the conditions of their parole, as determined by the parole board "
+    "and their parole officer.",
+    StateIncarcerationPeriodReleaseReason.COURT_ORDER: "Used when a person is "
+    "temporarily released because a judge has requested that the person make an "
+    "appearance in court. The person may be transferred to a county jail during "
+    "this time.",
+    StateIncarcerationPeriodReleaseReason.DEATH: "Used when a person is no longer "
+    "in a facility because they have died.",
+    StateIncarcerationPeriodReleaseReason.ESCAPE: "Used when a person has escaped "
+    "from a facility.",
+    StateIncarcerationPeriodReleaseReason.EXECUTION: "Used when a person is no longer "
+    "in a facility because they have been executed by the state.",
+    StateIncarcerationPeriodReleaseReason.PARDONED: "Describes a person being "
+    "released from a facility because they have been pardoned. When a person is "
+    "pardoned, there is immediate release from any active form of incarceration "
+    "or supervision related to the pardoned conviction. This is different from "
+    "`COMMUTED` because the person’s conviction is completely cleared when they are "
+    "pardoned. This is distinct from `VACATED`, because the conviction is still "
+    "legally valid, it has just been forgiven.",
+    StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION: "Used "
+    "when a person is released after having been admitted into a facility erroneously.",
+    StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: "Used when "
+    "a person has been released from a period of temporary custody. See "
+    "`StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY`.",
+    StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: "Used when a person has "
+    "been released from a facility erroneously.",
+    StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION: "Describes any "
+    "release onto some sort of supervision that doesn't qualify as a "
+    "`CONDITIONAL_RELEASE`. This is not common, but can be used to describe instances "
+    "where a person is released onto probation, for example (i.e. they are serving a "
+    "stacked probation sentence after an incarceration sentence). This is also used if "
+    "we cannot determine what type of release to supervision a release is.",
+    StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: "Describes a person being "
+    "released because they have served the entirety of their sentence. This should "
+    "not be used if the person is being released onto any form of supervision "
+    "(see `CONDITIONAL_RELEASE` and `RELEASED_TO_SUPERVISION`).",
+    StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: "Used when something about "
+    "a person’s incarceration has changed from a classification-standpoint. For "
+    "example, this is used when the `specialized_purpose_for_incarceration` value on "
+    "an IP changes, denoting that the “reason” the person is in prison has changed.",
+    StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE: "Describes being released "
+    "from a facility for any kind of temporary reason (e.g. work release, furlough, "
+    "etc.), where there is an understanding of when the person will be returning to "
+    "the facility.",
+    StateIncarcerationPeriodReleaseReason.TRANSFER: "Used when a person is "
+    "transferred between two facilities within the state.",
+    StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: "Used when "
+    "a person is transferred to a different jurisdiction. Used when a person is "
+    "transferred to another state, or to federal custody.",
+    StateIncarcerationPeriodReleaseReason.VACATED: "Used when a person is released "
+    "because the legal judgment on their conviction has become legally void, or has "
+    "been overturned. When a sentence is vacated, there is immediate release from "
+    "any active form of incarceration or supervision related to the vacated "
+    "conviction. This is distinct from `PARDONED`, because the conviction was "
+    "cleared as a result of it being deemed legally void.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -180,6 +330,45 @@ class StateSpecializedPurposeForIncarceration(StateEntityEnum):
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSpecializedPurposeForIncarceration"]:
         return _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The reason the person is in a facility."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_VALUE_DESCRIPTIONS
+
+
+_STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateSpecializedPurposeForIncarceration.GENERAL: "This person is in a facility "
+    "serving a sentence, where the reason the person is in a facility does not fall "
+    "into any of the other `StateSpecializedPurposeForIncarceration` categories.",
+    StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD: "This person is in a "
+    "facility temporarily while they await a hearing by the parole board. This is a "
+    "temporary situation in which a person on parole is incarcerated while awaiting "
+    "a decision from the parole board as to whether they will have to remain in "
+    "prison (for treatment, shock incarceration, or to serve out the rest of their "
+    "sentence), or whether they will be released back onto parole.",
+    StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION: "This person is in a "
+    "facility because they were mandated by either the court or the parole board to "
+    "spend a distinct, “short” period of time in prison. These mandates are always "
+    "for explicit amounts of time (e.g. 120 days, 9 months, etc.).",
+    StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY: "This person is in "
+    "facility temporarily, where the release date is determined by something other "
+    "than the person’s sentence end date, and where the person is *not* in a parole "
+    "board hold. For example, this is used when a person is in a county jail "
+    "temporarily after a probation revocation while the state determines the prison "
+    "into which they will be admitted.",
+    StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON: "This person is in a "
+    "facility because they were mandated by either the court or the parole board to "
+    "complete a treatment program in prison.",
+    StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT: "This person is in a "
+    "facility as part of a program or sentence where they are released during the "
+    "week, then readmitted every weekend.",
+}
 
 
 def is_commitment_from_supervision(

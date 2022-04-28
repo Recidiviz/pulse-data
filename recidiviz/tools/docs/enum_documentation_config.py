@@ -45,9 +45,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationFacilitySecurityLevel,
-    StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
-    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
@@ -92,11 +89,10 @@ ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
     StateEarlyDischargeDecisionStatus,
     StateEthnicity,
     StateGender,
+    # TODO(#12542): Remove when this unused enum is deleted
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
-    StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
     StateIncarcerationType,
     StatePersonAliasType,
     StateProgramAssignmentDischargeReason,
@@ -104,7 +100,6 @@ ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
     StateRace,
     StateResidencyStatus,
     StateSentenceStatus,
-    StateSpecializedPurposeForIncarceration,
     StateSupervisionCaseType,
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
