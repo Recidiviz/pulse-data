@@ -50,6 +50,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
@@ -82,10 +83,18 @@ class IngestViewMaterializationGatingContext:
         """For a given state/ingest instance, returns whether ingest should be using
         BQ-based ingest view materialization.
         """
-        return (
-            self._all_states_gating_context[state_code][ingest_instance]
-            == _MaterializationType.BQ
-        )
+        assert_type(state_code, StateCode)
+
+        if state_code not in self._all_states_gating_context:
+            raise ValueError(f"Did not find [{state_code}] in the gating context.")
+        state_gating_context = self._all_states_gating_context[state_code]
+        if ingest_instance not in state_gating_context:
+            raise ValueError(
+                f"Did not find [{ingest_instance}] in the [{state_code}] gating "
+                f"context: {state_gating_context}"
+            )
+
+        return state_gating_context[ingest_instance] == _MaterializationType.BQ
 
     @staticmethod
     def gating_config_path() -> GcsfsFilePath:
