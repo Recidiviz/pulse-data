@@ -19,7 +19,7 @@
 from unittest import TestCase
 
 from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
-from recidiviz.justice_counts.dimensions.person import Gender
+from recidiviz.justice_counts.dimensions.person import GenderRestricted
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.report_metric import (
@@ -56,7 +56,7 @@ class TestJusticeCountsReportMetric(TestCase):
                     ReportedAggregatedDimension(
                         dimension_to_value={
                             SheriffBudgetType.DETENTION: 50000,
-                            Gender.get("FEMALE"): 100,
+                            GenderRestricted.FEMALE: 100,
                         }
                     )
                 ],
