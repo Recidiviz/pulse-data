@@ -169,7 +169,11 @@ class JusticeCountsSchemaTestObjects:
 
     @staticmethod
     def get_reported_budget_metric(
-        value: int = 100000, include_disaggregations: bool = True
+        value: Optional[int] = 100000,
+        detention_value: Optional[int] = 66666,
+        patrol_value: Optional[int] = 33334,
+        include_contexts: bool = True,
+        include_disaggregations: bool = True,
     ) -> ReportMetric:
         return ReportMetric(
             key=law_enforcement.annual_budget.key,
@@ -178,12 +182,14 @@ class JusticeCountsSchemaTestObjects:
                 ReportedContext(
                     key=ContextKey.PRIMARY_FUNDING_SOURCE, value="government"
                 )
-            ],
+            ]
+            if include_contexts
+            else [],
             aggregated_dimensions=[
                 ReportedAggregatedDimension(
                     dimension_to_value={
-                        SheriffBudgetType.DETENTION: int(2 / 3 * value),
-                        SheriffBudgetType.PATROL: value - int(2 / 3 * value),
+                        SheriffBudgetType.DETENTION: detention_value,
+                        SheriffBudgetType.PATROL: patrol_value,
                     }
                 )
             ]

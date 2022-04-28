@@ -187,6 +187,56 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(contexts[0].key, "PRIMARY_FUNDING_SOURCE")
             self.assertEqual(contexts[0].value, "government")
 
+    def test_add_empty_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=self.test_schema_objects.get_reported_budget_metric(
+                    value=None,
+                    detention_value=None,
+                    patrol_value=None,
+                    include_contexts=False,
+                ),
+            )
+
+            # Two ReportTableInstances should be saved, but both should be empty.
+            queried_instances = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.id)
+                .all()
+            )
+            self.assertEqual(len(queried_instances), 2)
+            self.assertEqual(len(queried_instances[0].cells), 0)
+            self.assertEqual(len(queried_instances[1].cells), 0)
+            self.assertEqual(len(queried_instances[0].contexts), 0)
+            self.assertEqual(len(queried_instances[1].contexts), 0)
+
+    def test_add_incomplete_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=self.test_schema_objects.get_reported_budget_metric(
+                    value=None,
+                    detention_value=50,
+                    patrol_value=None,
+                ),
+            )
+
+            # Two ReportTableInstances should be saved, but the first should
+            # only have a context attached, not any cells.
+            queried_instances = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.id)
+                .all()
+            )
+            self.assertEqual(len(queried_instances), 2)
+            self.assertEqual(len(queried_instances[0].cells), 0)
+            self.assertEqual(len(queried_instances[0].contexts), 1)
+            self.assertEqual(len(queried_instances[1].cells), 1)
+            self.assertEqual(queried_instances[1].cells[0].value, 50)
+
     def test_add_calls_for_service_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             ReportInterface.add_or_update_metric(
@@ -285,7 +335,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             # This should result in an update to the existing database objects
             report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
-                value=1000
+                value=1000,
+                detention_value=600,
+                patrol_value=400,
             )
             ReportInterface.add_or_update_metric(
                 session=session,
@@ -311,11 +363,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 disaggregated_cells[0].aggregated_dimension_values, ["PATROL"]
             )
-            self.assertEqual(disaggregated_cells[0].value, 334)
+            self.assertEqual(disaggregated_cells[0].value, 400)
             self.assertEqual(
                 disaggregated_cells[1].aggregated_dimension_values, ["DETENTION"]
             )
-            self.assertEqual(disaggregated_cells[1].value, 666)
+            self.assertEqual(disaggregated_cells[1].value, 600)
 
     def test_update_metric_with_new_contexts(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

@@ -112,6 +112,10 @@ class ReportMetric:
                 continue
 
             reported_dimension_values = reported_dimension.dimension_to_value.values()
+            if len([value for value in reported_dimension_values if value is None]) > 0:
+                # If any dimension values haven't been reported yet, skip validation
+                return
+
             if sum(reported_dimension_values) != value:
                 raise ValueError(
                     f"Sums across dimension {dimension_identifier} do not equal "
