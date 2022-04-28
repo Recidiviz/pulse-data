@@ -20,7 +20,6 @@ in-progress."""
 from typing import List, Type
 
 from recidiviz.common.constants.entity_enum import EntityEnum
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -62,10 +61,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_shared_enums import (
-    StateActingBodyType,
-    StateCustodialAuthority,
-)
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -84,8 +80,6 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 )
 
 ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
-    StateActingBodyType,
-    StateAgentType,
     StateAssessmentClass,
     StateAssessmentLevel,
     StateAssessmentType,

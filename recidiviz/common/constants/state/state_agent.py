@@ -32,10 +32,8 @@ class StateAgentType(StateEntityEnum):
     CORRECTIONAL_OFFICER = state_enum_strings.state_agent_correctional_officer
     JUDGE = state_enum_strings.state_agent_judge
     JUSTICE = state_enum_strings.state_agent_justice
-    PAROLE_BOARD_MEMBER = state_enum_strings.state_agent_parole_board_member
     # A parole/probation officer (PO)
     SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
-    UNIT_SUPERVISOR = state_enum_strings.state_agent_unit_supervisor
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -43,15 +41,33 @@ class StateAgentType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateAgentType"]:
         return _STATE_AGENT_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "A type of official within the criminal justice system."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_AGENT_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_AGENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAgentType.CORRECTIONAL_OFFICER: "An official of the state department of "
+    "corrections who oversees individuals while they are in an incarceration facility.",
+    StateAgentType.JUDGE: "An official of the Judicial branch with authority to "
+    "decide lawsuits and determine sentences.",
+    StateAgentType.JUSTICE: "A `JUDGE` who sits on a Supreme Court.",
+    StateAgentType.SUPERVISION_OFFICER: "An official of the state supervision "
+    "department who oversees someone while they are on supervision. Also referred to "
+    "as a probation/parole officer.",
+}
+
 
 _STATE_AGENT_TYPE_MAP = {
     "PRESENT WITHOUT INFO": StateAgentType.PRESENT_WITHOUT_INFO,
     "CORRECTIONAL OFFICER": StateAgentType.CORRECTIONAL_OFFICER,
     "JUDGE": StateAgentType.JUDGE,
     "JUSTICE": StateAgentType.JUSTICE,
-    "PAROLE BOARD MEMBER": StateAgentType.PAROLE_BOARD_MEMBER,
     "SUPERVISION OFFICER": StateAgentType.SUPERVISION_OFFICER,
-    "UNIT SUPERVISOR": StateAgentType.UNIT_SUPERVISOR,
     "INTERNAL UNKNOWN": StateAgentType.INTERNAL_UNKNOWN,
     "EXTERNAL UNKNOWN": StateAgentType.EXTERNAL_UNKNOWN,
 }
