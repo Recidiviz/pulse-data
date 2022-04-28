@@ -367,7 +367,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 population.key,
-                "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/race_and_ethnicity",
+                "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
             )
 
             # Population metric should be blank

@@ -38,7 +38,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
         )
         self.assertEqual(
             law_enforcement.residents.key,
-            "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/race_and_ethnicity",
+            "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
         )
 
     def test_additional_context(self) -> None:

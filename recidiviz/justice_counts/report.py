@@ -235,18 +235,17 @@ class ReportInterface:
                 ),
                 session=session,
             )
-            if not report_table_definition_row:
-                raise ValueError(
-                    f"No existing ReportTableDefinition found for dimension identifier: {dimension_identifier}"
+            if report_table_definition_row:
+                # If no report_table_definition_row is found, then this dimension hasn't been
+                # reported yet, so there's nothing to delete.
+                report_table_definition = ReportTableDefinitionInterface.get_by_id(
+                    session=session, _id=report_table_definition_row.id
                 )
-            report_table_definition = ReportTableDefinitionInterface.get_by_id(
-                session=session, _id=report_table_definition_row.id
-            )
-            ReportTableInstanceInterface.delete_from_reported_metric(
-                session=session,
-                report=report,
-                report_table_definition=report_table_definition,
-            )
+                ReportTableInstanceInterface.delete_from_reported_metric(
+                    session=session,
+                    report=report,
+                    report_table_definition=report_table_definition,
+                )
 
     @staticmethod
     def get_metrics_by_report_id(
