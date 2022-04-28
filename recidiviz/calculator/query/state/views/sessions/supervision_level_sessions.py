@@ -17,6 +17,7 @@
 """Sessionized view of each individual on supervision. Session defined as continuous period of time on supervision level"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import non_active_supervision_levels
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -60,18 +61,20 @@ SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
         person_id,
         supervision_level,
         supervision_level_session_id_unordered,
+        supervision_group_id,
         correctional_level_priority,
         is_discretionary_level,
         MIN(start_date) start_date,
         CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
         MIN(dataflow_session_id) AS dataflow_session_id_start,
-        MAX(dataflow_session_id) AS dataflow_session_id_end,
+        MAX(dataflow_session_id) AS dataflow_session_id_end
         FROM
             (
             SELECT
                 *,
                 SUM(CASE WHEN COALESCE(level_changed, 1) = 1 THEN 1 ELSE 0 END)
-                    OVER(PARTITION BY person_id, state_code ORDER BY supervision_level, start_date) AS supervision_level_session_id_unordered
+                    OVER(PARTITION BY person_id, state_code ORDER BY supervision_level, start_date) AS supervision_level_session_id_unordered,
+                SUM(CASE WHEN COALESCE(date_gap, TRUE) THEN 1 ELSE 0 END) OVER(PARTITION BY person_id, state_code ORDER BY start_date) AS supervision_group_id
             FROM
                 (
                 SELECT
@@ -83,7 +86,8 @@ SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
                     session.start_date,
                     session.end_date,
                     session.dataflow_session_id,
-                    MIN(IF(session_lag.supervision_level = session.supervision_level, 0, 1)) AS level_changed
+                    MIN(IF(session_lag.supervision_level = session.supervision_level, 0, 1)) AS level_changed,
+                    MAX(session_lag.start_date) IS NULL AS date_gap
                 FROM deduped_cte session
                 LEFT JOIN deduped_cte as session_lag
                     ON session.state_code = session_lag.state_code
@@ -92,7 +96,7 @@ SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
                 GROUP BY 1,2,3,4,5,6,7,8
                 )
             )
-    GROUP BY 1,2,3,4,5,6
+    GROUP BY 1,2,3,4,5,6,7
     )
     ,
     sessionized_cte_ordered AS
@@ -113,6 +117,12 @@ SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
         session.start_date,
         session.end_date,
         session_lag.supervision_level AS previous_supervision_level,
+        LAST_VALUE(
+            CASE WHEN session.supervision_level NOT IN {non_active_supervision_levels} THEN session.supervision_level END IGNORE NULLS)
+            OVER(
+                PARTITION BY session.state_code, session.person_id, session.supervision_group_id
+                ORDER BY session.start_date
+            ) AS most_recent_active_supervision_level,
         CASE WHEN session.correctional_level_priority < session_lag.correctional_level_priority
             AND session.is_discretionary_level AND session_lag.is_discretionary_level
             THEN 1 ELSE 0 END as supervision_upgrade,
@@ -134,6 +144,7 @@ SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
+    non_active_supervision_levels=non_active_supervision_levels(),
 )
 
 if __name__ == "__main__":

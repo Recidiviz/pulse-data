@@ -17,7 +17,11 @@
 """People who have transitioned from supervision to prison by date of reincarceration."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import add_age_groups, first_known_location
+from recidiviz.calculator.query.bq_utils import (
+    add_age_groups,
+    first_known_location,
+    non_active_supervision_levels,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     pathways_state_specific_supervision_level,
@@ -40,7 +44,8 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         sessions.person_id,
         sessions.end_date + 1 AS transition_date,
         IF(sessions.compartment_level_2 = 'DUAL', 'PAROLE', sessions.compartment_level_2) AS supervision_type,
-        {state_specific_supervision_level} AS supervision_level,
+        IF({state_specific_supervision_level} IN {non_active_supervision_levels},
+            supervision_sessions.most_recent_active_supervision_level, {state_specific_supervision_level}) AS supervision_level,
         sessions.age_end AS age,
         {age_group}
         sessions.gender,
@@ -50,10 +55,6 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         super_sessions.start_date AS supervision_start_date,
     FROM
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
-    LEFT JOIN `{project_id}.{metrics_dataset}.most_recent_supervision_population_metrics_materialized` metrics
-    ON sessions.state_code = metrics.state_code
-        AND sessions.person_id = metrics.person_id
-        AND sessions.end_date + 1 = metrics.date_of_supervision
     LEFT JOIN (
         SELECT
             person_id,
@@ -63,13 +64,17 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
       ) super_sessions
     ON sessions.person_id = super_sessions.person_id
         AND sessions.end_date = super_sessions.end_date
+    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` supervision_sessions
+    ON sessions.person_id=supervision_sessions.person_id
+        AND sessions.end_date BETWEEN supervision_sessions.start_date AND supervision_sessions.end_date
     WHERE
         sessions.state_code IN {enabled_states}
         AND compartment_level_1 = 'SUPERVISION'
         AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN"
         AND outflow_to_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY")
         AND sessions.end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
-        -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months"""
+        -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
+"""
 
 SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
@@ -77,14 +82,13 @@ SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
     description=SUPERVISION_TO_PRISON_TRANSITIONS_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     age_group=add_age_groups("sessions.age_end"),
     first_known_location=first_known_location("compartment_location_end"),
+    non_active_supervision_levels=non_active_supervision_levels(),
     enabled_states=str(tuple(ENABLED_STATES)),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "sessions.state_code",
-        'SPLIT(sessions.correctional_level_end, " | ")[OFFSET(0)]',
-        "metrics.supervision_level_raw_text",
+        "sessions.correctional_level_end",
     ),
 )
 

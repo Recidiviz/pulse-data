@@ -506,28 +506,15 @@ def pathways_state_specific_supervision_district_filter() -> str:
     """
 
 
-# TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
 def pathways_state_specific_supervision_level(
     state_code_query: str = "state_code",
     supervision_level_query: str = "supervision_level",
-    supervision_level_raw_text_query: str = "supervision_level_raw_text",
 ) -> str:
     """State-specific logic to normalize supervision level for Pathways."""
     return f"""
         CASE 
-            WHEN {state_code_query}='US_ID' and COALESCE(supervision_level, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
+            WHEN {state_code_query}='US_ID' and COALESCE({supervision_level_query}, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
                 THEN "OTHER"
-            WHEN {state_code_query}='US_TN' THEN
-                IF({supervision_level_query} != "INTERNAL_UNKNOWN",
-                    {supervision_level_query},
-                    CASE {supervision_level_raw_text_query}
-                        WHEN "9WR" THEN "WARRANT"
-                        WHEN "ZWS" THEN "WARRANT"
-                        WHEN "9AB" THEN "ABSCONDED"
-                        WHEN "9IS" THEN "ICOTS_OUT"
-                        WHEN "9DT" THEN "DETAINER"
-                        ELSE "OTHER"
-                    END)    
             ELSE IFNULL({supervision_level_query}, "EXTERNAL_UNKNOWN")
         END
     """

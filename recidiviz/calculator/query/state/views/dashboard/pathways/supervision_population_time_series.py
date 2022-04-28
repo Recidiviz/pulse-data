@@ -117,7 +117,6 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuil
     dimensions=("state_code", "year", "month", "district", "supervision_level"),
     description=SUPERVISION_POPULATION_TIME_SERIES_VIEW_DESCRIPTION,
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=ENABLED_STATES
@@ -127,7 +126,6 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuil
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "s.state_code",
         "session_attributes.correctional_level",
-        "metrics.supervision_level_raw_text",
     ),
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )

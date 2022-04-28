@@ -50,10 +50,6 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
         supervision_start_date,
         {age_group}
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` s
-    LEFT JOIN `{project_id}.{metrics_dataset}.most_recent_supervision_population_metrics_materialized` metrics
-    ON s.state_code = metrics.state_code
-        AND s.person_id = metrics.person_id
-        AND s.end_date + 1 = metrics.date_of_supervision
     LEFT JOIN (
         SELECT
             person_id,
@@ -78,14 +74,12 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE,
     description=SUPERVISION_TO_LIBERTY_TRANSITIONS_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     first_known_location=first_known_location("compartment_location_end"),
     enabled_states=str(tuple(ENABLED_STATES)),
     age_group=add_age_groups("age_end"),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "s.state_code",
-        'SPLIT(correctional_level_end, " | ")[OFFSET(0)]',
-        "metrics.supervision_level_raw_text",
+        "correctional_level_end",
     ),
 )
 

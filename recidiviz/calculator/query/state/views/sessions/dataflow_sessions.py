@@ -164,12 +164,18 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
-        AND state_code != 'US_MO'
+        AND state_code not in ('US_MO', 'US_TN')
     UNION ALL
     -- Use MO preprocessed dataset to deal with state-specific logic
     SELECT 
         *
     FROM `{project_id}.{sessions_dataset}.us_mo_supervision_population_metrics_preprocessed_materialized`
+    UNION ALL
+    -- Use TN preprocessed dataset to deal with state-specific logic
+    -- TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
+    SELECT 
+        *
+    FROM `{project_id}.{sessions_dataset}.us_tn_supervision_population_metrics_preprocessed_materialized`
     UNION ALL
     SELECT 
         DISTINCT
