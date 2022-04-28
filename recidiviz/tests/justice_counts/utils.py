@@ -192,12 +192,20 @@ class JusticeCountsSchemaTestObjects:
         )
 
     @staticmethod
-    def get_reported_calls_for_service_metric() -> ReportMetric:
+    def get_reported_calls_for_service_metric(
+        agencies_available_for_response: Optional[str] = None,
+    ) -> ReportMetric:
         return ReportMetric(
             key=law_enforcement.calls_for_service.key,
             value=100,
             contexts=[
-                ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True)
+                ReportedContext(
+                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True
+                ),
+                ReportedContext(
+                    key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,
+                    value=agencies_available_for_response,
+                ),
             ],
             aggregated_dimensions=[
                 ReportedAggregatedDimension(

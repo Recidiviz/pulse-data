@@ -181,6 +181,34 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(disaggregated_cells[1].value, 66666)
 
+            # The aggregated instance should have one context
+            contexts = queried_instances[0].contexts
+            self.assertEqual(len(contexts), 1)
+            self.assertEqual(contexts[0].key, "PRIMARY_FUNDING_SOURCE")
+            self.assertEqual(contexts[0].value, "government")
+
+    def test_add_calls_for_service_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=self.test_schema_objects.reported_calls_for_service_metric,
+            )
+
+            # We should have two instances, one for the aggregated and one for disaggregated
+            queried_instances = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.id)
+                .all()
+            )
+            self.assertEqual(len(queried_instances), 2)
+
+            # The aggregated instance should have one context
+            contexts = queried_instances[0].contexts
+            self.assertEqual(len(contexts), 1)
+            self.assertEqual(contexts[0].key, "ALL_CALLS_OR_CALLS_RESPONDED")
+            self.assertEqual(contexts[0].value, True)
+
     def test_add_population_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             report = self.test_schema_objects.test_report_monthly
@@ -288,6 +316,51 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 disaggregated_cells[1].aggregated_dimension_values, ["DETENTION"]
             )
             self.assertEqual(disaggregated_cells[1].value, 666)
+
+    def test_update_metric_with_new_contexts(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=self.test_schema_objects.reported_calls_for_service_metric,
+            )
+
+            # Add a new context
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
+                    agencies_available_for_response="agency0"
+                ),
+            )
+            queried_instances = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.id)
+                .all()
+            )
+
+            # The aggregated instance should have two contexts
+            contexts = sorted(queried_instances[0].contexts, key=lambda x: x.key)
+            self.assertEqual(len(contexts), 2)
+            self.assertEqual(contexts[0].value, "agency0")
+
+            # Update a context
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
+                    agencies_available_for_response="agency0, agency1"
+                ),
+            )
+            queried_instances = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.id)
+                .all()
+            )
+
+            contexts = sorted(queried_instances[0].contexts, key=lambda x: x.key)
+            self.assertEqual(len(contexts), 2)
+            self.assertEqual(contexts[0].value, "agency0, agency1")
 
     def test_remove_disaggregation_from_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

@@ -321,7 +321,6 @@ class ReportInterface:
                 table_definition_instance_pairs=table_definition_instance_pairs,
             )
 
-            # TODO(#12050) Store ReportedContexts in the methodology column
             reported_contexts = [
                 ReportedContext(key=context.key, value=None)
                 for context in metric_definition.contexts or []
