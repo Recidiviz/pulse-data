@@ -139,6 +139,18 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
         return "global/race_and_ethnicity"
 
 
+class GenderRestricted(DimensionBase, enum.Enum):
+    MALE = enum_strings.gender_male
+    FEMALE = enum_strings.gender_female
+    OTHER = enum_strings.gender_other
+    NON_BINARY = "NON_BINARY"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "global/gender/restricted"
+
+
 @attr.s(frozen=True)
 class Gender(Dimension):
     """

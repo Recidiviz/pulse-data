@@ -24,7 +24,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     SheriffBudgetType,
 )
 from recidiviz.justice_counts.dimensions.person import (
-    Gender,
+    GenderRestricted,
     RaceAndEthnicity,
     StaffType,
 )
@@ -188,7 +188,9 @@ arrests_by_gender = MetricDefinition(
     description="Measures the number of arrests for each gender.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    aggregated_dimensions=[AggregatedDimension(dimension=Gender, required=True)],
+    aggregated_dimensions=[
+        AggregatedDimension(dimension=GenderRestricted, required=True)
+    ],
 )
 
 officer_use_of_force_incidents = MetricDefinition(
