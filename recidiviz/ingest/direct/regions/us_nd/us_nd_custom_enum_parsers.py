@@ -30,6 +30,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import StateResidencyStatus
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.str_field_utils import parse_datetime
 
@@ -205,3 +206,11 @@ def pfi_from_facility_and_dates(
         )
 
     return POST_JULY_2017_PFI_RAW_TEXT_TO_ENUM_MAP[facility]
+
+
+def parse_residency_status_from_address(
+    raw_text: str,
+) -> StateResidencyStatus:
+    if "HOMELESS" in raw_text.upper():
+        return StateResidencyStatus.HOMELESS
+    return StateResidencyStatus.PERMANENT

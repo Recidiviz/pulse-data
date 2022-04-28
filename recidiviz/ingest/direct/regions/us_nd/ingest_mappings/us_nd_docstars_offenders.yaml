@@ -1,34 +1,26 @@
-key_mappings:
-  SID: state_person.state_person_id
-  LAST_NAME: state_person.surname
-  FIRST: state_person.given_names
-  MIDDLE: state_person.middle_names
-  ADDRESS: state_person.current_address
-  DOB: state_person.birthdate
-  SEX: state_person.gender
-  HOMELESS: state_person.residency_status
-
-child_key_mappings:
-  RACE: state_person_race.race
-  SORAC_SCORE: state_assessment.assessment_level
-  ITAGROOT_ID: state_person_external_id.state_person_external_id_id
-  SEXOFF: state_supervision_case_type_entry.case_type
-
-primary_key:
-  SID: state_person.state_person_id
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - SID
+  - ITAGROOT_ID
+  - FIRST
+  - MIDDLE
+  - LAST_NAME
+  - ADDRESS
+  - CITY
+  - STATE
+  - ZIP
+  - DOB
+  - SEX
+  - RACE
+  - AGENT
+  - SEXOFF
   - SUP_LVL             # Unused, for now.
   - SUPER_OVERRIDE      # Unused, for now.
-
-  - AGENT                 # Handled manually in the controller
   - PREVIOUS_AGENT
   - RECORD_STATUS         # No apparent use for these at the moment
   - LAST_UPDATE           # No apparent use for these at the moment
   - ALIASFLAG             # More detailed alias data in the Alias file
-  - CITY                  # Manually joined with address in us_nd_scraper
-  - STATE                 # Manually joined with address in us_nd_scraper
-  - ZIP                   # Manually joined with address in us_nd_scraper
   - PHONE2                # Not storing phone numbers in our schema
   - ADDRESS2              # Not storing multiple addresses in our schema
   - CITY2                 # Not storing multiple addresses in our schema
@@ -66,7 +58,151 @@ keys_to_ignore:
   - RECORDCRDATE          # No apparent use for these at the moment
   - LAST_HOME_VISIT
   - LAST_FACE_TO_FACE
-  - COUNTY_RESIDENCE      # TODO(#2227) Either append to address string or create dedicated field on state_person
+  # TODO(#2227) Either append to address string or create dedicated field on state_person
+  - COUNTY_RESIDENCE
   - COMPLETION_IND
   - EARLY_TERMINATION_DATE
   - EARLY_TERMINATION_ACKNOWLEDGED
+  - HOMELESS
+  - SORAC_SCORE
+unused_columns:
+  - SUP_LVL             # Unused, for now.
+  - SUPER_OVERRIDE      # Unused, for now.
+  - PREVIOUS_AGENT
+  - RECORD_STATUS         # No apparent use for these at the moment
+  - LAST_UPDATE           # No apparent use for these at the moment
+  - ALIASFLAG             # More detailed alias data in the Alias file
+  - PHONE2                # Not storing phone numbers in our schema
+  - ADDRESS2              # Not storing multiple addresses in our schema
+  - CITY2                 # Not storing multiple addresses in our schema
+  - STATE2                # Not storing multiple addresses in our schema
+  - ZIP2                  # Not storing multiple addresses in our schema
+  - MAILING_ADDRESS2      # Not storing multiple addresses in our schema
+  - PHYSICAL_ADDRESS2     # Not storing multiple addresses in our schema
+  - SITEID                # Unused, we pull this from the officer instead
+  - ABSDATE               # No longer in use within source
+  - ABSCONDER
+  - GOODTIMEDATE
+  - C_MARITAL
+  - D_DEP
+  - E_LIV_ARR
+  - F_VETERAN
+  - G_INCOME
+  - H_EMPLOY
+  - I_JOB_CL
+  - J_LAST_GR
+  - K_PUB_ASST
+  - HEIGHT                # Not storing physical characteristics in our schema
+  - WEIGHT                # Not storing physical characteristics in our schema
+  - INACTIVEDATE          # No longer in use within source
+  - LSITOTAL              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT1              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT2              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT3              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT4              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT5              # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT6              # We receive detailed LSIR info from LSI Chronology
+  - ACTIVEREVOCATION_IND
+  - CCCFLAG
+  - RecDate               # No apparent use for these at the moment
+  - CREATED_BY            # No apparent use for these at the moment
+  - RECORDCRDATE          # No apparent use for these at the moment
+  - LAST_HOME_VISIT
+  - LAST_FACE_TO_FACE
+  # TODO(#2227) Either append to address string or create dedicated field on state_person
+  - COUNTY_RESIDENCE
+  - COMPLETION_IND
+  - EARLY_TERMINATION_DATE
+  - EARLY_TERMINATION_ACKNOWLEDGED
+  - HOMELESS
+  - SORAC_SCORE
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+      - $conditional:
+          - $if:
+              $not_null: ITAGROOT_ID
+            $then:
+              StatePersonExternalId:
+                  external_id: ITAGROOT_ID
+                  id_type: $literal("US_ND_ELITE")
+    full_name:
+      $person_name:
+        $given_names: FIRST
+        $middle_names: MIDDLE
+        $surname: LAST_NAME
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: FIRST
+              $middle_names: MIDDLE
+              $surname: LAST_NAME
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+    current_address:
+      $physical_address:
+        $address_1: ADDRESS
+        $city: CITY
+        $state: STATE
+        $zip: ZIP
+    birthdate: DOB
+    gender:
+      $enum_mapping:
+        $raw_text: SEX
+        $mappings:
+          StateGender.MALE: "1"
+          StateGender.FEMALE: "2"
+    residency_status:
+      $enum_mapping:
+        $raw_text: ADDRESS
+        $custom_parser: us_nd_custom_enum_parsers.parse_residency_status_from_address
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: RACE
+              $mappings:
+                StateRace.WHITE: "1"
+                StateRace.BLACK: "2"
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "3"
+                StateRace.ASIAN: "4"
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "6"
+              $ignore:
+                - "5"  # Hispanic
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: RACE
+              $mappings:
+                StateEthnicity.HISPANIC: "5"
+              $ignore:
+                # These are race values - ignore when mapping to ethnicity.
+                - "1"
+                - "2"
+                - "3"
+                - "4"
+                - "6"
+    supervising_officer:
+      $conditional:
+        - $if:
+            $not_null: AGENT
+          $then:
+            StateAgent:
+              external_id: AGENT
+              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+    supervision_periods:
+      - StateSupervisionPeriod:
+          case_type_entries:
+            - StateSupervisionCaseTypeEntry:
+                external_id: SID
+                case_type:
+                  $enum_mapping:
+                    $raw_text: SEXOFF
+                    $mappings:
+                      StateSupervisionCaseType.GENERAL: "0"
+                      StateSupervisionCaseType.SEX_OFFENSE: "-1"
+

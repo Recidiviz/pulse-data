@@ -31,14 +31,13 @@ from recidiviz.common.constants.state.standard_enum_overrides import (
     legacy_mappings_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
-from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
 )
-from recidiviz.common.constants.state.state_person import StateGender, StateRace
+from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -142,13 +141,8 @@ def generate_enum_overrides() -> EnumOverrides:
     distinct columns in the source data.
     """
     overrides: Dict[Enum, List[str]] = {
-        StateGender.FEMALE: ["2"],
-        StateGender.MALE: ["1"],
-        StateRace.WHITE: ["1"],
-        StateRace.BLACK: ["2"],
-        StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: ["3", "NAT"],
-        StateRace.ASIAN: ["4"],
-        StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["6", "HAW"],
+        StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: ["NAT"],
+        StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["HAW"],
         StateRace.OTHER: ["MUL"],
         StatePersonAliasType.AFFILIATION_NAME: ["GNG"],
         StatePersonAliasType.ALIAS: ["A", "O"],
@@ -232,8 +226,6 @@ def generate_enum_overrides() -> EnumOverrides:
             "Pending Coordinator",
         ],
         StateProgramAssignmentParticipationStatus.REFUSED: ["Refused"],
-        StateSupervisionCaseType.GENERAL: ["0"],
-        StateSupervisionCaseType.SEX_OFFENSE: ["-1"],
         StateAssessmentLevel.EXTERNAL_UNKNOWN: ["NOT APPLICABLE", "UNDETERMINED"],
         StateSupervisionContactReason.GENERAL_CONTACT: ["SUPERVISION"],
     }
