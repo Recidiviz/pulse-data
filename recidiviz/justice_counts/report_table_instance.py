@@ -60,16 +60,19 @@ class ReportTableInstanceInterface:
         if not aggregated_dimension:
             # If aggregated_dimension is None, we are currently creating
             # the ReportTableInstance corresponding to the aggregate metric value.
-            cells = [
-                update_existing_or_create(
-                    schema.Cell(
-                        value=report_metric.value,
-                        aggregated_dimension_values=[],
-                        report_table_instance=table_instance,
-                    ),
-                    session,
-                )
-            ]
+            if report_metric.value is not None:
+                cells = [
+                    update_existing_or_create(
+                        schema.Cell(
+                            value=report_metric.value,
+                            aggregated_dimension_values=[],
+                            report_table_instance=table_instance,
+                        ),
+                        session,
+                    )
+                ]
+            else:
+                cells = []
 
             # Right now we only support per-metric contexts, so we store all
             # contexts on the ReportTableInstance that corresponds to the
@@ -99,6 +102,7 @@ class ReportTableInstanceInterface:
                     session,
                 )
                 for key, value in aggregated_dimension.dimension_to_value.items()
+                if value is not None
             ]
             # TODO(#12433) Support per-dimension contexts
             contexts = []
