@@ -50,7 +50,7 @@ UNION ALL
 SELECT
   'US_TN' as region_code,
   OffenderID as person_external_id,
-  Date as date_of_stay,
+  DATE(Date) as date_of_stay,
   Site as facility
 FROM `{project_id}.{us_tn_raw_data_up_to_date_dateset}.TDPOP_latest`
 UNION ALL
