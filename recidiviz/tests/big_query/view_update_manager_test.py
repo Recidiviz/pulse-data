@@ -1083,7 +1083,7 @@ class TestUpdateAllManagedViews(unittest.TestCase):
         """Tests the /view_update/update_all_managed_views endpoint."""
 
         with self.app.test_request_context():
-            response = self.client.get(
+            response = self.client.post(
                 self.update_all_managed_views_url,
                 headers=self.headers,
             )

@@ -78,7 +78,7 @@ view_update_manager_blueprint = Blueprint("view_update", __name__)
 # TODO(#11437): We are aware that this endpoint will regularly time out, since updating
 #  all views takes a long time. This endpoint is a **temporary** solution,
 #  and will be deleted once we put the BigQuery view update into the DAG.
-@view_update_manager_blueprint.route("/update_all_managed_views")
+@view_update_manager_blueprint.route("/update_all_managed_views", methods=["POST"])
 @requires_gae_auth
 def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     """API endpoint to update all managed views."""
