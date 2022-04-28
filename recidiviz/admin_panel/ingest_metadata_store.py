@@ -23,6 +23,7 @@ from typing import Dict, List, Union
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
 )
@@ -32,6 +33,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
+from recidiviz.utils.types import assert_type
 
 
 class IngestDataFreshnessStore(AdminPanelStore):
@@ -78,7 +80,8 @@ class IngestDataFreshnessStore(AdminPanelStore):
                 continue
             struct = json.loads(line)
 
-            state_code = struct["state_code"]
+            state_code_str = assert_type(struct["state_code"], str)
+            state_code = StateCode(state_code_str.upper())
 
             # Check PRIMARY for bq materialization since that is where BQ is exported to.
             if ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
@@ -90,9 +93,9 @@ class IngestDataFreshnessStore(AdminPanelStore):
 
             latest_upper_bounds.append(
                 {
-                    "state": state_code,
+                    "state": state_code_str,
                     "date": struct.get("processed_date"),
-                    "ingestPaused": state_code in regions_paused,
+                    "ingestPaused": state_code_str in regions_paused,
                 }
             )
         self.data_freshness_results = latest_upper_bounds
