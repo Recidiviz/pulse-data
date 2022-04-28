@@ -86,7 +86,8 @@ residents = MetricDefinition(
     ],
     filtered_dimensions=[FilteredDimension(dimension=PopulationType.RESIDENTS)],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True)
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=GenderRestricted, required=True),
     ],
 )
 
