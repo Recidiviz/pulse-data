@@ -108,7 +108,7 @@ resource "google_bigquery_table" "validation_results" {
         "mode": "NULLABLE"
     },
     {
-        "name": "error_log",
+        "name": "exception_log",
         "type": "STRING",
         "mode": "NULLABLE"
     },
