@@ -208,6 +208,7 @@ def test_get_all_table_classes() -> None:
         "cell",
         "user_account",
         "agency_user_account_association",
+        "context",
     ]
     state_table_names = [
         "state_agent",

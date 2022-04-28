@@ -52,13 +52,14 @@ class ReportTableInstanceInterface:
                 report_table_definition=report_table_definition,
                 time_window_start=report.date_range_start,
                 time_window_end=report.date_range_end,
-                # TODO(#12050): Populate `methodology` column with `ReportedContexts`
                 methodology=None,
             ),
             session,
         )
 
         if not aggregated_dimension:
+            # If aggregated_dimension is None, we are currently creating
+            # the ReportTableInstance corresponding to the aggregate metric value.
             cells = [
                 update_existing_or_create(
                     schema.Cell(
@@ -70,7 +71,24 @@ class ReportTableInstanceInterface:
                 )
             ]
 
+            # Right now we only support per-metric contexts, so we store all
+            # contexts on the ReportTableInstance that corresponds to the
+            # aggregate metric value.
+            contexts = [
+                update_existing_or_create(
+                    schema.Context(
+                        key=context.key.value,
+                        value=context.value,
+                        report_table_instance=table_instance,
+                    ),
+                    session,
+                )
+                for context in report_metric.contexts or []
+                if context.value is not None
+            ]
         else:
+            # If aggregated_dimension is None, we are currently creating
+            # the ReportTableInstance corresponding to this dimension.
             cells = [
                 update_existing_or_create(
                     schema.Cell(
@@ -82,7 +100,12 @@ class ReportTableInstanceInterface:
                 )
                 for key, value in aggregated_dimension.dimension_to_value.items()
             ]
+            # TODO(#12433) Support per-dimension contexts
+            contexts = []
+
         table_instance.cells = cells
+        table_instance.contexts = contexts
+
         return table_instance
 
     @staticmethod

@@ -424,6 +424,13 @@ class ReportTableInstance(JusticeCountsBase):
         cascade="all, delete",
         passive_deletes=True,
     )
+    contexts = relationship(
+        "Context",
+        back_populates="report_table_instance",
+        lazy="selectin",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
 
 
 class Cell(JusticeCountsBase):
@@ -449,6 +456,32 @@ class Cell(JusticeCountsBase):
     )
 
     report_table_instance = relationship(ReportTableInstance, back_populates="cells")
+
+
+class Context(JusticeCountsBase):
+    """Additional context provided about data points."""
+
+    __tablename__ = "context"
+
+    id = Column(Integer, autoincrement=True)
+
+    report_table_instance_id = Column(Integer, nullable=False)
+    # Uniquely identifies the type of context provided. Should be an instance of ContextKey.
+    key = Column(String(255), nullable=False)
+    # What the agency reported for this piece of context.
+    value = Column(String(255), nullable=False)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(report_table_instance_id, key),
+            ForeignKeyConstraint(
+                [report_table_instance_id], [ReportTableInstance.id], ondelete="CASCADE"
+            ),
+        ]
+    )
+
+    report_table_instance = relationship(ReportTableInstance, back_populates="contexts")
 
 
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same
