@@ -133,6 +133,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # We should have two definitions, one for the aggregated Law Enforcement budget
@@ -198,6 +199,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     patrol_value=None,
                     include_contexts=False,
                 ),
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # Two ReportTableInstances should be saved, but both should be empty.
@@ -222,6 +224,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     detention_value=50,
                     patrol_value=None,
                 ),
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # Two ReportTableInstances should be saved, but the first should
@@ -243,6 +246,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # We should have two instances, one for the aggregated and one for disaggregated
@@ -266,6 +270,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=report,
                 report_metric=self.test_schema_objects.reported_residents_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # We should have two definitions, one for aggregated (total) residents
@@ -308,6 +313,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # This should be a no-op, because the metric definition is the same
@@ -317,6 +323,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             queried_definitions = session.query(schema.ReportTableDefinition).all()
@@ -331,6 +338,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # This should result in an update to the existing database objects
@@ -343,6 +351,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             queried_instances = (
@@ -375,6 +384,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # Add a new context
@@ -384,6 +394,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
                     agencies_available_for_response="agency0"
                 ),
+                user_account=self.test_schema_objects.test_user_A,
             )
             queried_instances = (
                 session.query(schema.ReportTableInstance)
@@ -403,6 +414,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
                     agencies_available_for_response="agency0, agency1"
                 ),
+                user_account=self.test_schema_objects.test_user_A,
             )
             queried_instances = (
                 session.query(schema.ReportTableInstance)
@@ -420,6 +432,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # User decides they don't want to report the disaggregation
@@ -430,6 +443,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
 
             # Should only have one instance and cell in the db
@@ -474,6 +488,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 report=report,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
+                user_account=self.test_schema_objects.test_user_A,
             )
             metrics = sorted(
                 ReportInterface.get_metrics_by_report_id(
@@ -507,3 +522,63 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 calls_for_service.aggregated_dimensions,
                 self.test_schema_objects.reported_calls_for_service_metric.aggregated_dimensions,
             )
+
+    def test_cell_histories(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+
+            # First update
+            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+                value=1000,
+                detention_value=600,
+                patrol_value=400,
+            )
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=report_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+
+            # Second update
+            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+                value=100,
+                detention_value=60,
+                patrol_value=40,
+            )
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=report_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+
+            cell_histories = (
+                session.query(schema.CellHistory)
+                .order_by(schema.CellHistory.cell_id, schema.CellHistory.timestamp)
+                .all()
+            )
+            self.assertEqual(len(cell_histories), 6)
+
+            # Aggregated value goes from 100000 -> 1000 -> 100
+            self.assertEqual(cell_histories[0].old_value, 100000)
+            self.assertEqual(cell_histories[0].new_value, 1000)
+            self.assertEqual(cell_histories[1].old_value, 1000)
+            self.assertEqual(cell_histories[1].new_value, 100)
+
+            # First disaggregated value goes from 66666 -> 600 -> 60
+            self.assertEqual(cell_histories[2].old_value, 66666)
+            self.assertEqual(cell_histories[2].new_value, 600)
+            self.assertEqual(cell_histories[3].old_value, 600)
+            self.assertEqual(cell_histories[3].new_value, 60)
+
+            # Second disaggregated value goes from 33334 -> 400 -> 40
+            self.assertEqual(cell_histories[4].old_value, 33334)
+            self.assertEqual(cell_histories[4].new_value, 400)
+            self.assertEqual(cell_histories[5].old_value, 400)
+            self.assertEqual(cell_histories[5].new_value, 40)

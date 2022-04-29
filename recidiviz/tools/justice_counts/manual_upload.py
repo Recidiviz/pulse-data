@@ -1474,10 +1474,11 @@ def _convert_entities(
     session: Session, ingested_report: Report, report_metadata: Metadata
 ) -> None:
     """Convert the ingested report into SQLAlchemy models"""
+    source, _ = update_existing_or_create(
+        schema.Source(name=ingested_report.source_name), session
+    )
     report = schema.Report(
-        source=update_existing_or_create(
-            schema.Source(name=ingested_report.source_name), session
-        ),
+        source=source,
         type=ingested_report.report_type,
         instance=ingested_report.report_instance,
         publish_date=ingested_report.publish_date,
@@ -1493,7 +1494,7 @@ def _convert_entities(
     delete_existing_and_create(session, report, schema.Report)
 
     for table in ingested_report.tables:
-        table_definition = update_existing_or_create(
+        table_definition, _ = update_existing_or_create(
             schema.ReportTableDefinition(
                 system=table.system,
                 metric_type=table.metric.get_metric_type(),
