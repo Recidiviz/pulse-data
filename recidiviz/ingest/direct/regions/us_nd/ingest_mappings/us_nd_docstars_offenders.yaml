@@ -143,11 +143,15 @@ output:
               $surname: LAST_NAME
           alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
     current_address:
-      $physical_address:
-        $address_1: ADDRESS
-        $city: CITY
-        $state: STATE
-        $zip: ZIP
+      $conditional:
+        - $if:
+            $not_null: ADDRESS
+          $then:
+            $physical_address:
+              $address_1: ADDRESS
+              $city: CITY
+              $state: STATE
+              $zip: ZIP
     birthdate: DOB
     gender:
       $enum_mapping:
@@ -205,4 +209,3 @@ output:
                     $mappings:
                       StateSupervisionCaseType.GENERAL: "0"
                       StateSupervisionCaseType.SEX_OFFENSE: "-1"
-
