@@ -23,15 +23,19 @@ columns:
     description: |-
       The date on which a status of a particular issue changes.
   - name: IncidentType
+    is_pii: True
     description: |-
       An abbreviation for the possible types of incidents that occur at institutions.
   - name: Location
+    is_pii: True
     description: |-
       The location at which an incident occured.
   - name: WeaponsUsed
+    is_pii: True
     description: |-
       Text about weapons involved in an incident requiring an inmate disciplinary or in an offense committed by a person.
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: ViolationLevel
@@ -41,12 +45,14 @@ columns:
     description: |-
       The dollar amount of damage associated with a disciplinary incident.
   - name: PreparedByStaffID
+    is_pii: True
     description: |-
       This field represents the staff id who prepared the text.
   - name: InjuryLevel
     description: |-
       Indicator on an Incident to show the level of injury sustained.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

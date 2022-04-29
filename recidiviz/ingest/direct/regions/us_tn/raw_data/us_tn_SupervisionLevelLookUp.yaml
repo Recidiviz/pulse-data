@@ -12,6 +12,7 @@ columns:
     description: |-
       TODO(#11323): fill out description once received.
   - name: SupervisionLevelCode
+    is_pii: True
     description: |-
       TODO(#11323): fill out description once received.
   - name: StartDate

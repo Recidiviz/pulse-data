@@ -8,15 +8,18 @@ primary_key_cols:
   - ContactNoteType
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ContactNoteDateTime
     description: |-
       This is the date a contact note is recorded for a person. This table contains one occurrence for each contact note tracked by the system for each person.  [Combination of DB2 columns DTE_CNTCT_NOTE and TME_CNTCT_NOTE]
   - name: ContactNoteType
+    is_pii: True
     description: |-
       A code for the type of contact made with or on behalf of a person. For a full list of contact code descriptions, visit go/us-tn-contact-codes
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDateTime

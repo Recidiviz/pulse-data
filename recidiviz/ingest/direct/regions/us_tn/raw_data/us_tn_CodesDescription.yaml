@@ -10,8 +10,10 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular table.
   - name: Code
+    is_pii: True
     description: |-
       The code present in a particular table.
   - name: Decode
+    is_pii: True
     description: |-
       The value associated with a particular code.

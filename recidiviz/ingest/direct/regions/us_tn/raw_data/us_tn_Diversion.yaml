@@ -10,6 +10,7 @@ primary_key_cols:
   - CountNumber
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
@@ -19,6 +20,7 @@ columns:
     description: |-
       The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
   - name: CaseNumber
+    is_pii: True
     description: |-
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
@@ -60,6 +62,7 @@ columns:
     description: |-
       The date that the judge closed a person's diversion.
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastModificationDate
@@ -67,6 +70,7 @@ columns:
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

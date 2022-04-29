@@ -6,6 +6,7 @@ primary_key_cols:
   - FeePriceSheetSAK
 columns:
   - name: FeePriceSheetSAK
+    is_pii: True
     description: |-
       TODO(#11323): fill out description once received.
   - name: FeeTypeID

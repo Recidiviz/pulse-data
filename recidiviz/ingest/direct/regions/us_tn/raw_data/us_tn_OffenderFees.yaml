@@ -6,6 +6,7 @@ primary_key_cols:
   - OffenderFeesSAK
 columns:
   - name: OffenderFeesSAK
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: FeeItemID
@@ -35,5 +36,6 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.

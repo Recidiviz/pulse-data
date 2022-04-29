@@ -12,6 +12,7 @@ primary_key_cols:
   - CountNumber
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrderDate
@@ -34,6 +35,7 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: PostedByStaffID
+    is_pii: True
     description: |-
       The staff id of the individual who initially posted information for a person.
   - name: PostedDate
@@ -41,9 +43,11 @@ columns:
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateStaffID
+    is_pii: True
     description: |-
       Staff ID of the last person to update a row on a table.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

@@ -9,6 +9,7 @@ primary_key_cols:
   - StaffID
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: HearingDate
@@ -75,6 +76,7 @@ columns:
       - value: TS
         description: TIME SETTING
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: AlternateReleaseDate
@@ -1068,6 +1070,7 @@ columns:
       - value: Y
         description: "YES - Board Members agreed on final decision"
   - name: Comments
+    is_pii: True
     description: |-
       The freeform text for comments.
   - name: FutureActionType
@@ -1077,12 +1080,15 @@ columns:
     description: |-
       The date on which some future action will be taken.
   - name: FutureActionReason
+    is_pii: True
     description: |-
       Free form text describing the reasons for a future action to occur.
   - name: FutureActionReason2
+    is_pii: True
     description: |-
       Free form text describing the reasons for a future action to occur.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

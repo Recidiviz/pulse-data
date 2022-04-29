@@ -7,6 +7,7 @@ primary_key_cols:
   - ContactNoteDateTime
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ContactNoteDateTime
@@ -20,17 +21,20 @@ columns:
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: PostedByStaffID
+    is_pii: True
     description: |-
       The staff ID of the person who posted the comment associated with a contact.
   - name: PostedDate
     description: |-
       The date on which a person posted the comment associated with a contact.
   - name: Comment
+    is_pii: True
     description: |-
       The freeform text for comments.
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

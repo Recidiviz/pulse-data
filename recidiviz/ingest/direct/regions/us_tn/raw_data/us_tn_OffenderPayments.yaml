@@ -6,9 +6,11 @@ primary_key_cols:
   - OffenderPaymentsSAK
 columns:
   - name: OffenderPaymentsSAK
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: PaymentNumber
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: PaymentDate
@@ -19,6 +21,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: UnAppliedAmount
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: AccountSAK
@@ -38,6 +41,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: VoidedDate
@@ -48,6 +52,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: VoidedByUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: Comments

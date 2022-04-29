@@ -7,12 +7,15 @@ primary_key_cols:
   - OtherID
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OtherID
+    is_pii: True
     description: |-
       This is an identifier assigned to a particular person in the TOMIS system, it is either a deleted duplicate TOMIS ID or an OBSCIS ID.
   - name: AbbreviatedName
+    is_pii: True
     description: |-
       The name of a person. This is the person last name first name, and middle initial strung together, Shortened to fit in 30 spaces.
   - name: Race
@@ -26,6 +29,7 @@ columns:
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: BirthDate
+    is_pii: True
     is_datetime: True
     description: |-
       The date on which a person was born.
@@ -34,9 +38,11 @@ columns:
     description: |-
       The date a person  is deleted.
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

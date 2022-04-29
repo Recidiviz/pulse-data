@@ -6,6 +6,7 @@ primary_key_cols:
   - OffenderID
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: AssignedSiteID
@@ -91,6 +92,7 @@ columns:
     description: |-
       The date a movement was made to cause the visitor person relationship data to be spaced out.
   - name: PostedByStaffID
+    is_pii: True
     description: |-
       The Staff identifier which posted the the row on the table.
   - name: PostedDate
@@ -98,6 +100,7 @@ columns:
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

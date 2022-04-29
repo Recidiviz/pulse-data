@@ -10,6 +10,7 @@ primary_key_cols:
   - CountNumber
 columns:
   - name: Offender
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: CountyofConviction
@@ -29,6 +30,7 @@ columns:
     description: |-
       The date on which a pardon or commutation is imposed by the governor.
   - name: GovernorName
+    is_pii: True
     description: |-
       The name of the governor responsible for the pardon or commutation of a sentence.
   - name: PardonCommutationType
@@ -66,6 +68,7 @@ columns:
     description: |-
       The minimum number of years for a person's sentence.
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastModifiedDate
@@ -73,6 +76,7 @@ columns:
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

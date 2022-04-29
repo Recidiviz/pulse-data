@@ -6,33 +6,41 @@ primary_key_cols:
   - PersonID
 columns:
   - name: PersonID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
   - name: AddressLine1
+    is_pii: True
     description: |-
       The first street address line.
   - name: AddressLine2
+    is_pii: True
     description: |-
       The second street address line.
   - name: AddressCity
+    is_pii: True
     description: |-
       The city for an address.
   - name: AddressState
     description: |-
       The state for an address.
   - name: AddressZip
+    is_pii: True
     description: |-
       The zip code for an address.
   - name: PhoneNumber
+    is_pii: True
     description: |-
       The number at which someone can be reached.
   - name: PhoneNumberType
     description: |-
       This indicates whether a phone number is published or unpublished.
   - name: AlternatePhoneNumber
+    is_pii: True
     description: |-
       The alternate phone number at which someone can be reached.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

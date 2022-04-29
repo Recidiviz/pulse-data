@@ -9,5 +9,6 @@ columns:
     description: |-
       TODO(#11323): fill out description once received.
   - name: SanctionLevel
+    is_pii: True
     description: |-
       TODO(#11323): fill out description once received.

@@ -40,6 +40,7 @@ columns:
     description: |-
       This is a code to show if a job or a class earns sentence credits.
   - name: JobTitle
+    is_pii: True
     description: |-
       The first name of the offender's job.
   - name: TreatmentProgramFlag
@@ -52,6 +53,7 @@ columns:
     description: |-
       The maximum minimum number of months an offender should be in a program.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

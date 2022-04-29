@@ -7,45 +7,57 @@ primary_key_cols:
   - ParolePlanDate
 columns:
   - name: AddressCity
+    is_pii: True
     description: |-
       The city for an address.
   - name: AddressDeny
+    is_pii: True
     description: |-
       Free form text regarding the denial of a person's new location.
   - name: AddressLine1
+    is_pii: True
     description: |-
       The first street address line.
   - name: AddressLine2
+    is_pii: True
     description: |-
       The second street address line.
   - name: AddressState
     description: |-
       The state for an address.
   - name: AddressZip
+    is_pii: True
     description: |-
       The zip code for an address.
   - name: EmployerAddressCity
+    is_pii: True
     description: |-
       The city for an address of an employer.
   - name: EmployerAddressLine1
+    is_pii: True
     description: |-
       The first line of the employer address. Alias of address line [D710.TEADE001].
   - name: EmployerAddressLine2
+    is_pii: True
     description: |-
       The second line of the employer address. Alias of address line [D710.TEADE002].
   - name: EmployerAddressState
     description: |-
       The state of the employer address.
   - name: EmployerAddressZip
+    is_pii: True
     description: |-
       The zip code of an employer's address.
   - name: EmployerDenyReason
+    is_pii: True
     description: |-
       Free form text regarding the denial of employment to a person  by the employer.
   - name: EmployerName
+    is_pii: True
     description: |-
       The last name, first name, and middle initial of an employer. It is 25 characters instead of 40.
   - name: EmployerPhoneNumber
+    is_pii: True
     description: |-
       The number at which someone can be reached.
   - name: EmployerVerified
@@ -57,15 +69,18 @@ columns:
       - value: D
         description: "TODO(#7424): Update with definition."
   - name: JobTitle
+    is_pii: True
     description: |-
       The first name of the person's job.
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ParolePlanDate
@@ -109,6 +124,7 @@ columns:
       - value: WK
         description: "TODO(#7424): Update with definition."
   - name: PhoneNumber
+    is_pii: True
     description: |-
       The number at which someone can be reached.
   - name: ProbationPlanFlag
@@ -305,15 +321,19 @@ columns:
       - value: XW
         description: "TODO(#7424): Update with definition."
   - name: RelationName1
+    is_pii: True
     description: |-
       The name of a person related to or involved with a person  on a release plan.
   - name: RelationName2
+    is_pii: True
     description: |-
       The name of a person related to or involved with a person  on a release plan.
   - name: ReleasedFromAgency
+    is_pii: True
     description: |-
       The name of an agency where a person  will reside after release on parole.
   - name: ReleasedFromAgency2
+    is_pii: True
     description: |-
       The name of an agency where a person  will reside after release on parole.
   - name: ReleasedRelation1
@@ -477,27 +497,34 @@ columns:
       - value: XW
         description: "TODO(#7424): Update with definition."
   - name: ReleasedRelationName1
+    is_pii: True
     description: |-
       The name of a person related to or involved with a person  on a release plan.
   - name: ReleasedRelationName2
+    is_pii: True
     description: |-
       The name of a person related to or involved with a person  on a release plan.
   - name: ReleasedToAddressCity
+    is_pii: True
     description: |-
       The proposed city for an address.
   - name: ReleasedToAddressLine1
+    is_pii: True
     description: |-
       The first street address line of an offender's proposed address.
   - name: ReleasedToAddressLine2
+    is_pii: True
     description: |-
       The second street address line of an offender's proposed address.
   - name: ReleasedToAddressState
     description: |-
       The state for an offender's proposed address on a release plan.
   - name: ReleasedToAddressZip
+    is_pii: True
     description: |-
       The zip code for an offender's proposed address on a release plan.
   - name: ReleasedToPhoneNumber
+    is_pii: True
     description: |-
       The number at which a person  can be reached on his release plan.
   - name: ResidenceVerified
@@ -517,6 +544,7 @@ columns:
       - value: D
         description: "TODO(#7424): Update with definition."
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: StartDate
@@ -524,5 +552,6 @@ columns:
     description: |-
       The date on which an inmate begins a job, class or program.
   - name: SupervisorName
+    is_pii: True
     description: |-
       The person who supervises a person  on his employment while on parole. Alias of job supervisor [D710.TENMJ003].

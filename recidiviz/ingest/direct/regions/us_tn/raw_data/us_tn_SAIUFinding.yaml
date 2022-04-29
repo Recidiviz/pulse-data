@@ -7,6 +7,7 @@ primary_key_cols:
   - PostedDate
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: PostedDate
@@ -14,6 +15,7 @@ columns:
     description: |-
       This is the date that data is actually posted to the system.
   - name: DisabilityDescription
+    is_pii: True
     description: |-
       A description of an inmate's disability or condition which would limit his ability to perform certain tasks or skills.
   - name: SAIUVolunteerFlag
@@ -41,9 +43,11 @@ columns:
       - value: Y
         description: "YES - Considered eligible for 7IU"
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
