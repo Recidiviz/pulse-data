@@ -77,6 +77,8 @@ class AggregatedDimension:
     required: bool
     # Whether the disaggregated values should sum to the total metric value
     should_sum_to_total: bool = False
+    # Text displayed above aggregated dimension breakdowns
+    helper_text: Optional[str] = None
 
     def dimension_identifier(self) -> str:
         return self.dimension.dimension_identifier()

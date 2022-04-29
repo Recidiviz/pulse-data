@@ -17,6 +17,7 @@
 """Contains base Dimension classes."""
 
 import enum
+import re
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Optional, Type, TypeVar
 
@@ -69,6 +70,25 @@ class DimensionBase:
         E.g. 'FEMALE' is a potential value for an instance of the 'global/raw/gender' dimension.
         """
         return self.to_enum().value
+
+    @property
+    def reporting_note(self) -> str:
+        """Reporting note below dimension field in control panel.
+
+        E.g. "PATROL" value of'SheriffBudgetType' should have a reporting_note of "Sheriff Budget: Patrol".
+        """
+        # Get first half of reporting note from class. Gender -> Gender, OffenseType -> Offense
+        class_name = self.__class__.__name__
+        class_name = re.sub(
+            r"([A-Z][a-z]+)", r"\1 ", class_name
+        )  # Add spaces between each word of class name. StaffBudgetType -> Staff Budget Type
+        type_index = class_name.find("Type")
+
+        class_name = class_name[
+            0 : type_index - 1 if type_index > 0 else type_index
+        ]  # Remove 'Type' from reporting class name Staff Budget Type -> Staff Budget
+
+        return f"{class_name}: {self.dimension_value.title()}"
 
 
 class Dimension(DimensionBase):
