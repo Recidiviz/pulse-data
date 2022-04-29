@@ -18,7 +18,11 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -71,13 +75,13 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 level_1_supervision_location_name,
         FROM (
             SELECT DISTINCT CE_PLN AS level_1_supervision_location_external_id
-            FROM `{project_id}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK034_latest`
+            FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBAKRDTA_TAK034_latest`
         )
         LEFT OUTER JOIN
-            `{project_id}.us_mo_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_district_to_name_latest`
+            `{project_id}.{us_mo_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_district_to_name_latest`
         USING (level_1_supervision_location_external_id)
         LEFT OUTER JOIN
-            `{project_id}.us_mo_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_district_to_region_latest`
+            `{project_id}.{us_mo_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_district_to_region_latest`
         USING (level_1_supervision_location_external_id)
     ),
     nd_location_names AS (
@@ -91,7 +95,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 supervising_district_external_id as level_1_supervision_location_external_id,
                 supervising_district_name as level_1_supervision_location_name,
         FROM
-            `{project_id}.us_nd_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_district_id_to_name_latest`
+            `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_district_id_to_name_latest`
     ),
     pa_location_names AS (
         SELECT 
@@ -102,7 +106,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             level_2_supervision_location_name,
             UPPER(level_1_supervision_location_external_id) AS level_1_supervision_location_external_id,
             level_1_supervision_location_name,
-        FROM `{project_id}.us_pa_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+        FROM `{project_id}.{us_pa_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
     ),
     tn_location_names AS (
         SELECT
@@ -162,6 +166,15 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
+    us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_MO.value
+    ),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_ND.value
+    ),
+    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_PA.value
+    ),
 )
 
 if __name__ == "__main__":

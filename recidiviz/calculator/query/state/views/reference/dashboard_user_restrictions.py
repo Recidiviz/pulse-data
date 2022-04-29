@@ -20,6 +20,10 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -51,7 +55,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             FALSE AS should_see_beta_charts,
             -- US_MO has not yet launched any user restricted pages
             TO_JSON_STRING(NULL) as routes
-        FROM `{project_id}.us_mo_raw_data_up_to_date_views.LANTERN_DA_RA_LIST_latest`
+        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
         WHERE EMAIL IS NOT NULL
         GROUP BY EMAIL
     ),
@@ -221,6 +225,9 @@ DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=DASHBOARD_USER_RESTRICTIONS_VIEW_NAME,
     view_query_template=DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE,
     description=DASHBOARD_USER_RESTRICTIONS_DESCRIPTION,
+    us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_MO.value
+    ),
     columns=[
         "state_code",
         "restricted_user_email",

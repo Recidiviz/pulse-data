@@ -20,6 +20,10 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,7 +44,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = """
         LOCATION_ID AS program_location_id,
         -- In the raw data the region is given as 'N.00' (e.g. '7.00' instead of '7')
         SPLIT(region, ".")[OFFSET(0)] AS region_id
-        FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_REF_PROVIDER_LOCATION_latest`
+        FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_REF_PROVIDER_LOCATION_latest`
      ), participants_with_race_or_ethnicity AS (
       SELECT
         state_code,
@@ -87,6 +91,9 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     ),
     region_dimension=bq_utils.unnest_column("region_id", "region_id"),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_ND.value
+    ),
 )
 
 if __name__ == "__main__":

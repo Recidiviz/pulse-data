@@ -18,6 +18,10 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,7 +48,7 @@ US_TN_SUPERVISION_PLAN_LOGIC_QUERY_TEMPLATE = """
             CASE WHEN SupervisionLevel IN ('4MI', 'MIN', 'Z1A', 'Z1M','ZMI' ) THEN 'MINIMUM' 
                 WHEN SupervisionLevel IN ('4ME','KG2','KN2','MED','QG2','QN2','VG2','VN2','XG2','XMD','XN2','Z2A','Z2M','ZME') THEN 'MEDIUM'
                 END AS SupervisionLevelClean
-            FROM `{project_id}.us_tn_raw_data_up_to_date_views.SupervisionPlan_latest`
+            FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.SupervisionPlan_latest`
             )
 """
 
@@ -53,6 +57,9 @@ US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_TN_SUPERVISION_PLAN_LOGIC_VIEW_NAME,
     description=US_TN_SUPERVISION_PLAN_LOGIC_VIEW_DESCRIPTION,
     view_query_template=US_TN_SUPERVISION_PLAN_LOGIC_QUERY_TEMPLATE,
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_TN.value
+    ),
     should_materialize=True,
 )
 
