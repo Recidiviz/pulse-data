@@ -93,7 +93,7 @@ export {
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
-  getIngestInstanceSummaries,
+  getIngestInstanceSummary,
   getIngestQueuesState,
   importDatabaseFromGCS,
   pauseDirectIngestInstance,

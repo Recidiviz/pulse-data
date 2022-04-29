@@ -33,7 +33,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import {
   exportDatabaseToGCS,
   fetchIngestStateCodes,
-  getIngestInstanceSummaries,
+  getIngestInstanceSummary,
   getIngestQueuesState,
   pauseDirectIngestInstance,
   startIngestRun,
@@ -130,8 +130,18 @@ const IngestOperationsView = (): JSX.Element => {
   }
 
   async function fetchIngestInstanceSummaries(regionCodeInput: string) {
-    const response = await getIngestInstanceSummaries(regionCodeInput);
-    const result: IngestInstanceSummary[] = await response.json();
+    const primaryResponse = await getIngestInstanceSummary(
+      regionCodeInput,
+      DirectIngestInstance.PRIMARY
+    );
+    const secondaryResponse = await getIngestInstanceSummary(
+      regionCodeInput,
+      DirectIngestInstance.SECONDARY
+    );
+    const result: IngestInstanceSummary[] = [
+      await primaryResponse.json(),
+      await secondaryResponse.json(),
+    ];
     setIngestInstanceSummaries(result);
     setIngestInstanceSummariesLoading(false);
   }
@@ -164,14 +174,14 @@ const IngestOperationsView = (): JSX.Element => {
         case IngestActions.PauseIngestInstance:
           if (ingestInstance) {
             await pauseDirectIngestInstance(stateCode, ingestInstance);
-            await getIngestInstanceSummaries(stateCode);
+            await fetchIngestInstanceSummaries(stateCode);
             setActionConfirmed(true);
           }
           break;
         case IngestActions.UnpauseIngestInstance:
           if (ingestInstance) {
             await unpauseDirectIngestInstance(stateCode, ingestInstance);
-            await getIngestInstanceSummaries(stateCode);
+            await fetchIngestInstanceSummaries(stateCode);
             setActionConfirmed(true);
           }
           break;

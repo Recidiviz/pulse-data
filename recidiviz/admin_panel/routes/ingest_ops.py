@@ -58,8 +58,8 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
-    move_ingest_view_results_to_backup,
     move_ingest_view_results_between_instances,
+    move_ingest_view_results_to_backup,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -136,17 +136,25 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
         return jsonify(ingest_queue_states), HTTPStatus.OK
 
-    # Get summaries of all ingest instances for state
-    @bp.route("/api/ingest_operations/<state_code_str>/get_ingest_instance_summaries")
+    # Get summary of an ingest instance for a state
+    @bp.route(
+        "/api/ingest_operations/<state_code_str>/get_ingest_instance_summary/<ingest_instance_str>"
+    )
     @requires_gae_auth
-    def _get_ingest_instance_summaries(
-        state_code_str: str,
-    ) -> Tuple[Response, HTTPStatus]:
+    def _get_ingest_instance_summary(
+        state_code_str: str, ingest_instance_str: str
+    ) -> Tuple[Union[str, Response], HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
-        ingest_instance_summaries = (
-            get_ingest_operations_store().get_ingest_instance_summaries(state_code)
+        try:
+            ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+        ingest_instance_summary = (
+            get_ingest_operations_store().get_ingest_instance_summary(
+                state_code, ingest_instance
+            )
         )
-        return jsonify(ingest_instance_summaries), HTTPStatus.OK
+        return jsonify(ingest_instance_summary), HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/export_database_to_gcs", methods=["POST"])
     @requires_gae_auth
