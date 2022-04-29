@@ -61,12 +61,13 @@ export const getIngestQueuesState = async (
   );
 };
 
-// Get ingest instance summaries
-export const getIngestInstanceSummaries = async (
-  regionCode: string
+// Get ingest instance summary
+export const getIngestInstanceSummary = async (
+  regionCode: string,
+  ingestInstance: DirectIngestInstance
 ): Promise<Response> => {
   return fetch(
-    `/admin/api/ingest_operations/${regionCode}/get_ingest_instance_summaries`,
+    `/admin/api/ingest_operations/${regionCode}/get_ingest_instance_summary/${ingestInstance}`,
     {
       headers: {
         "Content-Type": "application/json",

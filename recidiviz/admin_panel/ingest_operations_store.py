@@ -238,10 +238,10 @@ class IngestOperationsStore(AdminPanelStore):
             return "Raw"
         raise ValueError(f"Unexpected file_type [{file_type}]")
 
-    def get_ingest_instance_summaries(
-        self, state_code: StateCode
-    ) -> List[Dict[str, Any]]:
-        """Returns a list of dictionaries containing the following info for a given instance:
+    def get_ingest_instance_summary(
+        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> Dict[str, Any]:
+        """Returns a dictionary containing the following info for the provided instance:
         i.e. {
             instance: the direct ingest instance,
             dbName: database name for this instance,
@@ -264,56 +264,50 @@ class IngestOperationsStore(AdminPanelStore):
         """
         formatted_state_code = state_code.value.lower()
 
-        ingest_instance_summaries: List[Dict[str, Any]] = []
-        for instance in DirectIngestInstance:
-            # Get the ingest bucket path
-            ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
-                region_code=formatted_state_code,
-                system_level=SystemLevel.STATE,
-                ingest_instance=instance,
-                project_id=metadata.project_id(),
+        # Get the ingest bucket path
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+            region_code=formatted_state_code,
+            system_level=SystemLevel.STATE,
+            ingest_instance=ingest_instance,
+            project_id=metadata.project_id(),
+        )
+        # Get an object containing information about the ingest bucket
+        ingest_bucket_metadata = self._get_bucket_metadata(ingest_bucket_path)
+
+        # Get the storage bucket for this instance
+        storage_bucket_path = gcsfs_direct_ingest_storage_directory_path_for_region(
+            region_code=formatted_state_code,
+            system_level=SystemLevel.STATE,
+            ingest_instance=ingest_instance,
+            project_id=metadata.project_id(),
+        )
+
+        # Get the database name corresponding to this instance
+        ingest_db_name = ingest_instance.database_key_for_state(state_code).db_name
+
+        # Get the operations metadata for this ingest instance
+        operations_db_metadata = self._get_operations_db_metadata(
+            state_code, ingest_instance
+        )
+
+        if not self.ingest_view_materialization_gating_context:
+            self.ingest_view_materialization_gating_context = (
+                IngestViewMaterializationGatingContext.load_from_gcs()
             )
-            # Get an object containing information about the ingest bucket
-            ingest_bucket_metadata = self._get_bucket_metadata(ingest_bucket_path)
-
-            # Get the storage bucket for this instance
-            storage_bucket_path = gcsfs_direct_ingest_storage_directory_path_for_region(
-                region_code=formatted_state_code,
-                system_level=SystemLevel.STATE,
-                ingest_instance=instance,
-                project_id=metadata.project_id(),
-            )
-
-            # Get the database name corresponding to this instance
-            ingest_db_name = instance.database_key_for_state(state_code).db_name
-
-            # Get the operations metadata for this ingest instance
-            operations_db_metadata = self._get_operations_db_metadata(
-                state_code, instance
-            )
-
-            if not self.ingest_view_materialization_gating_context:
-                self.ingest_view_materialization_gating_context = (
-                    IngestViewMaterializationGatingContext.load_from_gcs()
-                )
-            is_bq_materialization_enabled = self.ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
-                state_code=state_code, ingest_instance=instance
-            )
-            ingest_instance_summary: Dict[str, Any] = {
-                "instance": instance.value,
-                "storage": storage_bucket_path.abs_path(),
-                "ingest": ingest_bucket_metadata,
-                "dbName": ingest_db_name,
-                "operations": operations_db_metadata,
-                # TODO(#11424): Delete this flag once BQ materialization has been fully
-                #  shipped to all states and admin panel frontend no longer references
-                #  this value.
-                "isBQMaterializationEnabled": is_bq_materialization_enabled,
-            }
-
-            ingest_instance_summaries.append(ingest_instance_summary)
-
-        return ingest_instance_summaries
+        is_bq_materialization_enabled = self.ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
+            state_code=state_code, ingest_instance=ingest_instance
+        )
+        return {
+            "instance": ingest_instance.value,
+            "storage": storage_bucket_path.abs_path(),
+            "ingest": ingest_bucket_metadata,
+            "dbName": ingest_db_name,
+            "operations": operations_db_metadata,
+            # TODO(#11424): Delete this flag once BQ materialization has been fully
+            #  shipped to all states and admin panel frontend no longer references
+            #  this value.
+            "isBQMaterializationEnabled": is_bq_materialization_enabled,
+        }
 
     @staticmethod
     def _get_operations_db_metadata(
