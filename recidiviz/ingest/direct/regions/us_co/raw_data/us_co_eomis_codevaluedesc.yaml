@@ -1,36 +1,38 @@
 file_tag: eomis_codevaluedesc
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This file contains datanames for codevalues and their descriptions to inform other tables known values.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - DATANAME
+  - CODEVALUE
 columns:
   - name: DATANAME
     description: |-
-      TODO(#12372)
+      The dataname of a code with codevalues and codedescriptions.
   - name: CODEVALUE
     description: |-
-      TODO(#12372)
+      The code in known values for other table ie. Y or N flag.
   - name: CODEDESCRIPTION
     description: |-
-      TODO(#12372)
+      The description of each codevalue ie "Y" codevalue has "Yes" code description.
   - name: CREATEDBY
     description: |-
-      TODO(#12372)
+      User making the Dataname and Codevalues.
   - name: CREATEDDATE
     description: |-
-      TODO(#12372)
+      Date of creation.
   - name: CREATEDTIME
     description: |-
-      TODO(#12372)
+      Time of creation.
   - name: LASTUPDATEDBY
     description: |-
-      TODO(#12372)
+      User who last updated values.
   - name: LASTUPDATEDATE
     description: |-
-      TODO(#12372)
+      Last update date.
   - name: LASTUPDATETIME
     description: |-
-      TODO(#12372)
+      Last update time.
   - name: RECORDUPDATECOUNT
     description: |-
       TODO(#12372)

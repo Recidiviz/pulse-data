@@ -7,7 +7,7 @@ primary_key_cols:
 columns:
   - name: ADDRESSID
     description: |-
-      A unique identifier for each address.
+      A unique identifier for each address - links to OFNRELATEDADDRESS table.
     is_pii: True
   - name: STREETNUMBER
     description: |-

@@ -1,6 +1,6 @@
 file_tag: eomis_ptyotherid
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This file contains additional information around incarceration and movements.
 data_classification: source
 primary_key_cols:
   - PARTYID
@@ -74,9 +74,9 @@ columns:
       - value: "64"
         description: Facility HS (Bedtime) Med-Line Time
       - value: "84"
-        description: No Co-pay Facility for MH Encounters
+        description: "No Co-pay Facility for MH Encounters"
       - value: "86"
-        description: No Co-pay Facility for Nursing MH Crisis Encounter
+        description: "No Co-pay Facility for Nursing MH Crisis Encounter"
       - value: "87"
         description: Allow P Code Manual Override Facility
   - name: PTYIDAGENCY
@@ -87,13 +87,13 @@ columns:
       To and From Facility IDs.
   - name: IDVERIFIEDDATE
     description: |-
-      TODO(#12372)
+      Date ID was verified.
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date of last update.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time of last update.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      User making last update. 
