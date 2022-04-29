@@ -21,7 +21,6 @@ from datetime import date
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
@@ -49,9 +48,7 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         # Arrange
         ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
             incarceration_type="STATE_PRISON",
-            facility_security_level="MEDIUM",
             admission_reason="REVOCATION",
-            projected_release_reason="CONDITIONAL_RELEASE",
             release_reason="SERVED",
             state_incarceration_period_id="INCARCERATION_ID",
             specialized_purpose_for_incarceration="SHOCK INCARCERATION",
@@ -77,12 +74,8 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         expected_result = entities.StateIncarcerationPeriod(
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="STATE_PRISON",
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
-            facility_security_level_raw_text="MEDIUM",
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="REVOCATION",
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            projected_release_reason_raw_text="CONDITIONAL_RELEASE",
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             release_reason_raw_text="SERVED",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,

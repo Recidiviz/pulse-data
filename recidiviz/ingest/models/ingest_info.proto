@@ -336,9 +336,7 @@ message StateIncarcerationPeriod {
     optional string county_code = 7;
     optional string facility = 8;
     optional string housing_unit = 9;
-    optional string facility_security_level = 10;
     optional string admission_reason = 11;
-    optional string projected_release_reason = 12;
     optional string release_reason = 13;
     optional string specialized_purpose_for_incarceration = 14;
     optional string custodial_authority = 15;

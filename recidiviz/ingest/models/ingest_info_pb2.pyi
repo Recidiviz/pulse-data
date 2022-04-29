@@ -2194,9 +2194,7 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     COUNTY_CODE_FIELD_NUMBER: builtins.int
     FACILITY_FIELD_NUMBER: builtins.int
     HOUSING_UNIT_FIELD_NUMBER: builtins.int
-    FACILITY_SECURITY_LEVEL_FIELD_NUMBER: builtins.int
     ADMISSION_REASON_FIELD_NUMBER: builtins.int
-    PROJECTED_RELEASE_REASON_FIELD_NUMBER: builtins.int
     RELEASE_REASON_FIELD_NUMBER: builtins.int
     SPECIALIZED_PURPOSE_FOR_INCARCERATION_FIELD_NUMBER: builtins.int
     CUSTODIAL_AUTHORITY_FIELD_NUMBER: builtins.int
@@ -2208,9 +2206,7 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     county_code: typing.Text = ...
     facility: typing.Text = ...
     housing_unit: typing.Text = ...
-    facility_security_level: typing.Text = ...
     admission_reason: typing.Text = ...
-    projected_release_reason: typing.Text = ...
     release_reason: typing.Text = ...
     specialized_purpose_for_incarceration: typing.Text = ...
     custodial_authority: typing.Text = ...
@@ -2225,9 +2221,7 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
         county_code: typing.Optional[typing.Text] = ...,
         facility: typing.Optional[typing.Text] = ...,
         housing_unit: typing.Optional[typing.Text] = ...,
-        facility_security_level: typing.Optional[typing.Text] = ...,
         admission_reason: typing.Optional[typing.Text] = ...,
-        projected_release_reason: typing.Optional[typing.Text] = ...,
         release_reason: typing.Optional[typing.Text] = ...,
         specialized_purpose_for_incarceration: typing.Optional[typing.Text] = ...,
         custodial_authority: typing.Optional[typing.Text] = ...,
@@ -2245,14 +2239,10 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"custodial_authority",
             "facility",
             b"facility",
-            "facility_security_level",
-            b"facility_security_level",
             "housing_unit",
             b"housing_unit",
             "incarceration_type",
             b"incarceration_type",
-            "projected_release_reason",
-            b"projected_release_reason",
             "release_date",
             b"release_date",
             "release_reason",
@@ -2278,14 +2268,10 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"custodial_authority",
             "facility",
             b"facility",
-            "facility_security_level",
-            b"facility_security_level",
             "housing_unit",
             b"housing_unit",
             "incarceration_type",
             b"incarceration_type",
-            "projected_release_reason",
-            b"projected_release_reason",
             "release_date",
             b"release_date",
             "release_reason",

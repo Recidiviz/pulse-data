@@ -1298,9 +1298,7 @@ class StateCourtCase(IngestObject):
 
 
 class StateIncarcerationPeriod(IngestObject):
-    """Class for information about a period of incarceration. Referenced from IncarcerationSentence and
-    SupervisionSentence.
-    """
+    """Class for information about a period of incarceration."""
 
     def __init__(
         self,
@@ -1312,9 +1310,7 @@ class StateIncarcerationPeriod(IngestObject):
         county_code=None,
         facility=None,
         housing_unit=None,
-        facility_security_level=None,
         admission_reason=None,
-        projected_release_reason=None,
         release_reason=None,
         specialized_purpose_for_incarceration=None,
         custodial_authority=None,
@@ -1329,9 +1325,7 @@ class StateIncarcerationPeriod(IngestObject):
         self.county_code: Optional[str] = county_code
         self.facility: Optional[str] = facility
         self.housing_unit: Optional[str] = housing_unit
-        self.facility_security_level: Optional[str] = facility_security_level
         self.admission_reason: Optional[str] = admission_reason
-        self.projected_release_reason: Optional[str] = projected_release_reason
         self.release_reason: Optional[str] = release_reason
         self.specialized_purpose_for_incarceration: Optional[
             str

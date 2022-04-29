@@ -25,22 +25,6 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
-# TODO(#12542): Delete this entirely unused enum
-@unique
-class StateIncarcerationFacilitySecurityLevel(StateEntityEnum):
-    MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
-    MEDIUM = state_enum_strings.state_incarceration_facility_security_level_medium
-    MINIMUM = state_enum_strings.state_incarceration_facility_security_level_minimum
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationFacilitySecurityLevel"]:
-        return _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP
-
-
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     """Reasons for admission to a period of incarceration."""
@@ -595,17 +579,6 @@ SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES = [
     StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
 ]
 
-
-_STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
-    "MAXIMUM": StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-    "MAX": StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-    "MEDIUM": StateIncarcerationFacilitySecurityLevel.MEDIUM,
-    "MED": StateIncarcerationFacilitySecurityLevel.MEDIUM,
-    "MINIMUM": StateIncarcerationFacilitySecurityLevel.MINIMUM,
-    "MIN": StateIncarcerationFacilitySecurityLevel.MINIMUM,
-    "INTERNAL UNKNOWN": StateIncarcerationFacilitySecurityLevel.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateIncarcerationFacilitySecurityLevel.EXTERNAL_UNKNOWN,
-}
 
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "ADMITTED IN ERROR": StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,

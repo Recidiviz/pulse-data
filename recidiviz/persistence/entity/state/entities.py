@@ -53,7 +53,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
@@ -780,33 +779,11 @@ class StateIncarcerationPeriod(
     )
 
     #   - What
-    # TODO(#12542): Delete this entirely unused field
-    facility_security_level: Optional[
-        StateIncarcerationFacilitySecurityLevel
-    ] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(StateIncarcerationFacilitySecurityLevel),
-    )
-    # TODO(#12542): Delete this entirely unused field
-    facility_security_level_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
         default=None,
         validator=attr_validators.is_opt(StateIncarcerationPeriodAdmissionReason),
     )
     admission_reason_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # TODO(#12405): This field is unused and should be deleted
-    projected_release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(StateIncarcerationPeriodReleaseReason),
-    )
-    # TODO(#12405): This field is unused and should be deleted
-    projected_release_reason_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 

@@ -157,10 +157,6 @@ state_incarceration_incident_outcome_treatment = "TREATMENT"
 state_incarceration_incident_outcome_warning = "WARNING"
 
 # state_incarceration_period.py
-state_incarceration_facility_security_level_maximum = "MAXIMUM"
-state_incarceration_facility_security_level_medium = "MEDIUM"
-state_incarceration_facility_security_level_minimum = "MINIMUM"
-
 state_incarceration_period_admission_reason_admitted_in_error = "ADMITTED_IN_ERROR"
 state_incarceration_period_admission_reason_admitted_from_supervision = (
     "ADMITTED_FROM_SUPERVISION"
