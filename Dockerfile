@@ -39,7 +39,7 @@ COPY ./frontends/justice-counts/control-panel/public /usr/justice-counts/control
 
 RUN yarn build
 
-FROM ubuntu:jammy
+FROM ubuntu:focal
 
 ENV DEBIAN_FRONTEND noninteractive
 
