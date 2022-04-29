@@ -529,6 +529,20 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         )
         GROUP BY 1
     ),
+    -- TN uses assessment scores to determine who is a "drug offender" - anyone who received a Moderate or High assessment for the 
+    -- AlcoholDrugNeedLevel. We currently assume this is based on someone's latest assessment 
+    assessment AS (    
+        SELECT *
+        FROM (
+            SELECT person_id,
+                    assessment_date, 
+                    MAX(CASE WHEN COALESCE(REPLACE(JSON_EXTRACT(assessment_metadata, "$.ALCOHOL_DRUG_NEED_LEVEL"), '"',''), 'MISSING') IN ('MOD','HIGH') THEN 1 ELSE 0 END) AS high_ad_client
+            FROM `{project_id}.{base_dataset}.state_assessment`
+            GROUP BY 1,2
+        )
+        WHERE TRUE
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY assessment_date DESC) = 1
+    ),
     add_more_flags_1 AS (
         SELECT sentences_join.* ,
                 dru_contacts.* EXCEPT(total_screens_in_past_year,Offender_ID),
@@ -536,6 +550,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 sum_payments.last_paid_amount,
                 arrearages.* EXCEPT(Offender_ID),
                 zt_codes,
+                high_ad_client,
+                assessment_date AS latest_assessment_date,
             -- General pattern:
             -- a) if dont have the flag now, didnt have it in past sentences or prior record, eligible
             -- b) if don't have the flag now, didnt have it in prior record, DID have it in past sentences but those sentences expired over 10 years ago, eligible
@@ -586,28 +602,28 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         -- Logic here: for non-drug-offense:
             -- They must be 6 months or more past their latest positive test. This will be null for people with no positive test - for those, we assume they meet this condition
             -- They must have at least 1 negative test in the past year 
-        CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 0 
+        CASE WHEN COALESCE(high_ad_client,0) = 0 
             AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 180 
             AND sum_negative_tests_in_past_year >= 1
             -- If someone has had a positive test, even if its more than 6 months old, we enforce that their most recent test is negative
             AND is_most_recent_test_negative = 1        
              THEN 1
             -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info or where drug offense = 1 since there are separate flags for that
-             WHEN COALESCE(drug_offense,drug_offense_ever) IS NULL AND sum_negative_tests_in_past_year >= 1 AND is_most_recent_test_negative = 1  THEN NULL
-             WHEN COALESCE(drug_offense,drug_offense_ever) = 1 THEN NULL
+             WHEN high_ad_client IS NULL THEN NULL
+             WHEN COALESCE(high_ad_client,0) = 1 THEN NULL
              ELSE 0 
              END AS drug_screen_pass_flag_non_drug_offense,
         -- Logic here: for drug offenses
             -- If there are 2 negative tests in the past year, the most recent test is negative, and the most recent positive test (if it exists) is over 12 months old, they're eligible
-        CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 1 
+        CASE WHEN COALESCE(high_ad_client,0) = 1 
             AND sum_negative_tests_in_past_year >= 2 
             AND is_most_recent_test_negative = 1 
             AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 365
             THEN 1
              -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info
              -- or where drug offense = 0 since there are separate flags for that
-             WHEN COALESCE(drug_offense,drug_offense_ever) = 0 THEN NULL
-             WHEN COALESCE(drug_offense,drug_offense_ever) IS NULL THEN NULL
+             WHEN high_ad_client IS NULL THEN NULL
+             WHEN COALESCE(high_ad_client,0) = 0 THEN NULL
              ELSE 0 
              END AS drug_screen_pass_flag_drug_offense,
         -- Criteria: Special Conditions are up to date
@@ -655,10 +671,11 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             AND account_flags.most_recent_payment = sum_payments.PaymentDate
         LEFT JOIN sanctions
             USING(Offender_ID)
+        LEFT JOIN assessment
+            USING(person_id)    
         LEFT JOIN zero_tolerance_codes 
             ON sentences_join.Offender_ID = zero_tolerance_codes.Offender_ID
             AND zero_tolerance_codes.latest_zero_tolerance_sanction_date  > COALESCE(sentence_start_date,'0001-01-01')
-
     ),
     add_more_flags_2 AS (
         SELECT
@@ -795,6 +812,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             drug_screen_pass_flag_drug_offense,
             drug_screen_pass_flag_non_drug_offense,
             COALESCE(drug_offense,drug_offense_ever) AS drug_offense,
+            high_ad_client,
+            latest_assessment_date,
             sum_negative_tests_in_past_year,
             is_most_recent_test_negative,
             total_screens_in_past_year,
