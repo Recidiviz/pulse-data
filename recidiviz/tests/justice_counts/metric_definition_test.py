@@ -55,3 +55,17 @@ class TestJusticeCountsMetricDefinition(TestCase):
             law_enforcement.annual_budget.contexts[1].key,
             ContextKey.ADDITIONAL_CONTEXT,
         )
+
+    def test_unit_from_metric_type(self) -> None:
+        self.assertEqual(law_enforcement.annual_budget.metric_type.unit, "USD")
+        self.assertEqual(law_enforcement.calls_for_service.metric_type.unit, "CALLS")
+        self.assertEqual(law_enforcement.arrests_by_gender.metric_type.unit, "ARRESTS")
+        self.assertEqual(law_enforcement.police_officers.metric_type.unit, "PEOPLE")
+        self.assertEqual(
+            law_enforcement.civilian_complaints_sustained.metric_type.unit,
+            "COMPLAINTS SUSTAINED",
+        )
+        self.assertEqual(
+            law_enforcement.officer_use_of_force_incidents.metric_type.unit,
+            "USE OF FORCE INCIDENTS",
+        )
