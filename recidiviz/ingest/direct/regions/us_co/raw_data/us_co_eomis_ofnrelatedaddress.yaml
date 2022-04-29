@@ -36,10 +36,10 @@ columns:
     is_pii: True
   - name: ADDRENDDATE
     description: |-
-      TODO(#12372)
+      Address end date.
   - name: OFFICERCONTROLNUM
     description: |-
-      All values are null.
+      Officer control number - all values are null.
   - name: ADDRVERIFYDATE
     description: |-
       The date a current address was verified.
@@ -57,13 +57,13 @@ columns:
       The time an address was last updated.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      User Making Last Update.
   - name: ADDRESSVERIFYINGAGENCY
     description: |-
-      All values are null.
+      Address Verifying Agency - all values are null.
   - name: ADDRESSVERIFYINGNAME
     description: |-
-      All values are null.
+      Address Verifying Name - all values are null.
   - name: OFFNISHOMELESS
     description: |-
       Indicates whethere a person is homeless or not.

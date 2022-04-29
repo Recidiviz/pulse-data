@@ -18,7 +18,7 @@ columns:
       Time of external movement.
   - name: LOCATIONREPORTMOVEMENT
     description: |-
-      Location where the movement was recorded.
+      Location where the movement was recorded - can link to partyid in organizationprof table.
   - name: EXTERNALMOVEMENTCODE
     description: |-
       A CIMOVCOD code indicating the type of movement.
@@ -131,7 +131,7 @@ columns:
         description: Transferred to County/City Jail
   - name: OTHERLOCATIONCODE
     description: |-
-      TODO(#12372)
+      Other location code - can link to partyid in organizationprof table.
   - name: REASONFORMOVEMENT
     description: |-
       CITRREAS code indicating the reason for movement.

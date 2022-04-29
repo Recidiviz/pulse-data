@@ -8,25 +8,223 @@ primary_key_cols:
   - PARTYID
 columns:
   - name: PARTYID
+    description: |-
+      TODO(#12372)
   - name: ORGANIZATIONNAME
+    description: |-
+      TODO(#12372)
   - name: ORGANIZATIONTYPE
+    description: |-
+      ORGTYPE code for type of organization.
+    known_values:
+      - value: A1
+        description: DOC Executive Director's Office
+      - value: A3
+        description: Central Office Offender Services
+      - value: A5
+        description: Central Office Programs
+      - value: A6
+        description: Central Office Time & Release
+      - value: A7
+        description: Central Office, OIT
+      - value: A9
+        description: Training Academy
+      - value: AI
+        description: Correctional Complex (of Facilities)
+      - value: AM
+        description: Stock Med Room
+      - value: AN
+        description: Central Office Court Services
+      - value: AO
+        description: Other Headquarters Offices
+      - value: AT
+        description: Central Transportation
+      - value: B0
+        description: State Prison - Intake Only Facility
+      - value: B1
+        description: State Prison - Major
+      - value: B2
+        description: State Prison - Minimum
+      - value: B3
+        description: Boot Camp
+      - value: B4
+        description: Private Prison
+      - value: B6
+        description: County Jail Contract
+      - value: B8
+        description: County Jail Backlog
+      - value: BC
+        description: City Jail Backlog
+      - value: BF
+        description: Reception Center
+      - value: BG
+        description: Out-of-State Contract Facility
+      - value: BJ
+        description: Community Corrections Center
+      - value: BK
+        description: Intensive Supervision
+      - value: BL
+        description: YOS Phase III Community Corrections
+      - value: BM
+        description: YOS Facility
+      - value: BY
+        description: Parolees in Prison Facility
+      - value: C9
+        description: Partole Interstate Compact
+      - value: D2
+        description: Region Office
+      - value: D3
+        description: Parole Office
+      - value: D4
+        description: Satellite Office
+      - value: E1
+        description: County Sheriff
+      - value: E5
+        description: County Prosecuting Attorney
+      - value: EA
+        description:  Colorado County or District Court
+      - value: EB
+        description: County District Attorney
+      - value: ED
+        description: County Probation Office
+      - value: F1
+        description: Parole Board
+      - value: G1
+        description: Hospital (Outside)
+      - value: G2
+        description: Clinic (Outside)
+      - value: G3
+        description: Doctor's Office (Outside)
+      - value: G4
+        description: Other Medical (Outside)
+      - value: G5
+        description: Mental Health Treatmt(Outside)
+      - value: I1
+        description: Other State ICC Office
+      - value: I2
+        description: Other State Court
+      - value: I4
+        description: Other State Law Enforc. Agency
+      - value: I5
+        description:  Other State DOC
+      - value: I8
+        description:  Other Country
+      - value: I9
+        description: Other State District Attorney
+      - value: L2
+        description: TB Test Manufacturer
+      - value: L4
+        description: Immunization Manufacturer
+      - value: M9
+        description: Employer (Other)
+      - value: P3
+        description: Dept. of (MH) Institutions
+      - value: P9
+        description:  Other Government Agency
+      - value: U1
+        description: US Marshal
+      - value: U3
+        description: Immigration & Nat. Service
+      - value: U5
+        description: Federal Bureau of Prisons (BOP)
+      - value: U6
+        description: FBI Office
+      - value: UE
+        description: Federal Transfer Tracking
+      - value: Z2
+        description: County (in Home State)
+      - value: Z4
+        description: County (in Home State)
+      - value: Z9
+        description: Unknown
+      - value: ZW
+        description: TODO(#12372)
   - name: ORGANIZATIONSTATUS
+    description: |-
+      ORGSTATUS code for the current status of facility ie closed or open.
+    known_values:
+      - value: A
+        description: Active
+      - value: C
+        description: Closed Permanently
+      - value: P
+        description: Pending
+      - value: T
+        description: Temporarily Closed
   - name: ORGSTATUSDATE
+    description: |-
+      TODO(#12372)
   - name: ORGCOMMONID
+    description: |-
+      TODO(#12372)
   - name: ORGDEPTCODE
+    description: |-
+      TODO(#12372)
   - name: ORGREGIONCODE
+    description: |-
+      TODO(#12372)
   - name: ORGAREACODE
+    description: |-
+      TODO(#12372)
   - name: ORGCONTACT
+    description: |-
+      TODO(#12372)
   - name: ORGCONTACTTITLE
+    description: |-
+      TODO(#12372)
   - name: HANDICAPACCESS
+    description: |-
+      ORGHNDCAP code to indicate whether a facility is handicap accesible.
+    known_values:
+      - value: "N"
+        description: "No"
+      - value: "U"
+        description: "Unknown"
   - name: RELEASENOTIFFLAG
+    description: |-
+      TODO(#12372)
   - name: ORGCOUNTYCODE
+    description: |-
+      TODO(#12372)
+    known_values: []
   - name: CLASS1CITY
+    description: |-
+      TODO(#12372)
   - name: ORGANIZATIONCOMMENTS
+    description: |-
+      TODO(#12372)
   - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
   - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
   - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
   - name: CLSCOUNASSIGNMETHOD
+    description: |-
+      TODO(#12372)
+    known_values:
+      - value: "Z"
+        description: Not applicable
   - name: CASEANALYSTASSIGNMETHOD
+    description: |-
+      TODO(#12372)
+    known_values:
+      - value: "Z"
+        description: Not applicable
   - name: CASERCDSTECHASSIGNMETHOD
+    description: |-
+      TODO(#12372)
+    known_values:
+      - value: "Z"
+        description: Not applicable
   - name: WORKRELEASEEMPLOYER
+    description: |-
+      TODO(#12372)
+    known_values:
+      - value: "N"
+        description: "No"
+      - value: "Z"
+        description: TODO(#12372)

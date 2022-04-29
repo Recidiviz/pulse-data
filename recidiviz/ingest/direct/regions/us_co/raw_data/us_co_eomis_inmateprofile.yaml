@@ -154,19 +154,19 @@ columns:
         description: ICC Commitment
   - name: DATEPAROLEVIOLATORRETURN
     description: |-
-      - TODO(#12372)
+      The date a person was returned for a parole violation, if any.
   - name: INMCURRENTUNIT
     description: |-
-      Number sequence indicating current facility.
+      Number sequence indicating current facility, related to PARTYID in ORGANIZATIONPROF.
   - name: INMCURRLOCATION
     description: |-
-      Number sequence indicating current facility.
+      Number sequence indicating current facility, related to PARTYID in ORGANIZATIONPROF.
   - name: INMATEHOUSINGAREAID
     description: |-
-      Number and letter sequence indicating current housing unit.
+      Number and letter sequence indicating current living unit.
   - name: INMATEBEDNUMBER
     description: |-
-      Number and letter sequence indicating current bed unit.
+      Number and letter sequence indicating current bed number.
   - name: PRIMARYBEDUSE
     description: |-
       TODO(#12372)
@@ -207,10 +207,10 @@ columns:
         description: TODO(#12372)
   - name: DATEOFLASTINMATEMVMENT
     description: |-
-      TODO(#12372)
+      The last inmate movement date.
   - name: TYPEOFLASTINMATEMVMT
     description: |-
-      CIMOVCOD code indicating the type of last movement.
+      CIMOVCOD code indicating the type of last external movement.
     known_values:
       - value: "01"
         description: New CO Commitment
@@ -450,10 +450,10 @@ columns:
         description: Community Jail Transfer
   - name: OTHERLOCATIONCODE
     description: |-
-      TODO(#12372)
+      An alternate location code.
   - name: LATESTCLASSIFDATE
     description: |-
-      TODO(#12372)
+      Latest classification date.
   - name: CURRCUSTODYCLASSIFICATION
     description: |-
       Letter and/or number code indicating Custody/Security Code.
@@ -471,44 +471,62 @@ columns:
       - value: "UK"
         description: Unknown
       - value: "UN"
-        description: TODO(#12372)
+        description: Unknown
   - name: CURRENTTOTALCUSTODYSCORE
     description: |-
       TODO(#12372)
   - name: CURRENTGTEARNINGCLASS
     description: |-
-      TODO(#12372)
+      CDPARCL code for current good time earning class.
     known_values:
       - value: "IV"
-        description: TODO(#12372)
+        description: Class IV
       - value: "UN"
-        description: TODO(#12372)
+        description: Unknown
   - name: JOBPGMCATEGORYAM
     description: |-
-      TODO(#12372)
+      Job / Program Category Assignment AM with WRKPGMCAT code.
     known_values:
       - value: "07"
         description: TODO(#12372)
       - value: "J"
-        description: TODO(#12372)
+        description: Other Job
       - value: "U"
-        description: TODO(#12372)
+        description: Unknown
   - name: WORKPGMASSIGNMNTAM
     description: |-
-      TODO(#12372)
+      Work/ Program Assignment AM populated by CIWRKPGM.
+    known_values:
+      - value: "95.00"
+        descriptiom: Unassigned
+      - value: "07.0197"
+        description: TODO(#12372)
+      - value: "11.0198"
+        description: TODO(#12372)
+      - value: "99.99"
+        description: Unknown
   - name: JOBPGMCATEGORYPM
     description: |-
-      TODO(#12372)
+      Job / Program Category Assignment PM with WRKPGMCAT code.
     known_values:
       - value: "07"
         description: TODO(#12372)
       - value: "J"
-        description: TODO(#12372)
+        description: Other Job
       - value: "U"
-        description: TODO(#12372)
+        description: Unknown
   - name: WORKPGMASSIGNMNTPM
     description: |-
-      TODO(#12372)
+      Work / Program Category Assignment PM with CIWRKPGM code.
+    known_values:
+      - value: "95.00"
+        descriptiom: Unassigned
+      - value: "07.0197"
+        description: TODO(#12372)
+      - value: "11.0198"
+        description: TODO(#12372)
+      - value: "99.99"
+        description: Unknown
   - name: OUTONGATEPASSFLAG
     description: |-
       TODO(#12372)
@@ -519,7 +537,7 @@ columns:
         description: "Yes"
   - name: PRECAUTIONSFLAG
     description: |-
-      TODO(#12372)
+      Outstanding precautions flag.
     known_values:
       - value: "N"
         description: "No"
@@ -527,44 +545,44 @@ columns:
         description: "Yes"
   - name: LATESTVIOLATIONDATE
     description: |-
-      TODO(#12372)
+      The date of the latest violation.
   - name: LATESTDISCIPLCODEVIOL
     description: |-
-      All values in this field are null.
+      Latest discipline code violation - all values in this field are null.
   - name: LATESTDISCPLRULEVIOLATION
     description: |-
-      All values in this field are null.
+      Latest discipline rule violation - all values in this field are null.
   - name: LATESTDISCPLVERDICTCODE
     description: |-
-      All values in this field are null.
+      Latest discipline verdict code - all values in this field are null.
   - name: LATESTCONTROLACTION
     description: |-
-      All values in this field are null.
+      Latest control action - all values in this field are null.
   - name: LATESTCTRLACTIONSTARTDATE
     description: |-
-      TODO(#12372)
+      Latest control action start date.
   - name: LATESTCNTRLACTIONENDDATE
     description: |-
-      TODO(#12372)
+      Latest control action end date.
   - name: LATESTDRUGTESTDATE
     description: |-
-      TODO(#12372)
+      Latest drug test date.
   - name: CURRMEDICALCLASSIFCODE
     description: |-
-      TODO(#12372)
+      Current medical classification code - CMMEDICL.
     known_values:
       - value: "M1"
-        description: TODO(#12372)
+        description: M1
       - value: "M2"
-        description: TODO(#12372)
+        description: M2
       - value: "M3"
-        description: TODO(#12372)
+        description: M3
       - value: "M4"
-        description: TODO(#12372)
+        description: M4
       - value: "M5"
-        description: TODO(#12372)
+        description: M5
       - value: "UN"
-        description: TODO(#12372)
+        description: Unknown
   - name: PERMITTEDTOHANDLEFOOD
     description: |-
       A flag denoting if a person is allowed to handle food or not.
@@ -575,91 +593,218 @@ columns:
         description: "Yes"
   - name: INMATETOTALWRATSCORE
     description: |-
-      All values in this field are null.
+      Latest WRAT score - all values in this field are null. #TODO(#12372)
   - name: INMATETOTALBETASCORE
     description: |-
-      TODO(#12372)
+      Latest BETA score of person. #TODO(#12372)
   - name: OLDESTCOMMIDCURINCARC
     description: |-
-      TODO(#12372)
+      Oldest COMM. ID of current incarceration.
   - name: OLDESTCOUNTOFCURINCARC
     description: |-
-      Admission date of a person.
+      Oldest count of current incarceration - admission date.
   - name: CURRCOMMITCONVICTIONDT
     description: |-
-      TODO(#12372)
+      Current Commitment Conviction Date.
   - name: INMCNTYCNVCFCURCOMMIT
     description: |-
-      TODO(#12372)
+      County of conviction for current commit - CDCOARAG code.
+    known_values: [] #TODO(#12372)
   - name: PRIMARYOFFENSECURRINCAR
     description: |-
-      TODO(#12372)
+      The primary offense leading to current incarceration - CDADCOFF code.
+    known_values:
+      - value: "0999"
+        description: Homicide
+      - value: "1007"
+        description: Kidnap Hostage for Escape
+      - value: "1099"
+        description: Kidnapping
+      - value: "1199"
+        description: Sex Assault
+      - value: "1299"
+        description: Robbery
+      - value: "1399"
+        description: Assault
+      - value: "2099"
+        description: Arson
+      - value: "2199"
+        description: Extortion
+      - value: "2299"
+        description: Burglary
+      - value: "2399"
+        description: Larceny
+      - value: "2499"
+        description: Vehicle Theft
+      - value: "2589"
+        description: Forgery
+      - value: "2689"
+        description: IDENTITY THEFT
+      - value: "2699"
+        description: Fraud
+      - value: "2799"
+        description: Embezzle
+      - value: "3564"
+        description: Marijuana
+      - value: "3567"
+        description: MARIJUANA
+      - value: "3599"
+        description: Dangerous Drugs
+      - value: "3612"
+        description: Failure to Register Sex Offend
+      - value: "3699"
+        description: Sex Offense
+      - value: "3802"
+        description: Cruelty toward Child
+      - value: "3899"
+        description: Family Offense
+      - value: "3999"
+        description: Gambling
+      - value: "4099"
+        description: Commercial Sex
+      - value: "4899"
+        description: Obstructing Police
+      - value: "4999"
+        description: Flight/Escape
+      - value: "5099"
+        description: Obstruction
+      - value: "5199"
+        description: Bribery
+      - value: "5299"
+        description: Weapon Offense
+      - value: "5399"
+        description: Public Peace
+      - value: "5499"
+        description: Traffic Offense
+      - value: "5799"
+        description: Invade Privarcy
+      - value: "5899"
+        description: Smuggling
+      - value: "6199"
+        description: Tax Revenue
+      - value: "7099"
+        description: Crimes against Person
+      - value: "7399"
+        description: Public Order Crimes
+      - value: "9999"
+        description: Homicide
+      - value: "999"
+        description: Homicide
   - name: TOTALSENTENCELENGTH
     description: |-
-      TODO(#12372)
+      Total sentence length in days.
   - name: MAXFLATRELEASEDATE
     description: |-
-      TODO(#12372)
+      Sentence discharge date (SDD).
   - name: CURRENTCOMMITMENTID
     description: |-
-      TODO(#12372)
+      Current commitment identifier.
   - name: CURRENTCOUNTNUMBER
     description: |-
-      TODO(#12372)
+      Current count number.
   - name: FINALMRCOMMITMENT
     description: |-
-      TODO(#12372)
+      Final MR Commitment.
   - name: FINALMRCOUNT
     description: |-
-      TODO(#12372)
+      Final MR count.
   - name: PROJRELEASEDT
     description: |-
-      The projected release date of a person.
+      Mandatory release date (MRD) - projected release date.
   - name: SGTLAWUSEDTOCALCMR
     description: |-
-      TODO(#12372)
+      SGT law used to caculate MR - CDSGTLAW code.
+    known_values:
+      - value: D
+        description: TODO(#12372)
+      - value: M
+        description: TODO(#12372)
   - name: DATEPRDLASTRECALC
     description: |-
-      TODO(#12372)
+      Last time computation date.
   - name: DATEOFLASTOUTTIME
     description: |-
-      TODO(#12372)
+      Last out time date.
   - name: PAROLEELIGIBILITYSTATUS
     description: |-
-      TODO(#12372)
+      Parole eligibility status.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: FINALPEDCOMMITMENT
     description: |-
-      TODO(#12372)
+      Final PED Commitment.
   - name: FINALPEDCOUNT
     description: |-
-      TODO(#12372)
+      Final PED count.
   - name: PAROLEELIGIBILITYDATE
     description: |-
-      TODO(#12372)
+      Parole Eligibility Date (PED).
   - name: SGTLAWUSEDTOCALCPED
     description: |-
-      TODO(#12372)
+      SGT Law used to calculate PED.
+    known_values: []  #TODO(#12372)
   - name: LATESTPAROLEBOARDHEARDT
     description: |-
-      TODO(#12372)
+      Last/Next Parole Board Hearing Date.
   - name: LATESTPAROLEBOARDHEARTYP
     description: |-
-      TODO(#12372)
+      Last/Next parole board hearing type.
+    known_values:
+      - value: "01"
+        description: Parole Hearing
+      - value: "41"
+        description: Progress Report
+      - value: "ZZ"
+        description: Not application
   - name: LATESTPAROLEBOARDACTION
     description: |-
-      TODO(#12372)
+      Last/Next Parole Board action code - CIBDACT1.
+    known_values:
+      -  value: "0"
+         description:
+      -  value: "01"
+         description: Parole Granted
+      -  value: "08"
+         description: Reinstate
+      -  value: "15"
+         description: Transfer to DCC Supervision
+      -  value: "39"
+         description: Parole Rescinded
+      -  value: "41"
+         description: Hear Continued Other Reason
+      -  value: "43"
+         description: Waived Appearance Denied
+      -  value: "50"
+         description: Parole Revoked
+      -  value: "99"
+         description: Next Hearing Scheduled
+      -  value: "CT"
+         description: Change To Board
+      -  value: "D0"
+         description: Deferred
+      -  value: "DC"
+         description: Discharged
+      -  value: "NA"
+         description: No Action Needed
+      -  value: "OP"
+         description: Parole Ordered
+      -  value: "WI"
+         description: Warrant Issued
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date of last update.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time of last update.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      The user making the last update.
   - name: INMATETYPECODE
     description: |-
-      Code from CIINMTYP like ICC, YOS, ISP, etc.
+      Incarcerated person type code from CIINMTYP like ICC, YOS, ISP, etc.
     known_values:
       - value: C
         description: ICC Inmate (Out-of-State)
@@ -675,163 +820,283 @@ columns:
         description: YOS Inmate
   - name: VINESNOTIFICATIONCODE
     description: |-
-      TODO(#12372)
+      Vine notification VINESFLG code.
+    known_values:
+      - value: "00"
+        description: No Changes to Report
+      - value: "02"
+        description: Bookings change
+      - value: "99"
+        description: Multiple Changes to Report
   - name: SCHEDULEDRELEASEDATE
     description: |-
-      TODO(#12372)
+      Scheduled release date.
   - name: SCHEDULEDRELEASETYPE
     description: |-
-      TODO(#12372)
+      Scheduled release Type - CISCHRELTYP code.
+    known_values:
+      - value: "7"
+        description: MRPD
   - name: HSCONDITIONFLAG
     description: |-
-      TODO(#12372)
+      Outstanding H/S Condition Flag. 
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: TOTALBONDAMOUNT
     description: |-
-      TODO(#12372)
+      The total bond amount.
   - name: INDIGENTINMATEINDICATOR
     description: |-
-      TODO(#12372)
+      "Idigent Inmate Indicator" - IBSINDIG code.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: INDIGENTCANTEENSALESBALANCE
     description: |-
-      TODO(#12372)
+      "Indigent Inmate Canteen Sales Balance"
   - name: INDIGENTINMATERESETDATE
     description: |-
-      TODO(#12372)
+      "Indigent Inmate Balance Reset Date"
   - name: LASTRISKASMTLEVEL
     description: |-
-      TODO(#12372)
+      Last Recommended Risk Level - LastRskAsmtLevel code.
+    known_values:
+      - value: "1"
+        description: Low
+      - value: "2"
+        description: Moderate
+      - value: "3"
+        description: High
+      - value: "4"
+        description: Very High
+      - value: "9"
+        description: Unassigned
   - name: STGAFFILIATIONCODE
     description: |-
-      TODO(#12372)
+      Inmate STG Flag - STGFLAG code.
+    known_values:
+      - value: "0"
+        description: N/A
   - name: PHASEGROUP
     description: |-
-      TODO(#12372)
+      RSVP Phase / Group CFPHASEGROUP code - all values are null.
   - name: PROPOSEDPHASEGROUP
     description: |-
-      TODO(#12372)
+      Proposed RSVP Phase / Group CFPHASEGROUP code - all values are null.
   - name: TRANSFERHOLDEXISTSFLAG
     description: |-
-      TODO(#12372)
+      Active Transfer Hold Exists Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: INMSTGASSOCIATIONFLAG
     description: |-
-      TODO(#12372)
+      Inmate STG Association Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: INMSTGASSOCIATIONDATE
     description: |-
-      TODO(#12372)
+      Inmate STG Association as of Date.
   - name: ACTIVEDETAINERFLAG
     description: |-
-      TODO(#12372)
+      Active Detainer Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: ACTIVESPNSEPARATIONFLAG
     description: |-
-      TODO(#12372)
+      Active Offender Separation Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: PREARISKLEVEL
     description: |-
-      TODO(#12372)
+      PREA Risk Level Flag
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: INCARCERATIONNUMBER
     description: |-
-      TODO(#12372)
+      Incarceration Period Sequence Number (Old).
   - name: LEGACYCALCULATEDRELEASEDATE
     description: |-
-      TODO(#12372)
+      Legacy Calculated Release Date.
   - name: LEGACYSOTMPENROLLMENTDATE
     description: |-
-      TODO(#12372)
+      Legacy SOTMP Enrollment Date.
   - name: ACTIVEWARRANTFLAG
     description: |-
-      TODO(#12372)
+      Active Warrant Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: CURRENTINCARCARRIVALDATE
     description: |-
-      TODO(#12372)
+      Current Incarceration Arrival Date.
   - name: LATESTARRIVALMOVEMENT
     description: |-
-      TODO(#12372)
+      Latest Admission Movement - CIMOVCOD code.
+    known_values:
+      - value: "01"
+        description: New CO Commitment
+      - value: "03"
+        description: YOS Commitment
+      - value: "06"
+        description: Recommitment
+      - value: "07"
+        description: ICC Commitment
   - name: LATESTADMISSIONDATE
     description: |-
-      TODO(#12372)
+      Latest Admission Date.
   - name: HELDHOUSINGAREAID
     description: |-
-      TODO(#12372)
+      Held Housing Area ID.
   - name: HELDBEDNUMBER
     description: |-
-      TODO(#12372)
+      Held Bed Number
   - name: FACLPOSITIONLOCATIONAM
     description: |-
-      TODO(#12372)
+      Facility where AM Position Located.
   - name: FACILITYPOSITIONNUMBERAM
     description: |-
-      TODO(#12372)
+      Facility Position Number AM.
   - name: FACLPOSITIONLOCATIONPM
     description: |-
-      TODO(#12372)
+      Facility where PM Position Located.
   - name: FACILITYPOSITIONNUMBERPM
     description: |-
-      TODO(#12372)
+      Facility Position Number PM.
   - name: LATESTREADINGSCORE
     description: |-
-      TODO(#12372)
+      Latest TABE Reading Score.
   - name: LATESTMATHSCORE
     description: |-
-      TODO(#12372)
+      Latest TABE Math Score.
   - name: CURRENTCLSSPECIALIST
     description: |-
-      TODO(#12372)
+      Current Case Manager.
   - name: COMMCORRAGENTNBR
     description: |-
-      TODO(#12372)
+      Parole Agent Party ID.
   - name: VICTIMENROLLED
     description: |-
-      TODO(#12372)
+      Victim Enrolled for Notification - VICENROLL code.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: ICCINMATEFLAG
     description: |-
-      TODO(#12372)
+      ICC Inmate Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: HIGHPROFILECASEFLAG
     description: |-
-      TODO(#12372)
+      High Profile Case Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: INMATEADAFLAG
     description: |-
-      TODO(#12372)
+      Inmate ADA Flag.
+    known_values:
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
   - name: SEXUALAGGRESSIVEBEHAVIORLEVEL
     description: |-
-      TODO(#12372)
+      Sexually Aggressive Behavior Level - SABLEVEL code.
+    known_values:
+      - value: "0"
+        description: N/A
+      - value: "3"
+        description: "3"
+      - value: "4"
+        description: "4"
+      - value: "5"
+        description: "5"
   - name: SEXUALVULNERABILITYRISKLEVEL
     description: |-
-      TODO(#12372)
+      Sexual Vulnerability Risk Level - SVRLEVEL code.
+    known_values:
+      - value: "0"
+        description: N/A
+      - value: "3"
+        description: "3"
+      - value: "4"
+        description: "4"
+      - value: "5"
+        description: "5"
   - name: TIMEPRDLASTRECALC
     description: |-
-      TODO(#12372)
+      Last Time Computation Time of Day.
   - name: PRIMARYSTATUTECODE
     description: |-
-      TODO(#12372)
+      Primary Statute Code (i.e., most serious) - PRISTATUTE code.
   - name: GATEPASSREASONCODE
     description: |-
-      TODO(#12372)
+      Current Gate Pass Reason - CFGPRSN code.
+    known_values:
+      - value: E
+        description: Medical Emergency
+      - value: M
+        description: Medical Appointment
+      - value: W
+        description: Work Crew
+      - value: X
+        description: Not Applicable
   - name: NEXTHEARINGREVIEWMONTH
     description: |-
-      TODO(#12372)
+      Next Hearing/Review Month.
   - name: NEXTHEARINGREVIEWYEAR
     description: |-
-      TODO(#12372)
+      Next Hearing/Review Year.
   - name: LATESTINMATERISKASMTTOTALSCORE
     description: |-
-      TODO(#12372)
+      Latest Inmate Risk Assessment Total Score.
   - name: LATESTINMATERISKASMTDATE
     description: |-
-      TODO(#12372)
+      Latest Inmate Risk Assessment Date.
   - name: PAROLETERMINATIONDATE
     description: |-
-      TODO(#12372)
+      Parole Termination Date (PTD).
   - name: MAXFLATRELEASEDATEACTUAL
     description: |-
-      TODO(#12372)
+      Sentence Discharge Date Actual (SDD).
   - name: PROJRELEASEDTACTUAL
     description: |-
-      TODO(#12372)
+      Mandatory Release Date Actual (MRD).
   - name: PAROLEELIGIBILITYDATEACTUAL
     description: |-
-      TODO(#12372)
+      Parole Eligibility Date Actual (PED).
   - name: PAROLETERMINATIONDATEACTUAL
     description: |-
-      TODO(#12372)
+      Parole Termination Date Actual (PTD).
   - name: PERMANENTUNIT
     description: |-
-      TODO(#12372)
+      Permanent Unit/Complex Party ID.

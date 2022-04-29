@@ -52,7 +52,7 @@ columns:
       This is the suffix of a person's name; such as Jr., Sr., II, III, 7, Esq., etc.
   - name: COMMITMENTPREFIX
     description: |-
-      TODO(#12372)
+      Commitment prefix.
     known_values:
       - value: "00"
         description: TODO(#12372)
@@ -170,7 +170,7 @@ columns:
         description: TODO(#12372)
   - name: OFFNSOUNDEXCODE
     description: |-
-      TODO(#12372)
+      Offender Name Soundex Code.
   - name: CURRENTCOMMNAME
     description: |-
       A field indicating if the alias is a persons current common name or not.
@@ -187,7 +187,7 @@ columns:
       The latest time a person's alias was updated.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      User Making Last Update.
   - name: CURRENTCOMMDOCNAME
     description: |-
       A field indicating if the alias is a persons current DOC common name or not.

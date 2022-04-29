@@ -1,8 +1,11 @@
 file_tag: eomis_sentencecomponent
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This file contains information about persons sentence type and length.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDERID
+  - COMMITMENTPREFIX
+  - SENTENCECOMPONENT
 columns:
   - name: OFFENDERID
     description: |-
@@ -18,16 +21,60 @@ columns:
       TODO(#12372)
   - name: SENTENCEFINDINGFLAG
     description: |-
-      TODO(#12372)
+      CMFINDING code for sentence finding.
+    known_values:
+      - value: "ACQT"
+        description: Acquitted
+      - value: "CNSD"
+        description: Consolidated
+      - value: "FDFS"
+        description: Deferred Sentence
+      - value: "FFGL"
+        description: Guilty to Lesser Charge
+      - value: "FFGM"
+        description: Guilty Misdemeanor
+      - value: "FFGY"
+        description: Guilty
+      - value: "FFNC"
+        description: Nolo Contendere
+      - value: "FGSA"
+        description: Guilty Set Aside
+      - value: "GU"
+        description: TODO(#12372)
+      - value: "PRVN"
+        description: Proven
+      - value: "UNKN"
+        description: Unknown (Conversion)
   - name: SENTENCEFINDINGDATE
     description: |-
-      TODO(#12372)
+      The date of the sentence finding.
   - name: GUILTYPLEAFLAG
     description: |-
-      TODO(#12372)
+      CMGUILTY code for guilty plea.
+    known_values:
+      - value: PLEG
+        description: Guilty
+      - value: PLES
+        description: Set Aside
+      - value: PLEW
+        description: Withdrawn
+      - value: PLIN
+        description: Not Guilty by Insanity
+      - value: PLLC
+        description: To Lesser Charge
+      - value: PLNC
+        description: Nolo Contendere
+      - value: PLNG
+        description: Not Guilty
+      - value: PLNR
+        description: Not Reported
+      - value: PLUN
+        description: Plea Unknown (Conversion)
+      - value: UN
+        description: Unknown
   - name: SENTENCEPLEADATE
     description: |-
-      TODO(#12372)
+      Date of sentence plea.
   - name: JAILTIME
     description: |-
       TODO(#12372)
@@ -36,7 +83,16 @@ columns:
       TODO(#12372)
   - name: SENTENCETYPE
     description: |-
-      TODO(#12372)
+      Type of sentence from CMSNTYPE code.
+    known_values:
+      - value: IC
+        description: TODO(#12372)
+      - value: PT
+        description: Parole Timeline
+      - value: SP
+        description: Prison Timeline
+      - value: YO
+        description: Youth Offender Services
   - name: SENTENCETYPE2
     description: |-
       TODO(#12372)
@@ -78,10 +134,130 @@ columns:
       TODO(#12372)
   - name: FELONYCLASS
     description: |-
-      TODO(#12372)
+      CMFELCLS code for felony classification.
+    known_values:
+      - value: "0"
+        description: Felony Other
+      - value: "1"
+        description: Felony Class 1
+      - value: "2"
+        description: Felony Class 2
+      - value: "3"
+        description: Felony Class 3
+      - value: "4"
+        description: Felony Class 4
+      - value: "5"
+        description: Felony Class 5
+      - value: "6"
+        description: Felony Class 6
+      - value: "7"
+        description: Misdemeanor (7)
+      - value: "8"
+        description: Misdemeanor (8)
+      - value: "9"
+        description: Misdemeanor (9)
+      - value: "A"
+        description: Drug Felony Class 1
+      - value: "B"
+        description: Drug Felony Class 2
+      - value: "C"
+        description: Drug Felony Class 3
+      - value: "D"
+        description: Drug Felony Class 4
+      - value: "E"
+        description: Drug Misdemeanor (E)
+      - value: "F"
+        description: Drug Misdemeanor (F)
+      - value: "G"
+        description: Drug Misdemeanor (G)
+      - value: "U"
+        description: Unclassified
+      - value: "X"
+        description: Unknown
   - name: DOCOFFENSECODE
     description: |-
-      TODO(#12372)
+      CDADCOFF code for type of offense.
+    known_values:
+      - value: "0999"
+        description: Homicide
+      - value: "1007"
+        description: Kidnap Hostage for Escape
+      - value: "1099"
+        description: Kidnapping
+      - value: "1199"
+        description: Sex Assault
+      - value: "1299"
+        description: Robbery
+      - value: "1399"
+        description: Assault
+      - value: "2099"
+        description: Arson
+      - value: "2199"
+        description: Extortion
+      - value: "2299"
+        description: Burglary
+      - value: "2399"
+        description: Larceny
+      - value: "2499"
+        description: Vehicle Theft
+      - value: "2589"
+        description: Forgery
+      - value: "2689"
+        description: IDENTITY THEFT
+      - value: "2699"
+        description: Fraud
+      - value: "2799"
+        description: Embezzle
+      - value: "3564"
+        description: Marijuana
+      - value: "3567"
+        description: MARIJUANA
+      - value: "3599"
+        description: Dangerous Drugs
+      - value: "3612"
+        description: Failure to Register Sex Offend
+      - value: "3699"
+        description: Sex Offense
+      - value: "3802"
+        description: Cruelty toward Child
+      - value: "3899"
+        description: Family Offense
+      - value: "3999"
+        description: Gambling
+      - value: "4099"
+        description: Commercial Sex
+      - value: "4899"
+        description: Obstructing Police
+      - value: "4999"
+        description: Flight/Escape
+      - value: "5099"
+        description: Obstruction
+      - value: "5199"
+        description: Bribery
+      - value: "5299"
+        description: Weapon Offense
+      - value: "5399"
+        description: Public Peace
+      - value: "5499"
+        description: Traffic Offense
+      - value: "5599"
+        description: Health-Safety
+      - value: "5799"
+        description: Invade Privarcy
+      - value: "5899"
+        description: Smuggling
+      - value: "6199"
+        description: Tax Revenue
+      - value: "6299"
+        description: Conservation
+      - value: "7099"
+        description: Crimes against Person
+      - value: "7299"
+        description: Morals-Decency Crimes
+      - value: "7399"
+        description: Public Order Crimes
+      - value: "9999"
+        description: Homicide
   - name: MINPRISONTERMY
     description: |-
       TODO(#12372)
@@ -106,12 +282,40 @@ columns:
   - name: SENTENCEINCHOATEFLAG
     description: |-
       TODO(#12372)
+    known_values:
+      - value: H
+        description: Attempt
+      - value: J
+        description: Conspiracy
+      - value: L
+        description: Solicitation
+      - value: "N"
+        description: Accessory
   - name: PRIORVIOLENTCOUNT
     description: |-
       TODO(#12372)
   - name: OFFENSESPECIALID
     description: |-
       TODO(#12372)
+    known_values:
+      - value: "1"
+        description: Special Drug Offender
+      - value: "2"
+        description: Domestic Violence
+      - value: "3"
+        description: Repeat School Zone / Housing
+      - value: "4"
+        description: School Zone / Public Housing
+      - value: "5"
+        description: At-Risk Adult / Juvenile
+      - value: "6"
+        description: Elderly / Disabled Victim
+      - value: "7"
+        description: TODO(#12372)
+      - value: "8"
+        description:  Habitual Burglar
+      - value: "9"
+        description: Repeated Theft from Store
   - name: OFFENSESPECIALID2
     description: |-
       TODO(#12372)
@@ -120,13 +324,42 @@ columns:
       TODO(#12372)
   - name: LIFESENTENCETYPE
     description: |-
-      TODO(#12372)
+      CMLIFETYPE code indicating the type of life sentence received.
+    known_values:
+      - value: "1Tl"
+        description: One day to Life
+      - value: DTH
+        description: Death
+      - value: LSX
+        description: Lifetime Supv of Sex Offense
+      - value: MXL
+        description: Indeterminate Min to Life Max
+      - value: "N/A"
+        description: "Not Applicable"
+      - value: WIP
+        description: Life with Parole
+      - value: WOP
+        description: Life w/o Parole
   - name: MANDATORYVIOLENTSENTENCEFLAG
     description: |-
       TODO(#12372)
+    known_values:
+      - value: "N"
+        description: "No"
+      - value: "Y"
+        description: "Yes"
+      - value: "U"
+        description: Unknown
   - name: VIOLENTTODOCSTAFF
     description: |-
       TODO(#12372)
+    known_values:
+      - value: "N"
+        description: "No"
+      - value: "Y"
+        description: "Yes"
+      - value: "U"
+        description: Unknown
   - name: MARTINCOOPERFLAG
     description: |-
       TODO(#12372)
@@ -150,10 +383,114 @@ columns:
       TODO(#12372)
   - name: SENTENCELAWCODE
     description: |-
-      TODO(#12372)
+      CILAWCODE for lawcode related to sentence.
+    known_values:
+      - value: "."
+        description: Interstate Compact
+      - value: "0R"
+        description: "0R"
+      - value: "79"
+        description: Old Law
+      - value: "B"
+        description: New Law
+      - value: "BS"
+        description: New Law with Mandatory Parole
+      - value: "BV"
+        description: BV
+      - value: "C"
+        description: TODO(#12372)
+      - value: "C3"
+        description: TODO(#12372)
+      - value: "E1"
+        description: V enh (one prior violent)
+      - value: "E2"
+        description: V enh (two or more prior violent)
+      - value: "E3"
+        description: B enh (93-04 one prior violent)
+      - value: "E4"
+        description: B enh (93-04 two or more prior violent)
+      - value: "F"
+        description: "F Law"
+      - value: "J"
+        description: Mandatory years habitual
+      - value: "J3"
+        description: J enh (93-03 one prior violent)
+      - value: "J4"
+        description: J enh (93-03 two or more prior violent)
+      - value: "L"
+        description: TODO(#12372)
+      - value: "LS"
+        description: LS
+      - value: "N"
+        description: "N Law"
+      - value: "P"
+        description: P Law
+      - value: "R0"
+        description: B enh (felony class 2 or 3)
+      - value: "R1"
+        description: B enh (felony class 4 or 5)
+      - value: "R2"
+        description: B enh (felony 2/3, 1 prior OR 2 or more prior)
+      - value: "S"
+        description: Mandatory years sex offender
+      - value: "S1"
+        description: S enh (87-93 one prior violent)
+      - value: "S2"
+        description: S enh (87-93 two or more prior violent)
+      - value: "S3"
+        description: S enh (93-02 one prior violent)
+      - value: "S4"
+        description: S enh (93-02 two or more prior violent)
+      - value: "UN"
+        description: Unknown (Conversion)
+      - value: "V"
+        description: V (Discretionary) Law
+      - value: "V1"
+        description: "V1"
+      - value: "V2"
+        description: "V2"
+      - value: "VB"
+        description: "VB"
+      - value: "X"
+        description: Martin/Cooper
+      - value: "X3"
+        description: X enh (one prior violent)
+      - value: "X4"
+        description: X enh (two or more prior violent)
+      - value: "Y2"
+        description: "Y2"
   - name: COMPSTATUSCODE
     description: |-
       TODO(#12372)
+    known_values:
+      - value: "1"
+        description: Active (Imposed)
+      - value: "8"
+        description: Commuted
+      - value: "9"
+        description: Vacated
+      - value: "D"
+        description: Discharged
+      - value: "F"
+        description: Appeal Bond
+      - value: "G"
+        description: Release on Probation
+      - value: "J"
+        description: YOS-Revoked
+      - value: "M"
+        description: Merged
+      - value: "N"
+        description: Released by court
+      - value: "O"
+        description: Held by CRS17-22.5-307
+      - value: "P"
+        description: Serving Parole Sentence
+      - value: "R"
+        description: Ignore for Minimum Calculation
+      - value: "S"
+        description: Suspended-YOS
+      - value: "T"
+        description: Splinter CS/CC
   - name: COMPSTATUSDATE
     description: |-
       TODO(#12372)
@@ -178,9 +515,25 @@ columns:
   - name: SENTENCINGDATACONDITION
     description: |-
       TODO(#12372)
+    known_values:
+      - value: "1"
+        description: Data Ready for Use
+      - value: "2"
+        description: Imported from CJIS - To Be Reviewed
+      - value: "3"
+        description: Imported from CJIS - Data Missing
   - name: COMPUTEDFLAG
     description: |-
       TODO(#12372)
+    known_values:
+      - value: C
+        description: Computed, under review
+      - value: N
+        description: "No"
+      - value: "Y"
+        description: Computed and Published
+      - value: Z
+        description: Not included in Computation
   - name: SENTENCECOUNT
     description: |-
       TODO(#12372)

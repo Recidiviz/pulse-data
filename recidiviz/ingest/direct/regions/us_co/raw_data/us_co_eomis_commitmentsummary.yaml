@@ -1,8 +1,10 @@
 file_tag: eomis_commitmentsummary
 file_description: |-
-  TODO(#12372): Fill in the file description
+  This file contains text sumarizing the commitment.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDERID
+  - COMMITMENTPREFIX
 columns:
   - name: OFFENDERID
   - name: COMMITMENTPREFIX
