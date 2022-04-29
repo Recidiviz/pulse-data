@@ -7,6 +7,7 @@ primary_key_cols:
   - IncidentID
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
   - name: IncidentID
@@ -32,6 +33,7 @@ columns:
     description: |-
       A unique identifier assigned to a job position in an institution.
   - name: OffenderAccount
+    is_pii: True
     description: |-
       The offender's account of the disciplinary for which he is charged. [Comibination of DB2 columns TXT_OFFNR_ACCT through TXT_OFFNR_ACCT _4]
   - name: WeaponsUsed
@@ -52,36 +54,43 @@ columns:
     description: |-
       The abbreviation for the disposition of an inmate disciplanary.
   - name: AdvisorOffenderID
+    is_pii: True
     description: |-
       This is the unique TOMIS identifier of the inmate advisor of another inmate at a disciplinary hearing.
   - name: AdvisorStaffID
+    is_pii: True
     description: |-
       This is the unique staff identifier of the staff person serving as an inmate advisor at a disciplinary hearing.
   - name: DecisionPersonID1
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
   - name: Decision1
     description: |-
       This indicates if the deciding person is a staff or an inmate.
   - name: DecisionPersonID2
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
   - name: Decision2
     description: |-
       This indicates if the deciding person is a staff or an inmate.
   - name: DecisionPersonID3
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
   - name: Decision3
     description: |-
       This indicates if the deciding person is a staff or an inmate.
   - name: DecisionPersonID4
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
   - name: Decision4
     description: |-
       This indicates if the deciding person is a staff or an inmate.
   - name: DecisionPersonID5
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-I D depending on the functional requirements.
   - name: Decision5
@@ -92,9 +101,11 @@ columns:
     description: |-
       This is the date that data is actually posted to the system. The time that information is entered to the TOMIS system. [Combination of of TOMIS columns DTE_POST and TME_POST]
   - name: PostedByStaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

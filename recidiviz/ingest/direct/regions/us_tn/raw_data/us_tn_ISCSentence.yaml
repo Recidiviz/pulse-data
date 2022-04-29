@@ -10,6 +10,7 @@ primary_key_cols:
   - CountNumber
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: Jurisdiction
@@ -19,18 +20,22 @@ columns:
     description: |-
       The year assigned to a sentence for a particular county.  It will generally be the current year at assignment.
   - name: CaseNumber
+    is_pii: True
     description: |-
       A case number assigned to a particular offense, or judgment order. This number is used in identifying a sentence.
   - name: CountNumber
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: ForeignJurisdication
+    is_pii: True
     description: |-
       The identifier given to a person  by another jurisdiction.
   - name: IndictmentNumber
+    is_pii: True
     description: |-
       A unique identifier number assigned to an indictment for a particular judgment order.
   - name: ConvictedOffense
+    is_pii: True
     description: |-
       The decode value of a conviction offense.
   - name: OffenseDate
@@ -48,9 +53,11 @@ columns:
       - value: P
         description: "TODO(#7424): Update with definition."
   - name: WarrantNumber
+    is_pii: True
     description: |-
       A unique identifier number assigned to a warrant for a particular judgment order.
   - name: Sentence
+    is_pii: True
     description: |-
       Text field used for description of the sentence a person  received for a particular offense.
   - name: SentenceImposedDate
@@ -70,6 +77,7 @@ columns:
       - value: PG
         description: PLED GUILTY
   - name: JudgeName
+    is_pii: True
     description: |-
       The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.
   - name: ReleaseEligibilityDate
@@ -94,6 +102,7 @@ columns:
     description: |-
       The total number of pretrial credit days that a person  has received for an ISC sentence.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

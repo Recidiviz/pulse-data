@@ -6,6 +6,7 @@ primary_key_cols:
   - AccountSAK
 columns:
   - name: AccountSAK
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: AccountStartDate
@@ -30,5 +31,6 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.

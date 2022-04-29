@@ -9,9 +9,11 @@ primary_key_cols:
   - Recommendation
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
   - name: AssessmentID
+    is_pii: True
     description: |-
       A unique identifier assigned to a STRONG-R assessment for a person.
   - name: Pathway
@@ -53,9 +55,11 @@ columns:
     description: |-
       The code that indicates the end reason for a TDOC TAP recommendation.
   - name: LastUpdateStaffID
+    is_pii: True
     description: |-
       Staff ID of the last person to update a row on a table.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

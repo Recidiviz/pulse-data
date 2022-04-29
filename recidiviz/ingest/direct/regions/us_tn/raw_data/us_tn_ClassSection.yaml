@@ -61,9 +61,11 @@ columns:
     description: |-
       The seventh day of the week with Monday as the first day.
   - name: UnitID
+    is_pii: True
     description: |-
       A unique identifier assigned to a particular unit within an institution.
   - name: RoomID
+    is_pii: True
     description: |-
       The room number or identifier for the scheduled room assignment.
   - name: WorkArea
@@ -73,6 +75,7 @@ columns:
     description: |-
       The total number of participants allowed into a vocational class.
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: RequestDate
@@ -88,15 +91,18 @@ columns:
     description: |-
       The date on which an inmate is denied placement on a vocational register.
   - name: DecisionStaffID
+    is_pii: True
     description: |-
       The staff id of the individual who made a decision.
   - name: AssignedStaffID
+    is_pii: True
     description: |-
       The staff id of an individual for a particular assignment.
   - name: InactivePayFlag
     description: |-
       Job receives CEMS This can only be YES if the CEMS-Indicator is YES.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

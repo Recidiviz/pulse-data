@@ -10,6 +10,7 @@ primary_key_cols:
   - CountNumber
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
@@ -25,22 +26,28 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
   - name: FirstName
+    is_pii: True
     description: |-
       This is the first name of a person.
   - name: MiddleName
+    is_pii: True
     description: |-
       This is the middle name of a person.
   - name: LastName
+    is_pii: True
     description: |-
       The last name of a person. truncated to length of for Staff Select function from prompt screen.
   - name: SuffixName
+    is_pii: True
     description: |-
       This is the suffix of a person's name; such as Jr., Sr., II, III, 7, Esq., etc.
   - name: BirthDate
+    is_pii: True
     is_datetime: True
     description: |-
       The date on which a person was born. ccyymmdd
   - name: SocialSecurityNumber
+    is_pii: True
     description: |-
       Social Security Number of an individual.
   - name: IndictmentNumber
@@ -56,9 +63,11 @@ columns:
     description: |-
       Division in which a judge presides.  This information is provided in either the PSI or the judgment order.
   - name: DefenseAttorneyName
+    is_pii: True
     description: |-
       The name of the attorney defending an offender. This name is a short, 30 character, text-only field captured on the judgment order.
   - name: DistrictAttorneyName
+    is_pii: True
     description: |-
       Name of the district attorney who is involved with a particular judgment order. This name is a short, text only field captured from the judgment order.
   - name: DefenseAttorneyType
@@ -76,9 +85,11 @@ columns:
       - value: RE
         description: RETAINED
   - name: SIDNumber
+    is_pii: True
     description: |-
       An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies an offender. 8 characters.
   - name: CountyOffenderID
+    is_pii: True
     description: |-
       The County OffenderID stored on the Judgment Order.
   - name: PostedDate
@@ -96,6 +107,7 @@ columns:
     description: |-
       The date on which a person  is arrested for a particular crime.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

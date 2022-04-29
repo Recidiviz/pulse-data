@@ -6,9 +6,11 @@ primary_key_cols:
   - StaffID
 columns:
   - name: StaffID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: UserID
+    is_pii: True
     description: |-
       The user identifier assigned to each successful trainee on TOMIS. Each trainee/employee must have an ID to gain access to the system
   - name: UserClass
@@ -110,12 +112,15 @@ columns:
     description: |-
       This element describes the date when the security statwas added or modified. It will be based on the system date at the time of the update.
   - name: SiteID
+    is_pii: True
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: LastName
+    is_pii: True
     description: |-
       The last name of a person.
   - name: FirstName
+    is_pii: True
     description: |-
       This is the first name of a person.
   - name: Race
@@ -143,15 +148,18 @@ columns:
       - value: U
         description: "TODO(#7424): Update with definition."
   - name: DriverLicenseNumber
+    is_pii: True
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.
   - name: DriverLicenseState
     description: |-
       The state issuing a driver's license.
   - name: SocialSecurityNumber
+    is_pii: True
     description: |-
       Social Security Number of an individual.
   - name: BirthDate
+    is_pii: True
     is_datetime: True
     description: |-
       The date on which a person was born.
@@ -771,15 +779,18 @@ columns:
     description: |-
       The unique identifier for the question a user fails on the first attempt during TOMIS Logon.
   - name: Comments
+    is_pii: True
     description: |-
       Free form text regarding observations made during an inventory audit, item assignment, etc.
   - name: SignonTerminalID
+    is_pii: True
     description: |-
       The terminal nodename that was last used by a staff-id to sigon to the TOMIS online system.
   - name: LastSignonDateTime
     description: |-
       The time of the most recent signon to the TOMIS online system.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

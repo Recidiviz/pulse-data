@@ -7,6 +7,7 @@ primary_key_cols:
   - RequestDate
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: RequestDate
@@ -14,21 +15,27 @@ columns:
     description: |-
       The date on which a request is made.
   - name: RequestLastName
+    is_pii: True
     description: |-
       This is the last name of a person used on a request.
   - name: RequestFirstName
+    is_pii: True
     description: |-
       This is the first name of a person used on a request.
   - name: RequestMiddleName
+    is_pii: True
     description: |-
       This is the middle name of a person used on a request.
   - name: RequestSuffix
+    is_pii: True
     description: |-
       This is the suffix name of a person used on a request.
   - name: RequestSocialSecurityNumber
+    is_pii: True
     description: |-
       Social Security Number of an individual.
   - name: RequestBirthDate
+    is_pii: True
     is_datetime: True
     description: |-
       The date on which a person was born.
@@ -55,6 +62,7 @@ columns:
       - value: M
         description: "TODO(#7424): Update with definition."
   - name: RequestDriverLicenseNumber
+    is_pii: True
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.
   - name: RequestSiteID
@@ -187,9 +195,11 @@ columns:
     description: |-
       The date the Official documentation is filed.
   - name: LastUpdateStaffID
+    is_pii: True
     description: |-
       Staff ID of the last person to update a row on a table.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

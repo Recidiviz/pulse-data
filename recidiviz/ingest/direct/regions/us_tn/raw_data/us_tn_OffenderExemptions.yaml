@@ -6,6 +6,7 @@ primary_key_cols:
   - OffExemptSAK
 columns:
   - name: OffExemptSAK
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: FeeItemID
@@ -36,6 +37,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: Verification
@@ -48,6 +50,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: VoidedByUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: VoidedDate

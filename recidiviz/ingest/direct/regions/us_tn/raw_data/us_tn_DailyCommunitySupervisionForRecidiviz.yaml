@@ -12,9 +12,11 @@ columns:
     description: |-
       This is the site associated with a person's supervision
   - name: StaffID
+    is_pii: True
     description: |-
       This is the StaffID of the person on supervision's assigned staff member
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number
   - name: ReportingDate

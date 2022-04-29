@@ -7,6 +7,7 @@ primary_key_cols:
   - DTE_CCR_RVW
 columns:
   - name: ID_TOMIS
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
   - name: DTE_CCR_RVW
@@ -14,15 +15,19 @@ columns:
     description: |-
       The date that a STRONG-R CCR is reviewed.
   - name: ID_STFF_CCR
+    is_pii: True
     description: |-
       The staff that needs to assess the STRONG-R CCR for an offender.
   - name: ID_STFF_CCR_RVW
+    is_pii: True
     description: |-
       The staff that reviewed the STRONG-R CCR for an offender.
   - name: ID_STFF_LAST
+    is_pii: True
     description: |-
       Staff ID of the last person to update a row on a table.
   - name: ID_USER_LAST
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: DTE_LAST_UPDT

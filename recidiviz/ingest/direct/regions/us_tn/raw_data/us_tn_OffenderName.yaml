@@ -7,21 +7,26 @@ primary_key_cols:
   - SequenceNumber
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: SequenceNumber
     description: |-
       This is a number used to distinguish the sequence of name codes accessed on a Soundex table.
   - name: FirstName
+    is_pii: True
     description: |-
       This is the first name of a person.
   - name: MiddleName
+    is_pii: True
     description: |-
       This is the middle name of a person.
   - name: LastName
+    is_pii: True
     description: |-
       The last name of a person.
   - name: Suffix
+    is_pii: True
     description: |-
       This is the suffix of a person's name; such as Jr., Sr., II, III, 7, Esq., etc.
   - name: NameType
@@ -52,16 +57,19 @@ columns:
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: BirthDate
+    is_pii: True
     is_datetime: True
     description: |-
       The date on which a person was born.
   - name: SocialSecurityNumber
+    is_pii: True
     description: |-
       Social Security Number of an individual.
   - name: STGNicknameFlag
     description: |-
       This flag indicates STG (Security Threat Group) nicknames exist or the person uses names other than their real name.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

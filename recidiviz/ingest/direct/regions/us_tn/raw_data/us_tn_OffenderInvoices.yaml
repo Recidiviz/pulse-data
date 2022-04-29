@@ -6,6 +6,7 @@ primary_key_cols:
   - OffenderInvoiceSAK
 columns:
   - name: OffenderInvoiceSAK
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: InvoiceNumber
@@ -32,6 +33,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: VoidedByUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: AccountSAK
@@ -42,6 +44,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: GPBatchID

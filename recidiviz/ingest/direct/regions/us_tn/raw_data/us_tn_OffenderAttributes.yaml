@@ -6,6 +6,7 @@ primary_key_cols:
   - OffenderID
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: Weight
@@ -37,6 +38,7 @@ columns:
     description: |-
       The state issuing a driver's license.
   - name: DriverLicenseNumber
+    is_pii: True
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.
   - name: ScarsMarksTattoos
@@ -54,9 +56,11 @@ columns:
     description: |-
       The state in which a person  was born.
   - name: NCICFingerprintID
+    is_pii: True
     description: |-
       An alphanumeric identified assigned by NCIC which uniquely identifies a person.
   - name: TennesseeFingerprintID
+    is_pii: True
     description: |-
       An alphanumeric identified assigned by the state of Tennesse which uniquely identifies a person.
   - name: DeathType
@@ -78,12 +82,15 @@ columns:
     description: |-
       The date on which an inmate's remains were disposed. The date on which damaged or scrap merchandise is disposed of.
   - name: DisposalLocation
+    is_pii: True
     description: |-
       The exact location (address, burial plot, or medical facility) at which disposal of an inmate's remains were made.
   - name: DeathPostedByStaffID
+    is_pii: True
     description: |-
       The staff id of the individual who initially posted the death of a person.
   - name: OBSCISID
+    is_pii: True
     description: |-
       This is the person ID used on the OBSCIS system.
   - name: RestoreDate
@@ -97,6 +104,7 @@ columns:
     description: |-
       This flag signifies that a death certificate was obtained as proof of death.
   - name: OldFBINumber
+    is_pii: True
     description: |-
       The old FBI number associated with the person.
   - name: OldSTGAffiliation
@@ -115,15 +123,19 @@ columns:
     description: |-
       This element will contain a person's place of birth (city) for a person  whose citizenship is other than the USA.
   - name: AlienID
+    is_pii: True
     description: |-
       An identifier which uniquely identifies a person  with respect to immigration authorities.
   - name: FBINumber
+    is_pii: True
     description: |-
       The FBI number for a person's attributes. This field differs from TENBF013 by having a different length. This field replaces the old NBR-FBI field.
   - name: SIDNumber
+    is_pii: True
     description: |-
       An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies a person.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

@@ -11,6 +11,7 @@ primary_key_cols:
   - LineNumber
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
@@ -32,9 +33,11 @@ columns:
     description: |-
       A sequential number that indexes the position of multiple occurrence lines on a select screen.
   - name: SpecialConditions
+    is_pii: True
     description: |-
       The text for a special condition listed on a person's Judgment order.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

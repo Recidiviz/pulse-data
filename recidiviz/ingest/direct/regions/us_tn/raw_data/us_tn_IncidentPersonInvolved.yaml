@@ -10,6 +10,7 @@ columns:
     description: |-
       The unique identifier for an incident.
   - name: PersonID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
   - name: PersonType
@@ -22,6 +23,7 @@ columns:
     description: |-
       Indicates whether a person involved in a disciplinary incident was injured. Valid values are Yes or No.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

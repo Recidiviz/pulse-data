@@ -7,21 +7,27 @@ primary_key_cols:
   - PartyID
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: PartyID
+    is_pii: True
     description: |-
       The unique description given to a person who submits a parole comment, is subpoenaed to a hearing, or who wants to be listed as an interested party for an offender.
   - name: PartyName
+    is_pii: True
     description: |-
       The name of a party who submits comments on an offender's parole or who requests notification of an offender's release, hearing, and/or decision.
   - name: AddressLine1
+    is_pii: True
     description: |-
       The first street address line.
   - name: AddressLine2
+    is_pii: True
     description: |-
       The second street address line.
   - name: AddressCity
+    is_pii: True
     description: |-
       The city for an address.
   - name: AddressState
@@ -31,7 +37,9 @@ columns:
     description: |-
       The zip code for an address.
   - name: PhoneNumber
+    is_pii: True
     description: |-
+      is_pii: True
       The number at which someone can be reached.
   - name: NoteType
     description: |-
@@ -108,6 +116,7 @@ columns:
       - value: WI
         description: "TODO(#7424): Update with definition."
   - name: ParoleStatement
+    is_pii: True
     description: |-
       Free form text submitted by an interested party to the Board of Parole regarding the parole of an offender.
   - name: PinID
@@ -126,6 +135,7 @@ columns:
       - value: Y
         description: "YES - New victim letter is to be produced"
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

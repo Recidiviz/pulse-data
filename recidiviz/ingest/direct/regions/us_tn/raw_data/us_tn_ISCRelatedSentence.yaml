@@ -14,6 +14,7 @@ primary_key_cols:
   - RelatedCountNumber
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: Jurisdication
@@ -65,6 +66,7 @@ columns:
       - value: T
         description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate

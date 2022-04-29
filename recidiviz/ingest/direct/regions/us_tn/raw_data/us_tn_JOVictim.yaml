@@ -11,6 +11,7 @@ primary_key_cols:
   - VictimID
 columns:
   - name: OffenderID
+    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ConvictionCounty
@@ -26,21 +27,27 @@ columns:
     description: |-
       The number of counts of the conviction offense reported in the 7RP Extract.
   - name: VictimID
+    is_pii: True
     description: |-
       A unique identifier assigned to the victim of a crime.
   - name: VictimName
+    is_pii: True
     description: |-
       The person or organization that has been a victim of a crime Department Paroles.
   - name: AddressLine1
+    is_pii: True
     description: |-
       The first street address line.
   - name: AddressLine2
+    is_pii: True
     description: |-
       The second street address line.
   - name: City
+    is_pii: True
     description: |-
       The city for an address.
   - name: State
+    is_pii: True
     description: |-
       The state for an address.
   - name: Zip
@@ -53,6 +60,7 @@ columns:
     description: |-
       The amount of restitution owed by a person  to a victim each month.
   - name: LastUpdateUserID
+    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
