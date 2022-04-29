@@ -40,7 +40,7 @@ columns:
     is_datetime: True
     description: |-
       The date and time of a scheduled court appearance for a person. This date is posted during the PSI assignment process.
-  - name: ReferralNamegit 
+  - name: ReferralName
     is_pii: True
     description: |-
       The name associated with a referral.
