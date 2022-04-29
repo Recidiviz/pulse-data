@@ -96,6 +96,32 @@ class IngestViewMaterializationGatingContext:
 
         return state_gating_context[ingest_instance] == _MaterializationType.BQ
 
+    def set_bq_materialization_enabled(
+        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> None:
+        """For a give state/ingest instance, set the bq materialization to enabled"""
+        if state_code not in self._all_states_gating_context:
+            raise ValueError(f"Invalid state: {state_code.value}")
+
+        self._all_states_gating_context[state_code][
+            ingest_instance
+        ] = _MaterializationType.BQ
+
+    def _convert_gating_context_to_yaml(self) -> str:
+        """Converts the IngestViewMaterializationGatingContext to a yaml string to be able to save to GCS"""
+        file_lines = [
+            "# Change values from FILE to BQ as instances are migrated",
+            "states:",
+        ]
+        for state in self._all_states_gating_context:
+            file_lines.append(f"- {state.value}:")
+            for instance in self._all_states_gating_context[state]:
+                file_lines.append(
+                    f"   {instance.value}: {self._all_states_gating_context[state][instance].value}"
+                )
+
+        return "\n".join(file_lines)
+
     @staticmethod
     def gating_config_path() -> GcsfsFilePath:
         """Returns path to the gating config file for this project."""
@@ -150,3 +176,18 @@ class IngestViewMaterializationGatingContext:
                 )
 
         return IngestViewMaterializationGatingContext(all_states_gating_context)
+
+    def save_to_gcs(self) -> GcsfsFilePath:
+        """Saves a YAML file to
+        gs://{project-name}-configs/bq_materialization_gating_config.yaml
+        """
+        fs = GcsfsFactory.build()
+        yaml_path = self.gating_config_path()
+
+        yaml_content = self._convert_gating_context_to_yaml() + "\n"
+
+        fs.upload_from_string(
+            path=yaml_path, contents=yaml_content, content_type="text/yaml"
+        )
+
+        return yaml_path

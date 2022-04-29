@@ -60,6 +60,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.flash_database_tools import (
     move_ingest_view_results_between_instances,
     move_ingest_view_results_to_backup,
+    ungate_bq_materialization_for_instance,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -606,6 +607,35 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             )
             ingest_view_metadata_manager.transfer_metadata_to_new_instance(
                 new_instance_manager=new_instance_manager
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    # TODO(#11424): Delete this endpoint and all references to it once the BQ materialization migration is complete.
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/ungate_materialization_instance",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _ungate_materialization_instance() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            ungate_bq_materialization_for_instance(
+                state_code=state_code, ingest_instance=ingest_instance
             )
             return (
                 "",

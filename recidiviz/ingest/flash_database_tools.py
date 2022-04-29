@@ -22,6 +22,9 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
@@ -108,3 +111,16 @@ def move_ingest_view_results_between_instances(
         dataset_ref=big_query_client.dataset_ref_for_id(dataset_id=source_dataset_id),
         delete_contents=True,
     )
+
+
+# TODO(#11424): Delete this endpoint and all references to it once the BQ materialization migration is complete.
+def ungate_bq_materialization_for_instance(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> None:
+    """Ungate BQ materialization in specific state/instance by enabling materialization and then uploading back to gcs."""
+
+    gating_context = IngestViewMaterializationGatingContext.load_from_gcs()
+    gating_context.set_bq_materialization_enabled(
+        state_code=state_code, ingest_instance=ingest_instance
+    )
+    gating_context.save_to_gcs()
