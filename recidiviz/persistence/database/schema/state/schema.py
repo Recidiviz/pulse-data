@@ -322,15 +322,6 @@ state_residency_status = Enum(
     name="state_residency_status",
 )
 
-state_incarceration_facility_security_level = Enum(
-    state_enum_strings.state_incarceration_facility_security_level_maximum,
-    state_enum_strings.state_incarceration_facility_security_level_medium,
-    state_enum_strings.state_incarceration_facility_security_level_minimum,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    name="state_incarceration_facility_security_level",
-)
-
 state_incarceration_period_admission_reason = Enum(
     state_enum_strings.state_incarceration_period_admission_reason_admitted_in_error,
     state_enum_strings.state_incarceration_period_admission_reason_admitted_from_supervision,
@@ -2069,13 +2060,6 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
         String(255),
         comment="The housing unit within the facility in which the person currently resides.",
     )
-    facility_security_level = Column(
-        state_incarceration_facility_security_level,
-        comment="The security level of the facility.",
-    )
-    facility_security_level_raw_text = Column(
-        String(255), comment="The raw text value of the facility security level."
-    )
     admission_reason = Column(
         state_incarceration_period_admission_reason,
         comment="The reason the person was admitted to this particular period of incarceration.",
@@ -2083,16 +2067,6 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
     admission_reason_raw_text = Column(
         String(255),
         comment="The raw text value of the incarceration period admission reason.",
-    )
-    projected_release_reason = Column(
-        state_incarceration_period_release_reason,
-        comment="The reason the person would be released on the current projected date "
-        "for their earliest possible release.",
-    )
-    projected_release_reason_raw_text = Column(
-        String(255),
-        comment="The raw text value of the incarceration period's "
-        "project release reason.",
     )
     release_reason = Column(
         state_incarceration_period_release_reason,

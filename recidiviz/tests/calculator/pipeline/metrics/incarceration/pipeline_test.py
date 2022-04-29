@@ -65,7 +65,6 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
@@ -196,9 +195,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
@@ -224,10 +221,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
@@ -240,10 +235,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id,
         )

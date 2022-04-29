@@ -51,7 +51,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
@@ -625,8 +624,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         result = deserialize_entity_factories.StateIncarcerationPeriodFactory.deserialize(
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="P",
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
-            facility_security_level_raw_text="M",
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="REV",
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
@@ -648,8 +645,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         expected_result = entities.StateIncarcerationPeriod(
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             incarceration_type_raw_text="P",
-            facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
-            facility_security_level_raw_text="M",
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="REV",
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,

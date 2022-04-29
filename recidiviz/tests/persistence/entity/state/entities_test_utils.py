@@ -45,7 +45,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
@@ -428,12 +427,8 @@ def generate_full_graph_state_person(
         county_code="US_XX_COUNTY",
         facility="ALCATRAZ",
         housing_unit="BLOCK A",
-        facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-        facility_security_level_raw_text="MAX",
         admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         admission_reason_raw_text="NEW ADMISSION",
-        projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        projected_release_reason_raw_text="CONDITIONAL RELEASE",
         release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         release_reason_raw_text="CONDITIONAL RELEASE",
     )

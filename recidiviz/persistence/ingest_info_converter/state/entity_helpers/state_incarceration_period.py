@@ -23,7 +23,6 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
@@ -70,24 +69,12 @@ def copy_fields_to_builder(
         metadata.enum_overrides,
     )
     new.incarceration_type_raw_text = getattr(proto, "incarceration_type")
-    new.facility_security_level = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "facility_security_level"),
-        StateIncarcerationFacilitySecurityLevel,
-        metadata.enum_overrides,
-    )
-    new.facility_security_level_raw_text = getattr(proto, "facility_security_level")
     new.admission_reason = DefaultingAndNormalizingEnumParser(
         getattr(proto, "admission_reason"),
         StateIncarcerationPeriodAdmissionReason,
         metadata.enum_overrides,
     )
     new.admission_reason_raw_text = getattr(proto, "admission_reason")
-    new.projected_release_reason = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "projected_release_reason"),
-        StateIncarcerationPeriodReleaseReason,
-        metadata.enum_overrides,
-    )
-    new.projected_release_reason_raw_text = getattr(proto, "projected_release_reason")
     new.release_reason = DefaultingAndNormalizingEnumParser(
         getattr(proto, "release_reason"),
         StateIncarcerationPeriodReleaseReason,

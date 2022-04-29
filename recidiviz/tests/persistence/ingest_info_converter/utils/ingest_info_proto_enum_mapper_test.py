@@ -23,11 +23,7 @@ from recidiviz.common.constants.county.charge import (
     ChargeStatus,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
-)
-from recidiviz.ingest.models.ingest_info_pb2 import Charge, StateIncarcerationPeriod
+from recidiviz.ingest.models.ingest_info_pb2 import Charge
 from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
     IngestInfoProtoEnumMapper,
 )
@@ -52,38 +48,6 @@ class IngestInfoProtoEnumMapperTest(unittest.TestCase):
 
         self.assertEqual(
             ChargeClass.PROBATION_VIOLATION, proto_enum_mapper.get(ChargeClass)
-        )
-
-    def testEnumMultipleFieldShareEnumType(self) -> None:
-        enum_fields = {
-            "admission_reason": StateIncarcerationPeriodAdmissionReason,
-            "projected_release_reason": StateIncarcerationPeriodReleaseReason,
-            "release_reason": StateIncarcerationPeriodReleaseReason,
-        }
-
-        proto = StateIncarcerationPeriod(
-            admission_reason="REVOCATION",
-            projected_release_reason="CONDITIONAL_RELEASE",
-            release_reason="SERVED",
-        )
-
-        proto_enum_mapper = IngestInfoProtoEnumMapper(
-            proto, enum_fields, EnumOverrides.Builder().build()
-        )
-
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            proto_enum_mapper.get(
-                StateIncarcerationPeriodReleaseReason,
-                field_name="projected_release_reason",
-            ),
-        )
-
-        self.assertEqual(
-            StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            proto_enum_mapper.get(
-                StateIncarcerationPeriodReleaseReason, field_name="release_reason"
-            ),
         )
 
     def testMultipleMappingsFails(self) -> None:
