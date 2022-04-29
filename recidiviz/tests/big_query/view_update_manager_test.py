@@ -55,7 +55,7 @@ _DATASET_NAME = "my_views_dataset"
 _DATASET_NAME_2 = "my_views_dataset_2"
 _DATASET_NAME_3 = "my_views_dataset_3"
 
-RAW_DATASET_ID_QUERY_REGEX = re.compile(r"`[a-z_{}]+\.([a-z_]+)\.[a-z_]+`")
+RAW_DATASET_ID_QUERY_REGEX = re.compile(r"`[a-z_{}]+\.([a-zA-Z_]+)\.[a-zA-Z_]+`")
 
 
 class ViewManagerTest(unittest.TestCase):

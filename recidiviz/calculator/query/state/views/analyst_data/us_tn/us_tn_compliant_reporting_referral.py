@@ -21,6 +21,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -41,7 +45,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
             COALESCE(CAST(vic.MonthlyRestitution AS FLOAT64 ),0) AS MonthlyRestitution,
             vic.VictimName,
             FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` pp
-            LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.JOVictim_latest` vic
+            LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.JOVictim_latest` vic
                 ON CAST(pp.external_id AS STRING) = CONCAT(vic.OffenderID, vic.ConvictionCounty, vic.CaseYear, vic.CaseNumber, FORMAT('%03d', CAST(vic.CountNumber AS INT64)))
             WHERE pp.sentence_status !='IN'
         ),
@@ -58,7 +62,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
         contact_note_type AS (
                 SELECT * EXCEPT(ContactNoteDateTime),
                     CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date,
-                FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+                FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         ),
         court_cost_contacts AS (
             -- Get latest contact related to court costs. Here's where looking for "fee status" and there appear to be 2 codes that give this status:
@@ -149,11 +153,11 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
         FROM `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_logic_materialized` cr
         LEFT JOIN aggregated_restitution
             USING(person_id)
-        LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.OffenderAttributes_latest` att
+        LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderAttributes_latest` att
             ON cr.person_external_id = att.OffenderID
         LEFT JOIN (
             SELECT *
-            FROM `{project_id}.us_tn_raw_data_up_to_date_views.ReleasePlan_latest` 
+            FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ReleasePlan_latest` 
             WHERE TRUE
             QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY LastUpdateDate DESC) = 1
         ) rp
@@ -173,6 +177,9 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_TN.value
+    ),
     should_materialize=True,
 )
 

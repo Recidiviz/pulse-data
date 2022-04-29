@@ -23,6 +23,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -201,7 +205,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 ContactNoteType,
                 CASE WHEN ContactNoteType IN ('DRUN','DRUX','DRUM') THEN 1 ELSE 0 END AS negative_drug_test,
                 1 AS drug_screen,
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         -- Limit to DRU% (DRUN,DRUM, etc) type contacts in the last 12 months 
         -- While the policy technically states the test must have been passed within the last 12 months, increasing the lookback
         -- window allows us to include people on the margin of eligibility who may have received a negative drug screen
@@ -252,27 +256,27 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     -- This will be useful for determining date of eligibility for people without drug offenses
     drun_contacts AS (
         SELECT OffenderID AS Offender_ID, MIN(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) AS earliest_DRUN_date
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN ('DRUN','DRUX','DRUM')
         GROUP BY 1
     ),
     -- This CTE excludes people who have a flag indicating Lifetime Supervision or Life Sentence - both are ineligible for CR or overdue
     CSL AS (
         SELECT OffenderID as Offender_ID, LifetimeSupervision, LifeDeathHabitual 
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.JOSentence_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.JOSentence_latest`
         WHERE TRUE
         QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CASE WHEN LifetimeSupervision = 'Y' THEN 0 ELSE 1 END,
                                                                     CASE WHEN LifeDeathHabitual IS NOT NULL THEN 0 ELSE 1 END) = 1
     ),
     life_sentence_ISC AS (
         SELECT DISTINCT OffenderID AS Offender_ID,
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ISCSentence_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ISCSentence_latest`
         WHERE sentence LIKE '%LIFE%'
     ),
     -- This CTE excludes people who have been rejected from CR because of criminal record or court order
     CR_rejection_codes AS (
         SELECT DISTINCT OffenderID as Offender_ID
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN ('DEIJ','DECR')
     ),
     -- This CTE excludes people who have been rejected from CR for other reasons, that are not static
@@ -283,7 +287,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         -- DECT: DENIED COMPLIANT REPORTING, INSUFFICENT TIME IN SUPERVISON LEVEL - since we're checking for that
     CR_rejection_codes_dynamic AS (
         SELECT DISTINCT OffenderID as Offender_ID
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN 
                                 -- DENIED, NO EFFORT TO PAY FINE AND COSTS
                                 ('DECF',
@@ -300,23 +304,23 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     ),
     rejection_codes_max_date AS (
         SELECT OffenderID as Offender_ID, MAX(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) AS latest_cr_rejection_code_date
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN ('DECF', 'DEDF','DEDU','DEIO','DEIR')
         GROUP BY 1
     ),
     -- serious sanctions criteria
     sanctions AS (
         SELECT DISTINCT OffenderID as Offender_ID,
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.Violations_latest`
-        JOIN `{project_id}.us_tn_raw_data_up_to_date_views.Sanctions_latest` 
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Violations_latest`
+        JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sanctions_latest` 
             USING(TriggerNumber)
         WHERE CAST(SanctionLevel AS INT) > 1
             AND CAST(CAST(ProposedDate AS datetime) AS DATE) >= DATE_SUB(CURRENT_DATE('US/Eastern'),INTERVAL 12 MONTH)
     ),
     sanctions_array AS (
         SELECT OffenderID as Offender_ID, ARRAY_AGG(ProposedSanction IGNORE NULLS) AS sanctions_in_last_year
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.Violations_latest`
-        JOIN `{project_id}.us_tn_raw_data_up_to_date_views.Sanctions_latest` 
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Violations_latest`
+        JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sanctions_latest` 
             USING(TriggerNumber)
         WHERE CAST(CAST(ProposedDate AS datetime) AS DATE) >= DATE_SUB(CURRENT_DATE('US/Eastern'),INTERVAL 12 MONTH)
         GROUP BY 1
@@ -325,8 +329,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT OffenderID as Offender_ID, 
               MAX(CASE WHEN CAST(SanctionLevel AS INT) > 1 THEN DATE_ADD(CAST(CAST(ProposedDate AS datetime) AS DATE), INTERVAL 12 MONTH)
                   ELSE '1900-01-01' END) AS date_sanction_eligible
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.Violations_latest`
-        JOIN `{project_id}.us_tn_raw_data_up_to_date_views.Sanctions_latest` 
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Violations_latest`
+        JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sanctions_latest` 
             USING(TriggerNumber)
         GROUP BY 1
     ),
@@ -335,13 +339,13 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT OffenderID as Offender_ID, 
                 ARRAY_AGG(STRUCT(ContactNoteType,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date)) AS zt_codes,
                 MAX(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) AS latest_zero_tolerance_sanction_date
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN ('VWAR','PWAR','ZTVR','COHC')
         GROUP BY OffenderID
     ),
     person_status_cte AS (
             SELECT OffenderID as Offender_ID, OffenderStatus AS person_status
-            FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderName_latest`
+            FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderName_latest`
             WHERE TRUE
             QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID 
                                     ORDER BY SequenceNumber DESC) = 1
@@ -355,14 +359,14 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AccountSAK,
                 ReasonCode,
                 CAST(ExemptAmount AS FLOAT64) AS ExemptAmount
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderExemptions_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderExemptions_latest`
     ),
     inv AS (
         SELECT * EXCEPT(InvoiceDate, UnPaidAmount, InvoiceAmount),
                         CAST(SPLIT(InvoiceDate,' ')[OFFSET(0)] AS DATE) as InvoiceDate,
                         ROUND(CAST(UnPaidAmount AS FLOAT64)) AS UnPaidAmount,
                         CAST(InvoiceAmount AS FLOAT64 ) AS InvoiceAmount,
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderInvoices_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderInvoices_latest`
     ),
     -- Returns all accounts with permanent exemption types
     permanent_exemptions AS (
@@ -394,7 +398,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                              END
                     ) as unpaid_total_latest,
             FROM sup_plan_standards
-            LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.OffenderAccounts_latest` accounts
+            LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderAccounts_latest` accounts
                 ON sup_plan_standards.Offender_ID = accounts.OffenderID
             LEFT JOIN inv inv_1 
                 ON accounts.AccountSAK = inv_1.AccountSAK
@@ -415,7 +419,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                              END
                     ) as unpaid_total_all,
             FROM sup_plan_standards
-            LEFT JOIN `{project_id}.us_tn_raw_data_up_to_date_views.OffenderAccounts_latest` accounts
+            LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderAccounts_latest` accounts
                 ON sup_plan_standards.Offender_ID = accounts.OffenderID
             LEFT JOIN inv inv_2 
                 ON accounts.AccountSAK = inv_2.AccountSAK
@@ -436,7 +440,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT AccountSAK, 
             CAST(SPLIT(PaymentDate,' ')[OFFSET(0)] AS DATE) as PaymentDate,
             CAST(PaidAmount AS FLOAT64) - CAST(UnAppliedAmount AS FLOAT64) AS PaidAmount,
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderPayments_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderPayments_latest`
     ),
     sum_payments AS (
         SELECT AccountSAK, PaymentDate, SUM(PaidAmount) as last_paid_amount
@@ -461,7 +465,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     latest_tepe AS (
         SELECT OffenderID as Offender_ID,
                 CAST(SPLIT(ContactNoteDateTime,' ')[OFFSET(0)] AS DATE) as latest_tepe_date
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType = 'TEPE'
         QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY ContactNoteDateTime DESC) = 1
     ),
@@ -469,7 +473,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT OffenderID as Offender_ID, 
                 CAST(SPLIT(ContactNoteDateTime,' ')[OFFSET(0)] AS DATE) as latest_zzz_date,
                 ContactNoteType as latest_zzz_code,
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN ('ZZZZ','ZZZC')
         QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY ContactNoteDateTime DESC) = 1
     ), 
@@ -477,7 +481,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT OffenderID as Offender_ID,
                 CAST(SPLIT(LastUpdateDate,' ')[OFFSET(0)] AS DATE) as latest_mvmt_date,
                 MovementType as latest_mvmt_code,
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.OffenderMovement_latest`
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderMovement_latest`
         WHERE MovementType LIKE '%DI%'
         QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY MovementDateTime DESC) = 1
     ),
@@ -489,13 +493,13 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT Offender_ID, hearing_date, condition, Decode AS condition_description
         FROM (
             SELECT DISTINCT OffenderID AS Offender_ID, CAST(HearingDate AS DATE) AS hearing_date, ParoleCondition1, ParoleCondition2, ParoleCondition3, ParoleCondition4, ParoleCondition5
-            FROM `{project_id}.us_tn_raw_data_up_to_date_views.BoardAction_latest`
+            FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.BoardAction_latest`
             WHERE FinalDecision = 'Y'
         )
         UNPIVOT(condition for c in (ParoleCondition1, ParoleCondition2, ParoleCondition3, ParoleCondition4, ParoleCondition5))
         LEFT JOIN (
             SELECT *
-            FROM `{project_id}.us_tn_raw_data_up_to_date_views.CodesDescription_latest`
+            FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.CodesDescription_latest`
             WHERE CodesTableID = 'TDPD030'
         ) codes 
             ON condition = codes.Code
@@ -1056,6 +1060,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_TN.value
+    ),
     should_materialize=True,
 )
 
