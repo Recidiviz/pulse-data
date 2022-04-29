@@ -2,7 +2,7 @@
 """drop_unused_ip_fields
 
 Revision ID: dbf7688df462
-Revises: 036740faa838
+Revises: 2fe9deb1d56f
 Create Date: 2022-04-29 12:09:52.067257
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "dbf7688df462"
-down_revision = "8b3414901d9b"
+down_revision = "2fe9deb1d56f"
 branch_labels = None
 depends_on = None
 

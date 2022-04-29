@@ -93,11 +93,9 @@ class BigQueryQueryRewriter:
         # Changes references to SAFE.PARSE_DATETIME to drop the SAFE, which is invalid in Postgres
         query = self._remove_safe_schema_from_parse_datetime(query)
 
-        # Update % signs to be double escaped
+        # Update % signs in format args to be double escaped
         query = _replace_iter(
-            query,
-            r"(?P<leading_char>[^\%])\%(?P<trailing_char>[^\%])",
-            "{leading_char}%%{trailing_char}",
+            query, r"(?P<first_char>[^\%])\%(?P<fmt>[A-Za-z])", "{first_char}%%{fmt}"
         )
 
         # SPLIT function has different format
