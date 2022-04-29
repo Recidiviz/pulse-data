@@ -85,10 +85,11 @@ class ReportTableDefinitionInterface:
             report=report,
         )
 
-        return update_existing_or_create(
+        table_definition, _ = update_existing_or_create(
             ingested_entity=report_table_definition,
             session=session,
         )
+        return table_definition
 
     @staticmethod
     def get_by_id(session: Session, _id: int) -> schema.ReportTableDefinition:

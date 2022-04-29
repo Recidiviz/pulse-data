@@ -16,7 +16,9 @@
 # =============================================================================
 """Interface for working with the ReportTableInstance model."""
 
-from typing import Optional
+import datetime
+import decimal
+from typing import Optional, Union
 
 from sqlalchemy.orm import Session
 
@@ -40,13 +42,15 @@ class ReportTableInstanceInterface:
         report: schema.Report,
         report_table_definition: schema.ReportTableDefinition,
         report_metric: ReportMetric,
+        user_account: schema.UserAccount,
+        current_time: datetime.datetime,
         aggregated_dimension: Optional[ReportedAggregatedDimension] = None,
     ) -> schema.ReportTableDefinition:
         """Given a Report, a ReportTableDefinition, a ReportMetric, and an
         (optional) aggregated dimension, create (or update) the corresponding
         ReportTableInstances and Cells.
         """
-        table_instance = update_existing_or_create(
+        table_instance, _ = update_existing_or_create(
             schema.ReportTableInstance(
                 report=report,
                 report_table_definition=report_table_definition,
@@ -61,39 +65,52 @@ class ReportTableInstanceInterface:
             # If aggregated_dimension is None, we are currently creating
             # the ReportTableInstance corresponding to the aggregate metric value.
             if report_metric.value is not None:
-                cells = [
-                    update_existing_or_create(
-                        schema.Cell(
-                            value=report_metric.value,
-                            aggregated_dimension_values=[],
-                            report_table_instance=table_instance,
-                        ),
-                        session,
+                cell, existing_cell = update_existing_or_create(
+                    schema.Cell(
+                        value=report_metric.value,
+                        aggregated_dimension_values=[],
+                        report_table_instance=table_instance,
+                    ),
+                    session,
+                )
+                if existing_cell:
+                    cell_history = schema.CellHistory(
+                        user_account_id=user_account.id,
+                        timestamp=current_time,
+                        # For some reason, SQLAlchemy returns an instance of decimal.decimal here
+                        old_value=_decimal_to_python_type(number=existing_cell.value),
+                        new_value=report_metric.value,
                     )
-                ]
+                    cell.cell_histories.append(cell_history)
+                cells = [cell]
             else:
                 cells = []
 
             # Right now we only support per-metric contexts, so we store all
             # contexts on the ReportTableInstance that corresponds to the
             # aggregate metric value.
-            contexts = [
-                update_existing_or_create(
+            contexts = []
+            for reported_context in report_metric.contexts or []:
+                if reported_context.value is None:
+                    continue
+                context: schema.Context
+                context, _ = update_existing_or_create(
                     schema.Context(
-                        key=context.key.value,
-                        value=context.value,
+                        key=reported_context.key.value,
+                        value=reported_context.value,
                         report_table_instance=table_instance,
                     ),
                     session,
                 )
-                for context in report_metric.contexts or []
-                if context.value is not None
-            ]
+                contexts.append(context)
         else:
             # If aggregated_dimension is None, we are currently creating
             # the ReportTableInstance corresponding to this dimension.
-            cells = [
-                update_existing_or_create(
+            cells = []
+            for key, value in aggregated_dimension.dimension_to_value.items():
+                if value is None:
+                    continue
+                cell, existing_cell = update_existing_or_create(
                     schema.Cell(
                         value=value,
                         aggregated_dimension_values=[key.dimension_value],
@@ -101,9 +118,17 @@ class ReportTableInstanceInterface:
                     ),
                     session,
                 )
-                for key, value in aggregated_dimension.dimension_to_value.items()
-                if value is not None
-            ]
+                if existing_cell:
+                    cell_history = schema.CellHistory(
+                        user_account_id=user_account.id,
+                        timestamp=current_time,
+                        # For some reason, SQLAlchemy returns an instance of decimal.decimal here
+                        old_value=_decimal_to_python_type(number=existing_cell.value),
+                        new_value=value,
+                    )
+                    cell.cell_histories.append(cell_history)
+                cells.append(cell)
+
             # TODO(#12433) Support per-dimension contexts
             contexts = []
 
@@ -128,3 +153,10 @@ class ReportTableInstanceInterface:
             ),
             schema.ReportTableInstance,
         )
+
+
+def _decimal_to_python_type(number: decimal.Decimal) -> Union[int, float]:
+    """Convert an instance of decimal.Decimal to either int or float."""
+    if number % 1 == 0:
+        return int(number)
+    return float(number)

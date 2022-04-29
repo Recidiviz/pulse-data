@@ -150,7 +150,10 @@ class ReportInterface:
 
     @staticmethod
     def add_or_update_metric(
-        session: Session, report: schema.Report, report_metric: ReportMetric
+        session: Session,
+        report: schema.Report,
+        report_metric: ReportMetric,
+        user_account: schema.UserAccount,
     ) -> None:
         """Given a Report and a ReportMetric, either add this metric
         to the report, or if the metric already exists on the report,
@@ -175,6 +178,7 @@ class ReportInterface:
               (e.g. 100 arrests of men, 23 arrests of women, etc,
               each in their own Cell object)
         """
+        current_time = datetime.datetime.utcnow()
 
         # First, define a ReportTableDefinition + Instance + Cells for the
         # aggregate metric value (summed across all dimensions).
@@ -188,10 +192,12 @@ class ReportInterface:
             report=report,
             report_table_definition=report_table_definition,
             report_metric=report_metric,
+            user_account=user_account,
+            current_time=current_time,
         )
 
         # Next, define a ReportTableDefinition + Instance + Cells for
-        # each disaggregated dimension of the metric.
+        # each disaggregated dimension of the metric that was reported.
         for dimension in report_metric.aggregated_dimensions or []:
             report_table_definition = (
                 ReportTableDefinitionInterface.create_or_update_from_report_metric(
@@ -207,11 +213,14 @@ class ReportInterface:
                 report_table_definition=report_table_definition,
                 report_metric=report_metric,
                 aggregated_dimension=dimension,
+                user_account=user_account,
+                current_time=current_time,
             )
 
-        # Finally, if any disaggregated dimensions that are defined on the metric
+        # If any disaggregated dimensions that are defined on the metric
         # were explicitly not reported by the agency, this means that the agency
         # decided to remove them, so delete them from the DB
+        # TODO(#12337) Create cell histories when deleting breakdowns
         definition_dimension_identifiers = {
             dimension.dimension_identifier()
             for dimension in report_metric.metric_definition.aggregated_dimensions or []
@@ -246,6 +255,9 @@ class ReportInterface:
                     report=report,
                     report_table_definition=report_table_definition,
                 )
+
+        # Finally, updated the Report object's `last_modified_at` and `modified_by` fields
+        # TODO(#12336) Update report editors and last modified
 
     @staticmethod
     def get_metrics_by_report_id(

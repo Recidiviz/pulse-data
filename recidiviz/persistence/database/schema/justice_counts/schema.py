@@ -456,6 +456,37 @@ class Cell(JusticeCountsBase):
     )
 
     report_table_instance = relationship(ReportTableInstance, back_populates="cells")
+    cell_histories = relationship(
+        "CellHistory",
+        back_populates="cell",
+        cascade="all, delete",
+        lazy="selectin",
+        passive_deletes=True,
+    )
+
+
+class CellHistory(JusticeCountsBase):
+    """Represents a history of changes made to a Cell."""
+
+    __tablename__ = "cell_history"
+
+    id = Column(Integer, autoincrement=True)
+
+    cell_id = Column(Integer, nullable=False)
+    user_account_id = Column(Integer, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    old_value = Column(Integer, nullable=False)
+    new_value = Column(Integer, nullable=False)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            ForeignKeyConstraint([cell_id], [Cell.id], ondelete="CASCADE"),
+            ForeignKeyConstraint([user_account_id], [UserAccount.id]),
+        ]
+    )
+
+    cell = relationship(Cell, back_populates="cell_histories")
 
 
 class Context(JusticeCountsBase):
