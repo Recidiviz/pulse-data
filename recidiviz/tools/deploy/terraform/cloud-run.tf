@@ -188,6 +188,48 @@ resource "google_cloud_run_service" "justice-counts" {
   autogenerate_revision_name = false
 }
 
+# Initializes Application Data Import Cloud Run service
+resource "google_cloud_run_service" "application-data-import" {
+  name     = "application-data-import"
+  location = var.region
+
+  # TODO(#12449): Remove staging-only check when we create production environment
+  count = var.project_id == "recidiviz-123" ? 0 : 1
+
+  template {
+    spec {
+      containers {
+        image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        command = ["pipenv"]
+        args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.application_data_import.server:app"]
+
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+      }
+
+      # TODO(#12449): Add a new service account
+    }
+
+    metadata {
+      # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
+      # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
+      # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
+      # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
+      # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
+      name = "application-data-import-${var.git_hash}"
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+  autogenerate_revision_name = false
+}
+
 # By default, Cloud Run services are private and secured by IAM. 
 # The blocks below set up public access so that anyone (e.g. our frontends)
 # can invoke the services through an HTTP endpoint.
@@ -206,6 +248,17 @@ resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
   location = google_cloud_run_service.justice-counts[count.index].location
   project  = google_cloud_run_service.justice-counts[count.index].project
   service  = google_cloud_run_service.justice-counts[count.index].name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# TODO(#12449): Make this private after we've had the opportunity to test it
+resource "google_cloud_run_service_iam_member" "application-data-import-public-access" {
+  count = var.project_id == "recidiviz-123" ? 0 : 1
+
+  location = google_cloud_run_service.application-data-import[count.index].location
+  project  = google_cloud_run_service.application-data-import[count.index].project
+  service  = google_cloud_run_service.application-data-import[count.index].name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
