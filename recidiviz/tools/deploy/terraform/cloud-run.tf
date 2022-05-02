@@ -119,7 +119,7 @@ resource "google_cloud_run_service" "case-triage" {
       # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
       # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
       # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
-      name = "case-triage-web-${var.git_hash}"
+      name = "case-triage-web-${local.git_short_hash}"
     }
   }
 
@@ -176,7 +176,7 @@ resource "google_cloud_run_service" "justice-counts" {
       # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
       # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
       # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
-      name = "justice-counts-web-${var.git_hash}"
+      name = "justice-counts-web-${local.git_short_hash}"
     }
   }
 
@@ -218,7 +218,7 @@ resource "google_cloud_run_service" "application-data-import" {
       # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
       # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
       # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
-      name = "application-data-import-${var.git_hash}"
+      name = "application-data-import-${local.git_short_hash}"
     }
   }
 
@@ -316,4 +316,11 @@ module "unified-product-load-balancer" {
       }
     }
   }
+}
+
+locals {
+  # Take a substring of the hash so we don't run into character limits on metadata.name,
+  # which can be at most 63 characters. We don't necessarily need the whole hash there,
+  # we just need to know if the code being pushed to Cloud Run has changed.
+  git_short_hash = substr(var.git_hash, 0, 8)
 }
