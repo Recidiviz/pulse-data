@@ -23,12 +23,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    WITH normalized_rows AS (
+WITH normalized_rows AS (
         SELECT
             OffenderID,
             FirstName,
             MiddleName,
             LastName,
+            NameType,
             CASE 
                 WHEN Race in ('W', 'B', 'A', 'I') THEN Race
                 ELSE NULL
@@ -41,12 +42,22 @@ VIEW_QUERY_TEMPLATE = """
                 WHEN Sex in ('F', 'M') THEN Sex
                 ELSE NULL
             END AS Sex,
-            BirthDate,
-            ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY LastUpdateDate DESC, CAST(SequenceNumber AS INT64) DESC) AS recency_rank
-        FROM
-            {OffenderName}
-        -- Filter out nicknames.
-        Where NameType != 'N'
+                -- There are times when updates are made to the rows for a name, but the birthdate is not always carried through with that update, 
+                -- which could cause null birthdates to be surfaced when we have the information. This window allows us to keep the most up to date 
+                -- name/information entry and still preserve birthdates when they are null.
+            FIRST_VALUE(BirthDate IGNORE NULLS) OVER (PARTITION BY OffenderID ORDER BY LastUpdateDate DESC, CAST(SequenceNumber AS INT64) DESC RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as BirthDate,
+            LastUpdateDate,
+            SequenceNumber
+        FROM {OffenderName}
+    ), 
+    filtered_out_nicknames AS (
+        -- Ensures that we include nickname rows when looking for the most recent non-null birthdate but 
+        -- skip them when we are calculating the row number.
+      SELECT *,
+      ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY LastUpdateDate DESC, CAST(SequenceNumber AS INT64) DESC) AS recency_rank
+      FROM normalized_rows
+      -- Filter out nicknames.
+      WHERE NameType != 'N'
     )
     SELECT
         OffenderID,
@@ -57,7 +68,7 @@ VIEW_QUERY_TEMPLATE = """
         Ethnicity,
         Sex,
         BirthDate
-    FROM normalized_rows
+    FROM filtered_out_nicknames
     WHERE recency_rank = 1
 """
 
