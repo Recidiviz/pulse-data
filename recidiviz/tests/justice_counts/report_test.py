@@ -490,25 +490,25 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
-            metrics = sorted(
-                ReportInterface.get_metrics_by_report_id(
-                    session=session, report_id=report_id
-                ),
-                key=lambda x: x.key,
+            metrics = ReportInterface.get_metrics_by_report_id(
+                session=session, report_id=report_id
             )
-            calls_for_service = metrics[0]
-            population = metrics[1]
+            self.assertEqual(len(metrics), 6)
+            calls_for_service = [
+                metric
+                for metric in metrics
+                if metric.key
+                == self.test_schema_objects.reported_calls_for_service_metric.key
+            ].pop()
 
-            # Should have two metrics: population and calls for service
-            self.assertEqual(len(metrics), 2)
-            self.assertEqual(
-                calls_for_service.key,
-                "LAW_ENFORCEMENT_CALLS_FOR_SERVICE__metric/law_enforcement/calls_for_service/type",
-            )
-            self.assertEqual(
-                population.key,
-                "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
-            )
+            population = [
+                metric
+                for metric in metrics
+                if metric.key == self.test_schema_objects.reported_residents_metric.key
+            ].pop()
+
+            self.assertIsNotNone(calls_for_service)
+            self.assertIsNotNone(population)
 
             # Population metric should be blank
             self.assertEqual(population.value, None)
