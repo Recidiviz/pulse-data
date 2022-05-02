@@ -25,6 +25,13 @@ METRICS = [
     law_enforcement.annual_budget,
     law_enforcement.residents,
     law_enforcement.calls_for_service,
+    law_enforcement.arrests_by_race_and_ethnicity,
+    law_enforcement.arrests_by_gender,
+    law_enforcement.civilian_complaints_sustained,
+    law_enforcement.police_officers,
+    law_enforcement.reported_crime,
+    law_enforcement.total_arrests,
+    law_enforcement.officer_use_of_force_incidents,
 ]
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key
