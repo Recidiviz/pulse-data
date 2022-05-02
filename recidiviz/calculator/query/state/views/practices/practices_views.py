@@ -18,10 +18,30 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.practices.client_record_archive import (
+    CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.practices.clients_latest_referral_status import (
+    CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.practices.clients_referral_completed import (
+    CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.practices.clients_referral_form_viewed import (
+    CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.practices.clients_surfaced import (
+    CLIENTS_SURFACED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.practices.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
 
 PRACTICES_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
+    CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
+    CLIENTS_SURFACED_VIEW_BUILDER,
+    CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
+    CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER,
+    CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
 ]
