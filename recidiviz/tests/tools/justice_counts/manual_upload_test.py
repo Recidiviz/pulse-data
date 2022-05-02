@@ -25,6 +25,7 @@ from unittest.mock import patch
 
 import pytest
 from dateutil.relativedelta import relativedelta
+from mock import MagicMock
 from sqlalchemy import sql
 
 from recidiviz.common.constants.entity_enum import (
@@ -814,7 +815,22 @@ class ManualUploadTest(TestCase):
             ]
             self.assertEqual(EXPECTED, results)
 
-    def test_ingestSubtypeNotStrict_isPersisted(self) -> None:
+    @patch(
+        "recidiviz.justice_counts.dimensions.helpers.DimensionParser.get_dimension_for_name"
+    )
+    def test_ingestSubtypeNotStrict_isPersisted(
+        self, mock_get_dimension: MagicMock
+    ) -> None:
+        # Arrange
+        def fake_get_dimension_for_name(name: str) -> Type[Dimension]:
+            if name == "FAKE_TYPE":
+                return FakeType
+            if name == "FAKE_SUBTYPE":
+                return FakeSubtype
+            raise ValueError(f"No dimension with name '{name}'")
+
+        mock_get_dimension.side_effect = fake_get_dimension_for_name
+
         # Act
         manual_upload.ingest(
             self.fs,
@@ -847,7 +863,22 @@ class ManualUploadTest(TestCase):
                 [(cell.aggregated_dimension_values, cell.value) for cell in cells],
             )
 
-    def test_ingestSubtypeStrict_isNotPersisted(self) -> None:
+    @patch(
+        "recidiviz.justice_counts.dimensions.helpers.DimensionParser.get_dimension_for_name"
+    )
+    def test_ingestSubtypeStrict_isNotPersisted(
+        self, mock_get_dimension: MagicMock
+    ) -> None:
+        # Arrange
+        def fake_get_dimension_for_name(name: str) -> Type[Dimension]:
+            if name == "FAKE_TYPE":
+                return FakeType
+            if name == "FAKE_SUBTYPE":
+                return FakeSubtype
+            raise ValueError(f"No dimension with name '{name}'")
+
+        mock_get_dimension.side_effect = fake_get_dimension_for_name
+
         # Act
         with self.assertRaises(EnumParsingError):
             manual_upload.ingest(
@@ -1490,11 +1521,12 @@ class ManualUploadTest(TestCase):
 
     def test_parse_date_range_raiseChronologicalError(self) -> None:
         range_input = YAMLDict({"type": "RANGE", "input": ["2020-11-01", "2020-10-01"]})
+        table_parser = manual_upload.TableParser()
 
         with self.assertRaisesRegex(
             ValueError, "Parsed date has to be in chronological order"
         ):
-            manual_upload._parse_date_range(  # pylint: disable=protected-access
+            table_parser._parse_date_range(  # pylint: disable=protected-access
                 range_input
             )
 
@@ -1509,9 +1541,10 @@ class ManualUploadTest(TestCase):
                 ],
             }
         )
+        table_parser = manual_upload.TableParser()
 
         with self.assertRaisesRegex(ValueError, "Have a maximum of 2 dates for input"):
-            manual_upload._parse_date_range(  # pylint: disable=protected-access
+            table_parser._parse_date_range(  # pylint: disable=protected-access
                 range_input
             )
 

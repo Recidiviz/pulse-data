@@ -17,11 +17,14 @@
 """Contains helper utilities for working with Dimension classes."""
 
 
+import inspect
 from typing import Dict, Optional, Type
 
 from recidiviz.common.constants.entity_enum import EntityEnumT
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.common.str_field_utils import to_snake_case
+from recidiviz.justice_counts import dimensions
 from recidiviz.justice_counts.dimensions.base import Dimension, RawDimension
 
 
@@ -98,15 +101,34 @@ def get_synthetic_dimension(column_name: str, source: str) -> Type[Dimension]:
     return synthetic_dimension
 
 
-# TODO(#4473): Raise an error if there are conflicting dimension names
-def parse_dimension_name(dimension_name: str) -> Type[Dimension]:
-    """Parses a dimension name to its corresponding Dimension class."""
-    for dimension in Dimension.__subclasses__():
-        if not issubclass(dimension, Dimension):
-            raise ValueError(f"Non-dimension subclass returned: {dimension}")
-        if dimension_name == to_snake_case(dimension.__name__).upper():
-            return dimension
-    raise KeyError(f"No dimension exists for name: {dimension_name}")
+class DimensionParser(ModuleCollectorMixin):
+    def __init__(self) -> None:
+        self.names_to_dimensions: Dict[str, Type[Dimension]] = {}
+
+        dimension_modules = ModuleCollectorMixin.get_submodules(
+            base_module=dimensions, submodule_name_prefix_filter=None
+        )
+        dimension_classes = set()
+        for module in dimension_modules:
+            for attribute_name in dir(module):
+                attribute = getattr(module, attribute_name)
+                if inspect.isclass(attribute) and issubclass(attribute, Dimension):
+                    dimension_classes.add(attribute)
+
+        for dimension in dimension_classes:
+            name = to_snake_case(dimension.__name__).upper()
+            if name in self.names_to_dimensions:
+                raise ValueError(
+                    f"Multiple dimensions with name '{name}': {self.names_to_dimensions[name]}, {dimension}"
+                )
+            self.names_to_dimensions[name] = dimension
+
+    def get_dimension_for_name(self, dimension_name: str) -> Type[Dimension]:
+        """Gets the corresponding Dimension class for `dimension_name`."""
+        dimension = self.names_to_dimensions.get(dimension_name)
+        if dimension is None:
+            raise KeyError(f"No dimension exists for name: {dimension_name}")
+        return dimension
 
 
 def _title_to_snake_case(title: str) -> str:
