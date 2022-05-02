@@ -87,8 +87,8 @@ from recidiviz.justice_counts.dimensions.corrections import (
     SupervisionViolationType,
 )
 from recidiviz.justice_counts.dimensions.helpers import (
+    DimensionParser,
     get_synthetic_dimension,
-    parse_dimension_name,
 )
 from recidiviz.justice_counts.dimensions.location import (
     Country,
@@ -1066,238 +1066,339 @@ class Report:
             )
 
 
-def _parse_location(location_input: Optional[YAMLDict]) -> Optional[Location]:
-    """Expects a dict with a single entry, e.g. `{'state': 'US_XX'}`"""
-    if location_input is None:
-        return None
+class TableParser:
+    """Responsible for parsing the table data based on the provided configuration"""
 
-    if len(location_input) == 1:
-        [location_type] = location_input.get().keys()
-        location_name = location_input.pop(location_type, str)
-        if location_type == "country":
-            return Country(location_name)
-        if location_type == "state":
-            return State(location_name)
-        if location_type == "county":
-            return County(location_name)
-    raise ValueError(
-        f"Invalid location, expected a dictionary with a single key that is one of ('country', 'state', "
-        f"'county') but received: {repr(location_input)}"
-    )
+    def __init__(self) -> None:
+        self.dimension_parser = DimensionParser()
 
+    def _parse_location(self, location_input: Optional[YAMLDict]) -> Optional[Location]:
+        """Expects a dict with a single entry, e.g. `{'state': 'US_XX'}`"""
+        if location_input is None:
+            return None
 
-def _get_converter(
-    range_type_input: str, range_converter_input: Optional[str] = None
-) -> DateRangeConverterType:
-    range_type = MeasurementWindowType(range_type_input)
-    if range_type is MeasurementWindowType.SNAPSHOT:
-        return SNAPSHOT_CONVERTERS[SnapshotType.get_or_default(range_converter_input)]
-    if range_type is MeasurementWindowType.RANGE:
-        return RANGE_CONVERTERS[RangeType.get_or_default(range_converter_input)]
-    raise ValueError(f"Enum case not handled for {range_type} when building converter.")
-
-
-def _get_date_formatter(
-    range_type_input: str, range_converter_input: Optional[str] = None
-) -> DateFormatParserType:
-    measurement_window_type = MeasurementWindowType(range_type_input)
-    if measurement_window_type is MeasurementWindowType.SNAPSHOT:
-        snapshot_type = SnapshotType.get_or_default(range_converter_input)
-        format_type = SNAPSHOT_CONVERTER_FORMAT_TYPES[snapshot_type]
-        return DATE_FORMAT_PARSERS[format_type]
-    if measurement_window_type is MeasurementWindowType.RANGE:
-        range_type = RangeType.get_or_default(range_converter_input)
-        format_type = RANGE_CONVERTER_FORMAT_TYPES[range_type]
-        return DATE_FORMAT_PARSERS[format_type]
-    raise ValueError(
-        f"Enum case not handled for {measurement_window_type} when getting date formatter."
-    )
-
-
-# TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
-# find all implementing classes of `key`, find matching class, pass inner dict as parameters to matching class.
-def _parse_date_range(range_input: YAMLDict) -> DateRange:
-    """
-    Expects a dict with a type, an input, and an optional range_converter.
-    e.g. `{'type':'snapshot', 'input': ['2020-11-01'], 'range_converter': 'DATE'}`
-    """
-
-    range_args = range_input.pop("input", list)
-    range_type = range_input.pop("type", str)
-    range_converter = range_input.pop_optional("converter", str)
-    date_formatter = _get_date_formatter(range_type.upper(), range_converter)
-
-    if len(range_input) > 0:
+        if len(location_input) == 1:
+            [location_type] = location_input.get().keys()
+            location_name = location_input.pop(location_type, str)
+            if location_type == "country":
+                return Country(location_name)
+            if location_type == "state":
+                return State(location_name)
+            if location_type == "county":
+                return County(location_name)
         raise ValueError(
-            f"Received unexpected parameters for date_range: {range_input}"
-        )
-    if len(range_args) > 2:
-        raise ValueError(
-            f"Have a maximum of 2 dates for input. Currently have: {range_args}"
+            f"Invalid location, expected a dictionary with a single key that is one of ('country', 'state', "
+            f"'county') but received: {repr(location_input)}"
         )
 
-    converter = _get_converter(range_type.upper(), range_converter)
-    parsed_args = [date_formatter(value) for value in range_args]
-
-    return converter(*parsed_args)  # type: ignore[call-arg]
-
-
-def _parse_dynamic_date_range_producer(
-    range_input: YAMLDict,
-) -> DynamicDateRangeProducer:
-    """Expects a dict with type (str), columns (dict) and converter (str, optional) entries.
-
-    E.g. `{'type': 'SNAPSHOT' {'columns': 'Date': 'DATE'}}`
-    """
-    range_type = range_input.pop("type", str)
-    range_converter = range_input.pop_optional("converter", str)
-    column_names = range_input.pop("columns", dict)
-    columns = {
-        key: DATE_FORMAT_PARSERS[DateFormatType(value)]
-        for key, value in column_names.items()
-    }
-
-    if len(range_input) > 0:
+    def _get_converter(
+        self, range_type_input: str, range_converter_input: Optional[str] = None
+    ) -> DateRangeConverterType:
+        range_type = MeasurementWindowType(range_type_input)
+        if range_type is MeasurementWindowType.SNAPSHOT:
+            return SNAPSHOT_CONVERTERS[
+                SnapshotType.get_or_default(range_converter_input)
+            ]
+        if range_type is MeasurementWindowType.RANGE:
+            return RANGE_CONVERTERS[RangeType.get_or_default(range_converter_input)]
         raise ValueError(
-            f"Received unexpected parameters for date range: {repr(range_input)}"
+            f"Enum case not handled for {range_type} when building converter."
         )
 
-    return DynamicDateRangeProducer(
-        converter=_get_converter(range_type, range_converter), columns=columns
-    )
+    def _get_date_formatter(
+        self, range_type_input: str, range_converter_input: Optional[str] = None
+    ) -> DateFormatParserType:
+        measurement_window_type = MeasurementWindowType(range_type_input)
+        if measurement_window_type is MeasurementWindowType.SNAPSHOT:
+            snapshot_type = SnapshotType.get_or_default(range_converter_input)
+            format_type = SNAPSHOT_CONVERTER_FORMAT_TYPES[snapshot_type]
+            return DATE_FORMAT_PARSERS[format_type]
+        if measurement_window_type is MeasurementWindowType.RANGE:
+            range_type = RangeType.get_or_default(range_converter_input)
+            format_type = RANGE_CONVERTER_FORMAT_TYPES[range_type]
+            return DATE_FORMAT_PARSERS[format_type]
+        raise ValueError(
+            f"Enum case not handled for {measurement_window_type} when getting date formatter."
+        )
 
+    # TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
+    # find all implementing classes of `key`, find matching class, pass inner dict as parameters to matching class.
+    def _parse_date_range(self, range_input: YAMLDict) -> DateRange:
+        """
+        Expects a dict with a type, an input, and an optional range_converter.
+        e.g. `{'type':'snapshot', 'input': ['2020-11-01'], 'range_converter': 'DATE'}`
+        """
 
-def _parse_date_range_producer(range_producer_input: YAMLDict) -> DateRangeProducer:
-    """Expects a dict with a single entry that is the arguments for the producer, e.g. `{'fixed': ...}`"""
-    if len(range_producer_input) == 1:
-        [range_producer_type] = range_producer_input.get().keys()
-        range_producer_args = range_producer_input.pop_dict(range_producer_type)
-        if range_producer_type == "fixed":
-            return FixedDateRangeProducer(
-                fixed_range=_parse_date_range(range_producer_args)
-            )
-        if range_producer_type == "dynamic":
-            return _parse_dynamic_date_range_producer(range_producer_args)
-    raise ValueError(
-        f"Invalid date range, expected a dictionary with a single key that is one of ('fixed', 'dynamic'"
-        f") but received: {repr(range_producer_input)}"
-    )
+        range_args = range_input.pop("input", list)
+        range_type = range_input.pop("type", str)
+        range_converter = range_input.pop_optional("converter", str)
+        date_formatter = self._get_date_formatter(range_type.upper(), range_converter)
 
-
-def _parse_dimensions_from_additional_filters(
-    additional_filters_input: Optional[YAMLDict],
-) -> List[Dimension]:
-    if additional_filters_input is None:
-        return []
-    dimensions = []
-    for dimension_name in list(additional_filters_input.get().keys()):
-        dimension_cls = parse_dimension_name(dimension_name)
-        value = additional_filters_input.pop(dimension_name, str)
-        dimension_value = dimension_cls.get(value)
-        if dimension_value is None:
+        if len(range_input) > 0:
             raise ValueError(
-                f"Unable to parse filter value '{value}' as {dimension_cls}"
+                f"Received unexpected parameters for date_range: {range_input}"
             )
-        dimensions.append(dimension_value)
-    return dimensions
+        if len(range_args) > 2:
+            raise ValueError(
+                f"Have a maximum of 2 dates for input. Currently have: {range_args}"
+            )
 
+        converter = self._get_converter(range_type.upper(), range_converter)
+        parsed_args = [date_formatter(value) for value in range_args]
 
-def _parse_table_converter(
-    source_name: str,
-    value_column_input: YAMLDict,
-    dimension_columns_input: Optional[List[YAMLDict]],
-    location: Optional[Location],
-    additional_filters: List[Dimension],
-) -> TableConverter:
-    """Expects a dict with the value column name and, optionally, a list of dicts describing the dimension columns.
+        return converter(*parsed_args)  # type: ignore[call-arg]
 
-    E.g. `value_column_input={'column_name': 'Population'}}
-          dimension_columns_input=[{'column_name': 'Race', 'dimension_name': 'Race', 'mapping_overrides': {...}}, ...]`
-    """
-    column_dimension_mappings: Dict[str, List[ColumnDimensionMapping]] = defaultdict(
-        list
-    )
-    if dimension_columns_input is not None:
-        for dimension_column_input in dimension_columns_input:
-            column_name = dimension_column_input.pop("column_name", str)
+    def _parse_dynamic_date_range_producer(
+        self,
+        range_input: YAMLDict,
+    ) -> DynamicDateRangeProducer:
+        """Expects a dict with type (str), columns (dict) and converter (str, optional) entries.
 
-            synthetic_column = dimension_column_input.pop_optional("synthetic", bool)
-            if synthetic_column is True:
+        E.g. `{'type': 'SNAPSHOT' {'columns': 'Date': 'DATE'}}`
+        """
+        range_type = range_input.pop("type", str)
+        range_converter = range_input.pop_optional("converter", str)
+        column_names = range_input.pop("columns", dict)
+        columns = {
+            key: DATE_FORMAT_PARSERS[DateFormatType(value)]
+            for key, value in column_names.items()
+        }
+
+        if len(range_input) > 0:
+            raise ValueError(
+                f"Received unexpected parameters for date range: {repr(range_input)}"
+            )
+
+        return DynamicDateRangeProducer(
+            converter=self._get_converter(range_type, range_converter), columns=columns
+        )
+
+    def _parse_date_range_producer(
+        self, range_producer_input: YAMLDict
+    ) -> DateRangeProducer:
+        """Expects a dict with a single entry that is the arguments for the producer, e.g. `{'fixed': ...}`"""
+        if len(range_producer_input) == 1:
+            [range_producer_type] = range_producer_input.get().keys()
+            range_producer_args = range_producer_input.pop_dict(range_producer_type)
+            if range_producer_type == "fixed":
+                return FixedDateRangeProducer(
+                    fixed_range=self._parse_date_range(range_producer_args)
+                )
+            if range_producer_type == "dynamic":
+                return self._parse_dynamic_date_range_producer(range_producer_args)
+        raise ValueError(
+            f"Invalid date range, expected a dictionary with a single key that is one of ('fixed', 'dynamic'"
+            f") but received: {repr(range_producer_input)}"
+        )
+
+    def _parse_dimensions_from_additional_filters(
+        self,
+        additional_filters_input: Optional[YAMLDict],
+    ) -> List[Dimension]:
+        if additional_filters_input is None:
+            return []
+        dimensions = []
+        for dimension_name in list(additional_filters_input.get().keys()):
+            dimension_cls = self.dimension_parser.get_dimension_for_name(dimension_name)
+            value = additional_filters_input.pop(dimension_name, str)
+            dimension_value = dimension_cls.get(value)
+            if dimension_value is None:
+                raise ValueError(
+                    f"Unable to parse filter value '{value}' as {dimension_cls}"
+                )
+            dimensions.append(dimension_value)
+        return dimensions
+
+    def _parse_table_converter(
+        self,
+        source_name: str,
+        value_column_input: YAMLDict,
+        dimension_columns_input: Optional[List[YAMLDict]],
+        location: Optional[Location],
+        additional_filters: List[Dimension],
+    ) -> TableConverter:
+        """Expects a dict with the value column name and, optionally, a list of dicts describing the dimension columns.
+
+        E.g. `value_column_input={'column_name': 'Population'}}
+            dimension_columns_input=[{'column_name': 'Race', 'dimension_name': 'Race', 'mapping_overrides': {...}}, ...]`
+        """
+        column_dimension_mappings: Dict[
+            str, List[ColumnDimensionMapping]
+        ] = defaultdict(list)
+        if dimension_columns_input is not None:
+            for dimension_column_input in dimension_columns_input:
+                column_name = dimension_column_input.pop("column_name", str)
+
+                synthetic_column = dimension_column_input.pop_optional(
+                    "synthetic", bool
+                )
+                if synthetic_column is True:
+                    column_dimension_mappings[column_name].append(
+                        ColumnDimensionMapping.for_synthetic(
+                            column_name=column_name, source=source_name
+                        )
+                    )
+                    continue
+
+                dimension_cls = self.dimension_parser.get_dimension_for_name(
+                    dimension_column_input.pop("dimension_name", str)
+                )
+
+                overrides_input = dimension_column_input.pop_dict_optional(
+                    "mapping_overrides"
+                )
+                overrides = None
+                if overrides_input is not None:
+                    overrides = {
+                        key: overrides_input.pop(key, str)
+                        for key in list(overrides_input.get().keys())
+                    }
+
+                strict = dimension_column_input.pop_optional("strict", bool)
+
+                if len(dimension_column_input) > 0:
+                    raise ValueError(
+                        f"Received unexpected input for dimension column: {repr(dimension_column_input)}"
+                    )
                 column_dimension_mappings[column_name].append(
-                    ColumnDimensionMapping.for_synthetic(
-                        column_name=column_name, source=source_name
+                    ColumnDimensionMapping.from_input(
+                        dimension_cls=dimension_cls,
+                        mapping_overrides=overrides,
+                        strict=strict,
                     )
                 )
-                continue
 
-            dimension_cls = parse_dimension_name(
-                dimension_column_input.pop("dimension_name", str)
+        dimension_generators = []
+        for column_name, mappings in column_dimension_mappings.items():
+            dimension_generators.append(
+                DimensionGenerator(column_name=column_name, dimension_mappings=mappings)
+            )
+        value_column = value_column_input.pop("column_name", str)
+
+        filters: Set[Dimension] = set(additional_filters)
+        if location is not None:
+            filters.add(location)
+
+        if len(value_column_input) > 0:
+            raise ValueError(
+                f"Received unexpected parameters for value column: {repr(value_column_input)}"
             )
 
-            overrides_input = dimension_column_input.pop_dict_optional(
-                "mapping_overrides"
-            )
-            overrides = None
-            if overrides_input is not None:
-                overrides = {
-                    key: overrides_input.pop(key, str)
-                    for key in list(overrides_input.get().keys())
-                }
-
-            strict = dimension_column_input.pop_optional("strict", bool)
-
-            if len(dimension_column_input) > 0:
-                raise ValueError(
-                    f"Received unexpected input for dimension column: {repr(dimension_column_input)}"
-                )
-            column_dimension_mappings[column_name].append(
-                ColumnDimensionMapping.from_input(
-                    dimension_cls=dimension_cls,
-                    mapping_overrides=overrides,
-                    strict=strict,
-                )
-            )
-
-    dimension_generators = []
-    for column_name, mappings in column_dimension_mappings.items():
-        dimension_generators.append(
-            DimensionGenerator(column_name=column_name, dimension_mappings=mappings)
+        return TableConverter(
+            dimension_generators=dimension_generators,
+            value_column=value_column,
+            filters=filters,
         )
-    value_column = value_column_input.pop("column_name", str)
 
-    filters: Set[Dimension] = set(additional_filters)
-    if location is not None:
-        filters.add(location)
-
-    if len(value_column_input) > 0:
+    def _parse_metric(self, metric_input: YAMLDict) -> Metric:
+        """Expects a dict with a single entry that is the arguments for the metric, e.g. `{'population': ...}`"""
+        if len(metric_input) == 1:
+            [metric_type] = metric_input.get().keys()
+            metric_args = metric_input.pop(metric_type, dict)
+            if metric_type == "population":
+                return Population(**metric_args)
+            if metric_type == "admissions":
+                return Admissions(**metric_args)
+            if metric_type == "releases":
+                return Releases(**metric_args)
+            if metric_type == "supervision_starts":
+                return SupervisionStarts(**metric_args)
         raise ValueError(
-            f"Received unexpected parameters for value column: {repr(value_column_input)}"
+            f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
+            f"'population', 'releases', 'supervision_starts') but received: {repr(metric_input)}"
         )
 
-    return TableConverter(
-        dimension_generators=dimension_generators,
-        value_column=value_column,
-        filters=filters,
-    )
+    # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
+    # dictionary type for convenience.
 
+    def parse_tables(
+        self,
+        gcs: GCSFileSystem,
+        manifest_path: GcsfsFilePath,
+        source_name: str,
+        tables_input: List[YAMLDict],
+    ) -> List[Table]:
+        """Parses the YAML list of dictionaries describing tables into Table objects"""
+        directory_path = GcsfsDirectoryPath.from_file_path(manifest_path)
 
-def _parse_metric(metric_input: YAMLDict) -> Metric:
-    """Expects a dict with a single entry that is the arguments for the metric, e.g. `{'population': ...}`"""
-    if len(metric_input) == 1:
-        [metric_type] = metric_input.get().keys()
-        metric_args = metric_input.pop(metric_type, dict)
-        if metric_type == "population":
-            return Population(**metric_args)
-        if metric_type == "admissions":
-            return Admissions(**metric_args)
-        if metric_type == "releases":
-            return Releases(**metric_args)
-        if metric_type == "supervision_starts":
-            return SupervisionStarts(**metric_args)
-    raise ValueError(
-        f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
-        f"'population', 'releases', 'supervision_starts') but received: {repr(metric_input)}"
-    )
+        # We are assuming that the spreadsheet and the yaml file have the same name
+        spreadsheet_name = manifest_path.file_name.replace(".yaml", "")
+        tables = []
+        for table_input in tables_input:
+            # Parse nested objects separately
+            date_range_producer = self._parse_date_range_producer(
+                table_input.pop_dict("date_range")
+            )
+            location_dimension: Optional[Location] = self._parse_location(
+                table_input.pop_dict_optional("location")
+            )
+            filter_dimensions = self._parse_dimensions_from_additional_filters(
+                table_input.pop_dict_optional("additional_filters")
+            )
+            table_converter = self._parse_table_converter(
+                source_name,
+                table_input.pop_dict("value_column"),
+                table_input.pop_dicts_optional("dimension_columns"),
+                location=location_dimension,
+                additional_filters=filter_dimensions,
+            )
+            metric = self._parse_metric(table_input.pop_dict("metric"))
+
+            table_name = table_input.pop_optional("name", str)
+            table_filename = table_input.pop_optional("file", str)
+            try:
+                table_handle = open_table_file(
+                    gcs, directory_path, spreadsheet_name, table_name, table_filename
+                )
+            except ValueError as e:
+                # Much of the manually collected data uses a single spreadsheet with all of the data for a state, even if
+                # it is from multiple sources. To support that we first look for a table named with the data source, e.g.
+                # 'AL_A', but otherwise we fall back to the generic version, e.g. 'AL_Data'.
+                try:
+                    spreadsheet_name = f"{spreadsheet_name.split('_')[0]}_Data"
+                    table_handle = open_table_file(
+                        gcs,
+                        directory_path,
+                        spreadsheet_name,
+                        table_name,
+                        table_filename,
+                    )
+                except BaseException:
+                    # Raise the original error.
+                    raise e from e
+            with table_handle.open() as table_file:
+                name = _get_table_filename(
+                    spreadsheet_name, name=table_name, file=table_filename
+                )
+                file_extension = os.path.splitext(name)[1]
+                if file_extension == ".csv":
+                    df = pandas.read_csv(table_file)
+                elif file_extension == ".tsv":
+                    df = pandas.read_table(table_file)
+                else:
+                    raise ValueError(f"Received unexpected file extension: {name}")
+
+            tables.extend(
+                Table.list_from_dataframe(
+                    date_range_producer=date_range_producer,
+                    table_converter=table_converter,
+                    metric=metric,
+                    system=table_input.pop("system", str),
+                    label=table_input.pop_optional("label", str),
+                    filename=name,
+                    methodology=table_input.pop("methodology", str),
+                    location=location_dimension,
+                    additional_filters=filter_dimensions,
+                    df=df,
+                )
+            )
+
+            if len(table_input) > 0:
+                raise ValueError(
+                    f"Received unexpected parameters for table: {table_input}"
+                )
+
+        return tables
 
 
 def _normalize(name: str) -> str:
@@ -1316,97 +1417,6 @@ def _get_table_filename(
     if file is not None:
         return file
     raise ValueError("Did not receive name parameter for table")
-
-
-# Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
-# dictionary type for convenience.
-
-
-def _parse_tables(
-    gcs: GCSFileSystem,
-    manifest_path: GcsfsFilePath,
-    source_name: str,
-    tables_input: List[YAMLDict],
-) -> List[Table]:
-    """Parses the YAML list of dictionaries describing tables into Table objects"""
-    directory_path = GcsfsDirectoryPath.from_file_path(manifest_path)
-
-    # We are assuming that the spreadsheet and the yaml file have the same name
-    spreadsheet_name = manifest_path.file_name.replace(".yaml", "")
-    tables = []
-    for table_input in tables_input:
-        # Parse nested objects separately
-        date_range_producer = _parse_date_range_producer(
-            table_input.pop_dict("date_range")
-        )
-        location_dimension: Optional[Location] = _parse_location(
-            table_input.pop_dict_optional("location")
-        )
-        filter_dimensions = _parse_dimensions_from_additional_filters(
-            table_input.pop_dict_optional("additional_filters")
-        )
-        table_converter = _parse_table_converter(
-            source_name,
-            table_input.pop_dict("value_column"),
-            table_input.pop_dicts_optional("dimension_columns"),
-            location=location_dimension,
-            additional_filters=filter_dimensions,
-        )
-        metric = _parse_metric(table_input.pop_dict("metric"))
-
-        table_name = table_input.pop_optional("name", str)
-        table_filename = table_input.pop_optional("file", str)
-        try:
-            table_handle = open_table_file(
-                gcs, directory_path, spreadsheet_name, table_name, table_filename
-            )
-        except ValueError as e:
-            # Much of the manually collected data uses a single spreadsheet with all of the data for a state, even if
-            # it is from multiple sources. To support that we first look for a table named with the data source, e.g.
-            # 'AL_A', but otherwise we fall back to the generic version, e.g. 'AL_Data'.
-            try:
-                spreadsheet_name = f"{spreadsheet_name.split('_')[0]}_Data"
-                table_handle = open_table_file(
-                    gcs,
-                    directory_path,
-                    spreadsheet_name,
-                    table_name,
-                    table_filename,
-                )
-            except BaseException:
-                # Raise the original error.
-                raise e from e
-        with table_handle.open() as table_file:
-            name = _get_table_filename(
-                spreadsheet_name, name=table_name, file=table_filename
-            )
-            file_extension = os.path.splitext(name)[1]
-            if file_extension == ".csv":
-                df = pandas.read_csv(table_file)
-            elif file_extension == ".tsv":
-                df = pandas.read_table(table_file)
-            else:
-                raise ValueError(f"Received unexpected file extension: {name}")
-
-        tables.extend(
-            Table.list_from_dataframe(
-                date_range_producer=date_range_producer,
-                table_converter=table_converter,
-                metric=metric,
-                system=table_input.pop("system", str),
-                label=table_input.pop_optional("label", str),
-                filename=name,
-                methodology=table_input.pop("methodology", str),
-                location=location_dimension,
-                additional_filters=filter_dimensions,
-                df=df,
-            )
-        )
-
-        if len(table_input) > 0:
-            raise ValueError(f"Received unexpected parameters for table: {table_input}")
-
-    return tables
 
 
 def open_table_file(
@@ -1440,7 +1450,8 @@ def _get_report_and_acquirer(
     source_name = manifest.pop("source", str)
     # Parse tables separately
     # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
-    tables = _parse_tables(
+    table_parser = TableParser()
+    tables = table_parser.parse_tables(
         gcs, manifest_path, source_name, manifest.pop_dicts("tables")
     )
     publish_date = manifest.pop("publish_date", str)
