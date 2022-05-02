@@ -145,9 +145,8 @@ class ViewManagerTest(unittest.TestCase):
         self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
     def test_rematerialize_views(self) -> None:
-        """Test that create_managed_dataset_and_deploy_views_for_view_builders only
-        updates views that have a set materialized_address when the
-        materialized_views_only flag is set to True.
+        """Test that rematerialize_views_for_view_builders updates the appropriate
+        views.
         """
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
@@ -178,6 +177,56 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [mock.call(mock_view_builders[0].build())], any_order=True
+        )
+
+    def test_rematerialize_views_downstream_view(self) -> None:
+        """Test that rematerialize_views_for_view_builders updates the appropriate
+        views, including views that are downstream of the views we are rematerializing.
+        """
+        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
+
+        mock_view_builders_to_rematerialize = [
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=True,
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+        ]
+
+        all_mock_view_builders = mock_view_builders_to_rematerialize + [
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="my_fake_view_3",
+                description="my_fake_view_3 description",
+                view_query_template=f"SELECT * FROM `{{project_id}}.{_DATASET_NAME}.my_fake_view` "
+                f"JOIN `{{project_id}}.{_DATASET_NAME}.my_fake_view_2`;",
+                should_materialize=True,
+            ),
+        ]
+
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+
+        view_update_manager.rematerialize_views_for_view_builders(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            views_to_update_builders=mock_view_builders_to_rematerialize,
+            all_view_builders=all_mock_view_builders,
+        )
+
+        self.mock_client.materialize_view_to_table.assert_has_calls(
+            [
+                mock.call(mock_view_builders_to_rematerialize[0].build()),
+                mock.call(all_mock_view_builders[2].build()),
+            ],
+            any_order=True,
         )
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_no_materialize_no_update(

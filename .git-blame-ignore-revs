@@ -1,2 +1,4 @@
 # Migrate code style to Black
 01e172c306699ecbe1b46afc134a963384646237
+# Migrate code style to Black (post-history rewrite)
+3fc779d125798eb927db804f8905c5b6e54bb76c

@@ -140,9 +140,9 @@ def rematerialize_views(
     bq_region_override: Optional[str] = None,
 ) -> None:
     """For all views in the provided |views_to_update| list, re-materializes any
-    materialized views. This should be called only when we want to refresh the data in
-    the materialized view(s), not when we want to update the underlying query of the
-    view(s).
+    materialized views, as well as any views upstream or downstream of those views. This
+    should be called only when we want to refresh the data in the materialized view(s),
+    not when we want to update the underlying query of the view(s).
 
     Args:
         views_to_update: List of views to re-materialize
@@ -187,9 +187,15 @@ def rematerialize_views(
             default_table_expiration_for_new_datasets,
         )
 
-        # Limit DAG to only ancestor views and the set of views to update
+        # Limit DAG to only views directly related to the views we are rematerializing
         ancestors_dag_walker = all_views_dag_walker.get_ancestors_sub_dag(
             views_to_update
+        )
+        descendants_dag_walker = all_views_dag_walker.get_descendants_sub_dag(
+            views_to_update
+        )
+        views_to_rematerialize_dag = BigQueryViewDagWalker.union_dags(
+            ancestors_dag_walker, descendants_dag_walker
         )
 
         def _materialize_view(
@@ -213,7 +219,7 @@ def rematerialize_views(
 
             bq_client.materialize_view_to_table(v)
 
-        ancestors_dag_walker.process_dag(_materialize_view)
+        views_to_rematerialize_dag.process_dag(_materialize_view)
     except Exception as e:
         with monitoring.measurements() as measurements:
             measurements.measure_int_put(m_failed_view_update, 1)
