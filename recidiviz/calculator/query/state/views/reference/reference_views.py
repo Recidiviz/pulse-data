@@ -60,9 +60,6 @@ from recidiviz.calculator.query.state.views.reference.us_id_case_update_info imp
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.us_tn_reidentified_users import (
-    US_TN_REIDENTIFIED_USERS_VIEW_BUILDER,
-)
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
@@ -78,6 +75,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
-    US_TN_REIDENTIFIED_USERS_VIEW_BUILDER,
     NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
 ]

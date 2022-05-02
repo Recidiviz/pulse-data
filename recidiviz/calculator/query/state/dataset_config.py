@@ -98,10 +98,6 @@ US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
 # Views that power the practices v2 part of the state dashboard
 PRACTICES_VIEWS_DATASET: str = "practices_views"
 
-EXPORT_ARCHIVES_DATASET = "export_archives"
-
-PULSE_DASHBOARD_SEGMENT_DATASET = "pulse_dashboard_segment_metrics"
-
 
 def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
     """Where the output of state-specific entity normalization pipelines is stored."""
