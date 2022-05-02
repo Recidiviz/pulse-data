@@ -18,14 +18,16 @@
 specifically."""
 
 import json
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
@@ -42,7 +44,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
     """
 
     def __init__(self) -> None:
-        self.data_freshness_results: List[Dict[str, Union[str, bool]]] = []
+        self.data_freshness_results: List[Dict[str, Union[Optional[str], bool]]] = []
         self.gcs_fs = GcsfsFactory.build()
 
     def recalculate_store(self) -> None:
@@ -68,34 +70,37 @@ class IngestDataFreshnessStore(AdminPanelStore):
         latest_upper_bounds_json = self.gcs_fs.download_as_string(
             latest_upper_bounds_path
         )
-        latest_upper_bounds = []
+        latest_upper_bounds: List[Dict[str, Union[Optional[str], bool]]] = []
 
         ingest_view_materialization_gating_context = (
             IngestViewMaterializationGatingContext.load_from_gcs()
         )
 
+        processed_date_by_state_code: Dict[str, str] = {}
         for line in latest_upper_bounds_json.splitlines():
             line = line.strip()
             if not line:
                 continue
             struct = json.loads(line)
-
             state_code_str = assert_type(struct["state_code"], str)
-            state_code = StateCode(state_code_str.upper())
+            processed_date_by_state_code[state_code_str.upper()] = struct.get(
+                "processed_date"
+            )
 
+        for state_code in get_direct_ingest_states_launched_in_env():
             # Check PRIMARY for bq materialization since that is where BQ is exported to.
             if ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
                 state_code, DirectIngestInstance.PRIMARY
             ):
                 raise ValueError(
-                    f"Ingest view materialization enabled for state: {state_code}"
+                    f"Ingest view materialization enabled for state: {state_code.name}"
                 )
 
             latest_upper_bounds.append(
                 {
-                    "state": state_code_str,
-                    "date": struct.get("processed_date"),
-                    "ingestPaused": state_code_str in regions_paused,
+                    "state": state_code.name,
+                    "date": processed_date_by_state_code.get(state_code.name),
+                    "ingestPaused": state_code.name in regions_paused,
                 }
             )
         self.data_freshness_results = latest_upper_bounds
