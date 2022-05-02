@@ -229,7 +229,7 @@ WITH date_array AS (
             )
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
-            supervising_officer_external_id, district, office, date
+            supervising_officer_external_id, district, office, date, d.employment_status_start_date
         ) AS days_incarcerated_1yr,
         SUM(
             CASE WHEN is_employed
@@ -246,7 +246,7 @@ WITH date_array AS (
             WHEN is_employed = FALSE THEN 0 END
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
-            supervising_officer_external_id, district, office, date
+            supervising_officer_external_id, district, office, date, c.start_date
         ) AS days_employed_1yr,
         
     # first date client associated with officer-office during SSS
