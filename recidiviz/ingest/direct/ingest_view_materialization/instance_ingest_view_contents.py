@@ -150,16 +150,24 @@ class IngestViewContentsSummary:
             indent=2,
         )
 
-    def as_api_dict(self) -> Dict[str, Union[str, int, Optional[datetime.datetime]]]:
+    def as_api_dict(self) -> Dict[str, Union[Optional[str], int]]:
         """Serializes this class into a dictionary that can be transmitted via an API
         to the frontend.
         """
         return {
             "ingestViewName": self.ingest_view_name,
             "numUnprocessedRows": self.num_unprocessed_rows,
-            "unprocessedRowsMinDatetime": self.unprocessed_rows_min_datetime,
+            "unprocessedRowsMinDatetime": (
+                self.unprocessed_rows_min_datetime.isoformat()
+                if self.unprocessed_rows_min_datetime
+                else None
+            ),
             "numProcessedRows": self.num_processed_rows,
-            "processedRowsMaxDatetime": self.processed_rows_max_datetime,
+            "processedRowsMaxDatetime": (
+                self.processed_rows_max_datetime.isoformat()
+                if self.processed_rows_max_datetime
+                else None
+            ),
         }
 
 

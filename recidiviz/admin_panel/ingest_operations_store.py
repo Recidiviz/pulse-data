@@ -317,7 +317,7 @@ class IngestOperationsStore(AdminPanelStore):
         Union[
             int,
             Optional[datetime],
-            List[Dict[str, Union[str, int, Optional[datetime]]]],
+            List[Dict[str, Union[Optional[str], int]]],
         ],
     ]:
         """Returns the following dictionary with information about the operations database for the state:

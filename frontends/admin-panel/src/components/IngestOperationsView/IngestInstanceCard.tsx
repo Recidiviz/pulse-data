@@ -145,7 +145,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       {/* TODO(#11424): Update to always return InstanceIngestViewMetadata once we have migrated
           all states to BQ // ingest view materialization. */}
       {data.isBQMaterializationEnabled ? (
-        <InstanceIngestViewMetadata data={data} />
+        <InstanceIngestViewMetadata stateCode={stateCode} data={data} />
       ) : (
         <LegacyInstanceIngestViewMetadata data={data} />
       )}

@@ -67,7 +67,7 @@ class IngestViewMaterializationSummary:
     # Min raw data datetime among pending materialization jobs
     pending_jobs_min_datetime: Optional[datetime.datetime]
 
-    def as_api_dict(self) -> Dict[str, Union[str, int, Optional[datetime.datetime]]]:
+    def as_api_dict(self) -> Dict[str, Union[Optional[str], int]]:
         """Serializes this class into a dictionary that can be transmitted via an API
         to the frontend.
         """
@@ -75,8 +75,16 @@ class IngestViewMaterializationSummary:
             "ingestViewName": self.ingest_view_name,
             "numPendingJobs": self.num_pending_jobs,
             "numCompletedJobs": self.num_completed_jobs,
-            "completedJobsMaxDatetime": self.completed_jobs_max_datetime,
-            "pendingJobsMinDatetime": self.pending_jobs_min_datetime,
+            "completedJobsMaxDatetime": (
+                self.completed_jobs_max_datetime.isoformat()
+                if self.completed_jobs_max_datetime
+                else None
+            ),
+            "pendingJobsMinDatetime": (
+                self.pending_jobs_min_datetime.isoformat()
+                if self.pending_jobs_min_datetime
+                else None
+            ),
         }
 
 
