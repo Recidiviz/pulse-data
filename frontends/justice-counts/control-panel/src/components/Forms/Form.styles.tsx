@@ -62,6 +62,7 @@ type TitleWrapperProps = {
 };
 
 export const TitleWrapper = styled.div<TitleWrapperProps>`
+  width: 100%;
   display: flex;
   flex-direction: column;
   border-bottom: ${({ underlined }) =>

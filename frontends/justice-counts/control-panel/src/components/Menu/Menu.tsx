@@ -49,10 +49,6 @@ const Menu = () => {
     }
   };
 
-  const dummyNavigationToAccountSettings = () => {
-    return undefined;
-  };
-
   return (
     <Dropdown>
       <ExtendedDropdownToggle kind="borderless" showCaret>
@@ -72,7 +68,7 @@ const Menu = () => {
         <ExtendedDropdownMenuItem onClick={() => navigate("/")}>
           Reports
         </ExtendedDropdownMenuItem>
-        <ExtendedDropdownMenuItem onClick={dummyNavigationToAccountSettings}>
+        <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
           Account Settings
         </ExtendedDropdownMenuItem>
         <ExtendedDropdownMenuItem onClick={logout}>

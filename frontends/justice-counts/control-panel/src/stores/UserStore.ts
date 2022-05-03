@@ -29,6 +29,8 @@ class UserStore {
 
   api: API;
 
+  name: string | undefined;
+
   email: string | undefined;
 
   userID: string | undefined;
@@ -48,6 +50,7 @@ class UserStore {
 
     this.authStore = authStore;
     this.api = api;
+    this.name = undefined;
     this.email = undefined;
     this.userID = undefined;
     this.auth0UserID = undefined;
@@ -77,7 +80,7 @@ class UserStore {
         Promise.reject(new Error("No user information exists."));
       }
 
-      const { email, sub: auth0ID } = this.authStore.user as User;
+      const { email, sub: auth0ID, name } = this.authStore.user as User;
 
       const response = (await this.api.request({
         path: "/api/users",
@@ -98,6 +101,7 @@ class UserStore {
       } = await response.json();
 
       runInAction(() => {
+        this.name = name;
         this.email = emailAddress;
         this.userID = userID;
         this.auth0UserID = auth0UserID;
