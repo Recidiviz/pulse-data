@@ -152,9 +152,9 @@ columns:
         description: Emergency
       - value: "11"
         description: Voluntarily Returned
-      - value: "12"
-        description: Placed in Jaill Temporarily
-      - value: "13"
+      - value: '12'
+        description: Placed in Jail Temporarily
+      - value: '13'
         description: Initial Classification
       - value: "14"
         description: Returned to Sending State
