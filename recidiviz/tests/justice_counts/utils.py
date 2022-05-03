@@ -25,6 +25,7 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
+    OffenseType,
     SheriffBudgetType,
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
@@ -181,7 +182,11 @@ class JusticeCountsSchemaTestObjects:
             contexts=[
                 ReportedContext(
                     key=ContextKey.PRIMARY_FUNDING_SOURCE, value="government"
-                )
+                ),
+                ReportedContext(
+                    key=ContextKey.ADDITIONAL_CONTEXT,
+                    value=None,
+                ),
             ]
             if include_contexts
             else [],
@@ -212,6 +217,10 @@ class JusticeCountsSchemaTestObjects:
                     key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,
                     value=agencies_available_for_response,
                 ),
+                ReportedContext(
+                    key=ContextKey.ADDITIONAL_CONTEXT,
+                    value=None,
+                ),
             ],
             aggregated_dimensions=[
                 ReportedAggregatedDimension(
@@ -221,5 +230,45 @@ class JusticeCountsSchemaTestObjects:
                         CallType.UNKNOWN: 20,
                     }
                 )
+            ],
+        )
+
+    @staticmethod
+    def get_total_arrests_metric() -> ReportMetric:
+        return ReportMetric(
+            key=law_enforcement.total_arrests.key,
+            value=120,
+            contexts=[
+                ReportedContext(
+                    key=ContextKey.JURISDICTION_DEFINITION_OF_ARREST,
+                    value="it is an arrest",
+                ),
+                ReportedContext(
+                    key=ContextKey.ADDITIONAL_CONTEXT,
+                    value="this is a test for additional context",
+                ),
+            ],
+            aggregated_dimensions=[
+                ReportedAggregatedDimension(
+                    dimension_to_value={
+                        OffenseType.DRUG: 60,
+                        OffenseType.PERSON: 10,
+                        OffenseType.PROPERTY: 40,
+                        OffenseType.UNKNOWN: 10,
+                    }
+                )
+            ],
+        )
+
+    @staticmethod
+    def get_civilian_complaints_sustained_metric() -> ReportMetric:
+        return ReportMetric(
+            key=law_enforcement.civilian_complaints_sustained.key,
+            value=30,
+            contexts=[
+                ReportedContext(
+                    key=ContextKey.ADDITIONAL_CONTEXT,
+                    value=None,
+                ),
             ],
         )

@@ -19,7 +19,10 @@
 from unittest import TestCase
 
 from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
-from recidiviz.justice_counts.dimensions.person import Gender
+from recidiviz.justice_counts.dimensions.person import (
+    GenderRestricted,
+    RaceAndEthnicity,
+)
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_registry import METRICS
@@ -79,6 +82,11 @@ class TestJusticeCountsMetricDefinition(TestCase):
         )
 
         self.assertEqual(
-            Gender.get("FEMALE").reporting_note,
+            GenderRestricted.FEMALE.reporting_note,
             "Gender: Female",
+        )
+
+        self.assertEqual(
+            RaceAndEthnicity.BLACK.reporting_note,
+            "Race / Ethnicity: Black",
         )

@@ -18,6 +18,7 @@
 
 from unittest import TestCase
 
+import recidiviz.justice_counts.metrics.law_enforcement as law_enforcement_metric_definitions
 from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.dimensions.person import GenderRestricted
 from recidiviz.justice_counts.metrics import law_enforcement
@@ -139,3 +140,243 @@ class TestJusticeCountsReportMetric(TestCase):
                 aggregated_dimensions=[],
                 enforce_required_fields=True,
             )
+
+    def test_budget_report_metric_json(self) -> None:
+        self.maxDiff = None
+        reported_metric = self.test_schema_objects.get_reported_budget_metric()
+        self.assertEqual(
+            reported_metric.to_json(),
+            {
+                "key": reported_metric.key,
+                "display_name": "Annual Budget",
+                "reporting_note": "Sheriff offices report on budget for patrol and detention separately",
+                "description": "Measures the total annual budget (in dollars) of the agency.",
+                "definitions": [],
+                "category": "CAPACITY AND COST",
+                "value": 100000,
+                "unit": "USD",
+                "label": "Annual Budget",
+                "contexts": [
+                    {
+                        "key": "PRIMARY_FUNDING_SOURCE",
+                        "display_name": "Primary funding source.",
+                        "reporting_note": None,
+                        "required": False,
+                        "type": "TEXT",
+                        "value": "government",
+                    },
+                    {
+                        "key": "ADDITIONAL_CONTEXT",
+                        "display_name": "Additional context",
+                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "required": False,
+                        "type": "TEXT",
+                        "value": None,
+                    },
+                ],
+                "disaggregations": [
+                    {
+                        "key": "metric/law_enforcement/budget/type",
+                        "display_name": "Sheriff Budget Types",
+                        "required": False,
+                        "should_sum_to_total": True,
+                        "helper_text": None,
+                        "dimensions": [
+                            {
+                                "key": "DETENTION",
+                                "label": "Detention",
+                                "value": 66666,
+                                "reporting_note": "Sheriff Budget: Detention",
+                            },
+                            {
+                                "key": "PATROL",
+                                "label": "Patrol",
+                                "value": 33334,
+                                "reporting_note": "Sheriff Budget: Patrol",
+                            },
+                        ],
+                    }
+                ],
+            },
+        )
+
+    def test_reported_calls_for_service_metric_json(self) -> None:
+        reported_metric = (
+            self.test_schema_objects.get_reported_calls_for_service_metric()
+        )
+        metric_definition = law_enforcement_metric_definitions.calls_for_service
+        self.assertEqual(
+            reported_metric.to_json(),
+            {
+                "key": reported_metric.key,
+                "display_name": metric_definition.display_name,
+                "reporting_note": metric_definition.reporting_note,
+                "description": metric_definition.description,
+                "definitions": [
+                    d.to_json() for d in metric_definition.definitions or []
+                ],
+                "category": metric_definition.category.value,
+                "value": reported_metric.value,
+                "unit": metric_definition.metric_type.unit,
+                "label": "Calls for Service",
+                "contexts": [
+                    {
+                        "key": "ALL_CALLS_OR_CALLS_RESPONDED",
+                        "display_name": "Whether number includes all calls or just calls responded to.",
+                        "reporting_note": None,
+                        "required": True,
+                        "type": "BOOLEAN",
+                        "value": True,
+                    },
+                    {
+                        "key": "AGENCIES_AVAILABLE_FOR_RESPONSE",
+                        "display_name": "All agencies available for response.",
+                        "reporting_note": None,
+                        "required": False,
+                        "type": "TEXT",
+                        "value": None,
+                    },
+                    {
+                        "key": "ADDITIONAL_CONTEXT",
+                        "display_name": "Additional context",
+                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "required": False,
+                        "type": "TEXT",
+                        "value": None,
+                    },
+                ],
+                "disaggregations": [
+                    {
+                        "key": "metric/law_enforcement/calls_for_service/type",
+                        "display_name": "Call Types",
+                        "required": True,
+                        "should_sum_to_total": False,
+                        "helper_text": None,
+                        "dimensions": [
+                            {
+                                "key": "EMERGENCY",
+                                "label": "Emergency",
+                                "value": 20,
+                                "reporting_note": "Call: Emergency",
+                            },
+                            {
+                                "key": "NON_EMERGENCY",
+                                "label": "Non-Emergency",
+                                "value": 60,
+                                "reporting_note": "Call: Non-Emergency",
+                            },
+                            {
+                                "key": "UNKNOWN",
+                                "label": "Unknown",
+                                "value": 20,
+                                "reporting_note": "Call: Unknown",
+                            },
+                        ],
+                    }
+                ],
+            },
+        )
+
+    def test_civilian_complaints_sustained_metric_json(self) -> None:
+        reported_metric = (
+            self.test_schema_objects.get_civilian_complaints_sustained_metric()
+        )
+        metric_definition = (
+            law_enforcement_metric_definitions.civilian_complaints_sustained
+        )
+        self.assertEqual(
+            reported_metric.to_json(),
+            {
+                "key": reported_metric.key,
+                "display_name": metric_definition.display_name,
+                "reporting_note": metric_definition.reporting_note,
+                "description": metric_definition.description,
+                "definitions": [],
+                "category": metric_definition.category.value,
+                "value": reported_metric.value,
+                "unit": metric_definition.metric_type.unit,
+                "label": "Civilian Complaints Sustained",
+                "contexts": [
+                    {
+                        "key": "ADDITIONAL_CONTEXT",
+                        "display_name": "Additional context",
+                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "required": False,
+                        "type": "TEXT",
+                        "value": None,
+                    },
+                ],
+                "disaggregations": [],
+            },
+        )
+
+    def test_total_arrests_metric_json(self) -> None:
+        reported_metric = self.test_schema_objects.get_total_arrests_metric()
+        metric_definition = law_enforcement_metric_definitions.total_arrests
+        self.assertEqual(
+            reported_metric.to_json(),
+            {
+                "key": reported_metric.key,
+                "display_name": metric_definition.display_name,
+                "reporting_note": metric_definition.reporting_note,
+                "description": metric_definition.description,
+                "definitions": [],
+                "category": metric_definition.category.value,
+                "value": reported_metric.value,
+                "unit": metric_definition.metric_type.unit,
+                "label": "Total Arrests",
+                "contexts": [
+                    {
+                        "key": "JURISDICTION_DEFINITION_OF_ARREST",
+                        "display_name": "The jurisdiction definition of arrest",
+                        "reporting_note": None,
+                        "required": True,
+                        "type": "TEXT",
+                        "value": "it is an arrest",
+                    },
+                    {
+                        "key": "ADDITIONAL_CONTEXT",
+                        "display_name": "Additional context",
+                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "required": False,
+                        "type": "TEXT",
+                        "value": "this is a test for additional context",
+                    },
+                ],
+                "disaggregations": [
+                    {
+                        "key": "metric/law_enforcement/reported_crime/type",
+                        "display_name": "Offense Types",
+                        "required": True,
+                        "should_sum_to_total": False,
+                        "helper_text": None,
+                        "dimensions": [
+                            {
+                                "key": "DRUG",
+                                "label": "Drug",
+                                "value": 60,
+                                "reporting_note": "Offense: Drug",
+                            },
+                            {
+                                "key": "PERSON",
+                                "label": "Person",
+                                "value": 10,
+                                "reporting_note": "Offense: Person",
+                            },
+                            {
+                                "key": "PROPERTY",
+                                "label": "Property",
+                                "value": 40,
+                                "reporting_note": "Offense: Property",
+                            },
+                            {
+                                "key": "UNKNOWN",
+                                "label": "Unknown",
+                                "value": 10,
+                                "reporting_note": "Offense: Unknown",
+                            },
+                        ],
+                    }
+                ],
+            },
+        )

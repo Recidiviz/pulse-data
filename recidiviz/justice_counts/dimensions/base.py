@@ -63,6 +63,18 @@ class DimensionBase:
             raise ValueError("Subclasses of DimensionBase must also subclass Enum.")
         return self
 
+    @classmethod
+    def human_readable_name(cls) -> str:
+        """The name of the dimension class
+
+        E.g. 'OffenseType' --> 'Offense Type
+        """
+        class_name = cls.__name__
+        class_name = re.sub(
+            r"([A-Z][a-z]+)", r"\1 ", class_name
+        )  # Add spaces between each word of class name. StaffBudgetType -> Staff Budget Type
+        return class_name.rstrip()
+
     @property
     def dimension_value(self) -> str:
         """The value of this dimension instance.
@@ -77,18 +89,18 @@ class DimensionBase:
 
         E.g. "PATROL" value of'SheriffBudgetType' should have a reporting_note of "Sheriff Budget: Patrol".
         """
-        # Get first half of reporting note from class. Gender -> Gender, OffenseType -> Offense
-        class_name = self.__class__.__name__
-        class_name = re.sub(
-            r"([A-Z][a-z]+)", r"\1 ", class_name
-        )  # Add spaces between each word of class name. StaffBudgetType -> Staff Budget Type
+        # Get first half of reporting note from class. GenderRestricted -> Gender, OffenseType -> Offense
+        class_name = self.__class__.human_readable_name()
         type_index = class_name.find("Type")
 
-        class_name = class_name[
-            0 : type_index - 1 if type_index > 0 else type_index
-        ]  # Remove 'Type' from reporting class name Staff Budget Type -> Staff Budget
+        class_name = (
+            class_name[0 : type_index - 1] if type_index > 0 else class_name
+        )  # Remove 'Type' from reporting class name Staff Budget Type -> Staff Budget
 
-        return f"{class_name}: {self.dimension_value.title()}"
+        value = re.sub(
+            "_", "-", self.dimension_value.title()
+        )  # replace underscores with dashes, if they exist. Non_Emergency -> Non-Emergency
+        return f"{class_name}: {value}"
 
 
 class Dimension(DimensionBase):
