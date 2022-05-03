@@ -436,13 +436,15 @@ def _create_or_update_view_and_materialize_if_necessary(
         )
         return CreateOrUpdateViewStatus.SKIPPED
     skipped_parents = [
-        result
-        for result in parent_results.values()
-        if result == CreateOrUpdateViewStatus.SKIPPED
+        parent_view.address
+        for parent_view, parent_status in parent_results.items()
+        if parent_status == CreateOrUpdateViewStatus.SKIPPED
     ]
     if skipped_parents:
         raise ValueError(
-            f"Found view [{view.address}] that has skipped parents - cannot deploy: {skipped_parents}"
+            f"Found view [{view.address}] that has skipped parents - cannot deploy. "
+            f"This means that the should_deploy() on these parent views returned False. "
+            f"Skipped parents: {skipped_parents}"
         )
 
     parent_changed = (
