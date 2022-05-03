@@ -17,7 +17,7 @@
 """Base class for official Justice Counts metrics."""
 
 import enum
-from typing import List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 import attr
 
@@ -50,8 +50,9 @@ class Context:
 
     key: ContextKey
     context_type: ContextType
-    label: str
     required: bool
+    label: str
+    reporting_note: Optional[str] = None
 
 
 @attr.define()
@@ -80,6 +81,13 @@ class AggregatedDimension:
     # Text displayed above aggregated dimension breakdowns
     helper_text: Optional[str] = None
 
+    @property
+    def display_name(self) -> str:
+        # Text displayed as label for aggregated dimension breakdowns in control panel (right of toggle)
+        return (
+            self.dimension.human_readable_name() + "s"
+        )  # Offense Type -> Offense Types
+
     def dimension_identifier(self) -> str:
         return self.dimension.dimension_identifier()
 
@@ -90,6 +98,9 @@ class Definition:
 
     term: str
     definition: str
+
+    def to_json(self) -> Dict[str, str]:
+        return {"term": self.term, "definition": self.definition}
 
 
 @attr.define(frozen=True)
@@ -165,6 +176,7 @@ class MetricDefinition:
                 key=ContextKey.ADDITIONAL_CONTEXT,
                 context_type=ContextType.TEXT,
                 label="Additional context",
+                reporting_note="Add any additional context that you would like to provide here.",
                 required=False,
             )
         ]

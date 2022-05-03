@@ -4,7 +4,7 @@
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your option) any later version.p
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,13 +16,18 @@
 # =============================================================================
 """Base class for the reported value(s) for a Justice Counts metric."""
 
+import re
 from typing import Any, Dict, List, Optional
 
 import attr
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.metrics.constants import ContextKey
-from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
+from recidiviz.justice_counts.metrics.metric_definition import (
+    AggregatedDimension,
+    Context,
+    MetricDefinition,
+)
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 
 
@@ -34,6 +39,16 @@ class ReportedContext:
 
     key: ContextKey
     value: Any
+
+    def to_json(self, context_definition: Context) -> Dict[str, Any]:
+        return {
+            "key": self.key.value,
+            "reporting_note": context_definition.reporting_note,
+            "display_name": context_definition.label,
+            "type": context_definition.context_type.value,
+            "required": context_definition.required,
+            "value": self.value,
+        }
 
 
 @attr.define()
@@ -68,6 +83,29 @@ class ReportedAggregatedDimension:
         # e.g. if `dimension_to_value` is `{Gender.FEMALE: 10, Gender.MALE: 5}`
         # then this returns `Gender.FEMALE.__class__.dimensions_identifier()`
         return list(self.dimension_to_value.keys())[0].__class__.dimension_identifier()
+
+    def dimension_to_json(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "key": dimension.to_enum().value,
+                "value": val,
+                "label": re.sub(
+                    "_", "-", dimension.dimension_value.title()
+                ),  # replace underscore with dashes. Non_Emergency -> Non-Emergency
+                "reporting_note": dimension.reporting_note,
+            }
+            for dimension, val in self.dimension_to_value.items()
+        ]
+
+    def to_json(self, dimension_definition: AggregatedDimension) -> Dict[str, Any]:
+        return {
+            "key": dimension_definition.dimension.dimension_identifier(),
+            "helper_text": dimension_definition.helper_text,
+            "required": dimension_definition.required,
+            "should_sum_to_total": dimension_definition.should_sum_to_total,
+            "display_name": dimension_definition.display_name,
+            "dimensions": self.dimension_to_json(),
+        }
 
 
 @attr.define()
@@ -169,3 +207,37 @@ class ReportMetric:
     def metric_definition(self) -> MetricDefinition:
         # MetricDefinition that this ReportMetric corresponds to
         return METRIC_KEY_TO_METRIC[self.key]
+
+    def to_json(self) -> Dict[str, Any]:
+        dimension_id_to_dimension_definition = {
+            d.dimension_identifier(): d
+            for d in self.metric_definition.aggregated_dimensions or []
+        }
+        context_key_to_context_definition = {
+            context.key: context for context in self.metric_definition.contexts or []
+        }
+        return {
+            "key": self.key,
+            "display_name": self.metric_definition.display_name,
+            "description": self.metric_definition.description,
+            "reporting_note": self.metric_definition.reporting_note,
+            "value": self.value,
+            "unit": self.metric_definition.metric_type.unit,
+            "category": self.metric_definition.category.value,
+            "label": self.metric_definition.display_name,
+            "definitions": [
+                d.to_json() for d in self.metric_definition.definitions or []
+            ],
+            "contexts": [
+                c.to_json(context_definition=context_key_to_context_definition[c.key])
+                for c in self.contexts or []
+            ],
+            "disaggregations": [
+                d.to_json(
+                    dimension_definition=dimension_id_to_dimension_definition[
+                        d.dimension_identifier()
+                    ]
+                )
+                for d in self.aggregated_dimensions or []
+            ],
+        }
