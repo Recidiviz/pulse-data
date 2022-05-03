@@ -273,3 +273,45 @@ class Facility(Dimension):
     @property
     def dimension_value(self) -> str:
         return self.name
+
+
+@attr.s(frozen=True)
+class Agency(Dimension):
+    """
+    Dimension that represents the reporting agency
+    """
+
+    name: str = attr.ib()
+
+    @classmethod
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> "Agency":
+        assert_no_overrides(cls, enum_overrides)
+        return cls(dimension_cell_value)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        raise ValueError("Can't create overrides for this class")
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return False
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "global/agency/raw"
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return []
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return []
+
+    @property
+    def dimension_value(self) -> str:
+        return self.name
