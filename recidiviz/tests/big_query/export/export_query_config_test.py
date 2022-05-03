@@ -16,13 +16,11 @@
 # =============================================================================
 """Tests for our export configs."""
 import unittest
+
 import attr
 from mock import ANY, patch
 
-from recidiviz.big_query.big_query_view import (
-    SimpleBigQueryViewBuilder,
-)
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 
@@ -34,14 +32,12 @@ class TestPointingAtStagingSubdirectory(unittest.TestCase):
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "project-id"
-        self.mock_bq_view_namespace = BigQueryViewNamespace.STATE
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
     def config_with_path(self, path: str) -> ExportBigQueryViewConfig:
         return ExportBigQueryViewConfig(
-            bq_view_namespace=self.mock_bq_view_namespace,
             view=SimpleBigQueryViewBuilder(
                 dataset_id="test_dataset",
                 view_id="test_view",

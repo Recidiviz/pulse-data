@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views that are regularly updated with the deploy and rematerialized with metric exports.."""
-from typing import Dict, List, Sequence, Set
+import itertools
+from typing import Dict, List, Set
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.county.view_config import (
@@ -50,41 +51,29 @@ from recidiviz.validation.views.view_config import (
 from recidiviz.validation.views.view_config import (
     get_view_builders_for_views_to_update as get_validation_view_builders,
 )
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
-def get_deployed_view_builders_by_namespace() -> Dict[
-    BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
-]:
-    return {
-        BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
-        BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
-        BigQueryViewNamespace.DIRECT_INGEST: get_direct_ingest_view_builders(),
-        BigQueryViewNamespace.EXPERIMENTS: EXPERIMENTS_VIEW_BUILDERS,
-        BigQueryViewNamespace.EXTERNALLY_SHARED_VIEWS: EXTERNALLY_SHARED_VIEW_BUILDERS,
-        BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
-        BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
-        BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
-        BigQueryViewNamespace.VALIDATION: get_validation_view_builders(),
-        BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
-    }
-
-
-def deployed_view_builders_for_namespace(
-    project_id: str, namespace: BigQueryViewNamespace
-) -> List[BigQueryViewBuilder]:
-    return [
-        builder
-        for builder in get_deployed_view_builders_by_namespace()[namespace]
-        if builder.should_deploy_in_project(project_id)
-    ]
+def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
+    return list(
+        itertools.chain(
+            CASE_TRIAGE_VIEW_BUILDERS,
+            COUNTY_VIEW_BUILDERS,
+            get_direct_ingest_view_builders(),
+            EXPERIMENTS_VIEW_BUILDERS,
+            EXTERNALLY_SHARED_VIEW_BUILDERS,
+            JUSTICE_COUNTS_VIEW_BUILDERS,
+            INGEST_METADATA_VIEW_BUILDERS,
+            STATE_VIEW_BUILDERS,
+            get_validation_view_builders(),
+            VALIDATION_METADATA_VIEW_BUILDERS,
+        )
+    )
 
 
 def deployed_view_builders(project_id: str) -> List[BigQueryViewBuilder]:
     return [
         builder
-        for builder_list in get_deployed_view_builders_by_namespace().values()
-        for builder in builder_list
+        for builder in _all_deployed_view_builders()
         if builder.should_deploy_in_project(project_id)
     ]
 
@@ -92,11 +81,7 @@ def deployed_view_builders(project_id: str) -> List[BigQueryViewBuilder]:
 # Full list of all deployed view builders
 @environment.local_only
 def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
-    return [
-        builder
-        for builder_list in get_deployed_view_builders_by_namespace().values()
-        for builder in builder_list
-    ]
+    return _all_deployed_view_builders()
 
 
 # A list of all datasets that have ever held managed views that were updated by our

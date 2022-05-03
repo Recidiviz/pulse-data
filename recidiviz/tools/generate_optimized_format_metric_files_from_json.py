@@ -54,7 +54,6 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.export_metrics_from_dataset_to_gcs import get_protected_buckets
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 LIMIT = 10000
 
@@ -143,7 +142,6 @@ def export_from_table(
         ),
     )
     export_config = ExportBigQueryViewConfig(
-        bq_view_namespace=BigQueryViewNamespace.STATE,
         view=MetricBigQueryViewBuilder(
             dataset_id=dataset_id,
             view_id=table_id,

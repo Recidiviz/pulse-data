@@ -26,7 +26,6 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 STAGING_DIRECTORY = "staging/"
 
@@ -86,9 +85,6 @@ BigQueryViewType = TypeVar("BigQueryViewType", bound=BigQueryView)
 @attr.s(frozen=True)
 class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     """Defines configuration for a BigQuery view whose results should be exported somewhere."""
-
-    # The category of BigQuery views of which this export belongs
-    bq_view_namespace: BigQueryViewNamespace = attr.ib()
 
     # The Big Query view to export from
     view: BigQueryViewType = attr.ib()

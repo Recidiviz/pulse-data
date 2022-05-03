@@ -30,7 +30,6 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator i
     OptimizedMetricBigQueryViewExportValidator,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 class ValidateTest(unittest.TestCase):
@@ -41,8 +40,6 @@ class ValidateTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "project-id"
 
-        self.mock_bq_view_namespace = BigQueryViewNamespace.STATE
-
         metric_view_one = MetricBigQueryViewBuilder(
             dataset_id="dataset",
             view_id="view1",
@@ -52,7 +49,6 @@ class ValidateTest(unittest.TestCase):
         ).build()
 
         export_config_one_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=self.mock_bq_view_namespace,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -70,7 +66,6 @@ class ValidateTest(unittest.TestCase):
         ).build()
 
         export_config_two_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=self.mock_bq_view_namespace,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",

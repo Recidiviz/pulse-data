@@ -46,7 +46,6 @@ from recidiviz.tests.ingest.scrape.scraper_cloud_task_manager_test import (
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 @mock.patch(
@@ -129,26 +128,22 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.views_to_update = {self.mock_dataset_id: self.view_builders_for_dataset}
 
         self.mock_export_name = "MOCK_EXPORT_NAME"
-        self.mock_big_query_view_namespace = BigQueryViewNamespace.STATE
 
         self.metric_dataset_export_configs_index = {
             "EXPORT": ExportViewCollectionConfig(
                 view_builders_to_export=[self.mock_view_builder],
                 output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
                 export_name="EXPORT",
-                bq_view_namespace=self.mock_big_query_view_namespace,
             ),
             "OTHER_EXPORT": ExportViewCollectionConfig(
                 view_builders_to_export=[self.mock_metric_view_builder],
                 output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
                 export_name="OTHER_EXPORT",
-                bq_view_namespace=self.mock_big_query_view_namespace,
             ),
             self.mock_export_name: ExportViewCollectionConfig(
                 view_builders_to_export=self.view_builders_for_dataset,
                 output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
                 export_name=self.mock_export_name,
-                bq_view_namespace=self.mock_big_query_view_namespace,
             ),
         }
 
@@ -193,7 +188,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         expected_view_config_list = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=view,
                 view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
                 intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
@@ -203,7 +197,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=metric_view,
                 view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
                 intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
@@ -243,7 +236,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         expected_view_config_list = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
@@ -253,7 +245,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=metric_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
@@ -294,7 +285,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         expected_view_config_list_1 = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{view.view_id}_table_US_XX",
@@ -307,7 +297,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         expected_view_config_list_2 = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=metric_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{view.view_id}_table_US_XX",
@@ -377,7 +366,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_builders_to_export=self.view_builders_for_dataset,
                 output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
                 export_name=self.mock_export_name,
-                bq_view_namespace=self.mock_big_query_view_namespace,
             ),
         }
 
@@ -395,7 +383,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         view_export_configs = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
@@ -405,7 +392,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 export_output_formats=[ExportOutputFormatType.JSON],
             ),
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=metric_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
@@ -477,44 +463,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     @mock.patch("recidiviz.metrics.export.view_export_manager.deployed_views")
     @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    @mock.patch(
-        "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
-    )
-    def test_export_dashboard_data_to_cloud_storage_update_all_views(
-        self,
-        mock_view_exporter: Mock,
-        mock_view_update_manager_deploy: Mock,
-        mock_view_update_manager_rematerialize: Mock,
-        mock_deployed_views: Mock,
-    ) -> None:
-        """Tests that all views in the namespace are updated before the export when the export name is in
-        export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
-        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = [
-            self.mock_big_query_view_namespace
-        ]
-
-        mock_deployed_views.deployed_view_builders_for_namespace = (
-            lambda _project_id, namespace: self.view_builders_for_dataset
-            if namespace == self.mock_big_query_view_namespace
-            else None
-        )
-
-        view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_export_name, override_view_exporter=mock_view_exporter
-        )
-
-        mock_view_update_manager_deploy.assert_called_with(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            view_builders_to_update=self.view_builders_for_dataset,
-            historically_managed_datasets_to_clean=None,
-        )
-        mock_view_update_manager_rematerialize.assert_called_once()
-
-    @mock.patch("recidiviz.metrics.export.view_export_manager.deployed_views")
-    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
-    @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_update_materialized_views_only(
@@ -523,15 +471,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_view_update_manager_rematerialize: Mock,
         mock_deployed_views: Mock,
     ) -> None:
-        """Tests that only materialized views in the namespace are updated before the export when the export name is not
-        in export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
-        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = ["OTHER_NAMESPACE"]
-
-        mock_deployed_views.deployed_view_builders_for_namespace = (
-            lambda _project_id, namespace: self.view_builders_for_dataset
-            if namespace == self.mock_big_query_view_namespace
-            else None
-        )
+        """Tests that only materialized views are updated before the export."""
         deployed_views = deployed_view_builders("test-project")
         mock_deployed_views.deployed_view_builders.return_value = deployed_views
 
