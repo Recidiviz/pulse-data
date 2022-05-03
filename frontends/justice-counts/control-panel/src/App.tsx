@@ -22,6 +22,7 @@ import { Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
 import CreateReports from "./components/Reports/CreateReport";
 import ReportDataEntry from "./components/Reports/ReportDataEntry";
+import AccountSettings from "./pages/AccountSettings";
 import Reports from "./pages/Reports";
 
 const App: React.FC = (): ReactElement => {
@@ -33,6 +34,7 @@ const App: React.FC = (): ReactElement => {
         <Route path="/" element={<Reports />} />
         <Route path="/reports/create" element={<CreateReports />} />
         <Route path="/reports/:id" element={<ReportDataEntry />} />
+        <Route path="/settings" element={<AccountSettings />} />
       </Routes>
     </>
   );
