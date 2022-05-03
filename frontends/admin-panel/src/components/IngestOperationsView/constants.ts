@@ -77,9 +77,30 @@ export type OperationsDbInfo = {
   isPaused: boolean;
   unprocessedFilesRaw: number;
   processedFilesRaw: number;
+
+  ingestViewMaterializationSummaries: IngestViewMaterializationSummary[];
+  ingestViewContentsSummaries: IngestViewContentsSummary[];
+
+  // TODO(#11424):Delete these three fields once BQ materialization migration is complete.
   unprocessedFilesIngestView: number;
   processedFilesIngestView: number;
   dateOfEarliestUnprocessedIngestView: Date;
+};
+
+export type IngestViewMaterializationSummary = {
+  ingestViewName: string;
+  numPendingJobs: number;
+  numCompletedJobs: number;
+  completedJobsMaxDatetime: string | null;
+  pendingJobsMinDatetime: string | null;
+};
+
+export type IngestViewContentsSummary = {
+  ingestViewName: string;
+  numUnprocessedRows: number;
+  numProcessedRows: number;
+  unprocessedRowsMinDatetime: string | null;
+  processedRowsMaxDatetime: string | null;
 };
 
 export type StateCodeInfo = {
