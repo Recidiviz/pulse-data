@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -107,6 +107,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervision_office,
         CAST(NULL AS STRING) AS supervision_district,    
         CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
         judicial_district_code,
@@ -137,6 +138,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervision_office,
         CAST(NULL AS STRING) AS supervision_district,
         CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
         judicial_district_code,
@@ -158,6 +160,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
         COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         supervision_level AS correctional_level,
+        supervision_level_raw_text AS correctional_level_raw_text,
         supervising_officer_external_id,
         case_type,
         judicial_district_code,
@@ -191,6 +194,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
         COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         supervision_level AS correctional_level,
+        supervision_level_raw_text AS correctional_level_raw_text,
         supervising_officer_external_id,
         case_type,
         judicial_district_code,
@@ -238,6 +242,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
                 supervision_office,
                 supervision_district,
                 correctional_level,
+                correctional_level_raw_text,
                 supervising_officer_external_id,
                 case_type,
                 COALESCE(j.judicial_district_code, p.judicial_district_code) AS judicial_district_code
@@ -251,6 +256,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
                 supervision_office,
                 supervision_district,
                 correctional_level,
+                correctional_level_raw_text,
                 supervising_officer_external_id,
                 case_type,
                 COALESCE(j.judicial_district_code, p.judicial_district_code)

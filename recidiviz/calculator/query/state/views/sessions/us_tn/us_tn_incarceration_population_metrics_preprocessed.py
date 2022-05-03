@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervision_office,
         CAST(NULL AS STRING) AS supervision_district,
         CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
         population.judicial_district_code,
