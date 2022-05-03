@@ -48,7 +48,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
     StateSpecificSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    filter_out_unknown_supervision_type_periods,
+    filter_out_supervision_period_types_excluded_from_pre_admission_search,
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
     supervision_periods_overlapping_with_date,
@@ -406,12 +406,11 @@ def _get_relevant_sps_for_pre_commitment_sp_search(
     """Filters the provided |supervision_periods| to the ones that should be
     considered when looking for pre-commitment supervision periods based on the filter
     configuration defined in the provided |commitment_from_supervision_delegate|."""
-    relevant_sps: List[NormalizedStateSupervisionPeriod] = supervision_periods
-
-    if (
-        commitment_from_supervision_delegate.should_filter_out_unknown_supervision_type_in_pre_commitment_sp_search()
-    ):
-        relevant_sps = filter_out_unknown_supervision_type_periods(supervision_periods)
+    relevant_sps = (
+        filter_out_supervision_period_types_excluded_from_pre_admission_search(
+            supervision_periods
+        )
+    )
 
     if (
         commitment_from_supervision_delegate.should_filter_to_matching_supervision_types_in_pre_commitment_sp_search()

@@ -59,17 +59,6 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC, StateSpecificDeleg
         """
         return False
 
-    def should_filter_out_unknown_supervision_type_in_pre_commitment_sp_search(
-        self,
-    ) -> bool:
-        """Whether or not we should ignore supervision periods with unset
-        supervision types when identifying the pre-commitment supervision period.
-
-        Default behavior is to not filter out periods with unknown supervision types.
-        Should be overridden by state-specific implementations if necessary.
-        """
-        return False
-
     def admission_reason_raw_texts_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
         self,
     ) -> Set[str]:

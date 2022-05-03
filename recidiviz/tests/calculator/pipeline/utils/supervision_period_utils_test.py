@@ -47,6 +47,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_del
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     CASE_TYPE_SEVERITY_ORDER,
+    filter_out_supervision_period_types_excluded_from_pre_admission_search,
     get_post_incarceration_supervision_type,
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
@@ -670,3 +671,45 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
         )
 
         self.assertEqual(supervision_periods, supervision_periods_during_referral)
+
+
+class TestFilterOutSpTypesExcludedFromPreAdmissionSearch(unittest.TestCase):
+    """Tests the filter_out_supervision_period_types_excluded_from_pre_admission_search
+    function."""
+
+    def test_filter_out_supervision_period_types_excluded_from_pre_admission_search(
+        self,
+    ) -> None:
+        sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            sequence_num=0,
+            state_code="US_XX",
+            start_date=date(2020, 1, 1),
+            termination_date=date(2020, 4, 1),
+        )
+
+        # Assert all StateSupervisionPeriodSupervisionType values are covered
+        for supervision_type in StateSupervisionPeriodSupervisionType:
+            sp.supervision_type = supervision_type
+
+            _ = filter_out_supervision_period_types_excluded_from_pre_admission_search(
+                [sp]
+            )
+
+    def test_filter_out_unset_type_excluded_from_pre_admission_search(
+        self,
+    ) -> None:
+        sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            sequence_num=0,
+            state_code="US_XX",
+            start_date=date(2020, 1, 1),
+            termination_date=date(2020, 4, 1),
+        )
+
+        # Unset supervision_type should be excluded
+        filtered_sps = (
+            filter_out_supervision_period_types_excluded_from_pre_admission_search([sp])
+        )
+
+        self.assertEqual([], filtered_sps)
