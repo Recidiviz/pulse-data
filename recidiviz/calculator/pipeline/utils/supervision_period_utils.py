@@ -119,21 +119,48 @@ def identify_most_severe_case_type(
     )
 
 
-def filter_out_unknown_supervision_type_periods(
+def filter_out_supervision_period_types_excluded_from_pre_admission_search(
     supervision_periods: List[StateSupervisionPeriodT],
 ) -> List[StateSupervisionPeriodT]:
-    """Filters the list of supervision periods to only include ones with a set
-    supervision_type."""
-    # Drop any supervision periods that don't have a set
-    # supervision_type (this could signify a bench warrant,
-    # for example).
-    return [
-        period
-        for period in supervision_periods
-        if period.supervision_type is not None
-        and period.supervision_type
-        != StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    """Filters the list of supervision periods to only include ones with a
+    supervision_type that should be included when looking for SPs that preceded an
+    admission to prison."""
+    included_in_search: List[StateSupervisionPeriodSupervisionType] = [
+        StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+        StateSupervisionPeriodSupervisionType.DUAL,
+        StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+        StateSupervisionPeriodSupervisionType.INVESTIGATION,
+        StateSupervisionPeriodSupervisionType.PAROLE,
+        StateSupervisionPeriodSupervisionType.PROBATION,
     ]
+
+    # The following supervision types are excluded when identifying the type of
+    # supervision that preceded incarceration as these are not associated with an
+    # explicit *type* of supervision
+    not_included_in_search: List[StateSupervisionPeriodSupervisionType] = [
+        StateSupervisionPeriodSupervisionType.ABSCONSION,
+        StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
+        StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
+        StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+    ]
+
+    filtered_periods: List[StateSupervisionPeriodT] = []
+
+    for sp in supervision_periods:
+        if not sp.supervision_type:
+            continue
+
+        if sp.supervision_type in included_in_search:
+            filtered_periods.append(sp)
+        elif sp.supervision_type in not_included_in_search:
+            continue
+        else:
+            raise ValueError(
+                "StateSupervisionPeriodSupervisionType value not "
+                f"handled: {sp.supervision_type}."
+            )
+
+    return filtered_periods
 
 
 def supervising_officer_and_location_info(

@@ -35,7 +35,7 @@ from recidiviz.calculator.pipeline.utils.shared_constants import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    filter_out_unknown_supervision_type_periods,
+    filter_out_supervision_period_types_excluded_from_pre_admission_search,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -103,8 +103,10 @@ def _us_id_normalize_period_if_commitment_from_supervision(
             "Expected non-null supervision_period_index."
         )
 
-    relevant_sps = filter_out_unknown_supervision_type_periods(
-        supervision_period_index.sorted_supervision_periods
+    relevant_sps = (
+        filter_out_supervision_period_types_excluded_from_pre_admission_search(
+            supervision_period_index.sorted_supervision_periods
+        )
     )
 
     incarceration_period = sorted_incarceration_periods[incarceration_period_list_index]
