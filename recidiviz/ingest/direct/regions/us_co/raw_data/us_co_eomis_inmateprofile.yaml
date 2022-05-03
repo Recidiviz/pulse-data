@@ -57,7 +57,7 @@ columns:
         description: Unknown
   - name: INMATERACECODE
     description: |-
-      A code from ACICRACE indicating the race of a person.
+      A code from CDCLRACE indicating the race of a person.
     known_values:
       - value: A
         description: Asian
@@ -66,9 +66,9 @@ columns:
       - value: H
         description: Hispanic
       - value: I
-        description: NA Indian
+        description: Native American Indian
       - value: N
-        description: TODO(#12372)
+        description: Native Hawaiin or Pacific Isl
       - value: O
         description: Other
       - value: U
@@ -456,21 +456,21 @@ columns:
       Latest classification date.
   - name: CURRCUSTODYCLASSIFICATION
     description: |-
-      Letter and/or number code indicating Custody/Security Code.
+      Letter and/or number CFHICUST code indicating Custody/Security Code.
     known_values:
-      - value: "C1"
-        description: Minimum (MIN)
-      - value: "C2"
-        description: Minimum-Restrictive (MIN-R)
-      - value: "C3"
-        description: Medium (MED)
-      - value: "C6"
-        description: Close
-      - value: "C7"
-        description: Maximum
-      - value: "UK"
-        description: Unknown
-      - value: "UN"
+      - value: 'C1'
+        description: Minimum
+      - value: 'C2'
+        description: Minimum-Restrictive (or below)
+      - value: 'C3'
+        description: Medium (or below)
+      - value: 'C6'
+        description: Close (or below)
+      - value: 'C7'
+        description: Maximum (or below)
+      - value: 'UK'
+        description: Unknown - Conversion
+      - value: 'UN'
         description: Unknown
   - name: CURRENTTOTALCUSTODYSCORE
     description: |-
@@ -713,7 +713,7 @@ columns:
       Mandatory release date (MRD) - projected release date.
   - name: SGTLAWUSEDTOCALCMR
     description: |-
-      SGT law used to caculate MR - CDSGTLAW code.
+      SGT law used to caculate mandatory release - CDSGTLAW code.
     known_values:
       - value: D
         description: TODO(#12372)

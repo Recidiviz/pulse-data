@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_docstars_OffenderName` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - ADCNUMBER
+  - INMATEFIRSTNAME
+  - INMATELASTNAME
+  - INMATEMIDDLENAME
+  - INMATENAMESUFFIX
+  - INMATEDATEOFBIRTH
+  - INMATERACECODE
+  - INMATESEXCODE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_PID")
+      - StatePersonExternalId:
+          external_id: ADCNUMBER
+          id_type: $literal("US_CO_DOC")
+    birthdate: INMATEDATEOFBIRTH
+    full_name:
+      $person_name:
+        $given_names: INMATEFIRSTNAME
+        $middle_names: INMATEMIDDLENAME
+        $surname: INMATELASTNAME
+        $name_suffix: INMATENAMESUFFIX
+    gender:
+      $enum_mapping:
+        $raw_text: INMATESEXCODE
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+          StateGender.EXTERNAL_UNKNOWN: U
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: INMATERACECODE
+              $mappings:
+                StateRace.ASIAN: A
+                StateRace.BLACK: B
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: N
+                StateRace.WHITE: W
+                StateRace.OTHER: O
+                StateRace.EXTERNAL_UNKNOWN: U
+              $ignore: [H]
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: INMATERACECODE
+              $mappings:
+                StateEthnicity.HISPANIC: H
+              $ignore:
+                - A
+                - B
+                - I
+                - N
+                - W
+                - O

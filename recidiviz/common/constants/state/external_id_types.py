@@ -34,6 +34,9 @@ US_MO_SID = "US_MO_SID"
 US_MO_FBI = "US_MO_FBI"
 US_MO_OLN = "US_MO_OLN"
 
+US_CO_DOC = "US_CO_DOC"
+US_CO_PID = "US_CO_PID"
+
 # ND Elite ID - tracks someone across all incarceration stays
 US_ND_ELITE = "US_ND_ELITE"
 # ND Booking ID - tracks someone across incarceration stays that are related to
