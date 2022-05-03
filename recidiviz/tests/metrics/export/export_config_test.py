@@ -38,7 +38,6 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.string import StrictStringFormatter
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 # TODO(#11034): Add a test to make sure products launched in production have the required calc metrics enabled
@@ -232,8 +231,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        self.mock_big_query_view_namespace = BigQueryViewNamespace.STATE
-
         self.mock_view_builder = MetricBigQueryViewBuilder(
             dataset_id=self.mock_dataset.dataset_id,
             view_id="test_view",
@@ -260,7 +257,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
             export_name="ALL_STATE_TEST_PRODUCT",
-            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = (
@@ -273,7 +269,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{expected_view.view_id}_table",
@@ -299,7 +294,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             export_name="STATE_SPECIFIC_PRODUCT_EXPORT",
-            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         mock_export_job_filter = "US_XX"
@@ -315,7 +309,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
@@ -338,7 +331,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
             export_name="TEST_EXPORT",
-            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = (
@@ -351,7 +343,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{expected_view.view_id}_table",
@@ -377,7 +368,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             export_name="TEST_EXPORT",
-            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         mock_state_code = "US_XX"
@@ -390,7 +380,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view_export_configs = [
             ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
                 view=expected_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{expected_view.view_id}_table_US_XX",

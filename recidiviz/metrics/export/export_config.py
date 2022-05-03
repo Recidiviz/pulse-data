@@ -75,7 +75,6 @@ from recidiviz.utils import environment
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 PRODUCTS_CONFIG_PATH = os.path.join(
     os.path.dirname(export_module.__file__),
@@ -346,9 +345,6 @@ class ExportViewCollectionConfig:
     # The name of the export config, used to filter to exports with specific names
     export_name: str = attr.ib()
 
-    # The category of BigQuery views of which this export belongs
-    bq_view_namespace: BigQueryViewNamespace = attr.ib()
-
     # List of output formats for these configs
     export_output_formats: Optional[List[ExportOutputFormatType]] = attr.ib(
         default=None
@@ -391,7 +387,6 @@ class ExportViewCollectionConfig:
                 optional_args["export_output_formats"] = self.export_output_formats
             configs.append(
                 ExportBigQueryViewConfig(
-                    bq_view_namespace=self.bq_view_namespace,
                     view=view,
                     view_filter_clause=view_filter_clause,
                     intermediate_table_name=StrictStringFormatter().format(
@@ -431,28 +426,24 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
         output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
         export_name="PO_MONTHLY",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Overdue Discharge Report views
     ExportViewCollectionConfig(
         view_builders_to_export=[OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER],
         output_directory_uri_template=OVERDUE_DISCHARGE_ALERT_OUTPUT_DIRECTORY_URI,
         export_name="OVERDUE_DISCHARGE",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # COVID Dashboard views
     ExportViewCollectionConfig(
         view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=COVID_DASHBOARD_OUTPUT_DIRECTORY_URI,
         export_name="COVID_DASHBOARD",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Case Triage views
     ExportViewCollectionConfig(
         view_builders_to_export=CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
         output_directory_uri_template=CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="CASE_TRIAGE",
-        bq_view_namespace=BigQueryViewNamespace.CASE_TRIAGE,
         export_output_formats=[ExportOutputFormatType.HEADERLESS_CSV],
     ),
     # Ingest metadata views for admin panel
@@ -460,42 +451,36 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=INGEST_METADATA_BUILDERS,
         output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
         export_name="INGEST_METADATA",
-        bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA,
     ),
     # Validation metadata views for admin panel
     ExportViewCollectionConfig(
         view_builders_to_export=VALIDATION_METADATA_BUILDERS,
         output_directory_uri_template=VALIDATION_METADATA_OUTPUT_DIRECTORY_URI,
         export_name="VALIDATION_METADATA",
-        bq_view_namespace=BigQueryViewNamespace.VALIDATION_METADATA,
     ),
     # Justice Counts views for frontend
     ExportViewCollectionConfig(
         view_builders_to_export=JUSTICE_COUNTS_VIEW_BUILDERS,
         output_directory_uri_template=JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI,
         export_name="JUSTICE_COUNTS",
-        bq_view_namespace=BigQueryViewNamespace.JUSTICE_COUNTS,
     ),
     # Lantern Dashboard views
     ExportViewCollectionConfig(
         view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="LANTERN",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Core Dashboard views
     ExportViewCollectionConfig(
         view_builders_to_export=CORE_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="CORE",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Public Dashboard views
     ExportViewCollectionConfig(
         view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PUBLIC_DASHBOARD",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
         # Not all views have data for every state, so it is okay if some of the files
         # are empty.
         allow_empty=True,
@@ -505,14 +490,12 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=VITALS_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="VITALS",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # User Restrictions
     ExportViewCollectionConfig(
         view_builders_to_export=[DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER],
         output_directory_uri_template=DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
         export_name="DASHBOARD_USER_RESTRICTIONS",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
         export_output_formats=[
             ExportOutputFormatType.HEADERLESS_CSV,
         ],
@@ -529,7 +512,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # All modules for the Pathways with projected prison and supervision populations
     ExportViewCollectionConfig(
@@ -544,29 +526,21 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_AND_PROJECTIONS",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Pathways Prison Module
     ExportViewCollectionConfig(
         view_builders_to_export=PATHWAYS_PRISON_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_PRISON",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Practices V2 Firestore ETL views
     ExportViewCollectionConfig(
         view_builders_to_export=FIRESTORE_VIEW_BUILDERS,
         output_directory_uri_template=PRACTICES_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PRACTICES_FIRESTORE",
-        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
 ]
 
 VIEW_COLLECTION_EXPORT_INDEX: Dict[str, ExportViewCollectionConfig] = {
     export.export_name: export for export in _VIEW_COLLECTION_EXPORT_CONFIGS
 }
-
-NAMESPACES_REQUIRING_FULL_UPDATE: List[BigQueryViewNamespace] = [
-    BigQueryViewNamespace.INGEST_METADATA,
-    BigQueryViewNamespace.VALIDATION_METADATA,
-]

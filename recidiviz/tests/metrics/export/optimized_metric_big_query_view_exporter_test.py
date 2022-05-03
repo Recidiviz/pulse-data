@@ -37,7 +37,6 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
     OptimizedMetricRepresentation,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 _DATA_POINTS = [
     {
@@ -486,7 +485,6 @@ class ConvertQueryResultsTest(unittest.TestCase):
         )
 
         export_config = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=MetricBigQueryViewBuilder(
                 dataset_id="test_dataset",
                 view_id="test_view",

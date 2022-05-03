@@ -43,7 +43,7 @@ from recidiviz.utils.params import str_to_bool
 UNDERSCORE_TODAY = date.today().isoformat().replace("-", "_")
 TEMP_DATASET_NAME = "temp_csg_export"
 
-# list of views in the sessions namespace to export
+# list of sessions views to export
 SESSIONS_TO_EXPORT: List[str] = [
     "compartment_sessions",
     "compartment_sentences",

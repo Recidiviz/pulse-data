@@ -31,7 +31,6 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.metrics.export.view_export_manager import export_views_with_exporters
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 class ExportManagerCompositeExportTest(unittest.TestCase):
@@ -55,7 +54,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -64,7 +62,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             ),
         )
         export_config_one_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -82,7 +79,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",
@@ -91,7 +87,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             ),
         )
         export_config_two_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",
@@ -207,7 +202,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -216,7 +210,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             ),
         )
         export_config_one_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -234,7 +227,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",
@@ -243,7 +235,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             ),
         )
         export_config_two_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",
@@ -297,7 +288,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -306,7 +296,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             ),
         )
         export_config_one_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_one,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table",
@@ -324,7 +313,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",
@@ -333,7 +321,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             ),
         )
         export_config_two_staging = ExportBigQueryViewConfig(
-            bq_view_namespace=BigQueryViewNamespace.STATE,
             view=metric_view_two,
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="intermediate_table2",
