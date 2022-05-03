@@ -21,7 +21,7 @@ import datetime
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.dimensions.corrections import PopulationType
-from recidiviz.justice_counts.dimensions.location import Country, County, State
+from recidiviz.justice_counts.dimensions.location import Agency, County, State
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -292,18 +292,18 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     filtered_dimensions,
                     [
                         PopulationType.dimension_identifier(),
-                        Country.dimension_identifier(),
                         State.dimension_identifier(),
                         County.dimension_identifier(),
+                        Agency.dimension_identifier(),
                     ],
                 )
                 self.assertEqual(
                     filtered_dimension_values,
                     [
                         PopulationType.RESIDENTS.value,
-                        Country.US.value,
                         report.source.state_code,
                         report.source.fips_county_code,
+                        report.source.name,
                     ],
                 )
 

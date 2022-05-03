@@ -20,7 +20,7 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from recidiviz.justice_counts.dimensions.location import Country, County, State
+from recidiviz.justice_counts.dimensions.location import Agency, County, State
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.report_metric import ReportMetric
 from recidiviz.justice_counts.utils.persistence_utils import update_existing_or_create
@@ -117,14 +117,14 @@ class ReportTableDefinitionInterface:
         ]
 
         filtered_dimension_keys += [
-            Country.dimension_identifier(),
             State.dimension_identifier(),
             County.dimension_identifier(),
+            Agency.dimension_identifier(),
         ]
         filtered_dimension_values += [
-            Country.US.value,
             report.source.state_code,
             report.source.fips_county_code,
+            report.source.name,
         ]
 
         return filtered_dimension_keys, filtered_dimension_values
