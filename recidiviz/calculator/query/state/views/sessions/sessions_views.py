@@ -102,6 +102,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_downgrade_sessi
 from recidiviz.calculator.query.state.views.sessions.supervision_level_dedup_priority import (
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_level_raw_text_sessions import (
+    SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_level_sessions import (
     SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
 )
@@ -211,5 +214,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SENTENCE_RELATIONSHIP_VIEW_BUILDER,
     US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     VIOLATIONS_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
     US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 ]

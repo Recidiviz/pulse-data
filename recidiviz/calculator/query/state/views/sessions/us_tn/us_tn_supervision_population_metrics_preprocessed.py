@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             WHEN supervision_level_raw_text =  "9DT" THEN "DETAINER"
             ELSE "INTERNAL_UNKNOWN"
         END AS correctional_level,
+        supervision_level_raw_text AS correctional_level_raw_text,
         supervising_officer_external_id,
         case_type,
         judicial_district_code,
