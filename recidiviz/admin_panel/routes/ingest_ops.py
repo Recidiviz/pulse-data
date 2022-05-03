@@ -46,6 +46,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
+    IngestViewMaterializationGatingContext,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -502,6 +505,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             move_ingest_view_results_to_backup(
                 state_code, ingest_instance, BigQueryClientImpl()
             )
+
             return (
                 "",
                 HTTPStatus.OK,
@@ -536,6 +540,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 ingest_instance_destination=ingest_instance_destination,
                 big_query_client=BigQueryClientImpl(),
             )
+
             return (
                 "",
                 HTTPStatus.OK,
@@ -567,6 +572,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 )
             )
             ingest_view_metadata_manager.mark_instance_data_invalidated()
+
             return (
                 "",
                 HTTPStatus.OK,
@@ -608,6 +614,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             ingest_view_metadata_manager.transfer_metadata_to_new_instance(
                 new_instance_manager=new_instance_manager
             )
+
             return (
                 "",
                 HTTPStatus.OK,
@@ -637,10 +644,45 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             ungate_bq_materialization_for_instance(
                 state_code=state_code, ingest_instance=ingest_instance
             )
+
             return (
                 "",
                 HTTPStatus.OK,
             )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    # TODO(#11424): Delete this endpoint once BQ materialization is shipped for all
+    #  states.
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/get_instance_materialization_bq_bool",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _get_instance_materialization_bq_bool() -> Tuple[
+        Union[str, Response], HTTPStatus
+    ]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            gating_context = IngestViewMaterializationGatingContext.load_from_gcs()
+            result = {}
+            for instance in DirectIngestInstance:
+                is_bq_materialization_enabled = (
+                    gating_context.is_bq_ingest_view_materialization_enabled(
+                        state_code=state_code, ingest_instance=instance
+                    )
+                )
+
+                result[instance.value.lower()] = is_bq_materialization_enabled
+
+            return (jsonify(result), HTTPStatus.OK)
 
         except ValueError as error:
             logging.exception(error)

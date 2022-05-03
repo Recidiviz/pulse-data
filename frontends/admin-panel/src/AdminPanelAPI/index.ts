@@ -101,6 +101,12 @@ export {
   startIngestRun,
   unpauseDirectIngestInstance,
   updateIngestQueuesState,
+  moveIngestViewResultsToBackup,
+  moveIngestViewResultsBetweenInstances,
+  markInstanceIngestViewDataInvalidated,
+  transferIngestViewMetadataToNewInstance,
+  ungateMaterializationInstance,
+  getInstanceMaterializationBQBool,
 } from "./IngestOperations";
 export {
   fetchEmailStateCodes,

@@ -199,3 +199,89 @@ export const listRawFilesInSandboxBucket = async (
     sourceBucket,
   });
 };
+
+// Move ingest view results to backup dataset
+export const moveIngestViewResultsToBackup = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/move_ingest_view_results_to_backup",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Move ingest view results between instances
+export const moveIngestViewResultsBetweenInstances = async (
+  stateCode: string,
+  srcIngestInstance: DirectIngestInstance,
+  destIngestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/move_ingest_view_results_between_instances",
+    {
+      stateCode,
+      srcIngestInstance,
+      destIngestInstance,
+    }
+  );
+};
+
+// Mark instance ingest view data as invalidated
+export const markInstanceIngestViewDataInvalidated = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/mark_instance_ingest_view_data_invalidated",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Transer ingest view metadata to new instance
+export const transferIngestViewMetadataToNewInstance = async (
+  stateCode: string,
+  srcIngestInstance: DirectIngestInstance,
+  destIngestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/transfer_ingest_view_metadata_to_new_instance",
+    {
+      stateCode,
+      srcIngestInstance,
+      destIngestInstance,
+    }
+  );
+};
+
+// Ungate BQ materialization instance
+export const ungateMaterializationInstance = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/ungate_materialization_instance",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Ungate BQ materialization instance
+export const getInstanceMaterializationBQBool = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/get_instance_materialization_bq_bool",
+    {
+      stateCode,
+    }
+  );
+};
