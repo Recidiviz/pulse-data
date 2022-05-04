@@ -19,9 +19,7 @@ input_columns:
   - SUPER_OVERRIDE      # Unused, for now.
   - PREVIOUS_AGENT
   - RECORD_STATUS         # No apparent use for these at the moment
-  - LAST_UPDATE           # No apparent use for these at the moment
   - ALIASFLAG             # More detailed alias data in the Alias file
-  - PHONE2                # Not storing phone numbers in our schema
   - ADDRESS2              # Not storing multiple addresses in our schema
   - CITY2                 # Not storing multiple addresses in our schema
   - STATE2                # Not storing multiple addresses in our schema
@@ -29,7 +27,6 @@ input_columns:
   - MAILING_ADDRESS2      # Not storing multiple addresses in our schema
   - PHYSICAL_ADDRESS2     # Not storing multiple addresses in our schema
   - SITEID                # Unused, we pull this from the officer instead
-  - ABSDATE               # No longer in use within source
   - ABSCONDER
   - GOODTIMEDATE
   - C_MARITAL
@@ -41,8 +38,6 @@ input_columns:
   - I_JOB_CL
   - J_LAST_GR
   - K_PUB_ASST
-  - HEIGHT                # Not storing physical characteristics in our schema
-  - WEIGHT                # Not storing physical characteristics in our schema
   - INACTIVEDATE          # No longer in use within source
   - LSITOTAL              # We receive detailed LSIR info from LSI Chronology
   - BIGSIXT1              # We receive detailed LSIR info from LSI Chronology
@@ -70,9 +65,7 @@ unused_columns:
   - SUPER_OVERRIDE      # Unused, for now.
   - PREVIOUS_AGENT
   - RECORD_STATUS         # No apparent use for these at the moment
-  - LAST_UPDATE           # No apparent use for these at the moment
   - ALIASFLAG             # More detailed alias data in the Alias file
-  - PHONE2                # Not storing phone numbers in our schema
   - ADDRESS2              # Not storing multiple addresses in our schema
   - CITY2                 # Not storing multiple addresses in our schema
   - STATE2                # Not storing multiple addresses in our schema
@@ -80,7 +73,6 @@ unused_columns:
   - MAILING_ADDRESS2      # Not storing multiple addresses in our schema
   - PHYSICAL_ADDRESS2     # Not storing multiple addresses in our schema
   - SITEID                # Unused, we pull this from the officer instead
-  - ABSDATE               # No longer in use within source
   - ABSCONDER
   - GOODTIMEDATE
   - C_MARITAL
@@ -92,8 +84,6 @@ unused_columns:
   - I_JOB_CL
   - J_LAST_GR
   - K_PUB_ASST
-  - HEIGHT                # Not storing physical characteristics in our schema
-  - WEIGHT                # Not storing physical characteristics in our schema
   - INACTIVEDATE          # No longer in use within source
   - LSITOTAL              # We receive detailed LSIR info from LSI Chronology
   - BIGSIXT1              # We receive detailed LSIR info from LSI Chronology
