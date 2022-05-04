@@ -46,7 +46,19 @@ _MATERIALIZATION_TIME_COL_NAME = "__materialization_time"
 _PROCESSED_TIME_COL_NAME = "__processed_time"
 _BATCH_NUMBER_COL_NAME = "__extract_and_merge_batch"
 
-_INGEST_VIEW_RESULTS_BATCH_QUERY_TEMPLATE = f"""SELECT *
+_ALL_METADATA_COLS_STR = ",\n  ".join(
+    [
+        _UPPER_BOUND_DATETIME_COL_NAME,
+        _LOWER_BOUND_DATETIME_COL_NAME,
+        _MATERIALIZATION_TIME_COL_NAME,
+        _PROCESSED_TIME_COL_NAME,
+        _BATCH_NUMBER_COL_NAME,
+    ]
+)
+
+_INGEST_VIEW_RESULTS_BATCH_QUERY_TEMPLATE = f"""SELECT * EXCEPT(
+  {_ALL_METADATA_COLS_STR}
+)
 FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
 WHERE
   {_UPPER_BOUND_DATETIME_COL_NAME} = {{upper_bound_datetime_inclusive}}
