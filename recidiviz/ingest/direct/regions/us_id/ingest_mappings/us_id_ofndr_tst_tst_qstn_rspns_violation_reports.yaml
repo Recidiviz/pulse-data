@@ -10,12 +10,12 @@ enforced_ancestor_types:
   state_sentence: state_supervision_sentence
 
 keys_to_ignore:
-  - violation_types     # List of violation types - Handled manually in controller.
-  - new_crime_types     # Further breakdown of the new crime (if any) - Handled manually in the controller.
-  - parolee_placement_recommendation      # Officer recommendation for a parolee - Handled manually in controller.
-  - probationer_placement_recommendation  # Officer recommendation for probationer - Handled manually in controller.
+  - violation_types # List of violation types - Handled manually in controller.
+  - new_crime_types # Further breakdown of the new crime (if any) - Handled manually in the controller.
+  - parolee_placement_recommendation # Officer recommendation for a parolee - Handled manually in controller.
+  - probationer_placement_recommendation # Officer recommendation for probationer - Handled manually in controller.
 
-  - assess_tst_id       # Unused - Always 210 for Violation Reports
-  - body_loc_cd         # Unused - Location of person at time of assessment
-  - legal_status        # Unused - Type of supervision (Probation, Parole, Dual) that the person is on.
-  - score_by_name       # Unused - Person who scored the assessment
+  - assess_tst_id # Unused - Always 210 for Violation Reports
+  - body_loc_cd # Unused - Location of person at time of assessment
+  - legal_status # Unused - Type of supervision (Probation, Parole, Dual) that the person is on.
+  - score_by_name # Unused - Person who scored the assessment

@@ -9,11 +9,11 @@ primary_key:
   ofndr_num: state_person.state_person_id
 
 keys_to_ignore:
-  - assess_tst_id       # Unused - Always 2 for LSIR assessments
-  - body_loc_cd         # Unused - Location of person at time of assessment  TODO(#3031): Add state_assessment.location
-  - score_by_name       # Unused - Person who scored the assessment
-  - cert_dt             # Unused - Date the test was certified. Usually the same as the date the test was administered
-                        #          (tst_dt), but not always
-  - cert_pass_flg       # Unused - Whether or not the test was certified. Always 'Y' because of SQL query.
-  - body_loc_cdNEW      # Unused - Temporary field on ID end, should ignore.
-  - cert_xml_doc        # Unused - XML version of assessment
+  - assess_tst_id # Unused - Always 2 for LSIR assessments
+  - body_loc_cd # Unused - Location of person at time of assessment  TODO(#3031): Add state_assessment.location
+  - score_by_name # Unused - Person who scored the assessment
+  - cert_dt # Unused - Date the test was certified. Usually the same as the date the test was administered
+    #          (tst_dt), but not always
+  - cert_pass_flg # Unused - Whether or not the test was certified. Always 'Y' because of SQL query.
+  - body_loc_cdNEW # Unused - Temporary field on ID end, should ignore.
+  - cert_xml_doc # Unused - XML version of assessment

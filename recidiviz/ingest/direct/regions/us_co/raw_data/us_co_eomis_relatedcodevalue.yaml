@@ -8,36 +8,36 @@ primary_key_cols:
   - RELATEDDENAME
   - RELATEDCODEVALUE
 columns:
-  - name : DATANAME
-    description : |-
+  - name: DATANAME
+    description: |-
       The dataname of a code with codevalues and codedescriptions.
-  - name : CODEVALUE
-    description : |-
+  - name: CODEVALUE
+    description: |-
       The possible values in scope for each dataname.
-  - name : RELATEDDENAME
-    description : |-
+  - name: RELATEDDENAME
+    description: |-
       Another dataname related to the same column.
-  - name : RELATEDCODEVALUE
-    description : |-
+  - name: RELATEDCODEVALUE
+    description: |-
       The possible values in scope for a related codename.
-  - name : CREATEDBY
-    description : |-
+  - name: CREATEDBY
+    description: |-
       The user who created this relateddename and corresponding relatedcodevalues.
-  - name : CREATEDDATE
-    description : |-
+  - name: CREATEDDATE
+    description: |-
       The date the relateddename was created.
-  - name : CREATEDTIME
-    description : |-
+  - name: CREATEDTIME
+    description: |-
       The time the relateddename was created.
-  - name : LASTUPDATEDBY
-    description : |-
+  - name: LASTUPDATEDBY
+    description: |-
       The user who most recently made an update to the relateddename.
-  - name : LASTUPDATEDATE
-    description : |-
+  - name: LASTUPDATEDATE
+    description: |-
       The date of the most recently made update to the relateddename.
-  - name : LASTUPDATETIME
-    description : |-
+  - name: LASTUPDATETIME
+    description: |-
       The time of the most recently made update to the relateddename.
-  - name : RECORDUPDATECOUNT
-    description : |-
+  - name: RECORDUPDATECOUNT
+    description: |-
       TODO(#12372)

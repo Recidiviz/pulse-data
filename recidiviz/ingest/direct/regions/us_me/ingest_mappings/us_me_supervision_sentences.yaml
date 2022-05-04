@@ -110,7 +110,7 @@ output:
                     $mappings:
                       StateChargeStatus.ACQUITTED:
                         - Acquitted
-                        - NCR  # Not Criminally Responsible
+                        - NCR # Not Criminally Responsible
                       StateChargeStatus.ADJUDICATED:
                         - Adjudicated
                         - Deferred Disposition
@@ -134,29 +134,29 @@ output:
                       - Mejis_Offns_Class_Tx
                       - Mejis_Offns_Title_Tx
                       - Mejis_Offns_Section_Tx
-                    $separator: '_'
+                    $separator: "_"
                 description: E_Offence_Type_Desc
                 classification_type:
                   $enum_mapping:
                     $raw_text: Offense_Class_Cd
                     $mappings:
                       StateChargeClassificationType.CIVIL:
-                        - V  # Civil Violation
+                        - V # Civil Violation
                       StateChargeClassificationType.FELONY:
-                        - A  # Class A (Felony)
-                        - B  # Class B (Felony)
-                        - C  # Class C (Felony)
-                        - F  # Unclassified Felonies
-                        - M  # Murder
+                        - A # Class A (Felony)
+                        - B # Class B (Felony)
+                        - C # Class C (Felony)
+                        - F # Unclassified Felonies
+                        - M # Murder
                       StateChargeClassificationType.MISDEMEANOR:
-                        - D  # Class D (Misdemeanor)
-                        - E  # Class E (Misdemeanor)
-                        - U  # Unclassified Misdemeanors
+                        - D # Class D (Misdemeanor)
+                        - E # Class E (Misdemeanor)
+                        - U # Unclassified Misdemeanors
                       StateChargeClassificationType.OTHER:
-                        - T  # Class T
+                        - T # Class T
                       StateChargeClassificationType.EXTERNAL_UNKNOWN:
-                        - X  # Migration - class unknown in source
-                        - Z  # Migration - class invalid in source
+                        - X # Migration - class unknown in source
+                        - Z # Migration - class invalid in source
                 is_sex_offense: $variable(is_sex_offense)
                 charge_notes: Comments_Tx
                 court_case:

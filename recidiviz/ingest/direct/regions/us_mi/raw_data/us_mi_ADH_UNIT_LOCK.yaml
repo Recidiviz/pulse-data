@@ -13,84 +13,84 @@ columns:
       The ID indicating the security level for the unit, as indicated by the REFERENCE_CODE
       table.
     known_values:
-      - value: '11539'
+      - value: "11539"
         description: SECURITY_LEVEL_I
-      - value: '11538'
+      - value: "11538"
         description: SECURITY_LEVEL_II
-      - value: '11537'
+      - value: "11537"
         description: SECURITY_LEVEL_III
-      - value: '11536'
+      - value: "11536"
         description: SECURITY_LEVEL_IV
-      - value: '11535'
+      - value: "11535"
         description: SECURITY_LEVEL_V
-      - value: '11540'
+      - value: "11540"
         description: SECURITY_LEVEL_VI
-      - value: '12551'
+      - value: "12551"
         description: SECURITY_LEVEL_IS
   - name: reporting_station_id
   - name: cell_type_id
     description: |-
       The type of cell designated for the unit, as indicated by the REFERENCE_CODE table.
     known_values:
-      - value: '7829'
+      - value: "7829"
         description: G1 - General Population - Level 1
-      - value: '7856'
+      - value: "7856"
         description: TS - Temporary Segregation
-      - value: '7833'
+      - value: "7833"
         description: G5 - General Population - Level 5
-      - value: '7823'
+      - value: "7823"
         description: AS - Administrative Segregation
-      - value: '7827'
+      - value: "7827"
         description: DS - Detention (Punitive Segregation)
-      - value: '13005'
+      - value: "13005"
         description: H1 - Observation
-      - value: '7830'
+      - value: "7830"
         description: G2 - General Population - Level 2
-      - value: '7844'
+      - value: "7844"
         description: RT - Residential Treatment Program
-      - value: '13007'
+      - value: "13007"
         description: H3 - Secure Status Residential Treatment Program
-      - value: '12550'
+      - value: "12550"
         description: G1S - General Population - Level 1 Secure
-      - value: '7826'
+      - value: "7826"
         description: DF - Default
-      - value: '7836'
+      - value: "7836"
         description: IH - Intake Housing
-      - value: '11319'
+      - value: "11319"
         description: Regular
-      - value: '13008'
+      - value: "13008"
         description: H4 - Residential Treatment Services
-      - value: '7822'
+      - value: "7822"
         description: AC - Acute Care Unit
-      - value: '7832'
+      - value: "7832"
         description: G4 - General Population - Level 4
-      - value: '14444'
+      - value: "14444"
         description: OB - Overnight Beds
-      - value: '7850'
+      - value: "7850"
         description: SM - SMPU (Self Mutilation Prevention Unit)
-      - value: '7831'
+      - value: "7831"
         description: G3 - General Population - Level 3
-      - value: '13010'
+      - value: "13010"
         description: H6 - Infirmary
-      - value: '14443'
+      - value: "14443"
         description: AR - ASRP
-      - value: '7834'
+      - value: "7834"
         description: HO - Hospital (Temporary - ON or OFF site)
-      - value: '13006'
+      - value: "13006"
         description: H2 - Seclusion
-      - value: '7842'
+      - value: "7842"
         description: PC - Protective Custody (Protective Segregation)
-      - value: '14440'
+      - value: "14440"
         description: PH - Protective Housing
-      - value: '16010'
+      - value: "16010"
         description: IC - Interm. Care Program
-      - value: '7825'
+      - value: "7825"
         description: CS - Crisis Stabilization Unit
-      - value: '13357'
+      - value: "13357"
         description: 1S - SSOTP Phase I
-      - value: '7835'
+      - value: "7835"
         description: IC - Intermediate Care Program
-      - value: '12820'
+      - value: "12820"
         description: QU - Quarantine
   - name: cell_status_id
   - name: location_wing_id

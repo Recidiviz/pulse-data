@@ -96,4 +96,4 @@ columns:
       Time of last update.
   - name: STAFFLASTUPDATE
     description: |-
-      User making last update. 
+      User making last update.

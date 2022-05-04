@@ -7,7 +7,6 @@ key_mappings:
   county_of_residence: state_supervision_period.county_code
   supervision_level: state_supervision_period.supervision_level
 
-
 ancestor_keys:
   parole_number: state_person.state_person_id
 
@@ -17,11 +16,11 @@ enforced_ancestor_types:
 # Primary key override for Supervision Period id defined in controller in format of [parole_number]-[period_sequence_number]
 
 keys_to_ignore:
-  - period_sequence_number          # Recidiviz-generated sequence number for a given period within periods with the same parole_count_id - handled manually in the controller
-  - condition_codes                 # A comma-separate list of conditions codes - handled manually in the controller
-  - supervising_officer_name        # Full name of supervision officer - handled manually in the controller
-  - supervising_officer_id          # Supervision officer's id - handled manually in the controller
-  - district_office                 # Code for district this person is being supervised in - handled manually in the controller
-  - district_sub_office_id          # Specific sub office this person is being supervised by - handled manually in the controller
-  - supervision_location_org_code   # Organization code of the person's specific supervision unit - handled manually in the controller
-  - supervision_types               # Admission codes used to derive supervision types for all ongoing types of supervision at this time - handled manually in the controller
+  - period_sequence_number # Recidiviz-generated sequence number for a given period within periods with the same parole_count_id - handled manually in the controller
+  - condition_codes # A comma-separate list of conditions codes - handled manually in the controller
+  - supervising_officer_name # Full name of supervision officer - handled manually in the controller
+  - supervising_officer_id # Supervision officer's id - handled manually in the controller
+  - district_office # Code for district this person is being supervised in - handled manually in the controller
+  - district_sub_office_id # Specific sub office this person is being supervised by - handled manually in the controller
+  - supervision_location_org_code # Organization code of the person's specific supervision unit - handled manually in the controller
+  - supervision_types # Admission codes used to derive supervision types for all ongoing types of supervision at this time - handled manually in the controller

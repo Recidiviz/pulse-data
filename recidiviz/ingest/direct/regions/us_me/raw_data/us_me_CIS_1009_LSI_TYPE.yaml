@@ -5,14 +5,14 @@ data_classification: source
 primary_key_cols:
   - Lsi_Type_Cd
 columns:
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     description: |-
       Notes about the creation of this assessment record.
     is_pii: True
-  - name : Created_On_Date
+  - name: Created_On_Date
     description: |-
       The date that this assessment record was created.
-  - name : E_Lsi_Type_Desc
+  - name: E_Lsi_Type_Desc
     description: The description of the LSI questionnaire type
     known_values:
       - value: 1
@@ -31,19 +31,19 @@ columns:
         description: Juvenile, Female, Community
       - value: 8
         description: Juvenile, Female, Facility
-  - name : Logical_Delete_Ind
-  - name : Lsi_Interface_Ind
-  - name : Modified_By_Tx
+  - name: Logical_Delete_Ind
+  - name: Lsi_Interface_Ind
+  - name: Modified_By_Tx
     description: |-
       Notes about the modification of this assessment record.
     is_pii: True
-  - name : Modified_On_Date
+  - name: Modified_On_Date
     is_datetime: True
     description: |-
       The date that this assessment record was last modified.
-  - name : System_Ref_Comments_Tx
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True
-  - name : Lsi_Type_Cd
+  - name: Lsi_Type_Cd
     description: The primary key of the code table and the LSI type code referenced in other raw tables.

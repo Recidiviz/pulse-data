@@ -116,7 +116,7 @@ class RawDataConfigWriter:
             config += f"encoding: {raw_file_config.encoding}\n"
         # If a separator is not the default, we need to include it in the config
         if raw_file_config.separator != default_separator:
-            config += f"separator: '{raw_file_config.separator}'\n"
+            config += f'separator: "{raw_file_config.separator}"\n'
         # If whether to ignore quotes is not the default, we need to include it in the config
         if raw_file_config.ignore_quotes != default_ignore_quotes:
             config += f"ignore_quotes: {raw_file_config.ignore_quotes}\n"
@@ -126,7 +126,7 @@ class RawDataConfigWriter:
             config += f"always_historical_export: {raw_file_config.always_historical_export}\n"
         if raw_file_config.custom_line_terminator:
             config += (
-                f"custom_line_terminator: '{raw_file_config.custom_line_terminator}'\n"
+                f'custom_line_terminator: "{raw_file_config.custom_line_terminator}"\n'
             )
 
         prior_config = None

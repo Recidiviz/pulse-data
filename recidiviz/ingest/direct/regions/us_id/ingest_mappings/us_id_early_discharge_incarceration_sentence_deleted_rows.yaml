@@ -19,7 +19,7 @@ enforced_ancestor_types:
   state_sentence: state_incarceration_sentence
 
 keys_to_ignore:
-  - early_discharge_id        # Early discharge id - can be associated with multiple sentences. Handled manually in
-                              #                      controller
-  - early_discharge_sent_id   # Id for each sentence-level early discharge request. Handled manually in controller.
-  - incrno                    # Unused - Incarceration number
+  - early_discharge_id # Early discharge id - can be associated with multiple sentences. Handled manually in
+    #                      controller
+  - early_discharge_sent_id # Id for each sentence-level early discharge request. Handled manually in controller.
+  - incrno # Unused - Incarceration number

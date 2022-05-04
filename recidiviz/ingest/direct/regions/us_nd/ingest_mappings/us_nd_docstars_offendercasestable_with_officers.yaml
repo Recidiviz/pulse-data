@@ -98,28 +98,28 @@ output:
                             new_offense_3_ncic: NEW_OFF3
                 supervision_violation_types:
                   - $conditional:
-                    - $if: $variable(is_rev_new_off)
-                      $then:
-                        StateSupervisionViolationTypeEntry:
-                          violation_type: $literal_enum(StateSupervisionViolationType.LAW)
-                    - $else_if:
-                        $in:
-                          $value: REV_ABSC_YN
-                          $options:
-                            - $literal("-1")
-                            - $literal("(1)")
-                      $then:
-                        StateSupervisionViolationTypeEntry:
-                          violation_type: $literal_enum(StateSupervisionViolationType.ABSCONDED)
-                    - $else_if:
-                        $in:
-                          $value: REV_TECH_YN
-                          $options:
-                            - $literal("-1")
-                            - $literal("(1)")
-                      $then:
-                        StateSupervisionViolationTypeEntry:
-                          violation_type: $literal_enum(StateSupervisionViolationType.TECHNICAL)
+                      - $if: $variable(is_rev_new_off)
+                        $then:
+                          StateSupervisionViolationTypeEntry:
+                            violation_type: $literal_enum(StateSupervisionViolationType.LAW)
+                      - $else_if:
+                          $in:
+                            $value: REV_ABSC_YN
+                            $options:
+                              - $literal("-1")
+                              - $literal("(1)")
+                        $then:
+                          StateSupervisionViolationTypeEntry:
+                            violation_type: $literal_enum(StateSupervisionViolationType.ABSCONDED)
+                      - $else_if:
+                          $in:
+                            $value: REV_TECH_YN
+                            $options:
+                              - $literal("-1")
+                              - $literal("(1)")
+                        $then:
+                          StateSupervisionViolationTypeEntry:
+                            violation_type: $literal_enum(StateSupervisionViolationType.TECHNICAL)
                 supervision_violation_responses:
                   - StateSupervisionViolationResponse:
                       response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
@@ -167,17 +167,17 @@ output:
             $enum_mapping:
               $raw_text: DESCRIPTION
               $mappings:
-                 StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE: "Community Placement Pgrm"
-                 StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: "CCC"
-                 StateSupervisionSentenceSupervisionType.PAROLE:
-                   - "IC Parole"
-                   - "Parole"
-                   - "SSOP"
-                 StateSupervisionSentenceSupervisionType.PROBATION:
-                   - "Deferred"
-                   - "IC Probation"
-                   - "Suspended"
-                 StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT: "Pre-Trial"
+                StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE: "Community Placement Pgrm"
+                StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: "CCC"
+                StateSupervisionSentenceSupervisionType.PAROLE:
+                  - "IC Parole"
+                  - "Parole"
+                  - "SSOP"
+                StateSupervisionSentenceSupervisionType.PROBATION:
+                  - "Deferred"
+                  - "IC Probation"
+                  - "Suspended"
+                StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT: "Pre-Trial"
           date_imposed: PAROLE_FR
           start_date: PAROLE_FR
           projected_completion_date: PAROLE_TO
@@ -232,45 +232,45 @@ output:
               $raw_text: TA_TYPE
               $mappings:
                 StateSupervisionPeriodTerminationReason.ABSCONSION:
-                  - "13"  # Terminated - Absconded (Active Petition To Revoke)
+                  - "13" # Terminated - Absconded (Active Petition To Revoke)
                 StateSupervisionPeriodTerminationReason.DEATH:
-                  - "11"  # "Terminated - Death
+                  - "11" # "Terminated - Death
                 StateSupervisionPeriodTerminationReason.DISCHARGE:
-                  - "1"   # Terminated - Dismissal (Deferred Imp.)
-                  - "2"   # Terminated - Early Dismissal (Deferred Imp.)
-                  - "5"   # Terminated - Termination-Positive (Susp. Sent)"
-                  - "8"   # Terminated - Released from Community Placement
-                  - "12"  # Terminated - Returned to Original State-Voluntary
-                  - "15"  # Terminated - Released from Custody
-                  - "16"  # Terminated - CCC
-                  - "17"  # Terminated - Returned to Original State-Violation
-                  - "29"  # Early Termination
+                  - "1" # Terminated - Dismissal (Deferred Imp.)
+                  - "2" # Terminated - Early Dismissal (Deferred Imp.)
+                  - "5" # Terminated - Termination-Positive (Susp. Sent)"
+                  - "8" # Terminated - Released from Community Placement
+                  - "12" # Terminated - Returned to Original State-Voluntary
+                  - "15" # Terminated - Released from Custody
+                  - "16" # Terminated - CCC
+                  - "17" # Terminated - Returned to Original State-Violation
+                  - "29" # Early Termination
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
-                  - "4"   # Terminated - Expiration (Susp. Sentence)
-                  - "7"   # Terminated - Expiration (Parole)
-                  - "19"  # Terminated - Expiration (IC Parole)
-                  - "20"  # Terminated - Expiration (IC Probation)
+                  - "4" # Terminated - Expiration (Susp. Sentence)
+                  - "7" # Terminated - Expiration (Parole)
+                  - "19" # Terminated - Expiration (IC Parole)
+                  - "20" # Terminated - Expiration (IC Probation)
                 StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
-                  - "14"  # Terminated - Other
+                  - "14" # Terminated - Other
                 StateSupervisionPeriodTerminationReason.INVESTIGATION:
                   # TODO(#3276): Migrate these termination reasons to other values so that we can
                   #  remove this termination reason
-                  - "21"  # Guilty
-                  - "22"  # Guilty of Lesser Charge
-                  - "23"  # Not Guilty
-                  - "24"  # Dismissed
-                  - "25"  # Mistrial
-                  - "26"  # Deferred Prosecution
-                  - "27"  # Post-Conviction Supervision
-                  - "28"  # Closed with Active FTA
-                  - "30"  # No Conditions Imposed
+                  - "21" # Guilty
+                  - "22" # Guilty of Lesser Charge
+                  - "23" # Not Guilty
+                  - "24" # Dismissed
+                  - "25" # Mistrial
+                  - "26" # Deferred Prosecution
+                  - "27" # Post-Conviction Supervision
+                  - "28" # Closed with Active FTA
+                  - "30" # No Conditions Imposed
                 StateSupervisionPeriodTerminationReason.REVOCATION:
-                  - "9"  # Terminated - Revocation
-                  - "10"  # Terminated - Revocation with Continuation
-                  - "18"  # Terminated - Returned to Custody from CPP
+                  - "9" # Terminated - Revocation
+                  - "10" # Terminated - Revocation with Continuation
+                  - "18" # Terminated - Returned to Custody from CPP
                 StateSupervisionPeriodTerminationReason.SUSPENSION:
-                  - "3"  # Terminated - Termination (Deferred Imp.)
-                  - "6"  # Terminated - Termination-Negative (Susp. Sent)
+                  - "3" # Terminated - Termination (Deferred Imp.)
+                  - "6" # Terminated - Termination-Negative (Susp. Sent)
           supervision_level:
             $enum_mapping:
               $raw_text: current_supervision_level
@@ -286,9 +286,9 @@ output:
                 StateSupervisionLevel.INTERSTATE_COMPACT: "9"
                 # 4 and 8 are no longer used now, 5 means not classified yet
                 StateSupervisionLevel.EXTERNAL_UNKNOWN:
-                  - "4"  # No longer in use
-                  - "5"  # Not classified yet
-                  - "8"  # No longer in use
+                  - "4" # No longer in use
+                  - "5" # Not classified yet
+                  - "8" # No longer in use
           county_code:
             $custom:
               $function: us_nd_custom_parsers.normalize_county_code

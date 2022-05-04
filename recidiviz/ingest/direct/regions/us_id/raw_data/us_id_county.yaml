@@ -17,4 +17,4 @@ columns:
   - name: cnty_ldesc
     description: |-
       County name (same as sdesc)
-separator: ','
+separator: ","

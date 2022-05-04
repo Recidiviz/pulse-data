@@ -5,12 +5,11 @@ user_inputs:
   speed_run: true
 
 compartments_architecture:
-    pretrial: shell
-    prison: full
-    parole: full
-    release: full
-    death: full
-
+  pretrial: shell
+  prison: full
+  parole: full
+  release: full
+  death: full
 
 reference_date: 2021.75
 
@@ -27,4 +26,3 @@ per_year_costs:
   parole: 3500.0
   release: 0.0
   death: 0.0
-

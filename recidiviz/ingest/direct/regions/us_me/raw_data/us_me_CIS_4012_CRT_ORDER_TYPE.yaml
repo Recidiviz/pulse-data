@@ -25,9 +25,9 @@ columns:
   - name: Crt_Order_Type_Cd
     description: The primary key for the table.
     known_values:
-      - value: '1'
-        description: 'Disposition'
-      - value: '2'
-        description: 'Pre Disposition'
-      - value: '3'
-        description: 'Re Disposition'
+      - value: "1"
+        description: "Disposition"
+      - value: "2"
+        description: "Pre Disposition"
+      - value: "3"
+        description: "Re Disposition"

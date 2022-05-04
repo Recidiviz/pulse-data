@@ -1,27 +1,27 @@
 user_inputs:
-#    policy_year: 2021.0
-    start_year: 2018.0
-    projection_years: 10.0
-    speed_run: true
+  #    policy_year: 2021.0
+  start_year: 2018.0
+  projection_years: 10.0
+  speed_run: true
 
 compartments_architecture:
-    pre-supervision: shell
-    probation: full
-    parole: full
-    prison_probation_revocations: full
-    prison_parole_revocations: full
-    release: full
+  pre-supervision: shell
+  probation: full
+  parole: full
+  prison_probation_revocations: full
+  prison_parole_revocations: full
+  release: full
 
 reference_date: 2014.0
 # january
-time_step: 0.083333333 
+time_step: 0.083333333
 # one month
 
-disaggregation_axes: 
-- crime
+disaggregation_axes:
+  - crime
 
-data_inputs: 
-    big_query_simulation_tag: TN_prison_revocations
+data_inputs:
+  big_query_simulation_tag: TN_prison_revocations
 
 per_year_costs:
   prison_probation_revocations: 6307.05

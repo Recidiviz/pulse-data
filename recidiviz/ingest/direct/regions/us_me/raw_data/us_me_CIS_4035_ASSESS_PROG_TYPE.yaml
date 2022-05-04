@@ -5,51 +5,51 @@ data_classification: source
 primary_key_cols:
   - Assess_Prog_Type_Cd
 columns:
-  - name : Adult_Comm_Ind
+  - name: Adult_Comm_Ind
     description: An indicator of whether the program is for adult clients on community supervision.
     known_values:
-      - value: 'Y'
-        description: 'Yes'
-      - value: 'N'
-        description: 'No'
-  - name : Adult_Cust_Ind
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
+  - name: Adult_Cust_Ind
     description: An indicator of whether the program is for adult clients in custody at a DOC facility.
     known_values:
-      - value: 'Y'
-        description: 'Yes'
-      - value: 'N'
-        description: 'No'
-  - name : Assess_Prog_Desc
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
+  - name: Assess_Prog_Desc
     description: A description of the program.
-  - name : Assessment_Ind
-  - name : Created_By_Tx
+  - name: Assessment_Ind
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Juvenile_Comm_Ind
+  - name: Created_On_Date
+  - name: Juvenile_Comm_Ind
     description: An indicator of whether the program is for juvenile clients on community supervision.
     known_values:
-      - value: 'Y'
-        description: 'Yes'
-      - value: 'N'
-        description: 'No'
-  - name : Juvenile_Cust_Ind
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
+  - name: Juvenile_Cust_Ind
     description: An indicator of whether the program is for juvenile clients in custody at a DOC facility.
     known_values:
-      - value: 'Y'
-        description: 'Yes'
-      - value: 'N'
-        description: 'No'
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+      - value: "Y"
+        description: "Yes"
+      - value: "N"
+        description: "No"
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Program_Ind
-  - name : Sys_Row_Ind
-  - name : System_Ref_Comments_Tx
+  - name: Modified_On_Date
+  - name: Program_Ind
+  - name: Sys_Row_Ind
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True
-  - name : Assess_Prog_Type_Cd
+  - name: Assess_Prog_Type_Cd
     description: The primary key for this table.
     known_values:
       - value: 0

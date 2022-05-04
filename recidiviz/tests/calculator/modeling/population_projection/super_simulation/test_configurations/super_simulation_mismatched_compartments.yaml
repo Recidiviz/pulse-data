@@ -4,8 +4,8 @@ user_inputs:
   projection_years: 10.0
 
 compartments_architecture:
-    PRETRIAL: shell
-    PRISON: full
+  PRETRIAL: shell
+  PRISON: full
 
 reference_date: 2010.0
 
@@ -18,5 +18,5 @@ data_inputs:
   big_query_simulation_tag: test_data
 
 per_year_costs:
-    RELEASE: 0.0
-    PRISON: 1000.0
+  RELEASE: 0.0
+  PRISON: 1000.0

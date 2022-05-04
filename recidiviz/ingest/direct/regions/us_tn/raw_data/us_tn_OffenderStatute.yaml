@@ -103,133 +103,133 @@ columns:
       A categorizing code for felony offenses based on the FBI's National Incident Based Reporting System (NIBRS).
     known_values:
       - value: 09A
-        description: 
+        description:
       - value: 09B
-        description: 
+        description:
       - value: 100
-        description: 
+        description:
       - value: 11A
-        description: 
+        description:
       - value: 120
-        description: 
+        description:
       - value: 120A
-        description: 
+        description:
       - value: 13A
-        description: 
+        description:
       - value: 13AX
-        description: 
+        description:
       - value: 13AZ
-        description: 
+        description:
       - value: 13B
-        description: 
+        description:
       - value: 13C
-        description: 
+        description:
       - value: 13D
-        description: 
+        description:
       - value: 200
-        description: 
+        description:
       - value: 210
-        description: 
+        description:
       - value: 220
-        description: 
+        description:
       - value: 23A
-        description: 
+        description:
       - value: 240
-        description: 
+        description:
       - value: 250
-        description: 
+        description:
       - value: 26A
-        description: 
+        description:
       - value: 26B
-        description: 
+        description:
       - value: 26C
-        description: 
+        description:
       - value: 26D
-        description: 
+        description:
       - value: 270
-        description: 
+        description:
       - value: 290
-        description: 
+        description:
       - value: 29O
         description: "TODO(#7424): Update with definition."
       - value: 35A
-        description: 
+        description:
       - value: 35AZ
-        description: 
+        description:
       - value: 35B
-        description: 
+        description:
       - value: 36A
-        description: 
+        description:
       - value: 36B
-        description: 
+        description:
       - value: 370
-        description: 
+        description:
       - value: 39B
-        description: 
+        description:
       - value: 40A
-        description: 
+        description:
       - value: 40B
-        description: 
+        description:
       - value: 510
-        description: 
+        description:
       - value: 520
         description:
       - value: 72O
         description: "TODO(#7424): Update with definition."
       - value: 90A
-        description: 
+        description:
       - value: 90C
-        description: 
+        description:
       - value: 90D
-        description: 
+        description:
       - value: 90DA
-        description: 
+        description:
       - value: 90F
-        description: 
+        description:
       - value: 90G
-        description: 
+        description:
       - value: 90Z
-        description: 
+        description:
       - value: 90Z1
-        description: 
+        description:
       - value: 90ZA
-        description: 
+        description:
       - value: 90ZB
-        description: 
+        description:
       - value: 90ZC
-        description: 
+        description:
       - value: 90ZD
-        description: 
+        description:
       - value: 90ZE
-        description: 
+        description:
       - value: 90ZF
-        description: 
+        description:
       - value: 90ZG
-        description: 
+        description:
       - value: 90ZH
-        description: 
+        description:
       - value: 90ZI
-        description: 
+        description:
       - value: 90ZJ
-        description: 
+        description:
       - value: 90ZK
-        description: 
+        description:
       - value: 90ZL
-        description: 
+        description:
       - value: 90ZM
-        description: 
+        description:
       - value: 90ZN
-        description: 
+        description:
       - value: 90ZO
-        description: 
+        description:
       - value: 90ZP
-        description: 
+        description:
       - value: 90ZQ
-        description: 
+        description:
       - value: 90ZR
-        description: 
+        description:
       - value: 90ZZ
-        description: 
+        description:
   - name: LastUpdateUserID
     is_pii: True
     description: |-

@@ -1,5 +1,5 @@
 file_tag: SentenceExtension
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each extension posted for the person's sentence.
 data_classification: source
 primary_key_cols:
@@ -62,4 +62,3 @@ columns:
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
     description: |-
-      

@@ -5,121 +5,121 @@ data_classification: source
 primary_key_cols:
   - Contact_Mode_Cd
 columns:
-  - name : Adult_Ind
+  - name: Adult_Ind
     description: Indicates whether the value is used for adult clients.
-  - name : Adult_Medicaid_Ind
-  - name : Created_By_Tx
+  - name: Adult_Medicaid_Ind
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : E_Mode_Desc
+  - name: Created_On_Date
+  - name: E_Mode_Desc
     description: The plain-text description associated with the code.
-  - name : Juvenile_Ind
+  - name: Juvenile_Ind
     description: Indicates whether the value is used for juvenile clients.
-  - name : Juvenile_Medicaid_Ind
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Juvenile_Medicaid_Ind
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : System_Ref_Comments_Tx
+  - name: Modified_On_Date
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True
-  - name : Contact_Mode_Cd
+  - name: Contact_Mode_Cd
     description: The primary key for the table.
     known_values:
-      - value: '1'
-        description: 'Case Conference'
-      - value: '2'
-        description: 'Case Review'
-      - value: '3'
-        description: 'Classification Notes'
-      - value: '4'
-        description: 'Collateral'
-      - value: '5'
-        description: 'Court'
-      - value: '6'
-        description: 'E-Mail'
-      - value: '7'
-        description: 'Employment'
-      - value: '8'
-        description: 'Exit Interview'
-      - value: '9'
-        description: 'Home Visit'
-      - value: '10'
-        description: 'Other'
-      - value: '11'
-        description: 'DOC Facility Contact'
-      - value: '12'
-        description: 'Fax'
-      - value: '13'
-        description: 'Failed To Report'
-      - value: '14'
-        description: 'Intake'
-      - value: '15'
-        description: 'Jail Contact'
-      - value: '16'
-        description: 'Office Visit'
-      - value: '17'
-        description: 'Phone'
-      - value: '18'
-        description: 'Police Contact'
-      - value: '19'
-        description: 'Preliminary Hearing'
-      - value: '20'
-        description: 'Program / Service'
-      - value: '21'
-        description: 'Referral'
-      - value: '22'
-        description: 'Scheduled Report'
-      - value: '23'
-        description: 'School Visit'
-      - value: '24'
-        description: 'Street meeting'
-      - value: '25'
-        description: 'Treatment'
-      - value: '26'
-        description: 'Update'
-      - value: '27'
-        description: 'Voice Mail'
-      - value: '28'
-        description: 'Written Message'
-      - value: '29'
-        description: 'Sign In'
-      - value: '30'
-        description: 'Letter'
-      - value: '31'
-        description: 'Migration'
-      - value: '32'
-        description: 'Preliminary Investigation'
-      - value: '38'
-        description: 'Assessment'
-      - value: '39'
-        description: 'Treatment Planning'
-      - value: '33'
-        description: 'Cell Search'
-      - value: '34'
-        description: 'Body Search'
-      - value: '35'
-        description: 'Warrant Check'
-      - value: '36'
-        description: 'NCIC / SBI'
-      - value: '37'
-        description: 'Mail Monitoring'
-      - value: '40'
-        description: 'Reentry Planning'
-      - value: '41'
-        description: 'Containment Meeting'
-      - value: '42'
-        description: 'Polygraph-Other'
-      - value: '43'
-        description: 'Client Transfer'
-      - value: '44'
-        description: 'Probable Cause'
-      - value: '45'
-        description: 'Polygraph-Denial'
-      - value: '46'
-        description: 'Polygraph-Sexual History'
-      - value: '47'
-        description: 'Polygraph-Maintenance'
-      - value: '48'
-        description: 'Program Non-Compliance'
+      - value: "1"
+        description: "Case Conference"
+      - value: "2"
+        description: "Case Review"
+      - value: "3"
+        description: "Classification Notes"
+      - value: "4"
+        description: "Collateral"
+      - value: "5"
+        description: "Court"
+      - value: "6"
+        description: "E-Mail"
+      - value: "7"
+        description: "Employment"
+      - value: "8"
+        description: "Exit Interview"
+      - value: "9"
+        description: "Home Visit"
+      - value: "10"
+        description: "Other"
+      - value: "11"
+        description: "DOC Facility Contact"
+      - value: "12"
+        description: "Fax"
+      - value: "13"
+        description: "Failed To Report"
+      - value: "14"
+        description: "Intake"
+      - value: "15"
+        description: "Jail Contact"
+      - value: "16"
+        description: "Office Visit"
+      - value: "17"
+        description: "Phone"
+      - value: "18"
+        description: "Police Contact"
+      - value: "19"
+        description: "Preliminary Hearing"
+      - value: "20"
+        description: "Program / Service"
+      - value: "21"
+        description: "Referral"
+      - value: "22"
+        description: "Scheduled Report"
+      - value: "23"
+        description: "School Visit"
+      - value: "24"
+        description: "Street meeting"
+      - value: "25"
+        description: "Treatment"
+      - value: "26"
+        description: "Update"
+      - value: "27"
+        description: "Voice Mail"
+      - value: "28"
+        description: "Written Message"
+      - value: "29"
+        description: "Sign In"
+      - value: "30"
+        description: "Letter"
+      - value: "31"
+        description: "Migration"
+      - value: "32"
+        description: "Preliminary Investigation"
+      - value: "38"
+        description: "Assessment"
+      - value: "39"
+        description: "Treatment Planning"
+      - value: "33"
+        description: "Cell Search"
+      - value: "34"
+        description: "Body Search"
+      - value: "35"
+        description: "Warrant Check"
+      - value: "36"
+        description: "NCIC / SBI"
+      - value: "37"
+        description: "Mail Monitoring"
+      - value: "40"
+        description: "Reentry Planning"
+      - value: "41"
+        description: "Containment Meeting"
+      - value: "42"
+        description: "Polygraph-Other"
+      - value: "43"
+        description: "Client Transfer"
+      - value: "44"
+        description: "Probable Cause"
+      - value: "45"
+        description: "Polygraph-Denial"
+      - value: "46"
+        description: "Polygraph-Sexual History"
+      - value: "47"
+        description: "Polygraph-Maintenance"
+      - value: "48"
+        description: "Program Non-Compliance"

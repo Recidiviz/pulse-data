@@ -5,20 +5,20 @@ file_description: |-
 data_classification: source
 primary_key_cols: [LSI_SUPERPLAN_ID]
 columns:
- - name : LSI_SUPERPLAN_ID
-   description : |-
-     Unique id for an LSI supervision plan
- - name : INACTIVEDATE
-   description : |-
-     Date the LSI supervision plan became inactive
-   is_datetime: True
- - name : RECDATE
-   description : |-
-     Date the LSI supervision plan was started
-   is_datetime: True
- - name : CREATED_BY
-   description : |-
-     External id for officer that created supervision plan
- - name : SID
-   description : |-
-     External id for a unique person from the Docstars system.
+  - name: LSI_SUPERPLAN_ID
+    description: |-
+      Unique id for an LSI supervision plan
+  - name: INACTIVEDATE
+    description: |-
+      Date the LSI supervision plan became inactive
+    is_datetime: True
+  - name: RECDATE
+    description: |-
+      Date the LSI supervision plan was started
+    is_datetime: True
+  - name: CREATED_BY
+    description: |-
+      External id for officer that created supervision plan
+  - name: SID
+    description: |-
+      External id for a unique person from the Docstars system.

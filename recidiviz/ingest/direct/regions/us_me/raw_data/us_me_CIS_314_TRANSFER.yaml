@@ -7,22 +7,22 @@ data_classification: source
 primary_key_cols:
   - Transfer_Id
 columns:
-  - name : Cancelled_Ind
-    description : |-
+  - name: Cancelled_Ind
+    description: |-
       Whether the transfer was cancelled
     known_values:
-      - value: 'Y'
+      - value: "Y"
         description: "Yes"
-      - value: 'N'
+      - value: "N"
         description: "No"
-  - name : Cancelled_Reason_Tx
+  - name: Cancelled_Reason_Tx
     is_pii: True
-  - name : Cis_100_Client_Id
+  - name: Cis_100_Client_Id
     description: |-
       The unique identifier for all clients in the offender management system.
     is_pii: True
-  - name : Cis_3140_Transfer_Type_Cd
-    description : |-
+  - name: Cis_3140_Transfer_Type_Cd
+    description: |-
       The type of transer and whether it was in our outside of DOC jurisdiction. "Society In" is used for supervision and
       incarceration starts. "Society Out" is used for supervision and incarceration ends. Transfer types that begin
       with "Non-DOC" refer to people who are being transferred to a DOC Facility but have not been sentenced. This
@@ -61,36 +61,36 @@ columns:
         description: "Society In"
       - value: 13
         description: "Society Out"
-  - name : Cis_3141_Transfer_Reason_Cd
-    description : |-
+  - name: Cis_3141_Transfer_Reason_Cd
+    description: |-
       A reason associated with the type of transfer, provides more details about what kind of transfer it was.
     known_values:
       - value: 1
-        description : "Bind Over (Juvenile Populations Only)"
+        description: "Bind Over (Juvenile Populations Only)"
       - value: 2
-        description : "Case Management Plan"
+        description: "Case Management Plan"
       - value: 3
-        description : "Change of Custody Level"
+        description: "Change of Custody Level"
       - value: 4
-        description : "Individual Client Request"
+        description: "Individual Client Request"
       - value: 5
-        description : "Other Jurisdiction (This could refer to transfers In or Out of other jurisdictions.)"
+        description: "Other Jurisdiction (This could refer to transfers In or Out of other jurisdictions.)"
       - value: 6
-        description : "Pending Adult Charges (Juvenile Populations Only)"
+        description: "Pending Adult Charges (Juvenile Populations Only)"
       - value: 7
-        description : "Population Distribution"
+        description: "Population Distribution"
       - value: 8
-        description : "Release to Community Reintegration (Juvenile Populations Only)"
+        description: "Release to Community Reintegration (Juvenile Populations Only)"
       - value: 9
-        description : "Release to Parole"
+        description: "Release to Parole"
       - value: 10
-        description : "Release to Probation/JCCO (Juvenile Community Corrections Officer)"
+        description: "Release to Probation/JCCO (Juvenile Community Corrections Officer)"
       - value: 11
-        description : "Safety"
+        description: "Safety"
       - value: 12
-        description : "SCCP Placement (Supervised Community Confinement Program)"
+        description: "SCCP Placement (Supervised Community Confinement Program)"
       - value: 13
-        description : "Security"
+        description: "Security"
       - value: 14
         description: "Violation of Community Reintegration (Juvenile Populations Only)"
       - value: 15
@@ -137,42 +137,42 @@ columns:
         description: "Higher Security"
       - value: 35
         description: "Weekly Transfers – Classification Only"
-  - name : Cis_3142_Tran_Typ_Rsn_Cd
-  - name : Cis_319_Term_Cust_Id
+  - name: Cis_3142_Tran_Typ_Rsn_Cd
+  - name: Cis_319_Term_Cust_Id
     description: The Term ID associated with this transfer
-  - name : Cis_900_Employee_Id
+  - name: Cis_900_Employee_Id
     is_pii: True
-  - name : Cis_900_Weekly_Tfr_Employee_Id
+  - name: Cis_900_Weekly_Tfr_Employee_Id
     is_pii: True
-  - name : Cis_908_Ccs_Loc_Jur_From_Id
+  - name: Cis_908_Ccs_Loc_Jur_From_Id
     description: The "From" jurisdiction location ID
-  - name : Cis_908_Ccs_Loc_Jur_To_Id
+  - name: Cis_908_Ccs_Loc_Jur_To_Id
     description: The "To" jurisdiction location ID
-  - name : Cis_908_Ccs_Location_Frm_Id
+  - name: Cis_908_Ccs_Location_Frm_Id
     description: The "From" physical location ID
-  - name : Cis_908_Ccs_Location_To_Id
+  - name: Cis_908_Ccs_Location_To_Id
     description: The "To" physical location ID
-  - name : Cis_912_Unit_Id
-  - name : Created_By_Tx
+  - name: Cis_912_Unit_Id
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Hearing_Date
-  - name : Keep_Separate_Tx
-  - name : Location_Tx
-  - name : Modified_By_Tx
+  - name: Created_On_Date
+  - name: Hearing_Date
+  - name: Keep_Separate_Tx
+  - name: Location_Tx
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Notes_Tx
+  - name: Modified_On_Date
+  - name: Notes_Tx
     is_pii: True
-  - name : Officer_Name
+  - name: Officer_Name
     is_pii: True
-  - name : Phone_Tx
+  - name: Phone_Tx
     is_pii: True
-  - name : Recommended_Date
-  - name : Transfer_Date
-    description : |-
+  - name: Recommended_Date
+  - name: Transfer_Date
+    description: |-
       The date the transfer happened
     is_datetime: True
-  - name : Transfer_Id
-    description : |-
+  - name: Transfer_Id
+    description: |-
       The primary key field

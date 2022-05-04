@@ -11,21 +11,21 @@ input_columns:
   - sentcing_cnty
   - offense_track_num
   - offense_code
-  - class_of_sent         
-  - max_cort_sent_yrs     
-  - max_cort_sent_mths    
-  - max_cort_sent_days    
-  - min_cort_sent_yrs     
-  - min_cort_sent_mths    
-  - min_cort_sent_days  
+  - class_of_sent
+  - max_cort_sent_yrs
+  - max_cort_sent_mths
+  - max_cort_sent_days
+  - min_cort_sent_yrs
+  - min_cort_sent_mths
+  - min_cort_sent_days
   - min_expir_date
-  - max_expir_date       
+  - max_expir_date
   - Offense
   - Grade_Category
-  - Grade            
-  - Category              
-  - SubCategory           
-  - ASCA_Category___Ranked     
+  - Grade
+  - Category
+  - SubCategory
+  - ASCA_Category___Ranked
 unused_columns: []
 output:
   StatePerson:
@@ -47,46 +47,46 @@ output:
                 StateSentenceStatus.COMPLETED:
                   # TODO(#10502): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
                   # final.
-                  - B  # Bailed
-                  - CS  # Change other Sentence
-                  - DA  # Deceased - Assault
-                  - DN  # Deceased - Natural
-                  - DS  # Deceased - Suicide
-                  - DX  # Deceased - Accident
-                  - DZ  # Deceased - Non DOC Location
-                  - EX  # Executed
-                  - FR  # Federal Release
-                  - NC  # Non-Return CSC
-                  - NF  # Non-Return Furlough
-                  - NR  # [Unlisted]
-                  - NW  # Non-Return Work Release
-                  - P   # Paroled
-                  - PC  # Program Completed - Seems to be used instead of SC for some State Drug Treatment Program sentences
-                  - RP  # Re-paroled (extremely rare)
-                  - SC  # Sentence Complete
-                  - SP  # Serve Previous
-                  - TC  # Transfer to County
-                  - TS  # Transfer to Other State
+                  - B # Bailed
+                  - CS # Change other Sentence
+                  - DA # Deceased - Assault
+                  - DN # Deceased - Natural
+                  - DS # Deceased - Suicide
+                  - DX # Deceased - Accident
+                  - DZ # Deceased - Non DOC Location
+                  - EX # Executed
+                  - FR # Federal Release
+                  - NC # Non-Return CSC
+                  - NF # Non-Return Furlough
+                  - NR # [Unlisted]
+                  - NW # Non-Return Work Release
+                  - P # Paroled
+                  - PC # Program Completed - Seems to be used instead of SC for some State Drug Treatment Program sentences
+                  - RP # Re-paroled (extremely rare)
+                  - SC # Sentence Complete
+                  - SP # Serve Previous
+                  - TC # Transfer to County
+                  - TS # Transfer to Other State
                 StateSentenceStatus.COMMUTED:
                   - RD # Release Detentioner
                   - RE # Received in Error
                 StateSentenceStatus.PARDONED:
                   - PD # Pardoned
                 StateSentenceStatus.SERVING:
-                  - AS  # Actively Serving
-                  - CT  # In Court
-                  - DC  # Diag/Class (Diagnostics / Classification)
-                  - EC  # Escape CSC
-                  - EI  # Escape Institution
-                  - F  # Furloughed
+                  - AS # Actively Serving
+                  - CT # In Court
+                  - DC # Diag/Class (Diagnostics / Classification)
+                  - EC # Escape CSC
+                  - EI # Escape Institution
+                  - F # Furloughed
                   # TODO(#10502): What does it mean when someone else is in custody elsewhere? Does this mean they are no
                   # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
                   # What does it mean when this code is used with a county code?
-                  - IC  # In Custody Elsewhere
-                  - MH  # Mental Health
-                  - SH  # State Hospital
-                  - W  # Waiting
-                  - WT  # WRIT/ATA
+                  - IC # In Custody Elsewhere
+                  - MH # Mental Health
+                  - SH # State Hospital
+                  - W # Waiting
+                  - WT # WRIT/ATA
                 StateSentenceStatus.VACATED:
                   - VC # Vacated Conviction
                   - VS # Vacated Sentence
@@ -104,12 +104,12 @@ output:
                 StateIncarcerationType.OUT_OF_STATE:
                   - O # Transfer out of Pennsylvania
                 StateIncarcerationType.STATE_PRISON:
-                  - S  # State
-                  - I  # Transfer into Pennsylvania
-                  - T  # County Transfer, i.e. transfer from county to state, usually for mental health services
-                  - P  # SIP Program
-                  - E  # SIP Evaluation
-                  - SCI  # State Correctional Institution
+                  - S # State
+                  - I # Transfer into Pennsylvania
+                  - T # County Transfer, i.e. transfer from county to state, usually for mental health services
+                  - P # SIP Program
+                  - E # SIP Evaluation
+                  - SCI # State Correctional Institution
               $ignore:
                 # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
                 - "'"
@@ -166,8 +166,8 @@ output:
                     - ASCA_Category___Ranked
                     - $literal("1-Violent")
                 offense_type:
-                    $concat:
-                      $values:
-                        - Category
-                        - SubCategory
-                      $include_nulls: False
+                  $concat:
+                    $values:
+                      - Category
+                      - SubCategory
+                    $include_nulls: False

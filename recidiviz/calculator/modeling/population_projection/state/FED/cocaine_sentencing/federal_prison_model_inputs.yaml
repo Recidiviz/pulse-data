@@ -4,10 +4,10 @@ user_inputs:
   projection_years: 10.0
 
 compartments_architecture:
-    prison: full
-    pretrial: shell
-    release: full
-    release_full: full
+  prison: full
+  pretrial: shell
+  release: full
+  release_full: full
 
 reference_date: 2017.0
 

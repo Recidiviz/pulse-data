@@ -25,77 +25,77 @@ enforced_ancestor_types:
   state_sentence: state_incarceration_sentence
 
 keys_to_ignore:
-  - judge_cd            # Judge id - handled manually in the controller
-  - judge_name          # Judge name - handled manually in the controller
-  - off_stat_sect       # Statute Section - Handled manually in controller
-  - off_stat_title      # Statute Title - Handled manually in controller
-  - sent_min_da         # Minimum days in sentence - Handled manually in the controller
-  - sent_min_mo         # Minimum months in sentence - Handled manually in the controller
-  - sent_min_yr         # Minimum years in sentence - Handled manually in the controller
-  - sent_max_da         # Maximum days in sentence - Handled manually in the controller
-  - sent_max_mo         # Maximum months in sentence - Handled manually in the controller
-  - sent_max_yr         # Maximum years in sentence - Handled manually in the controller
-  - sent_no             # Sentence number - Handled manually in controller
-  - off_sxo_flg         # Offense sex offender - Handled manually in the controller
-  - off_viol            # Whether or not the offense was violent - Handled manually in the controller
-  - off_dtd             # Offense date - Handled manually in the controller
+  - judge_cd # Judge id - handled manually in the controller
+  - judge_name # Judge name - handled manually in the controller
+  - off_stat_sect # Statute Section - Handled manually in controller
+  - off_stat_title # Statute Title - Handled manually in controller
+  - sent_min_da # Minimum days in sentence - Handled manually in the controller
+  - sent_min_mo # Minimum months in sentence - Handled manually in the controller
+  - sent_min_yr # Minimum years in sentence - Handled manually in the controller
+  - sent_max_da # Maximum days in sentence - Handled manually in the controller
+  - sent_max_mo # Maximum months in sentence - Handled manually in the controller
+  - sent_max_yr # Maximum years in sentence - Handled manually in the controller
+  - sent_no # Sentence number - Handled manually in controller
+  - off_sxo_flg # Offense sex offender - Handled manually in the controller
+  - off_viol # Whether or not the offense was violent - Handled manually in the controller
+  - off_dtd # Offense date - Handled manually in the controller
 
-  - am_sent_no          # Unused - Amended sentence number.
-  - caseno              # Unused - Case number, removed as part of #6564
-  - caseno_seq          # Unused - Case sequence number within a single docket.
-  - co_defend           # Unused - Co-defendants
-  - consec_sent_no      # Unused - Sequence number indicating rank in the chain of consecutive sentences
-  - consec_typ          # Unused - Sentence timing type (Consecutive vs Concurrent)
-  - court_cred          # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
-  - cnty_cd             # Unused - County code, instead we use cnty_desc for the actual county name
-  - cnty_ldesc          # Unused - County long description. We use cnty_sdesc instead (short description).
-  - def_atty            # Unused - Defense attorney code
-  - description         # Unused - Offense description
-  - dist_atty           # Unused - DA code
-  - enhanced            # Unused - Whether or not the sentence is enhanced. TODO(#3513): Consider adding to schema.
-  - govn_sent           # Unused - Whether this is the governing sentence or not.
-  - interstate_mitt     # Unused - Y/N flag to indicate if this is an interstate mittimus
-  - incrno              # Unused - Incarceration number
-  - jail_cred           # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
-  - jud_cd              # Unused - Judge code.
-  - law_cd              # Unused - Law code. TODO(#3506): Get more info from ID on this.
-  - lgl_fnam            # Unused - Legal first name of sentenced person (name information gathered from
-                        #          offender_ofndr_dob.csv)
-  - lgl_mnam            # Unused - Legal middle name of sentenced person (name information gathered from
-                        #          offender_ofndr_dob.csv)
-  - lgl_lnam            # Unused - Legal last name of sentenced person (name information gathered from
-                        #          offender_ofndr_dob.csv)
-  - lgl_title           # Unused - Legal title of sentenced person (name information gathered from
-                        #          offender_ofndr_dob.csv)
-  - mitt_disp           # Unused - Mittimus disposition (Probation, Incarceration, or Interstate)
-  - mitt_srl            # Unused - Mittimus id
-  - mitt_time_typ       # Unused - Original mittimus disposition
-  - off_actv_flg        # Unused - Whether or not the specific offense is currently a valid offense in ID.
-  - off_cat             # Unused - Offense category - Used to find off_ldesc
-  - off_cd              # Unused - Offense code - Used to find off_ldesc
-  - off_deg             # Unused - Offense degree - Usedtofind off_ldesc
-  - off_rank1           # Unused - TODO(#3506): Get more info from ID.
-  - off_rank2           # Unused - TODO(#3506): Get more info from ID.
-  - off_rank3           # Unused - TODO(#3506): Get more info from ID.
-  - off_rpt_flg         # Unused - TODO(#3506): Get more info from ID
-  - off_sdesc           # Unused - Offense short description. We use off_ldesc instead (long description).
-  - off_stat_eff_dtd    # Unused - Date the statue become effective
-  - off_stat_subsec     # Unused - Statute Subsection
-  - off_stat_term_dtd   # Unused - TODO(#3506): Get more info from ID
-  - off_typ             # Unused - Offense type - Always null
-  - offvisxo_flg        # Unused - Always null
-  - off_visxo_flg       # Unused - Always null
-  - crm_grp_cd          # Unused - Crime group code - only used in the ingest view for joins
-  - ofnse_crm_grp_id    # Unused - Offense crime group id - unnecessary
-  - ucr                 # Unused - Uniform Crime Reporting code TODO(#3506): Get more info from ID on this
-  - plea                # Unused - Plea TODO(#2607): Add plea to StateCharge.
-  - sent_eff_dtd        # Unused - Usually the same as sentence_dtd/sent_beg_dtd.
-                        #          TODO(#3506): Understand when these differ.
-  - sent_exp_dtd        # Unused - Date the mittimus expires. Usually the same as sent_ft_dtd unless there has been a
-                        #          manual process to update the expiration date.
-                        #          TODO(#3506): Should we use this instead of sent_ft_dtd
-  - sent_gtr_dtd        # Unused - Mostly null. TODO(#3506): Get more info from ID on this.
-  - state               # Unused - State where sentenced.
-  - string_no           # Unused - TODO(#3506): Get more info from ID
-  - vio_doc             # Unused - TODO(#3506): Get more info from ID on this.
-  - vio_1311            # Unused - TODO(#3506): Get more info from ID on this
+  - am_sent_no # Unused - Amended sentence number.
+  - caseno # Unused - Case number, removed as part of #6564
+  - caseno_seq # Unused - Case sequence number within a single docket.
+  - co_defend # Unused - Co-defendants
+  - consec_sent_no # Unused - Sequence number indicating rank in the chain of consecutive sentences
+  - consec_typ # Unused - Sentence timing type (Consecutive vs Concurrent)
+  - court_cred # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
+  - cnty_cd # Unused - County code, instead we use cnty_desc for the actual county name
+  - cnty_ldesc # Unused - County long description. We use cnty_sdesc instead (short description).
+  - def_atty # Unused - Defense attorney code
+  - description # Unused - Offense description
+  - dist_atty # Unused - DA code
+  - enhanced # Unused - Whether or not the sentence is enhanced. TODO(#3513): Consider adding to schema.
+  - govn_sent # Unused - Whether this is the governing sentence or not.
+  - interstate_mitt # Unused - Y/N flag to indicate if this is an interstate mittimus
+  - incrno # Unused - Incarceration number
+  - jail_cred # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
+  - jud_cd # Unused - Judge code.
+  - law_cd # Unused - Law code. TODO(#3506): Get more info from ID on this.
+  - lgl_fnam # Unused - Legal first name of sentenced person (name information gathered from
+    #          offender_ofndr_dob.csv)
+  - lgl_mnam # Unused - Legal middle name of sentenced person (name information gathered from
+    #          offender_ofndr_dob.csv)
+  - lgl_lnam # Unused - Legal last name of sentenced person (name information gathered from
+    #          offender_ofndr_dob.csv)
+  - lgl_title # Unused - Legal title of sentenced person (name information gathered from
+    #          offender_ofndr_dob.csv)
+  - mitt_disp # Unused - Mittimus disposition (Probation, Incarceration, or Interstate)
+  - mitt_srl # Unused - Mittimus id
+  - mitt_time_typ # Unused - Original mittimus disposition
+  - off_actv_flg # Unused - Whether or not the specific offense is currently a valid offense in ID.
+  - off_cat # Unused - Offense category - Used to find off_ldesc
+  - off_cd # Unused - Offense code - Used to find off_ldesc
+  - off_deg # Unused - Offense degree - Usedtofind off_ldesc
+  - off_rank1 # Unused - TODO(#3506): Get more info from ID.
+  - off_rank2 # Unused - TODO(#3506): Get more info from ID.
+  - off_rank3 # Unused - TODO(#3506): Get more info from ID.
+  - off_rpt_flg # Unused - TODO(#3506): Get more info from ID
+  - off_sdesc # Unused - Offense short description. We use off_ldesc instead (long description).
+  - off_stat_eff_dtd # Unused - Date the statue become effective
+  - off_stat_subsec # Unused - Statute Subsection
+  - off_stat_term_dtd # Unused - TODO(#3506): Get more info from ID
+  - off_typ # Unused - Offense type - Always null
+  - offvisxo_flg # Unused - Always null
+  - off_visxo_flg # Unused - Always null
+  - crm_grp_cd # Unused - Crime group code - only used in the ingest view for joins
+  - ofnse_crm_grp_id # Unused - Offense crime group id - unnecessary
+  - ucr # Unused - Uniform Crime Reporting code TODO(#3506): Get more info from ID on this
+  - plea # Unused - Plea TODO(#2607): Add plea to StateCharge.
+  - sent_eff_dtd # Unused - Usually the same as sentence_dtd/sent_beg_dtd.
+    #          TODO(#3506): Understand when these differ.
+  - sent_exp_dtd # Unused - Date the mittimus expires. Usually the same as sent_ft_dtd unless there has been a
+    #          manual process to update the expiration date.
+    #          TODO(#3506): Should we use this instead of sent_ft_dtd
+  - sent_gtr_dtd # Unused - Mostly null. TODO(#3506): Get more info from ID on this.
+  - state # Unused - State where sentenced.
+  - string_no # Unused - TODO(#3506): Get more info from ID
+  - vio_doc # Unused - TODO(#3506): Get more info from ID on this.
+  - vio_1311 # Unused - TODO(#3506): Get more info from ID on this

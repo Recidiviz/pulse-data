@@ -6,10 +6,10 @@ user_inputs:
   constant_admissions: true
 
 compartments_architecture:
-    pretrial: shell
-    prison: full
-    release: full
-    home_detent: full
+  pretrial: shell
+  prison: full
+  release: full
+  home_detent: full
 
 reference_date: 2020.6666666666666666
 

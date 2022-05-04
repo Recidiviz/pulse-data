@@ -5,19 +5,19 @@ data_classification: source
 primary_key_cols:
   - Plea_Type_Cd
 columns:
-  - name : Adult_Ind
-  - name : Created_By_Tx
+  - name: Adult_Ind
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : E_Plea_Type_Desc
+  - name: Created_On_Date
+  - name: E_Plea_Type_Desc
     description: |-
       A human-readable text description of the plea.
-  - name : Juvenile_Ind
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Juvenile_Ind
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Plea_Type_Cd
+  - name: Modified_On_Date
+  - name: Plea_Type_Cd
     description: |-
       The primary key for this table. A short enum code representing the plea.
     known_values:
@@ -41,7 +41,7 @@ columns:
         description: NOLO (Nolo contendere, which is essentially a plea of "no contest")
       - value: "?"
         description: DC CONV (Exact meaning unclear, usage is rare)
-  - name : System_Ref_Comments_Tx
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True

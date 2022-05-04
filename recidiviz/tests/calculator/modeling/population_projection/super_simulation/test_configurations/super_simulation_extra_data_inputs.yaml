@@ -4,9 +4,9 @@ user_inputs:
   projection_years: 10.0
 
 compartments_architecture:
-    PRETRIAL: shell
-    RELEASE: full
-    PRISON: full
+  PRETRIAL: shell
+  RELEASE: full
+  PRISON: full
 
 reference_date: 2010.0
 
@@ -28,5 +28,5 @@ data_inputs:
     state_code: test_state
 
 per_year_costs:
-    RELEASE: 0.0
-    PRISON: 1000.0
+  RELEASE: 0.0
+  PRISON: 1000.0

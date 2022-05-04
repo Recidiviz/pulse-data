@@ -1,7 +1,7 @@
 file_tag: dbo_PRS_FACT_PAROLEE_CNTC_SUMRY
 file_description: |-
   This file is provided by PADOC and provides an entry for a supervision contact that was made.
-  
+
   This table can have rows retroactively updated by agents with corrections between ingest dates
   as well as multiple rows within one ingest date that semantically represent the same contact made to
   a person on supervision.

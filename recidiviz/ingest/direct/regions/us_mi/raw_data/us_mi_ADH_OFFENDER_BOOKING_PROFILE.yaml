@@ -13,7 +13,7 @@ columns:
   - name: profile_date
     description: The date that a given profile for a given offender_booking_id is updated.
     is_datetime: True
-    datetime_sql_parsers: 
+    datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
   - name: living_unit_id
   - name: eye_color_id
@@ -23,103 +23,103 @@ columns:
       The flag that indicates a person's race based on appearance (as indicated by the 
       REFERENCE_CODE table).
     known_values:
-      - value: '371'
+      - value: "371"
         description: Black or African American
-      - value: '685'
+      - value: "685"
         description: White
-      - value: '373'
+      - value: "373"
         description: American Indian or Alaskan Native
-      - value: '7404'
+      - value: "7404"
         description: Unknown
-      - value: '9875'
+      - value: "9875"
         description: Native Hawaiian or Other Pacific Islander
-      - value: '372'
+      - value: "372"
         description: Asian
   - name: cultural_affiliation_id
     description: |-
       The flag that indicates a person's ethnicity or cultural affiliation (as indicated
       by the REFERENCE_CODE table).
     known_values:
-      - value: '603'
+      - value: "603"
         description: European
-      - value: '624'
+      - value: "624"
         description: East Indian
-      - value: '606'
+      - value: "606"
         description: African
-      - value: '621'
+      - value: "621"
         description: None
-      - value: '608'
+      - value: "608"
         description: Mexican
-      - value: '1172'
+      - value: "1172"
         description: Middle Eastern
-      - value: '602'
+      - value: "602"
         description: Hispanic
-      - value: '601'
+      - value: "601"
         description: Others
-      - value: '1171'
+      - value: "1171"
         description: Asian
-      - value: '1170'
+      - value: "1170"
         description: Native American
-      - value: '622'
+      - value: "622"
         description: Nordic/Scandinavian
-      - value: '607'
+      - value: "607"
         description: Jewish
-      - value: '625'
+      - value: "625"
         description: Pacific Islands
-      - value: '605'
+      - value: "605"
         description: Canadian
-      - value: '604'
+      - value: "604"
         description: Chinese
   - name: multiracial_flag
     description: |-
       Boolean flag that indicates whether a person is identified as multi-racial
     known_values:
-      - value: '0'
-        description: 'False'
-      - value: '1'
-        description: 'True'
+      - value: "0"
+        description: "False"
+      - value: "1"
+        description: "True"
   - name: caucasian_racial_flag
     description: |-
       Boolean flag that indicates whether a person is identified as Caucasian (or white)
     known_values:
-      - value: '0'
-        description: 'False'
-      - value: '1'
-        description: 'True'
+      - value: "0"
+        description: "False"
+      - value: "1"
+        description: "True"
   - name: native_american_racial_flag
     description: |-
       Boolean flag that indicates whether a person is identified as Native American
     known_values:
-      - value: '0'
-        description: 'False'
-      - value: '1'
-        description: 'True'
+      - value: "0"
+        description: "False"
+      - value: "1"
+        description: "True"
   - name: black_racial_flag
     description: |-
       Boolean flag that indiciates whether a person is identified as Black
     known_values:
-      - value: '0'
-        description: 'False'
-      - value: '1'
-        description: 'True'
+      - value: "0"
+        description: "False"
+      - value: "1"
+        description: "True"
   - name: asian_racial_flag
     description: |-
       Boolean flag that indicates whether a person is identified as Asian
     known_values:
-      - value: '0'
-        description: 'False'
-      - value: '1'
-        description: 'True'
+      - value: "0"
+        description: "False"
+      - value: "1"
+        description: "True"
   - name: skin_complexion_id
   - name: gender_id
     description: |-
       The flag that indicates a person's gender (as indicated by the REFERENCE_CODE table).
     known_values:
-      - value: '435'
+      - value: "435"
         description: Male
-      - value: '434'
+      - value: "434"
         description: Female
-      - value: '7403'
+      - value: "7403"
         description: Unknown
   - name: marital_status_id
   - name: facial_hair_id
@@ -154,25 +154,25 @@ columns:
     description: |-
       Boolean flag that indiciates whether a person is identified as Hispanic
     known_values:
-      - value: '0'
-        description: 'False'
-      - value: '1'
-        description: 'True'
+      - value: "0"
+        description: "False"
+      - value: "1"
+        description: "True"
   - name: racial_identification_code_id
     description: |-
       The flag that indicates a person's race (as indicated by the REFERENCE_CODE table).
     known_values:
-      - value: '371'
+      - value: "371"
         description: Black or African American
-      - value: '685'
+      - value: "685"
         description: White
-      - value: '373'
+      - value: "373"
         description: American Indian or Alaskan Native
-      - value: '7404'
+      - value: "7404"
         description: Unknown
-      - value: '9875'
+      - value: "9875"
         description: Native Hawaiian or Other Pacific Islander
-      - value: '372'
+      - value: "372"
         description: Asian
   - name: start_date
   - name: end_date

@@ -1,6 +1,5 @@
 default_encoding: UTF-8
-default_separator: ','
+default_separator: ","
 default_ignore_quotes: False
 default_line_terminator: "@\n"
 default_always_historical_export: False
-

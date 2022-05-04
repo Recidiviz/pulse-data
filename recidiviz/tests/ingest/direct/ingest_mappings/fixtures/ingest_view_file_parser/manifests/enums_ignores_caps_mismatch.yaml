@@ -16,4 +16,3 @@ output:
           FakeGender.MALE: Male
         $ignore:
           - x
-

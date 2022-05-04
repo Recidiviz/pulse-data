@@ -43,10 +43,10 @@ output:
                 StateAssessmentLevel.MODERATE:
                   - MOD
                 StateAssessmentLevel.HIGH:
-                  - HD    # High Drug Felony Risk
-                  - HP    # High Property Felony Risk
-                  - HV    # High Violent Felony Risk
-                  - HVPD  # High Violent, Property, and Drug Felony Risk
+                  - HD # High Drug Felony Risk
+                  - HP # High Property Felony Risk
+                  - HV # High Violent Felony Risk
+                  - HVPD # High Violent, Property, and Drug Felony Risk
           assessment_metadata:
             $json_dict:
               friends_need_level: FriendsNeedLevel
@@ -61,5 +61,3 @@ output:
           conducting_agent:
             StateAgent:
               external_id: ConductingStaffID
-
-

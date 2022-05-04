@@ -45,6 +45,16 @@ jobs:
       - name: Mypy check
         run: pipenv run mypy recidiviz
 
+  # Verify that all YAML files are properly formatted, according to prettier
+  prettier:
+    name: Prettier [yaml]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+      - run: npm install prettier
+      - run: npx prettier --check "**/*.{yaml,yml}"
+
   pylint:
     name: Pylint
     runs-on: ubuntu-latest
@@ -183,7 +193,7 @@ jobs:
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
             --durations=25
-  
+
   # These unit tests need to be run separately because they depend on a different Python
   # environment defined in the Pipfile in the recidiviz/airflow package.
   airflow-tests:

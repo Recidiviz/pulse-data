@@ -53,6 +53,8 @@ found in `{latest_views_dataset}`.
 
 STATE_RAW_DATA_FILE_HEADER_PATH = "raw_data.md"
 
+AUTOFORMAT_COMMIT_REGEX = r"\[autoformat\]"
+
 
 class DirectIngestDocumentationGenerator:
     """A class for generating documentation about our direct ingest integrations."""
@@ -250,7 +252,7 @@ class DirectIngestDocumentationGenerator:
             return res.stdout.decode()
 
         res = subprocess.run(
-            f'git log -1 --pretty=format:"%an" -- {path}',
+            f'git log -1 --invert-grep --grep "{AUTOFORMAT_COMMIT_REGEX}" --pretty=format:"%an" -- {path}',
             shell=True,
             stdout=subprocess.PIPE,
             check=True,
@@ -263,7 +265,7 @@ class DirectIngestDocumentationGenerator:
         if os.path.basename(path) in touched_configs:
             return datetime.datetime.today().strftime("%Y-%m-%d")
         res = subprocess.run(
-            f'git log -1 --date=short --pretty=format:"%ad" -- {path}',
+            f'git log -1 --invert-grep --grep "{AUTOFORMAT_COMMIT_REGEX}" --date=short --pretty=format:"%ad" -- {path}',
             shell=True,
             stdout=subprocess.PIPE,
             check=True,

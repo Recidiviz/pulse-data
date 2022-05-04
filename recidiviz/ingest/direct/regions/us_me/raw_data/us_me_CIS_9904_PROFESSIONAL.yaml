@@ -6,35 +6,35 @@ data_classification: source
 primary_key_cols:
   - Professional_Id
 columns:
-  - name : Cis_9902_Mejis_Crt_Abrv
-  - name : Cis_9902_Mejis_Crt_Hierarch
-  - name : Cis_9903_Professional_Type_Cd
+  - name: Cis_9902_Mejis_Crt_Abrv
+  - name: Cis_9902_Mejis_Crt_Hierarch
+  - name: Cis_9903_Professional_Type_Cd
     description: |-
       The type of professional, see CIS_9903_PROFESSIONAL_TYPE for possible values.
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Effct_Date
-  - name : First_Name
+  - name: Created_On_Date
+  - name: Effct_Date
+  - name: First_Name
     description: |-
       First name of the professional.
     is_pii: True
-  - name : Ineffct_Date
-  - name : Last_Name
+  - name: Ineffct_Date
+  - name: Last_Name
     description: |-
       Last name of the professional.
     is_pii: True
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Phone_Num
-  - name : Professional_Id
+  - name: Modified_On_Date
+  - name: Phone_Num
+  - name: Professional_Id
     description: |-
       The primary key for this table. A unique ID assigned to each distinct professional.
     is_pii: True
-  - name : Sys_Row_Ind
-  - name : System_Ref_Comments_Tx
+  - name: Sys_Row_Ind
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True

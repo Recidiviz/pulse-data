@@ -2,7 +2,7 @@
 user_inputs:
   start_year: 2021.8333333333333334
   projection_years: 5.0
-  run_date: '2021-11-01'
+  run_date: "2021-11-01"
 
 compartments_architecture:
   PRETRIAL: shell

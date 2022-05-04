@@ -11,15 +11,15 @@ columns:
   - name: program_ref_code
     description: High-level categorization of certain movement reasons
     known_values:
-      - value: 'OTHER'
+      - value: "OTHER"
         description: Indicates another movement type not indicative of the other choices.
-      - value: 'TRANSFER'
+      - value: "TRANSFER"
         description: Indicates a high-level transfer within or from/to MDOC jurisdictions.
-      - value: 'REPORTING'
+      - value: "REPORTING"
         description: Indicating that a person reporting to a parole office.
-      - value: 'PRISON_COMMITMENT'
+      - value: "PRISON_COMMITMENT"
         description: Indicates a high-level prison commitment within MDOC jurisdiction.
-      - value: 'INTAKE'
+      - value: "INTAKE"
         description: Indicates a person entering MDOC.
   - name: effective_date
   - name: expire_date

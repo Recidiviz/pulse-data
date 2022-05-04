@@ -4,12 +4,11 @@ user_inputs:
   projection_years: 10.0
 
 compartments_architecture:
-    pretrial: shell
-    prison: full
-    med_parole: full
-    release: full
-    release_full: full
-
+  pretrial: shell
+  prison: full
+  med_parole: full
+  release: full
+  release_full: full
 
 reference_date: 2021.75
 
@@ -26,4 +25,3 @@ per_year_costs:
   med_parole: 4405.55
   release: 0.0
   release_full: 0.0
-

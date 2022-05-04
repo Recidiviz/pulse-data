@@ -16,22 +16,21 @@ child_key_mappings:
 primary_key:
   docno: state_person.state_person_id
 
-
 keys_to_ignore:
-  - next_fac_cd             # Next facility code - handled manually in controller.
-  - prev_fac_cd             # Previous facility code. Handled manually in controller
-  - fac_cd                  # Facility code - analogous to fac_ldesc used above. Handled manually in controller.
-  - fac_typ                 # Facility type - handled manually in controller for periods of absconscion.
-  - loc_cd                  # Location code - handled manually in controller.
-  - lu_cd                   # Living unit code - handled manually in controller.
-  - empl_ldesc              # Supervising agent name - handled manually in controller
-  - empl_sdesc              # Supervising agent external id - handled manually in controller.
-  - prev_loc_ldesc          # Previous location name - handled manually in controller
-  - next_loc_ldesc          # Next location name - handled manually in controller
+  - next_fac_cd # Next facility code - handled manually in controller.
+  - prev_fac_cd # Previous facility code. Handled manually in controller
+  - fac_cd # Facility code - analogous to fac_ldesc used above. Handled manually in controller.
+  - fac_typ # Facility type - handled manually in controller for periods of absconscion.
+  - loc_cd # Location code - handled manually in controller.
+  - lu_cd # Living unit code - handled manually in controller.
+  - empl_ldesc # Supervising agent name - handled manually in controller
+  - empl_sdesc # Supervising agent external id - handled manually in controller.
+  - prev_loc_ldesc # Previous location name - handled manually in controller
+  - next_loc_ldesc # Next location name - handled manually in controller
 
-  - move_srl                # Unused - serial id for the associated movement
-  - empl_cd                 # Unused - Employee code
-  - empl_title              # Unused - Supervising officer role
-  - loc_ldesc               # Unused - Location name
-  - lu_ldesc                # Unused - Living unit named.
-  - incrno                  # Unused - Incarceration number, leftover from when we connected this period to StateSentenceGroup entities
+  - move_srl # Unused - serial id for the associated movement
+  - empl_cd # Unused - Employee code
+  - empl_title # Unused - Supervising officer role
+  - loc_ldesc # Unused - Location name
+  - lu_ldesc # Unused - Living unit named.
+  - incrno # Unused - Incarceration number, leftover from when we connected this period to StateSentenceGroup entities

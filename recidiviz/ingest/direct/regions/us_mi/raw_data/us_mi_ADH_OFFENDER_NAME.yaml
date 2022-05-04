@@ -30,7 +30,7 @@ columns:
   - name: birth_date
     description: The birthdate of the justice-involved individual
     is_datetime: True
-    datetime_sql_parsers: 
+    datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
     is_pii: True
   - name: birth_city
@@ -40,11 +40,11 @@ columns:
     description: |-
       The flag that indicates a person's sex (as indicated by the REFERENCE_CODE table).
     known_values:
-      - value: '435'
+      - value: "435"
         description: Male
-      - value: '434'
+      - value: "434"
         description: Female
-      - value: '7403'
+      - value: "7403"
         description: Unknown
   - name: create_date
   - name: last_name_soundex

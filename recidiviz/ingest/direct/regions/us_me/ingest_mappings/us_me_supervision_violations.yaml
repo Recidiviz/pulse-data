@@ -84,7 +84,7 @@ output:
                         $enum_mapping:
                           $raw_text:
                             $concat:
-                              $separator: '@@'
+                              $separator: "@@"
                               $values:
                                 - Violation_Finding_Descr_Tx
                                 - Disposition_Desc

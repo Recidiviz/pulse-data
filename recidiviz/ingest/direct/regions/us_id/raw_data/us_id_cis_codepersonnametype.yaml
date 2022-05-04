@@ -9,4 +9,4 @@ columns:
   - name: codedescription
   - name: nametypecode
   - name: active
-separator: ','
+separator: ","

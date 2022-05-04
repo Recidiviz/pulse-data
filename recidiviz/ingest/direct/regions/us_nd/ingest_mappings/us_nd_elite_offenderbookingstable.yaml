@@ -5,15 +5,15 @@ primary_key:
   ROOT_OFFENDER_ID: state_person.state_person_id
 
 keys_to_ignore:
-  - OFFENDER_BOOK_ID    # Booking ID - handled manually in the controller
-  - BOOKING_NO          # This particular id appears unused elsewhere
-  - LIVING_UNIT_ID      # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
-  - ACTIVE_FLAG         # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
-  - IN_OUT_STATUS       # No apparent use for these at the moment
-  - BOOKING_BEGIN_DATE  # Self-reported as unreliable. Covered elsewhere anyway
-  - BOOKING_END_DATE    # Self-reported as unreliable. Covered elsewhere anyway
-  - BOOKING_TYPE        # Always institution commitment (INST), which is implied
-  - BOOKING_STATUS      # No apparent use for these at the moment
-  - AGY_LOC_ID          # Provided in finer detail in External Movements file
-  - CREATE_DATETIME     # No apparent use for these at the moment
-  - MODIFY_DATETIME     # No apparent use for these at the moment
+  - OFFENDER_BOOK_ID # Booking ID - handled manually in the controller
+  - BOOKING_NO # This particular id appears unused elsewhere
+  - LIVING_UNIT_ID # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
+  - ACTIVE_FLAG # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
+  - IN_OUT_STATUS # No apparent use for these at the moment
+  - BOOKING_BEGIN_DATE # Self-reported as unreliable. Covered elsewhere anyway
+  - BOOKING_END_DATE # Self-reported as unreliable. Covered elsewhere anyway
+  - BOOKING_TYPE # Always institution commitment (INST), which is implied
+  - BOOKING_STATUS # No apparent use for these at the moment
+  - AGY_LOC_ID # Provided in finer detail in External Movements file
+  - CREATE_DATETIME # No apparent use for these at the moment
+  - MODIFY_DATETIME # No apparent use for these at the moment

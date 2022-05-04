@@ -16,8 +16,7 @@ products:
     is_state_agnostic: True
     exports:
       - MOCK_EXPORT_NAME
-    environment:
-      staging
+    environment: staging
   - name: Test Product Without Exports
     description: Test Product Without Exports description
     exports: []

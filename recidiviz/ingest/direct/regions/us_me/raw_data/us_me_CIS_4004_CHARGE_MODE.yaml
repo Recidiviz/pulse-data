@@ -26,11 +26,11 @@ columns:
   - name: Charge_Mode_Cd
     description: The primary key for the table.
     known_values:
-      - value: '1'
-        description: 'Indictment'
-      - value: '2'
-        description: 'Information'
-      - value: '3'
-        description: 'Complaint'
-      - value: '4'
-        description: 'Petition'
+      - value: "1"
+        description: "Indictment"
+      - value: "2"
+        description: "Information"
+      - value: "3"
+        description: "Complaint"
+      - value: "4"
+        description: "Petition"

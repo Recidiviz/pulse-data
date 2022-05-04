@@ -1,39 +1,39 @@
-source: 'Alabama Department of Corrections'
-report_type: 'Monthly Statistical Report'
-report_instance: 'September 2020'
-publish_date: '2020-11-20'
-url: 'http://www.doc.state.al.us/docs/MonthlyRpts/September%202020.pdf'
-assignee: 'Solange Knowles'
+source: "Alabama Department of Corrections"
+report_type: "Monthly Statistical Report"
+report_instance: "September 2020"
+publish_date: "2020-11-20"
+url: "http://www.doc.state.al.us/docs/MonthlyRpts/September%202020.pdf"
+assignee: "Solange Knowles"
 tables:
-  - file: 'by_type.csv'
+  - file: "by_type.csv"
     date_range:
       fixed:
-        type: 'RANGE'
+        type: "RANGE"
         input:
-          - '2020-09-01'
-          - '2020-10-01'
-    system: 'CORRECTIONS'
+          - "2020-09-01"
+          - "2020-10-01"
+    system: "CORRECTIONS"
     metric:
       admissions:
-        measurement_type: 'DELTA'
+        measurement_type: "DELTA"
     dimension_columns:
-      - column_name: 'Admission Type'
-        dimension_name: 'ADMISSION_TYPE'
+      - column_name: "Admission Type"
+        dimension_name: "ADMISSION_TYPE"
         mapping_overrides:
-          NEW COMMITMENTS: 'NEW_COMMITMENT'
-          OTHER: 'OTHER'
-          PAROLE RE ADMISSIONS: 'FROM_SUPERVISION'
-          PROBATION REVOCATIONS: 'FROM_SUPERVISION'
-          RETURNED ESCAPEES: 'OTHER'
-          SPLIT SENTENCE: 'NEW_COMMITMENT'
-      - column_name: 'Admission Type'
-        dimension_name: 'SUPERVISION_TYPE'
+          NEW COMMITMENTS: "NEW_COMMITMENT"
+          OTHER: "OTHER"
+          PAROLE RE ADMISSIONS: "FROM_SUPERVISION"
+          PROBATION REVOCATIONS: "FROM_SUPERVISION"
+          RETURNED ESCAPEES: "OTHER"
+          SPLIT SENTENCE: "NEW_COMMITMENT"
+      - column_name: "Admission Type"
+        dimension_name: "SUPERVISION_TYPE"
         strict: False
         mapping_overrides:
-          PAROLE RE ADMISSIONS: 'PAROLE'
-          PROBATION REVOCATIONS: 'PROBATION'
+          PAROLE RE ADMISSIONS: "PAROLE"
+          PROBATION REVOCATIONS: "PROBATION"
     value_column:
-      column_name: 'Total'
+      column_name: "Total"
     location:
-      state: 'US_AL'
-    methodology: ''
+      state: "US_AL"
+    methodology: ""

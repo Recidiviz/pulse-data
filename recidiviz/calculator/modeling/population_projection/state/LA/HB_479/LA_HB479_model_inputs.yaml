@@ -4,18 +4,18 @@ user_inputs:
   projection_years: 10.0
 
 compartments_architecture:
-    pretrial: shell
-    prison: full
-    release: full
-    release_full: full
-    prison_gtps_rev_new: full
+  pretrial: shell
+  prison: full
+  release: full
+  release_full: full
+  prison_gtps_rev_new: full
 
 reference_date: 2020.5
 
 time_step: 0.0833333333333
 
-disaggregation_axes: 
-- age
+disaggregation_axes:
+  - age
 
 data_inputs:
   big_query_simulation_tag: la_hb479

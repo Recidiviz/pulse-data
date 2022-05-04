@@ -5,37 +5,37 @@ data_classification: source
 primary_key_cols:
   - Assign_Id
 columns:
-  - name : Assign_Id
+  - name: Assign_Id
     description: Primary key of the table
-  - name : Cis_100_Client_Id
+  - name: Cis_100_Client_Id
     description: The unique identifier for all clients in the offender management system.
     is_pii: True
-  - name : Cis_900_Employee_Id
+  - name: Cis_900_Employee_Id
     is_pii: True
-  - name : Cis_9083_9082_Chng_Type_Cd
-  - name : Cis_9083_9083_Chng_Rsn_Cd
-  - name : Cis_9083_9084_Ooclass_Cd
-  - name : Cis_9084_9089_Client_Stat_Cd
-  - name : Cis_915_Bed_Id
-  - name : Conflict_Tx
+  - name: Cis_9083_9082_Chng_Type_Cd
+  - name: Cis_9083_9083_Chng_Rsn_Cd
+  - name: Cis_9083_9084_Ooclass_Cd
+  - name: Cis_9084_9089_Client_Stat_Cd
+  - name: Cis_915_Bed_Id
+  - name: Conflict_Tx
     is_pii: True
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : End_Date
+  - name: Created_On_Date
+  - name: End_Date
     description: The end date for the bed assignment.
     is_datetime: True
-  - name : Hold_Ind
-  - name : Keep_Sep_Ind
-  - name : Modified_By_Tx
+  - name: Hold_Ind
+  - name: Keep_Sep_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Notes_Tx
+  - name: Modified_On_Date
+  - name: Notes_Tx
     is_pii: True
-  - name : Out_Class_Ind
-  - name : Override_Prea_Ind
-  - name : Single_Bed_Ind
-  - name : Start_Date
+  - name: Out_Class_Ind
+  - name: Override_Prea_Ind
+  - name: Single_Bed_Ind
+  - name: Start_Date
     description: The start date for the bed assignment.
     is_datetime: True
-  - name : Top_Bunk_Ind
+  - name: Top_Bunk_Ind

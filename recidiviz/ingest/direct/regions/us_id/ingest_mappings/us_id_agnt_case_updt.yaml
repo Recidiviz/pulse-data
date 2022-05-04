@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-- agnt_case_updt_id
-- ofndr_num
-- create_by_usr_id
-- create_dt
-- agnt_note_title
+  - agnt_case_updt_id
+  - ofndr_num
+  - create_by_usr_id
+  - create_dt
+  - agnt_note_title
 unused_columns: []
 variables:
   - records_program_start:
@@ -26,133 +26,132 @@ output:
           id_type: $literal("US_ID_DOC")
     program_assignments:
       - $conditional:
-        - $if:
-            $or:
-              - $variable(records_program_start)
-              - $variable(records_program_discharge)
-          $then:
-            StateProgramAssignment:
-              referring_agent:
-                StateAgent:
-                  external_id: create_by_usr_id
-                  agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
-              external_id:
-                $concat:
-                  $values:
-                    - ofndr_num
-                    - agnt_case_updt_id
-                    - $literal("FUZZY_MATCHED")
-              participation_status:              
-                $enum_mapping:
-                  $raw_text: agnt_note_title
-                  $custom_parser: us_id_custom_enum_parsers.participation_status_from_agnt_note_title
-              discharge_reason:
-                $conditional:
-                  - $if: $variable(records_program_discharge)
-                    $then: $literal_enum(StateProgramAssignmentDischargeReason.COMPLETED)
-              start_date:
-                $conditional:
-                  - $if: $variable(records_program_start)
-                    $then: create_dt
-              discharge_date:
-                $conditional:
-                  - $if: $variable(records_program_discharge)
-                    $then: create_dt
+          - $if:
+              $or:
+                - $variable(records_program_start)
+                - $variable(records_program_discharge)
+            $then:
+              StateProgramAssignment:
+                referring_agent:
+                  StateAgent:
+                    external_id: create_by_usr_id
+                    agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+                external_id:
+                  $concat:
+                    $values:
+                      - ofndr_num
+                      - agnt_case_updt_id
+                      - $literal("FUZZY_MATCHED")
+                participation_status:
+                  $enum_mapping:
+                    $raw_text: agnt_note_title
+                    $custom_parser: us_id_custom_enum_parsers.participation_status_from_agnt_note_title
+                discharge_reason:
+                  $conditional:
+                    - $if: $variable(records_program_discharge)
+                      $then: $literal_enum(StateProgramAssignmentDischargeReason.COMPLETED)
+                start_date:
+                  $conditional:
+                    - $if: $variable(records_program_start)
+                      $then: create_dt
+                discharge_date:
+                  $conditional:
+                    - $if: $variable(records_program_discharge)
+                      $then: create_dt
     supervision_violations:
       - $conditional:
-        - $if:
-            $custom:
-              $function: us_id_custom_parsers.records_violation
-              $args:
-                agnt_note_title: agnt_note_title
-          $then:
-            StateSupervisionViolation:
-              external_id:
-                $concat:
-                  $values:
-                    - ofndr_num
-                    - agnt_case_updt_id
-                    - $literal("FUZZY_MATCHED")
-              violation_date: create_dt
-              supervision_violation_responses:
-                - StateSupervisionViolationResponse:
-                    external_id:
-                      $concat:
-                        $values:
-                          - ofndr_num
-                          - agnt_case_updt_id
-                          - $literal("FUZZY_MATCHED")
-                    response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
-                    response_date: create_dt
-                    deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
-                    decision_agents:
-                      - StateAgent:
-                          external_id: create_by_usr_id
-                          agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
-                    supervision_violation_response_decisions:
-                      - $conditional:
-                        - $if:
-                            $custom:
-                              $function: us_id_custom_parsers.records_violation_response_decision
-                              $args:
-                                agnt_note_title: agnt_note_title
-                          $then:
-                            StateSupervisionViolationResponseDecisionEntry:
-                              decision:
-                                $enum_mapping:
-                                  $raw_text: agnt_note_title
-                                  $custom_parser: us_id_custom_enum_parsers.violation_response_decision_from_agnt_note_title
-              supervision_violation_types:
-                - $conditional:
-                  - $if:
-                      $custom:
-                        $function: us_id_custom_parsers.records_absconsion
-                        $args:
-                          agnt_note_title: agnt_note_title
-                    $then:
-                      StateSupervisionViolationTypeEntry:
-                        violation_type: $literal_enum(StateSupervisionViolationType.ABSCONDED)
+          - $if:
+              $custom:
+                $function: us_id_custom_parsers.records_violation
+                $args:
+                  agnt_note_title: agnt_note_title
+            $then:
+              StateSupervisionViolation:
+                external_id:
+                  $concat:
+                    $values:
+                      - ofndr_num
+                      - agnt_case_updt_id
+                      - $literal("FUZZY_MATCHED")
+                violation_date: create_dt
+                supervision_violation_responses:
+                  - StateSupervisionViolationResponse:
+                      external_id:
+                        $concat:
+                          $values:
+                            - ofndr_num
+                            - agnt_case_updt_id
+                            - $literal("FUZZY_MATCHED")
+                      response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                      response_date: create_dt
+                      deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                      decision_agents:
+                        - StateAgent:
+                            external_id: create_by_usr_id
+                            agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+                      supervision_violation_response_decisions:
+                        - $conditional:
+                            - $if:
+                                $custom:
+                                  $function: us_id_custom_parsers.records_violation_response_decision
+                                  $args:
+                                    agnt_note_title: agnt_note_title
+                              $then:
+                                StateSupervisionViolationResponseDecisionEntry:
+                                  decision:
+                                    $enum_mapping:
+                                      $raw_text: agnt_note_title
+                                      $custom_parser: us_id_custom_enum_parsers.violation_response_decision_from_agnt_note_title
+                supervision_violation_types:
+                  - $conditional:
+                      - $if:
+                          $custom:
+                            $function: us_id_custom_parsers.records_absconsion
+                            $args:
+                              agnt_note_title: agnt_note_title
+                        $then:
+                          StateSupervisionViolationTypeEntry:
+                            violation_type: $literal_enum(StateSupervisionViolationType.ABSCONDED)
     incarceration_periods:
       - $conditional:
-        - $if:
-            $custom:
-              $function: us_id_custom_parsers.records_temporary_custody_admission
-              $args:
-                agnt_note_title: agnt_note_title
-          $then:
-            StateIncarcerationPeriod:
-              external_id:
-                $concat:
-                  $values:
-                    - ofndr_num
-                    - agnt_case_updt_id
-                    - $literal("FUZZY_MATCHED")
-              admission_date: create_dt
-              admission_reason: $literal_enum(StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY)
-              release_date: create_dt
-              release_reason: $literal_enum(StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN)
+          - $if:
+              $custom:
+                $function: us_id_custom_parsers.records_temporary_custody_admission
+                $args:
+                  agnt_note_title: agnt_note_title
+            $then:
+              StateIncarcerationPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - ofndr_num
+                      - agnt_case_updt_id
+                      - $literal("FUZZY_MATCHED")
+                admission_date: create_dt
+                admission_reason: $literal_enum(StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY)
+                release_date: create_dt
+                release_reason: $literal_enum(StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN)
     supervision_periods:
       - $conditional:
-        - $if:
-            $custom:
-              $function: us_id_custom_parsers.records_new_investigation_period
-              $args:
-                agnt_note_title: agnt_note_title
-          $then:
-            StateSupervisionPeriod:
-              external_id:
-                $concat:
-                  $values:
-                    - ofndr_num
-                    - agnt_case_updt_id
-                    - $literal("FUZZY_MATCHED")
-              supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.INVESTIGATION)
-              admission_reason: $literal_enum(StateSupervisionPeriodAdmissionReason.INVESTIGATION)
-              start_date: create_dt
-              termination_date: create_dt
-              termination_reason: $literal_enum(StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN)
-              supervising_officer:
-                StateAgent:
-                  external_id: create_by_usr_id
-                  agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
-
+          - $if:
+              $custom:
+                $function: us_id_custom_parsers.records_new_investigation_period
+                $args:
+                  agnt_note_title: agnt_note_title
+            $then:
+              StateSupervisionPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - ofndr_num
+                      - agnt_case_updt_id
+                      - $literal("FUZZY_MATCHED")
+                supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.INVESTIGATION)
+                admission_reason: $literal_enum(StateSupervisionPeriodAdmissionReason.INVESTIGATION)
+                start_date: create_dt
+                termination_date: create_dt
+                termination_reason: $literal_enum(StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN)
+                supervising_officer:
+                  StateAgent:
+                    external_id: create_by_usr_id
+                    agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)

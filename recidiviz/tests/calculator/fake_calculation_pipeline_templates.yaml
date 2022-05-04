@@ -41,7 +41,6 @@ incremental_metric_pipelines:
     region: us-east1
     staging_only: True
 
-
 historical_metric_pipelines:
   - pipeline: pipeline_with_limit
     job_name: us-yy-historical-pipeline_with_limit-calculations-240

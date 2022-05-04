@@ -2,7 +2,7 @@ file_tag: ADH_REFERENCE_CODE
 file_description: |-
   The reference code table used for everything except locations and offense types.
 data_classification: source
-primary_key_cols: 
+primary_key_cols:
   - reference_code_id
 columns:
   - name: reference_code_id

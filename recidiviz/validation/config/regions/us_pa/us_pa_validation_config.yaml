@@ -12,11 +12,12 @@ exclusions:
   - validation_name: po_report_missing_fields
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: PA has not yet been launched for PO Monthly report, so we are excluding this currently. To be fixed in \#7437.
-    
+
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
     hard_max_allowed_error_override: 0.04
-    override_reason: PA external validation data was generated from snapshots at the time the population for a given
+    override_reason:
+      PA external validation data was generated from snapshots at the time the population for a given
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
       numbers will get "worse" as time goes on and we get more accurate data about movements.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
@@ -69,14 +70,16 @@ max_allowed_error_overrides:
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 1200
-    override_reason: There is a small amount of disagreement between the two data
+    override_reason:
+      There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
       tables. This value was 12 as of 3/5/2021 and we expect that it may slowly grow
       over time as new data is added. TODO(#9734) - need to investigate increase due to
       CCC ingest. Rerun on 02/15/2022 did not improve these. There are 866 as of 03/01/2022.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 150000
-    override_reason: There is a small amount of disagreement between the two data
+    override_reason:
+      There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
       tables. This value was 133 as of 3/5/2021 and we expect that it may slowly grow
       over time as new data is added. TODO(#9736) - need to investgate CCC ingest overlaps
@@ -85,8 +88,9 @@ num_allowed_rows_overrides:
     override_reason: TODO(#9735) - needs investigation
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 700
-    override_reason: TODO(#6253) - Likely a rare edge case related to ordering movements
-      in the PA supervision_period ingest view. Rerun on 02/15/2022 did not improve these. 
+    override_reason:
+      TODO(#6253) - Likely a rare edge case related to ordering movements
+      in the PA supervision_period ingest view. Rerun on 02/15/2022 did not improve these.
       There are 645 of these as of 03/01/2022.
   - validation_name: supervision_period_dates_existence
     hard_num_allowed_rows_override: 1
@@ -97,7 +101,8 @@ num_allowed_rows_overrides:
     override_reason: TODO(#9735) - needs investigation
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 4500
-    override_reason: TODO(#10625) - Need to be handled in IP pre-processing. Rerun on 02/15/2022 did not improve these. 
+    override_reason:
+      TODO(#10625) - Need to be handled in IP pre-processing. Rerun on 02/15/2022 did not improve these.
       There are 4271 of these as of 03/01/2022.
   - validation_name: multiple_supervision_info_for_commitment_admission
     hard_num_allowed_rows_override: 5

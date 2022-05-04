@@ -41,7 +41,7 @@ output:
             $enum_mapping:
               $raw_text:
                 $concat:
-                  $separator: '@@'
+                  $separator: "@@"
                   $values:
                     - current_jurisdiction_location_type
                     - current_status
@@ -58,7 +58,7 @@ output:
             $enum_mapping:
               $raw_text:
                 $concat:
-                  $separator: '@@'
+                  $separator: "@@"
                   $values:
                     - previous_status
                     - current_status
@@ -77,7 +77,7 @@ output:
                   $enum_mapping:
                     $raw_text:
                       $concat:
-                        $separator: '@@'
+                        $separator: "@@"
                         $values:
                           - next_status
                           - next_jurisdiction_location
@@ -105,4 +105,3 @@ output:
                   $given_names: officer_first_name
                   $middle_names: officer_middle_name
                   $surname: officer_last_name
-

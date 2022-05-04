@@ -15,36 +15,36 @@ child_key_mappings:
 # There is a primary key override in us_nd_controller for this file
 
 keys_to_ignore:
-  - LAST_NAME                                       # Unused for now - Person last name
-  - FIRST_NAME                                      # Unused for now - Person first name
-  - OIC_INCIDENT_ID                                 # Used in primary key override
-  - AGENCY_INCIDENT_ID                              # Used in primary key override
-  - INCIDENT_TYPE_DESC                              # Unused, maps 1:1 to INCIDENT_TYPE
-  - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION   # Referenced manually in scraper to infer location_within_facility
-  - REPORT_DATE                                     # Unused for now
-  - OIC_HEARING_ID                                  # Unused for now - schema doesn't encode info about hearings TODO(#2330): Include these if/when we add hearing information
-  - OIC_HEARING_TYPE                                # Unused for now - schema doesn't encode info about hearings
-  - OIC_HEARING_TYPE_DESC                           # Unused for now - schema doesn't encode info about hearings
-  - HEARING_DATE                                    # Unused for now - schema doesn't encode info about hearings
-  - HEARING_STAFF_NAME                              # Unused for now - schema doesn't encode info about hearings
-  - OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT           # Unused for now
-  - OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION    # Unused, same values as OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION
-  - OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ      # Unused for now
-  - OIC_OFFENCE_CATEGORY                            # Unused for now
-  - OIC_OFFENCE_CODE                                # Referenced manually in scraper to inform incident_type
-  - OIC_OFFENCE_DESCRIPTION                         # Referenced manually in scraper to inform incident_type
-  - PLEA_DESCRIPTION                                # Unused
-  - FINDING_DESCRIPTION                             # Referenced manually in scraper to inform outcome_type
-  - RESULT_OIC_OFFENCE_CATEGORY                     # Unused
-  - RESULT_OIC_OFFENCE_CODE                         # Referenced manually in scraper to inform incident_type
-  - RESULT_OIC_OFFENCE_DESCRIPTION                  # Referenced manually in scraper to inform incident_type
-  - Expr1030                                        # Unused, same values as OIC_SANCTION_CODE
-  - SANCTION_SEQ                                    # Referenced manually in scraper to inform state_incarceration_incident_outcome_id
-  - COMPENSATION_AMOUNT                             # Unused
-  - SANCTION_MONTHS                                 # Referenced manually in scraper to inform punishment_length_days
-  - SANCTION_DAYS                                   # Referenced manually in scraper to inform punishment_length_days
+  - LAST_NAME # Unused for now - Person last name
+  - FIRST_NAME # Unused for now - Person first name
+  - OIC_INCIDENT_ID # Used in primary key override
+  - AGENCY_INCIDENT_ID # Used in primary key override
+  - INCIDENT_TYPE_DESC # Unused, maps 1:1 to INCIDENT_TYPE
+  - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION # Referenced manually in scraper to infer location_within_facility
+  - REPORT_DATE # Unused for now
+  - OIC_HEARING_ID # Unused for now - schema doesn't encode info about hearings TODO(#2330): Include these if/when we add hearing information
+  - OIC_HEARING_TYPE # Unused for now - schema doesn't encode info about hearings
+  - OIC_HEARING_TYPE_DESC # Unused for now - schema doesn't encode info about hearings
+  - HEARING_DATE # Unused for now - schema doesn't encode info about hearings
+  - HEARING_STAFF_NAME # Unused for now - schema doesn't encode info about hearings
+  - OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT # Unused for now
+  - OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION # Unused, same values as OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION
+  - OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ # Unused for now
+  - OIC_OFFENCE_CATEGORY # Unused for now
+  - OIC_OFFENCE_CODE # Referenced manually in scraper to inform incident_type
+  - OIC_OFFENCE_DESCRIPTION # Referenced manually in scraper to inform incident_type
+  - PLEA_DESCRIPTION # Unused
+  - FINDING_DESCRIPTION # Referenced manually in scraper to inform outcome_type
+  - RESULT_OIC_OFFENCE_CATEGORY # Unused
+  - RESULT_OIC_OFFENCE_CODE # Referenced manually in scraper to inform incident_type
+  - RESULT_OIC_OFFENCE_DESCRIPTION # Referenced manually in scraper to inform incident_type
+  - Expr1030 # Unused, same values as OIC_SANCTION_CODE
+  - SANCTION_SEQ # Referenced manually in scraper to inform state_incarceration_incident_outcome_id
+  - COMPENSATION_AMOUNT # Unused
+  - SANCTION_MONTHS # Referenced manually in scraper to inform punishment_length_days
+  - SANCTION_DAYS # Referenced manually in scraper to inform punishment_length_days
   - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT # Unused for now
-  - EFFECTIVE_DATE                                  # Referenced manually in scraper to inform punishment_length_days
-  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ   # Unused, same info as OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
-  - ALIAS_NAME_TYPE                                 # Provided by Aliases file
-  - OFFENDER_BOOK_ID                                # Unused - connected to person via ROOT_OFFENDER_ID
+  - EFFECTIVE_DATE # Referenced manually in scraper to inform punishment_length_days
+  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ # Unused, same info as OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
+  - ALIAS_NAME_TYPE # Provided by Aliases file
+  - OFFENDER_BOOK_ID # Unused - connected to person via ROOT_OFFENDER_ID

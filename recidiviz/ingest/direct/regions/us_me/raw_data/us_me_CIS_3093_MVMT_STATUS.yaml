@@ -6,20 +6,20 @@ data_classification: source
 primary_key_cols:
   - Mvmt_Status_Cd
 columns:
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : E_Mvmt_Status_Desc
-    description : |-
+  - name: Created_On_Date
+  - name: E_Mvmt_Status_Desc
+    description: |-
       The value for the Cis_3093_Mvmt_Status_Cd code. See CIS_309_MOVEMENT config for all possible values.
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : System_Ref_Comments_Tx
+  - name: Modified_On_Date
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True
-  - name : Mvmt_Status_Cd
-    description : |-
+  - name: Mvmt_Status_Cd
+    description: |-
       Primary key field and movement status code used in CIS_309_MOVEMENT table

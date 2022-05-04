@@ -15,11 +15,11 @@ ancestor_keys:
 # There is a primary key override for state_charge in us_nd_controller for this file
 
 keys_to_ignore:
-  - OFFENCE_TYPE          # Handled manually within us_nd_scraper
-  - OFFENCE_DATE_RANGE    # No apparent use for these at the moment, very sparse
-  - CREATE_DATETIME       # No apparent use for these at the moment
-  - MODIFY_DATETIME       # No apparent use for these at the moment
-  - ModifyDate            # No apparent use for these at the moment
-  - CHARGE_SEQ            # Handled manually within us_nd_scraper
-  - CHARGE_STATUS         # No apparent use for these at the moment
-  - DESCRIPTION           # A sparsely populated, fully redundant version of CODE_DESCRIPTION
+  - OFFENCE_TYPE # Handled manually within us_nd_scraper
+  - OFFENCE_DATE_RANGE # No apparent use for these at the moment, very sparse
+  - CREATE_DATETIME # No apparent use for these at the moment
+  - MODIFY_DATETIME # No apparent use for these at the moment
+  - ModifyDate # No apparent use for these at the moment
+  - CHARGE_SEQ # Handled manually within us_nd_scraper
+  - CHARGE_STATUS # No apparent use for these at the moment
+  - DESCRIPTION # A sparsely populated, fully redundant version of CODE_DESCRIPTION

@@ -1,5 +1,5 @@
 file_tag: JOVictim
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each victim of a count of a judgment order. There can be only one victim per count.
 data_classification: source
 primary_key_cols:

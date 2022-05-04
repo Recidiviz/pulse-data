@@ -12,28 +12,28 @@ primary_key_cols:
   - CIS_CLIENT_ID
   - RELEASE_DATE
 columns:
-  - name : CIS_CLIENT_ID
+  - name: CIS_CLIENT_ID
     description: This is the MDOC associated to the person being released.
     is_pii: True
-  - name : RELEASE_DATE
+  - name: RELEASE_DATE
     description: This is the date of release.
     is_datetime: True
-  - name : RELEASE_REASON
+  - name: RELEASE_REASON
     description: This is the transfer reason associated with this release. This could be a release from incarceration to supervision, from supervision to incarceration, or from either to liberty. The values used for this field come from CIS_314_TRANSFER.Cis_3141_Transfer_Reason_Cd.
-  - name : RELEASED_FROM
+  - name: RELEASED_FROM
     description: This is the plain-text name of the supervision or incarceration location that the person is being released from.
-  - name : RELEASED_TO
+  - name: RELEASED_TO
     description: This is the plain-text name of the supervision or incarceration location that the person is being released to. If it is a release to liberty, this will be either Maine or another state name.
-  - name : ADMISSION_DATE
+  - name: ADMISSION_DATE
     description: This is the intake date for this period of incarceration or supervision.
     is_datetime: True
-  - name : ADMISSION_REASON
+  - name: ADMISSION_REASON
     description: This is the transfer reason associated with the admission. The values used for this field come from CIS_314_TRANSFER.Cis_3141_Transfer_Reason_Cd.
-  - name : ADMITTED_FROM
+  - name: ADMITTED_FROM
     description: This is the plain-text name of the location where this person was admitted from for this period of incarceration or supervision.
-  - name : ADMITTED_TO
+  - name: ADMITTED_TO
     description: This is the plain-text name of the location where this person was admitted to for this period of incarceration or supervision.
-  - name : CURRENT_HOUSING
+  - name: CURRENT_HOUSING
     description: This is the housing unit for incarceration periods. This can be used to identify when someone is located at Southern Maine Women's ReEntry Center, which will appear in this column as SMWRC.
-  - name : CURRENT_CLIENT_STATUS
+  - name: CURRENT_CLIENT_STATUS
     description: This is the person's status on the release date. For example, if this person was "released" to a DOC facility from a supervision location, the status would show "Incarcerated". For a full list of statuses, see CIS_1000_CURRENT_STATUS.

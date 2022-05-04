@@ -5,10 +5,10 @@ user_inputs:
   speed_run: true
 
 compartments_architecture:
-    pre-trial: shell
-    prison: full
-    release: full
-    release_full: full
+  pre-trial: shell
+  prison: full
+  release: full
+  release_full: full
 
 reference_date: 2000.0
 

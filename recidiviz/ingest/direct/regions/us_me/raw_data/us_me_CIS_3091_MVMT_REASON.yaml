@@ -25,27 +25,27 @@ columns:
   - name: Mvmt_Reason_Cd
     description: The primary key for the table.
     known_values:
-      - value: '1'
-        description: 'Furlough -- Medical'
-      - value: '2'
-        description: 'Furlough -- All Other'
-      - value: '3'
-        description: 'Transport -- Hospital'
-      - value: '4'
-        description: 'Transport -- All Other'
-      - value: '5'
-        description: 'Transport -- Court'
-      - value: '6'
-        description: 'Escape'
-      - value: '7'
-        description: 'Transfer -- County Jail'
-      - value: '8'
-        description: 'Transfer -- All Other'
-      - value: '9'
-        description: 'Transfer -- SCCP'
-      - value: '10'
-        description: 'Transfer -- ISC'
-      - value: '11'
-        description: 'Transfer -- IAD'
-      - value: '12'
-        description: 'Community Reintegration'
+      - value: "1"
+        description: "Furlough -- Medical"
+      - value: "2"
+        description: "Furlough -- All Other"
+      - value: "3"
+        description: "Transport -- Hospital"
+      - value: "4"
+        description: "Transport -- All Other"
+      - value: "5"
+        description: "Transport -- Court"
+      - value: "6"
+        description: "Escape"
+      - value: "7"
+        description: "Transfer -- County Jail"
+      - value: "8"
+        description: "Transfer -- All Other"
+      - value: "9"
+        description: "Transfer -- SCCP"
+      - value: "10"
+        description: "Transfer -- ISC"
+      - value: "11"
+        description: "Transfer -- IAD"
+      - value: "12"
+        description: "Community Reintegration"

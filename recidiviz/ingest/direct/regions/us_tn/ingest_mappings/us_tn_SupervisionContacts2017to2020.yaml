@@ -21,16 +21,16 @@ output:
           external_id:
             $concat:
               $values:
-              - OffenderID
-              - ContactSequenceNumber
+                - OffenderID
+                - ContactSequenceNumber
           contact_date: ContactNoteDateTime
           contacted_agent:
             $conditional:
-                - $if:
-                    $not_null: StaffID
-                  $then:
-                    StateAgent:
-                      external_id: StaffID
+              - $if:
+                  $not_null: StaffID
+                $then:
+                  StateAgent:
+                    external_id: StaffID
           # Due to the number of contact codes present in the raw table, pulled the enum mapping into
           # contact_note_type_mapping variable below
           contact_type: $variable(contact_note_type_mapping)

@@ -239,7 +239,7 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
-    
+
   - description: Start Cloud SQL to BigQuery export tasks for case triage tables
     url: /cloud_sql_to_bq/create_refresh_bq_schema_task/case_triage
     schedule: every day 11:00
@@ -311,7 +311,7 @@ cron:
       min_backoff_seconds: 30
       max_doublings: 5
       job_age_limit: 9h
-  
+
   - description: "[Direct ingest][sftp] Initiate SFTP download for US_PA"
     url: /direct/handle_sftp_files?region=us_pa
     schedule: every Monday 15:00

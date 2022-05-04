@@ -5,19 +5,19 @@ data_classification: source
 primary_key_cols:
   - POLICE_DEPT_CD
 columns:
-  - name : POLICE_DEPT_CD
+  - name: POLICE_DEPT_CD
     description: The primary key of the table.
-  - name : E_POLICE_DEPT_DESC
+  - name: E_POLICE_DEPT_DESC
     description: The name of the police department.
-  - name : SYS_ROW_IND
-  - name : SYSTEM_REF_TX
+  - name: SYS_ROW_IND
+  - name: SYSTEM_REF_TX
     is_pii: True
-  - name : SYSTEM_REF_COMMENTS_TX
+  - name: SYSTEM_REF_COMMENTS_TX
     is_pii: True
-  - name : LOGICAL_DELETE_IND
-  - name : CREATED_BY_TX
+  - name: LOGICAL_DELETE_IND
+  - name: CREATED_BY_TX
     is_pii: True
-  - name : CREATED_ON_DATE
-  - name : MODIFIED_BY_TX
+  - name: CREATED_ON_DATE
+  - name: MODIFIED_BY_TX
     is_pii: True
-  - name : MODIFIED_ON_DATE
+  - name: MODIFIED_ON_DATE
