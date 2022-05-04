@@ -6,66 +6,66 @@ primary_key_cols:
   - Assess_Id
   - Cis_100_Client_Id
 columns:
-  - name : Assess_Id
+  - name: Assess_Id
     description: Part of the composite primary key for this table along with Cis_100_Client_Id.
-  - name : Assess_Reason_Tx
+  - name: Assess_Reason_Tx
     description: Notes recorded about the assessment reason.
     is_pii: True
-  - name : Assessor_Notes_Tx
+  - name: Assessor_Notes_Tx
     description: Notes recorded by the assessor.
     is_pii: True
-  - name : Bill_Tx
+  - name: Bill_Tx
     is_pii: True
-  - name : Cis_100_Client_Id
+  - name: Cis_100_Client_Id
     description: The client that is assigned the assessment.
     is_pii: True
-  - name : Cis_4035_Assess_Prog_Type_Cd
+  - name: Cis_4035_Assess_Prog_Type_Cd
     description: The type of program the assessment is for, see CIS_4035_ASSESS_PROG_TYPE for all possible values. This field is not used very often.
-  - name : Cis_4036_Tool_Type_Cd
+  - name: Cis_4036_Tool_Type_Cd
     description: The assessment tool used, see CIS_4036_ASSESS_TOOL for all possible values.
-  - name : Cis_4302_Request_Type_Cd
+  - name: Cis_4302_Request_Type_Cd
     description: The person or entity who requested the assessment. See CIS_4302_REQUESTED_TYPE for all possible values.
-  - name : Cis_4303_Degree_Cd
+  - name: Cis_4303_Degree_Cd
     description: The level of education being assessed, this field is not used very often. See CIS_4304_ASSESS_DEGREE for all possible values.
-  - name : Cis_4305_Recommendation_Action_Cd
+  - name: Cis_4305_Recommendation_Action_Cd
     description: This code maps to recommended actions for this assessment result. See CIS_4305_RECOMMENDATION_ACTION for all possible values.
-  - name : Cis_450_Agency_Id
-  - name : Cis_451_Contact_Id
+  - name: Cis_450_Agency_Id
+  - name: Cis_451_Contact_Id
     is_pii: True
-  - name : Cis_900_Employee_2_Id
+  - name: Cis_900_Employee_2_Id
     is_pii: True
-  - name : Cis_900_Employee_Id
+  - name: Cis_900_Employee_Id
     is_pii: True
-  - name : Cis_9902_Court_Cd
-  - name : Cis_9904_Proffesional_Cd
-  - name : Court_Ind
-  - name : Created_By_Tx
+  - name: Cis_9902_Court_Cd
+  - name: Cis_9904_Proffesional_Cd
+  - name: Court_Ind
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Dead_Line_Date
+  - name: Created_On_Date
+  - name: Dead_Line_Date
     description: The date the assessment should be completed by.
     is_datetime: True
-  - name : Education_Ind
-  - name : Ext_Int_Assess_Rb
-  - name : Intake_Tx
+  - name: Education_Ind
+  - name: Ext_Int_Assess_Rb
+  - name: Intake_Tx
     is_pii: True
-  - name : Interview_Date
+  - name: Interview_Date
     description: The date the assessment was completed. Start_Date and Interview_Date are almost always the same.
     is_datetime: True
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Other_Request_Tx
+  - name: Modified_On_Date
+  - name: Other_Request_Tx
     is_pii: True
-  - name : Other_Type_Tx
+  - name: Other_Type_Tx
     is_pii: True
-  - name : Result_Tx
+  - name: Result_Tx
     description: A description of the result for the assessment in a text field.
     is_pii: True
-  - name : Score_Tx
+  - name: Score_Tx
     description: A description of the score for the assessment in a text field.
     is_pii: True
-  - name : Start_Date
+  - name: Start_Date
     description: The date the assessment was started. An assessment can be completed on a different day than when it was started.
     is_datetime: True

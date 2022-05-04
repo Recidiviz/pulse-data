@@ -13,4 +13,4 @@ columns:
   - name: COL4
 encoding: ISO-8859-1
 ignore_quotes: True
-custom_line_terminator: '@'
+custom_line_terminator: "@"

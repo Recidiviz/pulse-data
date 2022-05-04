@@ -16,13 +16,13 @@ primary_key:
   docno: state_person.state_person_id
 
 keys_to_ignore:
-  - loc_ldesc               # Location name, used sometimes in place of fac_ldesc - handled manually in controller.
-  - next_loc_ldesc          # Next location name, used sometimes to augment next_fac_typ - handled manually in
-                            #   controller.
+  - loc_ldesc # Location name, used sometimes in place of fac_ldesc - handled manually in controller.
+  - next_loc_ldesc # Next location name, used sometimes to augment next_fac_typ - handled manually in
+    #   controller.
 
-  - fac_cd                  # Unused - facility code - analogous to fac_ldesc used above.
-  - fac_typ                 # Unused - always 'I' for incarcerated
-  - loc_cd                  # Unused - location code - analogous to loc_ldesc
-  - next_fac_cd             # Unused - next facility code
-  - prev_fac_cd             # Unused - previous facility code
-  - incrno                  # Unused - Incarceration number, leftover from when we connected this period to StateSentenceGroup entities
+  - fac_cd # Unused - facility code - analogous to fac_ldesc used above.
+  - fac_typ # Unused - always 'I' for incarcerated
+  - loc_cd # Unused - location code - analogous to loc_ldesc
+  - next_fac_cd # Unused - next facility code
+  - prev_fac_cd # Unused - previous facility code
+  - incrno # Unused - Incarceration number, leftover from when we connected this period to StateSentenceGroup entities

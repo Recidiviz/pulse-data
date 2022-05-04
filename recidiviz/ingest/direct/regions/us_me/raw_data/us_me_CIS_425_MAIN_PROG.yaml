@@ -5,45 +5,45 @@ data_classification: source
 primary_key_cols:
   - ENROLL_ID
 columns:
-  - name : ENROLL_ID
+  - name: ENROLL_ID
     description: The primary key of the table
-  - name : CIS_100_CLIENT_ID
+  - name: CIS_100_CLIENT_ID
     is_pii: True
     description: The MDOC ID associated with this enrollment.
-  - name : TERM_END_DATE
+  - name: TERM_END_DATE
     description: The date the client's term ends.
     is_datetime: True
-  - name : LSI_DATE
+  - name: LSI_DATE
     description: The date the LSI assessment was taken.
     is_datetime: True
-  - name : LSI_SCORE_NUM
+  - name: LSI_SCORE_NUM
     description: The LSI score from the assessment.
-  - name : NOTES_TX
+  - name: NOTES_TX
     is_pii: True
-  - name : UNADMIN_TX
+  - name: UNADMIN_TX
     is_pii: True
-  - name : UNADMINISTER_IND
-  - name : COURT_ORDER_IND
+  - name: UNADMINISTER_IND
+  - name: COURT_ORDER_IND
     description: Indicates whether the program was a court ordered enrollment.
-  - name : CONDITION_IND
+  - name: CONDITION_IND
     description: Indicates whether the program satisfies a sentence condition.
-  - name : CASE_PLAN_IND
+  - name: CASE_PLAN_IND
     description: Indicates whether the program enrollment is part of a case plan.
-  - name : KEEP_SEPARATE_IND
-  - name : KS_OVERRIDE_TX
+  - name: KEEP_SEPARATE_IND
+  - name: KS_OVERRIDE_TX
     is_pii: True
-  - name : NEXT_SCHED_IND
-  - name : CIS_9900_STAT_TYPE_CD
+  - name: NEXT_SCHED_IND
+  - name: CIS_9900_STAT_TYPE_CD
     description: A code that maps to a value in the CIS_9900_STATUS_TYPE table. This code indicates the status of the program enrollment.
-  - name : CIS_420_PROGRAM_ID
+  - name: CIS_420_PROGRAM_ID
     description: The program ID they are enrolled in, values found in CIS_420_PROGRAMS table.
-  - name : CIS_900_EMPLOYEE_ID
+  - name: CIS_900_EMPLOYEE_ID
     is_pii: True
-  - name : CIS_908_CCS_LOCATION_ID
+  - name: CIS_908_CCS_LOCATION_ID
     description: The CCS Location where the program takes place.
-  - name : CREATED_BY_TX
+  - name: CREATED_BY_TX
     is_pii: True
-  - name : CREATED_ON_DATE
-  - name : MODIFIED_BY_TX
+  - name: CREATED_ON_DATE
+  - name: MODIFIED_BY_TX
     is_pii: True
-  - name : MODIFIED_ON_DATE
+  - name: MODIFIED_ON_DATE

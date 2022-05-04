@@ -10,4 +10,4 @@ columns:
   - name: col_name_2a
     description: |-
       column description
-separator: '$'
+separator: "$"

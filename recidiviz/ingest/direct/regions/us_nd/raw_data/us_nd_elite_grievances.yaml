@@ -71,4 +71,3 @@ columns:
   - name: T_ASSIGNED_STAFF_ID
     description: |-
       ID of the staff member assigned to responding to the grievance.
-

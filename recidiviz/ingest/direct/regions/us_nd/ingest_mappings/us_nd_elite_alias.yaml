@@ -13,9 +13,9 @@ child_key_mappings:
   RACE_CODE: state_person_race.race
 
 keys_to_ignore:
-  - OFFENDER_ID           # This particular id appears unused elsewhere
-  - ALIAS_OFFENDER_ID     # This particular id appears unused elsewhere
-  - RACE_CODE             # Handled manually in us_nd_controller
-  - SEX_CODE              # Handled manually in us_nd_controller
-  - CREATE_DATETIME       # No apparent use for these at the moment
-  - MODIFY_DATETIME       # No apparent use for these at the moment
+  - OFFENDER_ID # This particular id appears unused elsewhere
+  - ALIAS_OFFENDER_ID # This particular id appears unused elsewhere
+  - RACE_CODE # Handled manually in us_nd_controller
+  - SEX_CODE # Handled manually in us_nd_controller
+  - CREATE_DATETIME # No apparent use for these at the moment
+  - MODIFY_DATETIME # No apparent use for these at the moment

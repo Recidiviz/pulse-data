@@ -5,79 +5,79 @@ data_classification: source
 primary_key_cols:
   - Charge_Id
 columns:
-  - name : Atn_Tx
+  - name: Atn_Tx
     is_pii: True
-  - name : Bind_Over_Result_Tx
+  - name: Bind_Over_Result_Tx
     is_pii: True
-  - name : Charge_Id
+  - name: Charge_Id
     description: |-
       The primary key for this table. A unique ID assigned to each individual charge.
-  - name : Charge_Outcome_Date
-  - name : Charge_Outcome_Notes_Tx
+  - name: Charge_Outcome_Date
+  - name: Charge_Outcome_Notes_Tx
     is_pii: True
-  - name : Cis_100_Client_Id
+  - name: Cis_100_Client_Id
     description: |-
       The unique identifier for all clients in the offender management system.
-  - name : Cis_4000_Charge_Outcome_Cd
+  - name: Cis_4000_Charge_Outcome_Cd
     description: |-
       The status of the charge, see CIS_4000_CHARGE_STATUS for possible values.
-  - name : Cis_4002_Plea_Type_Cd
+  - name: Cis_4002_Plea_Type_Cd
     description: |-
       The plea entered against the charge by the accused, see CIS_4002_PLEA_TYPE for possible values.
-  - name : Cis_4003_Offence_Type_Cd
+  - name: Cis_4003_Offence_Type_Cd
     description: |-
       The type of offense represented by this charge, see CIS_4003_OFFENCE_TYPE for possible values.
-  - name : Cis_4003_Pet_Offence_Type_Cd
-  - name : Cis_4004_Charge_Mode_Cd
-  - name : Cis_4006_Victim_Relation_Cd
-  - name : Cis_4009_Det_Status_Cd
-  - name : Cis_4009_Rel_Status_Cd
-  - name : Cis_4009_Type_Offense_Cd
-  - name : Cis_4020_Offense_Class_Cd
+  - name: Cis_4003_Pet_Offence_Type_Cd
+  - name: Cis_4004_Charge_Mode_Cd
+  - name: Cis_4006_Victim_Relation_Cd
+  - name: Cis_4009_Det_Status_Cd
+  - name: Cis_4009_Rel_Status_Cd
+  - name: Cis_4009_Type_Offense_Cd
+  - name: Cis_4020_Offense_Class_Cd
     description: |-
       The class of offense represented by this charge, see CIS_4003_OFFENCE_TYPE for possible values.
-  - name : Cis_4020_Pet_Class_Cd
-  - name : Cis_9003_Jurisd_County_Cd
+  - name: Cis_4020_Pet_Class_Cd
+  - name: Cis_9003_Jurisd_County_Cd
     description: |-
       The code of the county that holds jurisdiction for charging this offense, see CIS_9003_COUNTY for possible values.
-  - name : Cis_9901_Police_Dept_Cd
-  - name : Comments_Tx
+  - name: Cis_9901_Police_Dept_Cd
+  - name: Comments_Tx
     description: |-
       Free text comments about the charge written by some administrator within the MDOC system.
     is_pii: True
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Ctn_Tx
+  - name: Created_On_Date
+  - name: Ctn_Tx
     is_pii: True
-  - name : Detention_Req_Date
-  - name : Drugs_Alc_Inv_Ind
-  - name : Interstate_Comp_In_Ind
-  - name : Juvenile_Ind
+  - name: Detention_Req_Date
+  - name: Drugs_Alc_Inv_Ind
+  - name: Interstate_Comp_In_Ind
+  - name: Juvenile_Ind
     description: |-
       Indicates that this charge was filed against a juvenile, not an adult
     is_pii: True
-  - name : Modified_By_Tx
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Offense_Date
+  - name: Modified_On_Date
+  - name: Offense_Date
     description: |-
       The date that the originating offense took place.
     is_datetime: True
-  - name : Offense_Note_Tx
+  - name: Offense_Note_Tx
     is_pii: True
-  - name : Oos_Inv_Compl_Date
-  - name : Oos_Inv_Req_Date
-  - name : Petition_Outcome_Tx
+  - name: Oos_Inv_Compl_Date
+  - name: Oos_Inv_Req_Date
+  - name: Petition_Outcome_Tx
     is_pii: True
-  - name : Petition_Req_Date
-  - name : Petition_Req_Ind
-  - name : Police_Officer_Tx
+  - name: Petition_Req_Date
+  - name: Petition_Req_Ind
+  - name: Police_Officer_Tx
     is_pii: True
-  - name : Police_Rep_No_Tx
+  - name: Police_Rep_No_Tx
     is_pii: True
-  - name : Referral_Date
+  - name: Referral_Date
     description: |-
       The date that the offense was referred to the courts system for an official charge.
     is_datetime: True
-  - name : Summons_Date
+  - name: Summons_Date

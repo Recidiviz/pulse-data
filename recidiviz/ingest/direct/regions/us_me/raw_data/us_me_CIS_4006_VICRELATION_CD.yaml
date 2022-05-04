@@ -5,22 +5,22 @@ data_classification: source
 primary_key_cols:
   - VICTIM_RELATION_CD
 columns:
-  - name : VICTIM_RELATION_CD
+  - name: VICTIM_RELATION_CD
     description: The primary key for the table.
-  - name : E_VICTIM_RELATION_DESC
+  - name: E_VICTIM_RELATION_DESC
     description: A plain-text description associated with the code.
-  - name : ADULT_IND
+  - name: ADULT_IND
     description: Indicates whether the value is used for adult clients.
-  - name : JUVENILE_IND
+  - name: JUVENILE_IND
     description: Indicates whether the value is used for juvenile clients.
-  - name : SYSTEM_REF_TX
+  - name: SYSTEM_REF_TX
     is_pii: True
-  - name : SYSTEM_REF_COMMENTS_TX
+  - name: SYSTEM_REF_COMMENTS_TX
     is_pii: True
-  - name : LOGICAL_DELETE_IND
-  - name : MODIFIED_BY_TX
+  - name: LOGICAL_DELETE_IND
+  - name: MODIFIED_BY_TX
     is_pii: True
-  - name : MODIFIED_ON_DATE
-  - name : CREATED_BY_TX
+  - name: MODIFIED_ON_DATE
+  - name: CREATED_BY_TX
     is_pii: True
-  - name : CREATED_ON_DATE
+  - name: CREATED_ON_DATE

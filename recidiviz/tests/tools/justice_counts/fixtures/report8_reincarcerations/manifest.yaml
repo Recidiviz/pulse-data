@@ -1,35 +1,35 @@
-source: 'Michigan Department of Corrections'
-report_type: 'Statistical Report'
-report_instance: '2018'
-publish_date: '2019-11-27'
-url: 'https://www.michigan.gov/corrections/0,4551,7-119-1441---,00.html'
-assignee: 'Solange Knowles'
+source: "Michigan Department of Corrections"
+report_type: "Statistical Report"
+report_instance: "2018"
+publish_date: "2019-11-27"
+url: "https://www.michigan.gov/corrections/0,4551,7-119-1441---,00.html"
+assignee: "Solange Knowles"
 tables:
-  - file: 'data.csv'
+  - file: "data.csv"
     date_range:
       dynamic:
-        type: 'RANGE'
+        type: "RANGE"
         # TODO(#4934): Use YEAR instead
-        converter: 'CUSTOM'
+        converter: "CUSTOM"
         columns:
-          Start: 'MONTH'
-          End: 'MONTH'
-    system: 'CORRECTIONS'
+          Start: "MONTH"
+          End: "MONTH"
+    system: "CORRECTIONS"
     metric:
       admissions:
-        measurement_type: 'DELTA'
-        admission_type: 'FROM_SUPERVISION'
-        supervision_type: 'PAROLE'
+        measurement_type: "DELTA"
+        admission_type: "FROM_SUPERVISION"
+        supervision_type: "PAROLE"
     dimension_columns:
-      - column_name: 'Gender'
-        dimension_name: 'GENDER'
-      - column_name: 'Type'
-        dimension_name: 'SUPERVISION_VIOLATION_TYPE'
+      - column_name: "Gender"
+        dimension_name: "GENDER"
+      - column_name: "Type"
+        dimension_name: "SUPERVISION_VIOLATION_TYPE"
         mapping_overrides:
-          New Sentence Returns: 'NEW_CRIME'
-          Technical Violator Returns: 'TECHNICAL'
+          New Sentence Returns: "NEW_CRIME"
+          Technical Violator Returns: "TECHNICAL"
     value_column:
-      column_name: 'Value'
+      column_name: "Value"
     location:
-      state: 'US_MI'
-    methodology: ''
+      state: "US_MI"
+    methodology: ""

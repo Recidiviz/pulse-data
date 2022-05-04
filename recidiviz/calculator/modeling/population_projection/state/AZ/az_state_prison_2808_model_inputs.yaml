@@ -1,14 +1,14 @@
 ---
 user_inputs:
-#  policy_year: 2020.0
+  #  policy_year: 2020.0
   start_year: 2017.0
   projection_years: 14.0
   speed_run: true
 
 compartments_architecture:
-    pre-trial: shell
-    prison: full
-    release: full
+  pre-trial: shell
+  prison: full
+  release: full
 
 reference_date: 2020.0
 

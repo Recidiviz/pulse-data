@@ -23,43 +23,43 @@ enforced_ancestor_types:
   state_sentence: state_incarceration_sentence
 
 keys_to_ignore:
-  - early_discharge_id        # Early discharge id - can be associated with multiple sentences. Handled manually in
-                              #                      controller
-  - early_discharge_sent_id   # Id for each sentence-level early discharge request. Handled manually in controller.
-  - sent_no                   # Sentence number - Handled manually in the controller.
+  - early_discharge_id # Early discharge id - can be associated with multiple sentences. Handled manually in
+    #                      controller
+  - early_discharge_sent_id # Id for each sentence-level early discharge request. Handled manually in controller.
+  - sent_no # Sentence number - Handled manually in the controller.
 
-  - caseno_seq                        # Unused - Case sequence number within a single docket for related sentence
-  - case_planning_respond             # Unused - TODO(#3506): Get more details from ID
-  - compliance                        # Unused - whether the person has been compliant to their supervision conditions
-  - created_by_id                     # Unused - id of the person who created the request (usually a person's PO)
-  - current_lsir_id                   # Unused - test id of the persons current LSIR assessment
-  - decision_date                     # Unused - date a decision was made. We use official_decision_dt instead.
-                                      #          TODO(#3506): Understand why these can differ
-  - decision_state                    # Unused - integer value indicating at what stage in the process the request is in
-                                      #          (ranges 2-5)
-  - decision_updt_date                # Unused - time that the row was updated with decision information
-  - decision_updt_user_id             # Unused - id of person who input the decision information
-  - early_discharge_form_typ_id       # Unused - int code that is synonymous with early_discharge_form_type_desc
-  - fine_curr_bal                     # Unused - current fine balance
-  - fine_init_bal                     # Unused - initial fine balance
-  - fine_last_pymnt_dt                # Unused - last date a fine payment was made
-  - incrno                            # Unused - Incarceration number
-  - initial_lsir_id                   # Unused - test id of the person's initial LSIR assessment
-  - juris_auth_sbmt_dt                # Unused - date that the request was sent to the jurisdiction authority
-  - juris_auth_sbmt_id                # Unused - id of the person who entered the juris_auth_sbmt_dt
-  - jurisdiction_decision_code_id     # Unused - int code that is synonymous with jurisdiction_decision_code_desc
-  - juris_decision_comment            # Unused - comments surrounding early discharge decision
-  - meets_criteria                    # Unused - bool indicating if the person meets the early discharge critera.
-  - mitt_srl                          # Unused - id of the mittimus associated with the sentences
-  - narrative                         # Unused - TODO(#3506): Get more details from ID
-  - ncic_chk                          # Unused - bool indicating if an NCIC check was run (see if there are new charges)
-  - ncic_chk_date                     # Unused - date of the NCIC check
-  - restitution_curr_bal              # Unused - current restitution balance
-  - restitution_init_bal              # Unused - initial restitution balance
-  - restitution_last_pymnt_dt         # Unused - last day a restitution payment was made
-  - submit_updt_date                  # Unused - date when the latest update was submitted
-  - submit_updt_user_id               # Unused - user who submitted the latest update
-  - subst_tst_start_dt                # Unused - date since which the person has had no negative substance tests
-  - sup_aprv_sbmt_dt                  # Unused - date that the supervisor reviewed the request
-  - sup_aprv_sbmt_id                  # Unused - id of the person submitting the request to the supervisor
-                                      #          TODO(#3506): Or is it the supervisor id?
+  - caseno_seq # Unused - Case sequence number within a single docket for related sentence
+  - case_planning_respond # Unused - TODO(#3506): Get more details from ID
+  - compliance # Unused - whether the person has been compliant to their supervision conditions
+  - created_by_id # Unused - id of the person who created the request (usually a person's PO)
+  - current_lsir_id # Unused - test id of the persons current LSIR assessment
+  - decision_date # Unused - date a decision was made. We use official_decision_dt instead.
+    #          TODO(#3506): Understand why these can differ
+  - decision_state # Unused - integer value indicating at what stage in the process the request is in
+    #          (ranges 2-5)
+  - decision_updt_date # Unused - time that the row was updated with decision information
+  - decision_updt_user_id # Unused - id of person who input the decision information
+  - early_discharge_form_typ_id # Unused - int code that is synonymous with early_discharge_form_type_desc
+  - fine_curr_bal # Unused - current fine balance
+  - fine_init_bal # Unused - initial fine balance
+  - fine_last_pymnt_dt # Unused - last date a fine payment was made
+  - incrno # Unused - Incarceration number
+  - initial_lsir_id # Unused - test id of the person's initial LSIR assessment
+  - juris_auth_sbmt_dt # Unused - date that the request was sent to the jurisdiction authority
+  - juris_auth_sbmt_id # Unused - id of the person who entered the juris_auth_sbmt_dt
+  - jurisdiction_decision_code_id # Unused - int code that is synonymous with jurisdiction_decision_code_desc
+  - juris_decision_comment # Unused - comments surrounding early discharge decision
+  - meets_criteria # Unused - bool indicating if the person meets the early discharge critera.
+  - mitt_srl # Unused - id of the mittimus associated with the sentences
+  - narrative # Unused - TODO(#3506): Get more details from ID
+  - ncic_chk # Unused - bool indicating if an NCIC check was run (see if there are new charges)
+  - ncic_chk_date # Unused - date of the NCIC check
+  - restitution_curr_bal # Unused - current restitution balance
+  - restitution_init_bal # Unused - initial restitution balance
+  - restitution_last_pymnt_dt # Unused - last day a restitution payment was made
+  - submit_updt_date # Unused - date when the latest update was submitted
+  - submit_updt_user_id # Unused - user who submitted the latest update
+  - subst_tst_start_dt # Unused - date since which the person has had no negative substance tests
+  - sup_aprv_sbmt_dt # Unused - date that the supervisor reviewed the request
+  - sup_aprv_sbmt_id # Unused - id of the person submitting the request to the supervisor
+    #          TODO(#3506): Or is it the supervisor id?

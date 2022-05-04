@@ -48,7 +48,7 @@ output:
                   - SC
                   - SW
                 StateIncarcerationType.EXTERNAL_UNKNOWN:
-                # Could be a county jail or another state's facility
+                  # Could be a county jail or another state's facility
                   - NTAD
                 StateIncarcerationType.STATE_PRISON:
                   - BTC

@@ -4,13 +4,13 @@ file_description: |-
 data_classification: source
 primary_key_cols: [NEED_TYPE]
 columns:
- - name : NEED_TYPE
-   description : |-
-     Code of the LSI Need
- - name : DESCRIPTION
-   description : |-
-     Description of the LSI NEED
- - name : ACTIVE
-   description : |-
-     Flag for whether this need is active
- - name : SORT_ORDER
+  - name: NEED_TYPE
+    description: |-
+      Code of the LSI Need
+  - name: DESCRIPTION
+    description: |-
+      Description of the LSI NEED
+  - name: ACTIVE
+    description: |-
+      Flag for whether this need is active
+  - name: SORT_ORDER

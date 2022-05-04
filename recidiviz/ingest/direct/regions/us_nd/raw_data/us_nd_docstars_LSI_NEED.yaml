@@ -4,16 +4,16 @@ file_description: |-
 data_classification: source
 primary_key_cols: [NEED_ID]
 columns:
- - name : NEED_ID
-   description : |-
-     Unique ID for each LSI need
- - name : LSI_SUPERPLAN_ID
-   description : |-
-     ID for an overall LSI supervision plan. Maps onto recidiviz_docstars_LSI_SUPERPLAN.LSI_SUPERPLAN_ID
- - name : NEED_TYPE
-   description : |-
-     Code of the need that is being addressed, maps onto docstars_ref_lsi_need.NEED_TYPE
- - name : OBJECTIVE
-   description : |-
-     Goal of identifying this need
- - name : INACTIVEDATE
+  - name: NEED_ID
+    description: |-
+      Unique ID for each LSI need
+  - name: LSI_SUPERPLAN_ID
+    description: |-
+      ID for an overall LSI supervision plan. Maps onto recidiviz_docstars_LSI_SUPERPLAN.LSI_SUPERPLAN_ID
+  - name: NEED_TYPE
+    description: |-
+      Code of the need that is being addressed, maps onto docstars_ref_lsi_need.NEED_TYPE
+  - name: OBJECTIVE
+    description: |-
+      Goal of identifying this need
+  - name: INACTIVEDATE

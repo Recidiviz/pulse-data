@@ -9,5 +9,5 @@ primary_key:
   ROOT_OFFENDER_ID: state_person.state_person_id
 
 keys_to_ignore:
-  - CREATE_DATETIME       # No apparent use for these at the moment
-  - MODIFY_DATETIME       # No apparent use for these at the moment
+  - CREATE_DATETIME # No apparent use for these at the moment
+  - MODIFY_DATETIME # No apparent use for these at the moment

@@ -5,198 +5,198 @@ data_classification: source
 primary_key_cols:
   - Client_Id
 columns:
-  - name : Adult_Ind
-  - name : Birth_Date
-    description : |-
+  - name: Adult_Ind
+  - name: Birth_Date
+    description: |-
       The date on which this person was born.
     is_pii: True
     is_datetime: True
-  - name : Cis_1002_Citizenship_Cd
-  - name : Cis_1004_Eye_Colour_Cd
-  - name : Cis_1005_Hair_Colour_Cd
-  - name : Cis_1006_Race_Cd
-    description : |-
+  - name: Cis_1002_Citizenship_Cd
+  - name: Cis_1004_Eye_Colour_Cd
+  - name: Cis_1005_Hair_Colour_Cd
+  - name: Cis_1006_Race_Cd
+    description: |-
       The code that maps to the person's race.
     known_values:
-      - value: '1'
+      - value: "1"
         description: "Native American"
-      - value: '2'
+      - value: "2"
         description: "Asian"
-      - value: '3'
+      - value: "3"
         description: "Black or African American"
-      - value: '4'
+      - value: "4"
         description: "Native Hawaiian or Pacific Islander"
-      - value: '5'
+      - value: "5"
         description: "White"
-      - value: '6'
+      - value: "6"
         description: "Unknown"
-      - value: '8'
+      - value: "8"
         description: "Other"
-      - value: '9'
+      - value: "9"
         description: "Two or More Races"
-  - name : Cis_1010_Marital_Status_Cd
-  - name : Cis_1013_Complexion_Type_Cd
-  - name : Cis_1016_Disch_Type_Cd
-  - name : Cis_1016_Gang_Cd
-  - name : Cis_1016_Guardian_Cd
-  - name : Cis_1016_Hispanic_Cd
-    description : |-
+  - name: Cis_1010_Marital_Status_Cd
+  - name: Cis_1013_Complexion_Type_Cd
+  - name: Cis_1016_Disch_Type_Cd
+  - name: Cis_1016_Gang_Cd
+  - name: Cis_1016_Guardian_Cd
+  - name: Cis_1016_Hispanic_Cd
+    description: |-
       The code that maps to whether the person has Hispanic ethnicity. This field is more up to date than Hispanic_Ind.
     known_values:
-      - value: '186'
+      - value: "186"
         description: "Hispanic"
-      - value: '187'
+      - value: "187"
         description: "Non-Hispanic"
-      - value: '188'
+      - value: "188"
         description: "Unknown"
-  - name : Cis_1016_Milit_Br_Cd
-  - name : Cis_1016_Na_Tribe_Cd
-  - name : Cis_1016_Religion_Cd
-  - name : Cis_1016_Report_Type_Cd
-  - name : Cis_1016_Skill_Cd
-  - name : Cis_1017_Milit_Stat_Cd
-  - name : Cis_900_Employee_Id
-    description : |-
+  - name: Cis_1016_Milit_Br_Cd
+  - name: Cis_1016_Na_Tribe_Cd
+  - name: Cis_1016_Religion_Cd
+  - name: Cis_1016_Report_Type_Cd
+  - name: Cis_1016_Skill_Cd
+  - name: Cis_1017_Milit_Stat_Cd
+  - name: Cis_900_Employee_Id
+    description: |-
       The MDOC Employee ID associated with the person who updated whether the client is deceased.
     is_pii: True
-  - name : Cis_9012_Gender_Cd
-    description : |-
+  - name: Cis_9012_Gender_Cd
+    description: |-
       The code that maps to the person's gender.
     known_values:
-      - value: '1'
+      - value: "1"
         description: "Male"
-      - value: '2'
+      - value: "2"
         description: "Female"
-      - value: '3'
+      - value: "3"
         description: "Unknown"
-  - name : Cis_9013_Lang_Preferred_Cd
-  - name : Cis_9013_Parent_Guard_Lang_Pref_Cd
-  - name : Client_Id
-    description : |-
+  - name: Cis_9013_Lang_Preferred_Cd
+  - name: Cis_9013_Parent_Guard_Lang_Pref_Cd
+  - name: Client_Id
+    description: |-
       The unique identifier for all clients in the offender management system.
     is_pii: True
-  - name : Clothing_Description_Tx
+  - name: Clothing_Description_Tx
     is_pii: True
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Dangerous_Not_Dangerous_Tx
+  - name: Created_On_Date
+  - name: Dangerous_Not_Dangerous_Tx
     is_pii: True
-  - name : Date_Of_Emancipation_Tx
+  - name: Date_Of_Emancipation_Tx
     is_pii: True
-  - name : Death_Certificate_Tx
+  - name: Death_Certificate_Tx
     is_pii: True
-  - name : Death_Date
+  - name: Death_Date
     is_pii: True
-  - name : Death_Description_Tx
+  - name: Death_Description_Tx
     is_pii: True
-  - name : Death_Ind
-  - name : Delete_Comment_Tx
+  - name: Death_Ind
+  - name: Delete_Comment_Tx
     is_pii: True
-  - name : Dna_Required_Ind
-  - name : Dna_Sample_Date
-  - name : Email_Tx
+  - name: Dna_Required_Ind
+  - name: Dna_Sample_Date
+  - name: Email_Tx
     is_pii: True
-  - name : Fbi_Number_Tx
+  - name: Fbi_Number_Tx
     is_pii: True
-  - name : Fingerprint_Classification_Tx
+  - name: Fingerprint_Classification_Tx
     is_pii: True
-  - name : First_Name
-    description : |-
+  - name: First_Name
+    description: |-
       This is the first name of a person.
     is_pii: True
-  - name : Furlough_Date
-  - name : Glasses_Ind
+  - name: Furlough_Date
+  - name: Glasses_Ind
     is_pii: True
-  - name : Grievance_Policy_Notification_Date
-  - name : Height_Num
+  - name: Grievance_Policy_Notification_Date
+  - name: Height_Num
     is_pii: True
-  - name : Hispanic_Ind
-    description : |-
+  - name: Hispanic_Ind
+    description: |-
       Whether the person has Hispanic ethnicity. This field is no longer used and is kept for historical reasons.
     known_values:
       - value: Y
         description: "Yes"
       - value: N
         description: "No"
-  - name : Home_Visit_Ind
-  - name : Juv_Id
+  - name: Home_Visit_Ind
+  - name: Juv_Id
     is_pii: True
-  - name : Juvenile_Ind
+  - name: Juvenile_Ind
     is_pii: True
-  - name : Last_Name
-    description : |-
+  - name: Last_Name
+    description: |-
       This is the last name of a person.
     is_pii: True
-  - name : Laundry_Num
+  - name: Laundry_Num
     is_pii: True
-  - name : Literacy_Read_Ind
-  - name : Literacy_Write_Ind
-  - name : Lmtd_Engl_Spk_Ablty_Ind
-  - name : Lock_Ind
-  - name : Med_Marijuana_Program_Physician_Certificate_Ind
-  - name : Medicaid_Elig_Ind
-  - name : Medicare_Number_Tx
+  - name: Literacy_Read_Ind
+  - name: Literacy_Write_Ind
+  - name: Lmtd_Engl_Spk_Ablty_Ind
+  - name: Lock_Ind
+  - name: Med_Marijuana_Program_Physician_Certificate_Ind
+  - name: Medicaid_Elig_Ind
+  - name: Medicare_Number_Tx
     is_pii: True
-  - name : Middle_Name
-    description : |-
+  - name: Middle_Name
+    description: |-
       This is the middle name of a person.
     is_pii: True
-  - name : Modified_By_Tx
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Mothers_Maiden_Name
+  - name: Modified_On_Date
+  - name: Mothers_Maiden_Name
     is_pii: True
-  - name : Name_Suffix_Tx
+  - name: Name_Suffix_Tx
     is_pii: True
-  - name : Next_Reporting_Date
-  - name : Note_Place_Tx
+  - name: Next_Reporting_Date
+  - name: Note_Place_Tx
     is_pii: True
-  - name : Phone_Pin_Num
+  - name: Phone_Pin_Num
     is_pii: True
-  - name : Physical_App_Notes_Tx
+  - name: Physical_App_Notes_Tx
     is_pii: True
-  - name : Place_Of_Birth_Tx
+  - name: Place_Of_Birth_Tx
     is_pii: True
-  - name : Sex_Off_Not_Ind
-  - name : Sex_Off_Reg_Ind
-  - name : Sid_Number_Tx
+  - name: Sex_Off_Not_Ind
+  - name: Sex_Off_Reg_Ind
+  - name: Sid_Number_Tx
     is_pii: True
-  - name : Sin_Number_Tx
+  - name: Sin_Number_Tx
     is_pii: True
-  - name : Single_Room_Ind
-  - name : Soundex_First_Name
+  - name: Single_Room_Ind
+  - name: Soundex_First_Name
     is_pii: True
-  - name : Soundex_Last_Name
+  - name: Soundex_Last_Name
     is_pii: True
-  - name : Soundex_Middle_Name
+  - name: Soundex_Middle_Name
     is_pii: True
-  - name : Ssn_Number_Tx
+  - name: Ssn_Number_Tx
     is_pii: True
-  - name : Upper_First_Name
+  - name: Upper_First_Name
     is_pii: True
-  - name : Upper_Last_Name
+  - name: Upper_Last_Name
     is_pii: True
-  - name : Upper_Middle_Name
+  - name: Upper_Middle_Name
     is_pii: True
-  - name : Wabanaki_Descendent_Ind
+  - name: Wabanaki_Descendent_Ind
     is_pii: True
-  - name : Wabanaki_Ind
+  - name: Wabanaki_Ind
     is_pii: True
-  - name : Wabanaki_Member_Ind
+  - name: Wabanaki_Member_Ind
     is_pii: True
-  - name : Weight_Num
+  - name: Weight_Num
     is_pii: True
-  - name : Cis_1016_Insurance_Type_Cd
-  - name : Current_Free_Phone_Minutes_Limit
-  - name : Current_Kiosk_Property_Limit
-  - name : Current_Kiosk_Spending_Limit
-  - name : Current_Phone_Minutes_Limit
-  - name : Current_Score_Tablet_Limit
-  - name : Current_Visitation_Visits_Limit
-  - name : Fixed_Free_Phone_Minutes_Limit
-  - name : Fixed_Kiosk_Property_Limit
-  - name : Fixed_Kiosk_Spending_Limit
-  - name : Fixed_Phone_Minutes_Limit
-  - name : Fixed_Score_Tablet_Limit
-  - name : Fixed_Visitation_Visits_Limit
+  - name: Cis_1016_Insurance_Type_Cd
+  - name: Current_Free_Phone_Minutes_Limit
+  - name: Current_Kiosk_Property_Limit
+  - name: Current_Kiosk_Spending_Limit
+  - name: Current_Phone_Minutes_Limit
+  - name: Current_Score_Tablet_Limit
+  - name: Current_Visitation_Visits_Limit
+  - name: Fixed_Free_Phone_Minutes_Limit
+  - name: Fixed_Kiosk_Property_Limit
+  - name: Fixed_Kiosk_Spending_Limit
+  - name: Fixed_Phone_Minutes_Limit
+  - name: Fixed_Score_Tablet_Limit
+  - name: Fixed_Visitation_Visits_Limit

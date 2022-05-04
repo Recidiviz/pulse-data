@@ -5,33 +5,33 @@ file_description: |-
 data_classification: source
 primary_key_cols: [PLAN_ID]
 columns:
- - name : PLAN_ID
-   description : |-
-     ID of a given plan of action
- - name : NEED_ID
-   description : |-
-     ID of a specific need, maps to docstars_LSI_NEED.NEED_ID
- - name : PROGRAM_ID
-   description : |-
-     ID of a specific program that an individual is referred to, maps to docstars_ref_lsi_program.PROGRAM_ID
- - name : CATEGORY_ID
-   description : |-
-     ID of the type of program referral this is, more granular than WORK_STEP
- - name : WORK_STEP
-   description : |-
-     Broader category of the type of program referral this is
- - name : START_DATE
-   description : |-
-     Date this plan started
-   is_datetime: True
- - name : END_DATE
-   description : |-
-     Date this plan ended, if it has ended
-   is_datetime: True
- - name : NOTES
-   description : |-
-     Free text notes about the person and this plan
- - name : INACTIVEDATE
- - name : STATUS
-   description : |-
-     Status of plan
+  - name: PLAN_ID
+    description: |-
+      ID of a given plan of action
+  - name: NEED_ID
+    description: |-
+      ID of a specific need, maps to docstars_LSI_NEED.NEED_ID
+  - name: PROGRAM_ID
+    description: |-
+      ID of a specific program that an individual is referred to, maps to docstars_ref_lsi_program.PROGRAM_ID
+  - name: CATEGORY_ID
+    description: |-
+      ID of the type of program referral this is, more granular than WORK_STEP
+  - name: WORK_STEP
+    description: |-
+      Broader category of the type of program referral this is
+  - name: START_DATE
+    description: |-
+      Date this plan started
+    is_datetime: True
+  - name: END_DATE
+    description: |-
+      Date this plan ended, if it has ended
+    is_datetime: True
+  - name: NOTES
+    description: |-
+      Free text notes about the person and this plan
+  - name: INACTIVEDATE
+  - name: STATUS
+    description: |-
+      Status of plan

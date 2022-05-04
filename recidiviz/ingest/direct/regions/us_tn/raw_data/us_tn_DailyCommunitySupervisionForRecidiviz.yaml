@@ -21,4 +21,4 @@ columns:
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number
   - name: ReportingDate
     description: |-
-      This is the date that reports that the associated person is on supervision 
+      This is the date that reports that the associated person is on supervision

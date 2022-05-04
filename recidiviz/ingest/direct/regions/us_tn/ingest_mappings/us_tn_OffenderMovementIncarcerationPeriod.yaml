@@ -52,103 +52,103 @@ output:
               # !! fixture file.
               $mappings:
                 StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT:
-                  - PRFA-WKEND  # Probation to facility - serving weekend
-                  - CCFA-WKEND  # Serving weekend
+                  - PRFA-WKEND # Probation to facility - serving weekend
+                  - CCFA-WKEND # Serving weekend
                 StateSpecializedPurposeForIncarceration.GENERAL:
-                  - BOFA-BONDR  # Bond to Facility - Bond return
-                  - BOFA-INTRS  # Bond to Facility - in transit
-                  - CTFA-NEWAD  # Court to Facility - new admission
+                  - BOFA-BONDR # Bond to Facility - Bond return
+                  - BOFA-INTRS # Bond to Facility - in transit
+                  - CTFA-NEWAD # Court to Facility - new admission
                   # Only 2 instances, both in 1991. Seems to have been accidental.
-                  - PAFA-RTCHG  # Return with charges
-                  - DIFA-ADMCO  # Discharge to facility - Administrative correction/court ordered
-                  - NCFA-RTCUS  # Not in custody to Facility - Return to custody
-                  - CCFA-SPLIT  # Community corrections to facility - Split confinement
-                  - PRFA-SPLIT  # Probation to facility - Split confinement
-                  - PAFA-VIOLT  # Technical warrant violation
-                  - PAFA-VIOLW  # Warrant violation (new charge)
-                  - PRFA-VIOLT  # Technical warrant violation
-                  - PRFA-VIOLW  # Warrant violation (new charge)
-                  - PRFA-NEWCH  # New charges
-                  - PRFA-NEWCV  # New conviction
+                  - PAFA-RTCHG # Return with charges
+                  - DIFA-ADMCO # Discharge to facility - Administrative correction/court ordered
+                  - NCFA-RTCUS # Not in custody to Facility - Return to custody
+                  - CCFA-SPLIT # Community corrections to facility - Split confinement
+                  - PRFA-SPLIT # Probation to facility - Split confinement
+                  - PAFA-VIOLT # Technical warrant violation
+                  - PAFA-VIOLW # Warrant violation (new charge)
+                  - PRFA-VIOLT # Technical warrant violation
+                  - PRFA-VIOLW # Warrant violation (new charge)
+                  - PRFA-NEWCH # New charges
+                  - PRFA-NEWCV # New conviction
                   - PAFA-NEWCH # New charges
-                  - CCFA-NEWCV  # New conviction
-                  - CCFA-NEWCH  # New charges
-                  - CCFA-VIOLT  # Technical warrant violation
-                  - CCFA-VIOLW  # Warrant violation (new charge)
-                  - FUFA-RTFUR  # Furlough pass to Facility - Return from furlough
-                  - WRFA-RETWK  # Work release to Facility - Return from work release
-                  - FUFA-INTRS  # Furlough pass to Facility - In transit
-                  - FACT-OUTYS  # Out to court (charges)
-                  - FACT-OUTNO  # Out to court (no charges)
-                  - FACT-SARET  # Safekeeping (returned)
-                  - CTFA-SAREC  # Safekeeping (received)
-                  - CTFA-INTRS  # Court to facility - in transit
-                  - CTFA-OUTYS  # Court to facility (charges)
-                  - CTFA-OUTNO  # Court to facility (no charges)
-                  - CTFA-RTCHG  # Court to Facility - return charges
-                  - CTFA-RETNO  # Court to Facility - return no charges
-                  - FAFA-JAILT  # Jail transfer
-                  - FAFA-CLASN  # Classification assignment
-                  - FAFA-JAORD  # Jail order
-                  - FAFA-INTRS  # In transit
-                  - FAFA-POPMG  # Population management
-                  - FAFA-ADMIN  # Administrative transfer
-                  - FAFA-CONIN  # Conduct incentive
-                  - FAFA-DISCI  # Disciplinary
-                  - FAFA-BOOTC  # Bootcamp
-                  - FAFA-COURT  # Court ordered
-                  - FAFA-ADSEG  # Administrative segregation
-                  - FAFA-CUSTY  # Custody level change
-                  - FAFA-JOBAS  # Job assignment
-                  - FAFA-INCIB  # Behavioral incident
-                  - FAFA-PANEL  # Panel appearance
-                  - FAFA-RESEG  # Release from admin segregation
+                  - CCFA-NEWCV # New conviction
+                  - CCFA-NEWCH # New charges
+                  - CCFA-VIOLT # Technical warrant violation
+                  - CCFA-VIOLW # Warrant violation (new charge)
+                  - FUFA-RTFUR # Furlough pass to Facility - Return from furlough
+                  - WRFA-RETWK # Work release to Facility - Return from work release
+                  - FUFA-INTRS # Furlough pass to Facility - In transit
+                  - FACT-OUTYS # Out to court (charges)
+                  - FACT-OUTNO # Out to court (no charges)
+                  - FACT-SARET # Safekeeping (returned)
+                  - CTFA-SAREC # Safekeeping (received)
+                  - CTFA-INTRS # Court to facility - in transit
+                  - CTFA-OUTYS # Court to facility (charges)
+                  - CTFA-OUTNO # Court to facility (no charges)
+                  - CTFA-RTCHG # Court to Facility - return charges
+                  - CTFA-RETNO # Court to Facility - return no charges
+                  - FAFA-JAILT # Jail transfer
+                  - FAFA-CLASN # Classification assignment
+                  - FAFA-JAORD # Jail order
+                  - FAFA-INTRS # In transit
+                  - FAFA-POPMG # Population management
+                  - FAFA-ADMIN # Administrative transfer
+                  - FAFA-CONIN # Conduct incentive
+                  - FAFA-DISCI # Disciplinary
+                  - FAFA-BOOTC # Bootcamp
+                  - FAFA-COURT # Court ordered
+                  - FAFA-ADSEG # Administrative segregation
+                  - FAFA-CUSTY # Custody level change
+                  - FAFA-JOBAS # Job assignment
+                  - FAFA-INCIB # Behavioral incident
+                  - FAFA-PANEL # Panel appearance
+                  - FAFA-RESEG # Release from admin segregation
                   # Last instance was in 1995.
-                  - FAFA-61DAY  # 61 Day permanent resident
-                  - FAFA-SEXOF  # Sex offender treatment
-                  - FAFA-NELIG  # Not eligible due to law
-                  - FAFA-PGMCO  # Program completion
-                  - FAFA-JOBTE  # Job assignment (temporary)
-                  - FAFA-INCOM  # Incompatible
-                  - FAFA-INCVI  # Incident (violent or threat)
-                  - FAFA-INCIE  # Incident (escape or threat)
-                  - FAFA-RCPAR  # Already recommended parole (occurs only 13 times since 1960s, and they are
+                  - FAFA-61DAY # 61 Day permanent resident
+                  - FAFA-SEXOF # Sex offender treatment
+                  - FAFA-NELIG # Not eligible due to law
+                  - FAFA-PGMCO # Program completion
+                  - FAFA-JOBTE # Job assignment (temporary)
+                  - FAFA-INCOM # Incompatible
+                  - FAFA-INCVI # Incident (violent or threat)
+                  - FAFA-INCIE # Incident (escape or threat)
+                  - FAFA-RCPAR # Already recommended parole (occurs only 13 times since 1960s, and they are
                   # all associated with physical movements from one location to another).
-                  - FAFA-FAILB  # Failed boot camp
-                  - FAFA-APPDI  # Appeal disposition
-                  - FAFA-MEDTE  # Medical (temporary)
-                  - FAFA-MEDRE  # Medical (regular)
-                  - FAFA-MEDAD  # Medical admin
-                  - FAFA-SICKB  # Sick bed visit
-                  - FAFH-MEDTE  # Medical (temporary)
-                  - FAFH-SICKB  # Sick bed visit
-                  - FHFA-FHOSP  # From free world hospital
-                  - FHFA-INTRS  # In transit.
-                  - OJFA-RTFED  # Return from federal
-                  - OJFA-RTOUT  # Return from out to court
-                  - OJFA-ISC  # Interstate compact
-                  - OJFA-RTIAD  # Return from interstate on detainer
-                  - OJFA-RTMED  # Return from medical/other jurisdiction
-                  - OJFA-RTDET  # Return from detainer
-                  - PAFA-PAVOK  # Parole Revoked
-                  - PAFA-REVOK  # Revocation
-                  - PRFA-PRVOK  # Probation revoked
-                  - PRFA-PTVOK  # Partial revocation
-                  - CCFA-REVOK  # Revocation
-                  - CCFA-PTVOK  # Partial revocation
-                  - PAFA-RECIS  # Rescission
+                  - FAFA-FAILB # Failed boot camp
+                  - FAFA-APPDI # Appeal disposition
+                  - FAFA-MEDTE # Medical (temporary)
+                  - FAFA-MEDRE # Medical (regular)
+                  - FAFA-MEDAD # Medical admin
+                  - FAFA-SICKB # Sick bed visit
+                  - FAFH-MEDTE # Medical (temporary)
+                  - FAFH-SICKB # Sick bed visit
+                  - FHFA-FHOSP # From free world hospital
+                  - FHFA-INTRS # In transit.
+                  - OJFA-RTFED # Return from federal
+                  - OJFA-RTOUT # Return from out to court
+                  - OJFA-ISC # Interstate compact
+                  - OJFA-RTIAD # Return from interstate on detainer
+                  - OJFA-RTMED # Return from medical/other jurisdiction
+                  - OJFA-RTDET # Return from detainer
+                  - PAFA-PAVOK # Parole Revoked
+                  - PAFA-REVOK # Revocation
+                  - PRFA-PRVOK # Probation revoked
+                  - PRFA-PTVOK # Partial revocation
+                  - CCFA-REVOK # Revocation
+                  - CCFA-PTVOK # Partial revocation
+                  - PAFA-RECIS # Rescission
                   - DVCT-PRVOK # Diversion to Court - probation revoked
-                  - PAFA-RTABS  # Parole to facility - Return from absconsion
-                  - PAFA-RTESC  # Parole to facility - Return from escape
-                  - DIFA-RTABS  # Discharge to facility - Return from absconsion
-                  - EIFA-RTESC  # Escape information center to facility - Return from escape
-                  - ESFA-RTESC  # Escape to facility - Return from escape
+                  - PAFA-RTABS # Parole to facility - Return from absconsion
+                  - PAFA-RTESC # Parole to facility - Return from escape
+                  - DIFA-RTABS # Discharge to facility - Return from absconsion
+                  - EIFA-RTESC # Escape information center to facility - Return from escape
+                  - ESFA-RTESC # Escape to facility - Return from escape
                   # These only happen once, each in the very early 1990s.
-                  - PAFA-DETAN  # Parole to facility - Detainer
-                  - PAFA-EXPIR  # Parole to facility - Expiration
+                  - PAFA-DETAN # Parole to facility - Detainer
+                  - PAFA-EXPIR # Parole to facility - Expiration
                   # These started appearing in Feb 2022 and appear to be new codes
-                  - PAFA-PTVOS  # Parole to facility
-                  - PRFA-PTVOS  # Probation to facility
+                  - PAFA-PTVOS # Parole to facility
+                  - PRFA-PTVOS # Probation to facility
           admission_reason:
             $enum_mapping:
               $raw_text:
@@ -161,42 +161,42 @@ output:
               # !! fixture file.
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
-                  - BOFA-BONDR  # Bond to Facility - Bond return
-                  - BOFA-INTRS  # Bond to Facility - in transit
+                  - BOFA-BONDR # Bond to Facility - Bond return
+                  - BOFA-INTRS # Bond to Facility - in transit
 
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
-                  - CTFA-NEWAD  # Court to Facility - new admission
+                  - CTFA-NEWAD # Court to Facility - new admission
                   # Only 2 instances, both in 1991. Seems to have been accidental.
-                  - PAFA-RTCHG  # Return with charges
-                  - DIFA-ADMCO  # Discharge to facility - Administrative correction/court ordered
-                  - NCFA-RTCUS  # Not in custody to Facility - Return to custody
-                  - CCFA-SPLIT  # Community corrections to facility - Split confinement
-                  - PRFA-SPLIT  # Probation to facility - Split confinement
+                  - PAFA-RTCHG # Return with charges
+                  - DIFA-ADMCO # Discharge to facility - Administrative correction/court ordered
+                  - NCFA-RTCUS # Not in custody to Facility - Return to custody
+                  - CCFA-SPLIT # Community corrections to facility - Split confinement
+                  - PRFA-SPLIT # Probation to facility - Split confinement
 
                 # TEMPORARY_CUSTODY statuses are for when a person is being brought into a jail following a
                 # violation on supervision, prior to their formal revocation admission to a state prison.
                 # It may also be used in cases where someone is being admitted for a known
                 # short amount of time, e.g. when serving a weekend confinement sentence.
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
-                  - PAFA-VIOLT  # Technical warrant violation
-                  - PAFA-VIOLW  # Warrant violation (new charge)
-                  - PRFA-VIOLT  # Technical warrant violation
-                  - PRFA-VIOLW  # Warrant violation (new charge)
-                  - PRFA-NEWCH  # New charges
-                  - PRFA-NEWCV  # New conviction
+                  - PAFA-VIOLT # Technical warrant violation
+                  - PAFA-VIOLW # Warrant violation (new charge)
+                  - PRFA-VIOLT # Technical warrant violation
+                  - PRFA-VIOLW # Warrant violation (new charge)
+                  - PRFA-NEWCH # New charges
+                  - PRFA-NEWCV # New conviction
                   - PAFA-NEWCH # New charges
-                  - CCFA-NEWCV  # New conviction
-                  - CCFA-NEWCH  # New charges
-                  - CCFA-VIOLT  # Technical warrant violation
-                  - CCFA-VIOLW  # Warrant violation (new charge)
+                  - CCFA-NEWCV # New conviction
+                  - CCFA-NEWCH # New charges
+                  - CCFA-VIOLT # Technical warrant violation
+                  - CCFA-VIOLW # Warrant violation (new charge)
                   # Weekend confinement admissions
-                  - PRFA-WKEND  # Probation to facility - serving weekend
-                  - CCFA-WKEND  # Serving weekend
+                  - PRFA-WKEND # Probation to facility - serving weekend
+                  - CCFA-WKEND # Serving weekend
 
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
-                  - FUFA-RTFUR  # Furlough pass to Facility - Return from furlough
-                  - WRFA-RETWK  # Work release to Facility - Return from work release
-                  - FUFA-INTRS  # Furlough pass to Facility - In transit
+                  - FUFA-RTFUR # Furlough pass to Facility - Return from furlough
+                  - WRFA-RETWK # Work release to Facility - Return from work release
+                  - FUFA-INTRS # Furlough pass to Facility - In transit
 
                 StateIncarcerationPeriodAdmissionReason.TRANSFER:
                   # The following codes are all shared with
@@ -206,96 +206,96 @@ output:
                   # ---------------------------------START SHARED BLOCK--------------------------------------#
                   # The following are all movements from facility to court (FACT). The actual sites associated
                   # with these movements are jails and prisons, so we count them as transfers.
-                  - FACT-OUTYS  # Out to court (charges)
-                  - FACT-OUTNO  # Out to court (no charges)
-                  - FACT-SARET  # Safekeeping (returned)
-                  - CTFA-SAREC  # Safekeeping (received)
-                  - CTFA-INTRS  # Court to facility - in transit
-                  - CTFA-OUTYS  # Court to facility (charges)
-                  - CTFA-OUTNO  # Court to facility (no charges)
-                  - CTFA-RTCHG  # Court to Facility - return charges
-                  - CTFA-RETNO  # Court to Facility - return no charges
+                  - FACT-OUTYS # Out to court (charges)
+                  - FACT-OUTNO # Out to court (no charges)
+                  - FACT-SARET # Safekeeping (returned)
+                  - CTFA-SAREC # Safekeeping (received)
+                  - CTFA-INTRS # Court to facility - in transit
+                  - CTFA-OUTYS # Court to facility (charges)
+                  - CTFA-OUTNO # Court to facility (no charges)
+                  - CTFA-RTCHG # Court to Facility - return charges
+                  - CTFA-RETNO # Court to Facility - return no charges
                   # The following are all movements from facility to facility (FAFA).
-                  - FAFA-JAILT  # Jail transfer
-                  - FAFA-CLASN  # Classification assignment
-                  - FAFA-JAORD  # Jail order
-                  - FAFA-INTRS  # In transit
-                  - FAFA-POPMG  # Population management
-                  - FAFA-ADMIN  # Administrative transfer
-                  - FAFA-CONIN  # Conduct incentive
-                  - FAFA-DISCI  # Disciplinary
-                  - FAFA-BOOTC  # Bootcamp
-                  - FAFA-COURT  # Court ordered
-                  - FAFA-ADSEG  # Administrative segregation
-                  - FAFA-CUSTY  # Custody level change
-                  - FAFA-JOBAS  # Job assignment
-                  - FAFA-INCIB  # Behavioral incident
-                  - FAFA-PANEL  # Panel appearance
-                  - FAFA-RESEG  # Release from admin segregation
+                  - FAFA-JAILT # Jail transfer
+                  - FAFA-CLASN # Classification assignment
+                  - FAFA-JAORD # Jail order
+                  - FAFA-INTRS # In transit
+                  - FAFA-POPMG # Population management
+                  - FAFA-ADMIN # Administrative transfer
+                  - FAFA-CONIN # Conduct incentive
+                  - FAFA-DISCI # Disciplinary
+                  - FAFA-BOOTC # Bootcamp
+                  - FAFA-COURT # Court ordered
+                  - FAFA-ADSEG # Administrative segregation
+                  - FAFA-CUSTY # Custody level change
+                  - FAFA-JOBAS # Job assignment
+                  - FAFA-INCIB # Behavioral incident
+                  - FAFA-PANEL # Panel appearance
+                  - FAFA-RESEG # Release from admin segregation
                   # Last instance was in 1995.
-                  - FAFA-61DAY  # 61 Day permanent resident
-                  - FAFA-SEXOF  # Sex offender treatment
-                  - FAFA-NELIG  # Not eligible due to law
-                  - FAFA-PGMCO  # Program completion
-                  - FAFA-JOBTE  # Job assignment (temporary)
-                  - FAFA-INCOM  # Incompatible
-                  - FAFA-INCVI  # Incident (violent or threat)
-                  - FAFA-INCIE  # Incident (escape or threat)
-                  - FAFA-RCPAR  # Already recommended parole (occurs only 13 times since 1960s, and they are
+                  - FAFA-61DAY # 61 Day permanent resident
+                  - FAFA-SEXOF # Sex offender treatment
+                  - FAFA-NELIG # Not eligible due to law
+                  - FAFA-PGMCO # Program completion
+                  - FAFA-JOBTE # Job assignment (temporary)
+                  - FAFA-INCOM # Incompatible
+                  - FAFA-INCVI # Incident (violent or threat)
+                  - FAFA-INCIE # Incident (escape or threat)
+                  - FAFA-RCPAR # Already recommended parole (occurs only 13 times since 1960s, and they are
                   # all associated with physical movements from one location to another).
-                  - FAFA-FAILB  # Failed boot camp
-                  - FAFA-APPDI  # Appeal disposition
-                  - FAFA-MEDTE  # Medical (temporary)
-                  - FAFA-MEDRE  # Medical (regular)
-                  - FAFA-MEDAD  # Medical admin
-                  - FAFA-SICKB  # Sick bed visit
+                  - FAFA-FAILB # Failed boot camp
+                  - FAFA-APPDI # Appeal disposition
+                  - FAFA-MEDTE # Medical (temporary)
+                  - FAFA-MEDRE # Medical (regular)
+                  - FAFA-MEDAD # Medical admin
+                  - FAFA-SICKB # Sick bed visit
 
                   # The following are all movements from facility to free world hospital (FAFH). The actual sites associated
                   # with these movements are jails and prisons, so we count them as transfers.
-                  - FAFH-MEDTE  # Medical (temporary)
-                  - FAFH-SICKB  # Sick bed visit
+                  - FAFH-MEDTE # Medical (temporary)
+                  - FAFH-SICKB # Sick bed visit
 
                   # The following are all movements from free world hospital to facility (FHFA). The actual sites associated
                   # with these movements are jails and prisons, so we count them as transfers.
-                  - FHFA-FHOSP  # From free world hospital
-                  - FHFA-INTRS  # In transit
+                  - FHFA-FHOSP # From free world hospital
+                  - FHFA-INTRS # In transit
                   # -----------------------------------END SHARED BLOCK--------------------------------------#
 
                 StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   # The following are all movements from "other jurisdiction" to facility (OJFA).
-                  - OJFA-RTFED  # Return from federal
-                  - OJFA-RTOUT  # Return from out to court
-                  - OJFA-ISC  # Interstate compact
-                  - OJFA-RTIAD  # Return from interstate on detainer
-                  - OJFA-RTMED  # Return from medical/other jurisdiction
-                  - OJFA-RTDET  # Return from detainer
+                  - OJFA-RTFED # Return from federal
+                  - OJFA-RTOUT # Return from out to court
+                  - OJFA-ISC # Interstate compact
+                  - OJFA-RTIAD # Return from interstate on detainer
+                  - OJFA-RTMED # Return from medical/other jurisdiction
+                  - OJFA-RTDET # Return from detainer
 
                 StateIncarcerationPeriodAdmissionReason.REVOCATION:
                   # The following are all movements from parole to facility (PAFA).
-                  - PAFA-PAVOK  # Parole Revoked
-                  - PAFA-REVOK  # Revocation
+                  - PAFA-PAVOK # Parole Revoked
+                  - PAFA-REVOK # Revocation
                   # The following are all movements from probation to facility (PRFA).
-                  - PRFA-PRVOK  # Probation revoked
-                  - PRFA-PTVOK  # Partial revocation
-                  - CCFA-REVOK  # Revocation
-                  - CCFA-PTVOK  # Partial revocation
-                  - PAFA-RECIS  # Rescission
+                  - PRFA-PRVOK # Probation revoked
+                  - PRFA-PTVOK # Partial revocation
+                  - CCFA-REVOK # Revocation
+                  - CCFA-PTVOK # Partial revocation
+                  - PAFA-RECIS # Rescission
                   - DVCT-PRVOK # Diversion to Court - probation revoked
 
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
-                  - PAFA-RTABS  # Parole to facility - Return from absconsion
-                  - PAFA-RTESC  # Parole to facility - Return from escape
-                  - DIFA-RTABS  # Discharge to facility - Return from absconsion
-                  - EIFA-RTESC  # Escape information center to facility - Return from escape
-                  - ESFA-RTESC  # Escape to facility - Return from escape
+                  - PAFA-RTABS # Parole to facility - Return from absconsion
+                  - PAFA-RTESC # Parole to facility - Return from escape
+                  - DIFA-RTABS # Discharge to facility - Return from absconsion
+                  - EIFA-RTESC # Escape information center to facility - Return from escape
+                  - ESFA-RTESC # Escape to facility - Return from escape
 
                 StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                   # These only happen once, each in the very early 1990s.
-                  - PAFA-DETAN  # Parole to facility - Detainer
-                  - PAFA-EXPIR  # Parole to facility - Expiration
+                  - PAFA-DETAN # Parole to facility - Detainer
+                  - PAFA-EXPIR # Parole to facility - Expiration
                   # These started appearing in Feb 2022 and appear to be new codes
-                  - PAFA-PTVOS  # Parole to facility - TODO(#11765) Add in description
-                  - PRFA-PTVOS  # Probation to facility
+                  - PAFA-PTVOS # Parole to facility - TODO(#11765) Add in description
+                  - PRFA-PTVOS # Probation to facility
           release_reason:
             $enum_mapping:
               $raw_text:
@@ -307,40 +307,40 @@ output:
               $mappings:
                 StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
                   # The following are all movements from facility to probation (FAPR).
-                  - FAPR-REINS  # Reinstatement
-                  - FAPR-DETRE  # Determinate release
-                  - FAPR-RETSP  # Return from split confinement
-                  - FAPR-JUDRE  # Judicial release
-                  - FAPR-SPLIT  # Split confinement
-                  - FAPR-DETDT  # Determinate release with detainer
-                  - FAPR-BOOTC  # Boot camp
-                  - FAPR-JUDDE  # Judicial release/detainer
-                  - FAPR-SPLTD  # Split confinement/detainer
-                  - FAPR-BCDET  # Boot camp/detainer
+                  - FAPR-REINS # Reinstatement
+                  - FAPR-DETRE # Determinate release
+                  - FAPR-RETSP # Return from split confinement
+                  - FAPR-JUDRE # Judicial release
+                  - FAPR-SPLIT # Split confinement
+                  - FAPR-DETDT # Determinate release with detainer
+                  - FAPR-BOOTC # Boot camp
+                  - FAPR-JUDDE # Judicial release/detainer
+                  - FAPR-SPLTD # Split confinement/detainer
+                  - FAPR-BCDET # Boot camp/detainer
                   # The following are all movements from facility to community corrections (FACC).
-                  - FACC-REINS  # Reinstatement
-                  - FACC-JUDRE  # Judicial release
-                  - FACC-RETSP  # Return from split confinement
-                  - FACC-SPLIT  # Split confinement
-                  - FACC-JUDDE  # Judicial release/detainer
-                  - FACC-SPLTD  # Split confinement/detainer
+                  - FACC-REINS # Reinstatement
+                  - FACC-JUDRE # Judicial release
+                  - FACC-RETSP # Return from split confinement
+                  - FACC-SPLIT # Split confinement
+                  - FACC-JUDDE # Judicial release/detainer
+                  - FACC-SPLTD # Split confinement/detainer
                   # The following are all movements from facility to parole (FAPA).
-                  - FAPA-REGPA  # Regular (parole)
-                  - FAPA-RELEL  # Release eligibility
-                  - FAPA-REGDE  # Regular (detainer)
-                  - FAPA-REINS  # Reinstatement
-                  - FAPA-LFSP  # Lifetime supervision
-                  - FAPA-RELED  # Release eligibility/detainer
-                  - FAPA-SAFEV  # Safety valve (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
-                  - FAPA-MANPA  # Mandatory parole
-                  - FAPA-SAFED  # Safety valve/detainer (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
-                  - FAPA-PBPAD  # Probationary parole/detainer
-                  - FAPA-PBNPA  # Probationary parole
-                  - FAPA-MANDE  # Mandatory detainer
-                  - CTCC-NEWAD  # Court to community corrections - new admission
+                  - FAPA-REGPA # Regular (parole)
+                  - FAPA-RELEL # Release eligibility
+                  - FAPA-REGDE # Regular (detainer)
+                  - FAPA-REINS # Reinstatement
+                  - FAPA-LFSP # Lifetime supervision
+                  - FAPA-RELED # Release eligibility/detainer
+                  - FAPA-SAFEV # Safety valve (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
+                  - FAPA-MANPA # Mandatory parole
+                  - FAPA-SAFED # Safety valve/detainer (From TDOC website - "Earliest date that an offender can be released under executive order for overcrowding. Most violent offenders are excluded from this provision.")
+                  - FAPA-PBPAD # Probationary parole/detainer
+                  - FAPA-PBNPA # Probationary parole
+                  - FAPA-MANDE # Mandatory detainer
+                  - CTCC-NEWAD # Court to community corrections - new admission
 
                 StateIncarcerationPeriodReleaseReason.COMMUTED:
-                  - FAPA-COMMT  # Facility to parole - Commutation
+                  - FAPA-COMMT # Facility to parole - Commutation
 
                 StateIncarcerationPeriodReleaseReason.TRANSFER:
                   # The following codes are all shared with
@@ -350,111 +350,111 @@ output:
                   # ---------------------------------START SHARED BLOCK--------------------------------------#
                   # The following are all movements from facility to court (FACT). The actual sites associated
                   # with these movements are jails and prisons, so we count them as transfers.
-                  - FACT-OUTYS  # Out to court (charges)
-                  - FACT-OUTNO  # Out to court (no charges)
-                  - FACT-SARET  # Safekeeping (returned)
-                  - CTFA-SAREC  # Safekeeping (received)
-                  - CTFA-INTRS  # Court to facility - in transit
-                  - CTFA-OUTYS  # Court to facility (charges)
-                  - CTFA-OUTNO  # Court to facility (no charges)
+                  - FACT-OUTYS # Out to court (charges)
+                  - FACT-OUTNO # Out to court (no charges)
+                  - FACT-SARET # Safekeeping (returned)
+                  - CTFA-SAREC # Safekeeping (received)
+                  - CTFA-INTRS # Court to facility - in transit
+                  - CTFA-OUTYS # Court to facility (charges)
+                  - CTFA-OUTNO # Court to facility (no charges)
                   # The following are all movements from facility to facility (FAFA).
-                  - FAFA-JAILT  # Jail transfer
-                  - FAFA-CLASN  # Classification assignment
-                  - FAFA-JAORD  # Jail order
-                  - FAFA-INTRS  # In transit
-                  - FAFA-POPMG  # Population management
-                  - FAFA-ADMIN  # Administrative transfer
-                  - FAFA-CONIN  # Conduct incentive
-                  - FAFA-DISCI  # Disciplinary
-                  - FAFA-BOOTC  # Bootcamp
-                  - FAFA-COURT  # Court ordered
-                  - FAFA-ADSEG  # Administrative segregation
-                  - FAFA-CUSTY  # Custody level change
-                  - FAFA-JOBAS  # Job assignment
-                  - FAFA-INCIB  # Behavioral incident
-                  - FAFA-PANEL  # Panel appearance
-                  - FAFA-RESEG  # Release from admin segregation
+                  - FAFA-JAILT # Jail transfer
+                  - FAFA-CLASN # Classification assignment
+                  - FAFA-JAORD # Jail order
+                  - FAFA-INTRS # In transit
+                  - FAFA-POPMG # Population management
+                  - FAFA-ADMIN # Administrative transfer
+                  - FAFA-CONIN # Conduct incentive
+                  - FAFA-DISCI # Disciplinary
+                  - FAFA-BOOTC # Bootcamp
+                  - FAFA-COURT # Court ordered
+                  - FAFA-ADSEG # Administrative segregation
+                  - FAFA-CUSTY # Custody level change
+                  - FAFA-JOBAS # Job assignment
+                  - FAFA-INCIB # Behavioral incident
+                  - FAFA-PANEL # Panel appearance
+                  - FAFA-RESEG # Release from admin segregation
                   # Last instance was in 1995.
-                  - FAFA-61DAY  # 61 Day permanent resident
-                  - FAFA-SEXOF  # Sex offender treatment
-                  - FAFA-NELIG  # Not eligible due to law
-                  - FAFA-PGMCO  # Program completion
-                  - FAFA-JOBTE  # Job assignment (temporary)
-                  - FAFA-INCOM  # Incompatible
-                  - FAFA-INCVI  # Incident (violent or threat)
-                  - FAFA-INCIE  # Incident (escape or threat)
-                  - FAFA-RCPAR  # Already recommended parole (occurs only 13 times since 1960s, and they are
+                  - FAFA-61DAY # 61 Day permanent resident
+                  - FAFA-SEXOF # Sex offender treatment
+                  - FAFA-NELIG # Not eligible due to law
+                  - FAFA-PGMCO # Program completion
+                  - FAFA-JOBTE # Job assignment (temporary)
+                  - FAFA-INCOM # Incompatible
+                  - FAFA-INCVI # Incident (violent or threat)
+                  - FAFA-INCIE # Incident (escape or threat)
+                  - FAFA-RCPAR # Already recommended parole (occurs only 13 times since 1960s, and they are
                   # all associated with physical movements from one location to another).
-                  - FAFA-FAILB  # Failed boot camp
-                  - FAFA-APPDI  # Appeal disposition
-                  - FAFA-MEDTE  # Medical (temporary)
-                  - FAFA-MEDRE  # Medical (regular)
-                  - FAFA-MEDAD  # Medical admin
-                  - FAFA-SICKB  # Sick bed visit
+                  - FAFA-FAILB # Failed boot camp
+                  - FAFA-APPDI # Appeal disposition
+                  - FAFA-MEDTE # Medical (temporary)
+                  - FAFA-MEDRE # Medical (regular)
+                  - FAFA-MEDAD # Medical admin
+                  - FAFA-SICKB # Sick bed visit
 
                   # The following are all movements from facility to free world hospital (FAFH). The actual sites associated
                   # with these movements are jails and prisons, so we count them as transfers.
-                  - FAFH-MEDTE  # Medical (temporary)
-                  - FAFH-SICKB  # Sick bed visit
+                  - FAFH-MEDTE # Medical (temporary)
+                  - FAFH-SICKB # Sick bed visit
 
                   # The following are all movements from free world hospital to facility (FHFA). The actual sites associated
                   # with these movements are jails and prisons, so we count them as transfers.
-                  - FHFA-FHOSP  # From free world hospital
-                  - FHFA-INTRS  # In transit
+                  - FHFA-FHOSP # From free world hospital
+                  - FHFA-INTRS # In transit
                   # -----------------------------------END SHARED BLOCK--------------------------------------#
 
                   # The following are all movements from court to facility. Because often court movements are
                   # with facility locations.
-                  - CTFA-RETNO  # Court to Facility - return no charges
-                  - CTFA-RTCHG  # Court to Facility - return with charges
-                  - CTFA-NEWAD  # Court to facility - new admission
+                  - CTFA-RETNO # Court to Facility - return no charges
+                  - CTFA-RTCHG # Court to Facility - return with charges
+                  - CTFA-NEWAD # Court to facility - new admission
                 StateIncarcerationPeriodReleaseReason.ESCAPE:
                   # The following are all movements from facility to escape (FAES).
-                  - FAES-FRSEC  # From high security facility
-                  - FAES-FRMIN  # From minimum security facility
-                  - FAES-FURLO  # Furlough
-                  - FAES-FHOSP  # Free world hospital
-                  - FAES-INTRS  # In transit
-                  - FAES-PASS  # Pass (rare - occurs 34x in initial historical dump)
-                  - FAES-OUTCT  # Out to court
-                  - FAES-BOND  # Bond
-                  - FAES-CWORK  # Community work program
+                  - FAES-FRSEC # From high security facility
+                  - FAES-FRMIN # From minimum security facility
+                  - FAES-FURLO # Furlough
+                  - FAES-FHOSP # Free world hospital
+                  - FAES-INTRS # In transit
+                  - FAES-PASS # Pass (rare - occurs 34x in initial historical dump)
+                  - FAES-OUTCT # Out to court
+                  - FAES-BOND # Bond
+                  - FAES-CWORK # Community work program
                     # The following are all movements from facility to escape information center (FAEI).
-                  - FAEI-GTDAY  # Greater than 30 day escape
+                  - FAEI-GTDAY # Greater than 30 day escape
                 StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
-                  - FAWR-WKREL  # Work/release
-                   # The following are all movements from facility to furlough or pass" (FAFU).
-                  - FAFU-FURPA  # Furlough pass
-                  - FAFU-3DAY  # 3 day furlough pass
-                  - FAFU-1DAY  # 1 day furlough pass
+                  - FAWR-WKREL # Work/release
+                    # The following are all movements from facility to furlough or pass" (FAFU).
+                  - FAFU-FURPA # Furlough pass
+                  - FAFU-3DAY # 3 day furlough pass
+                  - FAFU-1DAY # 1 day furlough pass
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   # The following are all movements from facility to "other jurisdiction" (FAOJ).
-                  - FAOJ-FEDER  # Federal
-                  - FAOJ-OUTCT  # Out to court
-                  - FAOJ-DETAN  # Detainer
-                  - FAOJ-ISC  # Interstate compact
-                  - FAOJ-IADDE  # Interstate on detainer
-                  - FAOJ-MEDOJ  # Medical other jurisdiction
+                  - FAOJ-FEDER # Federal
+                  - FAOJ-OUTCT # Out to court
+                  - FAOJ-DETAN # Detainer
+                  - FAOJ-ISC # Interstate compact
+                  - FAOJ-IADDE # Interstate on detainer
+                  - FAOJ-MEDOJ # Medical other jurisdiction
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   # The following are all movements from facility to discharge (FADI).
-                  - FADI-EXPIR  # Expiration
-                  - FADI-COURT  # Court ordered
-                  - FADI-ADMDI  # Administrative discharge/court ordered
-                  - FADI-EXPDE  # Expiration/detainer
+                  - FADI-EXPIR # Expiration
+                  - FADI-COURT # Court ordered
+                  - FADI-ADMDI # Administrative discharge/court ordered
+                  - FADI-EXPDE # Expiration/detainer
 
                 StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
                   # Revocations are logged after temporary custody due to a vioation.
-                  - PAFA-PAVOK  # Parole Revoked
-                  - PAFA-REVOK  # Revocation
-                  - PRFA-PRVOK  # Probation revoked
-                  - PRFA-PTVOK  # Partial revocation
-                  - CCFA-REVOK  # Revocation
-                  - CCFA-PTVOK  # Partial revocation
-                  - PAFA-RECIS  # Rescission
-                  - DVCT-PRVOK  # Revocation
+                  - PAFA-PAVOK # Parole Revoked
+                  - PAFA-REVOK # Revocation
+                  - PRFA-PRVOK # Probation revoked
+                  - PRFA-PTVOK # Partial revocation
+                  - CCFA-REVOK # Revocation
+                  - CCFA-PTVOK # Partial revocation
+                  - PAFA-RECIS # Rescission
+                  - DVCT-PRVOK # Revocation
                   # Returns to supervision after serving a stint of weekend confinement.
-                  - FAPR-WKRET  # Weekend return
-                  - FACC-WKRET  # Weekend return
+                  - FAPR-WKRET # Weekend return
+                  - FACC-WKRET # Weekend return
 
                 StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
                   # Statuses that terminate in 'FA', 'CT', or 'FH' are admissions into a facility that
@@ -502,10 +502,10 @@ output:
                   - CTFA-MISPR
                   - FUFA-INTRS
                   # These started appearing in Feb 2022 and appear to be new codes
-                  - PAFA-PTVOS  # Parole to facility
-                  - PRFA-PTVOS  # Probation to facility
+                  - PAFA-PTVOS # Parole to facility
+                  - PRFA-PTVOS # Probation to facility
               $ignore:
-                  - "CTPR-NEWAD"
-                  - "CTCC-NEWAD"
-                  - "CTDV-COURT"
-                  - "CTPR-MISPR"
+                - "CTPR-NEWAD"
+                - "CTCC-NEWAD"
+                - "CTDV-COURT"
+                - "CTPR-MISPR"

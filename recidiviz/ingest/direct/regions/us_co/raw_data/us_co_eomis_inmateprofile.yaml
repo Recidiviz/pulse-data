@@ -458,19 +458,19 @@ columns:
     description: |-
       Letter and/or number CFHICUST code indicating Custody/Security Code.
     known_values:
-      - value: 'C1'
+      - value: "C1"
         description: Minimum
-      - value: 'C2'
+      - value: "C2"
         description: Minimum-Restrictive (or below)
-      - value: 'C3'
+      - value: "C3"
         description: Medium (or below)
-      - value: 'C6'
+      - value: "C6"
         description: Close (or below)
-      - value: 'C7'
+      - value: "C7"
         description: Maximum (or below)
-      - value: 'UK'
+      - value: "UK"
         description: Unknown - Conversion
-      - value: 'UN'
+      - value: "UN"
         description: Unknown
   - name: CURRENTTOTALCUSTODYSCORE
     description: |-
@@ -745,7 +745,7 @@ columns:
   - name: SGTLAWUSEDTOCALCPED
     description: |-
       SGT Law used to calculate PED.
-    known_values: []  #TODO(#12372)
+    known_values: [] #TODO(#12372)
   - name: LATESTPAROLEBOARDHEARDT
     description: |-
       Last/Next Parole Board Hearing Date.
@@ -763,36 +763,36 @@ columns:
     description: |-
       Last/Next Parole Board action code - CIBDACT1.
     known_values:
-      -  value: "0"
-         description:
-      -  value: "01"
-         description: Parole Granted
-      -  value: "08"
-         description: Reinstate
-      -  value: "15"
-         description: Transfer to DCC Supervision
-      -  value: "39"
-         description: Parole Rescinded
-      -  value: "41"
-         description: Hear Continued Other Reason
-      -  value: "43"
-         description: Waived Appearance Denied
-      -  value: "50"
-         description: Parole Revoked
-      -  value: "99"
-         description: Next Hearing Scheduled
-      -  value: "CT"
-         description: Change To Board
-      -  value: "D0"
-         description: Deferred
-      -  value: "DC"
-         description: Discharged
-      -  value: "NA"
-         description: No Action Needed
-      -  value: "OP"
-         description: Parole Ordered
-      -  value: "WI"
-         description: Warrant Issued
+      - value: "0"
+        description:
+      - value: "01"
+        description: Parole Granted
+      - value: "08"
+        description: Reinstate
+      - value: "15"
+        description: Transfer to DCC Supervision
+      - value: "39"
+        description: Parole Rescinded
+      - value: "41"
+        description: Hear Continued Other Reason
+      - value: "43"
+        description: Waived Appearance Denied
+      - value: "50"
+        description: Parole Revoked
+      - value: "99"
+        description: Next Hearing Scheduled
+      - value: "CT"
+        description: Change To Board
+      - value: "D0"
+        description: Deferred
+      - value: "DC"
+        description: Discharged
+      - value: "NA"
+        description: No Action Needed
+      - value: "OP"
+        description: Parole Ordered
+      - value: "WI"
+        description: Warrant Issued
   - name: DATELASTUPDATE
     description: |-
       Date of last update.
@@ -839,7 +839,7 @@ columns:
         description: MRPD
   - name: HSCONDITIONFLAG
     description: |-
-      Outstanding H/S Condition Flag. 
+      Outstanding H/S Condition Flag.
     known_values:
       - value: "Y"
         description: "Yes"

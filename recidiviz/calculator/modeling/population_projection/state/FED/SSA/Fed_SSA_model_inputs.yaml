@@ -5,18 +5,18 @@ user_inputs:
   speed_run: true
 
 compartments_architecture:
-    pretrial: shell
-    prison: full
-    release: full
-    full_release: full
-    prison_return: full
+  pretrial: shell
+  prison: full
+  release: full
+  full_release: full
+  prison_return: full
 
 reference_date: 2019.0
 
 time_step: 0.0833333333
 
-disaggregation_axes: 
-- crime_type
+disaggregation_axes:
+  - crime_type
 
 data_inputs:
   big_query_simulation_tag: fed_ssa

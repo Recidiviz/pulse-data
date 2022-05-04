@@ -8,11 +8,11 @@ primary_key:
   OFFENDER_BOOK_ID: state_person.state_person_id
 
 keys_to_ignore:
-  - MAX_TERM              # Max length of term - handled manually in the controller
-  - FINAL_SENT_EXP_DATE   # Provided in Sentences file on a per-Sentence basis
-  - CALC_POS_REL_DATE     # Provided in Sentences file on a per-Sentence basis
-  - OVR_POS_REL_DATE      # No apparent use for these at the moment
-  - PAROLE_REVIEW_DATE    # No apparent use for these at the moment
-  - CREATE_DATETIME       # No apparent use for these at the moment
-  - MODIFY_DATETIME       # No apparent use for these at the moment
+  - MAX_TERM # Max length of term - handled manually in the controller
+  - FINAL_SENT_EXP_DATE # Provided in Sentences file on a per-Sentence basis
+  - CALC_POS_REL_DATE # Provided in Sentences file on a per-Sentence basis
+  - OVR_POS_REL_DATE # No apparent use for these at the moment
+  - PAROLE_REVIEW_DATE # No apparent use for these at the moment
+  - CREATE_DATETIME # No apparent use for these at the moment
+  - MODIFY_DATETIME # No apparent use for these at the moment
   - EARLIEST_SENT_START_DATE # No apparent use for these at the moment

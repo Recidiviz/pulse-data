@@ -7,5 +7,5 @@ primary_key_cols:
 columns:
   - name: col1
   - name: bad_date
-    datetime_sql_parsers: 
+    datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"

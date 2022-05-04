@@ -82,7 +82,7 @@ columns:
       - value: E5
         description: County Prosecuting Attorney
       - value: EA
-        description:  Colorado County or District Court
+        description: Colorado County or District Court
       - value: EB
         description: County District Attorney
       - value: ED
@@ -106,9 +106,9 @@ columns:
       - value: I4
         description: Other State Law Enforc. Agency
       - value: I5
-        description:  Other State DOC
+        description: Other State DOC
       - value: I8
-        description:  Other Country
+        description: Other Country
       - value: I9
         description: Other State District Attorney
       - value: L2
@@ -120,7 +120,7 @@ columns:
       - value: P3
         description: Dept. of (MH) Institutions
       - value: P9
-        description:  Other Government Agency
+        description: Other Government Agency
       - value: U1
         description: US Marshal
       - value: U3

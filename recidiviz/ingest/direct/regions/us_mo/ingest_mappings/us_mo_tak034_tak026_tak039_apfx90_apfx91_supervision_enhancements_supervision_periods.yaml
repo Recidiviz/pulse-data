@@ -11,15 +11,15 @@ ancestor_keys:
   DOC: state_person.state_person_id
 
 keys_to_ignore:
-  - DOC                       # Offender DOC Number - Handled manually in the controller
-  - CYC                       # Offender Cycle Number - Handled manually in the controller
-  - FIELD_ASSIGNMENT_SEQ_NUM  # Field assignment sequence number - Handled manually in the controller
-  - START_STATUS_SEQ_NUM      # Sub-sequence number - Handled manually in the controller
-  - CASE_TYPE_LIST            # Case Type List - Handled manually in the controller
+  - DOC # Offender DOC Number - Handled manually in the controller
+  - CYC # Offender Cycle Number - Handled manually in the controller
+  - FIELD_ASSIGNMENT_SEQ_NUM # Field assignment sequence number - Handled manually in the controller
+  - START_STATUS_SEQ_NUM # Sub-sequence number - Handled manually in the controller
+  - CASE_TYPE_LIST # Case Type List - Handled manually in the controller
   # TODO(#9382): This should be used in the v2 YAML mappings file when we migrate.
-  - BDGNO   # Employee Id - Handled manually in the controller
-  - DEPCLS  # Unused - Employee Job Code
-  - LNAME   # Employee Last Name - Handled manually in the controller
-  - FNAME   # Employee First Name - Handled manually in the controller
-  - MINTL   # Employee Middle Initial - Handled manually in the controller
-  - CLSTTL  # Job role - Handled manually in controller
+  - BDGNO # Employee Id - Handled manually in the controller
+  - DEPCLS # Unused - Employee Job Code
+  - LNAME # Employee Last Name - Handled manually in the controller
+  - FNAME # Employee First Name - Handled manually in the controller
+  - MINTL # Employee Middle Initial - Handled manually in the controller
+  - CLSTTL # Job role - Handled manually in controller

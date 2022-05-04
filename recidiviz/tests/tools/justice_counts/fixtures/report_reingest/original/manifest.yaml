@@ -1,31 +1,31 @@
-source: 'Colorado Department of Corrections'
-report_type: 'Dashboard Measures'
-report_instance: '2020-10-05'
-publish_date: '2020-10-05'
-url: 'https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics'
-assignee: 'Solange Knowles'
+source: "Colorado Department of Corrections"
+report_type: "Dashboard Measures"
+report_instance: "2020-10-05"
+publish_date: "2020-10-05"
+url: "https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics"
+assignee: "Solange Knowles"
 tables:
-  - file: 'table.csv'
-    methodology: 'SNAPSHOT'
+  - file: "table.csv"
+    methodology: "SNAPSHOT"
     date_range:
       fixed:
-        type: 'SNAPSHOT'
+        type: "SNAPSHOT"
         input:
-          - '2020-09-01'
-    system: 'CORRECTIONS'
+          - "2020-09-01"
+    system: "CORRECTIONS"
     location:
-      state: 'US_MS'
+      state: "US_MS"
     metric:
       population:
-        measurement_type: 'INSTANT'
+        measurement_type: "INSTANT"
     value_column:
-      column_name: 'Population'
+      column_name: "Population"
     dimension_columns:
-      - column_name: 'Population Type'
-        dimension_name: 'POPULATION_TYPE'
+      - column_name: "Population Type"
+        dimension_name: "POPULATION_TYPE"
         mapping_overrides:
-          INMATES: 'PRISON'
-          PAROLEES: 'SUPERVISION'
-          PROBATIONEERS: 'SUPERVISION'
-      - column_name: 'Population Subtype'
+          INMATES: "PRISON"
+          PAROLEES: "SUPERVISION"
+          PROBATIONEERS: "SUPERVISION"
+      - column_name: "Population Subtype"
         synthetic: True

@@ -1,6 +1,6 @@
 ---
 user_inputs:
-#  policy_year: 2021.0
+  #  policy_year: 2021.0
   start_year: 2019.0
   projection_years: 10.0
   speed_run: true
@@ -19,7 +19,7 @@ time_step: 0.083333333
 # one month
 
 disaggregation_axes:
-- crime_type
+  - crime_type
 
 data_inputs:
   big_query_simulation_tag: WI_po_incentives

@@ -13,8 +13,8 @@ output:
             $or:
               - $is_null: NICKNAME
               - $equal:
-                - NICKNAME
-                - PERSONNAME
+                  - NICKNAME
+                  - PERSONNAME
           $then: PERSONNAME
         - $else: NICKNAME
     birthdate:

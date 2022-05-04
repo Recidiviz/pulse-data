@@ -10,38 +10,38 @@ ancestor_keys:
 
 keys_to_ignore:
   # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-  - VIOLATED_CONDITIONS  #  List of conditions violated - Handled manually in controller
-  - BY_CYC  # Offender Cycle Number - Handled manually in the controller
-  - BY_VSN  # Violation Sequence Number - Handled manually in the controller
-  - BY_VTY  # Violation Types - Handled manually in the controller
-  - BY_VOR  # Violation Report Recommendations - Handled manually in the controller
-  - BY_VWI  # Unused - Violation warrant flag
-  - BY_VSI  # Unused - Advised of Statements
-  - BY_VPH  # Unused - Preliminary hearing
-  - BY_VBG  # Unused - Given booklet
-  - BY_VA   # Unused - Absconsion warrant date
-  - BY_VIC  # Unused - Custody flag
-  - BY_DAX  # Unused - Detainer cross reference
-  - BY_VC   # Unused - Custody date
-  - BY_VD   # Unused - Interview date
-  - BY_VIH  # Unused - Interview hour
-  - BY_VIM  # Unused - Interview minute
-  - BY_VIL  # Unused - Interview location
-  - BY_PIN  # Unused - Designated DOC location
-  - BY_PLN  # Unused - DOC location acronym
-  - BY_PON  # Unused - Duplicate of BDGNO
-  - BY_RCA  # Unused - Requires court action
+  - VIOLATED_CONDITIONS #  List of conditions violated - Handled manually in controller
+  - BY_CYC # Offender Cycle Number - Handled manually in the controller
+  - BY_VSN # Violation Sequence Number - Handled manually in the controller
+  - BY_VTY # Violation Types - Handled manually in the controller
+  - BY_VOR # Violation Report Recommendations - Handled manually in the controller
+  - BY_VWI # Unused - Violation warrant flag
+  - BY_VSI # Unused - Advised of Statements
+  - BY_VPH # Unused - Preliminary hearing
+  - BY_VBG # Unused - Given booklet
+  - BY_VA # Unused - Absconsion warrant date
+  - BY_VIC # Unused - Custody flag
+  - BY_DAX # Unused - Detainer cross reference
+  - BY_VC # Unused - Custody date
+  - BY_VD # Unused - Interview date
+  - BY_VIH # Unused - Interview hour
+  - BY_VIM # Unused - Interview minute
+  - BY_VIL # Unused - Interview location
+  - BY_PIN # Unused - Designated DOC location
+  - BY_PLN # Unused - DOC location acronym
+  - BY_PON # Unused - Duplicate of BDGNO
+  - BY_RCA # Unused - Requires court action
   - BY_UID
   - BY_UIU
-  - CZ_DOC  # Duplicate of BY_DOC - Handled manually in controller
-  - CZ_CYC  # Duplicate of BY_CYC - Handled manually in controller
-  - CZ_SEO  # Sentence Key Sequence Number - Handled manually in controller
-  - CZ_FSO  # Field Sentence Sequence Number - Handled manually in controller
-  - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6_* cols) - Handled manually in controller
-  - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6_* cols)
+  - CZ_DOC # Duplicate of BY_DOC - Handled manually in controller
+  - CZ_CYC # Duplicate of BY_CYC - Handled manually in controller
+  - CZ_SEO # Sentence Key Sequence Number - Handled manually in controller
+  - CZ_FSO # Field Sentence Sequence Number - Handled manually in controller
+  - FINAL_FORMED_CREATE_DATE # Finally formed create date (E6_* cols) - Handled manually in controller
+  - FINAL_FORMED_UPDATE_DATE # Unused - Finally formed last update date (E6_* cols)
   # TODO(#9376): This should be used in the v2 YAML mappings file when we migrate.
-  - BDGNO   # Employee Id - Handled manually in the controller
-  - LNAME   # Employee Last Name - Handled manually in the controller
-  - FNAME   # Employee First Name - Handled manually in the controller
-  - MINTL   # Employee Middle Initial - Handled manually in the controller
-  - CLSTTL  # Job role - Handled manually in controller
+  - BDGNO # Employee Id - Handled manually in the controller
+  - LNAME # Employee Last Name - Handled manually in the controller
+  - FNAME # Employee First Name - Handled manually in the controller
+  - MINTL # Employee Middle Initial - Handled manually in the controller
+  - CLSTTL # Job role - Handled manually in controller

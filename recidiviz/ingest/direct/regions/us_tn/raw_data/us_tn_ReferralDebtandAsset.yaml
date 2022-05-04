@@ -1,5 +1,5 @@
 file_tag: ReferralDebtandAsset
-file_description: |- 
+file_description: |-
   This table contains one row for each debt or asset for a referral for an offender.
 data_classification: source
 primary_key_cols:

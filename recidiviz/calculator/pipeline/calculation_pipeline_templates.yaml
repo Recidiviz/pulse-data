@@ -35,7 +35,6 @@ normalization_pipelines:
     state_code: US_TN
     region: us-east1
 
-
 incremental_metric_pipelines:
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
@@ -144,7 +143,7 @@ incremental_metric_pipelines:
     calculation_month_count: 36
     region: us-central1
 
-# Daily US_ME calculations
+  # Daily US_ME calculations
   - pipeline: incarceration_metrics
     job_name: us-me-incarceration-metrics-36
     state_code: US_ME

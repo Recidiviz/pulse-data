@@ -2,12 +2,12 @@
 user_inputs:
   start_year: 2021.0
   projection_years: 5.0
-  run_date: '2021-01-01'
+  run_date: "2021-01-01"
 
 compartments_architecture:
-    PRETRIAL: shell
-    RELEASE: full
-    PRISON: full
+  PRETRIAL: shell
+  RELEASE: full
+  PRISON: full
 
 reference_date: 2019.0
 
@@ -17,8 +17,8 @@ disaggregation_axes:
   - gender
 
 per_year_costs:
-    RELEASE: 0.0
-    PRISON: 0.0
+  RELEASE: 0.0
+  PRISON: 0.0
 
 data_inputs:
   big_query_inputs:

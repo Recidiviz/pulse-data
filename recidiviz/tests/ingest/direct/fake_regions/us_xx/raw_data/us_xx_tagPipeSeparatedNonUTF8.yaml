@@ -12,5 +12,5 @@ columns:
   - name: COL3
   - name: COL4
 encoding: ISO-8859-1
-separator: '|'
+separator: "|"
 ignore_quotes: True

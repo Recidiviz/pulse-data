@@ -2,16 +2,16 @@
 user_inputs:
   start_year: 2021.16666666666666666
   projection_years: 5.0
-  run_date: '2021-03-01'
+  run_date: "2021-03-01"
 
 compartments_architecture:
-    PRETRIAL: shell
-    RELEASE: shell
-    INCARCERATION - GENERAL: full
-    INCARCERATION - RE-INCARCERATION: full
-    SUPERVISION - PAROLE: full
-    SUPERVISION - PROBATION: full
-    RELEASE - RELEASE: full
+  PRETRIAL: shell
+  RELEASE: shell
+  INCARCERATION - GENERAL: full
+  INCARCERATION - RE-INCARCERATION: full
+  SUPERVISION - PAROLE: full
+  SUPERVISION - PROBATION: full
+  RELEASE - RELEASE: full
 
 reference_date: 2021.0
 
@@ -21,11 +21,11 @@ disaggregation_axes:
   - gender
 
 per_year_costs:
-    INCARCERATION - GENERAL: 0.0
-    INCARCERATION - RE-INCARCERATION: 0.0
-    SUPERVISION - PAROLE: 0.0
-    SUPERVISION - PROBATION: 0.0
-    RELEASE - RELEASE: 0.0
+  INCARCERATION - GENERAL: 0.0
+  INCARCERATION - RE-INCARCERATION: 0.0
+  SUPERVISION - PAROLE: 0.0
+  SUPERVISION - PROBATION: 0.0
+  RELEASE - RELEASE: 0.0
 
 data_inputs:
   big_query_inputs:

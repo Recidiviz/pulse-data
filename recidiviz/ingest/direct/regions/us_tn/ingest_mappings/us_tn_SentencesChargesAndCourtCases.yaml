@@ -44,32 +44,32 @@ variables:
         # AC indicates an active incarceration sentence.
         - $equal: [SentenceStatus, $literal("AC")]
         - $and:
-          - $equal: [SentenceStatus, $literal("IN")] # Inactive sentence
-          # If set to `S`, then that means that this is a probation sentence,
-          # regardless of what value is in sentenced_to.
-          - $not_in:
-              $value: SuspendedToProbation
-              $options: [$literal("S")]
-          - $in:
-              $value: SentencedTo
-              $options:
-                - $literal("TD")  # TDOC (Tennessee Department of Corrections)
-                - $literal("LJ")  # Local Jail
-                - $literal("WK")  # Workhouse (jail for short sentences)
+            - $equal: [SentenceStatus, $literal("IN")] # Inactive sentence
+            # If set to `S`, then that means that this is a probation sentence,
+            # regardless of what value is in sentenced_to.
+            - $not_in:
+                $value: SuspendedToProbation
+                $options: [$literal("S")]
+            - $in:
+                $value: SentencedTo
+                $options:
+                  - $literal("TD") # TDOC (Tennessee Department of Corrections)
+                  - $literal("LJ") # Local Jail
+                  - $literal("WK") # Workhouse (jail for short sentences)
   - is_supervision_sentence:
       $or:
         - $in:
             $value: SentenceStatus
             $options:
-              - $literal("CC")  # Community corrections
-              - $literal("PB")  # Probation
+              - $literal("CC") # Community corrections
+              - $literal("PB") # Probation
         - $and:
-          - $equal: [SentenceStatus, $literal("IN")] # Inactive sentence
-          - $or:
-            # If set to `S`, then that means that this is a probation sentence,
-            # regardless of what value is in sentenced_to.
-            - $equal: [SuspendedToProbation, $literal("S")]
-            - $equal: [SentencedTo, $literal("CC")] # Community corrections
+            - $equal: [SentenceStatus, $literal("IN")] # Inactive sentence
+            - $or:
+                # If set to `S`, then that means that this is a probation sentence,
+                # regardless of what value is in sentenced_to.
+                - $equal: [SuspendedToProbation, $literal("S")]
+                - $equal: [SentencedTo, $literal("CC")] # Community corrections
   - sentence_external_id:
       $concat:
         $values:
@@ -147,12 +147,12 @@ output:
                     $raw_text: SentencedTo
                     $mappings:
                       StateIncarcerationType.COUNTY_JAIL:
-                        - LJ  # Local Jail
-                        - WK  # Workhouse
+                        - LJ # Local Jail
+                        - WK # Workhouse
                       StateIncarcerationType.STATE_PRISON:
-                        - TD  # TDOC
+                        - TD # TDOC
                       StateIncarcerationType.INTERNAL_UNKNOWN:
-                        - CC  # There are only 41 instances
+                        - CC # There are only 41 instances
                 start_date: SentenceEffectiveDate
                 date_imposed: SentenceImposeDate
                 projected_min_release_date: EarliestPossibleReleaseDate
@@ -164,14 +164,14 @@ output:
                 is_capital_punishment:
                   $equal:
                     - LifeDeathHabitual
-                    - $literal("D")  # Death Sentence
+                    - $literal("D") # Death Sentence
                 is_life:
                   $in:
                     $value: LifeDeathHabitual
                     $options:
-                      - $literal("L")  # Life Sentence
-                      - $literal("W")  # Life sentence without parole
-                      - $literal("H")  # Habitual (equivalent to life sentence)
+                      - $literal("L") # Life Sentence
+                      - $literal("W") # Life sentence without parole
+                      - $literal("H") # Habitual (equivalent to life sentence)
                 conditions: Conditions
                 sentence_metadata: $variable(sentence_metadata)
                 initial_time_served_days: PretrialJailCredits

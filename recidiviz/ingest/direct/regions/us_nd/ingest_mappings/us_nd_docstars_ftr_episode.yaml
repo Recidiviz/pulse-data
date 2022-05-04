@@ -13,14 +13,14 @@ primary_key:
   EPISODE_ID: state_program_assignment.state_program_assignment_id
 
 keys_to_ignore:
-  - STATUS_DATE             # Handled manually in controller.
-  - PENDING_CODE            # Always null.
-  - ALLOW_VIEWING           # Checking with ND. No apparent use for now.
-  - PEER_SUPPORT_OFFERED    # Checking with ND. No apparent use for now.
-  - PEER_SUPPORT_ACCEPTED   # Checking with ND. No apparent use for now.
-  - SN_LAST_UPDATED_DATE    # Checking with ND. No apparent use for now.
-  - COORDINATOR_GUID        # Checking with ND. No apparent use for now.
-  - PREFERRED_PROVIDER_ID   # Everything below processed manually
+  - STATUS_DATE # Handled manually in controller.
+  - PENDING_CODE # Always null.
+  - ALLOW_VIEWING # Checking with ND. No apparent use for now.
+  - PEER_SUPPORT_OFFERED # Checking with ND. No apparent use for now.
+  - PEER_SUPPORT_ACCEPTED # Checking with ND. No apparent use for now.
+  - SN_LAST_UPDATED_DATE # Checking with ND. No apparent use for now.
+  - COORDINATOR_GUID # Checking with ND. No apparent use for now.
+  - PREFERRED_PROVIDER_ID # Everything below processed manually
   - PREFERRED_LOCATION_ID
   - STRENGTHS
   - NEEDS

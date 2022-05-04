@@ -1,24 +1,24 @@
 user_inputs:
-#    policy_year: 2021.0
-    start_year: 2019.0
-    projection_years: 11.0
-    speed_run: true
+  #    policy_year: 2021.0
+  start_year: 2019.0
+  projection_years: 11.0
+  speed_run: true
 
 compartments_architecture:
-    pre-supervision: shell
-    probation: full
-    parole: full
-    prison_probation_revocations: full
-    prison_parole_revocations: full
-    release: full
+  pre-supervision: shell
+  probation: full
+  parole: full
+  prison_probation_revocations: full
+  prison_parole_revocations: full
+  release: full
 
 reference_date: 2010.0
 # january
-time_step: 0.083333333 
+time_step: 0.083333333
 # one month
 
-disaggregation_axes: 
-- crime_type
+disaggregation_axes:
+  - crime_type
 
 data_inputs:
   big_query_simulation_tag: GA_prison

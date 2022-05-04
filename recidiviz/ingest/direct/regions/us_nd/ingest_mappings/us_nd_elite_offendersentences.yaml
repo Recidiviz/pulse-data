@@ -9,16 +9,16 @@ ancestor_keys:
 # There is a primary key override in us_nd_controller for this file
 
 keys_to_ignore:
-  - SENTENCE_STATUS         # Not useful: has the same value for nearly all rows
-  - COMMENT_TEXT            # No apparent use for these at the moment
-  - EFFECTIVE_DATE          # No longer in use by source
+  - SENTENCE_STATUS # Not useful: has the same value for nearly all rows
+  - COMMENT_TEXT # No apparent use for these at the moment
+  - EFFECTIVE_DATE # No longer in use by source
   - EIGHTYFIVE_PERCENT_DATE # Unused
-  - GOOD_TIME               # Unused
-  - SENTENCE_CALC_TYPE      # Handled manually within us_nd_scraper
-  - CHARGE_SEQ              # Handled manually within us_nd_scraper
-  - CONSEC_TO_SENTENCE_SEQ  # Handled manually within us_nd_scraper
-  - CONSECUTIVE_COUNT_FLAG  # Handled manually within us_nd_scraper
-  - COUNTS                  # Handled manually within us_nd_scraper
-  - SENTENCE_SEQ            # Handled manually within us_nd_scraper
-  - CREATE_DATETIME         # No apparent use for these at the moment
-  - MODIFY_DATETIME         # No apparent use for these at the moment
+  - GOOD_TIME # Unused
+  - SENTENCE_CALC_TYPE # Handled manually within us_nd_scraper
+  - CHARGE_SEQ # Handled manually within us_nd_scraper
+  - CONSEC_TO_SENTENCE_SEQ # Handled manually within us_nd_scraper
+  - CONSECUTIVE_COUNT_FLAG # Handled manually within us_nd_scraper
+  - COUNTS # Handled manually within us_nd_scraper
+  - SENTENCE_SEQ # Handled manually within us_nd_scraper
+  - CREATE_DATETIME # No apparent use for these at the moment
+  - MODIFY_DATETIME # No apparent use for these at the moment

@@ -20,57 +20,57 @@ input_columns:
 unused_columns: []
 output:
   StatePerson:
-      external_ids:
-        - StatePersonExternalId:
-            external_id: control_number
-            id_type: $literal("US_PA_CONT")
-      incarceration_incidents:
-        - StateIncarcerationIncident:
-            external_id: misconduct_number
-            incident_date: misconduct_date
-            facility: institution
-            location_within_facility:
-              $concat:
-                $values:
-                  - place_hvl_code
-                  - place_extended
-                $include_nulls: False
-            incident_type:
-              $conditional:
-                - $if:
-                    $equal:
-                      - drug_related
-                      - $literal("Y")
-                  $then: $literal_enum(StateIncarcerationIncidentType.CONTRABAND)
-                - $else: $literal_enum(StateIncarcerationIncidentType.REPORT)
-            incident_details:
-              $json_dict:
-                category_1: ctgory_of_chrgs_1
-                category_2: ctgory_of_chrgs_2
-                category_3: ctgory_of_chrgs_3
-                category_4: ctgory_of_chrgs_4
-                category_5: ctgory_of_chrgs_5
-            incarceration_incident_outcomes:
-              - StateIncarcerationIncidentOutcome:
-                  external_id: misconduct_number
-                  hearing_date: hearing_after_date
-                  report_date: report_date
-                  outcome_type:
-                    $enum_mapping:
-                      $raw_text: confinement
-                      $mappings:
-                        StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
-                          - C  # Cell Confinement
-                        StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
-                          - Y  # Restricted Confinement
-                      $ignore:
-                        - N  # No Confinement
-                  date_effective:
-                    $conditional:
-                      - $if:
-                          $in:
-                            $value: confinement
-                            $options:
-                              - $literal("Y")
-                              - $literal("C")
-                        $then: confinement_date
+    external_ids:
+      - StatePersonExternalId:
+          external_id: control_number
+          id_type: $literal("US_PA_CONT")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id: misconduct_number
+          incident_date: misconduct_date
+          facility: institution
+          location_within_facility:
+            $concat:
+              $values:
+                - place_hvl_code
+                - place_extended
+              $include_nulls: False
+          incident_type:
+            $conditional:
+              - $if:
+                  $equal:
+                    - drug_related
+                    - $literal("Y")
+                $then: $literal_enum(StateIncarcerationIncidentType.CONTRABAND)
+              - $else: $literal_enum(StateIncarcerationIncidentType.REPORT)
+          incident_details:
+            $json_dict:
+              category_1: ctgory_of_chrgs_1
+              category_2: ctgory_of_chrgs_2
+              category_3: ctgory_of_chrgs_3
+              category_4: ctgory_of_chrgs_4
+              category_5: ctgory_of_chrgs_5
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id: misconduct_number
+                hearing_date: hearing_after_date
+                report_date: report_date
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: confinement
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                        - C # Cell Confinement
+                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                        - Y # Restricted Confinement
+                    $ignore:
+                      - N # No Confinement
+                date_effective:
+                  $conditional:
+                    - $if:
+                        $in:
+                          $value: confinement
+                          $options:
+                            - $literal("Y")
+                            - $literal("C")
+                      $then: confinement_date

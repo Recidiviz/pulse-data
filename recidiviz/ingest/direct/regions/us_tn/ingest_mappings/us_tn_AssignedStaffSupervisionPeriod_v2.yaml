@@ -49,87 +49,86 @@ output:
               $raw_text: AdmissionReason
               $mappings:
                 StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
-                  - NEWCS  # New Case
+                  - NEWCS # New Case
 
                 StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
-                  - TRANS  # Transfer Case
-                  - TRPAR  # Transfer to Parole
-                  - TRPRB  # Transfer to Probation
+                  - TRANS # Transfer Case
+                  - TRPAR # Transfer to Parole
+                  - TRPRB # Transfer to Probation
                   # Only 102 instances, all before 2001.
-                  - TRINS  # Transfer to other institution
-                  - RENEO  # Reassign to new officer
-                  - RENEC  # Reassign to new counselor
-                  - MULRE  # Multiple reassign
+                  - TRINS # Transfer to other institution
+                  - RENEO # Reassign to new officer
+                  - RENEC # Reassign to new counselor
+                  - MULRE # Multiple reassign
           termination_reason:
             $enum_mapping:
               $raw_text: TerminationReason
               $mappings:
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
-                  - ISC  # Transfer to interstate compact
+                  - ISC # Transfer to interstate compact
 
                 StateSupervisionPeriodTerminationReason.DISCHARGE:
-                  - DIS  # Discharge
-                  - RBC  # Released by court order
+                  - DIS # Discharge
+                  - RBC # Released by court order
 
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
-                  - RNO  # Reassigned to new officer
-                  - MRE  # Multiple reassign
-                  - CRA  # Counselor reassignment
-                  - TRS  # Transfer to new office
-                  - TRR  # Transfer to probation
+                  - RNO # Reassigned to new officer
+                  - MRE # Multiple reassign
+                  - CRA # Counselor reassignment
+                  - TRS # Transfer to new office
+                  - TRR # Transfer to probation
                   # TODO(#9976): add calc logic to update depending on if the facility is an
                   # incarceration or supervision facility.
-                  - TRF  # Transfer to other facility
-                  - TSP  # Transfer to supervision
-                  - TRP  # Transfer to parole
+                  - TRF # Transfer to other facility
+                  - TSP # Transfer to supervision
+                  - TRP # Transfer to parole
                   # Every instance of CNV is on 2001-08-11. There was a system-wide conversion done
-                  - CNV  # Conversion
+                  - CNV # Conversion
 
                 StateSupervisionPeriodTerminationReason.REVOCATION:
-                  - RVD  # Revoked
-                  - RVC  # Revocation, new charge
-                  - REV  # Revocation/rescinded
-                  - RVT  # Technical revocation
-                  - RVP  # Technical revocation, pending new charge
+                  - RVD # Revoked
+                  - RVC # Revocation, new charge
+                  - REV # Revocation/rescinded
+                  - RVT # Technical revocation
+                  - RVP # Technical revocation, pending new charge
 
                 StateSupervisionPeriodTerminationReason.ABSCONSION:
-                  - EIC  # Escape information center
-                  - TRE  # Transfer to escape
+                  - EIC # Escape information center
+                  - TRE # Transfer to escape
 
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
-                  - EXP  # Expiration
-
+                  - EXP # Expiration
 
                 StateSupervisionPeriodTerminationReason.DEATH:
-                  - DEA  # Death
+                  - DEA # Death
 
                 StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
                   # Only 100 instances of this, and they're all before 2000.
-                  - ICA  # Initial counselor assignment
+                  - ICA # Initial counselor assignment
                   # Only 2 instances, both before 2000.
-                  - TPR  # Transfer to pre-release
+                  - TPR # Transfer to pre-release
                   # Only 60 instances, all before 2002.
-                  - DEN  # Denied
+                  - DEN # Denied
                   # Only 1 instance, in 2001.
-                  - TER  # Transfer to education release
+                  - TER # Transfer to education release
                   # Only 1 instance, in 2001.
-                  - TWR  # Transfer to work release
+                  - TWR # Transfer to work release
 
                 StateSupervisionPeriodTerminationReason.DISMISSED:
-                  - RVR  # Rescinded
+                  - RVR # Rescinded
           supervision_type:
             $enum_mapping:
               $raw_text: AssignmentType
               $mappings:
                 StateSupervisionPeriodSupervisionType.PROBATION:
-                  - PRO  # Probation
+                  - PRO # Probation
 
                 StateSupervisionPeriodSupervisionType.PAROLE:
-                  - PAO  # Parole
+                  - PAO # Parole
 
                 # TODO(#9421): update mapping, when community centers are standardized.
                 StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
-                  - CCC  # Community corrections
+                  - CCC # Community corrections
           supervision_level:
             # TODO(#10291) - Should be able to map NULL values directly to an enum value.
             $conditional:
@@ -144,133 +143,133 @@ output:
                         - EXTERNAL_UNKNOWN
 
                       StateSupervisionLevel.LIMITED:
-                        - 4TR  # STANDARD - TELEPHONE RPT
+                        - 4TR # STANDARD - TELEPHONE RPT
 
                       StateSupervisionLevel.MINIMUM:
-                        - 4MI  # STANDARD - MINIMUM
-                        - MIN  # MINIMUM OFFENDER
-                        - Z1A  # MINIMUM SUPV PROBATION
-                        - Z1M  # MISDEMEANOR, MIN SUPV
-                        - ZMI  # MINIMUM SUPV PAROLE
+                        - 4MI # STANDARD - MINIMUM
+                        - MIN # MINIMUM OFFENDER
+                        - Z1A # MINIMUM SUPV PROBATION
+                        - Z1M # MISDEMEANOR, MIN SUPV
+                        - ZMI # MINIMUM SUPV PAROLE
 
                       StateSupervisionLevel.MEDIUM:
-                        - 3D3  # ELEVATED - DRC PHASE 3
-                        - 4ME  # STANDARD - MEDIUM
-                        - 6P3  # PSU INTERMEDIATE (SEX OFFENDER)
-                        - KG2  # KNOWN SEX MOT ON GPS - ME
-                        - KN2  # KNOWN SEX MOT NO GPS - ME
-                        - MED  # MEDIUM OFFENDER
-                        - QG2  # VIOL SEX OFF ON GPS - MED
-                        - QN2  # VIOL SEX OFF NO GPS - MED
-                        - VG2  # VIOL OFFEN ON GPS - MED
-                        - VN2  # VIOL OFFEN NO GPS - MED
-                        - XG2  # SEX OFFENDER ON GPS - MED
-                        - XMD  # MEDIUM SEX OFFENDER
-                        - XN2  # SEX OFFENDER NO GPS - MED
-                        - Z2A  # MEDIUM SUPV PROBATION
-                        - Z2M  # MISDEMEANOR, MED SUPV
-                        - ZME  # MEDIUM SUPV PAROLE
+                        - 3D3 # ELEVATED - DRC PHASE 3
+                        - 4ME # STANDARD - MEDIUM
+                        - 6P3 # PSU INTERMEDIATE (SEX OFFENDER)
+                        - KG2 # KNOWN SEX MOT ON GPS - ME
+                        - KN2 # KNOWN SEX MOT NO GPS - ME
+                        - MED # MEDIUM OFFENDER
+                        - QG2 # VIOL SEX OFF ON GPS - MED
+                        - QN2 # VIOL SEX OFF NO GPS - MED
+                        - VG2 # VIOL OFFEN ON GPS - MED
+                        - VN2 # VIOL OFFEN NO GPS - MED
+                        - XG2 # SEX OFFENDER ON GPS - MED
+                        - XMD # MEDIUM SEX OFFENDER
+                        - XN2 # SEX OFFENDER NO GPS - MED
+                        - Z2A # MEDIUM SUPV PROBATION
+                        - Z2M # MISDEMEANOR, MED SUPV
+                        - ZME # MEDIUM SUPV PAROLE
 
                       StateSupervisionLevel.HIGH:
                         # TODO(#10634): [Pathways][US_TN] Determine supervision level groupings
-                        - 2D2  # RESTRICTED - DRC PHASE 2
-                        - 3MA  # ELEVATED - MAXIMUM
-                        - KG3  # KNOWN SEX MOT ON GPS - MA
-                        - KN3  # KNOWN SEX MOT NO GPS - MA
-                        - MAX  # MAXIMUM OFFENDER
-                        - QG3  # VIOL SEX OFF ON GPS - MAX
-                        - QN3  # VIOL SEX OFF NO GPS - MAX
-                        - VG3  # VIOL OFFEN ON GPS - MAX
-                        - VN3  # VIOL OFFEN NO GPS - MAX
-                        - XG3  # SEX OFFENDER ON GPS - MAX
-                        - XMX  # MAXIMUM SEX OFFENDER
-                        - XN3  # SEX OFFENDER NO GPS - MAX
-                        - Z3A  # MAXIMUM SUPV PROBATION
-                        - ZMA  # MAXIMUM SUPV PAROLE
+                        - 2D2 # RESTRICTED - DRC PHASE 2
+                        - 3MA # ELEVATED - MAXIMUM
+                        - KG3 # KNOWN SEX MOT ON GPS - MA
+                        - KN3 # KNOWN SEX MOT NO GPS - MA
+                        - MAX # MAXIMUM OFFENDER
+                        - QG3 # VIOL SEX OFF ON GPS - MAX
+                        - QN3 # VIOL SEX OFF NO GPS - MAX
+                        - VG3 # VIOL OFFEN ON GPS - MAX
+                        - VN3 # VIOL OFFEN NO GPS - MAX
+                        - XG3 # SEX OFFENDER ON GPS - MAX
+                        - XMX # MAXIMUM SEX OFFENDER
+                        - XN3 # SEX OFFENDER NO GPS - MAX
+                        - Z3A # MAXIMUM SUPV PROBATION
+                        - ZMA # MAXIMUM SUPV PAROLE
 
                       StateSupervisionLevel.MAXIMUM:
-                        - 1D1  # SPEC RESTRCT - DRC PHASE 1
-                        - 1EN  # SPEC RESTRCT - ENHANCED
-                        - ENH  # ENHANCED OFFENDER
-                        - KGE  # KNOWN SEX MOT ON GPS - EN
-                        - KNE  # KNOWN SEX MOT NO GPS - EN
-                        - QGE  # VIOL SEX OFF ON GPS - ENH
-                        - QNE  # VIOL SEX OFF NO GPS - ENH
-                        - VGE  # VIOL OFFEN ON GPS - ENH
-                        - VNE  # VIOL OFFEN NO GPS - ENH
-                        - XEN  # ENHANCED SEX OFFENDER
-                        - XGE  # SEX OFFENDER ON GPS - ENH
-                        - XNE  # SEX OFFENDER NO GPS - ENH
-                        - ZEN  # ENHANCED SUPERVISION
+                        - 1D1 # SPEC RESTRCT - DRC PHASE 1
+                        - 1EN # SPEC RESTRCT - ENHANCED
+                        - ENH # ENHANCED OFFENDER
+                        - KGE # KNOWN SEX MOT ON GPS - EN
+                        - KNE # KNOWN SEX MOT NO GPS - EN
+                        - QGE # VIOL SEX OFF ON GPS - ENH
+                        - QNE # VIOL SEX OFF NO GPS - ENH
+                        - VGE # VIOL OFFEN ON GPS - ENH
+                        - VNE # VIOL OFFEN NO GPS - ENH
+                        - XEN # ENHANCED SEX OFFENDER
+                        - XGE # SEX OFFENDER ON GPS - ENH
+                        - XNE # SEX OFFENDER NO GPS - ENH
+                        - ZEN # ENHANCED SUPERVISION
 
                       StateSupervisionLevel.IN_CUSTODY:
-                        - 9IC  # ADM - IN CUST TDOC SENT
-                        - ICU  # IN CUST ON TDOC/BOPP SENT
-                        - ZCU  # VIOLATOR IN CUSTODY
+                        - 9IC # ADM - IN CUST TDOC SENT
+                        - ICU # IN CUST ON TDOC/BOPP SENT
+                        - ZCU # VIOLATOR IN CUSTODY
 
                       StateSupervisionLevel.UNASSIGNED:
-                        - 2IN  # RESTRICTED - INTAKE
-                        - IPA  # INTAKE PAROLE
-                        - IPR  # INTAKE PROBATION
-                        - XPA  # INTAKE SEX OFFNDR PAROLE
-                        - XPR  # INTAKE SEX OFFNDR PROB.
-                        - Z  # NO SUPERVISION LVL (ARCV)
+                        - 2IN # RESTRICTED - INTAKE
+                        - IPA # INTAKE PAROLE
+                        - IPR # INTAKE PROBATION
+                        - XPA # INTAKE SEX OFFNDR PAROLE
+                        - XPR # INTAKE SEX OFFNDR PROB.
+                        - Z # NO SUPERVISION LVL (ARCV)
 
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.UNSUPERVISED:
-                        - ZIC  # INACTIVE SUPV COMM. CORR.
-                        - ZIN  # INACTIVE SUPV PROBATION
-                        - 9JS  # ADM: JUDICIAL SUSP SUPVN
-                        - 9SD  # ADM - SUSP OF DIRECT SUPVN
-                        - SDS  # SUSPENSION OF DIRECT SUPV
+                        - ZIC # INACTIVE SUPV COMM. CORR.
+                        - ZIN # INACTIVE SUPV PROBATION
+                        - 9JS # ADM: JUDICIAL SUSP SUPVN
+                        - 9SD # ADM - SUSP OF DIRECT SUPVN
+                        - SDS # SUSPENSION OF DIRECT SUPV
 
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.INTERNAL_UNKNOWN:
-                        - 1SA  # SPEC RESTRCT - SANCTIONED
-                        - 2P1  # RESTRICTED - PSU PHASE ONE
-                        - 2PV  # RESTRICTED - POST VIOLATN
-                        - 3P2  # ELEVATED - PSU PHASE TWO
-                        - 3RE  # ELEVATED - RESISTIVE
-                        - 4P3  # STANDARD - PSU PHASE THREE
-                        - 6P1  # PSU PRIMARY (SEX OFFENDER)
-                        - 6P2  # PSU SECONDARY (SEX OFFENDER)
-                        - 6P4  # PSU TRANSITIONAL (SEX OFFENDER)
-                        - 9AB  # ADM - ABSCONDED OFFENDER
-                        - 9DP  # ADM - DEPORTED
-                        - 9DT  # ADM - DETAINER
-                        - 9IS  # ADM - ISC OUTGOING
-                        - 9RT  # ADM - RES. TREATMNT PLCMT
-                        - 9WR  # ADM - WARRANT
-                        - ABS  # ABSCONDED OFFENDER
-                        - DET  # DETAINER STATUS OFFENDER
-                        - IOT  # INTERACTIVE OFFENDER TRAC
-                        - ISC  # ISC TRANSFER OUT OF STATE
-                        - JSS  # JUDICIAL SUSPENSION SUPVN
-                        - MSD  # MISDEMEANOR OFFENDER
-                        - NIA  # WARRANT FILED; NOT SERVED
-                        - RTP  # RESIDENT TREATMT PLACEMNT
-                        - WRB  # WARRANT ON BOND
-                        - WRT  # WARRANT STATUS OFFENDER
-                        - Z1C  # INTENSIVE PHASE 1
-                        - Z1E  # INTENSIVE ELECTRONIC 1
-                        - Z2C  # INTENSIVE PHASE 2
-                        - Z2E  # INTENSIVE ELECTRONIC 2
-                        - Z3B  # "TODO(#7424): Update with definition."
-                        - Z3C  # INTENSIVE PHASE 3
-                        - Z3E  # INTENSIVE ELECTRONIC 3
-                        - Z4A  # PHASE 2 INTENSIVE
-                        - ZAB  # ABSCONDER PROBATION
-                        - ZAC  # ABSCONDER COMM. CORR.
-                        - ZAP  # ABSCONDER PAROLE
-                        - ZDE  # DETAINER PAROLE
-                        - ZIS  # ISC TRANSFER IN
-                        - ZIT  # INTERSTATE TRANSFER OUTST
-                        - ZRE  # RESIDENTIAL
-                        - ZS1  # STEP 1
-                        - ZS2  # STEP 2
-                        - ZS3  # STEP 3
-                        - ZS4  # STEP 4
-                        - ZSS  # SUSPENDED SUPV PAROLE
-                        - ZTS  # TEMPORARY STATUS
-                        - ZTV  # TECHNICAL VIOLATOR
-                        - ZWS  # WARRANT STATUS
+                        - 1SA # SPEC RESTRCT - SANCTIONED
+                        - 2P1 # RESTRICTED - PSU PHASE ONE
+                        - 2PV # RESTRICTED - POST VIOLATN
+                        - 3P2 # ELEVATED - PSU PHASE TWO
+                        - 3RE # ELEVATED - RESISTIVE
+                        - 4P3 # STANDARD - PSU PHASE THREE
+                        - 6P1 # PSU PRIMARY (SEX OFFENDER)
+                        - 6P2 # PSU SECONDARY (SEX OFFENDER)
+                        - 6P4 # PSU TRANSITIONAL (SEX OFFENDER)
+                        - 9AB # ADM - ABSCONDED OFFENDER
+                        - 9DP # ADM - DEPORTED
+                        - 9DT # ADM - DETAINER
+                        - 9IS # ADM - ISC OUTGOING
+                        - 9RT # ADM - RES. TREATMNT PLCMT
+                        - 9WR # ADM - WARRANT
+                        - ABS # ABSCONDED OFFENDER
+                        - DET # DETAINER STATUS OFFENDER
+                        - IOT # INTERACTIVE OFFENDER TRAC
+                        - ISC # ISC TRANSFER OUT OF STATE
+                        - JSS # JUDICIAL SUSPENSION SUPVN
+                        - MSD # MISDEMEANOR OFFENDER
+                        - NIA # WARRANT FILED; NOT SERVED
+                        - RTP # RESIDENT TREATMT PLACEMNT
+                        - WRB # WARRANT ON BOND
+                        - WRT # WARRANT STATUS OFFENDER
+                        - Z1C # INTENSIVE PHASE 1
+                        - Z1E # INTENSIVE ELECTRONIC 1
+                        - Z2C # INTENSIVE PHASE 2
+                        - Z2E # INTENSIVE ELECTRONIC 2
+                        - Z3B # "TODO(#7424): Update with definition."
+                        - Z3C # INTENSIVE PHASE 3
+                        - Z3E # INTENSIVE ELECTRONIC 3
+                        - Z4A # PHASE 2 INTENSIVE
+                        - ZAB # ABSCONDER PROBATION
+                        - ZAC # ABSCONDER COMM. CORR.
+                        - ZAP # ABSCONDER PAROLE
+                        - ZDE # DETAINER PAROLE
+                        - ZIS # ISC TRANSFER IN
+                        - ZIT # INTERSTATE TRANSFER OUTST
+                        - ZRE # RESIDENTIAL
+                        - ZS1 # STEP 1
+                        - ZS2 # STEP 2
+                        - ZS3 # STEP 3
+                        - ZS4 # STEP 4
+                        - ZSS # SUSPENDED SUPV PAROLE
+                        - ZTS # TEMPORARY STATUS
+                        - ZTV # TECHNICAL VIOLATOR
+                        - ZWS # WARRANT STATUS

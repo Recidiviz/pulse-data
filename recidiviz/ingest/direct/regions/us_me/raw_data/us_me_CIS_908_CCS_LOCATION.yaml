@@ -7,18 +7,18 @@ data_classification: source
 primary_key_cols:
   - Ccs_Location_Id
 columns:
-  - name : Capacity_Num
-  - name : Ccs_Location_Id
+  - name: Capacity_Num
+  - name: Ccs_Location_Id
     description: |-
       The unique location ID that is used by other tables to identify the location.
-  - name : Cis_900_Employee_Id
-  - name : Cis_9009_Region_Cd
+  - name: Cis_900_Employee_Id
+  - name: Cis_9009_Region_Cd
     description: |-
       The region where this location is located
-  - name : Cis_908_Canteen_Location_Id
-  - name : Cis_9080_Ccs_Location_Type_Cd
+  - name: Cis_908_Canteen_Location_Id
+  - name: Cis_9080_Ccs_Location_Type_Cd
     description: A code that describes the type of location it is.
-    known_values :
+    known_values:
       - value: 1
         description: Central Office, Administration location or Non-DOC Location type
       - value: 2
@@ -53,28 +53,28 @@ columns:
         description: Trust Fund Payee - Courts or government offices
       - value: 22
         description: Multi-Location - Any facility
-  - name : Cis_9083_9085_Area_Cd
-  - name : Cis_9083_9086_Fund_Cd
-  - name : Cis_9083_9087_Oper_Cd
-  - name : Cis_9083_9088_Type_Cd
-  - name : Created_By_Tx
+  - name: Cis_9083_9085_Area_Cd
+  - name: Cis_9083_9086_Fund_Cd
+  - name: Cis_9083_9087_Oper_Cd
+  - name: Cis_9083_9088_Type_Cd
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Loc_Cd_3Char_Tx
-  - name : Loc_Cd_Tx
-  - name : Location_Name
+  - name: Created_On_Date
+  - name: Loc_Cd_3Char_Tx
+  - name: Loc_Cd_Tx
+  - name: Location_Name
     description: |-
       The plain text name of the location
-  - name : Logical_Delete_Ind
-  - name : Lss_Export_Location
-  - name : Lss_Export_Password
-  - name : Lss_Export_Username
-  - name : Lss_Ori
-  - name : Modified_By_Tx
+  - name: Logical_Delete_Ind
+  - name: Lss_Export_Location
+  - name: Lss_Export_Password
+  - name: Lss_Export_Username
+  - name: Lss_Ori
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Sys_Row_Ind
-  - name : System_Ref_Comments_Tx
-  - name : System_Ref_Tx
-  - name : Use_Client_Level_Limits_Ind
-  - name : Year_Founded_Num
+  - name: Modified_On_Date
+  - name: Sys_Row_Ind
+  - name: System_Ref_Comments_Tx
+  - name: System_Ref_Tx
+  - name: Use_Client_Level_Limits_Ind
+  - name: Year_Founded_Num

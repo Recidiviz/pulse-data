@@ -5,48 +5,48 @@ data_classification: source
 primary_key_cols:
   - Charge_Outcome_Cd
 columns:
-  - name : Adult_Ind
-  - name : Charge_Outcome_Cd
+  - name: Adult_Ind
+  - name: Charge_Outcome_Cd
     description: |-
       The primary key for this table. A short enum code representing the charge outcome status.
     known_values:
-    - value: 1
-      description: Convicted
-    - value: 2
-      description: Charge Pending
-    - value: 3
-      description: Dismissed
-    - value: 4
-      description: Filed
-    - value: 5
-      description: Acquitted
-    - value: 6
-      description: Adjudicated
-    - value: 7
-      description: Bound Over-Case Transferred
-    - value: 8
-      description: Charge Dropped
-    - value: 9
-      description: NCR - Not Criminally Responsible
-    - value: A
-      description: Deferred Disposition
-    - value: 0
-      description: Incompetent
-  - name : Created_By_Tx
+      - value: 1
+        description: Convicted
+      - value: 2
+        description: Charge Pending
+      - value: 3
+        description: Dismissed
+      - value: 4
+        description: Filed
+      - value: 5
+        description: Acquitted
+      - value: 6
+        description: Adjudicated
+      - value: 7
+        description: Bound Over-Case Transferred
+      - value: 8
+        description: Charge Dropped
+      - value: 9
+        description: NCR - Not Criminally Responsible
+      - value: A
+        description: Deferred Disposition
+      - value: 0
+        description: Incompetent
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : E_Charge_Outcome_Desc
+  - name: Created_On_Date
+  - name: E_Charge_Outcome_Desc
     description: |-
       A human-readable text description of the charge outcome status.
-  - name : Justice_Cd
-  - name : Justice_Db_Type_Tx
-  - name : Juvenile_Ind
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Justice_Cd
+  - name: Justice_Db_Type_Tx
+  - name: Juvenile_Ind
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Sntc_Ind
-  - name : System_Ref_Comments_Tx
+  - name: Modified_On_Date
+  - name: Sntc_Ind
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True

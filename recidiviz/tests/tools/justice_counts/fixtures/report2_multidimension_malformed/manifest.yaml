@@ -1,64 +1,64 @@
-source: 'Mississippi DOC'
-report_type: 'Monthly Fact Sheet'
-report_instance: '2020-09-01'
-publish_date: '2020-09-24'
-url: 'https://www.mdoc.ms.gov/Admin-Finance/MonthlyFacts/2020-9%20Fact%20Sheet.pdf'
-assignee: 'Solange Knowles'
+source: "Mississippi DOC"
+report_type: "Monthly Fact Sheet"
+report_instance: "2020-09-01"
+publish_date: "2020-09-24"
+url: "https://www.mdoc.ms.gov/Admin-Finance/MonthlyFacts/2020-9%20Fact%20Sheet.pdf"
+assignee: "Solange Knowles"
 tables:
-    - name: 'facility_totals'
-      label: "Prison Population by Facility"
-      date_range:
-        fixed:
-          type: 'SNAPSHOT'
-          input:
-            - '2020-09-01'
-      system: 'CORRECTIONS'
-      metric:
-        population:
-          population_type: 'PRISON'
-          measurement_type: 'INSTANT'
-      dimension_columns:
-        - column_name: 'Facility'
-          dimension_name: 'FACILITY'
-      value_column:
-        column_name: 'Population'
-      location:
-        state: 'US_MS'
-      methodology: 'Unknown'
-    - name: 'facility_with_demographics'
-      label: "Prison Population by Demographics"
-      date_range:
-        fixed:
-          type: 'SNAPSHOT'
-          input:
-            - '2020-09-01'
-      system: 'CORRECTIONS'
-      metric:
-        population:
-          population_type: 'PRISON'
-          measurement_type: 'INSTANT'
-      dimension_columns:
-        - column_name: 'Facility'
-          dimension_name: 'FACILITY'
-        - column_name: 'Race'
-          dimension_name: 'RACE'
-          strict: False
-          mapping_overrides:
-            White: 'WHITE'
-            Black: 'BLACK'
-            Native American: 'AMERICAN_INDIAN_ALASKAN_NATIVE'
-            Asian: 'ASIAN'
-            Data Unavailable: 'EXTERNAL_UNKNOWN'
-        - column_name: 'Race'
-          dimension_name: 'ETHNICITY'
-          strict: False
-          mapping_overrides:
-            Hispanic: 'HISPANIC'
-            Data Unavailable: 'EXTERNAL_UNKNOWN'
-        - column_name: 'Sex'
-          dimension_name: 'GENDER'
-      value_column:
-        column_name: 'Population'
-      location:
-        state: 'US_MS'
-      methodology: 'Unknown'
+  - name: "facility_totals"
+    label: "Prison Population by Facility"
+    date_range:
+      fixed:
+        type: "SNAPSHOT"
+        input:
+          - "2020-09-01"
+    system: "CORRECTIONS"
+    metric:
+      population:
+        population_type: "PRISON"
+        measurement_type: "INSTANT"
+    dimension_columns:
+      - column_name: "Facility"
+        dimension_name: "FACILITY"
+    value_column:
+      column_name: "Population"
+    location:
+      state: "US_MS"
+    methodology: "Unknown"
+  - name: "facility_with_demographics"
+    label: "Prison Population by Demographics"
+    date_range:
+      fixed:
+        type: "SNAPSHOT"
+        input:
+          - "2020-09-01"
+    system: "CORRECTIONS"
+    metric:
+      population:
+        population_type: "PRISON"
+        measurement_type: "INSTANT"
+    dimension_columns:
+      - column_name: "Facility"
+        dimension_name: "FACILITY"
+      - column_name: "Race"
+        dimension_name: "RACE"
+        strict: False
+        mapping_overrides:
+          White: "WHITE"
+          Black: "BLACK"
+          Native American: "AMERICAN_INDIAN_ALASKAN_NATIVE"
+          Asian: "ASIAN"
+          Data Unavailable: "EXTERNAL_UNKNOWN"
+      - column_name: "Race"
+        dimension_name: "ETHNICITY"
+        strict: False
+        mapping_overrides:
+          Hispanic: "HISPANIC"
+          Data Unavailable: "EXTERNAL_UNKNOWN"
+      - column_name: "Sex"
+        dimension_name: "GENDER"
+    value_column:
+      column_name: "Population"
+    location:
+      state: "US_MS"
+    methodology: "Unknown"

@@ -1,30 +1,30 @@
-source: 'Alabama Department of Corrections'
-report_type: 'Monthly Statistical Report'
-report_instance: 'September 2020'
-publish_date: '2020-11-20'
-url: 'http://www.doc.state.al.us/docs/MonthlyRpts/September%202020.pdf'
-assignee: 'Jane Doe'
+source: "Alabama Department of Corrections"
+report_type: "Monthly Statistical Report"
+report_instance: "September 2020"
+publish_date: "2020-11-20"
+url: "http://www.doc.state.al.us/docs/MonthlyRpts/September%202020.pdf"
+assignee: "Jane Doe"
 tables:
-  - file: 'table.csv'
+  - file: "table.csv"
     date_range:
       fixed:
-        type: 'RANGE'
+        type: "RANGE"
         input:
-          - '2020-09-01'
-          - '2020-10-01'
-    system: 'CORRECTIONS'
+          - "2020-09-01"
+          - "2020-10-01"
+    system: "CORRECTIONS"
     metric:
       releases:
-        measurement_type: 'DELTA'
+        measurement_type: "DELTA"
     dimension_columns:
-      - column_name: 'Releases'
-        dimension_name: 'RELEASE_TYPE'
+      - column_name: "Releases"
+        dimension_name: "RELEASE_TYPE"
         mapping_overrides:
-          Discharged: 'COMPLETED'
-          Other: 'OTHER'
-          Parole: 'TO_SUPERVISION'
+          Discharged: "COMPLETED"
+          Other: "OTHER"
+          Parole: "TO_SUPERVISION"
     value_column:
-      column_name: 'Total'
+      column_name: "Total"
     location:
-      state: 'US_AL'
-    methodology: 'SNAPSHOT'
+      state: "US_AL"
+    methodology: "SNAPSHOT"

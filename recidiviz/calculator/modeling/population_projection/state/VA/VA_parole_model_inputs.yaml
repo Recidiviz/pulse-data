@@ -1,14 +1,14 @@
 ---
 user_inputs:
-#  policy_year: 2020.0
+  #  policy_year: 2020.0
   start_year: 2016.0
   projection_years: 10.0
 
 compartments_architecture:
-    prison: full
-    jail: full
-    pretrial: shell
-    release: full
+  prison: full
+  jail: full
+  pretrial: shell
+  release: full
 
 reference_date: 0.0
 

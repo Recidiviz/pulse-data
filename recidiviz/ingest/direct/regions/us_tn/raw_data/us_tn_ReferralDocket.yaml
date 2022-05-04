@@ -1,5 +1,5 @@
 file_tag: ReferralDocket
-file_description: |- 
+file_description: |-
   This table contains 1 row for each docket number for a referral for a person.
 data_classification: source
 primary_key_cols:

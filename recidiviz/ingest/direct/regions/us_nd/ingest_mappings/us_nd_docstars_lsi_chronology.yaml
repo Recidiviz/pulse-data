@@ -9,15 +9,15 @@ primary_key:
   RecID: state_assessment.state_assessment_id
 
 keys_to_ignore:
-  - LastUpdate      # No apparent use for this
-  - LSI_CHARGE      # No apparent use for this
-  - INACTIVEDATE    # No apparent use for this
-  - RecDate         # No apparent use for this
-  - CREATED_BY      # Unused -- Is this the person who administered the assessment?
-  - VERSION_ID      # No apparent use for this
-  - COMPLETE        # No apparent use for this
-  - SUPERLEVEL      # We get a more recent value in Docstars Offenders
-  - CHtotal         # The following domain/question values are handled manually
+  - LastUpdate # No apparent use for this
+  - LSI_CHARGE # No apparent use for this
+  - INACTIVEDATE # No apparent use for this
+  - RecDate # No apparent use for this
+  - CREATED_BY # Unused -- Is this the person who administered the assessment?
+  - VERSION_ID # No apparent use for this
+  - COMPLETE # No apparent use for this
+  - SUPERLEVEL # We get a more recent value in Docstars Offenders
+  - CHtotal # The following domain/question values are handled manually
   - EETotal
   - FnclTotal
   - FMTotal

@@ -1,24 +1,24 @@
-source: 'Colorado Department of Corrections'
-report_type: 'Dashboard Measures'
-report_instance: '2020-10-05'
-publish_date: '2020-10-05'
-url: 'https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics'
-assignee: 'Solange Knowles'
+source: "Colorado Department of Corrections"
+report_type: "Dashboard Measures"
+report_instance: "2020-10-05"
+publish_date: "2020-10-05"
+url: "https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics"
+assignee: "Solange Knowles"
 tables:
-    - name: 'table'
-      date_range:
-        dynamic:
-          columns:
-            Month: 'MONTH'
-          type: 'SNAPSHOT'
-          converter: 'LAST_DAY_OF_MONTH'
-      system: 'CORRECTIONS'
-      metric:
-        population:
-          population_type: 'PRISON'
-          measurement_type: 'INSTANT'
-      value_column:
-        column_name: 'Population'
-      location:
-        state: 'US_CO'
-      methodology: 'Unknown'
+  - name: "table"
+    date_range:
+      dynamic:
+        columns:
+          Month: "MONTH"
+        type: "SNAPSHOT"
+        converter: "LAST_DAY_OF_MONTH"
+    system: "CORRECTIONS"
+    metric:
+      population:
+        population_type: "PRISON"
+        measurement_type: "INSTANT"
+    value_column:
+      column_name: "Population"
+    location:
+      state: "US_CO"
+    methodology: "Unknown"

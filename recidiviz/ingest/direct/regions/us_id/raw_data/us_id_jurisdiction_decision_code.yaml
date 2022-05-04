@@ -17,4 +17,4 @@ columns:
   - name: parole_flag
     description: |-
       Whether or not this was a parole board decision
-separator: ','
+separator: ","

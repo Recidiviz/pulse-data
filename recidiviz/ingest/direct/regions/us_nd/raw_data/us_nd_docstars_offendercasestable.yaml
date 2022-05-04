@@ -159,9 +159,9 @@ columns:
       - value: "0"
         description: "Yes, a  revocation occurred"
       - value: "-1"
-        description:  "No, a  revocation did not occur (legacy)"
+        description: "No, a  revocation did not occur (legacy)"
       - value: "(1)"
-        description:  "No, a  revocation did not occur"
+        description: "No, a  revocation did not occur"
   - name: REV_ABSC_YN
     description: |-
       Whether the revocation occurred due in part to absconsion, if applicable.
@@ -169,9 +169,9 @@ columns:
       - value: "0"
         description: "Yes, a revocation occurred in part due to absconsion"
       - value: "-1"
-        description:  "No, a revocation did not occur due to absconsion (legacy)"
+        description: "No, a revocation did not occur due to absconsion (legacy)"
       - value: "(1)"
-        description:  "No, a revocation did not occur due to absconsion"
+        description: "No, a revocation did not occur due to absconsion"
   - name: REV_TECH_YN
     description: |-
       Whether the revocation occurred due in part to a technical violation, if applicable.
@@ -179,9 +179,9 @@ columns:
       - value: "0"
         description: "Yes, a revocation occurred in part due to a technical violation"
       - value: "-1"
-        description:  "No, a revocation did not occur due to a technical violation (legacy)"
+        description: "No, a revocation did not occur due to a technical violation (legacy)"
       - value: "(1)"
-        description:  "No, a revocation did not occur due to a technical violation"
+        description: "No, a revocation did not occur due to a technical violation"
   - name: LAST_UPDATE
     description: |-
       When this record was most recently updated.

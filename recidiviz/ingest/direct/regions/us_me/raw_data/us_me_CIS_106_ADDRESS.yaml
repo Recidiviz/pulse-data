@@ -5,55 +5,55 @@ data_classification: source
 primary_key_cols:
   - Address_Id
 columns:
-  - name : Address_Id
-  - name : Care_Of_Name
+  - name: Address_Id
+  - name: Care_Of_Name
     is_pii: True
-  - name : Cis_100_Client_Id
+  - name: Cis_100_Client_Id
     is_pii: True
-  - name : Cis_1016_Relationship_Type_Cd
-  - name : Cis_1017_Liv_Arrgmt_Cd
-  - name : Cis_1017_Place_By_Cd
-  - name : Cis_109_Civilian_Id
-  - name : Cis_109_Victi_Id
-  - name : Cis_450_Agency_Id
-  - name : Cis_9002_Country_Cd
-  - name : Cis_9003_County_Cd
-  - name : Cis_9004_Prov_Cd
-  - name : Cis_9005_Address_Use_Cd
-  - name : Cis_908_Ccs_Location_Id
-  - name : Cis_9081_Place_Cd
-  - name : Comments_Tx
+  - name: Cis_1016_Relationship_Type_Cd
+  - name: Cis_1017_Liv_Arrgmt_Cd
+  - name: Cis_1017_Place_By_Cd
+  - name: Cis_109_Civilian_Id
+  - name: Cis_109_Victi_Id
+  - name: Cis_450_Agency_Id
+  - name: Cis_9002_Country_Cd
+  - name: Cis_9003_County_Cd
+  - name: Cis_9004_Prov_Cd
+  - name: Cis_9005_Address_Use_Cd
+  - name: Cis_908_Ccs_Location_Id
+  - name: Cis_9081_Place_Cd
+  - name: Comments_Tx
     is_pii: True
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : End_Date
-  - name : Interstate_Compact_No_Tx
+  - name: Created_On_Date
+  - name: End_Date
+  - name: Interstate_Compact_No_Tx
     is_pii: True
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Note_Ind
-  - name : Other_Country_Tx
+  - name: Modified_On_Date
+  - name: Note_Ind
+  - name: Other_Country_Tx
     is_pii: True
-  - name : Other_Relation_Tx
+  - name: Other_Relation_Tx
     is_pii: True
-  - name : Out_State_Place_Tx
+  - name: Out_State_Place_Tx
     is_pii: True
-  - name : Po_Box_Tx
+  - name: Po_Box_Tx
     is_pii: True
-  - name : Postal_Cd
+  - name: Postal_Cd
     is_pii: True
-  - name : Primary_Address_Ind
-  - name : Residing_With_Tx
+  - name: Primary_Address_Ind
+  - name: Residing_With_Tx
     is_pii: True
-  - name : Start_Date
-  - name : Street_Name_Tx
+  - name: Start_Date
+  - name: Street_Name_Tx
     is_pii: True
-  - name : Street_Num
+  - name: Street_Num
     is_pii: True
-  - name : Street_Num_Tx
+  - name: Street_Num_Tx
     is_pii: True
-  - name : Unit_Id
-  - name : Cis_9004_Country_Cd
+  - name: Unit_Id
+  - name: Cis_9004_Country_Cd

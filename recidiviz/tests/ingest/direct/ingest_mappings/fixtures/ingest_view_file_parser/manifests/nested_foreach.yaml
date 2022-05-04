@@ -19,5 +19,5 @@ output:
                     $iterable: CHARGES
                     $result:
                       FakeCharge:
-                       external_id: $iter_item
-                       statute: STATUTE
+                        external_id: $iter_item
+                        statute: STATUTE

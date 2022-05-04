@@ -31,25 +31,25 @@ output:
       $enum_mapping:
         $raw_text: gender_id
         $mappings:
-          StateGender.MALE: '435'
-          StateGender.FEMALE: '434'
-          StateGender.EXTERNAL_UNKNOWN: '7403'
+          StateGender.MALE: "435"
+          StateGender.FEMALE: "434"
+          StateGender.EXTERNAL_UNKNOWN: "7403"
     races:
       - StatePersonRace:
           race:
             $enum_mapping:
               $raw_text: race_id
               $mappings:
-                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: '373'
-                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: '9875'
-                StateRace.WHITE: '685'
-                StateRace.BLACK: '371'
-                StateRace.ASIAN: '372'
-                StateRace.EXTERNAL_UNKNOWN: '7404'
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "373"
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "9875"
+                StateRace.WHITE: "685"
+                StateRace.BLACK: "371"
+                StateRace.ASIAN: "372"
+                StateRace.EXTERNAL_UNKNOWN: "7404"
     ethnicities:
       - $conditional:
           - $if:
-              $equal: 
+              $equal:
                 - hispanic_flag
                 - $literal("1")
             $then:
@@ -64,21 +64,19 @@ output:
                     $raw_text: cultural_affiliation_id
                     $mappings:
                       StateEthnicity.HISPANIC:
-                        - '608' # Mexican
-                        - '602' # Hispanic
+                        - "608" # Mexican
+                        - "602" # Hispanic
                     $ignore:
-                        - '603'
-                        - '624'
-                        - '606'
-                        - '621'
-                        - '1172'
-                        - '1171'
-                        - '1170'
-                        - '622'
-                        - '607'
-                        - '625'
-                        - '605'
-                        - '604'
-                        - '601'
-
-    
+                      - "603"
+                      - "624"
+                      - "606"
+                      - "621"
+                      - "1172"
+                      - "1171"
+                      - "1170"
+                      - "622"
+                      - "607"
+                      - "625"
+                      - "605"
+                      - "604"
+                      - "601"

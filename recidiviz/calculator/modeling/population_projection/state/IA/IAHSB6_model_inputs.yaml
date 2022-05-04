@@ -1,32 +1,32 @@
 user_inputs:
-#    policy_year: 2021.0
-    start_year: 2016.0
-    projection_years: 15.0
-    speed_run: true
+  #    policy_year: 2021.0
+  start_year: 2016.0
+  projection_years: 15.0
+  speed_run: true
 
 compartments_architecture:
-    pre-supervision: shell
-    probation: full
-    prison_technical_revocations: full
-    prison_crime_revocations: full
-    release: full
+  pre-supervision: shell
+  probation: full
+  prison_technical_revocations: full
+  prison_crime_revocations: full
+  release: full
 
 reference_date: 2015.0
 # january
 time_step: 0.083333333
 # one month
 
-disaggregation_axes: 
-- crime
+disaggregation_axes:
+  - crime
 
 data_inputs:
   big_query_simulation_tag: IA_HSB6
 
 per_year_costs:
-# average and marginal costs were requested by REFORM; average costs were to be used for the memo but we will deliver both. marginal costs below:
-#prison_technical_revocations: 1713
-#prison_crime_revocations: 1713
-#probation: 656
+  # average and marginal costs were requested by REFORM; average costs were to be used for the memo but we will deliver both. marginal costs below:
+  #prison_technical_revocations: 1713
+  #prison_crime_revocations: 1713
+  #probation: 656
   prison_technical_revocations: 32439.0
   prison_crime_revocations: 32439.0
   probation: 2203.0

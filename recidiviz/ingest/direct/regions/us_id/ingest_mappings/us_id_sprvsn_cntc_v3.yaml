@@ -1,16 +1,16 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-- sprvsn_cntc_id
-- ofndr_num
-- emplymt_vrfy_flg
-- cntc_loc_desc
-- cntc_rslt_desc
-- cntc_typ_desc
-- cntc_title_desc
-- cntc_dt
-- name
-- usr_id
+  - sprvsn_cntc_id
+  - ofndr_num
+  - emplymt_vrfy_flg
+  - cntc_loc_desc
+  - cntc_rslt_desc
+  - cntc_typ_desc
+  - cntc_title_desc
+  - cntc_dt
+  - name
+  - usr_id
 unused_columns: []
 output:
   StatePerson:
@@ -28,7 +28,7 @@ output:
                   full_name: name
               agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           external_id: sprvsn_cntc_id
-          verified_employment: 
+          verified_employment:
             $equal:
               - emplymt_vrfy_flg
               - $literal("Y")

@@ -6,31 +6,31 @@ data_classification: source
 primary_key_cols:
   - Unit_Id
 columns:
-  - name : Capacity_Num
-  - name : Cis_9012_Gender_Cd
-  - name : Cis_908_Ccs_Location_Id
-    description : |-
+  - name: Capacity_Num
+  - name: Cis_9012_Gender_Cd
+  - name: Cis_908_Ccs_Location_Id
+    description: |-
       The DOC Facility ID that this housing unit is associated with. This may not always be physically co-located, for example,
       the housing unit Southern Maine Women's ReEntry Center is listed as a unit within Maine Correctional Center, but it
       is located at an entirely different address. This is because of how the location was originally registered in the CORIS
       system.
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Desc_Tx
+  - name: Created_On_Date
+  - name: Desc_Tx
     description: |-
       This free text description field has additional information about the housing unit. Some descriptions include security level
       or facility purpose/type. Some descriptions are the full name of the Unit, whereas `Name_Tx` field is a shortened version of the
       name, for example the `Name_Tx` field will have "SMWRC" and the `Desc_Tx` might have "Southern Maine Women's ReEntry Center".
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Name_Tx
-    description : |-
+  - name: Modified_On_Date
+  - name: Name_Tx
+    description: |-
       This is the shortened name of the housing unit.
-  - name : Reception_Ind
-  - name : Spend_Limit_Num
-  - name : Unit_Id
-    description : |-
+  - name: Reception_Ind
+  - name: Spend_Limit_Num
+  - name: Unit_Id
+    description: |-
       This is the primary key of the table.

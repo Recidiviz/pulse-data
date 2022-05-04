@@ -313,7 +313,7 @@ columns:
       - value: "7"
         description: TODO(#12372)
       - value: "8"
-        description:  Habitual Burglar
+        description: Habitual Burglar
       - value: "9"
         description: Repeated Theft from Store
   - name: OFFENSESPECIALID2

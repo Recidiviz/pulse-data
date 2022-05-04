@@ -28,4 +28,4 @@ columns:
   - name: vld_flg
     description: |-
       Whether or not this row is valid (should only be invalid if the person has left IDOC).
-separator: ','
+separator: ","

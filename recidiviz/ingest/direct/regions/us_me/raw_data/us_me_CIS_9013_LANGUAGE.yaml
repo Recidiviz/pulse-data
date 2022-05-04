@@ -5,18 +5,18 @@ data_classification: source
 primary_key_cols:
   - LANGUAGE_CD
 columns:
-  - name : LANGUAGE_CD
+  - name: LANGUAGE_CD
     description: The primary key of the table.
-  - name : E_LANGUAGE_DESC
+  - name: E_LANGUAGE_DESC
     description: The name of the language.
-  - name : SYSTEM_REF_TX
+  - name: SYSTEM_REF_TX
     is_pii: True
-  - name : SYSTEM_REF_COMMENTS_TX
+  - name: SYSTEM_REF_COMMENTS_TX
     is_pii: True
-  - name : LOGICAL_DELETE_IND
-  - name : CREATED_BY_TX
+  - name: LOGICAL_DELETE_IND
+  - name: CREATED_BY_TX
     is_pii: True
-  - name : CREATED_ON_DATE
-  - name : MODIFIED_BY_TX
+  - name: CREATED_ON_DATE
+  - name: MODIFIED_BY_TX
     is_pii: True
-  - name : MODIFIED_ON_DATE
+  - name: MODIFIED_ON_DATE

@@ -5,20 +5,20 @@ data_classification: source
 primary_key_cols:
   - STAT_TYPE_CD
 columns:
-  - name : STAT_TYPE_CD
+  - name: STAT_TYPE_CD
     description: The primary key of the table.
-  - name : E_STAT_TYPE_DESC
+  - name: E_STAT_TYPE_DESC
     description: The plain-text value describing the status of a program enrollment.
-  - name : SYSTEM_REF_TX
+  - name: SYSTEM_REF_TX
     is_pii: True
-  - name : SYSTEM_REF_COMMENTS_TX
+  - name: SYSTEM_REF_COMMENTS_TX
     is_pii: True
-  - name : LOGICAL_DELETE_IND
-  - name : SUB_TYPE_TX
+  - name: LOGICAL_DELETE_IND
+  - name: SUB_TYPE_TX
     is_pii: True
-  - name : CREATED_BY_TX
+  - name: CREATED_BY_TX
     is_pii: True
-  - name : CREATED_ON_DATE
-  - name : MODIFIED_BY_TX
+  - name: CREATED_ON_DATE
+  - name: MODIFIED_BY_TX
     is_pii: True
-  - name : MODIFIED_ON_DATE
+  - name: MODIFIED_ON_DATE

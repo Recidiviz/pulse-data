@@ -1,7 +1,6 @@
 default_encoding: UTF-8
-default_separator: '‡'
+default_separator: "‡"
 default_ignore_quotes: True
 default_line_terminator: "†\n"
 default_infer_columns_from_config: True
 default_always_historical_export: True
-

@@ -31,7 +31,7 @@ columns:
   - name: birth_date
     description: The birthdate of the justice-involved individual
     is_datetime: True
-    datetime_sql_parsers: 
+    datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
     is_pii: True
   - name: eye_color_id
@@ -42,17 +42,17 @@ columns:
     description: |-
       The flag that indicates a person's race (as indicated by the REFERENCE_CODE table).
     known_values:
-      - value: '371'
+      - value: "371"
         description: Black or African American
-      - value: '685'
+      - value: "685"
         description: White
-      - value: '373'
+      - value: "373"
         description: American Indian or Alaskan Native
-      - value: '7404'
+      - value: "7404"
         description: Unknown
-      - value: '9875'
+      - value: "9875"
         description: Native Hawaiian or Other Pacific Islander
-      - value: '372'
+      - value: "372"
         description: Asian
   - name: race
     description: The description that accompanies race_id
@@ -60,12 +60,12 @@ columns:
     description: |-
       The flag that indicates a person's gender (as indicated by the REFERENCE_CODE table).
     known_values:
-      - value: '435'
+      - value: "435"
         description: Male
-      - value: '434'
+      - value: "434"
         description: Female
-      - value: '7403'
-        description: Unknown  
+      - value: "7403"
+        description: Unknown
   - name: gender
     description: The gender that accompanies gender_id
   - name: height

@@ -15,18 +15,18 @@ input_columns:
   - RACE
   - AGENT
   - SEXOFF
-  - SUP_LVL             # Unused, for now.
-  - SUPER_OVERRIDE      # Unused, for now.
+  - SUP_LVL # Unused, for now.
+  - SUPER_OVERRIDE # Unused, for now.
   - PREVIOUS_AGENT
-  - RECORD_STATUS         # No apparent use for these at the moment
-  - ALIASFLAG             # More detailed alias data in the Alias file
-  - ADDRESS2              # Not storing multiple addresses in our schema
-  - CITY2                 # Not storing multiple addresses in our schema
-  - STATE2                # Not storing multiple addresses in our schema
-  - ZIP2                  # Not storing multiple addresses in our schema
-  - MAILING_ADDRESS2      # Not storing multiple addresses in our schema
-  - PHYSICAL_ADDRESS2     # Not storing multiple addresses in our schema
-  - SITEID                # Unused, we pull this from the officer instead
+  - RECORD_STATUS # No apparent use for these at the moment
+  - ALIASFLAG # More detailed alias data in the Alias file
+  - ADDRESS2 # Not storing multiple addresses in our schema
+  - CITY2 # Not storing multiple addresses in our schema
+  - STATE2 # Not storing multiple addresses in our schema
+  - ZIP2 # Not storing multiple addresses in our schema
+  - MAILING_ADDRESS2 # Not storing multiple addresses in our schema
+  - PHYSICAL_ADDRESS2 # Not storing multiple addresses in our schema
+  - SITEID # Unused, we pull this from the officer instead
   - ABSCONDER
   - GOODTIMEDATE
   - C_MARITAL
@@ -38,19 +38,19 @@ input_columns:
   - I_JOB_CL
   - J_LAST_GR
   - K_PUB_ASST
-  - INACTIVEDATE          # No longer in use within source
-  - LSITOTAL              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT1              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT2              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT3              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT4              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT5              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT6              # We receive detailed LSIR info from LSI Chronology
+  - INACTIVEDATE # No longer in use within source
+  - LSITOTAL # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT1 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT2 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT3 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT4 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT5 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT6 # We receive detailed LSIR info from LSI Chronology
   - ACTIVEREVOCATION_IND
   - CCCFLAG
-  - RecDate               # No apparent use for these at the moment
-  - CREATED_BY            # No apparent use for these at the moment
-  - RECORDCRDATE          # No apparent use for these at the moment
+  - RecDate # No apparent use for these at the moment
+  - CREATED_BY # No apparent use for these at the moment
+  - RECORDCRDATE # No apparent use for these at the moment
   - LAST_HOME_VISIT
   - LAST_FACE_TO_FACE
   # TODO(#2227) Either append to address string or create dedicated field on state_person
@@ -61,18 +61,18 @@ input_columns:
   - HOMELESS
   - SORAC_SCORE
 unused_columns:
-  - SUP_LVL             # Unused, for now.
-  - SUPER_OVERRIDE      # Unused, for now.
+  - SUP_LVL # Unused, for now.
+  - SUPER_OVERRIDE # Unused, for now.
   - PREVIOUS_AGENT
-  - RECORD_STATUS         # No apparent use for these at the moment
-  - ALIASFLAG             # More detailed alias data in the Alias file
-  - ADDRESS2              # Not storing multiple addresses in our schema
-  - CITY2                 # Not storing multiple addresses in our schema
-  - STATE2                # Not storing multiple addresses in our schema
-  - ZIP2                  # Not storing multiple addresses in our schema
-  - MAILING_ADDRESS2      # Not storing multiple addresses in our schema
-  - PHYSICAL_ADDRESS2     # Not storing multiple addresses in our schema
-  - SITEID                # Unused, we pull this from the officer instead
+  - RECORD_STATUS # No apparent use for these at the moment
+  - ALIASFLAG # More detailed alias data in the Alias file
+  - ADDRESS2 # Not storing multiple addresses in our schema
+  - CITY2 # Not storing multiple addresses in our schema
+  - STATE2 # Not storing multiple addresses in our schema
+  - ZIP2 # Not storing multiple addresses in our schema
+  - MAILING_ADDRESS2 # Not storing multiple addresses in our schema
+  - PHYSICAL_ADDRESS2 # Not storing multiple addresses in our schema
+  - SITEID # Unused, we pull this from the officer instead
   - ABSCONDER
   - GOODTIMEDATE
   - C_MARITAL
@@ -84,19 +84,19 @@ unused_columns:
   - I_JOB_CL
   - J_LAST_GR
   - K_PUB_ASST
-  - INACTIVEDATE          # No longer in use within source
-  - LSITOTAL              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT1              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT2              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT3              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT4              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT5              # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT6              # We receive detailed LSIR info from LSI Chronology
+  - INACTIVEDATE # No longer in use within source
+  - LSITOTAL # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT1 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT2 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT3 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT4 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT5 # We receive detailed LSIR info from LSI Chronology
+  - BIGSIXT6 # We receive detailed LSIR info from LSI Chronology
   - ACTIVEREVOCATION_IND
   - CCCFLAG
-  - RecDate               # No apparent use for these at the moment
-  - CREATED_BY            # No apparent use for these at the moment
-  - RECORDCRDATE          # No apparent use for these at the moment
+  - RecDate # No apparent use for these at the moment
+  - CREATED_BY # No apparent use for these at the moment
+  - RECORDCRDATE # No apparent use for these at the moment
   - LAST_HOME_VISIT
   - LAST_FACE_TO_FACE
   # TODO(#2227) Either append to address string or create dedicated field on state_person
@@ -117,8 +117,8 @@ output:
               $not_null: ITAGROOT_ID
             $then:
               StatePersonExternalId:
-                  external_id: ITAGROOT_ID
-                  id_type: $literal("US_ND_ELITE")
+                external_id: ITAGROOT_ID
+                id_type: $literal("US_ND_ELITE")
     full_name:
       $person_name:
         $given_names: FIRST
@@ -165,7 +165,7 @@ output:
                 StateRace.ASIAN: "4"
                 StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "6"
               $ignore:
-                - "5"  # Hispanic
+                - "5" # Hispanic
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:

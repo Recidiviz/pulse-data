@@ -1,17 +1,17 @@
 ---
 user_inputs:
-#  policy_year: 2021.0
+  #  policy_year: 2021.0
   start_year: 2017.0
   projection_years: 14.0
   constant_admissions: true
   speed_run: true
 
 compartments_architecture:
-    pretrial: shell
-    prison: full
-    treatment_residential: full
-    treatment_non_residential: full
-    release: full
+  pretrial: shell
+  prison: full
+  treatment_residential: full
+  treatment_non_residential: full
+  release: full
 
 reference_date: 2020.0
 

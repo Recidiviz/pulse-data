@@ -1,30 +1,30 @@
 user_inputs:
-#    policy_year: 2021.0
-    start_year: 2017.0
-    projection_years: 14.0
-    speed_run: true
+  #    policy_year: 2021.0
+  start_year: 2017.0
+  projection_years: 14.0
+  speed_run: true
 
 compartments_architecture:
-    pre-supervision: shell
-    probation: full
-    parole: full
-    prison_probation_revocations: full
-    prison_parole_revocations: full
-    release: full
+  pre-supervision: shell
+  probation: full
+  parole: full
+  prison_probation_revocations: full
+  prison_parole_revocations: full
+  release: full
 
 reference_date: 2016.0
 # january
 time_step: 0.083333333
 # one month
 
-disaggregation_axes: 
-- crime
+disaggregation_axes:
+  - crime
 
 data_inputs:
   big_query_simulation_tag: AZ_financialincentives
 
 per_year_costs:
-# marginal costs
+  # marginal costs
   prison_probation_revocations: 4941.0
   prison_parole_revocations: 4941.0
   probation: 2687.0

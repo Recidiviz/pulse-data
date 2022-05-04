@@ -1,13 +1,13 @@
 ---
 user_inputs:
-#  policy_year: 2020.0
+  #  policy_year: 2020.0
   start_year: 2016.0
   projection_years: 10.0
 
 compartments_architecture:
-    prison: full
-    pretrial: shell
-    release: full
+  prison: full
+  pretrial: shell
+  release: full
 
 reference_date: 2016.0
 
@@ -20,5 +20,5 @@ data_inputs:
   big_query_simulation_tag: NJ_prison
 
 per_year_costs:
-  prison: 6181.0  # this is the parole cost because prison cost not listed
+  prison: 6181.0 # this is the parole cost because prison cost not listed
   release: 0.0

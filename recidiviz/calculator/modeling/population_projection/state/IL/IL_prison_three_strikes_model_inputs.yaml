@@ -1,15 +1,15 @@
 ---
 user_inputs:
-#    policy_year: 2021.0
-    start_year: 2018.0
-    projection_years: 13.0
-    speed_run: true
+  #    policy_year: 2021.0
+  start_year: 2018.0
+  projection_years: 13.0
+  speed_run: true
 
 compartments_architecture:
-    pretrial: shell
-    prison: full
-    probation: full
-    release: full
+  pretrial: shell
+  prison: full
+  probation: full
+  release: full
 # probation represents mandatory supervised release in this case
 
 reference_date: 2011.0

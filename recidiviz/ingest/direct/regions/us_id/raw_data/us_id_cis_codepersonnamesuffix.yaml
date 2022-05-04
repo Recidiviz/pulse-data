@@ -8,4 +8,4 @@ columns:
   - name: id
   - name: codedescription
   - name: active
-separator: ','
+separator: ","

@@ -5,22 +5,22 @@ data_classification: source
 primary_key_cols:
   - Recommendation_Action_Cd
 columns:
-  - name : Cis_4035_Assess_Prog_Type_Cd
+  - name: Cis_4035_Assess_Prog_Type_Cd
     description: The assessment program type associated with this recommended action. See CIS_4035_ASSESS_PROG_TYPE for all values.
-  - name : Created_By_Tx
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Logical_Delete_Ind
-  - name : Modified_By_Tx
+  - name: Created_On_Date
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Recommendation_Action_Desc
+  - name: Modified_On_Date
+  - name: Recommendation_Action_Desc
     description: The description of the recommended action.
-  - name : System_Ref_Comments_Tx
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True
-  - name : Recommendation_Action_Cd
+  - name: Recommendation_Action_Cd
     description: The primary key for this table.
     known_values:
       - value: 1

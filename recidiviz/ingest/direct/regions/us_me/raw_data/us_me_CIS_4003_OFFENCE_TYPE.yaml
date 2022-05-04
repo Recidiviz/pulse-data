@@ -5,48 +5,48 @@ data_classification: source
 primary_key_cols:
   - Offence_Type_Cd
 columns:
-  - name : Adult_Ind
+  - name: Adult_Ind
     description: |-
       Indicates that this offense type applies to adults, not to juveniles.
-  - name : Cis_4009_40026_Cd
-  - name : Cis_4009_40028_Severity_2_Cd
-  - name : Cis_4009_40028_Severity_Cd
-  - name : Cis_4020_Class_Cd
-  - name : Created_By_Tx
+  - name: Cis_4009_40026_Cd
+  - name: Cis_4009_40028_Severity_2_Cd
+  - name: Cis_4009_40028_Severity_Cd
+  - name: Cis_4020_Class_Cd
+  - name: Created_By_Tx
     is_pii: True
-  - name : Created_On_Date
-  - name : Dna_Ind
-  - name : Domestic_Violence_Ind
-  - name : E_Offence_Type_Desc
+  - name: Created_On_Date
+  - name: Dna_Ind
+  - name: Domestic_Violence_Ind
+  - name: E_Offence_Type_Desc
     description: |-
       The offense type, including a short description and a numerical code.
-  - name : Effct_Date
-  - name : Ineffct_Date
-  - name : Juv_Dna_Ind
-  - name : Juvenile_Ind
+  - name: Effct_Date
+  - name: Ineffct_Date
+  - name: Juv_Dna_Ind
+  - name: Juvenile_Ind
     description: |-
       Indicates that this offense type applies to juveniles, not to adults.
-  - name : Logical_Delete_Ind
-  - name : Mejis_Name_Indx_Cd
-  - name : Mejis_Offns_Class_Tx
+  - name: Logical_Delete_Ind
+  - name: Mejis_Name_Indx_Cd
+  - name: Mejis_Offns_Class_Tx
     description: |-
       Maine Judicial Information System (MEJIS) coding system offense class.
-  - name : Mejis_Offns_Section_Tx
+  - name: Mejis_Offns_Section_Tx
     description: |-
       Maine Judicial Information System (MEJIS) coding system offense section.
-  - name : Mejis_Offns_Title_Tx
+  - name: Mejis_Offns_Title_Tx
     description: |-
       Maine Judicial Information System (MEJIS) coding system offense title.
-  - name : Modified_By_Tx
+  - name: Modified_By_Tx
     is_pii: True
-  - name : Modified_On_Date
-  - name : Sexreg_Ind
-  - name : Statute_2004_Xmt_Ind
-  - name : Sys_Row_Ind
-  - name : System_Ref_Comments_Tx
+  - name: Modified_On_Date
+  - name: Sexreg_Ind
+  - name: Statute_2004_Xmt_Ind
+  - name: Sys_Row_Ind
+  - name: System_Ref_Comments_Tx
     is_pii: True
-  - name : System_Ref_Tx
+  - name: System_Ref_Tx
     is_pii: True
-  - name : Offence_Type_Cd
+  - name: Offence_Type_Cd
     description: |-
       The primary key for this table. A unique ID assigned to each distinct offense type.
