@@ -46,10 +46,16 @@ const DataFreshnessView = (): JSX.Element => {
       title: "Notes",
       key: "notes",
       render: (_: string, record: DataFreshnessResult) => {
-        if (!record.ingestPaused) {
-          return "N/A";
+        // TODO(#11413): Delete this check once have proper support for BQ materialization (PR 9).
+        if (record.isBQMaterializationEnabled) {
+          return "DISCLAIMER: BQ materialization enabled for this state - this result might not be 100% correct.";
         }
-        return "BigQuery data refreshes have been paused. The data in this table may be incorrect as a result.";
+
+        if (record.ingestPaused) {
+          return "BigQuery data refreshes have been paused. The data in this table may be incorrect as a result.";
+        }
+
+        return "N/A";
       },
     },
   ];

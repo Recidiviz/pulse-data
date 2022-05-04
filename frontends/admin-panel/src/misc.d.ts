@@ -39,6 +39,7 @@ interface DataFreshnessResult {
   state: string;
   date: string;
   ingestPaused: boolean;
+  isBQMaterializationEnabled: boolean;
 }
 
 // PO Feedback responses
