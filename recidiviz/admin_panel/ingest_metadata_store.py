@@ -92,15 +92,26 @@ class IngestDataFreshnessStore(AdminPanelStore):
             if ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
                 state_code, DirectIngestInstance.PRIMARY
             ):
-                raise ValueError(
-                    f"Ingest view materialization enabled for state: {state_code.name}"
+                latest_upper_bounds.append(
+                    {
+                        "state": state_code.name,
+                        # TODO(#11413): Update to pass the correct date through here (PR 9).
+                        "date": processed_date_by_state_code.get(state_code.name),
+                        "ingestPaused": state_code.name in regions_paused,
+                        # TODO(#11413): Delete this flag and frontend usage once we
+                        #  have proper support for BQ materialization.
+                        "isBQMaterializationEnabled": True,
+                    }
                 )
-
-            latest_upper_bounds.append(
-                {
-                    "state": state_code.name,
-                    "date": processed_date_by_state_code.get(state_code.name),
-                    "ingestPaused": state_code.name in regions_paused,
-                }
-            )
+            else:
+                latest_upper_bounds.append(
+                    {
+                        "state": state_code.name,
+                        "date": processed_date_by_state_code.get(state_code.name),
+                        "ingestPaused": state_code.name in regions_paused,
+                        # TODO(#11413): Delete this flag and frontend usage once we
+                        #  have proper support for BQ materialization.
+                        "isBQMaterializationEnabled": False,
+                    }
+                )
         self.data_freshness_results = latest_upper_bounds
