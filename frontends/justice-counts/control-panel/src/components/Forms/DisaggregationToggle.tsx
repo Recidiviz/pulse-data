@@ -106,7 +106,7 @@ export const DisaggregationToggle: React.FC<DisaggregationToggleProps> = ({
   description,
   children,
 }): JSX.Element => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const toggleOpen = () => setOpen(!open);
 

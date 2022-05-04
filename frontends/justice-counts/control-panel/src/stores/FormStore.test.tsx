@@ -15,31 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { runInAction } from "mobx";
-import React from "react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-import { rootStore, StoreProvider } from "../../stores";
-import ReportDataEntry from "./ReportDataEntry";
+import { rootStore } from ".";
 
-test("display loading when no reports are loaded", () => {
-  render(
-    <StoreProvider>
-      <ReportDataEntry />
-    </StoreProvider>
-  );
+const { reportStore, formStore } = rootStore;
 
-  const loadingText = screen.getByText(/Loading.../i);
-  expect(loadingText).toBeInTheDocument();
-
-  expect.hasAssertions();
-});
-
-describe("test data entry form", () => {
+beforeEach(() => {
   runInAction(() => {
-    rootStore.reportStore.reportOverviews = {
+    reportStore.reportOverviews = {
       0: {
         id: 0,
         year: 2022,
@@ -51,7 +35,7 @@ describe("test data entry form", () => {
       },
     };
 
-    rootStore.reportStore.reportMetrics = {
+    reportStore.reportMetrics = {
       0: [
         {
           key: "PROSECUTION_STAFF",
@@ -99,56 +83,65 @@ describe("test data entry form", () => {
       ],
     };
   });
+});
 
-  test("displays data entry form based on reports", () => {
-    render(
-      <StoreProvider>
-        <MemoryRouter initialEntries={["/reports/0"]}>
-          <Routes>
-            <Route path="/reports/:id" element={<ReportDataEntry />} />
-          </Routes>{" "}
-        </MemoryRouter>
-      </StoreProvider>
-    );
+test("metrics value handler updates the metric value", () => {
+  const mockEvent = {
+    target: {
+      name: "PROSECUTION_STAFF",
+      value: 2000,
+    },
+  } as unknown as React.ChangeEvent<HTMLInputElement>;
 
-    const reportDate = screen.getByText("April 2022");
-    const displayName = screen.getAllByText("Staff")[0];
-    const metricDescription = screen.getAllByText(
-      "Measures the number of full-time staff employed by the agency."
-    )[0];
-    const context = screen.getAllByText(
-      "Does this include programmatic or medical staff?"
-    )[0];
+  formStore.updateMetricsValues(
+    "PROSECUTION_STAFF",
+    mockEvent as React.ChangeEvent<HTMLInputElement>
+  );
 
-    expect(reportDate).toBeInTheDocument();
-    expect(displayName).toBeInTheDocument();
-    expect(metricDescription).toBeInTheDocument();
-    expect(context).toBeInTheDocument();
+  expect(formStore.metricsValues.PROSECUTION_STAFF).toEqual(
+    mockEvent.target.value
+  );
 
-    expect.hasAssertions();
-  });
+  expect.hasAssertions();
+});
 
-  test("toggle switch shows and hides disaggregation dimensions", () => {
-    render(
-      <StoreProvider>
-        <MemoryRouter initialEntries={["/reports/0"]}>
-          <Routes>
-            <Route path="/reports/:id" element={<ReportDataEntry />} />
-          </Routes>
-        </MemoryRouter>
-      </StoreProvider>
-    );
+test("disaggregation dimension value handler updates the disaggregation dimension value", () => {
+  const mockEvent = {
+    target: {
+      name: "SUPPORT",
+      value: 200,
+    },
+  } as unknown as React.ChangeEvent<HTMLInputElement>;
 
-    const disaggregationToggle = screen.getByRole("checkbox");
-    const disaggregationDimensionField =
-      screen.getAllByText("Staff: Support")[0];
+  formStore.updateDisaggregationDimensionValue(
+    "PROSECUTION_STAFF",
+    "PROSECUTION_STAFF_TYPE",
+    mockEvent as React.ChangeEvent<HTMLInputElement>
+  );
 
-    expect(disaggregationDimensionField).toBeInTheDocument();
+  expect(
+    formStore.disaggregations.PROSECUTION_STAFF.PROSECUTION_STAFF_TYPE.SUPPORT
+  ).toEqual(mockEvent.target.value);
 
-    userEvent.click(disaggregationToggle);
+  expect.hasAssertions();
+});
 
-    expect(disaggregationDimensionField).not.toBeInTheDocument();
+test("context value handler updates the context value", () => {
+  const mockEvent = {
+    target: {
+      name: "PROGRAMMATIC_OR_MEDICAL_STAFF",
+      value: 100,
+    },
+  } as unknown as React.ChangeEvent<HTMLInputElement>;
 
-    expect.hasAssertions();
-  });
+  formStore.updateContextValue(
+    "PROSECUTION_STAFF",
+    mockEvent as React.ChangeEvent<HTMLInputElement>
+  );
+
+  expect(
+    formStore.contexts.PROSECUTION_STAFF.PROGRAMMATIC_OR_MEDICAL_STAFF
+  ).toEqual(mockEvent.target.value);
+
+  expect.hasAssertions();
 });

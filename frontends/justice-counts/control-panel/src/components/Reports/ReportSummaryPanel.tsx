@@ -18,7 +18,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Metric } from "../../shared/types";
 import {
   GoBackLink,
   PreTitle,
@@ -28,9 +27,7 @@ import {
   Title,
 } from "../Forms";
 
-const ReportSummaryPanel: React.FC<{
-  reportMetrics: Metric[];
-}> = ({ reportMetrics }) => {
+const ReportSummaryPanel: React.FC = () => {
   const navigate = useNavigate();
 
   return (

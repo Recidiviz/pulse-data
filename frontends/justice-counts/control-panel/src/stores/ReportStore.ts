@@ -17,7 +17,7 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 
-import { mockMetrics, mockOverview, mockReport } from "../mocks/mockReport";
+import { mockReport } from "../mocks/mockReport";
 import { Metric, Report, ReportOverview } from "../shared/types";
 import API from "./API";
 import UserStore from "./UserStore";

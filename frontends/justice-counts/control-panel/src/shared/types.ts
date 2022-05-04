@@ -85,3 +85,25 @@ export interface CreateReportFormValuesType extends Record<string, unknown> {
   year: number;
   frequency: "MONTHLY" | "ANNUAL";
 }
+
+export type FormContexts = {
+  [contextKey: string]: string | number;
+};
+
+export type FormDimensions = {
+  [dimensionKey: string]: string | number;
+};
+
+export type FormDisaggregations = {
+  [disaggregationKey: string]: FormDimensions;
+};
+
+export type FormMetric = {
+  value: string | number;
+  contexts: FormContexts;
+  disaggregations: FormDisaggregations;
+};
+
+export type FormReport = {
+  [metricID: string]: FormMetric;
+};
