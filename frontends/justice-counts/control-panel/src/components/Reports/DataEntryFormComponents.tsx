@@ -49,7 +49,7 @@ export const MetricTextInput = observer(({ metric }: MetricTextInputProps) => {
       value={
         metricsValues[metric.key] !== undefined
           ? metricsValues[metric.key]
-          : (metric.value as string)
+          : (metric.value as string) || ""
       }
       required
     />
@@ -73,15 +73,17 @@ export const DisaggregationDimensionTextInput = observer(
     const { formStore } = useStore();
     const { disaggregations, updateDisaggregationDimensionValue, formErrors } =
       formStore;
+    const disaggregationDimensionKey = combineTwoKeyNames(
+      disaggregation.key,
+      dimension.key
+    );
 
     return (
       <TextInput
         key={dimension.key}
         label={dimension.label}
         error={
-          (formErrors[metric.key]?.[
-            combineTwoKeyNames(disaggregation.key, dimension.key)
-          ] as string) || ""
+          (formErrors[metric.key]?.[disaggregationDimensionKey] as string) || ""
         }
         type="text"
         name={dimension.key}

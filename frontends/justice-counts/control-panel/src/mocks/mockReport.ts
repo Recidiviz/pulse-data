@@ -32,7 +32,7 @@ export const mockMetrics = [
     description:
       "Measures the number of full-time staff employed by the agency.",
     reporting_note: "DOCs report only correctional institution staff.",
-    value: 1000,
+    value: null,
     unit: "people",
     category: "CAPACITY_AND_COST",
     label: "Total Staff",
@@ -102,7 +102,7 @@ export const mockMetrics = [
     description:
       "Measures the number of full-time staff employed by the agency.",
     reporting_note: "DOCs report only correctional institution staff.",
-    value: 1000,
+    value: null,
     unit: "people",
     category: "CAPACITY_AND_COST",
     label: "Total Staff2",

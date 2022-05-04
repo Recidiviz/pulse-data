@@ -41,7 +41,10 @@ import {
   MetricTextInput,
 } from "./DataEntryFormComponents";
 
-const DataEntryForm: React.FC<{ reportID: number }> = ({ reportID }) => {
+const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
+  reportID,
+  activeMetric,
+}) => {
   const { formStore, reportStore } = useStore();
 
   const reportOverview = reportStore.reportOverviews[reportID];
@@ -65,99 +68,101 @@ const DataEntryForm: React.FC<{ reportID: number }> = ({ reportID }) => {
       </Title>
 
       {/* Metrics */}
-      {reportMetrics?.map((metric) => {
-        return (
-          <Fragment key={metric.key}>
-            <TitleWrapper underlined>
-              <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
-              <MetricSectionSubTitle>
-                {metric.description}
-              </MetricSectionSubTitle>
-            </TitleWrapper>
+      {reportMetrics
+        ?.filter((metric) => metric.key === activeMetric)
+        .map((metric) => {
+          return (
+            <Fragment key={metric.key}>
+              <TitleWrapper underlined>
+                <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
+                <MetricSectionSubTitle>
+                  {metric.description}
+                </MetricSectionSubTitle>
+              </TitleWrapper>
 
-            {/* Metric Value */}
-            <MetricTextInput metric={metric} />
+              {/* Metric Value */}
+              <MetricTextInput metric={metric} />
 
-            {/* Disaggregations */}
-            {metric.disaggregations.length > 0 &&
-              metric.disaggregations.map(
-                (disaggregation, disaggregationIndex) => {
-                  return (
-                    <DisaggregationToggle
-                      key={disaggregation.key}
-                      description={disaggregation.display_name}
-                    >
-                      {disaggregation.helper_text && (
-                        <DisaggregationContentHelperText>
-                          {disaggregation.helper_text}
-                        </DisaggregationContentHelperText>
-                      )}
-
-                      {/* Dimensions */}
-                      {disaggregation.dimensions.length > 0 &&
-                        disaggregation.dimensions.map(
-                          (dimension, dimensionIndex) => {
-                            return (
-                              <DisaggregationDimensionTextInput
-                                key={dimension.key}
-                                metric={metric}
-                                dimension={dimension}
-                                disaggregation={disaggregation}
-                                disaggregationIndex={disaggregationIndex}
-                                dimensionIndex={dimensionIndex}
-                              />
-                            );
-                          }
-                        )}
-                    </DisaggregationToggle>
-                  );
-                }
-              )}
-
-            {/* Contexts */}
-            {metric.contexts.length > 0 &&
-              metric.contexts.map((context, contextIndex) => {
-                if (context.type === "BOOLEAN") {
-                  return (
-                    <BinaryRadioGroupContainer key={context.key}>
-                      <BinaryRadioGroupQuestion>
-                        {context.display_name}
-                      </BinaryRadioGroupQuestion>
-
-                      <BinaryRadioGroupWrapper>
-                        <BinaryRadioButtonInputs
-                          metric={metric}
-                          context={context}
-                          contextIndex={contextIndex}
-                        />
-                      </BinaryRadioGroupWrapper>
-                      <BinaryRadioGroupClearButton
-                        data-name={context.key}
-                        onClick={(e) =>
-                          formStore.resetBinaryInput(metric.key, e)
-                        }
+              {/* Disaggregations */}
+              {metric.disaggregations.length > 0 &&
+                metric.disaggregations.map(
+                  (disaggregation, disaggregationIndex) => {
+                    return (
+                      <DisaggregationToggle
+                        key={disaggregation.key}
+                        description={disaggregation.display_name}
                       >
-                        Clear Input
-                      </BinaryRadioGroupClearButton>
-                    </BinaryRadioGroupContainer>
+                        {disaggregation.helper_text && (
+                          <DisaggregationContentHelperText>
+                            {disaggregation.helper_text}
+                          </DisaggregationContentHelperText>
+                        )}
+
+                        {/* Dimensions */}
+                        {disaggregation.dimensions.length > 0 &&
+                          disaggregation.dimensions.map(
+                            (dimension, dimensionIndex) => {
+                              return (
+                                <DisaggregationDimensionTextInput
+                                  key={dimension.key}
+                                  metric={metric}
+                                  dimension={dimension}
+                                  disaggregation={disaggregation}
+                                  disaggregationIndex={disaggregationIndex}
+                                  dimensionIndex={dimensionIndex}
+                                />
+                              );
+                            }
+                          )}
+                      </DisaggregationToggle>
+                    );
+                  }
+                )}
+
+              {/* Contexts */}
+              {metric.contexts.length > 0 &&
+                metric.contexts.map((context, contextIndex) => {
+                  if (context.type === "BOOLEAN") {
+                    return (
+                      <BinaryRadioGroupContainer key={context.key}>
+                        <BinaryRadioGroupQuestion>
+                          {context.display_name}
+                        </BinaryRadioGroupQuestion>
+
+                        <BinaryRadioGroupWrapper>
+                          <BinaryRadioButtonInputs
+                            metric={metric}
+                            context={context}
+                            contextIndex={contextIndex}
+                          />
+                        </BinaryRadioGroupWrapper>
+                        <BinaryRadioGroupClearButton
+                          data-name={context.key}
+                          onClick={(e) =>
+                            formStore.resetBinaryInput(metric.key, e)
+                          }
+                        >
+                          Clear Input
+                        </BinaryRadioGroupClearButton>
+                      </BinaryRadioGroupContainer>
+                    );
+                  }
+                  return (
+                    <Fragment key={context.key}>
+                      <AdditionalContextLabel>
+                        {context.display_name}
+                      </AdditionalContextLabel>
+                      <AdditionalContextInput
+                        metric={metric}
+                        context={context}
+                        contextIndex={contextIndex}
+                      />
+                    </Fragment>
                   );
-                }
-                return (
-                  <Fragment key={context.key}>
-                    <AdditionalContextLabel>
-                      {context.display_name}
-                    </AdditionalContextLabel>
-                    <AdditionalContextInput
-                      metric={metric}
-                      context={context}
-                      contextIndex={contextIndex}
-                    />
-                  </Fragment>
-                );
-              })}
-          </Fragment>
-        );
-      })}
+                })}
+            </Fragment>
+          );
+        })}
     </Form>
   );
 };
