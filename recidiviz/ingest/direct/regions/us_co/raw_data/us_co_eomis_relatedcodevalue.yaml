@@ -1,0 +1,43 @@
+file_tag: eomis_relatedcodevalue
+file_description: |-
+  This file contains additional codevalue information for possible related values to potentially add more detail to those in the codevaluedesc table.
+data_classification: source
+primary_key_cols:
+  - DATANAME
+  - CODEVALUE
+  - RELATEDDENAME
+  - RELATEDCODEVALUE
+columns:
+  - name : DATANAME
+    description : |-
+      The dataname of a code with codevalues and codedescriptions.
+  - name : CODEVALUE
+    description : |-
+      The possible values in scope for each dataname.
+  - name : RELATEDDENAME
+    description : |-
+      Another dataname related to the same column.
+  - name : RELATEDCODEVALUE
+    description : |-
+      The possible values in scope for a related codename.
+  - name : CREATEDBY
+    description : |-
+      The user who created this relateddename and corresponding relatedcodevalues.
+  - name : CREATEDDATE
+    description : |-
+      The date the relateddename was created.
+  - name : CREATEDTIME
+    description : |-
+      The time the relateddename was created.
+  - name : LASTUPDATEDBY
+    description : |-
+      The user who most recently made an update to the relateddename.
+  - name : LASTUPDATEDATE
+    description : |-
+      The date of the most recently made update to the relateddename.
+  - name : LASTUPDATETIME
+    description : |-
+      The time of the most recently made update to the relateddename.
+  - name : RECORDUPDATECOUNT
+    description : |-
+      TODO(#12372)

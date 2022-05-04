@@ -35,4 +35,4 @@ columns:
       Last update time.
   - name: RECORDUPDATECOUNT
     description: |-
-      TODO(#12372)
+      TODO(#12372) 
