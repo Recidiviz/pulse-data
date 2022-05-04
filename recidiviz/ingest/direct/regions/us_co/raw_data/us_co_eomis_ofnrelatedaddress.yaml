@@ -18,15 +18,15 @@ columns:
     description: |-
       The type of address given i.e. permanent, planned, temporary, mailing, etc.
     known_values:
-      - value: A
+      - value: "A"
         description: ACIC Mailing (SOSRA)
-      - value: B
+      - value: "B"
         description: ACIC Physical (SOSRA)
-      - value: M
+      - value: "M"
         description: Mailing
-      - value: N
+      - value: "N"
         description: Planned (after release)
-      - value: P
+      - value: "P"
         description: Physical (Home)
       - value: "T"
         description: Temporary

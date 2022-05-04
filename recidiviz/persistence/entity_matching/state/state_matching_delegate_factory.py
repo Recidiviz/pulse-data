@@ -20,6 +20,9 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
+from recidiviz.persistence.entity_matching.state.us_co.us_co_matching_delegate import (
+    UsCoMatchingDelegate,
+)
 from recidiviz.persistence.entity_matching.state.us_id.us_id_matching_delegate import (
     UsIdMatchingDelegate,
 )
@@ -62,4 +65,6 @@ class StateMatchingDelegateFactory:
             return UsMeMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_MI":
             return UsMiMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_CO":
+            return UsCoMatchingDelegate(ingest_metadata)
         raise ValueError(f"Unexpected region_code provided: {region_code}.")

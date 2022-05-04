@@ -39,5 +39,7 @@ class UsCoController(BaseDirectIngestController):
         processed for data we received on a particular date.
         """
 
+        tags = ["StatePerson"]
+
         # Add ingest view names to this list as you add mappings for them.
-        return []
+        return tags
