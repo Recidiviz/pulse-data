@@ -97,15 +97,16 @@ export const mockMetrics = [
     ],
   },
   {
-    key: "PROSECUTION_STAFF2",
-    display_name: "Staff2",
+    key: "READMISSION_KEY",
+    display_name: "Readmission Rate",
     description:
-      "Measures the number of full-time staff employed by the agency.",
-    reporting_note: "DOCs report only correctional institution staff.",
+      "Measure the number of individuals admitted who had at least one other prison admission within the prior year.",
+    reporting_note:
+      "Exclude re-entry after a temporary exit (escape, work release, appointment, etc).",
     value: null,
-    unit: "people",
+    unit: "readmissions",
     category: "CAPACITY_AND_COST",
-    label: "Total Staff2",
+    label: "Readmission Rate",
     definitions: [
       {
         term: "full-time staff",
@@ -114,11 +115,11 @@ export const mockMetrics = [
     ],
     contexts: [
       {
-        key: "PROGRAMMATIC_OR_MEDICAL_STAFF2",
-        display_name: "Does this include programmatic or medical staff? ",
-        reporting_note: null,
+        key: "DEFINITION_OF_ADMISSION",
+        display_name: "Definition of Admission",
+        reporting_note: "",
         required: false,
-        type: "BOOLEAN",
+        type: "TEXT",
         value: null,
       },
       {
@@ -133,8 +134,8 @@ export const mockMetrics = [
     ],
     disaggregations: [
       {
-        key: "PROSECUTION_STAFF_TYPE2",
-        display_name: "Staff Types",
+        key: "READMISSION_KEY_TYPE",
+        display_name: "Readmission Types",
         dimensions: [
           {
             key: "SUPPORT2",
@@ -163,6 +164,59 @@ export const mockMetrics = [
         ],
         required: false,
         helper_text: "Break down the metric by NIBRS offense types.",
+      },
+    ],
+  },
+  {
+    key: "ANNUAL_BUDGET_KEY",
+    display_name: "Annual Budget",
+    reporting_note:
+      "Sheriff offices report on budget for patrol and detention separately",
+    description: "Measures the total annual budget (in dollars) of the agency.",
+    definitions: [],
+    category: "CAPACITY AND COST",
+    value: null,
+    unit: "USD",
+    label: "Total Annual Budget",
+    contexts: [
+      {
+        key: "PRIMARY_FUNDING_SOURCE",
+        display_name: "Primary Funding Source",
+        reporting_note: "",
+        required: false,
+        type: "TEXT",
+        value: null,
+      },
+      {
+        key: "ADDITIONAL_CONTEXT",
+        display_name: "Additional Context",
+        reporting_note: null,
+        required: false,
+        type: "TEXT",
+        value: null,
+      },
+    ],
+    disaggregations: [
+      {
+        key: "metric/law_enforcement/budget/type",
+        display_name: "Budget Breakdown",
+        required: false,
+        should_sum_to_total: true,
+        helper_text: null,
+        dimensions: [
+          {
+            key: "DETENTION",
+            label: "Detention",
+            value: null,
+            reporting_note: "Sheriff Budget: Detention",
+          },
+          {
+            key: "PATROL",
+            label: "Patrol",
+            value: null,
+            reporting_note: "Sheriff Budget: Patrol",
+          },
+        ],
       },
     ],
   },

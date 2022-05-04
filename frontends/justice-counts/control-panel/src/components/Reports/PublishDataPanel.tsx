@@ -20,7 +20,6 @@ import React, { useState } from "react";
 
 import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
-import { printCommaSeparatedList } from "../../utils";
 import {
   EditDetails,
   EditDetailsContent,
@@ -34,7 +33,7 @@ import PublishConfirmation from "./PublishConfirmation";
 const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [tempFinalObject, setTempFinalObject] = useState({}); // Temporarily Displaying Final Object For Testing Purposes
-  const { formStore, reportStore } = useStore();
+  const { formStore } = useStore();
 
   const toggleConfirmationDialogue = () =>
     setShowConfirmation(!showConfirmation);
@@ -57,37 +56,12 @@ const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
         <EditDetails>
           <EditDetailsTitle>Editors</EditDetailsTitle>
           <EditDetailsContent>
-            {printCommaSeparatedList(
-              reportStore.reportOverviews[reportID]?.editors || [""]
-            )}
+            Person #1, Person #2, Person #3
           </EditDetailsContent>
 
           <EditDetailsTitle>Details</EditDetailsTitle>
-          <EditDetailsContent>
-            Created today by{" "}
-            {reportStore.reportOverviews[reportID]?.editors?.[0] || ""}
-          </EditDetailsContent>
+          <EditDetailsContent>Created today by a Person #1</EditDetailsContent>
         </EditDetails>
-
-        {/* Temporarily Displaying Final Object For Testing Purposes */}
-        <pre
-          style={{
-            width: 320,
-            height: 500,
-            position: "fixed",
-            zIndex: 2,
-            bottom: 20,
-            right: 20,
-            background: "white",
-            overflow: "scroll",
-            fontSize: 10,
-            lineHeight: 2,
-            border: "1px dashed black",
-            padding: 10,
-          }}
-        >
-          {JSON.stringify(tempFinalObject, null, 2)}
-        </pre>
       </PublishDataWrapper>
       {showConfirmation && (
         <PublishConfirmation
