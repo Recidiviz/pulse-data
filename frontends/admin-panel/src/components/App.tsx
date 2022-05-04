@@ -33,6 +33,7 @@ import DatasetView from "./DatasetView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
+import Nelly from "../favicon-32x32.png";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
 import TableView from "./TableView";
@@ -50,6 +51,7 @@ const App = (): JSX.Element => {
       <Layout.Sider>
         <Typography.Title level={4} style={{ margin: 23 }}>
           {title.toUpperCase()}
+          <img src={Nelly} id="adminPanelNelly" alt="Nelly" />
         </Typography.Title>
         <Menu mode="inline" selectedKeys={selectedMenuKeys(location.pathname)}>
           <Menu.ItemGroup title="Ingest Metadata">
