@@ -86,7 +86,9 @@ class IngestViewMaterializationGatingContext:
         assert_type(state_code, StateCode)
 
         if state_code not in self._all_states_gating_context:
-            raise ValueError(f"Did not find [{state_code}] in the gating context.")
+            raise ValueError(
+                f"Did not find [{state_code.value}] in the gating context."
+            )
         state_gating_context = self._all_states_gating_context[state_code]
         if ingest_instance not in state_gating_context:
             raise ValueError(
@@ -101,7 +103,9 @@ class IngestViewMaterializationGatingContext:
     ) -> None:
         """For a give state/ingest instance, set the bq materialization to enabled"""
         if state_code not in self._all_states_gating_context:
-            raise ValueError(f"Invalid state: {state_code.value}")
+            raise ValueError(
+                f"Did not find [{state_code.value}] in the gating context."
+            )
 
         self._all_states_gating_context[state_code][
             ingest_instance
