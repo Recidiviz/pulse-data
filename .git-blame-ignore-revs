@@ -2,3 +2,7 @@
 01e172c306699ecbe1b46afc134a963384646237
 # Migrate code style to Black (post-history rewrite)
 3fc779d125798eb927db804f8905c5b6e54bb76c
+# Migrate code style to Black for Jupyter notebooks
+8157a8af41a5de78c505bc82af963333f1f66306
+# Autoformat YAMLs via prettier
+b3dc65351627a74b441bf852fd92192d2ed3ce54
