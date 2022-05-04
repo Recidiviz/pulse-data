@@ -43,9 +43,8 @@ const Header = () => {
   return (
     <HeaderRow>
       <HeaderCell>Justice Counts Data Publisher</HeaderCell>
-      <HeaderCell />
-      <HeaderCell>{agencyName}</HeaderCell>
-      <HeaderCell textAlign="right">
+      <HeaderCell>
+        {agencyName}
         <Menu />
       </HeaderCell>
     </HeaderRow>

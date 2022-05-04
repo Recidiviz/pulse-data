@@ -19,10 +19,6 @@ import styled from "styled-components/macro";
 
 import { palette } from "../GlobalStyles/Palette";
 
-type HeaderCellProps = {
-  textAlign?: "right" | "left";
-};
-
 export const HeaderRow = styled.header`
   width: 100%;
   height: 50px;
@@ -36,37 +32,7 @@ export const HeaderRow = styled.header`
   padding: 16px 22px;
 `;
 
-export const HeaderCell = styled.div<HeaderCellProps>`
-  width: 300px;
+export const HeaderCell = styled.div`
   display: flex;
-  justify-content: ${({ textAlign }) => {
-    if (!textAlign) {
-      // defaults as 'flex-start' if 'textAlign' is not defined.
-      return "flex-start";
-    }
-    return textAlign === "right" ? "flex-end" : "flex-start";
-  }};
-
-  &:nth-child(1) {
-    width: 400px;
-  }
-
-  &:nth-child(2) {
-    width: 330px;
-  }
-
-  &:nth-child(3) {
-    width: 400px;
-  }
-
-  &:nth-child(4) {
-    width: 200px;
-  }
-
-  @media only screen and (max-width: 1150px) {
-    // hides extra empty cell
-    &:nth-child(3) {
-      display: none;
-    }
-  }
+  align-items: center;
 `;
