@@ -174,7 +174,13 @@ FROM
                 batch_number=2,
             )
 
-        expected_query = """SELECT *
+        expected_query = """SELECT * EXCEPT(
+  __upper_bound_datetime_inclusive,
+  __lower_bound_datetime_exclusive,
+  __materialization_time,
+  __processed_time,
+  __extract_and_merge_batch
+)
 FROM `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
 WHERE
   __upper_bound_datetime_inclusive = DATETIME(2022, 1, 1, 0, 0, 0)
