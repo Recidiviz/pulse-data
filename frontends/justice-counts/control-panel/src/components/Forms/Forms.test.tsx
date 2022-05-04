@@ -84,3 +84,32 @@ test("Context description appears in document", () => {
 
   expect.hasAssertions();
 });
+
+test("Error state changes text input colors to red", () => {
+  render(
+    <TextInput
+      error="Error"
+      type="text"
+      name="Total Staff"
+      id="Total Staff"
+      label="Total Staff"
+      valueLabel="People"
+      context="Measures the number of full-time staff employed by the agency."
+      value="100"
+      readOnly
+      required
+    />
+  );
+
+  const input = screen.getByLabelText("Total Staff");
+  const valueLabel = screen.getByText("People");
+
+  expect(window.getComputedStyle(input).background).toBe(
+    "rgba(221, 18, 18, 0.05)"
+  );
+  expect(window.getComputedStyle(valueLabel).background).toBe(
+    "rgb(221, 18, 18)"
+  );
+
+  expect.hasAssertions();
+});

@@ -54,7 +54,7 @@ const ReportDataEntry = () => {
     <PageWrapper>
       <ReportSummaryPanel />
       <DataEntryForm reportID={reportID} />
-      <PublishDataPanel />
+      <PublishDataPanel reportID={reportID} />
     </PageWrapper>
   );
 };
