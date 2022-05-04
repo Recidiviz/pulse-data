@@ -17,7 +17,7 @@
 
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { Report } from "../../shared/types";
@@ -28,6 +28,7 @@ import PublishDataPanel from "./PublishDataPanel";
 import ReportSummaryPanel from "./ReportSummaryPanel";
 
 const ReportDataEntry = () => {
+  const [activeMetric, setActiveMetric] = useState<string>("");
   const { reportStore, userStore } = useStore();
   const params = useParams();
   const reportID = Number(params.id);
@@ -46,14 +47,24 @@ const ReportDataEntry = () => {
   const reportOverview = reportStore.reportOverviews[reportID] as Report;
   const reportMetrics = reportStore.reportMetrics[reportID];
 
+  const updateActiveMetric = (metricID: string) => setActiveMetric(metricID);
+
+  useEffect(() => {
+    updateActiveMetric(reportMetrics[0].key); // open to the first metric by default
+  }, [reportMetrics, reportID]);
+
   if (!reportMetrics || !reportOverview) {
     return <PageWrapper>Loading...</PageWrapper>;
   }
 
   return (
     <PageWrapper>
-      <ReportSummaryPanel />
-      <DataEntryForm reportID={reportID} />
+      <ReportSummaryPanel
+        reportID={reportID}
+        updateActiveMetric={updateActiveMetric}
+        activeMetric={activeMetric}
+      />
+      <DataEntryForm reportID={reportID} activeMetric={activeMetric} />
       <PublishDataPanel reportID={reportID} />
     </PageWrapper>
   );

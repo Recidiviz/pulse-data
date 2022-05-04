@@ -58,14 +58,14 @@ const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
           <EditDetailsTitle>Editors</EditDetailsTitle>
           <EditDetailsContent>
             {printCommaSeparatedList(
-              reportStore.reportOverviews[0]?.editors || [""]
+              reportStore.reportOverviews[reportID]?.editors || [""]
             )}
           </EditDetailsContent>
 
           <EditDetailsTitle>Details</EditDetailsTitle>
           <EditDetailsContent>
             Created today by{" "}
-            {reportStore.reportOverviews[0]?.editors?.[0] || ""}
+            {reportStore.reportOverviews[reportID]?.editors?.[0] || ""}
           </EditDetailsContent>
         </EditDetails>
 
