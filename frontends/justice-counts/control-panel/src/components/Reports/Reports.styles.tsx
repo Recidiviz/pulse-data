@@ -119,6 +119,7 @@ export const Label = styled.div`
 
   &:nth-child(4) {
     width: 200px;
+    text-align: right;
   }
 
   @media only screen and (max-width: 1150px) {
@@ -151,6 +152,7 @@ export const Cell = styled.div<{ capitalize?: boolean }>`
 
   &:nth-child(4) {
     width: 200px;
+    justify-content: flex-end;
   }
 
   @media only screen and (max-width: 1150px) {

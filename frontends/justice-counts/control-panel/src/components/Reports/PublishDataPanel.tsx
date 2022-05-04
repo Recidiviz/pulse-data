@@ -15,9 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
+import { observer } from "mobx-react-lite";
+import React, { useState } from "react";
 
-import { ReportOverview } from "../../shared/types";
+import { useStore } from "../../stores";
 import { printCommaSeparatedList } from "../../utils";
 import {
   EditDetails,
@@ -28,28 +29,115 @@ import {
   Title,
 } from "../Forms";
 
-const PublishDataPanel: React.FC<{
-  reportOverview: ReportOverview;
-}> = ({ reportOverview }) => {
+const PublishDataPanel: React.FC = () => {
+  const [tempFinalObject, setTempFinalObject] = useState({}); // Temporarily Displaying Final Object For Testing Purposes
+  const { formStore, reportStore } = useStore();
+
   return (
     <PublishDataWrapper>
       <Title>
-        <PublishButton>Publish Data</PublishButton>
+        <PublishButton
+          onClick={() => {
+            /** Should trigger a confirmation dialogue before submitting */
+
+            formStore.submitReport(0);
+            setTempFinalObject(formStore.submitReport(0)); // Temporarily Displaying Final Object For Testing Purposes
+          }}
+        >
+          Publish Data
+        </PublishButton>
       </Title>
 
       <EditDetails>
         <EditDetailsTitle>Editors</EditDetailsTitle>
         <EditDetailsContent>
-          {printCommaSeparatedList(reportOverview.editors)}
+          {printCommaSeparatedList(
+            reportStore.reportOverviews[0]?.editors || [""]
+          )}
         </EditDetailsContent>
 
         <EditDetailsTitle>Details</EditDetailsTitle>
         <EditDetailsContent>
-          Created today by {reportOverview.editors[0]}
+          Created today by {reportStore.reportOverviews[0]?.editors?.[0] || ""}
         </EditDetailsContent>
       </EditDetails>
+
+      {/* Temporarily Displaying Final Object For Testing Purposes */}
+      <div
+        style={{
+          position: "fixed",
+          zIndex: 2,
+          bottom: 520,
+          right: 20,
+          background: "black",
+          color: "white",
+          padding: 5,
+          fontSize: "0.8rem",
+        }}
+      >
+        Final Form Object To Submit (click Publish Data)
+      </div>
+      <pre
+        style={{
+          width: 320,
+          height: 500,
+          position: "fixed",
+          zIndex: 2,
+          bottom: 20,
+          right: 20,
+          background: "white",
+          overflow: "scroll",
+          fontSize: 10,
+          lineHeight: 2,
+          border: "1px dashed black",
+          padding: 10,
+        }}
+      >
+        {JSON.stringify(tempFinalObject, null, 2)}
+      </pre>
+
+      <div
+        style={{
+          position: "fixed",
+          zIndex: 2,
+          bottom: 520,
+          left: 20,
+          background: "black",
+          color: "white",
+          padding: 5,
+          fontSize: "0.8rem",
+        }}
+      >
+        Form Object (for updating)
+      </div>
+      <pre
+        style={{
+          width: 320,
+          height: 500,
+          position: "fixed",
+          zIndex: 2,
+          bottom: 20,
+          left: 20,
+          background: "white",
+          overflow: "scroll",
+          fontSize: 10,
+          lineHeight: 2,
+          border: "1px dashed black",
+          padding: 10,
+        }}
+      >
+        {JSON.stringify(
+          {
+            metricsValues: formStore.metricsValues,
+            contexts: formStore.contexts,
+            disaggregations: formStore.disaggregations,
+          },
+          null,
+          2
+        )}
+      </pre>
     </PublishDataWrapper>
   );
 };
 
-export default PublishDataPanel;
+export default observer(PublishDataPanel);

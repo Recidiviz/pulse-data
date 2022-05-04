@@ -58,7 +58,7 @@ export const Input = styled.input<InputProps>`
       if (disabled) {
         return palette.highlight.grey4;
       }
-      return value !== "" ? palette.solid.blue : palette.highlight.grey6;
+      return value ? palette.solid.blue : palette.highlight.grey6;
     }};
 
   &:focus ~ label {
@@ -194,7 +194,7 @@ export const TextInput: React.FC<TextInputProps> = ({
       <InputLabel
         htmlFor={name}
         required={required}
-        inputHasValue={value !== ""}
+        inputHasValue={Boolean(value)}
         isDisabled={disabled}
         additionalContext={additionalContext}
         error={error}

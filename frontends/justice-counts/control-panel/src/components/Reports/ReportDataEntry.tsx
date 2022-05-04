@@ -52,12 +52,9 @@ const ReportDataEntry = () => {
 
   return (
     <PageWrapper>
-      <ReportSummaryPanel reportMetrics={reportMetrics} />
-      <DataEntryForm
-        reportOverview={reportOverview}
-        reportMetrics={reportMetrics}
-      />
-      <PublishDataPanel reportOverview={reportOverview} />
+      <ReportSummaryPanel />
+      <DataEntryForm reportID={reportID} />
+      <PublishDataPanel />
     </PageWrapper>
   );
 };
