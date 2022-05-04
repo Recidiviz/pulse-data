@@ -50,7 +50,7 @@ const ReportDataEntry = () => {
   const updateActiveMetric = (metricID: string) => setActiveMetric(metricID);
 
   useEffect(() => {
-    updateActiveMetric(reportMetrics[0].key); // open to the first metric by default
+    if (reportMetrics) updateActiveMetric(reportMetrics?.[0].key); // open to the first metric by default
   }, [reportMetrics, reportID]);
 
   if (!reportMetrics || !reportOverview) {
