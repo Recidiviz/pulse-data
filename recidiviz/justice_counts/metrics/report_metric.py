@@ -154,7 +154,9 @@ class ReportMetric:
                 # If any dimension values haven't been reported yet, skip validation
                 return
 
-            if sum(reported_dimension_values) != value:
+            # we know at this point that no values are None, but add the filter explicitly to make
+            # mypy happy
+            if sum(filter(None, reported_dimension_values)) != value:
                 raise ValueError(
                     f"Sums across dimension {dimension_identifier} do not equal "
                     "the total metric value."

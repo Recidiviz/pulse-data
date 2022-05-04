@@ -54,9 +54,7 @@ def main(
     pd.options.display.max_columns = 999
     pd.options.display.max_rows = 999
 
-    quoting = csv.QUOTE_MINIMAL
-    if ignore_quotes:
-        quoting = csv.QUOTE_NONE
+    quoting = csv.QUOTE_NONE if ignore_quotes else csv.QUOTE_MINIMAL
 
     dfcolumns = pd.read_csv(local_filepath, nrows=1, sep=separator)
     df = pd.read_csv(
