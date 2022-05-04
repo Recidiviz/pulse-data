@@ -90,6 +90,7 @@ test("metrics value handler updates the metric value", () => {
     target: {
       name: "PROSECUTION_STAFF",
       value: 2000,
+      hasAttribute: (str: string) => str === "required",
     },
   } as unknown as React.ChangeEvent<HTMLInputElement>;
 
@@ -110,6 +111,7 @@ test("disaggregation dimension value handler updates the disaggregation dimensio
     target: {
       name: "SUPPORT",
       value: 200,
+      hasAttribute: (str: string) => str === "required",
     },
   } as unknown as React.ChangeEvent<HTMLInputElement>;
 
@@ -131,6 +133,7 @@ test("context value handler updates the context value", () => {
     target: {
       name: "PROGRAMMATIC_OR_MEDICAL_STAFF",
       value: 100,
+      hasAttribute: (str: string) => str === "required",
     },
   } as unknown as React.ChangeEvent<HTMLInputElement>;
 

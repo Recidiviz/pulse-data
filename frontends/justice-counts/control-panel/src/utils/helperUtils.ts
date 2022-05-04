@@ -15,9 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// Separate multiple people on a list by comma - no comma for the last person on the list
-// e.g. ['Editor 1', 'Editor 2', 'Editor 3'] would print: `Editor 1, Editor 2, Editor 3`
-
+/**
+ * Separate multiple people on a list by comma - no comma for the last person on the list
+ * @example ['Editor 1', 'Editor 2', 'Editor 3'] would print: `Editor 1, Editor 2, Editor 3`
+ */
 export const printCommaSeparatedList = (list: string[]): string => {
   const string = list.map((item, i) =>
     i < list.length - 1 ? `${item}, ` : `${item}`
@@ -25,16 +26,33 @@ export const printCommaSeparatedList = (list: string[]): string => {
   return string.join(" ");
 };
 
-// Take a string, trim and remove all spacing, and lowercase it.
-// e.g. normalizeString("All Reports ") will be "allreports"
-
+/**
+ * Take a string, trim and remove all spacing, and lowercase it.
+ * @example normalizeString("All Reports ") will be "allreports"
+ */
 export const normalizeString = (string: string): string => {
   return string.split(" ").join("").toLowerCase().trim();
 };
 
-// Take a string, replace _ with ' ' space.
-// e.g. "NOT_STARTED" becomes "NOT STARTED"
-
+/**
+ * Take a string, replace _ with ' ' space.
+ * @example "NOT_STARTED" becomes "NOT STARTED"
+ */
 export const removeSnakeCase = (string: string): string => {
   return string.split("_").join(" ");
+};
+
+/**
+ * Concatenate two string keys by an `_` underscore (default) or a specified separator string
+ * @returns a single concatenated string
+ * @examples
+ * combineTwoKeyNames("KEY1", "KEY2") will return "KEY1_KEY2"
+ * combineTwoKeyNames("KEY1", "KEY2", "-") will return "KEY1-KEY2"
+ */
+export const combineTwoKeyNames = (
+  key1: string,
+  key2: string,
+  separator?: string
+) => {
+  return `${key1}${separator || "_"}${key2}`;
 };

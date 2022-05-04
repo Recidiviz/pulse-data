@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { runInAction } from "mobx";
 import React from "react";
@@ -151,4 +151,44 @@ describe("test data entry form", () => {
 
     expect.hasAssertions();
   });
+});
+
+test("expect positive number value to not add field error (formErrors should be an empty object)", () => {
+  render(
+    <StoreProvider>
+      <MemoryRouter initialEntries={["/reports/0"]}>
+        <Routes>
+          <Route path="/reports/:id" element={<ReportDataEntry />} />
+        </Routes>
+      </MemoryRouter>
+    </StoreProvider>
+  );
+
+  const input = screen.getAllByLabelText("Total Staff")[0];
+
+  fireEvent.change(input, { target: { value: "1000" } });
+
+  expect(JSON.stringify(rootStore.formStore.formErrors)).toBe(
+    JSON.stringify({})
+  );
+});
+
+test("expect negative number value to add field error (formErrors should contain an error property for the field)", () => {
+  render(
+    <StoreProvider>
+      <MemoryRouter initialEntries={["/reports/0"]}>
+        <Routes>
+          <Route path="/reports/:id" element={<ReportDataEntry />} />
+        </Routes>
+      </MemoryRouter>
+    </StoreProvider>
+  );
+
+  const input = screen.getAllByLabelText("Total Staff")[0];
+
+  fireEvent.change(input, { target: { value: "-1000" } });
+
+  expect(JSON.stringify(rootStore.formStore.formErrors)).toBe(
+    JSON.stringify({ PROSECUTION_STAFF: { PROSECUTION_STAFF: "Error" } })
+  );
 });

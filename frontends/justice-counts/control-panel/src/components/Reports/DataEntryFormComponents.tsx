@@ -25,6 +25,7 @@ import {
   MetricDisaggregations,
 } from "../../shared/types";
 import { useStore } from "../../stores";
+import { combineTwoKeyNames } from "../../utils";
 import { BinaryRadioButton, TextInput } from "../Forms";
 
 interface MetricTextInputProps {
@@ -33,14 +34,15 @@ interface MetricTextInputProps {
 
 export const MetricTextInput = observer(({ metric }: MetricTextInputProps) => {
   const { formStore } = useStore();
-  const { metricsValues, updateMetricsValues } = formStore;
+  const { metricsValues, updateMetricsValues, formErrors } = formStore;
 
   return (
     <TextInput
       label={metric.label}
-      error=""
+      error={(formErrors[metric.key]?.[metric.key] as string) || ""}
       type="text"
       name={metric.key}
+      id={metric.key}
       valueLabel={metric.unit}
       context={metric.reporting_note}
       onChange={(e) => updateMetricsValues(metric.key, e)}
@@ -69,15 +71,21 @@ export const DisaggregationDimensionTextInput = observer(
     dimensionIndex,
   }: DisaggregationDimensionTextInputProps) => {
     const { formStore } = useStore();
-    const { disaggregations, updateDisaggregationDimensionValue } = formStore;
+    const { disaggregations, updateDisaggregationDimensionValue, formErrors } =
+      formStore;
 
     return (
       <TextInput
         key={dimension.key}
         label={dimension.label}
-        error=""
+        error={
+          (formErrors[metric.key]?.[
+            combineTwoKeyNames(disaggregation.key, dimension.key)
+          ] as string) || ""
+        }
         type="text"
         name={dimension.key}
+        id={dimension.key}
         valueLabel={metric.unit}
         context={dimension.reporting_note}
         onChange={(e) =>
@@ -140,9 +148,9 @@ export const AdditionalContextInput = observer(
 
     return (
       <TextInput
-        error=""
         type="text"
         name={context.key}
+        id={context.key}
         label="Type here..."
         context={context.reporting_note || ""}
         onChange={(e) => updateContextValue(metric.key, e)}

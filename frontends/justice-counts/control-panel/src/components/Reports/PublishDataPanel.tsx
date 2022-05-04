@@ -31,7 +31,7 @@ import {
 } from "../Forms";
 import PublishConfirmation from "./PublishConfirmation";
 
-const PublishDataPanel: React.FC = () => {
+const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [tempFinalObject, setTempFinalObject] = useState({}); // Temporarily Displaying Final Object For Testing Purposes
   const { formStore, reportStore } = useStore();
@@ -47,7 +47,7 @@ const PublishDataPanel: React.FC = () => {
             onClick={() => {
               /** Should trigger a confirmation dialogue before submitting */
               toggleConfirmationDialogue();
-              setTempFinalObject(formStore.submitReport(0)); // Temporarily Displaying Final Object For Testing Purposes
+              setTempFinalObject(formStore.submitReport(reportID)); // Temporarily Displaying Final Object For Testing Purposes
             }}
           >
             Publish Data

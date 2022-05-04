@@ -18,6 +18,7 @@
 import { makeAutoObservable } from "mobx";
 
 import { FormContexts, FormDisaggregations, Metric } from "../shared/types";
+import { combineTwoKeyNames } from "../utils";
 import ReportStore from "./ReportStore";
 
 class FormStore {
@@ -29,6 +30,8 @@ class FormStore {
 
   disaggregations: { [metricID: string]: FormDisaggregations };
 
+  formErrors: { [metricID: string]: { [fieldKey: string]: string } };
+
   constructor(reportStore: ReportStore) {
     makeAutoObservable(this);
 
@@ -36,10 +39,11 @@ class FormStore {
     this.metricsValues = {};
     this.contexts = {};
     this.disaggregations = {};
+    this.formErrors = {};
   }
 
   fullMetricsFromFormValues(reportID: number): Metric[] {
-    const updatedMetrics = this.reportStore.reportMetrics[reportID].map(
+    const updatedMetrics = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
         if (
           this.metricsValues[metric.key] ||
@@ -79,10 +83,46 @@ class FormStore {
     return updatedMetrics || [];
   }
 
+  /** Simple validation to flesh out as we solidify necessary validations */
+  validate = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    metricID: string,
+    key?: string
+  ) => {
+    const fieldKey = key || e.target.name;
+    const numbersOnlyRegex = /^[0-9]*$/g;
+    const isInputNumber =
+      typeof e.target.value === "number" ||
+      e.target.value.match(numbersOnlyRegex);
+
+    if (!this.formErrors[metricID]) {
+      this.formErrors[metricID] = {};
+    }
+
+    /** Raise error if value is not a number OR the field is required and the input is empty */
+    if (
+      !isInputNumber ||
+      (e.target.hasAttribute("required") && !e.target.value)
+    ) {
+      this.formErrors[metricID][fieldKey] = "Error";
+    }
+
+    /** Remove error if value is a number AND (required input and input is not empty OR optional input and input is empty) */
+    if (
+      isInputNumber &&
+      ((e.target.hasAttribute("required") && e.target.value) ||
+        !e.target.hasAttribute("required"))
+    ) {
+      delete this.formErrors[metricID][fieldKey];
+    }
+  };
+
+  /** Form Handlers */
   updateMetricsValues = (
     metricID: string,
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
+    this.validate(e, metricID);
     this.metricsValues[metricID] = e.target.value;
   };
 
@@ -91,6 +131,12 @@ class FormStore {
     disaggregationKey: string,
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
+    const disaggregationDimensionKey = combineTwoKeyNames(
+      disaggregationKey,
+      e.target.name
+    );
+    this.validate(e, metricID, disaggregationDimensionKey);
+
     if (!this.disaggregations[metricID]) {
       this.disaggregations[metricID] = {
         [disaggregationKey]: {},
@@ -120,6 +166,7 @@ class FormStore {
 
   submitReport = (reportID: number) => {
     /** Submit Report Logic Goes Here */
+    /** Final Validation Logic Goes Here (users should not be able to publish an empty/invalid report) */
 
     /** Temporarily Returning Final Object For Testing Purposes */
     return {
