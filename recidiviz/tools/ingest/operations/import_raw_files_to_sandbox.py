@@ -35,8 +35,7 @@ python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
 import argparse
 import logging
 import re
-import sys
-from typing import List, Optional
+from typing import Optional
 
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     import_raw_files_to_bq_sandbox,
@@ -84,7 +83,7 @@ def do_sandbox_raw_file_import(
     )
 
 
-def parse_arguments(argv: List[str]) -> argparse.Namespace:
+def parse_arguments() -> argparse.Namespace:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 
@@ -129,12 +128,12 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         help="Overrides the number of rows per chunk when uploading the files.",
     )
 
-    return parser.parse_args(argv)
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    known_args = parse_arguments(sys.argv)
+    known_args = parse_arguments()
     with local_project_id_override(GCP_PROJECT_STAGING):
         do_sandbox_raw_file_import(
             state_code=StateCode(known_args.state_code),
