@@ -178,7 +178,7 @@ class TestIngestViewMaterializationGatingContext(TestCase):
         invalid_state_code = StateCode.US_AZ
 
         with self.assertRaisesRegex(
-            ValueError, f"Invalid state: {invalid_state_code.value}"
+            ValueError, r"Did not find \[US_AZ\] in the gating context."
         ):
             gating_context.set_bq_materialization_enabled(
                 state_code=invalid_state_code,

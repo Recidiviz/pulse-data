@@ -254,8 +254,23 @@ class FlashDatabaseToolsTest(unittest.TestCase):
 
         # Act
         with self.assertRaisesRegex(
-            ValueError, f"Invalid state: {StateCode.US_AK.value}"
+            ValueError, r"Did not find \[US_AK\] in the gating context."
         ):
             ungate_bq_materialization_for_instance(
-                state_code=StateCode.US_AK, ingest_instance=DirectIngestInstance.PRIMARY
+                state_code=StateCode.US_AK,
+                ingest_instance=DirectIngestInstance.SECONDARY,
+            )
+
+    def test_ungate_bq_materialization_instance_primary_before_secondary(self) -> None:
+        # Arrange
+        self.set_config_yaml(SIMPLE_CONFIG_YAML)
+
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Attempting to enable BQ materialization for \[US_YY\] in PRIMARY before "
+            r"materialization has been enabled in SECONDARY.",
+        ):
+            ungate_bq_materialization_for_instance(
+                state_code=StateCode.US_YY, ingest_instance=DirectIngestInstance.PRIMARY
             )

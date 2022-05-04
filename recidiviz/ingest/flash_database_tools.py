@@ -113,13 +113,25 @@ def move_ingest_view_results_between_instances(
     )
 
 
-# TODO(#11424): Delete this endpoint and all references to it once the BQ materialization migration is complete.
+# TODO(#11424): Delete this endpoint and all references to it once the BQ
+#  materialization migration is complete.
 def ungate_bq_materialization_for_instance(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> None:
-    """Ungate BQ materialization in specific state/instance by enabling materialization and then uploading back to gcs."""
+    """Ungate BQ materialization in specific state/instance by enabling materialization
+    and then uploading back to gcs.
+    """
 
     gating_context = IngestViewMaterializationGatingContext.load_from_gcs()
+    if ingest_instance == DirectIngestInstance.PRIMARY:
+        if not gating_context.is_bq_ingest_view_materialization_enabled(
+            state_code=state_code, ingest_instance=DirectIngestInstance.SECONDARY
+        ):
+            raise ValueError(
+                f"Attempting to enable BQ materialization for [{state_code.value}] in "
+                f"PRIMARY before materialization has been enabled in SECONDARY."
+            )
+
     gating_context.set_bq_materialization_enabled(
         state_code=state_code, ingest_instance=ingest_instance
     )
