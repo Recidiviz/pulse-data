@@ -198,4 +198,4 @@ output:
                     $raw_text: SEXOFF
                     $mappings:
                       StateSupervisionCaseType.GENERAL: "0"
-                      StateSupervisionCaseType.SEX_OFFENSE: "-1"
+                      StateSupervisionCaseType.SEX_OFFENSE: "(1)"
