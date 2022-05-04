@@ -105,7 +105,7 @@ export const mockMetrics = [
     value: 1000,
     unit: "people",
     category: "CAPACITY_AND_COST",
-    label: "Total Staff",
+    label: "Total Staff2",
     definitions: [
       {
         term: "full-time staff",

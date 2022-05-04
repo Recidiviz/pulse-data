@@ -18,6 +18,7 @@
 import { observer } from "mobx-react-lite";
 import React, { useState } from "react";
 
+import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import { printCommaSeparatedList } from "../../utils";
 import {
@@ -28,115 +29,74 @@ import {
   PublishDataWrapper,
   Title,
 } from "../Forms";
+import PublishConfirmation from "./PublishConfirmation";
 
 const PublishDataPanel: React.FC = () => {
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [tempFinalObject, setTempFinalObject] = useState({}); // Temporarily Displaying Final Object For Testing Purposes
   const { formStore, reportStore } = useStore();
 
-  return (
-    <PublishDataWrapper>
-      <Title>
-        <PublishButton
-          onClick={() => {
-            /** Should trigger a confirmation dialogue before submitting */
+  const toggleConfirmationDialogue = () =>
+    setShowConfirmation(!showConfirmation);
 
-            formStore.submitReport(0);
-            setTempFinalObject(formStore.submitReport(0)); // Temporarily Displaying Final Object For Testing Purposes
+  return (
+    <>
+      <PublishDataWrapper>
+        <Title>
+          <PublishButton
+            onClick={() => {
+              /** Should trigger a confirmation dialogue before submitting */
+              toggleConfirmationDialogue();
+              setTempFinalObject(formStore.submitReport(0)); // Temporarily Displaying Final Object For Testing Purposes
+            }}
+          >
+            Publish Data
+          </PublishButton>
+        </Title>
+
+        <EditDetails>
+          <EditDetailsTitle>Editors</EditDetailsTitle>
+          <EditDetailsContent>
+            {printCommaSeparatedList(
+              reportStore.reportOverviews[0]?.editors || [""]
+            )}
+          </EditDetailsContent>
+
+          <EditDetailsTitle>Details</EditDetailsTitle>
+          <EditDetailsContent>
+            Created today by{" "}
+            {reportStore.reportOverviews[0]?.editors?.[0] || ""}
+          </EditDetailsContent>
+        </EditDetails>
+
+        {/* Temporarily Displaying Final Object For Testing Purposes */}
+        <pre
+          style={{
+            width: 320,
+            height: 500,
+            position: "fixed",
+            zIndex: 2,
+            bottom: 20,
+            right: 20,
+            background: "white",
+            overflow: "scroll",
+            fontSize: 10,
+            lineHeight: 2,
+            border: "1px dashed black",
+            padding: 10,
           }}
         >
-          Publish Data
-        </PublishButton>
-      </Title>
-
-      <EditDetails>
-        <EditDetailsTitle>Editors</EditDetailsTitle>
-        <EditDetailsContent>
-          {printCommaSeparatedList(
-            reportStore.reportOverviews[0]?.editors || [""]
-          )}
-        </EditDetailsContent>
-
-        <EditDetailsTitle>Details</EditDetailsTitle>
-        <EditDetailsContent>
-          Created today by {reportStore.reportOverviews[0]?.editors?.[0] || ""}
-        </EditDetailsContent>
-      </EditDetails>
-
-      {/* Temporarily Displaying Final Object For Testing Purposes */}
-      <div
-        style={{
-          position: "fixed",
-          zIndex: 2,
-          bottom: 520,
-          right: 20,
-          background: "black",
-          color: "white",
-          padding: 5,
-          fontSize: "0.8rem",
-        }}
-      >
-        Final Form Object To Submit (click Publish Data)
-      </div>
-      <pre
-        style={{
-          width: 320,
-          height: 500,
-          position: "fixed",
-          zIndex: 2,
-          bottom: 20,
-          right: 20,
-          background: "white",
-          overflow: "scroll",
-          fontSize: 10,
-          lineHeight: 2,
-          border: "1px dashed black",
-          padding: 10,
-        }}
-      >
-        {JSON.stringify(tempFinalObject, null, 2)}
-      </pre>
-
-      <div
-        style={{
-          position: "fixed",
-          zIndex: 2,
-          bottom: 520,
-          left: 20,
-          background: "black",
-          color: "white",
-          padding: 5,
-          fontSize: "0.8rem",
-        }}
-      >
-        Form Object (for updating)
-      </div>
-      <pre
-        style={{
-          width: 320,
-          height: 500,
-          position: "fixed",
-          zIndex: 2,
-          bottom: 20,
-          left: 20,
-          background: "white",
-          overflow: "scroll",
-          fontSize: 10,
-          lineHeight: 2,
-          border: "1px dashed black",
-          padding: 10,
-        }}
-      >
-        {JSON.stringify(
-          {
-            metricsValues: formStore.metricsValues,
-            contexts: formStore.contexts,
-            disaggregations: formStore.disaggregations,
-          },
-          null,
-          2
-        )}
-      </pre>
-    </PublishDataWrapper>
+          {JSON.stringify(tempFinalObject, null, 2)}
+        </pre>
+      </PublishDataWrapper>
+      {showConfirmation && (
+        <PublishConfirmation
+          toggleConfirmationDialogue={toggleConfirmationDialogue}
+          tempFinalObject={tempFinalObject as Report}
+          submitReport={formStore.submitReport}
+        />
+      )}
+    </>
   );
 };
 

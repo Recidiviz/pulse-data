@@ -23,6 +23,7 @@ export const ExtendedDropdownToggle = styled(DropdownToggle)`
   padding: 0;
   font-size: 1rem;
   font-weight: 500;
+  margin-left: 70px;
   color: ${palette.solid.darkgrey};
 
   &[aria-expanded="true"] {
