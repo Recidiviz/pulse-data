@@ -456,13 +456,20 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_get_metrics_for_empty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_report_monthly)
+            session.add_all(
+                [
+                    self.test_schema_objects.test_report_monthly,
+                    self.test_schema_objects.test_user_A,
+                ]
+            )
             session.flush()
             report_id = self.test_schema_objects.test_report_monthly.id
-
+            user_account_id = self.test_schema_objects.test_user_A.id
             metrics = sorted(
                 ReportInterface.get_metrics_by_report_id(
-                    session=session, report_id=report_id
+                    session=session,
+                    report_id=report_id,
+                    user_account_id=user_account_id,
                 ),
                 key=lambda x: x.key,
             )
@@ -477,9 +484,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_get_metrics_for_nonempty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_report_monthly)
+            session.add_all(
+                [
+                    self.test_schema_objects.test_report_monthly,
+                    self.test_schema_objects.test_user_A,
+                ]
+            )
             session.flush()
             report_id = self.test_schema_objects.test_report_monthly.id
+            user_account_id = self.test_schema_objects.test_user_A.id
 
             report = ReportInterface.get_report_by_id(
                 session=session, report_id=report_id
@@ -491,7 +504,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
             metrics = ReportInterface.get_metrics_by_report_id(
-                session=session, report_id=report_id
+                session=session, report_id=report_id, user_account_id=user_account_id
             )
             self.assertEqual(len(metrics), 6)
             calls_for_service = [

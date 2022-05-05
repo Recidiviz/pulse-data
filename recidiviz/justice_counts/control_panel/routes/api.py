@@ -67,17 +67,36 @@ def get_api_blueprint(
         permissions = g.user_context.permissions if "user_context" in g else None
         return make_response(updated_user.to_json(permissions=permissions), 200)
 
+    @api_blueprint.route("/reports/<report_id>", methods=["GET"])
+    @auth_decorator
+    def get_report_by_id(report_id: Optional[str] = None) -> Response:
+        report_id_int = int(assert_type(report_id, str))
+        report = ReportInterface.get_report_by_id(
+            session=current_session, report_id=report_id_int
+        )
+        user_id = get_user_account_id(request_dict=request.args.to_dict())
+        report_metrics = ReportInterface.get_metrics_by_report_id(
+            session=current_session,
+            report_id=report_id_int,
+            user_account_id=user_id,
+        )
+
+        report_definition_json = ReportInterface.to_json_response(
+            session=current_session, report=report
+        )
+        metrics_json = [report_metric.to_json() for report_metric in report_metrics]
+        report_definition_json["metrics"] = metrics_json
+
+        return make_response(jsonify(report_definition_json), 200)
+
     @api_blueprint.route("/reports", methods=["GET"])
     @auth_decorator
-    def get_reports() -> Response:
+    def get_report_by_agency_id() -> Response:
         request_dict = assert_type(request.args.to_dict(), dict)
+        user_id = get_user_account_id(request_dict=assert_type(request_dict, dict))
         agency_id = int(assert_type(request_dict.get("agency_id"), str))
-        user_id = get_user_account_id(request_dict=request_dict)
-
         reports = ReportInterface.get_reports_by_agency_id(
-            session=current_session,
-            agency_id=agency_id,
-            user_account_id=user_id,
+            session=current_session, agency_id=agency_id, user_account_id=user_id
         )
         report_json = jsonify(
             [

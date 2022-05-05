@@ -25,6 +25,7 @@ from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
+from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     ReportingFrequency,
@@ -83,7 +84,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             b"window.AUTH0_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'};",
         )
 
-    def test_get_reports(self) -> None:
+    def test_get_all_reports(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly
         self.session.add_all([report, user_A])
@@ -103,6 +104,35 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["month"], 6)
         self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
         self.assertEqual(response_json["year"], 2022)
+
+    def test_get_report_metrics(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        report = self.test_schema_objects.test_report_monthly
+        self.session.add_all([report, user_A])
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+            response = self.client.get(f"/api/reports/{report.id}")
+
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["editors"], [])
+        self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
+        self.assertEqual(response_json["last_modified_at"], None)
+        self.assertEqual(response_json["month"], 6)
+        self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
+        self.assertEqual(response_json["year"], 2022)
+        metrics = assert_type(response_json["metrics"], list)
+        self.assertEqual(len(metrics), 6)
+        self.assertEqual(metrics[0]["key"], law_enforcement.residents.key)
+        self.assertEqual(metrics[1]["key"], law_enforcement.calls_for_service.key)
+        self.assertEqual(
+            metrics[2]["key"], law_enforcement.arrests_by_race_and_ethnicity.key
+        )
+        self.assertEqual(metrics[3]["key"], law_enforcement.arrests_by_gender.key)
+        self.assertEqual(metrics[4]["key"], law_enforcement.reported_crime.key)
+        self.assertEqual(metrics[5]["key"], law_enforcement.total_arrests.key)
 
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A
