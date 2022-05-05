@@ -67,7 +67,9 @@ class ReportInterface:
         session: Session, agency_id: int, user_account_id: int
     ) -> List[schema.Report]:
         ReportInterface._raise_if_user_is_unauthorized(
-            session=session, agency_id=agency_id, user_account_id=user_account_id
+            session=session,
+            agency_id=agency_id,
+            user_account_id=user_account_id,
         )
         return (
             session.query(schema.Report)
@@ -261,8 +263,7 @@ class ReportInterface:
 
     @staticmethod
     def get_metrics_by_report_id(
-        session: Session,
-        report_id: int,
+        session: Session, report_id: int, user_account_id: int
     ) -> List[ReportMetric]:
         """Given a report_id, determine all MetricDefinitions that must be populated
         on this report, and convert them to ReportMetrics. If the agency has already
@@ -282,8 +283,11 @@ class ReportInterface:
            metric, its values will be None; otherwise they will be populated from the data
            already stored in our database.
         """
-        report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
 
+        report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
+        ReportInterface._raise_if_user_is_unauthorized(
+            session=session, agency_id=report.source_id, user_account_id=user_account_id
+        )
         # We determine which metrics to include on this report based on:
         #   - Agency system (e.g. only law enforcement)
         #   - Report frequency (e.g. only annual metrics)
