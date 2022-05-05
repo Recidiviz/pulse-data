@@ -121,7 +121,7 @@ module "configs" {
 resource "google_storage_bucket_object" "empty_json" {
   name    = "empty.json"
   bucket  = module.configs.name
-  content = ""
+  content = "\n"
 }
 
 module "dbexport" {
