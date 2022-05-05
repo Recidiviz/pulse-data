@@ -81,7 +81,7 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
               </TitleWrapper>
 
               {/* Metric Value */}
-              <MetricTextInput metric={metric} />
+              <MetricTextInput reportID={reportID} metric={metric} />
 
               {/* Disaggregations */}
               {metric.disaggregations.length > 0 &&
@@ -104,6 +104,7 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
                             (dimension, dimensionIndex) => {
                               return (
                                 <DisaggregationDimensionTextInput
+                                  reportID={reportID}
                                   key={dimension.key}
                                   metric={metric}
                                   dimension={dimension}
@@ -131,6 +132,7 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
 
                         <BinaryRadioGroupWrapper>
                           <BinaryRadioButtonInputs
+                            reportID={reportID}
                             metric={metric}
                             context={context}
                             contextIndex={contextIndex}
@@ -139,7 +141,7 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
                         <BinaryRadioGroupClearButton
                           data-name={context.key}
                           onClick={(e) =>
-                            formStore.resetBinaryInput(metric.key, e)
+                            formStore.resetBinaryInput(reportID, metric.key, e)
                           }
                         >
                           Clear Input
@@ -153,6 +155,7 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
                         {context.display_name}
                       </AdditionalContextLabel>
                       <AdditionalContextInput
+                        reportID={reportID}
                         metric={metric}
                         context={context}
                         contextIndex={contextIndex}

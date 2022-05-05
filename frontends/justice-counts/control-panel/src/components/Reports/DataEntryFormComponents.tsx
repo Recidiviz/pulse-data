@@ -29,41 +29,47 @@ import { combineTwoKeyNames } from "../../utils";
 import { BinaryRadioButton, TextInput } from "../Forms";
 
 interface MetricTextInputProps {
+  reportID: number;
   metric: Metric;
 }
 
-export const MetricTextInput = observer(({ metric }: MetricTextInputProps) => {
-  const { formStore } = useStore();
-  const { metricsValues, updateMetricsValues, formErrors } = formStore;
+export const MetricTextInput = observer(
+  ({ reportID, metric }: MetricTextInputProps) => {
+    const { formStore } = useStore();
+    const { metricsValues, updateMetricsValues, formErrors } = formStore;
 
-  return (
-    <TextInput
-      label={metric.label}
-      error={(formErrors[metric.key]?.[metric.key] as string) || ""}
-      type="text"
-      name={metric.key}
-      id={metric.key}
-      valueLabel={metric.unit}
-      context={metric.reporting_note}
-      onChange={(e) => updateMetricsValues(metric.key, e)}
-      value={
-        metricsValues[metric.key] !== undefined
-          ? metricsValues[metric.key]
-          : (metric.value as string) || ""
-      }
-      required
-    />
-  );
-});
+    return (
+      <TextInput
+        label={metric.label}
+        error={
+          (formErrors[reportID]?.[metric.key]?.[metric.key] as string) || ""
+        }
+        type="text"
+        name={metric.key}
+        id={metric.key}
+        valueLabel={metric.unit}
+        context={metric.reporting_note}
+        onChange={(e) => updateMetricsValues(reportID, metric.key, e)}
+        value={
+          metricsValues[reportID]?.[metric.key] !== undefined
+            ? metricsValues[reportID][metric.key]
+            : (metric.value as string) || ""
+        }
+        required
+      />
+    );
+  }
+);
 
 interface DisaggregationDimensionTextInputProps extends MetricTextInputProps {
-  dimension: MetricDisaggregationDimensions;
   disaggregation: MetricDisaggregations;
   disaggregationIndex: number;
+  dimension: MetricDisaggregationDimensions;
   dimensionIndex: number;
 }
 export const DisaggregationDimensionTextInput = observer(
   ({
+    reportID,
     metric,
     dimension,
     disaggregation,
@@ -83,7 +89,9 @@ export const DisaggregationDimensionTextInput = observer(
         key={dimension.key}
         label={dimension.label}
         error={
-          (formErrors[metric.key]?.[disaggregationDimensionKey] as string) || ""
+          (formErrors[reportID]?.[metric.key]?.[
+            disaggregationDimensionKey
+          ] as string) || ""
         }
         type="text"
         name={dimension.key}
@@ -91,13 +99,20 @@ export const DisaggregationDimensionTextInput = observer(
         valueLabel={metric.unit}
         context={dimension.reporting_note}
         onChange={(e) =>
-          updateDisaggregationDimensionValue(metric.key, disaggregation.key, e)
+          updateDisaggregationDimensionValue(
+            reportID,
+            metric.key,
+            disaggregation.key,
+            e
+          )
         }
         value={
-          disaggregations?.[metric.key]?.[disaggregation.key]?.[
+          disaggregations?.[reportID]?.[metric.key]?.[disaggregation.key]?.[
             dimension.key
           ] !== undefined
-            ? disaggregations[metric.key][disaggregation.key][dimension.key]
+            ? disaggregations[reportID][metric.key][disaggregation.key][
+                dimension.key
+              ]
             : (metric.disaggregations?.[disaggregationIndex]?.dimensions?.[
                 dimensionIndex
               ].value as string) || ""
@@ -114,7 +129,7 @@ interface AdditionalContextInputsProps extends MetricTextInputProps {
 }
 
 export const BinaryRadioButtonInputs = observer(
-  ({ metric, context }: AdditionalContextInputsProps) => {
+  ({ reportID, metric, context }: AdditionalContextInputsProps) => {
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
 
@@ -126,8 +141,8 @@ export const BinaryRadioButtonInputs = observer(
           name={context.key}
           label="Yes"
           value="Yes"
-          onChange={(e) => updateContextValue(metric.key, e)}
-          checked={contexts?.[metric.key]?.[context.key] === "Yes"}
+          onChange={(e) => updateContextValue(reportID, metric.key, e)}
+          checked={contexts?.[reportID]?.[metric.key]?.[context.key] === "Yes"}
         />
         <BinaryRadioButton
           type="radio"
@@ -135,8 +150,8 @@ export const BinaryRadioButtonInputs = observer(
           name={context.key}
           label="No"
           value="No"
-          onChange={(e) => updateContextValue(metric.key, e)}
-          checked={contexts?.[metric.key]?.[context.key] === "No"}
+          onChange={(e) => updateContextValue(reportID, metric.key, e)}
+          checked={contexts?.[reportID]?.[metric.key]?.[context.key] === "No"}
         />
       </>
     );
@@ -144,7 +159,12 @@ export const BinaryRadioButtonInputs = observer(
 );
 
 export const AdditionalContextInput = observer(
-  ({ metric, context, contextIndex }: AdditionalContextInputsProps) => {
+  ({
+    reportID,
+    metric,
+    context,
+    contextIndex,
+  }: AdditionalContextInputsProps) => {
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
 
@@ -155,10 +175,10 @@ export const AdditionalContextInput = observer(
         id={context.key}
         label="Type here..."
         context={context.reporting_note || ""}
-        onChange={(e) => updateContextValue(metric.key, e)}
+        onChange={(e) => updateContextValue(reportID, metric.key, e)}
         value={
-          contexts?.[metric.key]?.[context.key] !== undefined
-            ? contexts[metric.key][context.key]
+          contexts?.[reportID]?.[metric.key]?.[context.key] !== undefined
+            ? contexts[reportID]?.[metric.key][context.key]
             : (metric.contexts[contextIndex].value as string) || ""
         }
         additionalContext

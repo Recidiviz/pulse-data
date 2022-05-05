@@ -22,7 +22,11 @@ import styled, { css } from "styled-components/macro";
 import { CreateReportFormValuesType } from "../../shared/types";
 import { useStore } from "../../stores";
 import { monthsByName } from "../../utils";
-import { BinaryRadioButton, BinaryRadioGroupContainer } from "../Forms";
+import {
+  BinaryRadioButton,
+  BinaryRadioGroupContainer,
+  BinaryRadioGroupWrapper,
+} from "../Forms";
 import { palette } from "../GlobalStyles";
 
 // Temporary Placeholder Styles
@@ -168,23 +172,25 @@ const CreateReport = () => {
         />
 
         <BinaryRadioGroupContainer>
-          <BinaryRadioButton
-            type="radio"
-            id="monthly"
-            name="frequency"
-            label="Monthly"
-            value="MONTHLY"
-            onChange={updateFrequency}
-            defaultChecked
-          />
-          <BinaryRadioButton
-            type="radio"
-            id="annual"
-            name="frequency"
-            label="Annual"
-            value="ANNUAL"
-            onChange={updateFrequency}
-          />
+          <BinaryRadioGroupWrapper>
+            <BinaryRadioButton
+              type="radio"
+              id="monthly"
+              name="frequency"
+              label="Monthly"
+              value="MONTHLY"
+              onChange={updateFrequency}
+              defaultChecked
+            />
+            <BinaryRadioButton
+              type="radio"
+              id="annual"
+              name="frequency"
+              label="Annual"
+              value="ANNUAL"
+              onChange={updateFrequency}
+            />
+          </BinaryRadioGroupWrapper>
         </BinaryRadioGroupContainer>
 
         <Button onClick={onSubmit}>Create Report</Button>

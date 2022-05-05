@@ -105,5 +105,5 @@ export type FormMetric = {
 };
 
 export type FormReport = {
-  [metricID: string]: FormMetric;
+  [metricKey: string]: FormMetric;
 };

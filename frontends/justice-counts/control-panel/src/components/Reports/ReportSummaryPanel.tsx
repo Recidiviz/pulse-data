@@ -100,7 +100,7 @@ const ReportStatusIconComponent: React.FC<{
   metricHasEntries: boolean;
   activeMetric: string;
   metric: Metric;
-  updateActiveMetric: (metricID: string) => void;
+  updateActiveMetric: (metricKey: string) => void;
 }> = ({
   metricHasEntries,
   metricHasError,
@@ -138,7 +138,7 @@ const ReportStatusIconComponent: React.FC<{
 const ReportSummaryPanel: React.FC<{
   reportID: number;
   activeMetric: string;
-  updateActiveMetric: (metricID: string) => void;
+  updateActiveMetric: (metricKey: string) => void;
 }> = ({ reportID, activeMetric, updateActiveMetric }) => {
   const navigate = useNavigate();
   const { formStore, reportStore } = useStore();
@@ -158,8 +158,11 @@ const ReportSummaryPanel: React.FC<{
               updateActiveMetric={updateActiveMetric}
               activeMetric={activeMetric}
               metricHasError={
-                formStore.formErrors[metric.key] &&
-                Boolean(Object.keys(formStore.formErrors[metric.key]).length)
+                formStore.formErrors[reportID]?.[metric.key] &&
+                Boolean(
+                  Object.keys(formStore.formErrors[reportID]?.[metric.key])
+                    .length
+                )
               }
               /**
                * Need to figure out what this component should subscribe to in order to give
@@ -177,7 +180,7 @@ const ReportSummaryPanel: React.FC<{
               metricHasEntries={
                 Boolean(
                   reportStore.reportMetrics[reportID][metricIndex].value
-                ) || Boolean(formStore.metricsValues[metric.key])
+                ) || Boolean(formStore.metricsValues[reportID]?.[metric.key])
               }
               metric={metric}
             />

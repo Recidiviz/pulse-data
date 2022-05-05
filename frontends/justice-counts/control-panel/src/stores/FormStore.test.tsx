@@ -95,11 +95,12 @@ test("metrics value handler updates the metric value", () => {
   } as unknown as React.ChangeEvent<HTMLInputElement>;
 
   formStore.updateMetricsValues(
+    0,
     "PROSECUTION_STAFF",
     mockEvent as React.ChangeEvent<HTMLInputElement>
   );
 
-  expect(formStore.metricsValues.PROSECUTION_STAFF).toEqual(
+  expect(formStore.metricsValues[0].PROSECUTION_STAFF).toEqual(
     mockEvent.target.value
   );
 
@@ -116,13 +117,15 @@ test("disaggregation dimension value handler updates the disaggregation dimensio
   } as unknown as React.ChangeEvent<HTMLInputElement>;
 
   formStore.updateDisaggregationDimensionValue(
+    0,
     "PROSECUTION_STAFF",
     "PROSECUTION_STAFF_TYPE",
     mockEvent as React.ChangeEvent<HTMLInputElement>
   );
 
   expect(
-    formStore.disaggregations.PROSECUTION_STAFF.PROSECUTION_STAFF_TYPE.SUPPORT
+    formStore.disaggregations[0].PROSECUTION_STAFF.PROSECUTION_STAFF_TYPE
+      .SUPPORT
   ).toEqual(mockEvent.target.value);
 
   expect.hasAssertions();
@@ -138,12 +141,13 @@ test("context value handler updates the context value", () => {
   } as unknown as React.ChangeEvent<HTMLInputElement>;
 
   formStore.updateContextValue(
+    0,
     "PROSECUTION_STAFF",
     mockEvent as React.ChangeEvent<HTMLInputElement>
   );
 
   expect(
-    formStore.contexts.PROSECUTION_STAFF.PROGRAMMATIC_OR_MEDICAL_STAFF
+    formStore.contexts[0].PROSECUTION_STAFF.PROGRAMMATIC_OR_MEDICAL_STAFF
   ).toEqual(mockEvent.target.value);
 
   expect.hasAssertions();
