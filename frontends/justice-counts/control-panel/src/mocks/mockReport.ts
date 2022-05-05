@@ -27,77 +27,7 @@ export const mockOverview = {
 
 export const mockMetrics = [
   {
-    key: "PROSECUTION_STAFF",
-    display_name: "Staff",
-    description:
-      "Measures the number of full-time staff employed by the agency.",
-    reporting_note: "DOCs report only correctional institution staff.",
-    value: null,
-    unit: "people",
-    category: "CAPACITY_AND_COST",
-    label: "Total Staff",
-    definitions: [
-      {
-        term: "full-time staff",
-        definition: "definition of full-time staff",
-      },
-    ],
-    contexts: [
-      {
-        key: "PROGRAMMATIC_OR_MEDICAL_STAFF",
-        display_name: "Does this include programmatic or medical staff? ",
-        reporting_note: null,
-        required: false,
-        type: "BOOLEAN",
-        value: null,
-      },
-      {
-        key: "ADDITIONAL_CONTEXT",
-        display_name: "Additional Context",
-        reporting_note:
-          "Add any additional context that you would like to provide here.",
-        required: false,
-        type: "TEXT",
-        value: null,
-      },
-    ],
-    disaggregations: [
-      {
-        key: "PROSECUTION_STAFF_TYPE",
-        display_name: "Staff Types",
-        dimensions: [
-          {
-            key: "SUPPORT",
-            label: "Support",
-            value: null,
-            reporting_note: "Staff: Support",
-          },
-          {
-            key: "SECURITY",
-            label: "Security",
-            value: null,
-            reporting_note: "Staff: Security",
-          },
-          {
-            key: "OTHER",
-            label: "Other",
-            value: null,
-            reporting_note: "Staff: Other",
-          },
-          {
-            key: "UNKNOWN",
-            label: "Unknown",
-            value: null,
-            reporting_note: "Staff: Unknown",
-          },
-        ],
-        required: false,
-        helper_text: "Break down the metric by NIBRS offense types.",
-      },
-    ],
-  },
-  {
-    key: "READMISSION_KEY",
+    key: "READMISSION_RATE",
     display_name: "Readmission Rate",
     description:
       "Measure the number of individuals admitted who had at least one other prison admission within the prior year.",
@@ -105,19 +35,19 @@ export const mockMetrics = [
       "Exclude re-entry after a temporary exit (escape, work release, appointment, etc).",
     value: null,
     unit: "readmissions",
-    category: "CAPACITY_AND_COST",
+    category: "READMISSION_RATE",
     label: "Readmission Rate",
     definitions: [
       {
-        term: "full-time staff",
-        definition: "definition of full-time staff",
+        term: "",
+        definition: "",
       },
     ],
     contexts: [
       {
-        key: "DEFINITION_OF_ADMISSION",
-        display_name: "Definition of Admission",
-        reporting_note: "",
+        key: "DEFINITION_OF_READMISSION",
+        display_name: "Definition of Readmission",
+        reporting_note: "Agency's definition of readmission.",
         required: false,
         type: "TEXT",
         value: null,
@@ -138,28 +68,28 @@ export const mockMetrics = [
         display_name: "Readmission Types",
         dimensions: [
           {
-            key: "SUPPORT2",
-            label: "Support",
+            key: "NEW_OFFENSE",
+            label: "New Offense",
             value: null,
-            reporting_note: "Staff: Support",
+            reporting_note: "Readmission: New Offense",
           },
           {
-            key: "SECURITY2",
-            label: "Security",
+            key: "VIOLATION_OF_CONDITIONS",
+            label: "Violation of Conditions",
             value: null,
-            reporting_note: "Staff: Security",
+            reporting_note: "Readmission: Violation of Conditions",
           },
           {
-            key: "OTHER2",
+            key: "OTHER",
             label: "Other",
             value: null,
-            reporting_note: "Staff: Other",
+            reporting_note: "Readmission: Other",
           },
           {
-            key: "UNKNOWN2",
+            key: "UNKNOWN",
             label: "Unknown",
             value: null,
-            reporting_note: "Staff: Unknown",
+            reporting_note: "Readmission: Unknown",
           },
         ],
         required: false,
@@ -168,21 +98,27 @@ export const mockMetrics = [
     ],
   },
   {
-    key: "ANNUAL_BUDGET_KEY",
-    display_name: "Annual Budget",
+    key: "ADMISSIONS",
+    display_name: "Admissions",
+    description:
+      "Measure the number of new admission to the state corrections system.",
     reporting_note:
-      "Sheriff offices report on budget for patrol and detention separately",
-    description: "Measures the total annual budget (in dollars) of the agency.",
-    definitions: [],
-    category: "CAPACITY AND COST",
+      "Report individual in the most serious category (new sentence > vilation > hold).",
     value: null,
-    unit: "USD",
-    label: "Total Annual Budget",
+    unit: "admissions",
+    category: "ADMISSIONS",
+    label: "Admissions",
+    definitions: [
+      {
+        term: "",
+        definition: "",
+      },
+    ],
     contexts: [
       {
-        key: "PRIMARY_FUNDING_SOURCE",
-        display_name: "Primary Funding Source",
-        reporting_note: "",
+        key: "DEFINITION_OF_ADMISSION",
+        display_name: "Definition of Admission",
+        reporting_note: "Agency's definition of admission.",
         required: false,
         type: "TEXT",
         value: null,
@@ -190,7 +126,8 @@ export const mockMetrics = [
       {
         key: "ADDITIONAL_CONTEXT",
         display_name: "Additional Context",
-        reporting_note: null,
+        reporting_note:
+          "Add any additional context that you would like to provide here.",
         required: false,
         type: "TEXT",
         value: null,
@@ -198,25 +135,308 @@ export const mockMetrics = [
     ],
     disaggregations: [
       {
-        key: "metric/law_enforcement/budget/type",
-        display_name: "Budget Breakdown",
-        required: false,
-        should_sum_to_total: true,
-        helper_text: null,
+        key: "ADMISSIONS_KEY_TYPE",
+        display_name: "Population Type",
         dimensions: [
           {
-            key: "DETENTION",
-            label: "Detention",
+            key: "NEW_SENTENCE",
+            label: "New Sentence",
             value: null,
-            reporting_note: "Sheriff Budget: Detention",
+            reporting_note: "Admissions: New Sentence",
           },
           {
-            key: "PATROL",
-            label: "Patrol",
+            key: "TRANSFER_HOLD",
+            label: "Transfer/Hold",
             value: null,
-            reporting_note: "Sheriff Budget: Patrol",
+            reporting_note: "Admissions: Transfer/Hold",
+          },
+          {
+            key: "SUPERVISION_VIOLATION_REVOCATION",
+            label: "Supervision Violation/Revocation",
+            value: null,
+            reporting_note: "Admissions: Supervision Violation/Revocation",
+          },
+          {
+            key: "OTHER",
+            label: "Other",
+            value: null,
+            reporting_note: "Admissions: Other",
+          },
+          {
+            key: "UNKNOWN",
+            label: "Unknown",
+            value: null,
+            reporting_note: "Admissions: Unknown",
           },
         ],
+        required: false,
+        helper_text: "",
+      },
+    ],
+  },
+  {
+    key: "AVERAGE_DAILY_POPULATION",
+    display_name: "Average Daily Population",
+    description:
+      "Measures the average daily population held in the state corrections system.",
+    reporting_note:
+      "Calculate the average against a 30-day month. Report individual in the most serious category (new sentence > vilation > hold).",
+    value: null,
+    unit: "people",
+    category: "PEOPLE",
+    label: "People",
+    definitions: [
+      {
+        term: "",
+        definition: "",
+      },
+    ],
+    contexts: [
+      {
+        key: "VOC_COUNT_QUESTION",
+        display_name:
+          "Are individuals admitted for violation of conditions counted within the above population categories?",
+        reporting_note:
+          "Whether individual admitted for violation of conditions are counted within or separate from the above population categories.",
+        required: false,
+        type: "BOOLEAN",
+        value: null,
+      },
+      {
+        key: "ADDITIONAL_CONTEXT",
+        display_name: "Additional Context",
+        reporting_note:
+          "Add any additional context that you would like to provide here.",
+        required: false,
+        type: "TEXT",
+        value: null,
+      },
+    ],
+    disaggregations: [
+      {
+        key: "AVG_DAILY_POP_KEY_TYPE",
+        display_name: "Population Type",
+        dimensions: [
+          {
+            key: "NEW_SENTENCE",
+            label: "New Sentence",
+            value: null,
+            reporting_note: "Average Daily Population: New Sentence",
+          },
+          {
+            key: "TRANSFER_HOLD",
+            label: "Transfer/Hold",
+            value: null,
+            reporting_note: "Average Daily Population: Transfer/Hold",
+          },
+          {
+            key: "SUPERVISION_VIOLATION_REVOCATION",
+            label: "Supervision Violation/Revocation",
+            value: null,
+            reporting_note:
+              "Average Daily Population: Supervision Violation/Revocation",
+          },
+          {
+            key: "OTHER",
+            label: "Other",
+            value: null,
+            reporting_note: "Average Daily Population: Other",
+          },
+          {
+            key: "UNKNOWN",
+            label: "Unknown",
+            value: null,
+            reporting_note: "Average Daily Population: Unknown",
+          },
+        ],
+        required: false,
+        helper_text: "",
+      },
+      {
+        key: "RACE_ETHNICITY_KEY_TYPE",
+        display_name: "Race & Ethnicity",
+        dimensions: [
+          {
+            key: "WHITE",
+            label: "White",
+            value: null,
+            reporting_note: "Race/Ethnicity: White",
+          },
+          {
+            key: "BLACK",
+            label: "Black",
+            value: null,
+            reporting_note: "Race/Ethnicity: Black",
+          },
+          {
+            key: "HISPANIC_LATINX",
+            label: "Hispanic/Latinx",
+            value: null,
+            reporting_note: "Race/Ethnicity: Hispanic/Latinx",
+          },
+          {
+            key: "ASIAN",
+            label: "Asian",
+            value: null,
+            reporting_note: "Race/Ethnicity: Asian",
+          },
+          {
+            key: "NATIVE_AMERICAN",
+            label: "Native American",
+            value: null,
+            reporting_note: "Race/Ethnicity: Native American",
+          },
+          {
+            key: "NATIVE_HAWAIIAN_PI",
+            label: "Native Hawaiian or Pacific Islander",
+            value: null,
+            reporting_note:
+              "Race/Ethnicity: Native Hawaiian or Pacific Islander",
+          },
+          {
+            key: "OTHER",
+            label: "Other",
+            value: null,
+            reporting_note: "Race/Ethnicity: Other",
+          },
+          {
+            key: "UNKNOWN",
+            label: "Unknown",
+            value: null,
+            reporting_note: "Race/Ethnicity: Unknown",
+          },
+        ],
+        required: false,
+        helper_text:
+          "Measure the average daily correctional population of each race/ethnic group. This is the average daily population for each group. Calculate the average against a 30-day month.",
+      },
+      {
+        key: "GENDER_KEY_TYPE",
+        display_name: "Gender",
+        dimensions: [
+          {
+            key: "WHITE",
+            label: "Male",
+            value: null,
+            reporting_note: "Gender: Male",
+          },
+          {
+            key: "BLACK",
+            label: "Female",
+            value: null,
+            reporting_note: "Gender: Female",
+          },
+          {
+            key: "HISPANIC_LATINX",
+            label: "Non-binary",
+            value: null,
+            reporting_note: "Gender: Non-binary",
+          },
+          {
+            key: "OTHER",
+            label: "Other",
+            value: null,
+            reporting_note: "Gender: Other",
+          },
+          {
+            key: "UNKNOWN",
+            label: "Unknown",
+            value: null,
+            reporting_note: "Gender: Unknown",
+          },
+        ],
+        required: false,
+        helper_text:
+          "Measure the average daily correctional population of each gender group. This is the average daily population for each group. Calculate the average against a 30-day month.",
+      },
+    ],
+  },
+  {
+    key: "RELEASES",
+    display_name: "Releases",
+    description: "Measure the number of releases from the facility.",
+    reporting_note:
+      "Exclude temporary release (work release, appointment, court hearing, etc).",
+    value: null,
+    unit: "releases",
+    category: "RELEASES",
+    label: "Releases",
+    definitions: [
+      {
+        term: "",
+        definition: "",
+      },
+    ],
+    contexts: [
+      {
+        key: "DEFINITION_OF_SUPERVISION",
+        display_name: "Definition of Supervision",
+        reporting_note:
+          "Agency's definition of supervision (probation, parole, either).",
+        required: false,
+        type: "TEXT",
+        value: null,
+      },
+      {
+        key: "ADDITIONAL_CONTEXT",
+        display_name: "Additional Context",
+        reporting_note:
+          "Add any additional context that you would like to provide here.",
+        required: false,
+        type: "TEXT",
+        value: null,
+      },
+    ],
+    disaggregations: [
+      {
+        key: "RELEASE_KEY_TYPE",
+        display_name: "Release Types",
+        dimensions: [
+          {
+            key: "SENTENCE_COMPLETION",
+            label: "Sentence Completion",
+            value: null,
+            reporting_note: "Releases: New Sentence",
+          },
+          {
+            key: "PRETRIAL_RELEASE",
+            label: "Pretrial Release",
+            value: null,
+            reporting_note: "Releases: Pretrial Release",
+          },
+          {
+            key: "TRANSFER",
+            label: "Transfer",
+            value: null,
+            reporting_note: "Releases: Transfer",
+          },
+          {
+            key: "UNAPPROVED ABSENCE",
+            label: "Unapproved Absence",
+            value: null,
+            reporting_note: "Releases: Unapproved Absence",
+          },
+          {
+            key: "COMPASSIONATE",
+            label: "Compassionate",
+            value: null,
+            reporting_note: "Releases: Compassionate",
+          },
+          {
+            key: "OTHER",
+            label: "Other",
+            value: null,
+            reporting_note: "Releases: Other",
+          },
+          {
+            key: "UNKNOWN",
+            label: "Unknown",
+            value: null,
+            reporting_note: "Releases: Unknown",
+          },
+        ],
+        required: false,
+        helper_text: "",
       },
     ],
   },

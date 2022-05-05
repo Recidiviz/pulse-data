@@ -24,12 +24,12 @@ import { palette } from "../GlobalStyles";
 export const DisaggregationContent = styled.div`
   border-left: 1px solid black;
   padding-left: 25px;
-  margin-top: 15px;
 `;
 
 export const DisaggregationContentHelperText = styled.div`
   font-size: ${rem("15px")};
   line-height: 24px;
+  margin-top: 15px;
 `;
 
 export const ToggleSwitchContainer = styled.div`
