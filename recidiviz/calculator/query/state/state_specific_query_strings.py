@@ -469,6 +469,8 @@ def pathways_state_specific_facility_filter() -> str:
                 facility != "TABLET"
             WHEN state_code = "US_TN" THEN
                 facility not in ("CJ","WH", "GENERAL")
+            WHEN state_code = "US_ME" THEN
+                facility not in ("BANGOR (MAIN OFFICE), ADULT")
             ELSE true
         END
     """
