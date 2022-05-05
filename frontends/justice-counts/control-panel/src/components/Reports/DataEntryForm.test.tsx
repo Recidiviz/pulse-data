@@ -186,7 +186,7 @@ test("expect negative number value to add field error (formErrors should contain
 
   fireEvent.change(input, { target: { value: "-1000" } });
 
-  expect(JSON.stringify(rootStore.formStore.formErrors)).toBe(
+  expect(JSON.stringify(rootStore.formStore.formErrors[0])).toBe(
     JSON.stringify({ PROSECUTION_STAFF: { PROSECUTION_STAFF: "Error" } })
   );
 });

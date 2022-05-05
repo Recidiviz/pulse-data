@@ -21,16 +21,44 @@ import { FormContexts, FormDisaggregations, Metric } from "../shared/types";
 import { combineTwoKeyNames } from "../utils";
 import ReportStore from "./ReportStore";
 
+interface FormStoreMetricValue {
+  [metricKey: string]: number | string;
+}
+interface FormStoreMetricValues {
+  [reportID: string]: FormStoreMetricValue;
+}
+
+interface FormStoreContextValue {
+  [metricKey: string]: FormContexts;
+}
+interface FormStoreContextValues {
+  [reportID: string]: FormStoreContextValue;
+}
+
+interface FormStoreDisaggregationValue {
+  [metricKey: string]: FormDisaggregations;
+}
+interface FormStoreDisaggregationValues {
+  [reportID: string]: FormStoreDisaggregationValue;
+}
+
+interface FormStoreError {
+  [metricKey: string]: { [fieldKey: string]: string };
+}
+interface FormStoreErrors {
+  [reportID: string]: FormStoreError;
+}
 class FormStore {
   reportStore: ReportStore;
 
-  metricsValues: { [metricID: string]: number | string };
+  metricsValues: FormStoreMetricValues;
 
-  contexts: { [metricID: string]: FormContexts };
+  contexts: FormStoreContextValues;
 
-  disaggregations: { [metricID: string]: FormDisaggregations };
+  disaggregations: FormStoreDisaggregationValues;
 
-  formErrors: { [metricID: string]: { [fieldKey: string]: string } };
+  // formErrors: { [metricKey: string]: { [fieldKey: string]: string } };
+  formErrors: FormStoreErrors;
 
   constructor(reportStore: ReportStore) {
     makeAutoObservable(this);
@@ -46,17 +74,17 @@ class FormStore {
     const updatedMetrics = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
         if (
-          this.metricsValues[metric.key] ||
-          this.contexts[metric.key] ||
-          this.disaggregations[metric.key]
+          this.metricsValues[reportID][metric.key] ||
+          this.contexts[reportID][metric.key] ||
+          this.disaggregations[reportID][metric.key]
         ) {
           return {
             ...metric,
-            value: this.metricsValues?.[metric.key],
+            value: this.metricsValues?.[reportID]?.[metric.key],
             contexts: metric.contexts.map((context) => {
               return {
                 ...context,
-                value: this.contexts?.[metric.key]?.[context.key],
+                value: this.contexts?.[reportID]?.[metric.key]?.[context.key],
               };
             }),
             disaggregations: metric.disaggregations.map((disaggregation) => {
@@ -66,7 +94,7 @@ class FormStore {
                   return {
                     ...dimension,
                     value:
-                      this.disaggregations?.[metric.key]?.[
+                      this.disaggregations?.[reportID]?.[metric.key]?.[
                         disaggregation.key
                       ]?.[dimension.key],
                   };
@@ -86,7 +114,8 @@ class FormStore {
   /** Simple validation to flesh out as we solidify necessary validations */
   validate = (
     e: React.ChangeEvent<HTMLInputElement>,
-    metricID: string,
+    reportID: number,
+    metricKey: string,
     key?: string
   ) => {
     const fieldKey = key || e.target.name;
@@ -95,8 +124,12 @@ class FormStore {
       typeof e.target.value === "number" ||
       e.target.value.match(numbersOnlyRegex);
 
-    if (!this.formErrors[metricID]) {
-      this.formErrors[metricID] = {};
+    if (!this.formErrors[reportID]) {
+      this.formErrors[reportID] = {};
+    }
+
+    if (!this.formErrors[reportID][metricKey]) {
+      this.formErrors[reportID][metricKey] = {};
     }
 
     /** Raise error if value is not a number OR the field is required and the input is empty */
@@ -104,7 +137,7 @@ class FormStore {
       !isInputNumber ||
       (e.target.hasAttribute("required") && !e.target.value)
     ) {
-      this.formErrors[metricID][fieldKey] = "Error";
+      this.formErrors[reportID][metricKey][fieldKey] = "Error";
     }
 
     /** Remove error if value is a number AND (required input and input is not empty OR optional input and input is empty) */
@@ -113,21 +146,28 @@ class FormStore {
       ((e.target.hasAttribute("required") && e.target.value) ||
         !e.target.hasAttribute("required"))
     ) {
-      delete this.formErrors[metricID][fieldKey];
+      delete this.formErrors[reportID][metricKey][fieldKey];
     }
   };
 
   /** Form Handlers */
   updateMetricsValues = (
-    metricID: string,
+    reportID: number,
+    metricKey: string,
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
-    this.validate(e, metricID);
-    this.metricsValues[metricID] = e.target.value;
+    this.validate(e, reportID, metricKey);
+
+    if (!this.metricsValues[reportID]) {
+      this.metricsValues[reportID] = {};
+    }
+
+    this.metricsValues[reportID][metricKey] = e.target.value;
   };
 
   updateDisaggregationDimensionValue = (
-    metricID: string,
+    reportID: number,
+    metricKey: string,
     disaggregationKey: string,
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
@@ -135,33 +175,45 @@ class FormStore {
       disaggregationKey,
       e.target.name
     );
-    this.validate(e, metricID, disaggregationDimensionKey);
+    this.validate(e, reportID, metricKey, disaggregationDimensionKey);
 
-    if (!this.disaggregations[metricID]) {
-      this.disaggregations[metricID] = {
+    if (!this.disaggregations[reportID]) {
+      this.disaggregations[reportID] = {};
+    }
+
+    if (!this.disaggregations[reportID][metricKey]) {
+      this.disaggregations[reportID][metricKey] = {
         [disaggregationKey]: {},
       };
     }
-    this.disaggregations[metricID][disaggregationKey][e.target.name] =
-      e.target.value;
+    this.disaggregations[reportID][metricKey][disaggregationKey][
+      e.target.name
+    ] = e.target.value;
   };
 
   updateContextValue = (
-    metricID: string,
+    reportID: number,
+    metricKey: string,
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
-    if (!this.contexts[metricID]) {
-      this.contexts[metricID] = {};
+    if (!this.contexts[reportID]) {
+      this.contexts[reportID] = {};
     }
-    this.contexts[metricID][e.target.name] = e.target.value;
+
+    if (!this.contexts[reportID][metricKey]) {
+      this.contexts[reportID][metricKey] = {};
+    }
+
+    this.contexts[reportID][metricKey][e.target.name] = e.target.value;
   };
 
   resetBinaryInput = (
-    metricID: string,
+    reportID: number,
+    metricKey: string,
     e: React.MouseEvent<HTMLDivElement>
   ): void => {
     const fieldKey = e.currentTarget.dataset.name as string;
-    this.contexts[metricID][fieldKey] = "";
+    this.contexts[reportID][metricKey][fieldKey] = "";
   };
 
   submitReport = (reportID: number) => {
