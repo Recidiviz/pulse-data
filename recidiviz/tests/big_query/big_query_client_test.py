@@ -1613,6 +1613,62 @@ class BigQueryClientImplTest(unittest.TestCase):
             ]
         )
 
+    def test_copy_table_schema_only_external_config(self) -> None:
+        source_dataset_id = "my_source"
+        destination_dataset_id = "my_destination"
+
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.table_type = "TABLE"
+        mock_table.table_id = "my_table"
+        mock_table.external_data_configuration = (
+            bigquery.external_config.ExternalConfig("NEWLINE_DELIMITED_JSON")
+        )
+        mock_table.external_data_configuration.source_uris = ["gs://bucket/source.json"]
+
+        # Destination already exists
+        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        schema1 = [bigquery.schema.SchemaField("foo", "STRING")]
+
+        def mock_get_table(table_ref: bigquery.TableReference) -> bigquery.Table:
+            if table_ref.table_id == mock_table.table_id:
+                return bigquery.Table(table_ref, schema1)
+            raise ValueError("Unexpected table")
+
+        self.mock_client.get_table.side_effect = mock_get_table
+
+        self.bq_client.copy_table(
+            source_dataset_id=source_dataset_id,
+            source_table_id=mock_table.table_id,
+            destination_dataset_id=destination_dataset_id,
+            schema_only=True,
+        )
+
+        destination_dataset_ref = bigquery.DatasetReference(
+            "fake-recidiviz-project", destination_dataset_id
+        )
+        expected_table = bigquery.Table(
+            bigquery.TableReference(
+                destination_dataset_ref,
+                "my_table",
+            ),
+            schema1,
+        )
+        expected_table.external_data_configuration = (
+            bigquery.external_config.ExternalConfig("NEWLINE_DELIMITED_JSON")
+        )
+        expected_table.external_data_configuration.source_uris = [
+            f"gs://{self.mock_project_id}-configs/empty.json",
+        ]
+        self.mock_client.copy_table.assert_not_called()
+        self.mock_client.create_table.assert_has_calls(
+            [
+                call(
+                    expected_table,
+                    exists_ok=False,
+                ),
+            ]
+        )
+
     def test_copy_dataset(self) -> None:
         source_dataset_id = "my_source"
         destination_dataset_id = "my_destination"
