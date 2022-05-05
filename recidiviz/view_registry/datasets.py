@@ -30,8 +30,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_DATA_SCRATCH_SPACE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
+    EXPORT_ARCHIVES_DATASET,
     NORMALIZED_STATE_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
+    PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -98,6 +100,7 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
     COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",
     DATAFLOW_METRICS_DATASET: "Stores metric output of Dataflow pipeline jobs.",
+    EXPORT_ARCHIVES_DATASET: "Contains tables that archive the contents of daily exports.",
     EXTERNAL_REFERENCE_DATASET: "Stores data gathered from external sources. CSV versions"
     " of tables are committed to our codebase, and updates to"
     " tables are fully managed by Terraform.",
@@ -105,6 +108,7 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     " copy of the operations postgres database.",
     POPULATION_PROJECTION_OUTPUT_DATASET: "Stores output of the population projection"
     " simulations.",
+    PULSE_DASHBOARD_SEGMENT_DATASET: "Stores events logged from pulse-dashboard via Segment.",
     SENDGRID_EMAIL_DATA_DATASET: "Stores the output of email activity data from Sendgrid.",
     STATE_BASE_DATASET: "Ingested state data. This dataset is a copy of the state"
     " postgres database.",
