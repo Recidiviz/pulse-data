@@ -39,6 +39,9 @@ from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
     federated_cloud_sql_to_bq_refresh,
 )
+from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
+    CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
+)
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -255,6 +258,9 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                     DatasetReference("recidiviz-staging", "operations"),
                     default_table_expiration_ms=None,
                 ),
+                mock.call(
+                    DatasetReference("recidiviz-staging", "cloud_sql_to_bq_refresh")
+                ),
             ],
         )
 
@@ -275,6 +281,24 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 ),
             ]
         )
+        stream_into_table_args = self.mock_bq_client.stream_into_table.call_args
+        self.assertEqual(
+            stream_into_table_args[0][0],
+            DatasetReference("recidiviz-staging", "cloud_sql_to_bq_refresh"),
+        )
+        self.assertEqual(
+            stream_into_table_args[0][1],
+            CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
+        )
+        self.assertEqual(2, len(stream_into_table_args[0][2]))
+        self.assertEqual(
+            stream_into_table_args[0][2][0].get("region_code"), state_codes[0].name
+        )
+        self.assertEqual(stream_into_table_args[0][2][0].get("schema"), "OPERATIONS")
+        self.assertEqual(
+            stream_into_table_args[0][2][1].get("region_code"), state_codes[1].name
+        )
+        self.assertEqual(stream_into_table_args[0][2][1].get("schema"), "OPERATIONS")
 
     @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_existing_direct_ingest_states")
     @patch(
@@ -343,6 +367,11 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                     DatasetReference("recidiviz-staging", "my_prefix_operations"),
                     default_table_expiration_ms=expiration_ms,
                 ),
+                mock.call(
+                    DatasetReference(
+                        "recidiviz-staging", "my_prefix_cloud_sql_to_bq_refresh"
+                    )
+                ),
             ],
         )
 
@@ -363,6 +392,24 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 ),
             ]
         )
+        stream_into_table_args = self.mock_bq_client.stream_into_table.call_args
+        self.assertEqual(
+            stream_into_table_args[0][0],
+            DatasetReference("recidiviz-staging", "my_prefix_cloud_sql_to_bq_refresh"),
+        )
+        self.assertEqual(
+            stream_into_table_args[0][1],
+            CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
+        )
+        self.assertEqual(2, len(stream_into_table_args[0][2]))
+        self.assertEqual(
+            stream_into_table_args[0][2][0].get("region_code"), state_codes[0].name
+        )
+        self.assertEqual(stream_into_table_args[0][2][0].get("schema"), "OPERATIONS")
+        self.assertEqual(
+            stream_into_table_args[0][2][1].get("region_code"), state_codes[1].name
+        )
+        self.assertEqual(stream_into_table_args[0][2][1].get("schema"), "OPERATIONS")
 
     def test_secondary_without_prefix_raises(self) -> None:
         with self.assertRaises(ValueError):
@@ -445,6 +492,9 @@ person:
                     DatasetReference("recidiviz-staging", "operations"),
                     default_table_expiration_ms=None,
                 ),
+                mock.call(
+                    DatasetReference("recidiviz-staging", "cloud_sql_to_bq_refresh")
+                ),
             ],
         )
 
@@ -465,3 +515,16 @@ person:
                 ),
             ],
         )
+
+        stream_into_table_args = self.mock_bq_client.stream_into_table.call_args
+        self.assertEqual(
+            stream_into_table_args[0][0],
+            DatasetReference("recidiviz-staging", "cloud_sql_to_bq_refresh"),
+        )
+        self.assertEqual(
+            stream_into_table_args[0][1],
+            CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS.table_id,
+        )
+        self.assertEqual(1, len(stream_into_table_args[0][2]))
+        self.assertEqual(stream_into_table_args[0][2][0].get("region_code"), "US_XX")
+        self.assertEqual(stream_into_table_args[0][2][0].get("schema"), "OPERATIONS")

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +16,11 @@
 # =============================================================================
 """Export data from Cloud SQL and load it into BigQuery."""
 import logging
+import uuid
+from datetime import datetime
 from typing import List, Optional
 
+import pytz
 from sqlalchemy import Table
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -34,6 +37,10 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
+    CloudSqlToBqRefreshStatus,
+    store_bq_refresh_status_in_big_query,
+)
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -76,21 +83,63 @@ def federated_bq_schema_refresh(
     config = CloudSqlToBQConfig.for_schema_type(schema_type, direct_ingest_instance)
     # Query CloudSQL and export data into datasets with regions that match the instance
     # region (e.g. us-east1)
-    _federated_bq_regional_dataset_refresh(config, dataset_override_prefix)
+    refreshed_states = _federated_bq_regional_dataset_refresh(
+        config, dataset_override_prefix
+    )
 
     # Copy the regional datasets to their final resting place in multi-region datasets
     _copy_regional_dataset_to_multi_region(config, dataset_override_prefix)
+
+    _save_status_in_bq(config, refreshed_states, dataset_override_prefix)
+
+
+def _save_status_in_bq(
+    config: CloudSqlToBQConfig,
+    refreshed_states: Optional[List[StateCode]],
+    dataset_override_prefix: Optional[str],
+) -> None:
+    bq_refresh_statuses: List[CloudSqlToBqRefreshStatus] = []
+    last_refresh_datetime = datetime.now(tz=pytz.UTC)
+    status_id = uuid.uuid4().hex
+    if refreshed_states is None:
+        bq_refresh_statuses.append(
+            CloudSqlToBqRefreshStatus(
+                refresh_run_id=status_id,
+                schema=config.schema_type,
+                last_refresh_datetime=last_refresh_datetime,
+                region_code=None,
+            )
+        )
+    else:
+        for state_code in refreshed_states:
+            bq_refresh_statuses.append(
+                CloudSqlToBqRefreshStatus(
+                    refresh_run_id=status_id,
+                    schema=config.schema_type,
+                    last_refresh_datetime=last_refresh_datetime,
+                    region_code=state_code.name,
+                )
+            )
+
+    store_bq_refresh_status_in_big_query(
+        bq_client=BigQueryClientImpl(),
+        bq_refresh_statuses=bq_refresh_statuses,
+        dataset_override_prefix=dataset_override_prefix,
+    )
 
 
 def _federated_bq_regional_dataset_refresh(
     config: CloudSqlToBQConfig,
     dataset_override_prefix: Optional[str] = None,
-) -> None:
+) -> Optional[List[StateCode]]:
     """Queries data in the appropriate CloudSQL instance for the given schema / conifg
     and loads it into a single, unified dataset **in the same** region as the CloudSQL
     instance. In the process, creates / updates views that provide direct federated
     connections to the CloudSQL instance and intermediate state-segmented datasets
     (where appropriate).
+
+    Returns the list of states that the data was refreshed for if this is a
+    state-segmented schema, or None if it is not.
 
     Example resulting datasets (OPERATIONS schema):
       operations_cloudsql_connection  <-- Federated views
@@ -99,12 +148,18 @@ def _federated_bq_regional_dataset_refresh(
       operations_regional  <-- Materialized data from most recent export for each state
     """
 
+    states_that_will_be_refreshed: Optional[List[StateCode]]
     if config.is_state_segmented_refresh_schema():
+        state_segmented_collector = StateSegmentedSchemaFederatedBigQueryViewCollector(
+            config
+        )
         collector: BigQueryViewCollector[
             FederatedCloudSQLTableBigQueryViewBuilder
-        ] = StateSegmentedSchemaFederatedBigQueryViewCollector(config)
+        ] = state_segmented_collector
+        states_that_will_be_refreshed = state_segmented_collector.state_codes_to_collect
     else:
         collector = UnsegmentedSchemaFederatedBigQueryViewCollector(config)
+        states_that_will_be_refreshed = None
 
     view_builders = collector.collect_view_builders()
 
@@ -156,6 +211,8 @@ def _federated_bq_regional_dataset_refresh(
             bq_region_override,
             dataset_override_prefix,
         )
+
+    return states_that_will_be_refreshed
 
 
 def _copy_regional_dataset_to_multi_region(
