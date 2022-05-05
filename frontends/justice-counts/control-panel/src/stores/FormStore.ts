@@ -57,7 +57,6 @@ class FormStore {
 
   disaggregations: FormStoreDisaggregationValues;
 
-  // formErrors: { [metricKey: string]: { [fieldKey: string]: string } };
   formErrors: FormStoreErrors;
 
   constructor(reportStore: ReportStore) {
@@ -74,9 +73,9 @@ class FormStore {
     const updatedMetrics = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
         if (
-          this.metricsValues[reportID][metric.key] ||
-          this.contexts[reportID][metric.key] ||
-          this.disaggregations[reportID][metric.key]
+          this.metricsValues[reportID]?.[metric.key] ||
+          this.contexts[reportID]?.[metric.key] ||
+          this.disaggregations[reportID]?.[metric.key]
         ) {
           return {
             ...metric,
