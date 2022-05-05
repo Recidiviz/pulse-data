@@ -171,7 +171,6 @@ WITH date_array AS (
         compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
         AND outflow_to_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE")
 )
-# TODO(#12368): Refactor to build employment metrics from state-agnostic views instead of ID-specific view.
 , employment_changes AS (
   SELECT DISTINCT
         a.state_code,
@@ -182,7 +181,7 @@ WITH date_array AS (
         date,
         is_employed,
     FROM
-        `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` a
+        `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` a
     INNER JOIN
         date_array
     ON
@@ -276,7 +275,7 @@ WITH date_array AS (
 
     # join employment sessions for calculating days employed
     LEFT JOIN
-        `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` d
+        `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` d
     ON
         a.state_code = d.state_code
         AND a.person_id = d.person_id
@@ -376,7 +375,7 @@ WITH date_array AS (
         AND date BETWEEN assessment_date AND IFNULL(score_end_date, "9999-01-01")
         AND assessment_type = "LSIR"
     LEFT JOIN
-        `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` e
+        `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` e
     ON 
         e.state_code = c.state_code
         AND e.person_id = c.person_id

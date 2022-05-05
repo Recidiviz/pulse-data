@@ -91,7 +91,7 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
       LEFT JOIN `{project_id}.{base_dataset}.state_supervision_contact` contacts
       ON p.person_id = contacts.person_id
         AND contacts.contact_date >= sessions.start_date
-      LEFT JOIN `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized` employment
+      LEFT JOIN `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` employment
       ON p.person_id = employment.person_id
         AND employment.employment_status_end_date IS NULL
       LEFT JOIN `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua

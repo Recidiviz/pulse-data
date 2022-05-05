@@ -69,6 +69,9 @@ from recidiviz.calculator.query.state.views.sessions.dataflow_sessions import (
 from recidiviz.calculator.query.state.views.sessions.district_sessions import (
     DISTRICT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.employment_periods_preprocessed import (
+    EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.incarceration_super_sessions import (
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -99,6 +102,9 @@ from recidiviz.calculator.query.state.views.sessions.revocation_sessions import 
 from recidiviz.calculator.query.state.views.sessions.supervision_downgrade_sessions import (
     SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_employment_status_sessions import (
+    SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_level_dedup_priority import (
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
@@ -123,8 +129,8 @@ from recidiviz.calculator.query.state.views.sessions.supervision_tool_access_ses
 from recidiviz.calculator.query.state.views.sessions.system_sessions import (
     SYSTEM_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_id.us_id_employment_sessions import (
-    US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.sessions.us_id.us_id_employment_periods_preprocessed import (
+    US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_id.us_id_incarceration_population_metrics_preprocessed import (
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
@@ -201,7 +207,9 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
     SUPERVISION_TOOL_ACCESS_SESSIONS_VIEW_BUILDER,
     SYSTEM_SESSIONS_VIEW_BUILDER,
-    US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER,
+    EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
+    SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER,
+    US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ID_POSITIVE_URINE_ANALYSIS_SESSIONS_VIEW_BUILDER,
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,

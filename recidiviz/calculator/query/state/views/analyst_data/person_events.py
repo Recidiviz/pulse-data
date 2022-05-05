@@ -26,7 +26,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     SHARED_METRIC_VIEWS_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -252,16 +251,11 @@ SELECT
     e.state_code,
     person_id,
     "EMPLOYMENT_JOB_START" AS event,
-    recorded_start_date AS event_date,
+    employment_start_date AS event_date,
     CAST(NULL AS STRING) AS attribute_1,
     CAST(NULL AS STRING) AS attribute_2,
 FROM 
-    `{project_id}.{case_triage_dataset}.employment_periods_materialized` e
-INNER JOIN 
-    `{project_id}.{state_base_dataset}.state_person_external_id` p
-ON 
-    CAST(e.person_external_id AS STRING) = p.external_id
-    AND p.state_code = "US_ID"
+    `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized` e
 WHERE
     is_unemployed = FALSE
 
@@ -278,7 +272,7 @@ SELECT
     CAST(NULL AS STRING) AS attribute_1,
     CAST(NULL AS STRING) AS attribute_2,
 FROM
-    `{project_id}.{sessions_dataset}.us_id_employment_sessions_materialized`
+    `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized`
 WHERE
     is_employed
 
@@ -427,7 +421,6 @@ PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSON_EVENTS_QUERY_TEMPLATE,
     description=PERSON_EVENTS_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    case_triage_dataset=CASE_TRIAGE_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     shared_metric_views_dataset=SHARED_METRIC_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
