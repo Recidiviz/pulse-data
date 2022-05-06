@@ -19,6 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
@@ -55,16 +56,28 @@ US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         population.state_code,
         'SUPERVISION' AS compartment_level_1,
         COALESCE(abs.supervision_type, population.supervision_type) AS compartment_level_2,
-        CONCAT(COALESCE(population.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(population.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        # TODO(#12757): Remove when US_MO level_2 location information is ingested
+        CONCAT(COALESCE(population.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(population.level_2_supervision_location_external_id,ref.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         CAST(NULL AS STRING) AS facility,
-        COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
-        COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
+        COALESCE(population.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
+        COALESCE(population.level_2_supervision_location_external_id,ref.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         population.supervision_level AS correctional_level,
         population.supervision_level_raw_text AS correctional_level_raw_text,
         population.supervising_officer_external_id,
         population.case_type,
         judicial_district_code,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` population
+    LEFT JOIN (
+      SELECT DISTINCT 
+      state_code,
+      level_2_supervision_location_external_id,
+      level_2_supervision_location_name,
+      level_1_supervision_location_external_id,
+      level_1_supervision_location_name
+      FROM `{reference_views_dataset}.supervision_location_ids_to_names`
+    )  ref
+      ON population.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
+      AND population.state_code = ref.state_code
     LEFT JOIN absconsion_cte abs
         ON abs.person_id = population.person_id
         AND population.date_of_supervision BETWEEN abs.start_date AND COALESCE(DATE_SUB(abs.termination_date, INTERVAL 1 DAY), '9999-01-01')
@@ -78,6 +91,7 @@ US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryV
     description=US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     should_materialize=True,
 )
 

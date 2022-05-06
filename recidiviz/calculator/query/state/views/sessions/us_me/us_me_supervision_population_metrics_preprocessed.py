@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""TN State-specific preprocessing for joining with dataflow sessions"""
+"""ME State-specific preprocessing for joining with dataflow sessions"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -25,15 +25,15 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME = (
-    "us_tn_supervision_population_metrics_preprocessed"
+US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME = (
+    "us_me_supervision_population_metrics_preprocessed"
 )
 
-US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """TN State-specific preprocessing for joining with dataflow sessions:
-- Recategorize INTERNAL_UNKNOWN supervision levels based on raw text codes
+US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """ME State-specific preprocessing for joining with dataflow sessions:
+Hydrate level_2_supervision_location_external_id using reference tables
 """
 
-US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
+US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     /*{description}*/   
     SELECT DISTINCT
         person_id,
@@ -43,19 +43,11 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         df.state_code,
         'SUPERVISION' AS compartment_level_1,
         supervision_type AS compartment_level_2,
-        # TODO(#12756): Remove when US_TN level_2 location information is ingested
         CONCAT(COALESCE(df.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(df.level_2_supervision_location_external_id,ref.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         CAST(NULL AS STRING) AS facility,
         COALESCE(df.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
         COALESCE(df.level_2_supervision_location_external_id,ref.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
-        CASE
-            WHEN COALESCE(supervision_level, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN" THEN supervision_level
-            WHEN supervision_level_raw_text IN ("9WR",  "ZWS") THEN "WARRANT"
-            WHEN supervision_level_raw_text =  "9AB" THEN "ABSCONDED"
-            WHEN supervision_level_raw_text =  "9IS" THEN "ICOTS_OUT"
-            WHEN supervision_level_raw_text =  "9DT" THEN "DETAINER"
-            ELSE "INTERNAL_UNKNOWN"
-        END AS correctional_level,
+        supervision_level AS correctional_level,
         supervision_level_raw_text AS correctional_level_raw_text,
         supervising_officer_external_id,
         case_type,
@@ -72,14 +64,14 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     )  ref
       ON df.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
       AND df.state_code = ref.state_code
-    WHERE df.state_code = 'US_TN'
+    WHERE df.state_code = 'US_ME'
 """
 
-US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    view_id=US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME,
-    view_query_template=US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
-    description=US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
+    view_id=US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME,
+    view_query_template=US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
+    description=US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     should_materialize=True,
@@ -87,4 +79,4 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryV
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.build_and_print()
+        US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.build_and_print()
