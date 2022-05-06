@@ -62,8 +62,8 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
         COUNTIF(ed.decision != 'REQUEST_DENIED') OVER(PARTITION BY p.person_id) num_open_earned_discharge_requests,
         clients.supervision_level,
         DATE_DIFF(CURRENT_DATE('US/Eastern'), levels.start_date, DAY) days_at_current_supervision_level,
-        DATE_DIFF(CURRENT_DATE('US/Eastern'), MAX(positive_urine_analysis_date) OVER(PARTITION BY p.person_id), DAY) days_since_last_positive_urine_analysis_date,
-        COUNTIF(positive_urine_analysis_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 YEAR)) OVER(PARTITION BY p.person_id) positive_urine_analysis_results_past_year_count,
+        DATE_DIFF(CURRENT_DATE('US/Eastern'), MAX(drug_screen_date) OVER(PARTITION BY p.person_id), DAY) days_since_last_positive_urine_analysis_date,
+        COUNTIF(drug_screen_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 YEAR)) OVER(PARTITION BY p.person_id) positive_urine_analysis_results_past_year_count,
         is_employed,
         last_verified_date AS last_verified_employment_date,
         /* Using the earliest listed start date for any employment period in the employment session to calculate days employed.*/
@@ -94,8 +94,11 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
       LEFT JOIN `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` employment
       ON p.person_id = employment.person_id
         AND employment.employment_status_end_date IS NULL
-      LEFT JOIN `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
-      ON p.person_id = ua.person_id )
+      LEFT JOIN `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized` ua
+      ON p.person_id = ua.person_id 
+        AND ua.sample_type = "URINE"
+        AND ua.is_positive_result
+      )
     WHERE
       rn = 1
       AND state_code = 'US_ID'

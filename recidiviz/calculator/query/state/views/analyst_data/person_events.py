@@ -338,37 +338,39 @@ WHERE
 
 UNION ALL
 
--- Positive drug tests within a supervision super session in Idaho
+-- Positive drug tests within a supervision super session
 SELECT
-    ua.state_code,
-    ua.person_id,
+    d.state_code,
+    d.person_id,
     'POSITIVE_DRUG_TEST' AS event,
-    ua.positive_urine_analysis_date AS event_date,
-    CAST(NULL AS STRING) AS attribute_1,
+    d.drug_screen_date AS event_date,
+    d.sample_type AS attribute_1,
     CAST(NULL AS STRING) AS attribute_2,
-FROM `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
+FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized` d
 INNER JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` ss
-    ON ua.person_id = ss.person_id
-    AND ua.positive_urine_analysis_date BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
+    ON d.person_id = ss.person_id
+    AND d.drug_screen_date BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
+    AND d.is_positive_result
 
 UNION ALL
 
--- Initial positive drug test within a supervision super session in Idaho
+-- Initial positive drug test within a supervision super session
 SELECT
-    ua.state_code,
-    ua.person_id,
+    d.state_code,
+    d.person_id,
     'INITIAL_POSITIVE_DRUG_TEST' AS event,
-    ua.positive_urine_analysis_date AS event_date,
-    CAST(NULL AS STRING) AS attribute_1,
+    d.drug_screen_date AS event_date,
+    d.sample_type AS attribute_1,
     CAST(NULL AS STRING) AS attribute_2,
-FROM `{project_id}.{sessions_dataset}.us_id_positive_urine_analysis_sessions_materialized` ua
+FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized` d
 INNER JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` ss
-    ON ua.person_id = ss.person_id
-    AND ua.positive_urine_analysis_date BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
+    ON d.person_id = ss.person_id
+    AND d.drug_screen_date BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
+    AND d.is_positive_result
 WHERE TRUE
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY ss.person_id, ss.supervision_super_session_id
-    ORDER BY ua.positive_urine_analysis_date
+    ORDER BY event_date
 ) = 1
 
 UNION ALL
