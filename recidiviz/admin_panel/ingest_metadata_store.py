@@ -20,9 +20,14 @@ specifically."""
 import json
 from typing import Dict, List, Optional, Union
 
+from google.cloud.bigquery.table import Row
+
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
 )
@@ -30,12 +35,39 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
+    CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
+    CloudSqlToBqRefreshStatus,
+)
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
+
+
+def cloud_sql_refresh_status_query_for_schema(
+    project_id: str, bq_refresh_address: BigQueryAddress, schema: SchemaType
+) -> str:
+    return f"""
+    SELECT
+        refresh_run_id,
+        schema,
+        last_refresh_datetime,
+        region_code,
+    FROM (
+        SELECT *,
+        ROW_NUMBER() OVER (
+            PARTITION BY schema, region_code
+            -- Orders by recency of the compared data
+            ORDER BY last_refresh_datetime DESC) as ordinal
+        FROM `{project_id}.{bq_refresh_address.dataset_id}.{bq_refresh_address.table_id}`
+    )
+    -- Get the row with the most recent status
+    WHERE ordinal = 1
+    AND schema = "{schema.name}"
+    """
 
 
 class IngestDataFreshnessStore(AdminPanelStore):
@@ -46,6 +78,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
     def __init__(self) -> None:
         self.data_freshness_results: List[Dict[str, Union[Optional[str], bool]]] = []
         self.gcs_fs = GcsfsFactory.build()
+        self.bq_client: BigQueryClient = BigQueryClientImpl()
 
     def recalculate_store(self) -> None:
         self.update_data_freshness_results()
@@ -76,6 +109,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
             IngestViewMaterializationGatingContext.load_from_gcs()
         )
 
+        refresh_status_bq = self.get_statuses_for_schema(SchemaType.STATE)
         processed_date_by_state_code: Dict[str, str] = {}
         for line in latest_upper_bounds_json.splitlines():
             line = line.strip()
@@ -97,6 +131,9 @@ class IngestDataFreshnessStore(AdminPanelStore):
                         "state": state_code.name,
                         # TODO(#11413): Update to pass the correct date through here (PR 9).
                         "date": processed_date_by_state_code.get(state_code.name),
+                        "lastRefreshDate": refresh_status_bq[
+                            state_code
+                        ].last_refresh_datetime.isoformat(),
                         "ingestPaused": state_code.name in regions_paused,
                         # TODO(#11413): Delete this flag and frontend usage once we
                         #  have proper support for BQ materialization.
@@ -108,6 +145,9 @@ class IngestDataFreshnessStore(AdminPanelStore):
                     {
                         "state": state_code.name,
                         "date": processed_date_by_state_code.get(state_code.name),
+                        "lastRefreshDate": refresh_status_bq[
+                            state_code
+                        ].last_refresh_datetime.isoformat(),
                         "ingestPaused": state_code.name in regions_paused,
                         # TODO(#11413): Delete this flag and frontend usage once we
                         #  have proper support for BQ materialization.
@@ -115,3 +155,35 @@ class IngestDataFreshnessStore(AdminPanelStore):
                     }
                 )
         self.data_freshness_results = latest_upper_bounds
+
+    def get_statuses_for_schema(
+        self, schema: SchemaType
+    ) -> Dict[Optional[StateCode], CloudSqlToBqRefreshStatus]:
+        query_job = self.bq_client.run_query_async(
+            cloud_sql_refresh_status_query_for_schema(
+                metadata.project_id(),
+                CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
+                schema,
+            ),
+        )
+
+        # Build up new results
+        records: Dict[Optional[StateCode], CloudSqlToBqRefreshStatus] = {}
+
+        for row in query_job:
+            record = _bq_refresh_status_record_for_row(row)
+            records[
+                StateCode(record.region_code) if record.region_code else None
+            ] = record
+        return records
+
+
+def _bq_refresh_status_record_for_row(row: Row) -> CloudSqlToBqRefreshStatus:
+    """Takes a BigQuery row from the query template and converts it to an object"""
+
+    return CloudSqlToBqRefreshStatus(
+        refresh_run_id=row["refresh_run_id"],
+        last_refresh_datetime=row["last_refresh_datetime"],
+        schema=row["schema"],
+        region_code=row["region_code"],
+    )
