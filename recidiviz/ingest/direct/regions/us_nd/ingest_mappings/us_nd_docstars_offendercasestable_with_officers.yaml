@@ -62,6 +62,7 @@ unused_columns:
   - RECORDCRDATE
   - RecDate
   - CHANGE_DATE_REASON
+  - JUDGE
 variables:
   - is_rev_new_off:
       $in:
@@ -156,54 +157,44 @@ output:
                                     - "DOCR Inmate Sentence followed by probation"
                                     - "resentenced to five years more"
     supervision_sentences:
-      - StateSupervisionSentence:
-          external_id: CASE_NUMBER
-          status:
-            $conditional:
-              - $if:
-                  $not_null: TERM_DATE
-                $then: $literal_enum(StateSentenceStatus.COMPLETED)
-          supervision_type:
-            $enum_mapping:
-              $raw_text: DESCRIPTION
-              $mappings:
-                StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE: "Community Placement Pgrm"
-                StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: "CCC"
-                StateSupervisionSentenceSupervisionType.PAROLE:
-                  - "IC Parole"
-                  - "Parole"
-                  - "SSOP"
-                StateSupervisionSentenceSupervisionType.PROBATION:
-                  - "Deferred"
-                  - "IC Probation"
-                  - "Suspended"
-                StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT: "Pre-Trial"
-          date_imposed: PAROLE_FR
-          start_date: PAROLE_FR
-          projected_completion_date: PAROLE_TO
-          completion_date: TERM_DATE
-          max_length_days:
-            $custom:
-              $function: us_nd_custom_parsers.parse_supervision_sentence_max_length
-              $args:
-                years: SENT_YY
-                months: SENT_MM
-                effective_date: PAROLE_FR
-          charges:
-            - $conditional:
-                - $if:
-                    $not_null: JUDGE
-                  $then:
-                    StateCharge:
-                      court_case:
-                        StateCourtCase:
-                          judge:
-                            StateAgent:
-                              # TODO(#10497): Parse full_name in the same way we do for person
-                              full_name:
-                                $json_dict:
-                                  full_name: JUDGE
-                              agent_type: $literal_enum(StateAgentType.JUDGE)
+      - $conditional:
+          - $if:
+              $not_in:
+                $value: DESCRIPTION
+                $options: [$literal("Pre-Trial")]
+            $then:
+              StateSupervisionSentence:
+                external_id: CASE_NUMBER
+                status:
+                  $conditional:
+                    - $if:
+                        $not_null: TERM_DATE
+                      $then: $literal_enum(StateSentenceStatus.COMPLETED)
+                supervision_type:
+                  $enum_mapping:
+                    $raw_text: DESCRIPTION
+                    $mappings:
+                      StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS: "Community Placement Pgrm"
+                      StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: "CCC"
+                      StateSupervisionSentenceSupervisionType.PAROLE:
+                        - "IC Parole"
+                        - "Parole"
+                        - "SSOP"
+                      StateSupervisionSentenceSupervisionType.PROBATION:
+                        - "Deferred"
+                        - "IC Probation"
+                        - "Suspended"
+                date_imposed: PAROLE_FR
+                start_date: PAROLE_FR
+                projected_completion_date: PAROLE_TO
+                completion_date: TERM_DATE
+                max_length_days:
+                  $custom:
+                    $function: us_nd_custom_parsers.parse_supervision_sentence_max_length
+                    $args:
+                      years: SENT_YY
+                      months: SENT_MM
+                      effective_date: PAROLE_FR
     supervision_periods:
       - StateSupervisionPeriod:
           external_id: CASE_NUMBER
