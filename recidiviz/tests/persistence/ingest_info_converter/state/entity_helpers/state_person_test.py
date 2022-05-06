@@ -127,9 +127,7 @@ class StatePersonConverterTest(unittest.TestCase):
     def testParseStatePerson_NoiseInPlaceOfResidence_ParsesResidency(self):
         # Arrange
         metadata = FakeLegacyStateAndJailsIngestMetadata.for_state(region="us_xx")
-        ingest_person = ingest_info_pb2.StatePerson(
-            current_address="transient moves around"
-        )
+        ingest_person = ingest_info_pb2.StatePerson(current_address="999 homeless")
 
         # Act
         state_person.copy_fields_to_builder(self.subject, ingest_person, metadata)
@@ -137,8 +135,8 @@ class StatePersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
-            current_address="TRANSIENT MOVES AROUND",
-            residency_status=StateResidencyStatus.TRANSIENT,
+            current_address="999 HOMELESS",
+            residency_status=StateResidencyStatus.HOMELESS,
             state_code="US_XX",
         )
 

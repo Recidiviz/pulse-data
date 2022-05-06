@@ -39,6 +39,28 @@ class StatePersonAliasType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StatePersonAliasType"]:
         return _ALIAS_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The type of the alias (a name that a person is called)."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_PERSON_ALIAS_VALUE_DESCRIPTIONS
+
+
+_STATE_PERSON_ALIAS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StatePersonAliasType.AFFILIATION_NAME: "Used when the alias is a name associated "
+    "with some sort of group affiliation (usually a gang affiliation).",
+    StatePersonAliasType.ALIAS: "Used when the alias is an additional name "
+    "that the person is called.",
+    StatePersonAliasType.GIVEN_NAME: "Used when the alias is the person’s given "
+    "name.",
+    StatePersonAliasType.MAIDEN_NAME: "Used when the alias includes the person’s "
+    "maiden name.",
+    StatePersonAliasType.NICKNAME: "Used when the alias is a nickname for the "
+    "person.",
+}
+
 
 _ALIAS_TYPE_MAP = {
     "AFFILIATION NAME": StatePersonAliasType.AFFILIATION_NAME,
