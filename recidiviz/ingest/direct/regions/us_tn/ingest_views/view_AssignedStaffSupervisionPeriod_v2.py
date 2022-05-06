@@ -191,8 +191,6 @@ combined_officer_and_level AS (
     SELECT
         staff_periods.OffenderID,
         SupervisionType,
-        AdmissionReason,
-        TerminationReason,
         SupervisionOfficerID,
         staff_periods.AssignmentType,
         Site,
@@ -215,14 +213,36 @@ combined_officer_and_level AS (
         AND level_periods.AssignmentType = staff_periods.AssignmentType
         AND ((level_periods.SessionStartDate >= staff_periods.StartDate AND level_periods.SessionStartDate < IFNULL(staff_periods.EndDate, CURRENT_DATE))
             OR (staff_periods.StartDate >= level_periods.SessionStartDate AND staff_periods.StartDate < IFNULL(level_periods.SessionEndDate, CURRENT_DATE)))
+),
+all_supervision_periods AS (
+    SELECT 
+        combined_officer_and_level.*,
+        -- If the admission or termination reason is null, we mark it as a transfer 
+        COALESCE(officer_period_start.AdmissionReason,'TRANS') AS AdmissionReason,
+        COALESCE(officer_period_end.TerminationReason,'TRANS') AS TerminationReason
+    FROM combined_officer_and_level
+    LEFT JOIN cleaned_assignment_periods officer_period_start
+        ON combined_officer_and_level.OffenderID = officer_period_start.OffenderID 
+        AND combined_officer_and_level.StartDate = officer_period_start.StartDate 
+        AND COALESCE(combined_officer_and_level.SupervisionType,'') = COALESCE(officer_period_start.SupervisionType,'') 
+        AND COALESCE(combined_officer_and_level.SupervisionOfficerID,'') = COALESCE(officer_period_start.SupervisionOfficerID,'') 
+        AND COALESCE(combined_officer_and_level.AssignmentType,'') = COALESCE(officer_period_start.AssignmentType,'') 
+        AND COALESCE(combined_officer_and_level.Site,'') = COALESCE(officer_period_start.Site,'')
+    LEFT JOIN cleaned_assignment_periods officer_period_end
+        ON combined_officer_and_level.OffenderID = officer_period_end.OffenderID 
+        AND combined_officer_and_level.EndDate = officer_period_end.EndDate 
+        AND COALESCE(combined_officer_and_level.SupervisionType,'') = COALESCE(officer_period_end.SupervisionType,'') 
+        AND COALESCE(combined_officer_and_level.SupervisionOfficerID,'') = COALESCE(officer_period_end.SupervisionOfficerID,'') 
+        AND COALESCE(combined_officer_and_level.AssignmentType,'') = COALESCE(officer_period_end.AssignmentType,'') 
+        AND COALESCE(combined_officer_and_level.Site,'') = COALESCE(officer_period_end.Site,'')
+    WHERE IFNULL(SupervisionLevel, '') != 'ZDS' -- Exclude periods where the person was marked as discharged (ZDS)
+    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
 )
-
-SELECT 
+SELECT
     *,
     ROW_NUMBER() OVER person_window AS SupervisionPeriodSequenceNumber
-FROM combined_officer_and_level
-WHERE IFNULL(SupervisionLevel, '') != 'ZDS' -- Exclude periods where the person was marked as discharged (ZDS)
-WINDOW person_window AS (PARTITION BY OffenderID ORDER BY StartDate ASC, EndDate ASC)
+    FROM all_supervision_periods 
+    WINDOW person_window AS (PARTITION BY OffenderID ORDER BY StartDate ASC, EndDate ASC)
 """
 
 
