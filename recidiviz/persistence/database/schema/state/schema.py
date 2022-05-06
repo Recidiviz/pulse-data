@@ -738,43 +738,7 @@ class _ReferencesStatePersonSharedColumns:
         )
 
 
-# StatePersonExternalId
-
-
-class _StatePersonExternalIdSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StatePersonExternalId and
-    StatePersonExternalIdHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonExternalIdSharedColumns":
-        if cls is _StatePersonExternalIdSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    external_id = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StatePersonExternalId"
-        ),
-    )
-    state_code = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=STATE_CODE_COMMENT,
-    )
-    id_type = Column(
-        String(255),
-        nullable=False,
-        comment="The type of id provided by the system. For example, in a "
-        "state with multiple data systems that we ingest, this may "
-        "be the name of the system from the id emanates.",
-    )
-
-
-class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
+class StatePersonExternalId(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StatePersonExternalId in the SQL schema"""
 
     __tablename__ = "state_person_external_id"
@@ -803,35 +767,30 @@ class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
         ),
     )
 
-
-# StatePersonAlias
-
-
-class _StatePersonAliasSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StatePersonAlias and
-    StatePersonAliasHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonAliasSharedColumns":
-        if cls is _StatePersonAliasSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StatePersonExternalId"
+        ),
+    )
     state_code = Column(
         String(255),
         nullable=False,
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    full_name = Column(String(255), comment="A person’s name.")
-    alias_type = Column(state_person_alias_type, comment="The type of the name alias.")
-    alias_type_raw_text = Column(
-        String(255), comment="The raw text value for the alias type."
+    id_type = Column(
+        String(255),
+        nullable=False,
+        comment="The type of id provided by the system. For example, in a "
+        "state with multiple data systems that we ingest, this may "
+        "be the name of the system from the id emanates.",
     )
 
 
-class StatePersonAlias(StateBase, _StatePersonAliasSharedColumns):
+class StatePersonAlias(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StatePersonAlias in the SQL schema"""
 
     __tablename__ = "state_person_alias"
@@ -851,33 +810,20 @@ class StatePersonAlias(StateBase, _StatePersonAliasSharedColumns):
         ),
     )
 
-
-# StatePersonRace
-
-
-class _StatePersonRaceSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StatePersonRace and
-    StatePersonRaceHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonRaceSharedColumns":
-        if cls is _StatePersonRaceSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
     state_code = Column(
         String(255),
         nullable=False,
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    race = Column(state_race, comment="A person’s reported race.")
-    race_raw_text = Column(
-        String(255), comment="The raw text value of the person's race."
+    full_name = Column(String(255), comment="A person’s name.")
+    alias_type = Column(state_person_alias_type, comment="The type of the name alias.")
+    alias_type_raw_text = Column(
+        String(255), comment="The raw text value for the alias type."
     )
 
 
-class StatePersonRace(StateBase, _StatePersonRaceSharedColumns):
+class StatePersonRace(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StatePersonRace in the SQL schema"""
 
     __tablename__ = "state_person_race"
@@ -895,33 +841,19 @@ class StatePersonRace(StateBase, _StatePersonRaceSharedColumns):
         ),
     )
 
-
-# StatePersonEthnicity
-
-
-class _StatePersonEthnicitySharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StatePersonEthnicity and
-    StatePersonEthnicityHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonEthnicitySharedColumns":
-        if cls is _StatePersonEthnicitySharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
     state_code = Column(
         String(255),
         nullable=False,
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    ethnicity = Column(state_ethnicity, comment="A person’s reported ethnicity.")
-    ethnicity_raw_text = Column(
-        String(255), comment="The raw text value of the ethnicity."
+    race = Column(state_race, comment="A person’s reported race.")
+    race_raw_text = Column(
+        String(255), comment="The raw text value of the person's race."
     )
 
 
-class StatePersonEthnicity(StateBase, _StatePersonEthnicitySharedColumns):
+class StatePersonEthnicity(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a state person in the SQL schema"""
 
     __tablename__ = "state_person_ethnicity"
@@ -939,19 +871,35 @@ class StatePersonEthnicity(StateBase, _StatePersonEthnicitySharedColumns):
         ),
     )
 
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    ethnicity = Column(state_ethnicity, comment="A person’s reported ethnicity.")
+    ethnicity_raw_text = Column(
+        String(255), comment="The raw text value of the ethnicity."
+    )
 
-# StatePerson
 
+class StatePerson(StateBase):
+    """Represents a StatePerson in the state SQL schema"""
 
-class _StatePersonSharedColumns:
-    """A mixin which defines all columns common to StatePerson and
-    StatePersonHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StatePersonSharedColumns":
-        if cls is _StatePersonSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    __tablename__ = "state_person"
+    __table_args__ = {
+        "comment": "Each StatePerson holds details about the individual, as well as lists of several "
+        "child entities. Some of these child entities are extensions of individual details,"
+        " e.g. Race is its own entity as opposed to a single field, to allow for the"
+        " inclusion/tracking of multiple such entities or sources of such information."
+    }
+    person_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person"
+        ),
+    )
 
     state_code = Column(
         String(255),
@@ -1004,25 +952,6 @@ class _StatePersonSharedColumns:
             ),
         )
 
-
-class StatePerson(StateBase, _StatePersonSharedColumns):
-    """Represents a StatePerson in the state SQL schema"""
-
-    __tablename__ = "state_person"
-    __table_args__ = {
-        "comment": "Each StatePerson holds details about the individual, as well as lists of several "
-        "child entities. Some of these child entities are extensions of individual details,"
-        " e.g. Race is its own entity as opposed to a single field, to allow for the"
-        " inclusion/tracking of multiple such entities or sources of such information."
-    }
-    person_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person"
-        ),
-    )
-
     external_ids = relationship(
         "StatePersonExternalId", backref="person", lazy="selectin"
     )
@@ -1059,19 +988,33 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-# StateCourtCase
+class StateCourtCase(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateCourtCase in the SQL schema"""
 
+    __tablename__ = "state_court_case"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            "person_id",
+            name="court_case_external_ids_unique_within_state_and_person",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateCourtCase object holds information on a single court case that a person stands trial "
+            "at. This represents the case itself, not the charges brought in the case, or any sentences "
+            "imposed as a result of the case."
+        },
+    )
 
-class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateCourtCase and
-    StateCourtCaseHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateCourtCaseSharedColumns":
-        if cls is _StateCourtCaseSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    court_case_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="court case"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -1127,50 +1070,40 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
             ),
         )
 
-
-class StateCourtCase(StateBase, _StateCourtCaseSharedColumns):
-    """Represents a StateCourtCase in the SQL schema"""
-
-    __tablename__ = "state_court_case"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            "person_id",
-            name="court_case_external_ids_unique_within_state_and_person",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateCourtCase object holds information on a single court case that a person stands trial "
-            "at. This represents the case itself, not the charges brought in the case, or any sentences "
-            "imposed as a result of the case."
-        },
-    )
-
-    court_case_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="court case"
-        ),
-    )
     person = relationship("StatePerson", uselist=False)
     judge = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-# StateCharge
+class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateCharge in the SQL schema"""
 
+    __tablename__ = "state_charge"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="charge_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateCharge object holds information on a single charge that a person has been accused of. "
+            "A single StateCharge can reference multiple Incarceration/Supervision Sentences (e.g. multiple "
+            "concurrent sentences served due to an overlapping set of charges) and a multiple charges can "
+            "reference a single Incarceration/Supervision Sentence (e.g. one sentence resulting from multiple "
+            "charges). Thus, the relationship between StateCharge and each distinct Supervision/Incarceration "
+            "Sentence type is many:many. Each StateCharge is brought to trial as part of no more than a single"
+            " StateCourtCase."
+        },
+    )
 
-class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateCharge and
-    StateChargeHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateChargeSharedColumns":
-        if cls is _StateChargeSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    charge_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="charge"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -1268,38 +1201,6 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
             ),
         )
 
-
-class StateCharge(StateBase, _StateChargeSharedColumns):
-    """Represents a StateCharge in the SQL schema"""
-
-    __tablename__ = "state_charge"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="charge_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateCharge object holds information on a single charge that a person has been accused of. "
-            "A single StateCharge can reference multiple Incarceration/Supervision Sentences (e.g. multiple "
-            "concurrent sentences served due to an overlapping set of charges) and a multiple charges can "
-            "reference a single Incarceration/Supervision Sentence (e.g. one sentence resulting from multiple "
-            "charges). Thus, the relationship between StateCharge and each distinct Supervision/Incarceration "
-            "Sentence type is many:many. Each StateCharge is brought to trial as part of no more than a single"
-            " StateCourtCase."
-        },
-    )
-
-    charge_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="charge"
-        ),
-    )
-
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)
     court_case = relationship(
@@ -1307,18 +1208,25 @@ class StateCharge(StateBase, _StateChargeSharedColumns):
     )
 
 
-# StateAssessment
+class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateAssessment in the SQL schema"""
 
+    __tablename__ = "state_assessment"
+    __table_args__ = {
+        "comment": "The StateAssessment object represents information about an "
+        "assessment conducted for some person. Assessments are used in various stages "
+        "of the justice system to assess a person's risk, or a person's needs, or to "
+        "determine what course of action to take, such as pretrial sentencing or "
+        "program reference."
+    }
 
-class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateAssessment and
-    StateAssessmentHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateAssessmentSharedColumns":
-        if cls is _StateAssessmentSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    assessment_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="assessment"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -1375,42 +1283,35 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
             comment="The id of the agent conducting this assessment.",
         )
 
-
-class StateAssessment(StateBase, _StateAssessmentSharedColumns):
-    """Represents a StateAssessment in the SQL schema"""
-
-    __tablename__ = "state_assessment"
-    __table_args__ = {
-        "comment": "The StateAssessment object represents information about an "
-        "assessment conducted for some person. Assessments are used in various stages "
-        "of the justice system to assess a person's risk, or a person's needs, or to "
-        "determine what course of action to take, such as pretrial sentencing or "
-        "program reference."
-    }
-
-    assessment_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="assessment"
-        ),
-    )
-
     conducting_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-# StateSupervisionSentence
+class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateSupervisionSentence in the SQL schema"""
 
+    __tablename__ = "state_supervision_sentence"
+    __table_args__ = {
+        "comment": "The StateSupervisionSentence object represents information about a single sentence to a period of "
+        "supervision imposed as part of a group of related sentences. Multiple distinct, related sentences "
+        "to supervision should be captured as separate supervision sentence objects within the same group. "
+        "These sentences may, for example, be concurrent or consecutive to one another. "
+        "Like the sentence group above, the supervision sentence represents only the imposition of some "
+        "sentence terms, not an actual period of supervision experienced by the person.<br /><br />"
+        "A StateSupervisionSentence object can reference many charges, and each charge can reference many "
+        "sentences -- the relationship is many:many.<br /><br />"
+        "A StateSupervisionSentence can have multiple child StateSupervisionPeriods. It can also have child "
+        "StateIncarcerationPeriods since a sentence to supervision may result in a person's parole being "
+        "revoked and the person being re-incarcerated, for example. In some jurisdictions, this would be "
+        "modeled as distinct sentences of supervision and incarceration, but this is not universal."
+    }
 
-class _StateSupervisionSentenceSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateSupervisionSentence and
-    StateSupervisionSentenceHistory"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionSentenceSharedColumns":
-        if cls is _StateSupervisionSentenceSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    supervision_sentence_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -1485,34 +1386,6 @@ class _StateSupervisionSentenceSharedColumns(_ReferencesStatePersonSharedColumns
         " (See conditions on StateSupervisionPeriod).",
     )
 
-
-class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns):
-    """Represents a StateSupervisionSentence in the SQL schema"""
-
-    __tablename__ = "state_supervision_sentence"
-    __table_args__ = {
-        "comment": "The StateSupervisionSentence object represents information about a single sentence to a period of "
-        "supervision imposed as part of a group of related sentences. Multiple distinct, related sentences "
-        "to supervision should be captured as separate supervision sentence objects within the same group. "
-        "These sentences may, for example, be concurrent or consecutive to one another. "
-        "Like the sentence group above, the supervision sentence represents only the imposition of some "
-        "sentence terms, not an actual period of supervision experienced by the person.<br /><br />"
-        "A StateSupervisionSentence object can reference many charges, and each charge can reference many "
-        "sentences -- the relationship is many:many.<br /><br />"
-        "A StateSupervisionSentence can have multiple child StateSupervisionPeriods. It can also have child "
-        "StateIncarcerationPeriods since a sentence to supervision may result in a person's parole being "
-        "revoked and the person being re-incarcerated, for example. In some jurisdictions, this would be "
-        "modeled as distinct sentences of supervision and incarceration, but this is not universal."
-    }
-
-    supervision_sentence_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
-        ),
-    )
-
     charges = relationship(
         "StateCharge",
         secondary=state_charge_supervision_sentence_association_table,
@@ -1524,21 +1397,40 @@ class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns
     )
 
 
-# StateIncarcerationSentence
+class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateIncarcerationSentence in the SQL schema"""
 
+    __tablename__ = "state_incarceration_sentence"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_sentence_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateIncarcerationSentence object represents information about a single sentence to a "
+            "period of incarceration imposed as part of a group of related sentences. Multiple distinct, related "
+            "sentences to incarceration should be captured as separate incarceration sentence objects within the same "
+            "group. These sentences may, for example, be concurrent or consecutive to one another. Like the sentence "
+            "group, the StateIncarcerationSentence represents only the imposition of some sentence terms, "
+            "not an actual period of incarceration experienced by the person.<br /><br />A StateIncarcerationSentence "
+            "can reference many charges, and each charge can reference many sentences -- the relationship "
+            "is many:many.<br /><br />A StateIncarcerationSentence can have multiple child StateIncarcerationPeriods. "
+            "It can also have child StateSupervisionPeriods since a sentence to incarceration may result in a person "
+            "being paroled, for example. In some jurisdictions, this would be modeled as distinct sentences of "
+            "incarceration and supervision, but this is not universal."
+        },
+    )
 
-class _StateIncarcerationSentenceSharedColumns(
-    _ReferencesStatePersonSharedColumns,
-):
-    """A mixin which defines all columns common to StateIncarcerationSentence
-    and StateIncarcerationSentenceHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateIncarcerationSentenceSharedColumns":
-        if cls is _StateIncarcerationSentenceSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    incarceration_sentence_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -1639,42 +1531,6 @@ class _StateIncarcerationSentenceSharedColumns(
         " (See conditions on StateSupervisionPeriod).",
     )
 
-
-class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedColumns):
-    """Represents a StateIncarcerationSentence in the SQL schema"""
-
-    __tablename__ = "state_incarceration_sentence"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="incarceration_sentence_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateIncarcerationSentence object represents information about a single sentence to a "
-            "period of incarceration imposed as part of a group of related sentences. Multiple distinct, related "
-            "sentences to incarceration should be captured as separate incarceration sentence objects within the same "
-            "group. These sentences may, for example, be concurrent or consecutive to one another. Like the sentence "
-            "group, the StateIncarcerationSentence represents only the imposition of some sentence terms, "
-            "not an actual period of incarceration experienced by the person.<br /><br />A StateIncarcerationSentence "
-            "can reference many charges, and each charge can reference many sentences -- the relationship "
-            "is many:many.<br /><br />A StateIncarcerationSentence can have multiple child StateIncarcerationPeriods. "
-            "It can also have child StateSupervisionPeriods since a sentence to incarceration may result in a person "
-            "being paroled, for example. In some jurisdictions, this would be modeled as distinct sentences of "
-            "incarceration and supervision, but this is not universal."
-        },
-    )
-
-    incarceration_sentence_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
-        ),
-    )
-
     charges = relationship(
         "StateCharge",
         secondary=state_charge_incarceration_sentence_association_table,
@@ -1686,19 +1542,43 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
     )
 
 
-# StateIncarcerationPeriod
+class StateIncarcerationPeriod(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateIncarcerationPeriod in the SQL schema"""
 
-
-class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateIncarcerationPeriod and
-    StateIncarcerationPeriodHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateIncarcerationPeriodSharedColumns":
-        if cls is _StateIncarcerationPeriodSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    __tablename__ = "state_incarceration_period"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_period_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateIncarcerationPeriod object represents information "
+            "about a single period of incarceration, defined as a contiguous stay by a "
+            "particular person in a particular facility. As a person transfers from "
+            "facility to facility, these are modeled as multiple abutting "
+            "incarceration periods. This also extends to temporary transfers to, say, "
+            "hospitals or court appearances. The sequence of incarceration periods can "
+            "be squashed into longer conceptual periods (e.g. from the first admission "
+            "to the final release for a particular sentence) for analytical purposes, "
+            "such as measuring recidivism and revocation -- this is done with a "
+            "fine-grained examination of the admission dates, admission reasons, "
+            "release dates, and release reasons of consecutive incarceration periods."
+            "<br /><br />Handling of incarceration periods is a crucial aspect of our "
+            "platform and involves work in jurisdictional ingest mappings, entity "
+            "matching, and calculation. Fortunately, this means that we have practice "
+            "working with varied representations of this information."
+        },
+    )
+    incarceration_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -1777,58 +1657,28 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
     )
 
 
-class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns):
-    """Represents a StateIncarcerationPeriod in the SQL schema"""
+class StateSupervisionPeriod(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateSupervisionPeriod in the SQL schema"""
 
-    __tablename__ = "state_incarceration_period"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="incarceration_period_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateIncarcerationPeriod object represents information "
-            "about a single period of incarceration, defined as a contiguous stay by a "
-            "particular person in a particular facility. As a person transfers from "
-            "facility to facility, these are modeled as multiple abutting "
-            "incarceration periods. This also extends to temporary transfers to, say, "
-            "hospitals or court appearances. The sequence of incarceration periods can "
-            "be squashed into longer conceptual periods (e.g. from the first admission "
-            "to the final release for a particular sentence) for analytical purposes, "
-            "such as measuring recidivism and revocation -- this is done with a "
-            "fine-grained examination of the admission dates, admission reasons, "
-            "release dates, and release reasons of consecutive incarceration periods."
-            "<br /><br />Handling of incarceration periods is a crucial aspect of our "
-            "platform and involves work in jurisdictional ingest mappings, entity "
-            "matching, and calculation. Fortunately, this means that we have practice "
-            "working with varied representations of this information."
-        },
-    )
-    incarceration_period_id = Column(
+    __tablename__ = "state_supervision_period"
+    __table_args__ = {
+        "comment": "The StateSupervisionPeriod object represents information about a "
+        "single period of supervision, defined as a contiguous period of custody for a "
+        "particular person under a particular jurisdiction. As a person transfers "
+        "between supervising locations, these are modeled as multiple abutting "
+        "supervision periods. Multiple periods of supervision for a particular person "
+        "may be overlapping, due to extended periods of supervision that are "
+        "temporarily interrupted by, say, periods of incarceration, or periods of "
+        "supervision stemming from different charges."
+    }
+
+    supervision_period_id = Column(
         Integer,
         primary_key=True,
         comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision period"
         ),
     )
-
-
-# StateSupervisionPeriod
-
-
-class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateSupervisionPeriod and
-    StateSupervisionPeriodHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionPeriodSharedColumns":
-        if cls is _StateSupervisionPeriodSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
 
     external_id = Column(
         String(255),
@@ -1929,82 +1779,13 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
             ),
         )
 
-
-class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
-    """Represents a StateSupervisionPeriod in the SQL schema"""
-
-    __tablename__ = "state_supervision_period"
-    __table_args__ = {
-        "comment": "The StateSupervisionPeriod object represents information about a "
-        "single period of supervision, defined as a contiguous period of custody for a "
-        "particular person under a particular jurisdiction. As a person transfers "
-        "between supervising locations, these are modeled as multiple abutting "
-        "supervision periods. Multiple periods of supervision for a particular person "
-        "may be overlapping, due to extended periods of supervision that are "
-        "temporarily interrupted by, say, periods of incarceration, or periods of "
-        "supervision stemming from different charges."
-    }
-
-    supervision_period_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision period"
-        ),
-    )
-
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
     case_type_entries = relationship(
         "StateSupervisionCaseTypeEntry", backref="supervision_period", lazy="selectin"
     )
 
 
-# StateSupervisionCaseTypeEntry
-
-
-class _StateSupervisionCaseTypeEntrySharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to
-    StateSupervisionCaseTypeEntry and StateSupervisionCaseTypeEntryHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(
-        cls, *_: Any, **__: Any
-    ) -> "_StateSupervisionCaseTypeEntrySharedColumns":
-        if cls is _StateSupervisionCaseTypeEntrySharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    case_type = Column(
-        state_supervision_case_type,
-        comment="The type of case that describes the associated period of supervision.",
-    )
-    case_type_raw_text = Column(
-        String(255), comment="The raw text value of the case type."
-    )
-    state_code = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=STATE_CODE_COMMENT,
-    )
-
-    @declared_attr
-    def supervision_period_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_supervision_period.supervision_period_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state supervision period"
-            ),
-        )
-
-
-class StateSupervisionCaseTypeEntry(
-    StateBase, _StateSupervisionCaseTypeEntrySharedColumns
-):
+class StateSupervisionCaseTypeEntry(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateSupervisionCaseTypeEntry in the SQL schema"""
 
     __tablename__ = "state_supervision_case_type_entry"
@@ -2034,6 +1815,32 @@ class StateSupervisionCaseTypeEntry(
         ),
     )
 
+    case_type = Column(
+        state_supervision_case_type,
+        comment="The type of case that describes the associated period of supervision.",
+    )
+    case_type_raw_text = Column(
+        String(255), comment="The raw text value of the case type."
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+
+    @declared_attr
+    def supervision_period_id(self) -> Column:
+        return Column(
+            Integer,
+            ForeignKey("state_supervision_period.supervision_period_id"),
+            index=True,
+            nullable=True,
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state supervision period"
+            ),
+        )
+
     person = relationship("StatePerson", uselist=False)
 
     external_id = Column(
@@ -2045,19 +1852,34 @@ class StateSupervisionCaseTypeEntry(
     )
 
 
-# StateIncarcerationIncident
+class StateIncarcerationIncident(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateIncarcerationIncident in the SQL schema"""
 
+    __tablename__ = "state_incarceration_incident"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_incident_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateIncarcerationIncident object represents any behavioral incidents recorded against a "
+            "person during a period of incarceration, such as a fight with another incarcerated individual "
+            "or the possession of contraband. A StateIncarcerationIncident has zero to many "
+            "StateIncarcerationIncidentOutcome children, indicating any official outcomes "
+            "(e.g. disciplinary responses) due to the incident."
+        },
+    )
 
-class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateIncarcerationIncident
-    and StateIncarcerationIncidentHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateIncarcerationIncidentSharedColumns":
-        if cls is _StateIncarcerationIncidentSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    incarceration_incident_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceartion incident"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -2101,36 +1923,6 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
             ),
         )
 
-
-class StateIncarcerationIncident(StateBase, _StateIncarcerationIncidentSharedColumns):
-    """Represents a StateIncarcerationIncident in the SQL schema"""
-
-    __tablename__ = "state_incarceration_incident"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="incarceration_incident_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateIncarcerationIncident object represents any behavioral incidents recorded against a "
-            "person during a period of incarceration, such as a fight with another incarcerated individual "
-            "or the possession of contraband. A StateIncarcerationIncident has zero to many "
-            "StateIncarcerationIncidentOutcome children, indicating any official outcomes "
-            "(e.g. disciplinary responses) due to the incident."
-        },
-    )
-
-    incarceration_incident_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceartion incident"
-        ),
-    )
-
     responding_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
     incarceration_incident_outcomes = relationship(
@@ -2140,24 +1932,33 @@ class StateIncarcerationIncident(StateBase, _StateIncarcerationIncidentSharedCol
     )
 
 
-# StateIncarcerationIncidentOutcome
+class StateIncarcerationIncidentOutcome(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateIncarcerationIncidentOutcome in the SQL schema"""
 
+    __tablename__ = "state_incarceration_incident_outcome"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="incarceration_incident_outcome_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateIncarcerationIncidentOutcome object represents the outcomes in response to a particular "
+            "StateIncarcerationIncident. These can be positive, neutral, or negative, but they should never "
+            "be empty or null -- an incident that has no outcomes should simply have no "
+            "StateIncarcerationIncidentOutcome children objects."
+        },
+    )
 
-class _StateIncarcerationIncidentOutcomeSharedColumns(
-    _ReferencesStatePersonSharedColumns
-):
-    """A mixin which defines all columns common to
-    StateIncarcerationIncidentOutcome and
-    StateIncarcerationIncidentOutcomeHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(
-        cls, *_: Any, **__: Any
-    ) -> "_StateIncarcerationIncidentOutcomeSharedColumns":
-        if cls is _StateIncarcerationIncidentOutcomeSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    incarceration_incident_outcome_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration incident outcome"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -2203,84 +2004,11 @@ class _StateIncarcerationIncidentOutcomeSharedColumns(
             ),
         )
 
-
-class StateIncarcerationIncidentOutcome(
-    StateBase, _StateIncarcerationIncidentOutcomeSharedColumns
-):
-    """Represents a StateIncarcerationIncidentOutcome in the SQL schema"""
-
-    __tablename__ = "state_incarceration_incident_outcome"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="incarceration_incident_outcome_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateIncarcerationIncidentOutcome object represents the outcomes in response to a particular "
-            "StateIncarcerationIncident. These can be positive, neutral, or negative, but they should never "
-            "be empty or null -- an incident that has no outcomes should simply have no "
-            "StateIncarcerationIncidentOutcome children objects."
-        },
-    )
-
-    incarceration_incident_outcome_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration incident outcome"
-        ),
-    )
-
     person = relationship("StatePerson", uselist=False)
 
 
-# StateSupervisionViolationTypeEntry
-
-
-class _StateSupervisionViolationTypeEntrySharedColumns(
-    _ReferencesStatePersonSharedColumns
-):
-    """A mixin which defines all columns common to
-    StateSupervisionViolationTypeEntry and
-    StateSupervisionViolationTypeEntryHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(
-        cls, *_: Any, **__: Any
-    ) -> "_StateSupervisionViolationTypeEntrySharedColumns":
-        if cls is _StateSupervisionViolationTypeEntrySharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    state_code = Column(
-        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
-    )
-    violation_type = Column(
-        state_supervision_violation_type, comment="The type of violation."
-    )
-    violation_type_raw_text = Column(
-        String(255), comment="The raw text value of the violation type."
-    )
-
-    @declared_attr
-    def supervision_violation_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_supervision_violation." "supervision_violation_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
-            ),
-        )
-
-
 class StateSupervisionViolationTypeEntry(
-    StateBase, _StateSupervisionViolationTypeEntrySharedColumns
+    StateBase, _ReferencesStatePersonSharedColumns
 ):
     """Represents a StateSupervisionViolationTypeEntry in the SQL schema."""
 
@@ -2306,27 +2034,52 @@ class StateSupervisionViolationTypeEntry(
         ),
     )
 
+    state_code = Column(
+        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
+    )
+    violation_type = Column(
+        state_supervision_violation_type, comment="The type of violation."
+    )
+    violation_type_raw_text = Column(
+        String(255), comment="The raw text value of the violation type."
+    )
+
+    @declared_attr
+    def supervision_violation_id(self) -> Column:
+        return Column(
+            Integer,
+            ForeignKey("state_supervision_violation." "supervision_violation_id"),
+            index=True,
+            nullable=True,
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
+            ),
+        )
+
     person = relationship("StatePerson", uselist=False)
 
 
-# StateSupervisionViolatedConditionEntry
-
-
-class _StateSupervisionViolatedConditionEntrySharedColumns(
-    _ReferencesStatePersonSharedColumns
+class StateSupervisionViolatedConditionEntry(
+    StateBase, _ReferencesStatePersonSharedColumns
 ):
-    """A mixin which defines all columns common to
-    StateSupervisionViolatedConditionEntry and
-    StateSupervisionViolatedConditionEntryHistory
-    """
+    """Represents a StateSupervisionViolatedConditionEntry in the SQL schema."""
 
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(
-        cls, *_: Any, **__: Any
-    ) -> "_StateSupervisionViolatedConditionEntrySharedColumns":
-        if cls is _StateSupervisionViolatedConditionEntrySharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    __tablename__ = "state_supervision_violated_condition_entry"
+    __table_args__ = {
+        "comment": "The StateSupervisionViolatedConditionEntry object represents a particular condition of supervision "
+        "which was violated by a particular supervision violation. Each supervision violation has zero "
+        "to many violated conditions. For example, a violation may be recorded because a brand new charge "
+        "has been brought against the supervised person."
+    }
+
+    supervision_violated_condition_entry_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE,
+            object_name="supervision violated condition entry",
+        ),
+    )
 
     state_code = Column(
         String(255),
@@ -2352,67 +2105,10 @@ class _StateSupervisionViolatedConditionEntrySharedColumns(
             ),
         )
 
-
-class StateSupervisionViolatedConditionEntry(
-    StateBase, _StateSupervisionViolatedConditionEntrySharedColumns
-):
-    """Represents a StateSupervisionViolatedConditionEntry in the SQL schema."""
-
-    __tablename__ = "state_supervision_violated_condition_entry"
-    __table_args__ = {
-        "comment": "The StateSupervisionViolatedConditionEntry object represents a particular condition of supervision "
-        "which was violated by a particular supervision violation. Each supervision violation has zero "
-        "to many violated conditions. For example, a violation may be recorded because a brand new charge "
-        "has been brought against the supervised person."
-    }
-
-    supervision_violated_condition_entry_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE,
-            object_name="supervision violated condition entry",
-        ),
-    )
-
     person = relationship("StatePerson", uselist=False)
 
 
-# StateSupervisionViolation
-
-
-class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateSupervisionViolation and
-    StateSupervisionViolationHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionViolationSharedColumns":
-        if cls is _StateSupervisionViolationSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionViolation"
-        ),
-    )
-
-    violation_date = Column(Date, comment="The date on which the violation took place.")
-    state_code = Column(
-        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
-    )
-    is_violent = Column(
-        Boolean, comment="Whether or not the violation was violent in nature."
-    )
-    is_sex_offense = Column(
-        Boolean, comment="Whether or not the violation involved a sex offense."
-    )
-
-
-class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColumns):
+class StateSupervisionViolation(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateSupervisionViolation in the SQL schema"""
 
     __tablename__ = "state_supervision_violation"
@@ -2441,6 +2137,25 @@ class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColum
         ),
     )
 
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionViolation"
+        ),
+    )
+
+    violation_date = Column(Date, comment="The date on which the violation took place.")
+    state_code = Column(
+        String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
+    )
+    is_violent = Column(
+        Boolean, comment="Whether or not the violation was violent in nature."
+    )
+    is_sex_offense = Column(
+        Boolean, comment="Whether or not the violation involved a sex offense."
+    )
+
     supervision_violation_types = relationship(
         "StateSupervisionViolationTypeEntry",
         backref="supervision_violation",
@@ -2458,24 +2173,30 @@ class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColum
     )
 
 
-# StateSupervisionViolationResponseDecisionEntry
-
-
-class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
-    _ReferencesStatePersonSharedColumns
+class StateSupervisionViolationResponseDecisionEntry(
+    StateBase, _ReferencesStatePersonSharedColumns
 ):
-    """A mixin which defines all columns common to
-    StateSupervisionViolationResponseDecisionEntry and
-    StateSupervisionViolationResponseDecisionEntryHistory
+    """Represents a StateSupervisionViolationResponseDecisionEntry in the
+    SQL schema.
     """
 
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(
-        cls, *_: Any, **__: Any
-    ) -> "_StateSupervisionViolationResponseDecisionEntrySharedColumns":
-        if cls is _StateSupervisionViolationResponseDecisionEntrySharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    __tablename__ = "state_supervision_violation_response_decision_entry"
+    __table_args__ = {
+        "comment": "The StateSupervisionViolationResponseDecisionEntry object represents each "
+        "specific decision made in response to a particular supervision violation. Each "
+        "supervision violation response has zero to many such decisions. Decisions are "
+        "essentially the final consequences of a violation, actions such as continuance, "
+        "privileges revoked, or revocation."
+    }
+
+    supervision_violation_response_decision_entry_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE,
+            object_name="supervision violation response decision entry",
+        ),
+    )
 
     state_code = Column(
         String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
@@ -2505,53 +2226,40 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
             ),
         )
 
-
-class StateSupervisionViolationResponseDecisionEntry(
-    StateBase, _StateSupervisionViolationResponseDecisionEntrySharedColumns
-):
-    """Represents a StateSupervisionViolationResponseDecisionEntry in the
-    SQL schema.
-    """
-
-    __tablename__ = "state_supervision_violation_response_decision_entry"
-    __table_args__ = {
-        "comment": "The StateSupervisionViolationResponseDecisionEntry object represents each "
-        "specific decision made in response to a particular supervision violation. Each "
-        "supervision violation response has zero to many such decisions. Decisions are "
-        "essentially the final consequences of a violation, actions such as continuance, "
-        "privileges revoked, or revocation."
-    }
-
-    supervision_violation_response_decision_entry_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE,
-            object_name="supervision violation response decision entry",
-        ),
-    )
-
     person = relationship("StatePerson", uselist=False)
 
 
-# StateSupervisionViolationResponse
+class StateSupervisionViolationResponse(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateSupervisionViolationResponse in the SQL schema"""
 
+    __tablename__ = "state_supervision_violation_response"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="supervision_violation_response_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateSupervisionViolationResponse object represents the official responses to a"
+            " particular StateSupervisionViolation. These can be positive, neutral, or negative, but they "
+            "should never be empty or null -- a violation that has no responses should simply have no "
+            "StateSupervisionViolationResponse children objects.<br /><br />As described under "
+            "StateIncarcerationPeriod, any StateSupervisionViolationResponse which leads to a revocation "
+            "back to prison should be linked to the subsequent period of incarceration. This can be done "
+            "implicitly in entity matching, or can be marked explicitly in incoming data, either here or "
+            "on the incarceration period as the case may be."
+        },
+    )
 
-class _StateSupervisionViolationResponseSharedColumns(
-    _ReferencesStatePersonSharedColumns
-):
-    """A mixin which defines all columns common to
-    StateSupervisionViolationResponse and
-    StateSupervisionViolationResponseHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(
-        cls, *_: Any, **__: Any
-    ) -> "_StateSupervisionViolationResponseSharedColumns":
-        if cls is _StateSupervisionViolationResponseSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    supervision_violation_response_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision violation response"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -2605,41 +2313,6 @@ class _StateSupervisionViolationResponseSharedColumns(
             ),
         )
 
-
-class StateSupervisionViolationResponse(
-    StateBase, _StateSupervisionViolationResponseSharedColumns
-):
-    """Represents a StateSupervisionViolationResponse in the SQL schema"""
-
-    __tablename__ = "state_supervision_violation_response"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="supervision_violation_response_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateSupervisionViolationResponse object represents the official responses to a"
-            " particular StateSupervisionViolation. These can be positive, neutral, or negative, but they "
-            "should never be empty or null -- a violation that has no responses should simply have no "
-            "StateSupervisionViolationResponse children objects.<br /><br />As described under "
-            "StateIncarcerationPeriod, any StateSupervisionViolationResponse which leads to a revocation "
-            "back to prison should be linked to the subsequent period of incarceration. This can be done "
-            "implicitly in entity matching, or can be marked explicitly in incoming data, either here or "
-            "on the incarceration period as the case may be."
-        },
-    )
-
-    supervision_violation_response_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision violation response"
-        ),
-    )
-
     person = relationship("StatePerson", uselist=False)
     supervision_violation_response_decisions = relationship(
         "StateSupervisionViolationResponseDecisionEntry",
@@ -2653,41 +2326,7 @@ class StateSupervisionViolationResponse(
     )
 
 
-# StateAgent
-
-
-class _StateAgentSharedColumns:
-    """A mixin which defines all columns common to StateAgent and
-    StateAgentHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateAgentSharedColumns":
-        if cls is _StateAgentSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateAgent"
-        ),
-    )
-    agent_type = Column(state_agent_type, nullable=False, comment="The type of agent.")
-    agent_type_raw_text = Column(
-        String(255), comment="The raw text value of the agent type."
-    )
-    state_code = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=STATE_CODE_COMMENT,
-    )
-    full_name = Column(String(255), comment="The state agent's full name.")
-
-
-class StateAgent(StateBase, _StateAgentSharedColumns):
+class StateAgent(StateBase):
     """Represents a StateAgent in the SQL schema"""
 
     __tablename__ = "state_agent"
@@ -2709,20 +2348,59 @@ class StateAgent(StateBase, _StateAgentSharedColumns):
         ),
     )
 
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateAgent"
+        ),
+    )
+    agent_type = Column(state_agent_type, nullable=False, comment="The type of agent.")
+    agent_type_raw_text = Column(
+        String(255), comment="The raw text value of the agent type."
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    full_name = Column(String(255), comment="The state agent's full name.")
 
-# StateProgramAssignment
 
+class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateProgramAssignment in the SQL schema."""
 
-class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateProgramAssignment and
-    StateProgramAssignmentHistory.
-    """
+    __tablename__ = "state_program_assignment"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="program_assignment_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "The StateProgramAssignment object represents information about "
+            "the assignment of a person to some form of rehabilitative programming -- "
+            "and their participation in the program -- intended to address specific "
+            "needs of the person. People can be assigned to programs while under "
+            "various forms of custody, principally while incarcerated or under "
+            "supervision. These programs can be administered by the "
+            "agency/government, by a quasi-governmental organization, by a private "
+            "third party, or any other number of service providers. The "
+            "programming-related portion of our schema is still being constructed and "
+            "will be added to in the near future."
+        },
+    )
 
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateProgramAssignmentSharedColumns":
-        if cls is _StateProgramAssignmentSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
+    program_assignment_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="program assignment"
+        ),
+    )
 
     external_id = Column(
         String(255),
@@ -2790,56 +2468,37 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
             ),
         )
 
+    referring_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
-class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
-    """Represents a StateProgramAssignment in the SQL schema."""
 
-    __tablename__ = "state_program_assignment"
+class StateEarlyDischarge(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateEarlyDischarge in the SQL schema."""
+
+    __tablename__ = "state_early_discharge"
     __table_args__ = (
         UniqueConstraint(
             "state_code",
             "external_id",
-            name="program_assignment_external_ids_unique_within_state",
+            name="early_discharge_external_ids_unique_within_state",
             deferrable=True,
             initially="DEFERRED",
         ),
         {
-            "comment": "The StateProgramAssignment object represents information about "
-            "the assignment of a person to some form of rehabilitative programming -- "
-            "and their participation in the program -- intended to address specific "
-            "needs of the person. People can be assigned to programs while under "
-            "various forms of custody, principally while incarcerated or under "
-            "supervision. These programs can be administered by the "
-            "agency/government, by a quasi-governmental organization, by a private "
-            "third party, or any other number of service providers. The "
-            "programming-related portion of our schema is still being constructed and "
-            "will be added to in the near future."
+            "comment": "The StateEarlyDischarge object represents a request and its associated decision to discharge "
+            "a sentence before its expected end date. This includes various metadata surrounding the "
+            "actual event of the early discharge request as well as who requested and approved the "
+            "decision for early discharge. It is possible for a sentence to be discharged early without "
+            "ending someone's supervision / incarceration term if that person is serving multiple sentences."
         },
     )
 
-    program_assignment_id = Column(
+    early_discharge_id = Column(
         Integer,
         primary_key=True,
         comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="program assignment"
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="early discharge"
         ),
     )
-    referring_agent = relationship("StateAgent", uselist=False, lazy="selectin")
-
-
-# StateEarlyDischarge
-
-
-class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateEarlyDischarge and
-    StateEarlyDischargeHistory.
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateEarlyDischargeSharedColumns":
-        if cls is _StateEarlyDischargeSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
 
     external_id = Column(
         String(255),
@@ -2927,52 +2586,42 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
             ),
         )
 
+    person = relationship("StatePerson", uselist=False)
 
-class StateEarlyDischarge(StateBase, _StateEarlyDischargeSharedColumns):
-    """Represents a StateEarlyDischarge in the SQL schema."""
 
-    __tablename__ = "state_early_discharge"
+class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateSupervisionContact in the SQL schema."""
+
+    __tablename__ = "state_supervision_contact"
     __table_args__ = (
         UniqueConstraint(
             "state_code",
             "external_id",
-            name="early_discharge_external_ids_unique_within_state",
+            name="supervision_contact_external_ids_unique_within_state",
             deferrable=True,
             initially="DEFERRED",
         ),
         {
-            "comment": "The StateEarlyDischarge object represents a request and its associated decision to discharge "
-            "a sentence before its expected end date. This includes various metadata surrounding the "
-            "actual event of the early discharge request as well as who requested and approved the "
-            "decision for early discharge. It is possible for a sentence to be discharged early without "
-            "ending someone's supervision / incarceration term if that person is serving multiple sentences."
+            "comment": "The StateSupervisionContact object represents information about a point of contact between a "
+            "person under supervision and some agent representing the department, typically a "
+            "supervising officer. These may include face-to-face meetings, phone calls, emails, or other "
+            "such media. At these contacts, specific things may occur, such as referral to programming or "
+            "written warnings or even arrest, but any and all events that happen as part of a single contact "
+            "are modeled as one supervision contact. StateSupervisionPeriods have zero to many "
+            "StateSupervisionContacts as children, and each StateSupervisionContact has one to many "
+            "StateSupervisionPeriods as parents. This is because a given person may be serving multiple "
+            "periods of supervision simultaneously in rare cases, and a given point of contact may apply "
+            "to both."
         },
     )
 
-    early_discharge_id = Column(
+    supervision_contact_id = Column(
         Integer,
         primary_key=True,
         comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="early discharge"
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision contact"
         ),
     )
-
-    person = relationship("StatePerson", uselist=False)
-
-
-# StateSupervisionContact
-
-
-class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateSupervisionContact and
-    StateSupervisionContactHistory.
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateSupervisionContactSharedColumns":
-        if cls is _StateSupervisionContactSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
 
     external_id = Column(
         String(255),
@@ -3041,40 +2690,5 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
                 FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
             ),
         )
-
-
-class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
-    """Represents a StateSupervisionContact in the SQL schema."""
-
-    __tablename__ = "state_supervision_contact"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="supervision_contact_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateSupervisionContact object represents information about a point of contact between a "
-            "person under supervision and some agent representing the department, typically a "
-            "supervising officer. These may include face-to-face meetings, phone calls, emails, or other "
-            "such media. At these contacts, specific things may occur, such as referral to programming or "
-            "written warnings or even arrest, but any and all events that happen as part of a single contact "
-            "are modeled as one supervision contact. StateSupervisionPeriods have zero to many "
-            "StateSupervisionContacts as children, and each StateSupervisionContact has one to many "
-            "StateSupervisionPeriods as parents. This is because a given person may be serving multiple "
-            "periods of supervision simultaneously in rare cases, and a given point of contact may apply "
-            "to both."
-        },
-    )
-
-    supervision_contact_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="supervision contact"
-        ),
-    )
 
     contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")

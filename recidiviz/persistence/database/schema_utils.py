@@ -154,14 +154,6 @@ def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
 
 
-# TODO(#12393): Delete this function once we have deprecated the _history tables for
-#  the state schema
-def get_non_history_state_table_classes() -> Iterator[Table]:
-    for table in get_state_table_classes():
-        if not is_history_table(table.name):
-            yield table
-
-
 def get_state_entity_names() -> Iterator[str]:
     for state_table_class in get_all_table_classes_in_module(state_schema):
         yield state_table_class.name

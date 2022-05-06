@@ -43,12 +43,12 @@ class StateBQTableExportUtilsTest(unittest.TestCase):
         )
 
         expected_query = (
-            "SELECT state_person_race.state_code,state_person_race.race,state_person_race.race_raw_text,"
-            "state_person_race.person_race_id,state_person_race.person_id "
+            "SELECT state_person_race.person_race_id,state_person_race.state_code,"
+            "state_person_race.race,state_person_race.race_raw_text,state_person_race.person_id "
             "FROM `recidiviz-456.state.state_person_race` state_person_race "
             "WHERE state_code IN ('US_PA');"
         )
-        self.assertEqual(query, expected_query)
+        self.assertEqual(expected_query, query)
 
     def test_state_table_export_query_str_association_table(self) -> None:
         query = state_table_export_query_str(

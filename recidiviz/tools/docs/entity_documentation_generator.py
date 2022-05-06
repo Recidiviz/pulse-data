@@ -37,9 +37,7 @@ from recidiviz.common.constants.state.enum_canonical_strings import (
 )
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
-from recidiviz.persistence.database.schema_utils import (
-    get_non_history_state_table_classes,
-)
+from recidiviz.persistence.database.schema_utils import get_state_table_classes
 from recidiviz.persistence.entity.entity_utils import get_all_enum_classes_in_module
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.tools.docs.enum_documentation_config import ENUMS_WITH_INCOMPLETE_DOCS
@@ -138,7 +136,7 @@ def generate_entity_documentation() -> bool:
     old_file_names = set(os.listdir(ENTITY_DOCS_ROOT))
     generated_file_names = set()
     anything_modified = False
-    for t in get_non_history_state_table_classes():
+    for t in get_state_table_classes():
         if t.comment is None:
             raise ValueError(
                 f"Every entity must have an associated comment. "
@@ -213,7 +211,7 @@ def generate_enum_documentation() -> bool:
     all_enum_names = [enum_class.__name__ for enum_class in all_enum_classes]
     all_entity_names = [
         snake_to_camel(t.name, capitalize_first_letter=True)
-        for t in get_non_history_state_table_classes()
+        for t in get_state_table_classes()
     ]
 
     def _get_value_descriptions(enum_type: Type[StateEntityEnum]) -> str:
@@ -302,7 +300,7 @@ def main() -> int:
         list_of_tables: str = "\n".join(
             sorted(
                 f"\t - [{entity_table}](schema/{ENTITIES_PACKAGE_NAME}/{entity_table}.md)"
-                for entity_table in get_non_history_state_table_classes()
+                for entity_table in get_state_table_classes()
             )
         )
         list_of_tables += "\n"

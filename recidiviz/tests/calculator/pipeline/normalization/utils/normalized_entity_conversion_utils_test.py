@@ -83,17 +83,17 @@ class TestBQSchemaForNormalizedStateEntity(unittest.TestCase):
         )
 
         expected_schema = [
-            SchemaField("state_code", bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField("condition", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField(
                 "supervision_violated_condition_entry_id",
                 bigquery.enums.SqlTypeNames.INTEGER.value,
             ),
+            SchemaField("state_code", bigquery.enums.SqlTypeNames.STRING.value),
+            SchemaField("condition", bigquery.enums.SqlTypeNames.STRING.value),
+            SchemaField("person_id", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField(
                 "supervision_violation_id",
                 bigquery.enums.SqlTypeNames.INTEGER.value,
             ),
-            SchemaField("person_id", bigquery.enums.SqlTypeNames.INTEGER.value),
         ]
 
         self.assertEqual(expected_schema, schema_for_entity)

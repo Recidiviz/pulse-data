@@ -26,8 +26,6 @@ The yaml file format for cloud_sql_to_bq_config.yaml is:
 
 region_codes_to_exclude:
   - <list of state region codes>
-state_history_tables_to_include:
-  - <list of state history tables>
 county_columns_to_exclude:
   <map with tables as keys>:
     - <list of columns for those tables to exclude>
@@ -62,7 +60,6 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database import base_schema
 
 # TODO(#4302): Remove unused schema module imports
 # These imports are needed to ensure that the SQL Alchemy table metadata is loaded for the
@@ -86,7 +83,6 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_table_class_by_name,
-    is_history_table,
     schema_type_to_schema_base,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -101,8 +97,6 @@ class CloudSqlToBQConfig:
     Args:
         columns_to_exclude: An optional dictionary of table names and the columns
             to exclude from the export.
-        history_tables_to_include: An optional List of history tables to include
-            in the export.
 
     Usage:
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
@@ -114,11 +108,8 @@ class CloudSqlToBQConfig:
         schema_type: SchemaType,
         direct_ingest_instance: Optional[DirectIngestInstance] = None,
         columns_to_exclude: Optional[Dict[str, List[str]]] = None,
-        history_tables_to_include: Optional[List[str]] = None,
         region_codes_to_exclude: Optional[List[str]] = None,
     ):
-        if history_tables_to_include is None:
-            history_tables_to_include = []
         if columns_to_exclude is None:
             columns_to_exclude = {}
         if region_codes_to_exclude is None:
@@ -128,7 +119,6 @@ class CloudSqlToBQConfig:
         self.metadata_base = schema_type_to_schema_base(schema_type)
         self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
         self.columns_to_exclude = columns_to_exclude
-        self.history_tables_to_include = history_tables_to_include
         self.region_codes_to_exclude = region_codes_to_exclude
 
     def is_state_segmented_refresh_schema(self) -> bool:
@@ -287,18 +277,6 @@ class CloudSqlToBQConfig:
             else SQLAlchemyEngineManager.get_cloudsql_instance_region(self.schema_type)
         )
 
-    def _get_tables_to_exclude(self) -> List[Optional[Table]]:
-        """Return List of table classes to exclude from export"""
-        if self.metadata_base == base_schema.StateBase:
-            return list(
-                table
-                for table in self.sorted_tables
-                if is_history_table(table.name)
-                and table.name not in self.history_tables_to_include
-            )
-
-        return []
-
     def _get_table_columns_to_export(self, table: Table) -> List[str]:
         """Return a List of column objects to export for a given table"""
         return list(
@@ -393,11 +371,7 @@ class CloudSqlToBQConfig:
 
     def get_tables_to_export(self) -> List[Table]:
         """Return List of table classes to include in export"""
-        return list(
-            table
-            for table in self.sorted_tables
-            if table not in self._get_tables_to_exclude()
-        )
+        return list(self.sorted_tables)
 
     @classmethod
     def is_valid_schema_type(cls, schema_type: SchemaType) -> bool:
@@ -465,9 +439,6 @@ class CloudSqlToBQConfig:
                 schema_type=SchemaType.STATE,
                 direct_ingest_instance=direct_ingest_instance,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
-                history_tables_to_include=yaml_config.get(
-                    "state_history_tables_to_include", []
-                ),
             )
         if schema_type == SchemaType.CASE_TRIAGE:
             return CloudSqlToBQConfig(schema_type=SchemaType.CASE_TRIAGE)

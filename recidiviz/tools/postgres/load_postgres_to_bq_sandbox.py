@@ -39,9 +39,7 @@ import sys
 from typing import List, Optional, Tuple
 from unittest import mock
 
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_config
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
@@ -56,8 +54,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 STANDARD_YAML_CONTENTS = """
 region_codes_to_exclude: []
-state_history_tables_to_include:
-- state_person_history
 county_columns_to_exclude:
 person:
 - full_name
