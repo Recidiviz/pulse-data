@@ -56,13 +56,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactLocation,
-    StateSupervisionContactMethod,
-    StateSupervisionContactReason,
-    StateSupervisionContactStatus,
-    StateSupervisionContactType,
-)
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
@@ -90,10 +83,5 @@ ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
     StateResidencyStatus,
     StateSentenceStatus,
     StateSupervisionCaseType,
-    StateSupervisionContactLocation,
-    StateSupervisionContactMethod,
-    StateSupervisionContactReason,
-    StateSupervisionContactStatus,
-    StateSupervisionContactType,
     StateSupervisionSentenceSupervisionType,
 ]

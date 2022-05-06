@@ -39,6 +39,26 @@ class StateSupervisionContactType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionContactType"]:
         return _STATE_SUPERVISION_CONTACT_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The category of the contact."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_CONTACT_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_CONTACT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT: "Used when the supervising "
+    "officer is contacting both the person on supervision and someone else (e.g. the "
+    "person’s spouse, the person’s employer, etc.).",
+    StateSupervisionContactType.COLLATERAL: "Used when the supervising officer is "
+    "contacting someone that is not the person on supervision (e.g. the person’s "
+    "spouse, the person’s employer, etc.).",
+    StateSupervisionContactType.DIRECT: "Used when the supervising officer is "
+    "contacting the person on supervision.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -56,6 +76,30 @@ class StateSupervisionContactMethod(StateEntityEnum):
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactMethod"]:
         return _STATE_SUPERVISION_CONTACT_METHOD_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The way in which the supervising officer interacted with the person "
+            "on supervision."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_CONTACT_METHOD_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_CONTACT_METHOD_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionContactMethod.IN_PERSON: "Used when the supervising officer "
+    "saw the person on supervision in person.",
+    StateSupervisionContactMethod.TELEPHONE: "Used when the supervising officer "
+    "communicated with the person on supervision over the telephone.",
+    StateSupervisionContactMethod.VIRTUAL: "Used when the supervising officer "
+    "communicated with the person on supervision virtually (e.g. a video call).",
+    StateSupervisionContactMethod.WRITTEN_MESSAGE: "Used when the supervising officer "
+    "communicated with the person on supervision through some form of written "
+    "communication (e.g. a letter).",
+}
 
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
@@ -78,6 +122,26 @@ class StateSupervisionContactReason(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionContactReason"]:
         return _STATE_SUPERVISION_CONTACT_REASON_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The reason the supervising officer contacted the person on supervision."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_CONTACT_REASON_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_CONTACT_REASON_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionContactReason.EMERGENCY_CONTACT: "Used when the supervising "
+    "officer contacted the person on supervision because of some kind of emergency.",
+    StateSupervisionContactReason.GENERAL_CONTACT: "Used when the supervising officer "
+    "contacted the person on supervision because of the general contact requirements "
+    "of the person’s supervision conditions.",
+    StateSupervisionContactReason.INITIAL_CONTACT: "Used when the supervising officer "
+    "contacted the person on supervision because the person had just started on "
+    "supervision.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -92,9 +156,32 @@ class StateSupervisionContactStatus(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionContactStatus"]:
         return _STATE_SUPERVISION_CONTACT_STATUS_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The status of the contact between the supervising officer and the "
+            "person on supervision."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_CONTACT_STATUS_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_CONTACT_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionContactStatus.ATTEMPTED: "Used when the contact was attempted but "
+    "not successfully completed (e.g. the supervising officer called the person on "
+    "their phone, but the person did not answer).",
+    StateSupervisionContactStatus.COMPLETED: "Used when the contact was successfully "
+    "completed.",
+}
+
 
 @unique
 class StateSupervisionContactLocation(StateEntityEnum):
+    """The location at which the supervising officer interacted with the
+    person on supervision."""
+
     COURT = state_enum_strings.state_supervision_contact_location_court
     FIELD = state_enum_strings.state_supervision_contact_location_field
     JAIL = state_enum_strings.state_supervision_contact_location_jail
@@ -114,6 +201,7 @@ class StateSupervisionContactLocation(StateEntityEnum):
     PAROLE_COMMISSION = (
         state_enum_strings.state_supervision_contact_location_parole_commission
     )
+    # TODO(#12648): Rename to ALTERNATIVE_PLACE_OF_EMPLOYMENT
     ALTERNATIVE_WORK_SITE = (
         state_enum_strings.state_supervision_contact_location_alternative_work_site
     )
@@ -124,6 +212,40 @@ class StateSupervisionContactLocation(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionContactLocation"]:
         return _STATE_SUPERVISION_CONTACT_LOCATION_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The location at which the supervising officer interacted with the "
+            "person on supervision."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_CONTACT_LOCATION_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_CONTACT_LOCATION_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE: "A location of employment "
+    "for the person on supervision that is not the person’s primary employment.",
+    StateSupervisionContactLocation.COURT: "A courtroom.",
+    StateSupervisionContactLocation.FIELD: "Used when a supervising officer interacts "
+    "with a person on supervision somewhere outside of an official office that does "
+    "not fall into any of the other `StateSupervisionContactLocation` categories.",
+    StateSupervisionContactLocation.JAIL: "A jail.",
+    StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY: "A law enforcement agency "
+    "location (e.g. a police station).",
+    StateSupervisionContactLocation.PAROLE_COMMISSION: "Used when a supervising "
+    "officer made contact with an individual on supervision during a parole board "
+    "hearing.",
+    StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT: "The location of employment "
+    "for the person on supervision.",
+    StateSupervisionContactLocation.RESIDENCE: "The residence of the person on "
+    "supervision.",
+    StateSupervisionContactLocation.SUPERVISION_OFFICE: "The office where the "
+    "supervising officer works.",
+    StateSupervisionContactLocation.TREATMENT_PROVIDER: "A location at which the "
+    "person on supervision is receiving treatment.",
+}
 
 _STATE_SUPERVISION_CONTACT_LOCATION_MAP = {
     "EXTERNAL UNKNOWN": StateSupervisionContactLocation.EXTERNAL_UNKNOWN,

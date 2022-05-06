@@ -13,7 +13,7 @@ from alembic import op
 from recidiviz.utils.string import StrictStringFormatter
 
 revision = "312e157fbc9f"
-down_revision = "dbf7688df462"
+down_revision = "09c40b704975"
 branch_labels = None
 depends_on = None
 
