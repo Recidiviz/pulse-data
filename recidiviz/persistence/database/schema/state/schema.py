@@ -280,7 +280,7 @@ state_person_alias_type = Enum(
 state_gender = Enum(
     state_enum_strings.state_gender_female,
     state_enum_strings.state_gender_male,
-    state_enum_strings.state_gender_non_binary,
+    state_enum_strings.state_gender_other,
     state_enum_strings.state_gender_trans,
     state_enum_strings.state_gender_trans_female,
     state_enum_strings.state_gender_trans_male,
@@ -312,6 +312,7 @@ state_ethnicity = Enum(
 state_residency_status = Enum(
     state_enum_strings.state_residency_status_homeless,
     state_enum_strings.state_residency_status_permanent,
+    state_enum_strings.state_residency_status_transient,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_residency_status",

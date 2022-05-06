@@ -27,7 +27,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 class StateGender(StateEntityEnum):
     FEMALE = state_enum_strings.state_gender_female
     MALE = state_enum_strings.state_gender_male
-    NON_BINARY = state_enum_strings.state_gender_non_binary
+    OTHER = state_enum_strings.state_gender_other
     TRANS = state_enum_strings.state_gender_trans
     TRANS_FEMALE = state_enum_strings.state_gender_trans_female
     TRANS_MALE = state_enum_strings.state_gender_trans_male
@@ -38,23 +38,6 @@ class StateGender(StateEntityEnum):
     def _get_default_map() -> Dict[str, Optional["StateGender"]]:
         return _STATE_GENDER_MAP
 
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "The gender of the person."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_GENDER_VALUE_DESCRIPTIONS
-
-
-_STATE_GENDER_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateGender.FEMALE: "Female",
-    StateGender.MALE: "Male",
-    StateGender.NON_BINARY: "Non-binary",
-    StateGender.TRANS: "Trans",
-    StateGender.TRANS_FEMALE: "Trans female",
-    StateGender.TRANS_MALE: "Trans male",
-}
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -72,25 +55,6 @@ class StateRace(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateRace"]:
         return _STATE_RACE_MAP
 
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "A racial identity of the person."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_RACE_VALUE_DESCRIPTIONS
-
-
-_STATE_RACE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "American Indian Alaskan Native",
-    StateRace.ASIAN: "Asian",
-    StateRace.BLACK: "Black",
-    StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "Native Hawaiian Pacific Islander",
-    StateRace.OTHER: "Used when the state data explicitly indicates that the person’s "
-    "race is “Other”. If there is a race value that does not map to one of our "
-    "`StateRace` enum values, then `INTERNAL_UNKNOWN` should be used.",
-    StateRace.WHITE: "White",
-}
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -104,25 +68,13 @@ class StateEthnicity(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateEthnicity"]:
         return STATE_ETHNICITY_MAP
 
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "An ethnicity of the person."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_ETHNICITY_VALUE_DESCRIPTIONS
-
-
-_STATE_ETHNICITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateEthnicity.HISPANIC: "Used when a person is Hispanic.",
-    StateEthnicity.NOT_HISPANIC: "Used when a person is not Hispanic.",
-}
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
 class StateResidencyStatus(StateEntityEnum):
     HOMELESS = state_enum_strings.state_residency_status_homeless
     PERMANENT = state_enum_strings.state_residency_status_permanent
+    TRANSIENT = state_enum_strings.state_residency_status_transient
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -130,20 +82,6 @@ class StateResidencyStatus(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateResidencyStatus"]:
         return STATE_RESIDENCY_STATUS_SUBSTRING_MAP
 
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "The status of the person’s permanent residency."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_RESIDENCY_STATUS_VALUE_DESCRIPTIONS
-
-
-_STATE_RESIDENCY_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateResidencyStatus.HOMELESS: "Used when the person is unhoused.",
-    StateResidencyStatus.PERMANENT: "Used when the person is living in a permanent "
-    "residence.",
-}
 
 _STATE_GENDER_MAP = {
     "EXTERNAL UNKNOWN": StateGender.EXTERNAL_UNKNOWN,
@@ -152,8 +90,8 @@ _STATE_GENDER_MAP = {
     "M": StateGender.MALE,
     "MALE": StateGender.MALE,
     "NOT SPECIFIED": None,
-    "NB": StateGender.NON_BINARY,
-    "NON BINARY": StateGender.NON_BINARY,
+    "O": StateGender.OTHER,
+    "OTHER": StateGender.OTHER,
     "TRANS": StateGender.TRANS,
     "TRANS FEMALE": StateGender.TRANS_FEMALE,
     "TRANS FEMALE TRANS WOMAN": StateGender.TRANS_FEMALE,
@@ -256,6 +194,7 @@ STATE_ETHNICITY_MAP = {
 STATE_RESIDENCY_STATUS_SUBSTRING_MAP = {
     "HOMELESS": StateResidencyStatus.HOMELESS,
     "PERMANENT": StateResidencyStatus.PERMANENT,
+    "TRANSIENT": StateResidencyStatus.TRANSIENT,
     "INTERNAL UNKNOWN": StateResidencyStatus.INTERNAL_UNKNOWN,
     "EXTERNAL UNKNOWN": StateResidencyStatus.EXTERNAL_UNKNOWN,
 }
