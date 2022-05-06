@@ -20,11 +20,6 @@ in-progress."""
 from typing import List, Type
 
 from recidiviz.common.constants.entity_enum import EntityEnum
-from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentClass,
-    StateAssessmentLevel,
-    StateAssessmentType,
-)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
@@ -61,9 +56,6 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 )
 
 ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
-    StateAssessmentClass,
-    StateAssessmentLevel,
-    StateAssessmentType,
     StateChargeClassificationType,
     StateChargeStatus,
     StateCourtCaseStatus,

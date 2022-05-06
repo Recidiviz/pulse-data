@@ -131,7 +131,6 @@ def assessment_score_bucket(
             StateAssessmentType.ORAS_PRISON_SCREENING,
             StateAssessmentType.ORAS_PRISON_INTAKE,
             StateAssessmentType.ORAS_REENTRY,
-            StateAssessmentType.ORAS_STATIC,
             StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
         ]:
             if assessment_level:
@@ -142,7 +141,6 @@ def assessment_score_bucket(
         elif assessment_type in [
             StateAssessmentType.EXTERNAL_UNKNOWN,
             StateAssessmentType.INTERNAL_UNKNOWN,
-            StateAssessmentType.ASI,
             StateAssessmentType.CSSM,
             StateAssessmentType.HIQ,
             StateAssessmentType.J_SOAP,

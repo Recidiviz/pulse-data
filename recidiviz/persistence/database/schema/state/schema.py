@@ -105,9 +105,7 @@ CUSTODIAL_AUTHORITY_COMMENT = (
 )
 
 state_assessment_class = Enum(
-    state_enum_strings.state_assessment_class_mental_health,
     state_enum_strings.state_assessment_class_risk,
-    state_enum_strings.state_assessment_class_security_classification,
     state_enum_strings.state_assessment_class_sex_offense,
     state_enum_strings.state_assessment_class_social,
     state_enum_strings.state_assessment_class_substance_abuse,
@@ -117,7 +115,6 @@ state_assessment_class = Enum(
 )
 
 state_assessment_type = Enum(
-    state_enum_strings.state_assessment_type_asi,
     state_enum_strings.state_assessment_type_cssm,
     state_enum_strings.state_assessment_type_hiq,
     state_enum_strings.state_assessment_type_j_soap,
@@ -141,7 +138,6 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_oras_prison_screening,
     state_enum_strings.state_assessment_type_oras_prison_intake,
     state_enum_strings.state_assessment_type_oras_reentry,
-    state_enum_strings.state_assessment_type_oras_static,
     state_enum_strings.state_assessment_type_oras_supplemental_reentry,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,

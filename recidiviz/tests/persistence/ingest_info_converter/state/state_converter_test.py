@@ -214,7 +214,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_assessments.add(
             state_assessment_id="ASSESSMENT_ID",
-            assessment_class="MENTAL_HEALTH",
+            assessment_class="RISK",
             conducting_agent_id="AGENT_ID1",
         )
         ingest_info.state_program_assignments.add(
@@ -400,8 +400,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         assessment = StateAssessment.new_with_defaults(
             external_id="ASSESSMENT_ID",
             state_code="US_XX",
-            assessment_class=StateAssessmentClass.MENTAL_HEALTH,
-            assessment_class_raw_text="MENTAL_HEALTH",
+            assessment_class=StateAssessmentClass.RISK,
+            assessment_class_raw_text="RISK",
             conducting_agent=StateAgent.new_with_defaults(
                 external_id="AGENT_ID1",
                 agent_type=StateAgentType.PRESENT_WITHOUT_INFO,

@@ -29,11 +29,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 class StateAssessmentClass(StateEntityEnum):
     """An enumeration of assessment classifications tracked in our schema."""
 
-    MENTAL_HEALTH = state_enum_strings.state_assessment_class_mental_health
     RISK = state_enum_strings.state_assessment_class_risk
-    SECURITY_CLASSIFICATION = (
-        state_enum_strings.state_assessment_class_security_classification
-    )
     SEX_OFFENSE = state_enum_strings.state_assessment_class_sex_offense
     SOCIAL = state_enum_strings.state_assessment_class_social
     SUBSTANCE_ABUSE = state_enum_strings.state_assessment_class_substance_abuse
@@ -44,6 +40,26 @@ class StateAssessmentClass(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateAssessmentClass"]:
         return _STATE_ASSESSMENT_CLASS_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The classification of the assessment."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS
+
+
+_STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentClass.RISK: "Describes an assessment that evaluates the risk of an "
+    "individual.",
+    StateAssessmentClass.SEX_OFFENSE: "Describes an assessment that evaluates the "
+    "risk of an individual, where the assessment is specifically built for individuals "
+    "convicted of a sex offense.",
+    StateAssessmentClass.SOCIAL: "Describes an assessment that evaluates the social "
+    "attitudes and beliefs of an individual.",
+    StateAssessmentClass.SUBSTANCE_ABUSE: "Describes an assessment that evaluates the "
+    "degree of substance use by an individual.",
+}
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -51,7 +67,6 @@ class StateAssessmentClass(StateEntityEnum):
 class StateAssessmentType(StateEntityEnum):
     """An enumeration of assessment types tracked in our schema."""
 
-    ASI = state_enum_strings.state_assessment_type_asi
     CSSM = state_enum_strings.state_assessment_type_cssm
     HIQ = state_enum_strings.state_assessment_type_hiq
     J_SOAP = state_enum_strings.state_assessment_type_j_soap
@@ -75,7 +90,6 @@ class StateAssessmentType(StateEntityEnum):
     )
     ORAS_PRISON_INTAKE = state_enum_strings.state_assessment_type_oras_prison_intake
     ORAS_REENTRY = state_enum_strings.state_assessment_type_oras_reentry
-    ORAS_STATIC = state_enum_strings.state_assessment_type_oras_static
     ORAS_SUPPLEMENTAL_REENTRY = (
         state_enum_strings.state_assessment_type_oras_supplemental_reentry
     )
@@ -95,6 +109,55 @@ class StateAssessmentType(StateEntityEnum):
     @staticmethod
     def _get_default_map() -> Dict[str, "StateAssessmentType"]:
         return _STATE_ASSESSMENT_TYPE_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The type of the assessment."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentType.CSSM: "Criminal Sentiments Scale – Modified (CSM-R)",
+    StateAssessmentType.HIQ: "Hostile Interpretations Questionnaire (HIQ) ",
+    StateAssessmentType.J_SOAP: "Juvenile Sex Offender Assessment Protocol-II "
+    "(J-SOAP-II)",
+    StateAssessmentType.LSIR: "Level of Service Inventory - Revised (LSI-R)",
+    StateAssessmentType.ODARA: "Ontario Domestic Assault Risk Assessment",
+    StateAssessmentType.ORAS_COMMUNITY_SUPERVISION: "Ohio Risk Assessment System - "
+    "Community Supervision Tool (ORAS-CST)",
+    StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING: "Ohio Risk Assessment "
+    "System - Community Supervision Screening Tool (ORAS-CSST)",
+    StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT: "Ohio Risk Assessment System - "
+    "Misdemeanor Assessment Tool (ORAS-MAT)",
+    StateAssessmentType.ORAS_MISDEMEANOR_SCREENING: "Ohio Risk Assessment System - "
+    "Misdemeanor Screening Tool (ORAS-MST)",
+    StateAssessmentType.ORAS_PRE_TRIAL: "Ohio Risk Assessment System - Pre-Trial "
+    "Assessment Tool (ORAS-PAT)",
+    StateAssessmentType.ORAS_PRISON_INTAKE: "Ohio Risk Assessment System - Prison "
+    "Intake Tool (ORAS-PIT)",
+    StateAssessmentType.ORAS_PRISON_SCREENING: "Ohio Risk Assessment System - Prison "
+    "Screening Tool (ORAS-PST)",
+    StateAssessmentType.ORAS_REENTRY: "Ohio Risk Assessment System - Reentry Tool "
+    "(ORAS-RT)",
+    StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY: "Ohio Risk Assessment System - "
+    "Supplemental Reentry Tool (ORAS-SRT)",
+    StateAssessmentType.OYAS: "Ohio Youth Assessment System (OYAS)",
+    StateAssessmentType.PA_RST: "Pennsylvania Risk Screen Tool (RST)",
+    StateAssessmentType.PSA: "Public Safety Assessment (PSA)",
+    StateAssessmentType.SORAC: "Sex Offender Risk Assessment Committee (SORAC)",
+    StateAssessmentType.SOTIPS: "Sex Offender Treatment Intervention and Progress "
+    "Scale (SOTIPS)",
+    StateAssessmentType.SPIN_W: "Service Planning Instrument for Women (SPIn-W)",
+    StateAssessmentType.STABLE: "Sex offense risk assessment (STABLE-2007)",
+    StateAssessmentType.STATIC_99: "Sex offense risk assessment (STATIC-99/STATIC-99R)",
+    StateAssessmentType.STRONG_R: "Static Risk Offender Needs Guide – Revised "
+    "(STRONG-R)",
+    StateAssessmentType.TCU_DRUG_SCREEN: "Texas Christian University (TCU) Drug "
+    "Screen (TCU)",
+}
 
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
@@ -117,12 +180,39 @@ class StateAssessmentLevel(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateAssessmentLevel"]:
         return _STATE_ASSESSMENT_LEVEL_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The categorical classification determined by the values or score of "
+            "the assessment, for assessments that produce discrete levels."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_ASSESSMENT_LEVEL_VALUE_DESCRIPTIONS
+
+
+_STATE_ASSESSMENT_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentLevel.HIGH: "Category of “High”, as defined by the assessment.",
+    StateAssessmentLevel.LOW: "Category of “Low”, as defined by the assessment.",
+    StateAssessmentLevel.LOW_MEDIUM: "Category of “Low-Medium”, as defined by the "
+    "assessment.",
+    StateAssessmentLevel.MAXIMUM: "Category of “Maximum”, as defined by the "
+    "assessment. This is considered higher than the `VERY_HIGH` category.",
+    StateAssessmentLevel.MEDIUM: "Category of “Medium”, as defined by the assessment.",
+    StateAssessmentLevel.MEDIUM_HIGH: "Category of “Medium-High”, as defined by the "
+    "assessment.",
+    StateAssessmentLevel.MINIMUM: "Category of “Minimum”, as defined by the "
+    "assessment. This is considered lower than the `LOW` category.",
+    StateAssessmentLevel.MODERATE: "Category of “Moderate”, as defined by the "
+    "assessment.",
+    StateAssessmentLevel.VERY_HIGH: "Category of “Very High”, as defined by the "
+    "assessment.",
+}
+
 
 _STATE_ASSESSMENT_CLASS_MAP = {
-    "MENTAL HEALTH": StateAssessmentClass.MENTAL_HEALTH,
-    "MH": StateAssessmentClass.MENTAL_HEALTH,
     "RISK": StateAssessmentClass.RISK,
-    "SECURITY CLASSIFICATION": StateAssessmentClass.SECURITY_CLASSIFICATION,
     "SEX OFFENSE": StateAssessmentClass.SEX_OFFENSE,
     "SOCIAL": StateAssessmentClass.SOCIAL,
     "SUBSTANCE ABUSE": StateAssessmentClass.SUBSTANCE_ABUSE,
@@ -133,7 +223,6 @@ _STATE_ASSESSMENT_CLASS_MAP = {
 
 
 _STATE_ASSESSMENT_TYPE_MAP = {
-    "ASI": StateAssessmentType.ASI,
     "CSSM": StateAssessmentType.CSSM,
     "HIQ": StateAssessmentType.HIQ,
     "J SOAP": StateAssessmentType.J_SOAP,
@@ -147,7 +236,6 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     "ORAS PRISON SCREENING": StateAssessmentType.ORAS_PRISON_SCREENING,
     "ORAS PRISON INTAKE": StateAssessmentType.ORAS_PRISON_INTAKE,
     "ORAS REENTRY": StateAssessmentType.ORAS_REENTRY,
-    "ORAS STATIC": StateAssessmentType.ORAS_STATIC,
     "ORAS SUPPLEMENTAL REENTRY": StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
     "OYAS": StateAssessmentType.OYAS,
     "PA RST": StateAssessmentType.PA_RST,
