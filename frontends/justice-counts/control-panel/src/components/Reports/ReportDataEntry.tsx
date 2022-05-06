@@ -38,7 +38,7 @@ const ReportDataEntry = () => {
       // return when's disposer so it is cleaned up if it never runs
       when(
         () => userStore.userInfoLoaded,
-        () => reportStore.mockGetReport(reportID)
+        () => reportStore.getReport(reportID)
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
