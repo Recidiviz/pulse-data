@@ -38,9 +38,14 @@ const DataFreshnessView = (): JSX.Element => {
       key: "state",
     },
     {
-      title: "Date",
+      title: "State Dataset Freshness",
       dataIndex: "date",
       key: "date",
+    },
+    {
+      title: "Last State Dataset Reresh",
+      dataIndex: "lastRefreshDate",
+      key: "lastRefreshDate",
     },
     {
       title: "Notes",
