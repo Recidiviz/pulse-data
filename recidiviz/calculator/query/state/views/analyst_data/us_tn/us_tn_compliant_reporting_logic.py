@@ -595,8 +595,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                  WHEN COALESCE(young_victim_flag,0) = 0 AND COALESCE(young_victim_flag_ever,0) = 1 AND COALESCE(all_young_victim_offenses_expired,0) = 0 THEN 'Discretion'
                  WHEN COALESCE(young_victim_flag,0) = 0 AND COALESCE(young_victim_flag_prior,0) = 1 THEN 'Discretion'
                  ELSE 'Ineligible' END AS young_victim_flag_eligibility,
+            CASE WHEN COALESCE(dui_flag,0) = 0 THEN 'Eligible' ELSE 'Ineligible' END as dui_flag_eligibility,
             CASE WHEN COALESCE(dui_last_5_years_flag,0) = 0 THEN 'Eligible' ELSE 'Ineligible' END AS dui_last_5_years_flag_eligibility,
-                 
+            CASE WHEN GREATEST(COALESCE(homicide_flag,0),COALESCE(homicide_flag_ever,0),COALESCE(homicide_flag_prior,0)) = 1 THEN 'Ineligible' ELSE 'Eligible' END AS homicide_eligibility,                  
             CASE WHEN total_screens_in_past_year IS NULL THEN 0 
                 ELSE total_screens_in_past_year END AS total_screens_in_past_year,
         -- Logic here: for non-drug-offense:
@@ -808,6 +809,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             unknown_offense_flag_eligibility,
             missing_offense_flag_eligibility,
             young_victim_flag_eligibility,
+            homicide_eligibility,
+            dui_flag_eligibility,
             dui_last_5_years_flag_eligibility,
             drug_screen_pass_flag_drug_offense,
             drug_screen_pass_flag_non_drug_offense,
@@ -832,6 +835,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                         AND unknown_offense_flag_eligibility = 'Eligible'
                         AND missing_offense_flag_eligibility = 'Eligible'
                         AND young_victim_flag_eligibility = 'Eligible'
+                        AND dui_flag_eligibility = 'Eligible'
+                        AND homicide_eligibility = 'Eligible'
                         AND dui_last_5_years_flag_eligibility = 'Eligible'
                         AND latest_expiration_date_for_excluded_offenses IS NOT NULL THEN DATE_ADD(latest_expiration_date_for_excluded_offenses, INTERVAL 10 YEAR)
                 WHEN domestic_flag_eligibility in ('Eligible','Discretion')
@@ -841,6 +846,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                         AND unknown_offense_flag_eligibility in ('Eligible','Discretion')
                         AND missing_offense_flag_eligibility in ('Eligible','Discretion')
                         AND young_victim_flag_eligibility in ('Eligible','Discretion')
+                        AND homicide_eligibility = 'Eligible'
+                        AND dui_flag_eligibility = 'Eligible'
                         AND dui_last_5_years_flag_eligibility = 'Eligible' THEN '1900-01-01'
                 END AS date_offenses_eligible,
             date_sup_level_eligible,
@@ -862,7 +869,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
+                AND dui_flag_eligibility in ('Eligible')
                 AND dui_last_5_years_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
+                AND homicide_eligibility = 'Eligible'
                 THEN 1 ELSE 0 END AS eligible_offenses,
             CASE WHEN 
                 COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
@@ -882,7 +891,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired')
                 AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired')
                 AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired')
+                AND dui_flag_eligibility = 'Eligible'
                 AND dui_last_5_years_flag_eligibility = 'Eligible'
+                AND homicide_eligibility = 'Eligible'
                 -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
                 AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
                 AND COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
@@ -912,7 +923,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
+                AND dui_flag_eligibility = 'Eligible'
                 AND dui_last_5_years_flag_eligibility = 'Eligible'
+                AND homicide_eligibility = 'Eligible'
                 -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
                 AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
                 AND COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
@@ -942,7 +955,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
+                AND dui_flag_eligibility = 'Eligible'
                 AND dui_last_5_years_flag_eligibility = 'Eligible'
+                AND homicide_eligibility = 'Eligible'
                 -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
                 AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
                 AND COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
@@ -966,6 +981,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
                 AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
+                AND dui_flag_eligibility = 'Eligible'
                 AND dui_last_5_years_flag_eligibility = 'Eligible'
                 -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
                 AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
@@ -976,6 +992,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 AND no_lifetime_flag = 1
                 AND eligible_counties = 1
                 AND fines_fees_eligible != 'Ineligible'
+                AND homicide_eligibility = 'Eligible'
             THEN 1 ELSE 0 END AS all_eligible_and_offense_and_zt_and_fines_discretion,
         FROM add_more_flags_1    
         LEFT JOIN contacts_cte_arrays 
