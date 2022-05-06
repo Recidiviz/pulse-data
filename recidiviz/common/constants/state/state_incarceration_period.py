@@ -275,11 +275,12 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_VALUE_DESCRIPTIONS: Dict[
     "a person is transferred to a different jurisdiction. Used when a person is "
     "transferred to another state, or to federal custody.",
     StateIncarcerationPeriodReleaseReason.VACATED: "Used when a person is released "
-    "because the legal judgment on their conviction has become legally void, or has "
-    "been overturned. When a sentence is vacated, there is immediate release from "
-    "any active form of incarceration or supervision related to the vacated "
-    "conviction. This is distinct from `PARDONED`, because the conviction was "
-    "cleared as a result of it being deemed legally void.",
+    "because the legal judgment on their conviction has become legally void, their "
+    "conviction has been overturned, or their case has been dismissed. When a "
+    "sentence is vacated, there is immediate release from any active form of "
+    "incarceration or supervision related to the vacated conviction. This is distinct "
+    "from `PARDONED`, because the sentence was cleared as a result of it being "
+    "deemed legally void.",
 }
 
 
