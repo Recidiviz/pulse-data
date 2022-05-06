@@ -17,6 +17,7 @@
 """SQLAlchemy table mixin that defines all columns common on a history table"""
 
 from typing import Any, Dict
+
 from sqlalchemy import Column, DateTime
 
 

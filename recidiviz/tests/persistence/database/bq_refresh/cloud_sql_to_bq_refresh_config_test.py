@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType, is_history_table
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
@@ -160,19 +160,6 @@ county_columns_to_exclude:
 
             for table in tables_to_export:
                 self.assertIsInstance(table, sqlalchemy.Table)
-
-            if schema_type == SchemaType.STATE:
-                history_tables_to_include = config.history_tables_to_include
-                for history_table in history_tables_to_include:
-                    table_names = list(map(lambda t: t.name, tables_to_export))
-                    self.assertIn(history_table, table_names)
-
-                for table in config.sorted_tables:
-                    if (
-                        is_history_table(table.name)
-                        and table.name not in config.history_tables_to_include
-                    ):
-                        self.assertNotIn(table, tables_to_export)
 
     def test_dataset_id(self) -> None:
         """Make sure dataset_id is defined correctly.

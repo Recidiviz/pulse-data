@@ -10,9 +10,6 @@ def upgrade() -> None:
     op.alter_column("{primary_table}", column_name="{column}",
                     type_=sa.Enum(*new_values, name="{enum_name}"),
                     postgresql_using="{column}::text::{enum_name}")
-    op.alter_column("{primary_table}_history", column_name="{column}",
-                    type_=sa.Enum(*new_values, name="{enum_name}"),
-                    postgresql_using="{column}::text::{enum_name}")
     op.execute("DROP TYPE {enum_name}_old;")
 
 
@@ -20,9 +17,6 @@ def downgrade() -> None:
     op.execute("ALTER TYPE {enum_name} RENAME TO {enum_name}_old;")
     sa.Enum(*old_values, name="{enum_name}").create(bind=op.get_bind())
     op.alter_column("{primary_table}", column_name="{column}",
-                    type_=sa.Enum(*old_values, name="{enum_name}"),
-                    postgresql_using="{column}::text::{enum_name}")
-    op.alter_column("{primary_table}_history", column_name="{column}",
                     type_=sa.Enum(*old_values, name="{enum_name}"),
                     postgresql_using="{column}::text::{enum_name}")
     op.execute("DROP TYPE {enum_name}_old;")

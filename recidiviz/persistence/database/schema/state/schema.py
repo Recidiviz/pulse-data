@@ -20,17 +20,6 @@ for state-level entities.
 
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
-
-NOTE: Many of the tables in the below schema are historical tables. The primary
-key of a historical table exists only due to the requirements of SQLAlchemy,
-and should not be referenced by any other table. The key which should be used
-to reference a historical table is the key shared with the primary table. For
-the historical table, this key is non-unique. This is necessary to allow the
-desired temporal table behavior. Because of this, any foreign key column on a
-historical table must point to the *primary* table (which has a unique key), not
-the historical table (which does not). Because the key is shared between the
-primary and historical tables, this allows an indirect guarantee of referential
-integrity to the historical tables as well.
 """
 from typing import Any, TypeVar
 
@@ -52,13 +41,7 @@ from sqlalchemy.orm import relationship
 from recidiviz.common.constants.state import (
     enum_canonical_strings as state_enum_strings,
 )
-
-# SQLAlchemy enums. Created separately from the tables so they can be shared
-# between the primary and historical tables for each entity.
 from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
-    HistoryTableSharedColumns,
-)
 from recidiviz.utils.string import StrictStringFormatter
 
 ASSOCIATON_TABLE_COMMENT_TEMPLATE = (
@@ -85,15 +68,6 @@ FOREIGN_KEY_COMMENT_TEMPLATE = (
     "dataset to connect this object to relevant {object_name} information."
 )
 
-HISTORICAL_TABLE_COMMENT_TEMPLATE = (
-    "Represents all updates that have made to a(n) {object_name} object over time."
-)
-
-HISTORICAL_ID_COMMENT = (
-    "This primary key should not be used. It only exists because SQLAlchemy requires every table "
-    "to have a unique primary key."
-)
-
 STATE_CODE_COMMENT = "The U.S. state or region that provided the source data."
 
 CUSTODIAL_AUTHORITY_COMMENT = (
@@ -104,6 +78,8 @@ CUSTODIAL_AUTHORITY_COMMENT = (
     "that person's path through the system."
 )
 
+# SQLAlchemy enums. Created separately from the tables so they can be shared
+# between tables / columns if necessary.
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_risk,
     state_enum_strings.state_assessment_class_sex_offense,
@@ -828,34 +804,6 @@ class StatePersonExternalId(StateBase, _StatePersonExternalIdSharedColumns):
     )
 
 
-class StatePersonExternalIdHistory(
-    StateBase, _StatePersonExternalIdSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StatePersonExternalId"""
-
-    __tablename__ = "state_person_external_id_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonExternalId"
-        )
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    person_external_id_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    person_external_id_id = Column(
-        Integer,
-        ForeignKey("state_person_external_id.person_external_id_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person external id"
-        ),
-    )
-
-
 # StatePersonAlias
 
 
@@ -904,35 +852,6 @@ class StatePersonAlias(StateBase, _StatePersonAliasSharedColumns):
     )
 
 
-class StatePersonAliasHistory(
-    StateBase, _StatePersonAliasSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StatePersonAlias"""
-
-    __tablename__ = "state_person_alias_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonAlias"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    person_alias_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    person_alias_id = Column(
-        Integer,
-        ForeignKey("state_person_alias.person_alias_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person alias"
-        ),
-    )
-
-
 # StatePersonRace
 
 
@@ -977,35 +896,6 @@ class StatePersonRace(StateBase, _StatePersonRaceSharedColumns):
     )
 
 
-class StatePersonRaceHistory(
-    StateBase, _StatePersonRaceSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StatePersonRace"""
-
-    __tablename__ = "state_person_race_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonRace"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    person_race_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    person_race_id = Column(
-        Integer,
-        ForeignKey("state_person_race.person_race_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person race"
-        ),
-    )
-
-
 # StatePersonEthnicity
 
 
@@ -1046,35 +936,6 @@ class StatePersonEthnicity(StateBase, _StatePersonEthnicitySharedColumns):
         primary_key=True,
         comment=StrictStringFormatter().format(
             PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person ethnicity"
-        ),
-    )
-
-
-class StatePersonEthnicityHistory(
-    StateBase, _StatePersonEthnicitySharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a state person ethnicity"""
-
-    __tablename__ = "state_person_ethnicity_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePersonEthnicity"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    person_ethnicity_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    person_ethnicity_id = Column(
-        Integer,
-        ForeignKey("state_person_ethnicity.person_ethnicity_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state person ethnicity"
         ),
     )
 
@@ -1198,33 +1059,6 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-class StatePersonHistory(
-    StateBase, _StatePersonSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StatePerson"""
-
-    __tablename__ = "state_person_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StatePerson"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    person_history_id = Column(Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT)
-
-    person_id = Column(
-        Integer,
-        ForeignKey("state_person.person_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state person"
-        ),
-    )
-
-
 # StateCourtCase
 
 
@@ -1323,36 +1157,6 @@ class StateCourtCase(StateBase, _StateCourtCaseSharedColumns):
     )
     person = relationship("StatePerson", uselist=False)
     judge = relationship("StateAgent", uselist=False, lazy="selectin")
-
-
-class StateCourtCaseHistory(
-    StateBase, _StateCourtCaseSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateCourtCase"""
-
-    __tablename__ = "state_court_case_history"
-    __table_args__ = {
-        "comment": "The history table for StateCourtCase. "
-        "Represents the historical state of a StateCourtCase."
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    court_case_history_id = Column(
-        Integer,
-        primary_key=True,
-        comment=HISTORICAL_ID_COMMENT,
-    )
-
-    court_case_id = Column(
-        Integer,
-        ForeignKey("state_court_case.court_case_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="court case"
-        ),
-    )
 
 
 # StateCharge
@@ -1503,36 +1307,6 @@ class StateCharge(StateBase, _StateChargeSharedColumns):
     )
 
 
-class StateChargeHistory(
-    StateBase, _StateChargeSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateCharge"""
-
-    __tablename__ = "state_charge_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateCharge"
-        )
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    charge_history_id = Column(
-        Integer,
-        primary_key=True,
-        comment=HISTORICAL_ID_COMMENT,
-    )
-
-    charge_id = Column(
-        Integer,
-        ForeignKey("state_charge.charge_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state charge"
-        ),
-    )
-
-
 # StateAssessment
 
 
@@ -1623,37 +1397,6 @@ class StateAssessment(StateBase, _StateAssessmentSharedColumns):
     )
 
     conducting_agent = relationship("StateAgent", uselist=False, lazy="selectin")
-
-
-class StateAssessmentHistory(
-    StateBase, _StateAssessmentSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateAssessment"""
-
-    __tablename__ = "state_assessment_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateAssessment"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    assessment_history_id = Column(
-        Integer,
-        primary_key=True,
-        comment=HISTORICAL_ID_COMMENT,
-    )
-
-    assessment_id = Column(
-        Integer,
-        ForeignKey("state_assessment.assessment_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state assessment"
-        ),
-    )
 
 
 # StateSupervisionSentence
@@ -1778,35 +1521,6 @@ class StateSupervisionSentence(StateBase, _StateSupervisionSentenceSharedColumns
     )
     early_discharges = relationship(
         "StateEarlyDischarge", backref="supervision_sentence", lazy="selectin"
-    )
-
-
-class StateSupervisionSentenceHistory(
-    StateBase, _StateSupervisionSentenceSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateSupervisionSentence"""
-
-    __tablename__ = "state_supervision_sentence_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionSentence"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_sentence_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_sentence_id = Column(
-        Integer,
-        ForeignKey("state_supervision_sentence.supervision_sentence_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision sentence"
-        ),
     )
 
 
@@ -1972,35 +1686,6 @@ class StateIncarcerationSentence(StateBase, _StateIncarcerationSentenceSharedCol
     )
 
 
-class StateIncarcerationSentenceHistory(
-    StateBase, _StateIncarcerationSentenceSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateIncarcerationSentence"""
-
-    __tablename__ = "state_incarceration_sentence_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateIncarcerationSentence"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    incarceration_sentence_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    incarceration_sentence_id = Column(
-        Integer,
-        ForeignKey("state_incarceration_sentence.incarceration_sentence_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration sentence"
-        ),
-    )
-
-
 # StateIncarcerationPeriod
 
 
@@ -2127,34 +1812,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
         primary_key=True,
         comment=StrictStringFormatter().format(
             PRIMARY_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
-        ),
-    )
-
-
-class StateIncarcerationPeriodHistory(
-    StateBase, _StateIncarcerationPeriodSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateIncarcerationPeriod"""
-
-    __tablename__ = "state_incarceration_period_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateIncarcerationPeriod"
-        )
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    incarceration_period_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    incarceration_period_id = Column(
-        Integer,
-        ForeignKey("state_incarceration_period.incarceration_period_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration period"
         ),
     )
 
@@ -2302,35 +1959,6 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
     )
 
 
-class StateSupervisionPeriodHistory(
-    StateBase, _StateSupervisionPeriodSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateSupervisionPeriod"""
-
-    __tablename__ = "state_supervision_period_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionPeriod"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_period_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_period_id = Column(
-        Integer,
-        ForeignKey("state_supervision_period.supervision_period_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state supervision period"
-        ),
-    )
-
-
 # StateSupervisionCaseTypeEntry
 
 
@@ -2413,39 +2041,6 @@ class StateSupervisionCaseTypeEntry(
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionCaseTypeEntry"
-        ),
-    )
-
-
-# TODO(#4136): Update historical column names here -- or downgrade and upgrade?
-class StateSupervisionCaseTypeEntryHistory(
-    StateBase, _StateSupervisionCaseTypeEntrySharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateSupervisionCaseTypeEntry"""
-
-    __tablename__ = "state_supervision_case_type_entry_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE,
-            object_name="StateSupervisionCaseTypeEntry",
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_case_type_entry_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_case_type_entry_id = Column(
-        Integer,
-        ForeignKey(
-            "state_supervision_case_type_entry" ".supervision_case_type_entry_id"
-        ),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state case type entry"
         ),
     )
 
@@ -2542,34 +2137,6 @@ class StateIncarcerationIncident(StateBase, _StateIncarcerationIncidentSharedCol
         "StateIncarcerationIncidentOutcome",
         backref="incarceration_incident",
         lazy="selectin",
-    )
-
-
-class StateIncarcerationIncidentHistory(
-    StateBase, _StateIncarcerationIncidentSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateIncarcerationIncident"""
-
-    __tablename__ = "state_incarceration_incident_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateIncarcerationIncident"
-        )
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    incarceration_incident_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    incarceration_incident_id = Column(
-        Integer,
-        ForeignKey("state_incarceration_incident.incarceration_incident_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration incident"
-        ),
     )
 
 
@@ -2670,39 +2237,6 @@ class StateIncarcerationIncidentOutcome(
     person = relationship("StatePerson", uselist=False)
 
 
-class StateIncarcerationIncidentOutcomeHistory(
-    StateBase,
-    _StateIncarcerationIncidentOutcomeSharedColumns,
-    HistoryTableSharedColumns,
-):
-    """Represents the historical state of a StateIncarcerationIncidentOutcome"""
-
-    __tablename__ = "state_incarceration_incident_outcome_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE,
-            object_name="StateIncarcerationIncidentOutcome",
-        )
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    incarceration_incident_outcome_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    incarceration_incident_outcome_id = Column(
-        Integer,
-        ForeignKey(
-            "state_incarceration_incident_outcome." "incarceration_incident_outcome_id"
-        ),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="incarceration incident outcome"
-        ),
-    )
-
-
 # StateSupervisionViolationTypeEntry
 
 
@@ -2775,43 +2309,6 @@ class StateSupervisionViolationTypeEntry(
     person = relationship("StatePerson", uselist=False)
 
 
-class StateSupervisionViolationTypeEntryHistory(
-    StateBase,
-    _StateSupervisionViolationTypeEntrySharedColumns,
-    HistoryTableSharedColumns,
-):
-    """Represents the historical state of a
-    StateSupervisionViolationTypeEntry.
-    """
-
-    __tablename__ = "state_supervision_violation_type_entry_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE,
-            object_name="StateSupervisionViolationTypeEntry",
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_violation_type_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_violation_type_entry_id = Column(
-        Integer,
-        ForeignKey(
-            "state_supervision_violation_type_entry."
-            "supervision_violation_type_entry_id"
-        ),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation type entry"
-        ),
-    )
-
-
 # StateSupervisionViolatedConditionEntry
 
 
@@ -2879,44 +2376,6 @@ class StateSupervisionViolatedConditionEntry(
     )
 
     person = relationship("StatePerson", uselist=False)
-
-
-class StateSupervisionViolatedConditionEntryHistory(
-    StateBase,
-    _StateSupervisionViolatedConditionEntrySharedColumns,
-    HistoryTableSharedColumns,
-):
-    """Represents the historical state of a
-    StateSupervisionViolatedConditionEntry
-    """
-
-    __tablename__ = "state_supervision_violated_condition_entry_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE,
-            object_name="StateSupervisionViolatedConditionEntry",
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_violated_condition_entry_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_violated_condition_entry_id = Column(
-        Integer,
-        ForeignKey(
-            "state_supervision_violated_condition_entry."
-            "supervision_violated_condition_entry_id"
-        ),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE,
-            object_name="supervision violation response decision entry",
-        ),
-    )
 
 
 # StateSupervisionViolation
@@ -2999,35 +2458,6 @@ class StateSupervisionViolation(StateBase, _StateSupervisionViolationSharedColum
     )
 
 
-class StateSupervisionViolationHistory(
-    StateBase, _StateSupervisionViolationSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateSupervisionViolation"""
-
-    __tablename__ = "state_supervision_violation_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionViolation"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_violation_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_violation_id = Column(
-        Integer,
-        ForeignKey("state_supervision_violation.supervision_violation_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation"
-        ),
-    )
-
-
 # StateSupervisionViolationResponseDecisionEntry
 
 
@@ -3102,43 +2532,6 @@ class StateSupervisionViolationResponseDecisionEntry(
     )
 
     person = relationship("StatePerson", uselist=False)
-
-
-class StateSupervisionViolationResponseDecisionEntryHistory(
-    StateBase,
-    _StateSupervisionViolationResponseDecisionEntrySharedColumns,
-    HistoryTableSharedColumns,
-):
-    """Represents the historical state of a
-    StateSupervisionViolationResponseDecisionEntry.
-    """
-
-    __tablename__ = "state_supervision_violation_response_decision_entry_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE,
-            object_name="StateSupervisionViolationResponseDecisionEntry",
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_violation_response_decision_entry_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_violation_response_decision_entry_id = Column(
-        Integer,
-        ForeignKey(
-            "state_supervision_violation_response_decision_entry."
-            "supervision_violation_response_decision_entry_id"
-        ),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation response"
-        ),
-    )
 
 
 # StateSupervisionViolationResponse
@@ -3260,40 +2653,6 @@ class StateSupervisionViolationResponse(
     )
 
 
-class StateSupervisionViolationResponseHistory(
-    StateBase,
-    _StateSupervisionViolationResponseSharedColumns,
-    HistoryTableSharedColumns,
-):
-    """Represents the historical state of a StateSupervisionViolationResponse"""
-
-    __tablename__ = "state_supervision_violation_response_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE,
-            object_name="StateSupervisionViolationResponse",
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_violation_response_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_violation_response_id = Column(
-        Integer,
-        ForeignKey(
-            "state_supervision_violation_response." "supervision_violation_response_id"
-        ),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="supervision violation response"
-        ),
-    )
-
-
 # StateAgent
 
 
@@ -3348,33 +2707,6 @@ class StateAgent(StateBase, _StateAgentSharedColumns):
         comment=StrictStringFormatter().format(
             PRIMARY_KEY_COMMENT_TEMPLATE, object_name="agent"
         ),
-    )
-
-
-class StateAgentHistory(StateBase, _StateAgentSharedColumns, HistoryTableSharedColumns):
-    """Represents the historical state of a StateAgent"""
-
-    __tablename__ = "state_agent_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateAgent"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    agent_history_id = Column(
-        Integer,
-        primary_key=True,
-        comment=HISTORICAL_ID_COMMENT,
-    )
-
-    agent_id = Column(
-        Integer,
-        ForeignKey("state_agent.agent_id"),
-        nullable=False,
-        index=True,
-        comment="Unique identifier for an agent. If not specified, one will be generated.",
     )
 
 
@@ -3493,34 +2825,6 @@ class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
         ),
     )
     referring_agent = relationship("StateAgent", uselist=False, lazy="selectin")
-
-
-class StateProgramAssignmentHistory(
-    StateBase, _StateProgramAssignmentSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateProgramAssignment"""
-
-    __tablename__ = "state_program_assignment_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateProgramAssignment"
-        )
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    program_assignment_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    program_assignment_id = Column(
-        Integer,
-        ForeignKey("state_program_assignment.program_assignment_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="program assignment"
-        ),
-    )
 
 
 # StateEarlyDischarge
@@ -3656,34 +2960,6 @@ class StateEarlyDischarge(StateBase, _StateEarlyDischargeSharedColumns):
     person = relationship("StatePerson", uselist=False)
 
 
-class StateEarlyDischargeHistory(
-    StateBase, _StateEarlyDischargeSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateEarlyDischarge"""
-
-    __tablename__ = "state_early_discharge_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateEarlyDischarge"
-        )
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    early_discharge_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    early_discharge_id = Column(
-        Integer,
-        ForeignKey("state_early_discharge.early_discharge_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="early discharge"
-        ),
-    )
-
-
 # StateSupervisionContact
 
 
@@ -3802,32 +3078,3 @@ class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
     )
 
     contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")
-
-
-class StateSupervisionContactHistory(
-    StateBase, _StateSupervisionContactSharedColumns, HistoryTableSharedColumns
-):
-    """Represents the historical state of a StateSupervisionContact"""
-
-    __tablename__ = "state_supervision_contact_history"
-    __table_args__ = {
-        "comment": StrictStringFormatter().format(
-            HISTORICAL_TABLE_COMMENT_TEMPLATE, object_name="StateSupervisionContact"
-        )
-    }
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    supervision_contact_history_id = Column(
-        Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT
-    )
-
-    supervision_contact_id = Column(
-        Integer,
-        ForeignKey("state_supervision_contact.supervision_contact_id"),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state supervision contact"
-        ),
-    )
