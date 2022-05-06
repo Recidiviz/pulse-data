@@ -119,9 +119,9 @@ module "configs" {
 # Ensure we have an empty JSON file in storage somewhere so we can use it as the data source for
 # schema-only BigQuery copies of tables with external data configurations.
 resource "google_storage_bucket_object" "empty_json" {
-  name    = "empty.json"
-  bucket  = module.configs.name
-  content = "\n"
+  name   = "empty.json"
+  bucket = module.configs.name
+  source = "${local.recidiviz_root}/datasets/static_data/empty.json"
 }
 
 module "dbexport" {
