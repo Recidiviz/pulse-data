@@ -227,19 +227,19 @@ class BaseDirectIngestController:
             ingest_database_name=self.ingest_database_key.db_name,
         )
 
+        big_query_client = BigQueryClientImpl()
+
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
             region=self.region,
             fs=self.fs,
             ingest_bucket_path=self.ingest_bucket_path,
             temp_output_directory_path=self.temp_output_directory_path,
-            big_query_client=BigQueryClientImpl(),
+            big_query_client=big_query_client,
         )
 
         view_collector = DirectIngestPreProcessedIngestViewCollector(
             self.region, self.get_ingest_view_rank_list()
         )
-
-        big_query_client = BigQueryClientImpl()
 
         materialization_gating_context = (
             IngestViewMaterializationGatingContext.load_from_gcs()
@@ -965,6 +965,8 @@ class BaseDirectIngestController:
         # TODO(#11424): Remove this check once the ingest_view_contents is non-optional.
         if not self.ingest_view_contents:
             raise ValueError("The ingest_view_contents is unexpectedly None.")
+
+        logging.info("Marking rows processed for ingest run [%s]", args.job_tag())
         self.ingest_view_contents.mark_rows_as_processed(
             ingest_view_name=args.ingest_view_name,
             upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
