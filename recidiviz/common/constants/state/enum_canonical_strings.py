@@ -211,7 +211,7 @@ state_person_alias_alias_type_nickname = "NICKNAME"
 
 state_gender_female = "FEMALE"
 state_gender_male = "MALE"
-state_gender_other = "OTHER"
+state_gender_non_binary = "NON_BINARY"
 state_gender_trans = "TRANS"
 state_gender_trans_female = "TRANS_FEMALE"
 state_gender_trans_male = "TRANS_MALE"

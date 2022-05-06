@@ -38,13 +38,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
 )
-from recidiviz.common.constants.state.state_person import (
-    StateEthnicity,
-    StateGender,
-    StateRace,
-    StateResidencyStatus,
-)
-from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
@@ -63,16 +56,11 @@ ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
     StateCustodialAuthority,
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
-    StateEthnicity,
-    StateGender,
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
     StateIncarcerationType,
-    StatePersonAliasType,
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
-    StateRace,
-    StateResidencyStatus,
     StateSentenceStatus,
     StateSupervisionCaseType,
     StateSupervisionSentenceSupervisionType,
