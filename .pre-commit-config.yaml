@@ -43,7 +43,7 @@ repos:
         entry: pipenv run python -m recidiviz.tools.docs.entity_documentation_generator
         language: system
         files: >
-          (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/database/schema/history_table_shared_columns_mixin.py)$
+          (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/database/schema/history_table_shared_columns_mixin.py|^recidiviz/common/constants/state/)$
         require_serial: true
       - id: generate_calc_documentation
         name: generate_calc_documentation
