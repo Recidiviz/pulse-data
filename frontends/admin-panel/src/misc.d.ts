@@ -38,6 +38,7 @@ interface MetadataCount {
 interface DataFreshnessResult {
   state: string;
   date: string;
+  lastRefreshDate?: string;
   ingestPaused: boolean;
   isBQMaterializationEnabled: boolean;
 }
