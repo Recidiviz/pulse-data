@@ -219,33 +219,42 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     ENUM_OVERRIDES: Dict[Enum, List[str]] = {
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
-            "CPP",  # Residential Community Placement (treatment)
-            "EMP",  # Electronic Monitoring
             "ESC",  # Absconder
+            # The following codes are no longer used according to MO, but may appear in historical records
+        ],
+        StateSupervisionLevel.UNASSIGNED: [
             "IAP",  # Initial Assessment Phase
             "NSV",  # Not Under Supervision (case closed by court/board but still open at district level)
             # The following codes are no longer used according to MO, but may appear in historical records
-            "ENH",  # Enhanced
-            "MIN",  # Minimum
-            "MSC",  # Automated Minimum
-            "NOI",  # No Contract Monitoring Level I
-            "NII",  # No Contract Monitoring Level II
             "PSI",  # Pre Sentence Investigation
-            "REG",  # Regular Supervision
-            "RTF",  # Residential Treatment facility
-            "VCT",  # Residential Violator Center
+        ],
+        StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: [
+            "EMP",  # Electronic Monitoring
         ],
         StateSupervisionLevel.MINIMUM: [
             "OOI",  # Low Risk (low risk on ORAS)
+            # The following codes are no longer used according to MO, but may appear in historical records
+            "NOI",  # No Contract Monitoring Level I
+            "MIN",  # Minimum
+            "MSC",  # Automated Minimum
         ],
         StateSupervisionLevel.MEDIUM: [
             "OII",  # Moderate Risk (moderate/low or moderate on ORAS)
+            # The following codes are no longer used according to MO, but may appear in historical records
+            "NII",  # No Contract Monitoring Level II
+            "REG",  # Regular Supervision
         ],
         StateSupervisionLevel.HIGH: [
             "III",  # High Risk (high risk on ORAS)
+            # The following codes are no longer used according to MO, but may appear in historical records
+            "ENH",  # Enhanced
         ],
         StateSupervisionLevel.MAXIMUM: [
             "ISP",  # Intensive Supervision (specialized programming + very high risk on ORAS)
+            "CPP",  # Residential Community Placement (treatment)
+            # The following codes are no longer used according to MO, but may appear in historical records
+            "RTF",  # Residential Treatment facility
+            "VCT",  # Residential Violator Center
         ],
         StateSupervisionLevel.INCARCERATED: [
             "ITC",  # Institutional Treatment Center
