@@ -38,20 +38,20 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = """
       FROM
         `{project_id}.{static_reference_dataset}.zip_city_county_state`
     ),
-    persons_with_last_known_address_and_zip AS (
+    persons_with_current_zip AS (
       SELECT
         person_id,
         state_code,
-        SUBSTR(last_known_address, -5) AS zip_code,
+        SUBSTR(current_address, -5) AS zip_code,
       FROM
-        `{project_id}.{reference_views_dataset}.persons_with_last_known_address`
+        `{project_id}.{base_dataset}.state_person`
     )
     SELECT
       state_code,
       person_id,
       CONCAT(state_code, '_', normalized_county_name) AS county_of_residence,
     FROM
-      persons_with_last_known_address_and_zip
+      persons_with_current_zip
     JOIN
       zip_code_county_map
     USING (zip_code)
@@ -64,7 +64,7 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
     description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    base_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
 if __name__ == "__main__":
