@@ -144,6 +144,9 @@ from recidiviz.calculator.query.state.views.sessions.us_id.us_id_incarceration_p
 from recidiviz.calculator.query.state.views.sessions.us_id.us_id_raw_lsir_assessments import (
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_me.us_me_supervision_population_metrics_preprocessed import (
+    US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_supervision_population_metrics_preprocessed import (
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -232,4 +235,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     VIOLATIONS_SESSIONS_VIEW_BUILDER,
     SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
     US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+    US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 ]

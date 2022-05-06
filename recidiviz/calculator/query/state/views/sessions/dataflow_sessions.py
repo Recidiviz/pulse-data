@@ -167,12 +167,18 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
-        AND state_code not in ('US_MO', 'US_TN')
+        AND state_code not in ('US_MO', 'US_TN', 'US_ME')
     UNION ALL
     -- Use MO preprocessed dataset to deal with state-specific logic
     SELECT 
         *
     FROM `{project_id}.{sessions_dataset}.us_mo_supervision_population_metrics_preprocessed_materialized`
+    UNION ALL
+    -- Use ME preprocessed dataset to deal with state-specific logic
+    -- TODO(#12762): Remove when US_ME level_2 location information is ingested
+    SELECT 
+        *
+    FROM `{project_id}.{sessions_dataset}.us_me_supervision_population_metrics_preprocessed_materialized`
     UNION ALL
     -- Use TN preprocessed dataset to deal with state-specific logic
     -- TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
@@ -200,8 +206,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         judicial_district_code,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
-    )
-    ,
+    ),
     last_day_of_data_by_state_and_source AS
     /*
     Get the max date for each state and population source, and then the min of these dates for each state. This is to 
