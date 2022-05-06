@@ -152,7 +152,7 @@ output:
                         - D # Class D (Misdemeanor)
                         - E # Class E (Misdemeanor)
                         - U # Unclassified Misdemeanors
-                      StateChargeClassificationType.OTHER:
+                      StateChargeClassificationType.INFRACTION:
                         - T # Class T
                       StateChargeClassificationType.EXTERNAL_UNKNOWN:
                         - X # Migration - class unknown in source
