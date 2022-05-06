@@ -137,7 +137,7 @@ function pre_deploy_configure_infrastructure {
 
     echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
     # The remote migration execution script doesn't play nice with run_cmd
-    gcloud compute ssh --ssh-flag="-t" prod-data-client --command "cd pulse-data \
+    gcloud compute ssh --ssh-flag="-t" prod-data-client --project recidiviz-123 --zone us-east4-c --command "cd pulse-data \
         && git fetch --all --tags --prune --prune-tags \
         && git checkout $COMMIT_HASH \
         && pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh $COMMIT_HASH $PROJECT"
