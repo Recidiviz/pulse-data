@@ -108,19 +108,21 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
                 CASE WHEN SAFE_CAST(ConvictedOffense AS INT) IS NULL THEN 0 ELSE 1 END AS missing_offense,
                 CASE WHEN (ConvictedOffense LIKE '%DRUG%' AND ConvictedOffense NOT LIKE '%ADULTERATION%')
                     OR ConvictedOffense LIKE '%METH%'
-                    OR ConvictedOffense LIKE '%POSSESSION OF%CONT%'
-                    OR ConvictedOffense LIKE '%POSS%OF%CONT%'
-                    OR ConvictedOffense LIKE '%POSS%OF%AMPH%'
-                    OR ConvictedOffense LIKE '%POSS%OF%HEROIN%'
+                    OR ConvictedOffense LIKE '%POSS%CONT%'
+                    OR ConvictedOffense LIKE '%POSS%AMPH%'
+                    OR ConvictedOffense LIKE '%POSS%HEROIN%'
                     OR ConvictedOffense LIKE '%VGCSA%'
                     OR ConvictedOffense LIKE '%SIMPLE POSS%'
                     OR ConvictedOffense LIKE '%COCAINE%'
                     OR ConvictedOffense LIKE '%HEROIN%'
                     OR ConvictedOffense LIKE '%CONT. SUBSTANCE%'
                     OR ConvictedOffense LIKE '%MARIJUANA%'
+                    OR ConvictedOffense LIKE '%NARCOTIC%'
+                    OR ConvictedOffense LIKE '%OPIUM%'
                         THEN 1 ELSE 0 END AS drug_offense,
                     CASE WHEN ConvictedOffense LIKE '%DOMESTIC%' THEN 1 ELSE 0 END AS domestic_flag,
                     CASE WHEN ConvictedOffense LIKE '%SEX%' OR ConvictedOffense LIKE '%RAPE%' THEN 1 ELSE 0 END AS sex_offense_flag,
+                    CASE WHEN ConvictedOffense LIKE '%DUI%' OR ConvictedOffense LIKE '%DWI%' OR ConvictedOffense LIKE '%INFLUENCE%' THEN 1 ELSE 0 END AS dui_flag,
                     CASE WHEN DATE_DIFF(CURRENT_DATE,CAST(CAST(OffenseDate AS DATETIME) AS DATE),YEAR) <5 AND (ConvictedOffense LIKE '%DUI%' OR ConvictedOffense LIKE '%DWI%' OR ConvictedOffense LIKE '%INFLUENCE%') THEN 1 ELSE 0 END AS dui_last_5_years,
                     CASE WHEN ConvictedOffense LIKE '%BURGLARY%' 
                         OR ConvictedOffense LIKE '%ROBBERY%'
@@ -150,6 +152,7 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
                         OR ConvictedOffense LIKE '%STEAL%'
                         THEN 0 ELSE 1 END AS unknown_offense_flag,
                         CASE WHEN (ConvictedOffense LIKE '%13%' AND ConvictedOffense LIKE '%VICT%' ) THEN 1 ELSE 0 END AS young_victim_flag,
+                        CASE WHEN (ConvictedOffense LIKE '%HOMICIDE%' AND ConvictedOffense LIKE '%MURDER%' ) THEN 1 ELSE 0 END AS homicide_flag,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ISCSentence_latest`
     ),
     sent_union_diversion AS (
@@ -176,11 +179,13 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
                     THEN 1 ELSE 0 END AS drug_offense,
             CASE WHEN offense_description LIKE '%DOMESTIC%' THEN 1 ELSE 0 END AS domestic_flag,
             CASE WHEN ((offense_description LIKE '%SEX%' OR offense_description LIKE '%RAPE%') AND offense_description NOT LIKE '%REGIS%') THEN 1 ELSE 0 END AS sex_offense_flag,
+            CASE WHEN offense_description LIKE '%DUI%' OR offense_description LIKE '%INFLUENCE%' THEN 1 ELSE 0 END AS dui_flag,
             CASE WHEN DATE_DIFF(CURRENT_DATE,offense_date,YEAR) <5 AND (offense_description LIKE '%DUI%' OR offense_description LIKE '%INFLUENCE%') THEN 1 ELSE 0 END AS dui_last_5_years,
             0 AS maybe_assaultive_flag,
             CASE WHEN (COALESCE(AssaultiveOffenseFlag,'N') = 'Y') THEN 1 ELSE 0 END AS assaultive_offense_flag,
             0 AS unknown_offense_flag,
             CASE WHEN (offense_description LIKE '%13%' AND offense_description LIKE '%VICT%' ) THEN 1 ELSE 0 END AS young_victim_flag,
+            CASE WHEN (offense_description LIKE '%HOMICIDE%' AND offense_description LIKE '%MURDER%' ) THEN 1 ELSE 0 END AS homicide_flag,
         FROM sent_union_diversion
         LEFT JOIN 
             (
@@ -230,8 +235,9 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             max(maybe_assaultive_flag) AS maybe_assaultive_flag_ever,
             max(case when maybe_assaultive_flag = 1 and expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) AS all_maybe_assaultive_offenses_expired,
             max(unknown_offense_flag) AS unknown_offense_flag_ever,
+            max(homicide_flag) AS homicide_flag_ever,
             max(case when unknown_offense_flag = 1 and expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) AS all_unknown_offenses_expired,
-            max(case when domestic_flag = 1 OR sex_offense_flag = 1 OR assaultive_offense_flag = 1 OR young_victim_flag = 1 OR dui_last_5_years = 1 OR maybe_assaultive_flag = 1 then expiration_date END) AS latest_expiration_date_for_excluded_offenses,
+            max(case when domestic_flag = 1 OR sex_offense_flag = 1 OR assaultive_offense_flag = 1 OR dui_flag = 1 OR young_victim_flag = 1 OR dui_last_5_years = 1 OR maybe_assaultive_flag = 1 then expiration_date END) AS latest_expiration_date_for_excluded_offenses,
             ARRAY_AGG(offense_description IGNORE NULLS) AS lifetime_offenses,
             ARRAY_AGG(docket_number IGNORE NULLS) AS docket_numbers,
         FROM sent_union_isc
@@ -247,6 +253,7 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             max(sex_offense_flag) AS sex_offense_flag_prior,
             max(assaultive_offense_flag) AS assaultive_offense_flag_prior,
             max(young_victim_flag) AS young_victim_flag_prior,
+            max(homicide_flag) AS homicide_flag_prior,
             max(dui_last_5_years) AS dui_last_5_years_prior,
             max(maybe_assaultive_flag) AS maybe_assaultive_flag_prior,
             max(unknown_offense_flag) AS unknown_offense_flag_prior,
@@ -262,8 +269,10 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             max(drug_offense) AS drug_offense,
             max(domestic_flag) AS domestic_flag,
             max(sex_offense_flag) AS sex_offense_flag,
+            max(dui_flag) as dui_flag,
             max(assaultive_offense_flag) AS assaultive_offense_flag,
             max(young_victim_flag) AS young_victim_flag,
+            max(homicide_flag) AS homicide_flag,
             max(maybe_assaultive_flag) AS maybe_assaultive_flag,
             max(unknown_offense_flag) AS unknown_offense_flag,
             ARRAY_AGG(offense_description IGNORE NULLS) AS active_offenses,
