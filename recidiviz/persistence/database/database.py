@@ -128,18 +128,15 @@ def _save_record_trees(
 
         check_all_objs_have_type(merged_root_people, county_schema.Person)
         _overwrite_dummy_booking_ids(merged_root_people)
-
+        update_snapshots.update_historical_snapshots(
+            session, merged_root_people, merged_orphaned_entities, metadata
+        )
     elif metadata.system_level == SystemLevel.STATE:
         merged_root_people = root_people
         if orphaned_entities:
             raise PersistenceError("State doesn't use orphaned entities")
-        merged_orphaned_entities = []
     else:
         raise PersistenceError(f"Unexpected system level [{metadata.system_level}]")
-
-    update_snapshots.update_historical_snapshots(
-        session, merged_root_people, merged_orphaned_entities, metadata
-    )
 
     return merged_root_people
 
