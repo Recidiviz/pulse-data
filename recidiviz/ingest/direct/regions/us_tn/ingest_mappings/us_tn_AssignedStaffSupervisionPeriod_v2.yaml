@@ -72,6 +72,7 @@ output:
                   - RBC # Released by court order
 
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - TRANS # Inferred transfer from null termination reason in supervision period view
                   - RNO # Reassigned to new officer
                   - MRE # Multiple reassign
                   - CRA # Counselor reassignment
