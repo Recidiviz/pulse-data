@@ -62,8 +62,6 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             """
 region_codes_to_exclude:
   - US_ND
-state_history_tables_to_include:
-  - state_person_history
 county_columns_to_exclude:
   person:
     - full_name
@@ -216,10 +214,9 @@ county_columns_to_exclude:
                 SchemaType.JAILS,
                 [],
                 {"person": ["full_name", "birthdate_inferred_from_age"]},
-                [],
             ),
-            (SchemaType.OPERATIONS, ["US_ND"], {}, []),
-            (SchemaType.STATE, ["US_ND"], {}, ["state_person_history"]),
+            (SchemaType.OPERATIONS, ["US_ND"], {}),
+            (SchemaType.STATE, ["US_ND"], {}),
         ]
     )
     def test_yaml_config_reads_correctly_JAILS(
@@ -227,7 +224,6 @@ county_columns_to_exclude:
         schema: SchemaType,
         regions_to_exclude: List[str],
         columns_to_exclude: Dict[str, List[str]],
-        history_tables_to_include: List[str],
     ) -> None:
         config = CloudSqlToBQConfig.for_schema_type(schema)
         assert config is not None
@@ -236,11 +232,6 @@ county_columns_to_exclude:
             regions_to_exclude,
             config.region_codes_to_exclude,
             msg_prefix="Region codes",
-        )
-        self.assertListsDistinctAndEqual(
-            history_tables_to_include,
-            config.history_tables_to_include,
-            msg_prefix="History tables",
         )
 
         self.assertListsDistinctAndEqual(

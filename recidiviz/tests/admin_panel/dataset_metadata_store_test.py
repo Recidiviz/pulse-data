@@ -52,8 +52,6 @@ class TestDatasetMetadataStore(TestCase):
             contents="""
 region_codes_to_exclude:
   - US_ND
-state_history_tables_to_include:
-  - state_person_history
 county_columns_to_exclude:
   person:
     - full_name

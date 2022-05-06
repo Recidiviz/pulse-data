@@ -43,8 +43,6 @@ from recidiviz.view_registry.deployed_views import (
 
 NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML = """
 region_codes_to_exclude: []
-state_history_tables_to_include:
-  - state_person_history
 county_columns_to_exclude:
   person:
     - full_name
@@ -54,8 +52,6 @@ county_columns_to_exclude:
 PAUSED_REGION_CLOUD_SQL_CONFIG_YAML = """
 region_codes_to_exclude:
   - US_ND
-state_history_tables_to_include:
-  - state_person_history
 county_columns_to_exclude:
   person:
     - full_name

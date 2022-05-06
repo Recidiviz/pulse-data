@@ -80,8 +80,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         yaml_contents = """
     region_codes_to_exclude:
     - US_ND
-    state_history_tables_to_include:
-    - state_person_history
     county_columns_to_exclude:
     person:
     - full_name
@@ -139,14 +137,14 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         )
         view = view_builder.build()
         expected_query = (
-            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
-            "state_person_external_id.person_id FROM "
+            "SELECT state_person_external_id.person_external_id_id,"
+            "state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
             "`recidiviz-staging.us_xx_state_regional.state_person_external_id` state_person_external_id\n"
             "UNION ALL\n"
-            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
-            "state_person_external_id.person_id FROM "
+            "SELECT state_person_external_id.person_external_id_id,"
+            "state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
             "`recidiviz-staging.us_ww_state_regional.state_person_external_id` state_person_external_id"
         )
         self.assertEqual(expected_query, view.view_query)
@@ -179,14 +177,14 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         address_overrides = address_overrides_builder.build()
         view = view_builder.build(address_overrides=address_overrides)
         expected_query = (
-            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
-            "state_person_external_id.person_id FROM "
+            "SELECT state_person_external_id.person_external_id_id,"
+            "state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
             "`recidiviz-staging.my_prefix_us_xx_state_regional.state_person_external_id` state_person_external_id\n"
             "UNION ALL\n"
-            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
-            "state_person_external_id.person_id FROM "
+            "SELECT state_person_external_id.person_external_id_id,"
+            "state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
             "`recidiviz-staging.my_prefix_us_ww_state_regional.state_person_external_id` state_person_external_id"
         )
         self.assertEqual(expected_query, view.view_query)
@@ -447,8 +445,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         yaml_contents = """
 region_codes_to_exclude:
 - US_WW
-state_history_tables_to_include:
-- state_person_history
 county_columns_to_exclude:
 person:
 - full_name
