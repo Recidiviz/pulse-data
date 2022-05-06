@@ -40,7 +40,7 @@ from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
+from recidiviz.persistence.database.schema.county.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
 )
 from recidiviz.persistence.database.schema.justice_counts import (

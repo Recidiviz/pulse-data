@@ -53,7 +53,7 @@ from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
 from recidiviz.persistence.database.base_schema import JailsBase
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
+from recidiviz.persistence.database.schema.county.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
 )
 

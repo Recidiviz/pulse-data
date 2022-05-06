@@ -28,7 +28,7 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.history.historical_snapshot_update import (
     update_historical_snapshots,
 )
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
+from recidiviz.persistence.database.schema.county.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
 )
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType

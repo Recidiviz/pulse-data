@@ -36,14 +36,14 @@ import argparse
 import logging
 import sys
 
-from alembic.command import revision, upgrade
 import alembic.config
+from alembic.command import revision, upgrade
 
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
