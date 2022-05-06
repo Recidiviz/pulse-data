@@ -30,42 +30,16 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     """Enum that denotes what type of supervision someone is serving at a moment in
     time."""
 
-    # Used when a person is in an active period of absconsion (when the person on
-    # supervision has stopped reporting to their supervising officer, and the officer
-    # cannot contact or locate them).
     ABSCONSION = state_enum_strings.state_supervision_period_supervision_type_absconsion
-
-    # A judge can issue a bench warrant when an individual violates the rules of the
-    # court, most often when they fail to show up to court. The police can treat this
-    # similar to an open arrest warrant and use it to bring an individual back in front
-    # of the judge.
     BENCH_WARRANT = (
         state_enum_strings.state_supervision_period_supervision_type_bench_warrant
     )
     # TODO(#9421): The way that this information is stored may be updated when we
     #  standardize the representation of community centers
-    # A type of supervision where the person is being monitored while they are confined
-    # in the community instead of being incarcerated in a state prison facility. This
-    # happens when a person is transferred from prison into either a home or a facility
-    # in the community before they have been legally granted parole or released from
-    # incarceration. During this time they are monitored by supervision officers and
-    # not by correctional officers. They are still serving out the incarceration
-    # portion of their sentence, and are doing so confined in the community instead
-    # of in prison. Any information about the location of the person is captured in the
-    # overlapping incarceration period, if one exists. Some examples include the
-    # "Community Placement Program" in US_ND and the "Supervised Community
-    # Confinement Program" in US_ME.
     COMMUNITY_CONFINEMENT = (
         state_enum_strings.state_supervision_period_supervision_type_community_confinement
     )
-    # If the person is serving both probation and parole at the same time, this may be
-    # modeled with just one supervision period if the PO is the same. In this case,
-    # the supervision period supervision type is DUAL.
     DUAL = state_enum_strings.state_supervision_period_supervision_type_dual
-    # A type of supervision where the person is not formally supervised and does not
-    # have to regularly report to a PO. The person does have certain conditions
-    # associated with their supervision, that when violated can lead to revocations.
-    # Might also be called "Court Probation".
     INFORMAL_PROBATION = (
         state_enum_strings.state_supervision_period_supervision_type_informal_probation
     )
@@ -81,6 +55,67 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionPeriodSupervisionType"]:
         return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The type of supervision a person is on."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateSupervisionPeriodSupervisionType.ABSCONSION: "Used when a person is "
+    "absconding (when the person on supervision has stopped reporting to their "
+    "supervising officer, and the officer cannot contact or locate them).",
+    StateSupervisionPeriodSupervisionType.BENCH_WARRANT: "Used when a judge has issued "
+    "a warrant for the arrest of a person on supervision. A judge can issue a bench "
+    "warrant when an individual on supervision violates the rules of the court, most "
+    "often when they fail to show up to court. The police can treat this similar to "
+    "an open arrest warrant and use it to bring an individual back in front of the "
+    "judge.",
+    StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT: "Describes a type of "
+    "supervision where the person is being monitored while they are confined in the "
+    "community instead of being incarcerated in a state prison facility. This happens "
+    "when a person is transferred from prison into either a home or a facility in the "
+    "community before they have been legally granted parole or released from "
+    "incarceration. During this time they are monitored by supervision officers and "
+    "not by correctional officers. They are still serving out the incarceration "
+    "portion of their sentence, and are doing so confined in the community instead of "
+    "in prison. Any information about the location of the person is captured in the "
+    "overlapping incarceration period, if one exists. Some examples include the "
+    "“Community Placement Program“ in US_ND and the “Supervised Community Confinement "
+    "Program“ in US_ME.",
+    StateSupervisionPeriodSupervisionType.DUAL: "If a person is serving both "
+    "`PROBATION` and `PAROLE` at the same time, this may be modeled with a single "
+    "supervision period if the person is reporting to a single supervising officer. "
+    "When this happens, `DUAL` is used to describe the fact that the person is "
+    "simultaneously on probation and parole.",
+    StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION: "A type of supervision "
+    "where the person is not formally supervised and does not have to regularly "
+    "report to a supervision officer. The person does have certain conditions "
+    "associated with their supervision, that when violated can lead to revocations. "
+    "Might also be called “Court Probation“.",
+    StateSupervisionPeriodSupervisionType.INVESTIGATION: "Describes a type of "
+    "supervision where a person has not yet been sentenced. A person may be on "
+    "investigative supervision between their arrest and trial, or between their "
+    "conviction and sentencing hearing. During this time the person is often "
+    "meeting with a supervision officer, who may be conducting risk assessments "
+    "or interviewing the individual to provide more information to the judge.",
+    StateSupervisionPeriodSupervisionType.PAROLE: "Describes the type of supervision "
+    "where someone is serving the remaining portion of an incarceration sentence in "
+    "the community. The person’s release from prison is conditional on them following "
+    "certain supervision requirements as determined by the parole board and the "
+    "person’s supervision officer.",
+    StateSupervisionPeriodSupervisionType.PROBATION: "Describes the type of "
+    "supervision where someone has been sentenced by the court to a period of "
+    "supervision - often in lieu of being sentenced to incarceration. Individuals "
+    "on probation report to a supervision officer, and must follow the conditions of "
+    "their supervision as determined by the judge and person’s supervision officer.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -89,8 +124,7 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     """Admission reasons for StateSupervisionPeriod"""
 
     ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_absconsion
-    # This reason indicates the person has been released from an incarceration period into a supervision period
-    # (i.e. parole).
+    # TODO(#12648): Change this to be RELEASE_FROM_INCARCERATION
     CONDITIONAL_RELEASE = (
         state_enum_strings.state_supervision_period_admission_reason_conditional_release
     )
@@ -121,6 +155,57 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionPeriodAdmissionReason"]:
         return _STATE_SUPERVISION_ADMISSION_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The reason the period of supervision has started."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionPeriodAdmissionReason.ABSCONSION: "This is used when a person on "
+    "supervision has started absconding (when the person has stopped reporting to "
+    "their supervising officer, and the officer cannot contact or locate them).",
+    # TODO(#12648): Update this description once this value is changed to be
+    #  RELEASE_FROM_INCARCERATION
+    StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: "A period of "
+    "supervision begins when a person is released through the the process of being "
+    "granted parole by the parole board. The term “conditional” represents the fact "
+    "that the person’s privilege of serving the rest of their sentence in the "
+    "community is conditional on them following the conditions of their parole, as "
+    "determined by the parole board and their parole officer. Though this should only "
+    "be used on supervision periods with "
+    "`StateSupervisionPeriodSupervisionType.PAROLE` "
+    "or `StateSupervisionPeriodSupervisionType.DUAL`, it is currently being used for "
+    "any transition from incarceration to supervision (see Issue #12648).",
+    StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: "Used when a period of "
+    "supervision has started because the person was sentenced to serve some "
+    "form of supervision by the court.",
+    StateSupervisionPeriodAdmissionReason.INVESTIGATION: "Used for all periods with a "
+    "`supervision_type` of `StateSupervisionPeriodSupervisionType.``INVESTIGATION`.",
+    StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION: "Used when a "
+    "person’s supervision has resumed after a period of absconsion. See "
+    "`StateSupervisionPeriodSupervisionType.``ABSCONSION`.",
+    StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION: "Used when a "
+    "person’s supervision has resumed after a period of time in which supervision was "
+    "suspended. In some instances supervision may be suspended while a person awaits "
+    "the result of a revocation hearing (from the court or parole board). During this "
+    "time, the person is usually not reporting to their supervising officer, and also "
+    "not earning time against their sentence.",
+    StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: "Used when "
+    "a period of supervision has started in the given state because the person was on "
+    "supervision elsewhere (usually in another state), and has been transferred to "
+    "report to a supervising officer within the given state.",
+    StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE: "Used when a new "
+    "period of supervision has started because the person on supervision has been "
+    "transferred from one period of supervision to another, where both periods are "
+    "supervised by officers within the given state. This is typically used when a "
+    "person has transferred to a new supervising officer, or when an attribute of the "
+    "supervision period has changed (e.g. when the person is downgraded to a lower "
+    "`StateSupervisionLevel`).",
+}
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -132,8 +217,7 @@ class StateSupervisionLevel(StateEntityEnum):
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
-    # TODO(#9421): Re-evaluate the use of this value when we standardize the
-    #  representation of community centers
+    # TODO(#12648): DEPRECATED - USE IN_CUSTODY INSTEAD
     INCARCERATED = (
         state_enum_strings.state_supervision_period_supervision_level_incarcerated
     )
@@ -148,7 +232,6 @@ class StateSupervisionLevel(StateEntityEnum):
     ELECTRONIC_MONITORING_ONLY = (
         state_enum_strings.state_supervision_period_supervision_level_electronic_monitoring_only
     )
-    # Parole with minimal (e.g. once a year) PO contact - may also be called administrative supervision
     LIMITED = state_enum_strings.state_supervision_period_supervision_level_limited
     MINIMUM = state_enum_strings.state_supervision_period_supervision_level_minimum
     MEDIUM = state_enum_strings.state_supervision_period_supervision_level_medium
@@ -157,9 +240,6 @@ class StateSupervisionLevel(StateEntityEnum):
     UNSUPERVISED = (
         state_enum_strings.state_supervision_period_supervision_level_unsupervised
     )
-    # Unassigned is for when the data explicitly indicates that the supervision level is
-    # unassigned, as opposed to when there is not enough data to determine what the
-    # supervision level is.
     UNASSIGNED = (
         state_enum_strings.state_supervision_period_supervision_level_unassigned
     )
@@ -207,6 +287,70 @@ class StateSupervisionLevel(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSupervisionLevel"]:
         return _STATE_SUPERVISION_LEVEL_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The severity with which the person is being supervised, "
+            "or the category of the supervision."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_LEVEL_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionLevel.DIVERSION: "Used when a person is being supervised as a "
+    "part of a specific diversion program. Diversion programs provide an opportunity "
+    "for an individual to avoid being convicted of an offense by completing "
+    "certain programmatic requirements (like drug treatment or mental health "
+    "treatment, for example). An individual typically has their charges dismissed and "
+    "record expunged upon successful completion of a diversion program.",
+    StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: "Describes a level of "
+    "supervision where the person is being electronically monitored (via an "
+    "ankle monitor, for example), but otherwise has no regular contact with a "
+    "supervising officer.",
+    StateSupervisionLevel.HIGH: "Used when a person is on a high level of "
+    "supervision that is not the maximum level of supervision, as defined by the "
+    "state.",
+    StateSupervisionLevel.INCARCERATED: "Used on a period of supervision when the "
+    "person is simultaneously incarcerated (e.g. in prison for a parole board hold). "
+    "TODO(#12648): THIS WILL SOON BE MERGED WITH `IN_CUSTODY`. IF YOU ARE ADDING NEW "
+    "ENUM MAPPINGS, USE `IN_CUSTODY` INSTEAD.",
+    StateSupervisionLevel.INTERSTATE_COMPACT: "Used on a period of supervision when "
+    "the person is being supervised in a state that is different than the state where "
+    "they were sentenced. For example, this is used in Idaho when someone is being "
+    "supervised by an officer in Idaho on behalf of the state of Texas, "
+    "for a conviction that occurred for the person in Texas. This is *also* used in "
+    "Idaho data in cases where a person is being supervised by an officer in Texas on "
+    "behalf of the state of Idaho. The `StateCustodialAuthority` value on the period "
+    "determines whether the person is being supervised in the state or in another "
+    "state.",
+    StateSupervisionLevel.IN_CUSTODY: "Used on a period of supervision when the "
+    "person is simultaneously in some form of custody (e.g. in a county jail, in a "
+    "state prison for a parole board hold, in an ICE detainer, etc.).",
+    StateSupervisionLevel.LIMITED: "Used when a person is on the lowest level of "
+    "supervision, as defined by the state. Typically includes very minimal (e.g. "
+    "once a year) contact with a supervising officer. May also be called "
+    "“administrative supervision” in some states.",
+    StateSupervisionLevel.MAXIMUM: "Used when a person is on the maximum level "
+    "of supervision, as defined by the state.",
+    StateSupervisionLevel.MEDIUM: "Used when a person is on a medium level of "
+    "supervision, as defined by the state.",
+    StateSupervisionLevel.MINIMUM: "Used when a person is on a low level of "
+    "supervision, as defined by the state.",
+    StateSupervisionLevel.UNASSIGNED: "Unassigned is used when the data explicitly "
+    "indicates that the supervision level is unassigned, as opposed to when there is "
+    "not enough data to determine what the supervision level is. If a value in the "
+    "state's data doesn't map to one of our `StateSupervisionLevel` options, "
+    "then `INTERNAL_UNKNOWN` should be used.",
+    StateSupervisionLevel.UNSUPERVISED: "Used when a person is on "
+    "supervision but is not being actively supervised by a supervision officer. "
+    "This is distinct from `UNASSIGNED` because the person has been “assigned” to be "
+    "explicitly unsupervised. A person may be unsupervised if their supervision has "
+    "been suspended.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -217,14 +361,11 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     ABSCONSION = (
         state_enum_strings.state_supervision_period_termination_reason_absconsion
     )
-    # Used to denote supervision ends due to a reduction in the sentence.
     COMMUTED = state_enum_strings.state_supervision_period_termination_reason_commuted
     DEATH = state_enum_strings.state_supervision_period_termination_reason_death
-    # Used to denote supervision ended earlier than the sentence's end dates.
     DISCHARGE = state_enum_strings.state_supervision_period_termination_reason_discharge
-    # Used to denote supervision ending because the underlying conviction was overturned.
+    # TODO(#12648): Change this to VACATED
     DISMISSED = state_enum_strings.state_supervision_period_termination_reason_dismissed
-    # Used to denote supervision ended due to sentences being completed as sentenced.
     EXPIRATION = (
         state_enum_strings.state_supervision_period_termination_reason_expiration
     )
@@ -234,7 +375,6 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     INVESTIGATION = (
         state_enum_strings.state_supervision_period_termination_reason_investigation
     )
-    # Used to denote supervision ended due to the sentence being officially pardoned (usually by governor).
     PARDONED = state_enum_strings.state_supervision_period_termination_reason_pardoned
     TRANSFER_TO_OTHER_JURISDICTION = (
         state_enum_strings.state_supervision_period_termination_reason_transfer_to_other_jurisdiction
@@ -245,6 +385,7 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     RETURN_FROM_ABSCONSION = (
         state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion
     )
+    # TODO(#12648): Change this to ADMITTED_TO_INCARCERATION
     RETURN_TO_INCARCERATION = (
         state_enum_strings.state_supervision_period_termination_reason_return_to_incarceration
     )
@@ -260,6 +401,79 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionPeriodTerminationReason"]:
         return _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The reason the period of supervision has ended."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionPeriodTerminationReason.ABSCONSION: "Used when a person is "
+    "absconding (when the person on supervision has stopped reporting to their "
+    "supervising officer, and the officer cannot contact or locate them).",
+    StateSupervisionPeriodTerminationReason.COMMUTED: "Describes a person being "
+    "discharged from supervision because their sentence has been commuted. "
+    "“Commutation” is a reduction of a sentence to a lesser period of time. This is "
+    "different than `PARDONED` because the conviction has not been cleared from the "
+    "person’s record.",
+    StateSupervisionPeriodTerminationReason.DEATH: "Used when a person is no longer on "
+    "supervision because they have died.",
+    StateSupervisionPeriodTerminationReason.DISCHARGE: "Describes a person being "
+    "released from their supervision earlier than their sentence’s end date.",
+    # TODO(#12648): Rename 'DISMISSED' to 'VACATED'
+    StateSupervisionPeriodTerminationReason.DISMISSED: "Used when a person is "
+    "discharged because the legal judgment on their conviction has become legally "
+    "void, their conviction has been overturned, or their case has been dismissed. "
+    "When a sentence is vacated, there is immediate release from any active form of "
+    "incarceration or supervision related to the vacated conviction. This is distinct "
+    "from `PARDONED`, because the sentence was cleared as a result of it being deemed "
+    "legally void.",
+    StateSupervisionPeriodTerminationReason.EXPIRATION: "Describes a person’s "
+    "supervision ending because they have reached the maximum completion date on "
+    "their sentence.",
+    StateSupervisionPeriodTerminationReason.INVESTIGATION: "Used for all periods with "
+    "a `supervision_type` of `StateSupervisionPeriodSupervisionType.``INVESTIGATION`.",
+    # TODO(#12648): Change this to replace 'DISMISSED' with 'VACATED'
+    StateSupervisionPeriodTerminationReason.PARDONED: "Describes a person being "
+    "discharged from supervision because they have been pardoned. When a person is "
+    "pardoned, there is immediate release from any active form of incarceration or "
+    "supervision related to the pardoned conviction. This is different from `COMMUTED` "
+    "because the person’s conviction is completely cleared when they are pardoned. "
+    "This is distinct from `DISMISSED`, because the conviction is still legally valid, "
+    "it has just been forgiven.",
+    StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION: "Used when a "
+    "person’s period of absconsion has ended. See "
+    "`StateSupervisionPeriodSupervisionType.ABSCONSION`.",
+    StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION: "Used when a "
+    "person’s supervision has ended because the person has been admitted to "
+    "incarceration. If the raw data indicates that this admission is due to a "
+    "revocation of supervision, then `REVOCATION` should be used. All other "
+    "terminations due to admissions to incarceration from supervision should use "
+    "this value.",
+    StateSupervisionPeriodTerminationReason.REVOCATION: "Describes a person’s "
+    "supervision ending because it has been revoked by either the court or the "
+    "parole board.",
+    StateSupervisionPeriodTerminationReason.SUSPENSION: "Used when a person’s "
+    "supervision has been suspended. In some instances supervision may be suspended "
+    "while a person awaits the result of a revocation hearing (from the court or "
+    "parole board). During this time, the person is usually not reporting to their "
+    "supervising officer, and also not earning time against their sentence.",
+    StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION: "Used when "
+    "a period of supervision has ended in the given state because the person has been "
+    "transferred to report to a supervising officer elsewhere (usually in "
+    "another state).",
+    StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE: "Used when a "
+    "period of supervision has ended because the person on supervision has been "
+    "transferred from one period of supervision to another, where both periods are "
+    "supervised by officers within the given state. This is typically used when a "
+    "person has transferred to a new supervising officer, or when an attribute of the "
+    "supervision period has changed (e.g. when the person is downgraded to a lower "
+    "`StateSupervisionLevel`).",
+}
 
 
 _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
