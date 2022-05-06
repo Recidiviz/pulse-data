@@ -211,7 +211,7 @@ state_person_alias_alias_type_nickname = "NICKNAME"
 
 state_gender_female = "FEMALE"
 state_gender_male = "MALE"
-state_gender_non_binary = "NON_BINARY"
+state_gender_other = "OTHER"
 state_gender_trans = "TRANS"
 state_gender_trans_female = "TRANS_FEMALE"
 state_gender_trans_male = "TRANS_MALE"
@@ -228,6 +228,7 @@ state_ethnicity_not_hispanic = "NOT_HISPANIC"
 
 state_residency_status_homeless = "HOMELESS"
 state_residency_status_permanent = "PERMANENT"
+state_residency_status_transient = "TRANSIENT"
 
 # state_sentence.py
 state_sentence_status_commuted = "COMMUTED"
