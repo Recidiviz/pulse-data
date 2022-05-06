@@ -17,7 +17,6 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 
-import { mockReport } from "../mocks/mockReport";
 import { Metric, Report, ReportOverview } from "../shared/types";
 import API from "./API";
 import UserStore from "./UserStore";
@@ -73,16 +72,27 @@ class ReportStore {
     }
   }
 
-  async mockGetReport(reportID: number): Promise<void | Error> {
-    // TODO(#12189): endpoint not yet implemented, return a mock response for development
+  async getReport(reportID: number): Promise<void | Error> {
+    try {
+      const response = (await this.api.request({
+        path: `/api/reports/${reportID}`,
+        method: "GET",
+      })) as Response;
 
-    // run getReportOverviews to make sure we have overview information for the report
-    this.getReportOverviews();
-    const { metrics } = mockReport;
-    runInAction(() => {
-      // when we un-mock getReport, we also should set this.reportOverviews[reportID]
-      this.reportMetrics[reportID] = metrics;
-    });
+      if (response.status !== 200) {
+        throw new Error("There was an issue getting this report.");
+      }
+
+      const report = (await response.json()) as Report;
+      const { metrics, ...overview } = report;
+
+      runInAction(() => {
+        this.reportOverviews[reportID] = overview;
+        this.reportMetrics[reportID] = metrics;
+      });
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
   }
 
   // TODO(#12358): Decide on API for this request
