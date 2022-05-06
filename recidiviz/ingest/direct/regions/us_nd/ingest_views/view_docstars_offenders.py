@@ -50,6 +50,10 @@ WITH annotated_rows AS (
             AND ADDRESS_UPPERCASE NOT LIKE '%519 MAIN ST STE 8%'
             AND ADDRESS_UPPERCASE NOT LIKE '%115 S 5TH ST STE A%'
             AND ADDRESS_UPPERCASE NOT LIKE '%117 HWY 49%'
+            -- Garbage addresses
+            AND ADDRESS_UPPERCASE NOT LIKE '%XXX%'
+            AND ADDRESS_UPPERCASE NOT LIKE '%***%'
+            AND CITY_UPPERCASE NOT IN ('ABSCONDER', 'ABSCONDED')
             -- General filter for addresses that seem to be correctional facilities of some sort
             AND ADDRESS_UPPERCASE NOT LIKE '%JAIL%'
             AND ADDRESS_UPPERCASE NOT LIKE '%PRISON%'
@@ -58,7 +62,9 @@ WITH annotated_rows AS (
         )  AS is_valid_address
     FROM (
         SELECT 
-            *, UPPER(ADDRESS) AS ADDRESS_UPPERCASE
+            *,
+            UPPER(ADDRESS) AS ADDRESS_UPPERCASE,
+            UPPER(CITY) AS CITY_UPPERCASE
         FROM {docstars_offenders}
     ) people
 )
