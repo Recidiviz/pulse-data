@@ -133,7 +133,9 @@ class IngestDataFreshnessStore(AdminPanelStore):
                         "date": processed_date_by_state_code.get(state_code.name),
                         "lastRefreshDate": refresh_status_bq[
                             state_code
-                        ].last_refresh_datetime.isoformat(),
+                        ].last_refresh_datetime.isoformat()
+                        if refresh_status_bq.get(state_code)
+                        else None,
                         "ingestPaused": state_code.name in regions_paused,
                         # TODO(#11413): Delete this flag and frontend usage once we
                         #  have proper support for BQ materialization.
@@ -147,7 +149,9 @@ class IngestDataFreshnessStore(AdminPanelStore):
                         "date": processed_date_by_state_code.get(state_code.name),
                         "lastRefreshDate": refresh_status_bq[
                             state_code
-                        ].last_refresh_datetime.isoformat(),
+                        ].last_refresh_datetime.isoformat()
+                        if refresh_status_bq.get(state_code)
+                        else None,
                         "ingestPaused": state_code.name in regions_paused,
                         # TODO(#11413): Delete this flag and frontend usage once we
                         #  have proper support for BQ materialization.
