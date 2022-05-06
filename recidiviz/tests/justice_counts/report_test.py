@@ -19,6 +19,8 @@
 
 import datetime
 
+from freezegun import freeze_time
+
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.dimensions.corrections import PopulationType
 from recidiviz.justice_counts.dimensions.location import Agency, County, State
@@ -126,6 +128,52 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 new_annual_report.date_range_end, datetime.date(2023, 3, 1)
             )
+
+    def test_update_report(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_agency_A)
+            session.commit()
+            session.refresh(self.test_schema_objects.test_agency_A)
+
+            user_id = self.test_schema_objects.test_agency_A.id
+            agency_id = self.test_schema_objects.test_agency_A.id
+            update_datetime = datetime.datetime(2022, 2, 1, 0, 0, 0)
+
+            with freeze_time(update_datetime):
+                report = ReportInterface.create_report(
+                    session=session,
+                    agency_id=agency_id,
+                    user_account_id=user_id,
+                    month=2,
+                    year=2022,
+                    frequency=schema.ReportingFrequency.MONTHLY.value,
+                )
+                self.assertEqual(report.status, schema.ReportStatus.NOT_STARTED)
+                updated_report = ReportInterface.update_report(
+                    session=session,
+                    report_id=report.id,
+                    editor_id=1,
+                    status=schema.ReportStatus.DRAFT.value,
+                )
+                self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
+                self.assertEqual(updated_report.modified_by, [1])
+                self.assertEqual(updated_report.last_modified_at, update_datetime)
+                updated_report = ReportInterface.update_report(
+                    session=session,
+                    report_id=report.id,
+                    editor_id=2,
+                    status=schema.ReportStatus.DRAFT.value,
+                )
+                self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
+                self.assertEqual(updated_report.modified_by, [1, 2])
+                updated_report = ReportInterface.update_report(
+                    session=session,
+                    report_id=report.id,
+                    status=schema.ReportStatus.PUBLISHED.value,
+                    editor_id=1,
+                )
+                self.assertEqual(updated_report.status, schema.ReportStatus.PUBLISHED)
+                self.assertEqual(updated_report.modified_by, [1, 2])
 
     def test_add_budget_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

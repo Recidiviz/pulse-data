@@ -79,6 +79,28 @@ class ReportInterface:
         )
 
     @staticmethod
+    def update_report(
+        session: Session,
+        report_id: int,
+        status: Optional[str] = None,
+        editor_id: Optional[int] = None,
+    ) -> schema.Report:
+        report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
+        if report.status.value == status and editor_id in report.modified_by:
+            return report
+
+        if status and report.status.value != status:
+            report.status = schema.ReportStatus[status]
+        if editor_id is not None:
+            if report.modified_by is None:
+                report.modified_by = [editor_id]
+            elif editor_id not in report.modified_by:
+                report.modified_by = report.modified_by + [editor_id]
+        report.last_modified_at = datetime.datetime.now()
+        session.commit()
+        return report
+
+    @staticmethod
     def _get_report_instance(
         report_type: str,
         date_range_start: datetime.date,
