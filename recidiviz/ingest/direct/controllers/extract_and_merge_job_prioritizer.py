@@ -18,6 +18,7 @@
 merge job should run next given the desired data import ordering.
 """
 import abc
+import logging
 from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
 
@@ -65,16 +66,23 @@ class ExtractAndMergeJobPrioritizerImpl(
         self,
     ) -> Optional[NewExtractAndMergeArgs]:
 
+        logging.info("Getting next extract and merge job args")
         highest_pri_batch = None
+
+        next_batch_for_each_view = (
+            self.ingest_view_contents.get_next_unprocessed_batch_info_by_view()
+        )
 
         # Iterate over ingest view names in the order that they should be processed
         # *within* a given date.
         for ingest_view_name in self.ingest_view_rank_list:
-            next_batch_for_view = (
-                self.ingest_view_contents.get_next_unprocessed_batch_info(
-                    ingest_view_name
+            if ingest_view_name not in next_batch_for_each_view:
+                logging.warning(
+                    "No next batch info for ingest view [%s]", ingest_view_name
                 )
-            )
+                continue
+
+            next_batch_for_view = next_batch_for_each_view[ingest_view_name]
             if next_batch_for_view is None:
                 continue
 
@@ -85,8 +93,14 @@ class ExtractAndMergeJobPrioritizerImpl(
                 highest_pri_batch = next_batch_for_view
 
         if not highest_pri_batch:
+            logging.info("Found no ingest view result rows to process.")
             return None
 
+        logging.info(
+            "Found rows to process for [%s] with date [%s]",
+            highest_pri_batch.ingest_view_name,
+            highest_pri_batch.upper_bound_datetime_inclusive,
+        )
         return NewExtractAndMergeArgs(
             ingest_time=datetime.now(tz=pytz.UTC),
             ingest_instance=self.ingest_view_contents.ingest_instance,

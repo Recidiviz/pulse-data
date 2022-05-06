@@ -97,6 +97,7 @@ FROM
 
 HIGHEST_PRIORITY_ROW_FOR_VIEW_TEMPLATE = f"""
 SELECT
+  '{{ingest_view_name}}' AS ingest_view_name,
   {_UPPER_BOUND_DATETIME_COL_NAME},
   {_BATCH_NUMBER_COL_NAME}
 FROM
@@ -104,7 +105,7 @@ FROM
 WHERE
   {_PROCESSED_TIME_COL_NAME} IS NULL
 ORDER BY {_UPPER_BOUND_DATETIME_COL_NAME}, {_BATCH_NUMBER_COL_NAME}
-LIMIT 1;
+LIMIT 1
 """
 
 SUMMARY_FOR_VIEW_TEMPLATE = f"""
@@ -232,12 +233,15 @@ class InstanceIngestViewContents:
         """
 
     @abc.abstractmethod
-    def get_next_unprocessed_batch_info(
-        self, ingest_view_name: str
-    ) -> Optional[ResultsBatchInfo]:
+    def get_next_unprocessed_batch_info_by_view(
+        self,
+    ) -> Dict[str, Optional[ResultsBatchInfo]]:
         """Returns info about the next unprocessed batch of ingest view results for the
-        given ingest view. This first looks for batches with the earliest file date,
-        then chooses the lowest batch number among batches with the same date.
+        each ingest ingest view with generated results. This first looks for batches
+        with the earliest file date, then chooses the lowest batch number among batches
+        with the same date. For any given view, if there are result rows but all have
+        been processed, then that view will have an entry in the result, but the value
+        will be None.
         """
 
     @abc.abstractmethod
@@ -453,32 +457,54 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             query_job, value_converter=to_string_value_converter
         )
 
-    def get_next_unprocessed_batch_info(
-        self, ingest_view_name: str
-    ) -> Optional[ResultsBatchInfo]:
-        results_address = self._ingest_view_results_address(ingest_view_name)
-        query_job = self._big_query_client.run_query_async(
-            query_str=StrictStringFormatter().format(
+    def get_next_unprocessed_batch_info_by_view(
+        self,
+    ) -> Dict[str, Optional[ResultsBatchInfo]]:
+        highest_priority_row_for_view_queries = []
+
+        ingest_views_with_results = [
+            results_table.table_id
+            for results_table in self._big_query_client.list_tables(
+                self.results_dataset()
+            )
+        ]
+        if not ingest_views_with_results:
+            return {}
+
+        for ingest_view_name in ingest_views_with_results:
+            results_address = self._ingest_view_results_address(ingest_view_name)
+            highest_priority_row_for_view_query = StrictStringFormatter().format(
                 HIGHEST_PRIORITY_ROW_FOR_VIEW_TEMPLATE,
                 project_id=metadata.project_id(),
                 results_dataset=results_address.dataset_id,
                 results_table=results_address.table_id,
+                ingest_view_name=ingest_view_name,
             )
-        )
-        rows: Iterable[Dict[str, Any]] = peekable(
-            BigQueryResultsContentsHandle(query_job).get_contents_iterator()
-        )
-        if not rows:
-            return None
-        row = one(rows)
+            highest_priority_row_for_view_queries.append(
+                highest_priority_row_for_view_query
+            )
+        all_views_query = "\nUNION ALL\n".join(highest_priority_row_for_view_queries)
 
-        return ResultsBatchInfo(
-            ingest_view_name=ingest_view_name,
-            upper_bound_datetime_inclusive=assert_type(
-                row[_UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
-            ),
-            batch_number=assert_type(row[_BATCH_NUMBER_COL_NAME], int),
-        )
+        query_job = self._big_query_client.run_query_async(query_str=all_views_query)
+
+        result: Dict[str, Optional[ResultsBatchInfo]] = {
+            ingest_view_name: None for ingest_view_name in ingest_views_with_results
+        }
+        row_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
+            query_job
+        ).get_contents_iterator()
+
+        for row in row_iterator:
+            ingest_view_name = row["ingest_view_name"]
+            result[ingest_view_name] = ResultsBatchInfo(
+                ingest_view_name=ingest_view_name,
+                upper_bound_datetime_inclusive=assert_type(
+                    row[_UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
+                ),
+                batch_number=assert_type(row[_BATCH_NUMBER_COL_NAME], int),
+            )
+
+        return result
 
     def mark_rows_as_processed(
         self,
@@ -653,9 +679,18 @@ if __name__ == "__main__":
             f"Summary for [{ingest_view_name_}]:\n"
             f"{contents_.get_ingest_view_contents_summary(ingest_view_name_)}"
         )
-        while next_batch_info := contents_.get_next_unprocessed_batch_info(
-            ingest_view_name=ingest_view_name_
-        ):
+        while True:
+            all_views_next_batch_info = (
+                contents_.get_next_unprocessed_batch_info_by_view()
+            )
+            if ingest_view_name_ not in all_views_next_batch_info:
+                raise ValueError(
+                    f"Expected to find [{ingest_view_name_} in "
+                    f"all_views_next_batch_info: {all_views_next_batch_info}"
+                )
+            next_batch_info = all_views_next_batch_info[ingest_view_name_]
+            if next_batch_info is None:
+                break
             print(
                 f"Found next batch: "
                 f"date=[{next_batch_info.upper_bound_datetime_inclusive.isoformat()}], "

@@ -126,17 +126,18 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
 
         return FakeQueryJob(run_query_fn=run_query_fn)
 
-    def get_next_unprocessed_batch_info(
-        self, ingest_view_name: str
-    ) -> Optional[ResultsBatchInfo]:
-        if ingest_view_name not in self._batches_by_view:
-            return None
-        if not self._batches_by_view[ingest_view_name]:
-            return None
-        for batch_data in self._batches_by_view[ingest_view_name]:
-            if not batch_data.is_processed:
-                return batch_data.batch_info
-        return None
+    def get_next_unprocessed_batch_info_by_view(
+        self,
+    ) -> Dict[str, Optional[ResultsBatchInfo]]:
+        result = {}
+        for ingest_view, batches in self._batches_by_view.items():
+            batch_info = None
+            for batch_data in batches:
+                if not batch_data.is_processed:
+                    batch_info = batch_data.batch_info
+                    break
+            result[ingest_view] = batch_info
+        return result
 
     def mark_rows_as_processed(
         self,

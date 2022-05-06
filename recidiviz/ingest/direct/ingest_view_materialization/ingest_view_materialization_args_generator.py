@@ -119,6 +119,7 @@ class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationAr
                 f"Ingest not enabled for region [{self.region.region_code}]"
             )
 
+        logging.info("Finding outstanding ingest view materialization jobs...")
         logging.info("Gathering export state for each ingest view")
         ingest_view_to_export_state = {}
         for ingest_view_name, ingest_view in self.ingest_views_by_name.items():
@@ -133,10 +134,11 @@ class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationAr
         jobs_to_schedule = self.delegate.get_registered_jobs_pending_completion()
 
         logging.info(
-            "Found [%s] already pending jobs to schedule.", len(jobs_to_schedule)
+            "Found [%s] already pending materialization jobs to schedule.",
+            len(jobs_to_schedule),
         )
 
-        logging.info("Generating new ingest jobs.")
+        logging.info("Generating new ingest view materialization jobs.")
         for ingest_view_name, export_state in ingest_view_to_export_state.items():
             ingest_view = self.ingest_views_by_name[ingest_view_name]
             lower_bound_datetime_exclusive = (
@@ -167,7 +169,7 @@ class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationAr
                     upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
                 )
                 logging.info(
-                    "Generating job args for ingest view [%s]: [%s].",
+                    "Generating materialization job args for ingest view [%s]: [%s].",
                     ingest_view_name,
                     args,
                 )
@@ -178,7 +180,10 @@ class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationAr
 
             jobs_to_schedule.extend(ingest_args_list)
 
-        logging.info("Returning [%s] jobs to schedule.", len(jobs_to_schedule))
+        logging.info(
+            "Returning [%s] ingest view materialization jobs to schedule.",
+            len(jobs_to_schedule),
+        )
         return jobs_to_schedule
 
     def _get_export_state_for_ingest_view(

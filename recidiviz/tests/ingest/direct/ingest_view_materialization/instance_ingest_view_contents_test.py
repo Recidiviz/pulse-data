@@ -39,7 +39,8 @@ class InstanceIngestViewContentsTest(unittest.TestCase):
     def setUp(self) -> None:
 
         self.region_code = "us_xx"
-        self.ingest_view_name = "ingest_view_name"
+        self.ingest_view_name = "my_ingest_view_name"
+        self.ingest_view_name_2 = "some_other_view"
 
         self.project_id = "recidiviz-456"
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -83,7 +84,7 @@ class InstanceIngestViewContentsTest(unittest.TestCase):
             )
         expected_temp_dataset = "us_xx_ingest_view_results_primary_temp_20220201"
         expected_final_dataset = "us_xx_ingest_view_results_primary"
-        expected_temp_results_table = f"ingest_view_name_{mock_uuid}"
+        expected_temp_results_table = f"my_ingest_view_name_{mock_uuid}"
         expected_final_query = f"""
 SELECT 
     *, 
@@ -181,7 +182,7 @@ FROM
   __processed_time,
   __extract_and_merge_batch
 )
-FROM `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
+FROM `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
 WHERE
   __upper_bound_datetime_inclusive = DATETIME(2022, 1, 1, 0, 0, 0)
   AND __extract_and_merge_batch = 2
@@ -192,7 +193,7 @@ WHERE
             self.mock_bq_client.mock_calls,
         )
 
-    def test_get_next_unprocessed_batch_info_no_batches_returned(self) -> None:
+    def test_get_next_unprocessed_batch_info_by_view_no_results_tables(self) -> None:
         ingest_view_contents = InstanceIngestViewContentsImpl(
             big_query_client=self.mock_bq_client,
             region_code=self.region_code,
@@ -200,32 +201,183 @@ WHERE
             dataset_prefix=None,
         )
 
-        self.mock_bq_client.run_query_async.return_value = iter([])
+        self.mock_bq_client.list_tables.return_value = []
 
-        batch_info = ingest_view_contents.get_next_unprocessed_batch_info(
-            ingest_view_name=self.ingest_view_name
-        )
+        batch_info = ingest_view_contents.get_next_unprocessed_batch_info_by_view()
 
-        self.assertIsNone(batch_info)
-
-        expected_query = """
-SELECT
-  __upper_bound_datetime_inclusive,
-  __extract_and_merge_batch
-FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
-WHERE
-  __processed_time IS NULL
-ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1;
-"""
+        self.assertEqual({}, batch_info)
 
         self.assertEqual(
-            [call.run_query_async(query_str=expected_query)],
+            [call.list_tables("us_xx_ingest_view_results_primary")],
             self.mock_bq_client.mock_calls,
         )
 
-    def test_get_next_unprocessed_batch_info(self) -> None:
+    def test_get_next_unprocessed_batch_info_by_view_no_batches_returned(self) -> None:
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+
+        self.mock_bq_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                {
+                    "tableReference": {
+                        "projectId": self.project_id,
+                        "datasetId": "us_xx_ingest_view_results_primary",
+                        "tableId": ingest_view_name,
+                    }
+                }
+            )
+            for ingest_view_name in [self.ingest_view_name, self.ingest_view_name_2]
+        ]
+
+        self.mock_bq_client.run_query_async.return_value = iter([])
+
+        batch_info = ingest_view_contents.get_next_unprocessed_batch_info_by_view()
+
+        self.assertEqual(
+            {"my_ingest_view_name": None, "some_other_view": None}, batch_info
+        )
+
+        expected_query = """
+SELECT
+  'my_ingest_view_name' AS ingest_view_name,
+  __upper_bound_datetime_inclusive,
+  __extract_and_merge_batch
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
+WHERE
+  __processed_time IS NULL
+ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+LIMIT 1
+
+UNION ALL
+
+SELECT
+  'some_other_view' AS ingest_view_name,
+  __upper_bound_datetime_inclusive,
+  __extract_and_merge_batch
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
+WHERE
+  __processed_time IS NULL
+ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+LIMIT 1
+"""
+
+        self.assertEqual(
+            [
+                call.list_tables("us_xx_ingest_view_results_primary"),
+                call.run_query_async(query_str=expected_query),
+            ],
+            self.mock_bq_client.mock_calls,
+        )
+
+    def test_get_next_unprocessed_batch_info_by_view(self) -> None:
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+
+        batch_date_1 = datetime.datetime(2022, 2, 1, 0, 0, 0)
+        batch_number_1 = 10
+
+        batch_date_2 = datetime.datetime(2022, 2, 2, 0, 0, 0)
+        batch_number_2 = 0
+
+        self.mock_bq_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                {
+                    "tableReference": {
+                        "projectId": self.project_id,
+                        "datasetId": "us_xx_ingest_view_results_primary",
+                        "tableId": ingest_view_name,
+                    }
+                }
+            )
+            for ingest_view_name in [self.ingest_view_name, self.ingest_view_name_2]
+        ]
+
+        self.mock_bq_client.run_query_async.return_value = iter(
+            [
+                bigquery.table.Row(
+                    [self.ingest_view_name, batch_date_1, batch_number_1],
+                    {
+                        "ingest_view_name": 0,
+                        "__upper_bound_datetime_inclusive": 1,
+                        "__extract_and_merge_batch": 2,
+                    },
+                ),
+                bigquery.table.Row(
+                    [self.ingest_view_name_2, batch_date_2, batch_number_2],
+                    {
+                        "ingest_view_name": 0,
+                        "__upper_bound_datetime_inclusive": 1,
+                        "__extract_and_merge_batch": 2,
+                    },
+                ),
+            ]
+        )
+
+        batch_info = ingest_view_contents.get_next_unprocessed_batch_info_by_view()
+
+        self.assertEqual(
+            {
+                self.ingest_view_name: ResultsBatchInfo(
+                    ingest_view_name=self.ingest_view_name,
+                    upper_bound_datetime_inclusive=batch_date_1,
+                    batch_number=batch_number_1,
+                ),
+                self.ingest_view_name_2: ResultsBatchInfo(
+                    ingest_view_name=self.ingest_view_name_2,
+                    upper_bound_datetime_inclusive=batch_date_2,
+                    batch_number=batch_number_2,
+                ),
+            },
+            batch_info,
+        )
+
+        expected_query = """
+SELECT
+  'my_ingest_view_name' AS ingest_view_name,
+  __upper_bound_datetime_inclusive,
+  __extract_and_merge_batch
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
+WHERE
+  __processed_time IS NULL
+ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+LIMIT 1
+
+UNION ALL
+
+SELECT
+  'some_other_view' AS ingest_view_name,
+  __upper_bound_datetime_inclusive,
+  __extract_and_merge_batch
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
+WHERE
+  __processed_time IS NULL
+ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+LIMIT 1
+"""
+
+        self.assertEqual(
+            [
+                call.list_tables("us_xx_ingest_view_results_primary"),
+                call.run_query_async(query_str=expected_query),
+            ],
+            self.mock_bq_client.mock_calls,
+        )
+
+    def test_get_next_unprocessed_batch_info_by_view_one_no_results_returned(
+        self,
+    ) -> None:
         ingest_view_contents = InstanceIngestViewContentsImpl(
             big_query_client=self.mock_bq_client,
             region_code=self.region_code,
@@ -235,45 +387,78 @@ LIMIT 1;
 
         batch_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
         batch_number = 10
+
+        self.mock_bq_client.list_tables.return_value = [
+            bigquery.table.TableListItem(
+                {
+                    "tableReference": {
+                        "projectId": self.project_id,
+                        "datasetId": "us_xx_ingest_view_results_primary",
+                        "tableId": ingest_view_name,
+                    }
+                }
+            )
+            for ingest_view_name in [self.ingest_view_name, self.ingest_view_name_2]
+        ]
+
         self.mock_bq_client.run_query_async.return_value = iter(
             [
                 bigquery.table.Row(
-                    [batch_date, batch_number],
+                    [self.ingest_view_name, batch_date, batch_number],
                     {
-                        "__upper_bound_datetime_inclusive": 0,
-                        "__extract_and_merge_batch": 1,
+                        "ingest_view_name": 0,
+                        "__upper_bound_datetime_inclusive": 1,
+                        "__extract_and_merge_batch": 2,
                     },
                 )
             ]
         )
 
-        batch_info = ingest_view_contents.get_next_unprocessed_batch_info(
-            ingest_view_name=self.ingest_view_name
-        )
+        batch_info = ingest_view_contents.get_next_unprocessed_batch_info_by_view()
 
         self.assertEqual(
-            ResultsBatchInfo(
-                ingest_view_name=self.ingest_view_name,
-                upper_bound_datetime_inclusive=batch_date,
-                batch_number=10,
-            ),
+            {
+                self.ingest_view_name: ResultsBatchInfo(
+                    ingest_view_name=self.ingest_view_name,
+                    upper_bound_datetime_inclusive=batch_date,
+                    batch_number=10,
+                ),
+                self.ingest_view_name_2: None,
+            },
             batch_info,
         )
 
         expected_query = """
 SELECT
+  'my_ingest_view_name' AS ingest_view_name,
   __upper_bound_datetime_inclusive,
   __extract_and_merge_batch
 FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
+  `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
 WHERE
   __processed_time IS NULL
 ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1;
+LIMIT 1
+
+UNION ALL
+
+SELECT
+  'some_other_view' AS ingest_view_name,
+  __upper_bound_datetime_inclusive,
+  __extract_and_merge_batch
+FROM
+  `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
+WHERE
+  __processed_time IS NULL
+ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+LIMIT 1
 """
 
         self.assertEqual(
-            [call.run_query_async(query_str=expected_query)],
+            [
+                call.list_tables("us_xx_ingest_view_results_primary"),
+                call.run_query_async(query_str=expected_query),
+            ],
             self.mock_bq_client.mock_calls,
         )
 
@@ -293,7 +478,7 @@ LIMIT 1;
             )
 
         expected_query = """
-UPDATE `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
+UPDATE `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
 SET __processed_time = DATETIME(2022, 2, 1, 0, 0, 0)
 WHERE
   __upper_bound_datetime_inclusive = DATETIME(2022, 1, 1, 0, 0, 0)
@@ -371,7 +556,7 @@ SELECT
     IF(__processed_time IS NOT NULL, __upper_bound_datetime_inclusive, NULL)
   ) AS processed_rows_max_datetime
 FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.ingest_view_name`
+  `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
 """
 
         self.assertEqual(
