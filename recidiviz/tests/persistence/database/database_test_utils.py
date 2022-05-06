@@ -120,7 +120,7 @@ def generate_test_assessment(person_id) -> state_schema.StateAssessment:
     instance = state_schema.StateAssessment(
         assessment_id=345,
         state_code="US_XX",
-        assessment_type=StateAssessmentType.ASI.value,
+        assessment_type=StateAssessmentType.LSIR.value,
         person_id=person_id,
     )
     return instance
