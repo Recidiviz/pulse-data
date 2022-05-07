@@ -96,16 +96,21 @@ FROM
 
 
 HIGHEST_PRIORITY_ROW_FOR_VIEW_TEMPLATE = f"""
-SELECT
-  '{{ingest_view_name}}' AS ingest_view_name,
-  {_UPPER_BOUND_DATETIME_COL_NAME},
-  {_BATCH_NUMBER_COL_NAME}
-FROM
-  `{{project_id}}.{{results_dataset}}.{{results_table}}`
-WHERE
-  {_PROCESSED_TIME_COL_NAME} IS NULL
-ORDER BY {_UPPER_BOUND_DATETIME_COL_NAME}, {_BATCH_NUMBER_COL_NAME}
-LIMIT 1
+SELECT *
+FROM (
+  SELECT
+    '{{ingest_view_name}}' AS ingest_view_name,
+    {_UPPER_BOUND_DATETIME_COL_NAME},
+    {_BATCH_NUMBER_COL_NAME},
+    ROW_NUMBER() OVER (
+      ORDER BY {_UPPER_BOUND_DATETIME_COL_NAME}, {_BATCH_NUMBER_COL_NAME}
+    ) AS priority
+  FROM
+    `{{project_id}}.{{results_dataset}}.{{results_table}}`
+  WHERE
+    {_PROCESSED_TIME_COL_NAME} IS NULL
+)
+WHERE priority = 1
 """
 
 SUMMARY_FOR_VIEW_TEMPLATE = f"""
