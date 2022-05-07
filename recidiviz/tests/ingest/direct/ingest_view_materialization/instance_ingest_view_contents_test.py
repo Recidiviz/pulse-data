@@ -242,29 +242,39 @@ WHERE
         )
 
         expected_query = """
-SELECT
-  'my_ingest_view_name' AS ingest_view_name,
-  __upper_bound_datetime_inclusive,
-  __extract_and_merge_batch
-FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
-WHERE
-  __processed_time IS NULL
-ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1
+SELECT *
+FROM (
+  SELECT
+    'my_ingest_view_name' AS ingest_view_name,
+    __upper_bound_datetime_inclusive,
+    __extract_and_merge_batch,
+    ROW_NUMBER() OVER (
+      ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+    ) AS priority
+  FROM
+    `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
+  WHERE
+    __processed_time IS NULL
+)
+WHERE priority = 1
 
 UNION ALL
 
-SELECT
-  'some_other_view' AS ingest_view_name,
-  __upper_bound_datetime_inclusive,
-  __extract_and_merge_batch
-FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
-WHERE
-  __processed_time IS NULL
-ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1
+SELECT *
+FROM (
+  SELECT
+    'some_other_view' AS ingest_view_name,
+    __upper_bound_datetime_inclusive,
+    __extract_and_merge_batch,
+    ROW_NUMBER() OVER (
+      ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+    ) AS priority
+  FROM
+    `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
+  WHERE
+    __processed_time IS NULL
+)
+WHERE priority = 1
 """
 
         self.assertEqual(
@@ -342,29 +352,39 @@ LIMIT 1
         )
 
         expected_query = """
-SELECT
-  'my_ingest_view_name' AS ingest_view_name,
-  __upper_bound_datetime_inclusive,
-  __extract_and_merge_batch
-FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
-WHERE
-  __processed_time IS NULL
-ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1
+SELECT *
+FROM (
+  SELECT
+    'my_ingest_view_name' AS ingest_view_name,
+    __upper_bound_datetime_inclusive,
+    __extract_and_merge_batch,
+    ROW_NUMBER() OVER (
+      ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+    ) AS priority
+  FROM
+    `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
+  WHERE
+    __processed_time IS NULL
+)
+WHERE priority = 1
 
 UNION ALL
 
-SELECT
-  'some_other_view' AS ingest_view_name,
-  __upper_bound_datetime_inclusive,
-  __extract_and_merge_batch
-FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
-WHERE
-  __processed_time IS NULL
-ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1
+SELECT *
+FROM (
+  SELECT
+    'some_other_view' AS ingest_view_name,
+    __upper_bound_datetime_inclusive,
+    __extract_and_merge_batch,
+    ROW_NUMBER() OVER (
+      ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+    ) AS priority
+  FROM
+    `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
+  WHERE
+    __processed_time IS NULL
+)
+WHERE priority = 1
 """
 
         self.assertEqual(
@@ -429,29 +449,39 @@ LIMIT 1
         )
 
         expected_query = """
-SELECT
-  'my_ingest_view_name' AS ingest_view_name,
-  __upper_bound_datetime_inclusive,
-  __extract_and_merge_batch
-FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
-WHERE
-  __processed_time IS NULL
-ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1
+SELECT *
+FROM (
+  SELECT
+    'my_ingest_view_name' AS ingest_view_name,
+    __upper_bound_datetime_inclusive,
+    __extract_and_merge_batch,
+    ROW_NUMBER() OVER (
+      ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+    ) AS priority
+  FROM
+    `recidiviz-456.us_xx_ingest_view_results_primary.my_ingest_view_name`
+  WHERE
+    __processed_time IS NULL
+)
+WHERE priority = 1
 
 UNION ALL
 
-SELECT
-  'some_other_view' AS ingest_view_name,
-  __upper_bound_datetime_inclusive,
-  __extract_and_merge_batch
-FROM
-  `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
-WHERE
-  __processed_time IS NULL
-ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
-LIMIT 1
+SELECT *
+FROM (
+  SELECT
+    'some_other_view' AS ingest_view_name,
+    __upper_bound_datetime_inclusive,
+    __extract_and_merge_batch,
+    ROW_NUMBER() OVER (
+      ORDER BY __upper_bound_datetime_inclusive, __extract_and_merge_batch
+    ) AS priority
+  FROM
+    `recidiviz-456.us_xx_ingest_view_results_primary.some_other_view`
+  WHERE
+    __processed_time IS NULL
+)
+WHERE priority = 1
 """
 
         self.assertEqual(
