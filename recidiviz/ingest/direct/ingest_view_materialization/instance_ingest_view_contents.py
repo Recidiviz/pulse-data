@@ -130,15 +130,21 @@ FROM
 _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 
 
+# TODO(#8905): This function makes the contents we read from ingest view results tables
+#  backwards compatible with the content we used to read from ingest view files. It is
+#  possible that this will not be necessary once all views have been migrated to v2
+#  mappings and it's worth revisiting at that time.
 def to_string_value_converter(
     field_name: str,  # pylint: disable=unused-argument
     value: Any,
-) -> Optional[str]:
+) -> str:
     if value is None:
-        return None
-    if isinstance(value, (str, bool, int)):
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (bool, int)):
         return str(value)
-    if isinstance(value, datetime.datetime):
+    if isinstance(value, (datetime.datetime, datetime.date)):
         return value.isoformat()
 
     raise ValueError(f"Unexpected value type [{type(value)}]: {value}")
