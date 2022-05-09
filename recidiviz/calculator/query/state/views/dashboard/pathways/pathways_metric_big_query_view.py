@@ -48,7 +48,7 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
             dataset_id=dataset_id,
             view_id=view_id,
             description=description,
-            view_query_template=self._view_query_template_with_filtered_dimensions(
+            view_query_template=self._view_query_template_with_updated_dimensions(
                 view_query_template=view_query_template, dimensions=dimensions
             ),
             dimensions=dimensions,
@@ -59,20 +59,28 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
         )
 
     @classmethod
-    def _has_all_dimensions_clause(cls, dimensions: Tuple[str, ...]) -> str:
+    def _replace_unknowns(cls, dimensions: Tuple[str, ...]) -> str:
         clauses = [
-            f"COALESCE(UPPER(CAST({dimension} AS STRING)), 'EXTERNAL_UNKNOWN') NOT IN ('UNKNOWN', 'EXTERNAL_UNKNOWN', 'INTERNAL_UNKNOWN')"
+            f"""
+            CASE COALESCE(UPPER(CAST({dimension} AS STRING)), 'EXTERNAL_UNKNOWN')
+                WHEN 'EXTERNAL_UNKNOWN' THEN 'UNKNOWN'
+                WHEN 'INTERNAL_UNKNOWN' THEN 'OTHER'
+                ELSE CAST({dimension} AS STRING)
+                END
+            AS {dimension}"""
             for dimension in dimensions
         ]
-
-        return "\n AND ".join(clauses)
+        return ",\n".join(clauses)
 
     @classmethod
-    def _view_query_template_with_filtered_dimensions(
+    def _view_query_template_with_updated_dimensions(
         cls, view_query_template: str, dimensions: Tuple[str, ...]
     ) -> str:
         return f"""
             WITH pathways_view AS ( {view_query_template} )
-            SELECT * FROM pathways_view
-            WHERE {cls._has_all_dimensions_clause(dimensions)}
+            SELECT *
+            REPLACE (
+                {cls._replace_unknowns(dimensions)}
+            )
+            FROM pathways_view
         """
