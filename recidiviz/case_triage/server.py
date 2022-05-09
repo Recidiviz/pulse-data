@@ -44,6 +44,10 @@ from recidiviz.case_triage.util import (
     get_sessions_redis,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
@@ -97,15 +101,20 @@ limiter = Limiter(
     storage_options=get_redis_connection_options(),
 )
 
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MiB max body size
-
-if not in_development():
+if in_development():
+    db_url = os.environ.get("CASE_TRIAGE_DEVELOPMENT_POSTGRES_URL")
+else:
+    db_url = SQLAlchemyEngineManager.get_server_postgres_instance_url(
+        database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+    )
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 
-
-setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MiB max body size
+setup_scoped_sessions(
+    app, SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE), db_url
+)
 
 
 def on_successful_authorization(jwt_claims: TokenClaims) -> None:

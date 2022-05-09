@@ -18,7 +18,7 @@ from typing import Any, Dict, List
 
 from recidiviz.auth.auth0_client import Auth0AppMetadata
 
-from ..rest import RestClientOptions
+from .rest import RestClientOptions
 
 class Users:
     def list(self, per_page: int, fields: List[str], q: str) -> Dict[str, Any]: ...

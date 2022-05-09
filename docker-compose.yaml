@@ -1,10 +1,40 @@
-# Defines services that shared across multiple apps, such as Redis
+# Defines services that shared across multiple apps, such as Postgres databases and Redis
 # Run via `docker-compose up`
 
 version: "3"
 
 services:
+  db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_MULTIPLE_DATABASES: case_triage,justice_counts
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./recidiviz/tools/postgres/pg_init_scripts:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
+
+  migrations:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - db
+    command: >
+      bash -c "SQLALCHEMY_DB_NAME=case_triage pipenv run alembic -c recidiviz/persistence/database/migrations/case_triage_alembic.ini upgrade head
+      && SQLALCHEMY_DB_NAME=justice_counts pipenv run alembic -c recidiviz/persistence/database/migrations/justice_counts_alembic.ini upgrade head"
+    environment:
+      - SQLALCHEMY_DB_HOST=db
+      - SQLALCHEMY_USE_SSL=0
+      - SQLALCHEMY_DB_USER=postgres
+      - SQLALCHEMY_DB_PASSWORD=example
+
   redis:
     image: redis:5.0
     ports:
       - "6379:6379"
+
+volumes:
+  pgdata:

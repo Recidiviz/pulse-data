@@ -72,13 +72,12 @@ class ReportingEndpointTests(TestCase):
         self.mock_gcs_file_system.return_value = self.gcs_file_system
 
         self.app = Flask(__name__)
-        schema_type = SchemaType.CASE_TRIAGE
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
-        engine = setup_scoped_sessions(self.app, schema_type, db_url)
+        engine = setup_scoped_sessions(self.app, self.database_key, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
         blueprint = Blueprint("email_reporting_test", __name__)
@@ -107,7 +106,9 @@ class ReportingEndpointTests(TestCase):
         self.requires_gae_auth_patcher.stop()
         self.gcs_file_system_patcher.stop()
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

@@ -8,7 +8,7 @@ function write_to_file {
 }
 
 read -p "Enter your email: " USER_EMAIL
-run_cmd mkdir -p recidiviz/case_triage/local/gcs/case-triage-data/ recidiviz/local/gsm/
+run_cmd mkdir -p recidiviz/local/gcs/case-triage-data/ ../recidiviz/local/gsm/
 
 # Load staging Auth0 configuration. Uses subshell to remove additional output from gcloud util
 AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=case_triage_auth0 --project recidiviz-staging))
@@ -27,13 +27,6 @@ write_to_file '6379' recidiviz/local/gsm/case_triage_rate_limiter_redis_port
 # References hostname specified in `services.case_triage_backend.links` from `docker-compose.yml`
 write_to_file 'sessions_cache' recidiviz/local/gsm/case_triage_sessions_redis_host
 write_to_file '6379' recidiviz/local/gsm/case_triage_sessions_redis_port
-
-# Database secrets
-write_to_file 'case_triage' recidiviz/local/gsm/case_triage_cloudsql_instance_id
-write_to_file 'case_triage_user' recidiviz/local/gsm/case_triage_db_user
-write_to_file 'example' recidiviz/local/gsm/case_triage_db_password
-write_to_file '5432' recidiviz/local/gsm/case_triage_db_port
-
 
 # Set up application-specific configuration in GCS
 write_to_file $(eval printf "%s" '[{\"email\": \"$USER_EMAIL\", \"is_admin\": true}]') recidiviz/case_triage/local/gcs/case-triage-data/allowlist_v2.json
