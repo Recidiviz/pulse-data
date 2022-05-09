@@ -137,7 +137,7 @@ PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_QUERY_TEMPLATE = """
     , judicial_districts AS (
         SELECT DISTINCT
             state_code,
-            intake_district AS judicial_district,
+            judicial_district,
         FROM `{project_id}.{dashboard_views_dataset}.liberty_to_prison_transitions`
 
         UNION ALL
