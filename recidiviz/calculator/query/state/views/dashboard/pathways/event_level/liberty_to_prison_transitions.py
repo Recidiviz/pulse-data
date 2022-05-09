@@ -17,7 +17,12 @@
 """People who have transitioned from liberty to prison by date of incarceration."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import add_age_groups
+from recidiviz.calculator.query.bq_utils import (
+    add_age_groups,
+    convert_days_to_years,
+    create_buckets_with_cap,
+    get_binned_time_period_months,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     ENABLED_STATES,
@@ -38,11 +43,13 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             compartment.state_code,
             compartment.person_id,
             compartment.start_date AS transition_date,
+            EXTRACT(YEAR FROM compartment.start_date) AS year,
+            EXTRACT(MONTH FROM compartment.start_date) AS month,
             age_start AS age,
             {age_group}
             gender,
-            prioritized_race_or_ethnicity,
-            IFNULL(judicial_district_code_start, 'UNKNOWN') AS intake_district,
+            prioritized_race_or_ethnicity AS race,
+            IFNULL(judicial_district_code_start, 'UNKNOWN') AS judicial_district,
             IFNULL(previous_incarceration.session_length_days, 0) AS prior_length_of_incarceration,
             ROW_NUMBER() OVER (PARTITION BY compartment.state_code, compartment.person_id ORDER BY session_id_end DESC) AS rn,
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment
@@ -58,19 +65,26 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
     )
 
-    SELECT * EXCEPT (rn)
+    SELECT * EXCEPT (prior_length_of_incarceration, rn),
+        {binned_time_periods} AS time_period,
+        {length_of_stay} AS prior_length_of_incarceration
+    
     FROM prior_incarcerations
     WHERE rn = 1
 """
 
 LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
+    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=LIBERTY_TO_PRISON_TRANSITIONS_VIEW_NAME,
     view_query_template=LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
     description=LIBERTY_TO_PRISON_TRANSITIONS_DESCRIPTION,
     age_group=add_age_groups("age_start"),
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     enabled_states=str(tuple(ENABLED_STATES)),
+    binned_time_periods=get_binned_time_period_months("transition_date"),
+    length_of_stay=create_buckets_with_cap(
+        convert_days_to_years("prior_incarcerations.prior_length_of_incarceration"), 11
+    ),
 )
 
 if __name__ == "__main__":
