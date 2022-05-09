@@ -84,12 +84,13 @@ class TestCaseTriageAPIRoutes(TestCase):
         self.test_client = self.helpers.test_client
         self.mock_segment_client = self.helpers.mock_segment_client
 
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        schema_type = SchemaType.CASE_TRIAGE
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
         self.overridden_env_vars = (
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
-        engine = setup_scoped_sessions(self.test_app, self.database_key, db_url)
+        engine = setup_scoped_sessions(self.test_app, schema_type, db_url)
         # Auto-generate all tables that exist in our schema in this database
         self.database_key.declarative_meta.metadata.create_all(engine)
         # `flask_sqlalchemy_session` sets the `scoped_session` attribute on the app,
@@ -214,9 +215,7 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        )
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @classmethod
     def tearDownClass(cls) -> None:

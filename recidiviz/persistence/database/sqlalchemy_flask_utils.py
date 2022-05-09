@@ -15,11 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements helpers for working with SQLAlchemy in a Flask app."""
+from typing import Optional
+
 from flask import Flask
 from flask_sqlalchemy_session import flask_scoped_session
-from sqlalchemy.engine import URL, Engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -27,12 +30,21 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 
 
 def setup_scoped_sessions(
-    app: Flask, database_key: SQLAlchemyDatabaseKey, db_url: URL
+    app: Flask, schema_type: SchemaType, database_url_override: Optional[str] = None
 ) -> Engine:
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
+    database_url = (
+        database_url_override
+        or SQLAlchemyEngineManager.get_server_postgres_instance_url(
+            database_key=database_key
+        )
+    )
+
     engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
         database_key=database_key,
-        db_url=db_url,
+        db_url=database_url,
     )
-    session_factory = sessionmaker(bind=engine)
-    flask_scoped_session(session_factory, app)
+
+    flask_scoped_session(sessionmaker(bind=engine), app)
+
     return engine

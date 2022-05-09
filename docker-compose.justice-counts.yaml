@@ -8,13 +8,44 @@ services:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
+      - justice_counts_db_socket:/cloudsql/justice_counts
     depends_on:
-      - db
+      - justice_counts_db
     ports:
-      - "5000:5000"
-    command: pipenv run flask run -h 0.0.0.0
+      - "5001:5000"
+    # Running with threads and no debugger seems to improve latency on first request
+    command: pipenv run flask run -h 0.0.0.0  --with-threads --no-debugger
     environment:
       - FLASK_APP=/app/recidiviz/justice_counts/control_panel/server.py
       - FLASK_ENV=development
       - IS_DEV=true
-      - JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL=postgresql://postgres:example@db/justice_counts
+
+  justice_counts_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: justice_counts_user
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - justice_counts_db_data:/var/lib/postgresql/data
+      - justice_counts_db_socket:/var/run/postgresql/
+
+  justice_counts_migrations:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - justice_counts_db
+    command: pipenv run alembic -c recidiviz/persistence/database/migrations/justice_counts_alembic.ini upgrade head
+    environment:
+      - SQLALCHEMY_DB_HOST=justice_counts_db
+      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_USE_SSL=0
+      - SQLALCHEMY_DB_USER=justice_counts_user
+      - SQLALCHEMY_DB_PASSWORD=example
+
+volumes:
+  justice_counts_db_data:
+  justice_counts_db_socket:
