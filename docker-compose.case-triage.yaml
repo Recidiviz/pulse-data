@@ -9,17 +9,48 @@ services:
     volumes:
       - "./recidiviz:/app/recidiviz/"
       - "./frontends:/app/frontends/"
+      - case_triage_db_socket:/cloudsql/case_triage
     depends_on:
-      - db
+      - case_triage_db
     ports:
       - "5000:5000"
-    command: pipenv run flask run -h 0.0.0.0
+    # Running with threads and no debugger seems to improve latency on first request
+    command: pipenv run flask run -h 0.0.0.0 --with-threads --no-debugger
     environment:
       - FLASK_APP=/app/recidiviz/case_triage/server.py
       - FLASK_ENV=development
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
-      - CASE_TRIAGE_DEVELOPMENT_POSTGRES_URL=postgresql://postgres:example@db/case_triage
     links:
       - "redis:rate_limit_cache"
       - "redis:sessions_cache"
+
+  case_triage_migrations:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - case_triage_db
+    command: pipenv run alembic -c recidiviz/persistence/database/migrations/case_triage_alembic.ini upgrade head
+    environment:
+      - SQLALCHEMY_DB_HOST=case_triage_db
+      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_USE_SSL=0
+      - SQLALCHEMY_DB_USER=case_triage_user
+      - SQLALCHEMY_DB_PASSWORD=example
+
+  case_triage_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: case_triage_user
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - case_triage_db_data:/var/lib/postgresql/data
+      - case_triage_db_socket:/var/run/postgresql/
+
+volumes:
+  case_triage_db_data:
+  case_triage_db_socket:
