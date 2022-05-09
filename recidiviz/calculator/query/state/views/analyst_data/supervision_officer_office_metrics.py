@@ -32,7 +32,7 @@ Tracks daily officer-office level metrics
 
 SUPERVISION_OFFICER_OFFICE_METRICS_QUERY_TEMPLATE = """
 /*{description}*/
-    
+
 WITH date_array AS (
     SELECT
         date,
@@ -43,88 +43,88 @@ WITH date_array AS (
             INTERVAL 1 DAY
         )) AS date
 )
+# Unnested cte of officer-office per person and date
+, officer_office_sessions_unnested AS ( 
+    SELECT * 
+    FROM 
+        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` 
+    INNER JOIN 
+        date_array 
+    ON 
+        date BETWEEN start_date AND end_date 
+)
 
 ###############
 # Person events
 ###############
 
+# Transitions from supervision to release
 , successful_completions AS (
     SELECT 
-        state_code, 
-        person_id,
+        a.state_code, 
+        a.person_id,
         supervising_officer_external_id,
         district,
         office,
         date,
     FROM
-        `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
-    INNER JOIN
-        date_array
-    ON
-        date = end_date
-    INNER JOIN
-        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` officers
-    USING
-        (state_code, person_id, end_date)
+        `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON 
+        a.state_code = b.state_code 
+        AND a.person_id = b.person_id 
+        AND a.end_date = b.date
     WHERE
-        compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
-        AND outflow_to_level_1 = "RELEASE"
+        a.compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
+        AND a.outflow_to_level_1 = "RELEASE"
 )
-
+# Valid earned discharge requests
 , earned_discharge_requests AS (
     SELECT DISTINCT
-        ed.state_code,
-        ed.person_id,
+        a.state_code,
+        a.person_id,
         supervising_officer_external_id,
         district,
         office,
         date,
     FROM
-        `{project_id}.{base_dataset}.state_early_discharge` ed
-    INNER JOIN
-        date_array
-    ON
-        date = ed.request_date
-    # Join with overlapping session to get supervision officer-office at time of request
-    INNER JOIN
-        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
-    ON
-        ed.state_code = b.state_code
-        AND ed.person_id = b.person_id
-        AND ed.request_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+        `{project_id}.{base_dataset}.state_early_discharge` a
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON 
+        a.state_code = b.state_code 
+        AND a.person_id = b.person_id 
+        AND a.request_date = b.date
     WHERE
         decision_status != "INVALID"
 )
-
+# Changes in supervision level, along with direction of change
 , supervision_level_changes AS (
     SELECT DISTINCT
-        levels.state_code,
-        levels.person_id,
+        a.state_code,
+        a.person_id,
         supervising_officer_external_id,
         district,
         office,
-        IF(levels.supervision_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
+        IF(a.supervision_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
         date,
     FROM
-        `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` levels
-    INNER JOIN
-        date_array
-    ON
-        date = levels.start_date
-    INNER JOIN
-        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
-    ON
-        levels.state_code = b.state_code
-        AND levels.person_id = b.person_id
-        AND levels.start_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+        `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` a
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON 
+        a.state_code = b.state_code 
+        AND a.person_id = b.person_id 
+        AND a.start_date = b.date
     WHERE
-        levels.supervision_downgrade > 0 OR levels.supervision_upgrade > 0
+        a.supervision_downgrade > 0 OR a.supervision_upgrade > 0
 )
-
+# Violation responses, with violation type and response decision
 , violations AS (
     SELECT 
-        violations.state_code,
-        violations.person_id,
+        a.state_code,
+        a.person_id,
         supervising_officer_external_id,
         district,
         office,
@@ -132,19 +132,15 @@ WITH date_array AS (
         most_severe_response_decision AS response_decision,
         date,
     FROM
-        `{project_id}.{sessions_dataset}.violations_sessions_materialized` violations
-    INNER JOIN
-        date_array
-    ON
-        date = response_date
-    INNER JOIN
-        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
-    ON
-        violations.state_code = b.state_code
-        AND violations.person_id = b.person_id
-        AND violations.response_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+        `{project_id}.{sessions_dataset}.violations_sessions_materialized` a
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON 
+        a.state_code = b.state_code 
+        AND a.person_id = b.person_id 
+        AND a.response_date = b.date
 )
-
+# Transitions from supervision to incarceration
 , incarcerations AS (
     SELECT 
         a.state_code,
@@ -157,20 +153,17 @@ WITH date_array AS (
         date,
     FROM
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
-    INNER JOIN
-        date_array
-    ON
-        date = DATE_ADD(a.end_date, INTERVAL 1 DAY)
-    INNER JOIN
-        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
-    ON
-        a.state_code = b.state_code
-        AND a.person_id = b.person_id
-        AND a.end_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON 
+        a.state_code = b.state_code 
+        AND a.person_id = b.person_id 
+        AND a.end_date = b.date
     WHERE
         compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
         AND outflow_to_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE")
 )
+# Changes in employment status from employment to unemployment, or vice versa
 , employment_changes AS (
   SELECT DISTINCT
         a.state_code,
@@ -182,16 +175,12 @@ WITH date_array AS (
         is_employed,
     FROM
         `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` a
-    INNER JOIN
-        date_array
-    ON
-        date = a.employment_status_start_date
-    INNER JOIN
-        `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
-    ON
-        a.state_code = b.state_code
-        AND a.person_id = b.person_id
-        AND a.employment_status_start_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON 
+        a.state_code = b.state_code 
+        AND a.person_id = b.person_id 
+        AND a.employment_status_start_date = b.date
     QUALIFY 
         # only keep dates where the person gained or lost employment
         # edge case: treat jobs at supervision start as employment gains
@@ -201,16 +190,40 @@ WITH date_array AS (
             ORDER BY employment_status_start_date
         ), FALSE)
 )
+# All drug screen dates, along with whether at least one test on a given day had a positive result
+, drug_screens AS (
+    SELECT 
+        a.state_code,
+        a.person_id,
+        supervising_officer_external_id,
+        district,
+        office,
+        date,
+        LOGICAL_OR(is_positive_result) AS is_positive_result,
+    FROM
+        `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized` a
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON 
+        a.state_code = b.state_code 
+        AND a.person_id = b.person_id 
+        AND a.drug_screen_date = b.date
+    GROUP BY 1,2,3,4,5,6
+)
 
 # skip revocations for now because the lag from temporary hold to actual revocation 
 # makes it challenging to associate revocation with an officer
 
 #################
-# Person statuses
+# Window Metrics
+# Calculates metrics such as days incarcerated, days employed, and employment stability, 
+# over a year window following initial assignment to officer-office.
 #################
 
-# Calculates days in status (incarcerated, employed) over year following initial assignment to officer-office
-, days_in_status AS (
+, window_metrics AS (
+    # For all metrics below, we include all date indexes from other joined tables besides 
+    # the relevant table for the current metric in the window partition, 
+    # to avoid counting duplicates.
     SELECT
         sss.supervision_super_session_id,
         a.state_code,
@@ -219,6 +232,8 @@ WITH date_array AS (
         district,
         office,
         date,
+
+        # Number of days incarcerated within a year of first assignment to officer
         SUM(
             DATE_DIFF(
                 LEAST(
@@ -228,8 +243,11 @@ WITH date_array AS (
             )
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
-            supervising_officer_external_id, district, office, date, d.employment_status_start_date
+            supervising_officer_external_id, district, office, date, 
+            d.employment_status_start_date, e.employment_start_date
         ) AS days_incarcerated_1yr,
+
+        # Number of days employed within a year of first assignment to officer
         SUM(
             CASE WHEN is_employed
             THEN DATE_DIFF(
@@ -245,9 +263,38 @@ WITH date_array AS (
             WHEN is_employed = FALSE THEN 0 END
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
-            supervising_officer_external_id, district, office, date, c.start_date
+            supervising_officer_external_id, district, office, date, 
+            c.start_date, e.employment_start_date
         ) AS days_employed_1yr,
-        
+
+        # Number of days at the longest stint with a consistent employer within a year 
+        # of first assignment to officer
+        MAX(
+            CASE WHEN NOT is_unemployed
+            THEN DATE_DIFF(
+                LEAST(
+                    IFNULL(e.employment_end_date, "9999-01-01"), 
+                    DATE_ADD(a.start_date, INTERVAL 365 DAY)
+                ), 
+                GREATEST(
+                    e.employment_start_date, 
+                    a.start_date
+                ), DAY
+            )
+            WHEN is_unemployed THEN 0 END
+        ) OVER (
+            PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
+            supervising_officer_external_id, district, office, date, 
+            c.start_date, d.employment_status_start_date
+        ) AS max_days_stable_employment_1yr,
+
+        # Number of unique employers within a year of first assignment to officer
+        COUNT(DISTINCT IF(is_unemployed, NULL, employer_name)) OVER (
+            PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
+            supervising_officer_external_id, district, office, date, 
+            c.start_date, d.employment_status_start_date
+        ) AS num_unique_employers_1yr,
+
     # first date client associated with officer-office during SSS
     FROM
         `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` a
@@ -261,7 +308,7 @@ WITH date_array AS (
         sss.state_code = a.state_code
         AND sss.person_id = a.person_id
         AND a.start_date BETWEEN sss.start_date AND IFNULL(sss.end_date, "9999-01-01")
-        
+
     # join compartment level 1 super sessions for calculating days incarcerated
     LEFT JOIN
         `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` c
@@ -272,7 +319,6 @@ WITH date_array AS (
         AND c.start_date BETWEEN a.start_date AND
             DATE_ADD(a.start_date, INTERVAL 365 DAY)
         AND c.compartment_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE")
-
     # join employment sessions for calculating days employed
     LEFT JOIN
         `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` d
@@ -281,8 +327,16 @@ WITH date_array AS (
         AND a.person_id = d.person_id
         # count days incarcerated in year following officer assignment
         AND IFNULL(d.employment_status_end_date, "9999-01-01") > a.start_date 
-        AND d.employment_status_start_date < LEAST(DATE_ADD(a.start_date, INTERVAL 365 DAY), IFNULL(a.end_date, "9999-01-01"))
-        
+        AND d.employment_status_start_date < DATE_ADD(a.start_date, INTERVAL 365 DAY)
+
+    # join employment periods for calculating employment stability and volatility metrics
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized` e
+    ON
+        a.state_code = e.state_code
+        AND a.person_id = e.person_id
+        AND IFNULL(e.employment_end_date, "9999-01-01") > a.start_date 
+        AND e.employment_start_date < DATE_ADD(a.start_date, INTERVAL 365 DAY)
     # Keep first assignment of officer-office to client within SSS only
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY sss.supervision_super_session_id, a.state_code, 
@@ -332,16 +386,16 @@ WITH date_array AS (
         COUNT(DISTINCT IF(case_type_start IS NULL, c.person_id, NULL)
             ) AS caseload_unknown,
         AVG(assessment_score) AS avg_lsir_score,
-        COUNT(IF(assessment_score IS NULL, score.person_id, NULL)) 
+        COUNT(DISTINCT IF(assessment_score IS NULL, score.person_id, NULL)) 
             AS caseload_no_lsir_score,
-        COUNT(IF(assessment_level IN ("LOW", "LOW_MEDIUM", "MINIMUM"), score.person_id,
+        COUNT(DISTINCT IF(assessment_level IN ("LOW", "LOW_MEDIUM", "MINIMUM"), score.person_id,
             NULL)) AS caseload_low_risk_level,
-        COUNT(IF(assessment_level IN ("HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"), 
+        COUNT(DISTINCT IF(assessment_level IN ("HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"), 
             score.person_id, NULL)) AS caseload_high_risk_level,
-        COUNT(IF(assessment_level IS NULL OR assessment_level LIKE "%UNKNOWN",
+        COUNT(DISTINCT IF(assessment_level IS NULL OR assessment_level LIKE "%UNKNOWN",
             score.person_id, NULL)) AS caseload_unknown_risk_level,
         AVG(DATE_DIFF(date, birthdate, DAY) / 365.25) AS avg_age,
-        COUNT(IF(is_employed, e.person_id, NULL)) AS caseload_is_employed,
+        COUNT(DISTINCT IF(is_employed, e.person_id, NULL)) AS caseload_is_employed,
     FROM
         date_array d
     INNER JOIN
@@ -379,7 +433,8 @@ WITH date_array AS (
     ON 
         e.state_code = c.state_code
         AND e.person_id = c.person_id
-        AND date BETWEEN employment_status_start_date AND IFNULL(employment_status_end_date, "9999-01-01")
+        AND date BETWEEN employment_status_start_date AND 
+            IFNULL(employment_status_end_date, "9999-01-01")
     LEFT JOIN
         `{project_id}.{sessions_dataset}.person_demographics_materialized` bday
     ON
@@ -400,77 +455,77 @@ FROM
     caseload_attributes
 LEFT JOIN (
     SELECT
-        # caseload_attributes
-        state_code, 
-        supervising_officer_external_id,
-        district,
-        office,
-        date,
-        
+        # index columns
+        {join_columns},
+
         # successful_completions
-        COUNT(successful_completions.person_id) AS successful_completions,
+        COUNT(DISTINCT successful_completions.person_id) AS successful_completions,
 
         # earned_discharge_requests
-        COUNT(earned_discharge_requests.person_id) AS earned_discharge_requests,
-        
+        COUNT(DISTINCT earned_discharge_requests.person_id) AS earned_discharge_requests,
+
         # supervision_level_changes
-        COUNT(IF(
+        COUNT(DISTINCT IF(
             supervision_level_changes.change_type = "DOWNGRADE",
             supervision_level_changes.person_id, NULL)) AS supervision_downgrades,
-        COUNT(IF(
+        COUNT(DISTINCT IF(
             supervision_level_changes.change_type = "UPGRADE",
             supervision_level_changes.person_id, NULL)) AS supervision_upgrades,
-        
-        # violations
-        COUNT(violations.person_id) AS violations,
-        COUNTIF(violations.most_serious_violation_type IN ("ESCAPED", "ABSCONDED"))
-            AS violations_absconded,
-        COUNTIF(violations.most_serious_violation_type IN ("FELONY", "LAW", 
-            "MISDEMEANOR", "MUNICIPAL")) AS violations_legal,
-        COUNTIF(violations.most_serious_violation_type = "TECHNICAL") 
-            AS violations_technical,
+
+        # violations (max one per person per day per type)
+        COUNT(DISTINCT violations.person_id) AS violations,
+        COUNT(DISTINCT IF(violations.most_serious_violation_type IN ("ESCAPED", 
+            "ABSCONDED"), violations.person_id, NULL)) AS violations_absconded,
+        COUNT(DISTINCT IF(violations.most_serious_violation_type IN ("FELONY", "LAW", 
+            "MISDEMEANOR", "MUNICIPAL"), violations.person_id, NULL)) AS violations_legal,
+        COUNT(DISTINCT IF(violations.most_serious_violation_type = "TECHNICAL",
+            violations.person_id, NULL)) AS violations_technical,
 
         # incarcerations
-        COUNT(IF(incarcerations.temporary_flag, incarcerations.person_id, NULL)) 
-            AS incarcerations_temporary,
-        COUNT(incarcerations.person_id) AS incarcerations_all,
-        
+        COUNT(DISTINCT IF(incarcerations.temporary_flag, incarcerations.person_id, 
+            NULL)) AS incarcerations_temporary,
+        COUNT(DISTINCT incarcerations.person_id) AS incarcerations_all,
+
+        # drug screens
+        COUNT(DISTINCT IF(drug_screens.is_positive_result, drug_screens.person_id, 
+            NULL)) AS drug_screens_positive,
+        COUNT(DISTINCT drug_screens.person_id) AS drug_screens_all,
+
         # employment starts (transitions from unemployed to employed)
-        COUNT(IF(is_employed, employment_changes.person_id, NULL)) AS gained_employment,
-        
+        COUNT(DISTINCT IF(is_employed, employment_changes.person_id, 
+            NULL)) AS gained_employment,
+
         # employment ends (transitions from employed to unemployed)
-        COUNT(IF(NOT is_employed, employment_changes.person_id, NULL)) AS lost_employment,
-        
-        # status since initial officer assignment
-        SUM(days_in_status.days_employed_1yr) AS days_employed_1yr,
-        COUNT(days_in_status.person_id) AS new_clients_assigned,
-        IFNULL(SUM(days_in_status.days_incarcerated_1yr), 0) AS days_incarcerated_1yr,
-        COUNT(days_in_status.person_id) * 
-            DATE_DIFF(LEAST(
+        COUNT(DISTINCT IF(NOT is_employed, employment_changes.person_id, 
+            NULL)) AS lost_employment,
+
+        # assignments to officer-office within year
+        COUNT(DISTINCT window_metrics.person_id) AS new_clients_assigned,
+
+        # window metrics since initial officer-office assignment
+        SUM(window_metrics.days_employed_1yr) AS days_employed_1yr,
+        SUM(window_metrics.max_days_stable_employment_1yr) AS max_days_stable_employment_1yr,
+        SUM(window_metrics.num_unique_employers_1yr) AS num_unique_employers_1yr,
+
+        IFNULL(SUM(window_metrics.days_incarcerated_1yr), 0) AS days_incarcerated_1yr,
+        COUNT(window_metrics.person_id) * DATE_DIFF(
+            LEAST(
                 CURRENT_DATE("US/Eastern"),
                 DATE_ADD(date, INTERVAL 365 DAY)
             ), date, DAY) AS days_since_assignment_1yr,
 
-    FROM
-        caseload_attributes
-    LEFT JOIN successful_completions USING(state_code, supervising_officer_external_id,
-        district, office, date)
-    LEFT JOIN earned_discharge_requests USING(state_code, supervising_officer_external_id,
-        district, office, date)
-    LEFT JOIN supervision_level_changes USING(state_code, supervising_officer_external_id,
-        district, office, date)
-    LEFT JOIN violations USING(state_code, supervising_officer_external_id,
-        district, office, date)
-    LEFT JOIN incarcerations USING(state_code, supervising_officer_external_id,
-        district, office, date)       
-    LEFT JOIN days_in_status USING(state_code, supervising_officer_external_id,
-        district, office, date) 
-    LEFT JOIN employment_changes USING(state_code, supervising_officer_external_id,
-        district, office, date) 
-
+    FROM caseload_attributes
+    LEFT JOIN successful_completions USING({join_columns})
+    LEFT JOIN earned_discharge_requests USING({join_columns})
+    LEFT JOIN supervision_level_changes USING({join_columns})
+    LEFT JOIN violations USING({join_columns})
+    LEFT JOIN incarcerations USING({join_columns})
+    LEFT JOIN employment_changes USING({join_columns})
+    LEFT JOIN drug_screens USING({join_columns})
+    LEFT JOIN window_metrics USING({join_columns})
     GROUP BY 1, 2, 3, 4, 5
 ) 
-USING (state_code, supervising_officer_external_id, district, office, date)
+USING ({join_columns})
 # no ORDER BY because table too large, too computationally expensive
 """
 
@@ -481,6 +536,7 @@ SUPERVISION_OFFICER_OFFICE_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_OFFICER_OFFICE_METRICS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     base_dataset=STATE_BASE_DATASET,
+    join_columns="state_code, supervising_officer_external_id, district, office, date",
     clustering_fields=["state_code", "supervising_officer_external_id"],
     should_materialize=True,
 )

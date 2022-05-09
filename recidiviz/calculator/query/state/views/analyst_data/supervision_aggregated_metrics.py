@@ -211,12 +211,16 @@ WITH date_range AS (
         SUM(violations_technical) AS violations_technical,
         SUM(incarcerations_temporary) AS incarcerations_temporary,
         SUM(incarcerations_all) AS incarcerations_all,
+        SUM(drug_screens_positive) AS drug_screens_positive,
+        SUM(drug_screens_all) AS drug_screens_all,
         SUM(gained_employment) AS gained_employment,
         SUM(lost_employment) AS lost_employment,
         SUM(new_clients_assigned) AS new_clients_assigned,
         SUM(days_since_assignment_1yr) AS days_since_assignment_1yr,
         SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
         SUM(days_employed_1yr) AS days_employed_1yr,
+        SUM(max_days_stable_employment_1yr) AS max_days_stable_employment_1yr,
+        SUM(num_unique_employers_1yr) AS num_unique_employers_1yr,
     FROM
         `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized`
     GROUP BY {index_cols}, date
@@ -264,12 +268,16 @@ SELECT
     SUM(violations_technical) AS violations_technical,
     SUM(incarcerations_temporary) AS incarcerations_temporary,
     SUM(incarcerations_all) AS incarcerations_all,
+    SUM(drug_screens_positive) AS drug_screens_positive,
+    SUM(drug_screens_all) AS drug_screens_all,
     SUM(gained_employment) AS gained_employment,
     SUM(lost_employment) AS lost_employment,
     SUM(new_clients_assigned) AS new_clients_assigned,
     SUM(days_since_assignment_1yr) AS days_since_assignment_1yr,
     SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
     SUM(days_employed_1yr) AS days_employed_1yr,
+    SUM(max_days_stable_employment_1yr) AS max_days_stable_employment_1yr,
+    SUM(num_unique_employers_1yr) AS num_unique_employers_1yr,
 FROM 
     {level}_level_metrics a
 INNER JOIN
