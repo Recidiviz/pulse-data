@@ -30,7 +30,7 @@ from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
-from recidiviz.utils.secrets import get_local_secret
+from recidiviz.utils.secrets import get_secret
 
 os.environ.setdefault("APP_URL", "http://localhost:3000")
 
@@ -68,13 +68,10 @@ def create_app(config: Optional[Config] = None) -> Flask:
         )
     )
 
-    local_path = os.path.join(
-        os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
-    )
     app = Flask(__name__, static_folder=static_folder)
     config = config or Config()
     app.config.from_object(config)
-    app.secret_key = get_local_secret(local_path, "justice_counts_secret_key")
+    app.secret_key = get_secret("justice_counts_secret_key")
     setup_scoped_sessions(
         app=app, database_key=config.DATABASE_KEY, db_url=config.DB_URL
     )

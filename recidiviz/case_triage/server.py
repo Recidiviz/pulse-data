@@ -56,12 +56,9 @@ from recidiviz.utils.auth.auth0 import (
     update_session_with_user_info,
 )
 from recidiviz.utils.environment import in_development, in_gcp, in_test
-from recidiviz.utils.secrets import get_local_secret
+from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.timer import RepeatedTimer
 
-local_path = os.path.join(
-    os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
-)
 # Sentry setup
 if in_gcp():
     # pylint: disable=abstract-class-instantiated
@@ -82,7 +79,7 @@ static_folder = os.path.abspath(
 )
 
 app = Flask(__name__, static_folder=static_folder)
-app.secret_key = get_local_secret(local_path, "case_triage_secret_key")
+app.secret_key = get_secret("case_triage_secret_key")
 
 sessions_redis = get_sessions_redis()
 
@@ -142,7 +139,7 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
         raise auth_error
 
 
-auth0_configuration = get_local_secret(local_path, "case_triage_auth0")
+auth0_configuration = get_secret("case_triage_auth0")
 
 if not auth0_configuration:
     raise ValueError("Missing Case Triage Auth0 configuration secret")

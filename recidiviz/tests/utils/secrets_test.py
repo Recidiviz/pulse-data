@@ -19,7 +19,7 @@
 
 """Tests for utils/secrets.py."""
 from typing import Callable
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from google.cloud import exceptions
 from google.cloud.secretmanager_v1beta1.proto import service_pb2
@@ -32,9 +32,16 @@ from recidiviz.utils import secrets
 class TestSecrets:
     """Tests for the secrets module."""
 
+    def setup_method(self) -> None:
+        self.in_test_patcher = patch(
+            "recidiviz.utils.secrets.in_test", return_value=False
+        )
+        self.in_test_patcher.start()
+
     def teardown_method(self, _test_method: Callable) -> None:
         secrets.clear_sm()
         secrets.CACHED_SECRETS.clear()
+        self.in_test_patcher.stop()
 
     def test_get_in_cache(self) -> None:
         write_to_local("top_track", "An Eagle In Your Mind")
