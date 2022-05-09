@@ -12,6 +12,7 @@ columns:
   - name: SID
     description: |-
       External id for a unique person from the Docstars system.
+  - name: TIME_STAMP
   - name: CONTACT_DATE
     is_datetime: True
     description: |-
@@ -98,9 +99,26 @@ columns:
   - name: C6
     description: |-
       Additional sub-code for the kind of contact which occurred. Known values are same as those captured in CONTACT_CODE or C2
+  - name: REMARKS
+  - name: ALCO_POS
+  - name: ALCO_NEG
+  - name: COKE_POS
+  - name: COKE_NEG
+  - name: THC_POS
+  - name: THC_NEG
+  - name: OPIATE_POS
+  - name: OPIATE_NEG
+  - name: AMP_METH_POS
+  - name: AMP_METH_NEG
+  - name: SYNTHETIC_POS
+  - name: SYNTHETIC_NEG
+  - name: OTHER_POS
+  - name: OTHER_NEG
   - name: CATEGORY
     description: |-
       The type of contact (i.e. Supervision, Recovery, etc.).
   - name: ORIGINATOR
     description: |-
       The name of the supervision officer associated with this contact.
+  - name: RecDate
+  - name: LASTUPDATE

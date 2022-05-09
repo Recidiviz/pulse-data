@@ -403,6 +403,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 sandbox_dataset_prefix=sandbox_dataset_prefix,
                 source_bucket=source_bucket,
                 file_tag_filters=file_tags,
+                allow_incomplete_configs=True,
             )
         except ValueError as error:
             return str(error), HTTPStatus.INTERNAL_SERVER_ERROR
