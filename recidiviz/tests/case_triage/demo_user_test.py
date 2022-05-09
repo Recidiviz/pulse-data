@@ -58,14 +58,14 @@ class TestDemoUser(TestCase):
         self.test_app = Flask(__name__)
         self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)
 
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
             local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
         # Auto-generate all tables that exist in our schema in this database
-        schema_type = SchemaType.CASE_TRIAGE
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-        engine = setup_scoped_sessions(self.test_app, schema_type, db_url)
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        engine = setup_scoped_sessions(self.test_app, self.database_key, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
         self.demo_clients = get_fixture_clients()
@@ -81,7 +81,9 @@ class TestDemoUser(TestCase):
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

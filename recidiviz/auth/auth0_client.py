@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, TypedDict
 
 from auth0.v3.authentication import GetToken
 from auth0.v3.management import Auth0
-from auth0.v3.rest import RestClientOptions
+from auth0.v3.management.rest import RestClientOptions
 from ratelimit import limits, sleep_and_retry
 
 from recidiviz.utils import secrets
