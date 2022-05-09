@@ -220,10 +220,13 @@ class IngestOperationsStore(AdminPanelStore):
         }
 
         for file_type in GcsfsDirectIngestFileType:
+            logging.info("Getting bucket metadata for file type [%s]", file_type)
             file_type_str = self.get_file_type_api_string(file_type)
+            logging.info("Getting unprocessed file paths [%s]", file_type)
             unprocessed_files = self.fs.get_unprocessed_file_paths(path, file_type)
             bucket_metadata[f"unprocessedFiles{file_type_str}"] = len(unprocessed_files)
 
+            logging.info("Getting processed file paths [%s]", file_type)
             processed_files = self.fs.get_processed_file_paths(path, file_type)
             bucket_metadata[f"processedFiles{file_type_str}"] = len(processed_files)
 
@@ -290,6 +293,10 @@ class IngestOperationsStore(AdminPanelStore):
             state_code, ingest_instance
         )
 
+        logging.info(
+            "Getting ingest view materialization gating context for [%s]",
+            ingest_instance.value,
+        )
         if not self.ingest_view_materialization_gating_context:
             self.ingest_view_materialization_gating_context = (
                 IngestViewMaterializationGatingContext.load_from_gcs()
@@ -297,6 +304,7 @@ class IngestOperationsStore(AdminPanelStore):
         is_bq_materialization_enabled = self.ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
             state_code=state_code, ingest_instance=ingest_instance
         )
+        logging.info("Done getting instance summary for [%s]", ingest_instance.value)
         return {
             "instance": ingest_instance.value,
             "storage": storage_bucket_path.abs_path(),
@@ -372,6 +380,9 @@ class IngestOperationsStore(AdminPanelStore):
                 "dateOfEarliestUnprocessedIngestView": datetime(2021, 4, 28),
             }
 
+        logging.info(
+            "Getting operations DB metadata for instance [%s]", ingest_instance.value
+        )
         raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=state_code.value,
             ingest_database_name=ingest_instance.database_key_for_state(
@@ -389,8 +400,14 @@ class IngestOperationsStore(AdminPanelStore):
         )
 
         if ingest_instance == DirectIngestInstance.PRIMARY:
+            logging.info(
+                "Getting unprocessed raw files for instance [%s]", ingest_instance.value
+            )
             num_unprocessed_raw_files = (
                 raw_file_metadata_manager.get_num_unprocessed_raw_files()
+            )
+            logging.info(
+                "Getting processed raw files for instance [%s]", ingest_instance.value
             )
             num_processed_raw_files = (
                 raw_file_metadata_manager.get_num_processed_raw_files()
@@ -407,8 +424,13 @@ class IngestOperationsStore(AdminPanelStore):
         ingest_instance_status_manager = DirectIngestInstanceStatusManager(
             state_code.value, ingest_instance
         )
+        logging.info("Checking is instance [%s] paused", ingest_instance.value)
         is_paused = ingest_instance_status_manager.is_instance_paused()
 
+        logging.info(
+            "Getting instance [%s] ingest view materialization summaries",
+            ingest_instance.value,
+        )
         materialization_job_summaries = DirectIngestViewMaterializationMetadataManager(
             state_code.value, ingest_instance
         ).get_instance_summaries()
@@ -419,11 +441,19 @@ class IngestOperationsStore(AdminPanelStore):
             ingest_instance=ingest_instance,
             dataset_prefix=None,
         )
+        logging.info(
+            "Getting instance [%s] ingest view contents summaries",
+            ingest_instance.value,
+        )
         contents_summaries = [
             ingest_view_contents.get_ingest_view_contents_summary(ingest_view_name)
             for ingest_view_name, summary in materialization_job_summaries.items()
         ]
 
+        logging.info(
+            "Done getting operations DB metadata for instance [%s]",
+            ingest_instance.value,
+        )
         return {
             "isPaused": is_paused,
             "unprocessedFilesRaw": num_unprocessed_raw_files,
