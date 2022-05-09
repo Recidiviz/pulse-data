@@ -17,11 +17,14 @@
 """Base class for the reported value(s) for a Justice Counts metric."""
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import attr
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.dimensions.dimension_registry import (
+    DIMENSION_IDENTIFIER_TO_DIMENSION,
+)
 from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -29,6 +32,12 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricDefinition,
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+
+ReportedContextT = TypeVar("ReportedContextT", bound="ReportedContext")
+ReportedAggregatedDimensionT = TypeVar(
+    "ReportedAggregatedDimensionT", bound="ReportedAggregatedDimension"
+)
+ReportMetricT = TypeVar("ReportMetricT", bound="ReportMetric")
 
 
 @attr.define()
@@ -49,6 +58,12 @@ class ReportedContext:
             "required": context_definition.required,
             "value": self.value,
         }
+
+    @classmethod
+    def from_json(
+        cls: Type[ReportedContextT], json: Dict[str, Any]
+    ) -> ReportedContextT:
+        return cls(key=json["key"], value=json["value"])
 
 
 @attr.define()
@@ -106,6 +121,24 @@ class ReportedAggregatedDimension:
             "display_name": dimension_definition.display_name,
             "dimensions": self.dimension_to_json(),
         }
+
+    @classmethod
+    def from_json(
+        cls: Type[ReportedAggregatedDimensionT], json: Dict[str, Any]
+    ) -> ReportedAggregatedDimensionT:
+        # convert dimension name -> value mapping to dimension class -> value mapping
+        # e.g "BLACK" : 50 -> RaceAndEthnicity().BLACK : 50
+        dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
+            json["key"]
+        ]  # example: RaceAndEthnicity
+        dimension_enum_value_to_value = {
+            dim["key"]: dim["value"] for dim in json["dimensions"]
+        }  # example: {"BLACK": 50, "WHITE": 20, ...}
+        dimension_to_value = {
+            dimension: dimension_enum_value_to_value[dimension.to_enum().value]
+            for dimension in dimension_class
+        }  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20}
+        return cls(dimension_to_value=dimension_to_value)
 
 
 @attr.define()
@@ -243,3 +276,22 @@ class ReportMetric:
                 for d in self.aggregated_dimensions or []
             ],
         }
+
+    @classmethod
+    def from_json(cls: Type[ReportMetricT], json: Dict[str, Any]) -> ReportMetricT:
+        reported_contexts = [
+            ReportedContext.from_json(json=context_json)
+            for context_json in json.get("contexts", [])
+        ]
+        disaggregations = []
+        for dimension_json in json.get("disaggregations", []):
+            disaggregations.append(
+                ReportedAggregatedDimension.from_json(json=dimension_json)
+            )
+
+        return cls(
+            key=json["key"],
+            value=json["value"],
+            contexts=reported_contexts,
+            aggregated_dimensions=disaggregations,
+        )

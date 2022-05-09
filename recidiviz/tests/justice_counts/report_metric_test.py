@@ -19,8 +19,11 @@
 from unittest import TestCase
 
 import recidiviz.justice_counts.metrics.law_enforcement as law_enforcement_metric_definitions
-from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
-from recidiviz.justice_counts.dimensions.person import GenderRestricted
+from recidiviz.justice_counts.dimensions.law_enforcement import (
+    OffenseType,
+    SheriffBudgetType,
+)
+from recidiviz.justice_counts.dimensions.person import GenderRestricted, StaffType
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.report_metric import (
@@ -379,4 +382,115 @@ class TestJusticeCountsReportMetric(TestCase):
                     }
                 ],
             },
+        )
+
+    def test_arrest_metric_json_to_report_metric(self) -> None:
+        metric_definition = law_enforcement_metric_definitions.total_arrests
+        response_json = {
+            "key": metric_definition.key,
+            "value": 100,
+            "contexts": [
+                {
+                    "key": metric_definition.contexts[0].key,
+                    "value": "definition of arrest",
+                }
+            ],
+            "disaggregations": [
+                {
+                    "key": OffenseType.dimension_identifier(),
+                    "dimensions": [
+                        {"key": OffenseType.DRUG.value, "value": 50},
+                        {"key": OffenseType.PERSON.value, "value": 50},
+                        {"key": OffenseType.PROPERTY.value, "value": 0},
+                        {"key": OffenseType.UNKNOWN.value, "value": 0},
+                    ],
+                }
+            ],
+        }
+
+        self.assertEqual(
+            ReportMetric(
+                key=metric_definition.key,
+                value=100,
+                contexts=[
+                    ReportedContext(
+                        key=metric_definition.contexts[0].key,
+                        value="definition of arrest",
+                    )
+                ],
+                aggregated_dimensions=[
+                    ReportedAggregatedDimension(
+                        dimension_to_value={
+                            OffenseType.DRUG: 50,
+                            OffenseType.PERSON: 50,
+                            OffenseType.PROPERTY: 0,
+                            OffenseType.UNKNOWN: 0,
+                        }
+                    )
+                ],
+            ),
+            ReportMetric.from_json(json=response_json),
+        )
+
+    def test_police_officer_metric_json_to_report_metric(self) -> None:
+        metric_definition = law_enforcement_metric_definitions.police_officers
+        response_json = {
+            "key": metric_definition.key,
+            "value": 100,
+            "contexts": [
+                {
+                    "key": metric_definition.contexts[0].key,
+                    "value": "additional context",
+                }
+            ],
+            "disaggregations": [
+                {
+                    "key": StaffType.dimension_identifier(),
+                    "dimensions": [
+                        {"key": StaffType.POLICE_OFFICERS.value, "value": 100},
+                        {"key": StaffType.UNKNOWN.value, "value": 0},
+                    ],
+                }
+            ],
+        }
+
+        self.assertEqual(
+            ReportMetric(
+                key=metric_definition.key,
+                value=100,
+                contexts=[
+                    ReportedContext(
+                        key=metric_definition.contexts[0].key,
+                        value="additional context",
+                    )
+                ],
+                aggregated_dimensions=[
+                    ReportedAggregatedDimension(
+                        dimension_to_value={
+                            StaffType.POLICE_OFFICERS: 100,
+                            StaffType.UNKNOWN: 0,
+                        }
+                    )
+                ],
+            ),
+            ReportMetric.from_json(json=response_json),
+        )
+
+    def test_complaints_sustained_metric_json_to_report_metric(self) -> None:
+        metric_definition = (
+            law_enforcement_metric_definitions.civilian_complaints_sustained
+        )
+        response_json = {
+            "key": metric_definition.key,
+            "value": 100,
+        }
+
+        self.assertEqual(
+            ReportMetric(
+                key=metric_definition.key,
+                value=100,
+                contexts=[],
+                aggregated_dimensions=[],
+            ),
+            ReportMetric.from_json(json=response_json),
         )
