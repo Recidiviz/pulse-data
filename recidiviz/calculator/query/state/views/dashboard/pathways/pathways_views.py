@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
+    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_count_by_month import (
     LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
 )
@@ -80,6 +83,10 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_pr
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
+PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER
+]
+
 PATHWAYS_PRISON_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
@@ -127,6 +134,7 @@ PATHWAYS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
 ]
 
 PATHWAYS_HELPER_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    *PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
     PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER,

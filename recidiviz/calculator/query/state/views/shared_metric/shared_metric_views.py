@@ -39,9 +39,6 @@ from recidiviz.calculator.query.state.views.shared_metric.event_based_supervisio
 from recidiviz.calculator.query.state.views.shared_metric.event_based_supervision_populations_with_commitments_for_rate_denominators import (
     EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.shared_metric.liberty_to_prison_transitions import (
-    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.shared_metric.overdue_discharge_alert_exclusions import (
     OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_VIEW_BUILDER,
 )
@@ -92,7 +89,6 @@ SHARED_METRIC_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
-    LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,

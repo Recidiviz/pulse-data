@@ -19,11 +19,6 @@
 To generate the BQ view, run:
 python -m recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_population_snapshot_by_dimension
 """
-from recidiviz.calculator.query.bq_utils import (
-    convert_days_to_years,
-    create_buckets_with_cap,
-    get_binned_time_period_months,
-)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
@@ -49,11 +44,11 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             state_code,
             gender,
             age_group,
-            intake_district AS judicial_district,
-            prioritized_race_or_ethnicity AS race,
-            {binned_time_periods} AS time_period,
-            {length_of_stay} AS prior_length_of_incarceration,
-        FROM `{project_id}.{shared_metric_views_dataset}.liberty_to_prison_transitions`
+            judicial_district,
+            race,
+            time_period,
+            prior_length_of_incarceration
+        FROM `{project_id}.{dashboard_views_dataset}.liberty_to_prison_transitions`
         WHERE transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),
     get_last_updated AS ({get_pathways_incarceration_last_updated_date})
@@ -93,12 +88,8 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetric
         "judicial_district",
         "prior_length_of_incarceration",
     ),
-    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
-    binned_time_periods=get_binned_time_period_months("transition_date"),
+    dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
-    length_of_stay=create_buckets_with_cap(
-        convert_days_to_years("prior_length_of_incarceration"), 11
-    ),
 )
 
 if __name__ == "__main__":
