@@ -55,6 +55,13 @@ def get_secret(secret_id: str) -> Optional[str]:
 
     Returns None if the secret could not be found.
     """
+    if in_development() or in_test():
+        try:
+            return get_secret_from_local_directory(secret_id=secret_id)
+        except OSError:
+            logging.error("Couldn't locate local secret %s", secret_id)
+            return None
+
     secret_value = CACHED_SECRETS.get(secret_id)
     if secret_value:
         return secret_value
@@ -87,24 +94,7 @@ def get_secret(secret_id: str) -> Optional[str]:
     return secret_value
 
 
-def get_local_secret(local_path: str, secret_name: str) -> Optional[str]:
-    """
-    Helper function for supporting local development flows.
-    When in development environments, we fetch file contents from `recidiviz/<app name>/local/gsm`
-    In Google Cloud environments, we delegate to Secrets Manager.
-    """
-    if in_development() or in_test():
-        try:
-            return get_secret_from_local_directory(
-                local_path=local_path, secret_name=secret_name
-            )
-        except OSError:
-            logging.error("Couldn't locate secret %s", secret_name)
-            return None
-
-    return get_secret(secret_name)
-
-
-def get_secret_from_local_directory(local_path: str, secret_name: str) -> str:
-    secret = Path(os.path.join(local_path, "gsm", secret_name)).read_text("utf-8")
+def get_secret_from_local_directory(secret_id: str) -> str:
+    local_path = os.path.join(os.path.dirname(__file__), "../local")
+    secret = Path(os.path.join(local_path, "gsm", secret_id)).read_text("utf-8")
     return secret.strip()

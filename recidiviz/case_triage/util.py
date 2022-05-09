@@ -28,7 +28,7 @@ from redis.retry import Retry
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.environment import in_development
-from recidiviz.utils.secrets import get_local_secret
+from recidiviz.utils.secrets import get_secret
 
 local_path = os.path.join(
     os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
@@ -55,8 +55,8 @@ def get_local_file(file_path: GcsfsFilePath) -> str:
 
 def get_rate_limit_storage_uri() -> str:
     """Reads the rate limit redis secrets; returns an in-memory store if they do not exist"""
-    host = get_local_secret(local_path, "case_triage_rate_limiter_redis_host")
-    port = get_local_secret(local_path, "case_triage_rate_limiter_redis_port")
+    host = get_secret("case_triage_rate_limiter_redis_host")
+    port = get_secret("case_triage_rate_limiter_redis_port")
 
     if host and port:
         return f"redis://{host}:{port}"
@@ -110,8 +110,8 @@ def get_redis_connection_options() -> Dict[Any, Any]:
 
 
 def get_sessions_redis() -> Optional[Redis]:
-    host = get_local_secret(local_path, "case_triage_sessions_redis_host")
-    port = get_local_secret(local_path, "case_triage_sessions_redis_port")
+    host = get_secret("case_triage_sessions_redis_host")
+    port = get_secret("case_triage_sessions_redis_port")
 
     if host is None or port is None:
         return None

@@ -157,6 +157,9 @@ yalc.lock
 # Stackdriver Traces
 traces
 
+# Local emulator files
+recidiviz/local/**/*
+
 # Local Case Triage files
 recidiviz/case_triage/local/**/*
 

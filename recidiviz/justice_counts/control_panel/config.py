@@ -35,7 +35,7 @@ from recidiviz.utils.auth.auth0 import (
     passthrough_authorization_decorator,
 )
 from recidiviz.utils.environment import in_ci, in_development
-from recidiviz.utils.secrets import get_local_secret
+from recidiviz.utils.secrets import get_secret
 
 JUSTICE_COUNTS_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(
     SchemaType.JUSTICE_COUNTS
@@ -80,10 +80,7 @@ class Config:
             # prove that the server is working, so just return None
             return None
 
-        local_path = os.path.join(
-            os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
-        )
-        auth0_configuration = get_local_secret(local_path, "justice_counts_auth0")
+        auth0_configuration = get_secret("justice_counts_auth0")
         if not auth0_configuration:
             raise JusticeCountsAuthorizationError(
                 code="no_justice_counts_access",

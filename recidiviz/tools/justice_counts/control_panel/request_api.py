@@ -29,7 +29,6 @@ python -m recidiviz.tools.justice_counts.control_panel.request_api users '{"emai
 """
 import argparse
 import json
-import os
 from typing import Dict
 
 import requests
@@ -45,12 +44,6 @@ request_string_to_request_type = {
     "post": HttpMethod.POST,
 }
 
-local_path = os.path.join(
-    os.path.dirname(__file__),
-    "../../../..",
-    "recidiviz/justice_counts/control_panel/local/",
-)
-
 
 def make_request_to_api(
     endpoint: str, body: Dict[str, str], request_type_str: str
@@ -65,17 +58,11 @@ def make_request_to_api(
             "Register the {endpoint} method in `endpoint_to_request_type`."
         )
 
-    auth0_dict = json.loads(
-        get_secret_from_local_directory(local_path, "justice_counts_auth0")
-    )
+    auth0_dict = json.loads(get_secret_from_local_directory("justice_counts_auth0"))
     domain = auth0_dict["domain"]
     audience = auth0_dict["audience"]
-    client_id = get_secret_from_local_directory(
-        local_path, "justice_counts_m2m_client_id"
-    )
-    client_secret = get_secret_from_local_directory(
-        local_path, "justice_counts_m2m_client_secret"
-    )
+    client_id = get_secret_from_local_directory("justice_counts_m2m_client_id")
+    client_secret = get_secret_from_local_directory("justice_counts_m2m_client_secret")
     # First obtain an access_token via a client_credientials grant
     # More details: https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow
     data = {
