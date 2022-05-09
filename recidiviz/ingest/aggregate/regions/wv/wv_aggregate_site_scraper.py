@@ -59,7 +59,7 @@ def get_urls_to_download() -> Set[str]:
             url
             for url in content.xpath("//a/@href")
             if url.startswith("https://dhhr.wv.gov/COVID-19/Documents/COVID19_DCR_")
-            and url.endswith(".txt")
+            and url.endswith((".txt", ".tsv"))
             and not url.endswith("COVID19_DCR_2020_09-25.txt")
         }
 
