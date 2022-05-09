@@ -95,6 +95,7 @@ def import_raw_files_to_bq_sandbox(
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
     file_tag_filters: Optional[List[str]],
+    allow_incomplete_configs: bool,
 ) -> SandboxRawFileImportResult:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset. If |file_tag_filters| is set, then will only import files with that set
@@ -114,7 +115,7 @@ def import_raw_files_to_bq_sandbox(
             ),
             big_query_client=BigQueryClientImpl(),
             sandbox_dataset_prefix=sandbox_dataset_prefix,
-            allow_incomplete_configs=True,
+            allow_incomplete_configs=allow_incomplete_configs,
         )
 
         bq_client = BigQueryClientImpl()

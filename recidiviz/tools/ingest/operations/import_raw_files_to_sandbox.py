@@ -29,7 +29,8 @@ Usage:
 python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
     --state_code US_PA --sandbox_dataset_prefix my_prefix \
     --source_bucket recidiviz-staging-my-test-bucket \
-    [--file-tag-filter-regex (tagA|otherTagB)]
+    [--file-tag-filter-regex (tagA|otherTagB)] \
+    [--allow-incomplete-configs False]
 """
 
 import argparse
@@ -48,6 +49,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_bool
 
 
 def do_sandbox_raw_file_import(
@@ -55,6 +57,7 @@ def do_sandbox_raw_file_import(
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
     file_tag_filter_regex: Optional[str],
+    allow_incomplete_configs: bool,
 ) -> None:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
@@ -80,6 +83,7 @@ def do_sandbox_raw_file_import(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         source_bucket=source_bucket,
         file_tag_filters=file_tag_filters,
+        allow_incomplete_configs=allow_incomplete_configs,
     )
 
 
@@ -88,8 +92,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--state_code",
-        dest="state_code",
+        "--state-code",
         help="State that these raw files are for, in the form US_XX.",
         type=str,
         choices=[state.value for state in StateCode],
@@ -97,8 +100,7 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--sandbox_dataset_prefix",
-        dest="sandbox_dataset_prefix",
+        "--sandbox-dataset-prefix",
         help="A prefix to append to all names of the raw data dataset this data will be"
         "loaded into.",
         type=str,
@@ -106,7 +108,7 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--source_bucket",
+        "--source-bucket",
         type=str,
         required=True,
         help="A sandbox GCS bucket where raw files live. Files in this bucket must "
@@ -115,18 +117,12 @@ def parse_arguments() -> argparse.Namespace:
 
     parser.add_argument(
         "--file-tag-filter-regex",
-        dest="file_tag_filter_regex",
         default=None,
         help="Regex file tag filter - when set, will only import files whose tags "
         "contain a match to this regex.",
     )
 
-    parser.add_argument(
-        "--upload_chunk_size",
-        type=int,
-        default=None,
-        help="Overrides the number of rows per chunk when uploading the files.",
-    )
+    parser.add_argument("--allow-incomplete-configs", type=str_to_bool, default=True)
 
     return parser.parse_args()
 
@@ -140,4 +136,5 @@ if __name__ == "__main__":
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
             file_tag_filter_regex=known_args.file_tag_filter_regex,
+            allow_incomplete_configs=known_args.allow_incomplete_configs,
         )
