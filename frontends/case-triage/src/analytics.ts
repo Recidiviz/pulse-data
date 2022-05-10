@@ -28,15 +28,15 @@ export const identify = (
 ): void => {
   const fullMetadata = metadata || {};
   fullMetadata.sessionId = sessionId;
-  fullMetadata.integrations = {
-    Intercom: {
-      user_hash: userHash,
-      hideDefaultLauncher: isIE11(),
-    },
-  };
-
   if (process.env.NODE_ENV !== "development") {
-    window.analytics.identify(userId, fullMetadata);
+    window.analytics.identify(userId, fullMetadata, {
+      integrations: {
+        Intercom: {
+          hideDefaultLauncher: isIE11(),
+          userHash,
+        },
+      },
+    });
   } else {
     // eslint-disable-next-line
     console.log(

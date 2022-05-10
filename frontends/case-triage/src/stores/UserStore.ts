@@ -24,8 +24,12 @@ import createAuth0Client, {
 import { makeAutoObservable, runInAction, when } from "mobx";
 import qs from "qs";
 import { navigate } from "@reach/router";
+import * as Sentry from "@sentry/react";
 import { titleCase } from "../utils";
 import { FullName } from "./API";
+import { identify } from "../analytics";
+
+const APP_METADATA_CLAIM = "https://dashboard.recidiviz.org/app_metadata";
 
 export const REGISTRATION_DATE_CLAIM =
   "https://dashboard.recidiviz.org/registration_date";
@@ -130,7 +134,12 @@ export default class UserStore {
     }
 
     if (await auth0.isAuthenticated()) {
-      const user = await auth0.getUser();
+      const user = (await auth0.getUser()) || {};
+
+      const metadata = user[APP_METADATA_CLAIM] || {};
+
+      identify(metadata.segment_id, metadata.intercom_id);
+      Sentry.setUser({ id: metadata.segment_id });
 
       runInAction(() => {
         this.user = user;
