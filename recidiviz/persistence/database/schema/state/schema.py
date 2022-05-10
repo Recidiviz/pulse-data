@@ -155,12 +155,8 @@ state_sentence_status = Enum(
 )
 
 state_supervision_sentence_supervision_type = Enum(
-    state_enum_strings.state_supervision_sentence_supervision_type_civil_commitment,
     state_enum_strings.state_supervision_sentence_supervision_type_community_corrections,
-    state_enum_strings.state_supervision_sentence_supervision_type_halfway_house,
     state_enum_strings.state_supervision_sentence_supervision_type_parole,
-    state_enum_strings.state_supervision_sentence_supervision_type_post_confinement,
-    state_enum_strings.state_supervision_sentence_supervision_type_pre_confinement,
     state_enum_strings.state_supervision_sentence_supervision_type_probation,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
@@ -168,7 +164,6 @@ state_supervision_sentence_supervision_type = Enum(
 )
 
 state_supervision_case_type = Enum(
-    state_enum_strings.state_supervision_case_type_alcohol_drug,
     state_enum_strings.state_supervision_case_type_domestic_violence,
     state_enum_strings.state_supervision_case_type_drug_court,
     state_enum_strings.state_supervision_case_type_family_court,
@@ -1441,7 +1436,7 @@ class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns)
     status = Column(
         state_sentence_status,
         nullable=False,
-        comment=STATE_CODE_COMMENT,
+        comment="The current status of this sentence.",
     )
     status_raw_text = Column(
         String(255), comment="The raw text value of the status of the sentence."

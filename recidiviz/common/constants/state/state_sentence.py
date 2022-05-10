@@ -27,21 +27,14 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 #  migrated to v2 mappings.
 @unique
 class StateSentenceStatus(StateEntityEnum):
-    # Commuted means that the sentence has been shortened/lessened, all the way to today, but the judgment remains
     COMMUTED = state_enum_strings.state_sentence_status_commuted
     COMPLETED = state_enum_strings.state_sentence_status_completed
-    # Pardoned means that the executive branch has removed the conviction after the fact,
-    # but the judgment may remain until expunged from the record in some cases
     PARDONED = state_enum_strings.state_sentence_status_pardoned
-    # The trial or court order is still in progress
     PENDING = state_enum_strings.state_sentence_status_pending
-    # Revoked means someone was on probation and that probation sentence was revoked / turned into incarceration
     REVOKED = state_enum_strings.state_sentence_status_revoked
-    # A court sanction was handed down that doesn't include any term to serve but may include, e.g. fines and fees
     SANCTIONED = state_enum_strings.state_sentence_status_sanctioned
     SERVING = state_enum_strings.state_sentence_status_serving
     SUSPENDED = state_enum_strings.state_sentence_status_suspended
-    # Vacated means that a previous judgment was voided by the judiciary - the judgment is completely undone
     VACATED = state_enum_strings.state_sentence_status_vacated
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
@@ -51,6 +44,48 @@ class StateSentenceStatus(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateSentenceStatus"]:
         return _STATE_SENTENCE_STATUS_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The status of a sentence."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS
+
+
+_STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSentenceStatus.COMMUTED: "Describes a sentence that has been commuted. "
+    "“Commutation” is a reduction of a sentence to a lesser period of time. This is "
+    "different than `PARDONED` because the conviction has not been cleared from the "
+    "person’s record.",
+    StateSentenceStatus.COMPLETED: "Used when a person has served the entirety of the "
+    "sentence.",
+    StateSentenceStatus.PARDONED: "Describes a sentence associated with a conviction "
+    "that has been pardoned. When a person is pardoned, there is immediate release "
+    "from any active form of incarceration or supervision related to the pardoned "
+    "conviction. This is different from `COMMUTED` because the person’s conviction is "
+    "completely cleared when they are pardoned. This is distinct from `VACATED`, "
+    "because the conviction is still legally valid, it has just been forgiven.",
+    StateSentenceStatus.PENDING: "Describes a sentence for which the associated trial "
+    "is still in progress.",
+    StateSentenceStatus.REVOKED: "Used when a person’s supervision has been revoked "
+    "and they are consequently re-sentenced.",
+    StateSentenceStatus.SANCTIONED: "Used on a sentence that does not include any "
+    "incarceration or supervision requirement, but may include, for example, fines "
+    "and fees.",
+    StateSentenceStatus.SERVING: "Describes a sentence that is actively being "
+    "served by the person.",
+    StateSentenceStatus.SUSPENDED: "Describes a sentence that has has not yet been "
+    "enacted. This usually occurs when the execution of a sentence has been "
+    "conditionally deferred on the person completing some type of supervision or "
+    "diversionary programming.",
+    StateSentenceStatus.VACATED: "Describes a sentence that has been vacated, "
+    "which happens when the legal judgment on a conviction has become legally void, a "
+    "conviction has been overturned, or a case as been dismissed. When a sentence is "
+    "vacated, there is immediate release from any active form of incarceration or "
+    "supervision related to the vacated conviction. This is distinct from `PARDONED`, "
+    "because the sentence was cleared as a result of it being deemed legally void.",
+}
 
 # MappableEnum.parse will strip punctuation and separate tokens with a single
 # space. Add mappings here using a single space between words and numbers.

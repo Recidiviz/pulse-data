@@ -74,15 +74,6 @@ def sentence_supervision_type_to_supervision_periods_supervision_type(
         return StateSupervisionPeriodSupervisionType.PROBATION
     if sentence_supervision_type == StateSupervisionSentenceSupervisionType.PAROLE:
         return StateSupervisionPeriodSupervisionType.PAROLE
-    if sentence_supervision_type in (
-        StateSupervisionSentenceSupervisionType.PRE_CONFINEMENT,
-        StateSupervisionSentenceSupervisionType.POST_CONFINEMENT,
-        StateSupervisionSentenceSupervisionType.HALFWAY_HOUSE,
-        StateSupervisionSentenceSupervisionType.CIVIL_COMMITMENT,
-    ):
-        # These are all types that should be deprecated, but for now, just assume probation - the numbers in ND are very
-        # small for these.
-        return StateSupervisionPeriodSupervisionType.PROBATION
     if (
         sentence_supervision_type
         == StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS

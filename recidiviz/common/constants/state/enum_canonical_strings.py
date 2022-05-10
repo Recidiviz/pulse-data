@@ -238,14 +238,10 @@ state_sentence_status_suspended = "SUSPENDED"
 state_sentence_status_vacated = "VACATED"
 
 # state_supervision_sentence.py
-state_supervision_sentence_supervision_type_civil_commitment = "CIVIL_COMMITMENT"
 state_supervision_sentence_supervision_type_community_corrections = (
     "COMMUNITY_CORRECTIONS"
 )
-state_supervision_sentence_supervision_type_halfway_house = "HALFWAY_HOUSE"
 state_supervision_sentence_supervision_type_parole = "PAROLE"
-state_supervision_sentence_supervision_type_post_confinement = "POST_CONFINEMENT"
-state_supervision_sentence_supervision_type_pre_confinement = "PRE_CONFINEMENT"
 state_supervision_sentence_supervision_type_probation = "PROBATION"
 
 # state_supervision_period.py
@@ -319,7 +315,6 @@ state_supervision_period_termination_reason_revocation = "REVOCATION"
 state_supervision_period_termination_reason_suspension = "SUSPENSION"
 
 # state_supervision_case_type_entry.py
-state_supervision_case_type_alcohol_drug = "ALCOHOL_DRUG"
 state_supervision_case_type_domestic_violence = "DOMESTIC_VIOLENCE"
 state_supervision_case_type_drug_court = "DRUG_COURT"
 state_supervision_case_type_family_court = "FAMILY_COURT"
