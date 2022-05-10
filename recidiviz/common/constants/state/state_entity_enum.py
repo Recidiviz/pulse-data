@@ -32,12 +32,8 @@ class StateEntityEnum(EntityEnum, metaclass=EntityEnumMeta):
 
     @classmethod
     def get_enum_description(cls) -> str:
-        return "TODO(#12127): Add enum description"
-        # TODO(#12127): Uncomment below once this is enforced on all state enum classes
-        # raise NotImplementedError
+        raise NotImplementedError
 
     @classmethod
     def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return {}
-        # TODO(#12127): Uncomment below once this is enforced on all state enum classes
-        # raise NotImplementedError
+        raise NotImplementedError
