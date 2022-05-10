@@ -40,7 +40,6 @@ from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
 from recidiviz.persistence.database.schema_utils import get_state_table_classes
 from recidiviz.persistence.entity.entity_utils import get_all_enum_classes_in_module
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.tools.docs.enum_documentation_config import ENUMS_WITH_INCOMPLETE_DOCS
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
 
@@ -231,28 +230,15 @@ def generate_enum_documentation() -> bool:
         )
 
         for enum_value in sorted_values:
-            # TODO(#12127): Update this to error always if the enum class is missing a
-            #  description for an enum value once all enums are documented
             try:
                 enum_value_description = enum_descriptions[enum_value]
-
-                if (
-                    enum_value.value not in SHARED_ENUM_VALUE_DESCRIPTIONS
-                    and enum_type in ENUMS_WITH_INCOMPLETE_DOCS
-                ):
-                    raise ValueError(
-                        f"Enum {enum_type.__name__} has complete docs and should be "
-                        f"removed from the ENUMS_WITH_INCOMPLETE_DOCS list."
-                    )
             except KeyError as e:
-                if enum_type not in ENUMS_WITH_INCOMPLETE_DOCS:
-                    raise KeyError(
-                        "Must implement get_value_descriptions() for enum "
-                        f"class {enum_type.__name__} with descriptions "
-                        f"for each enum value. Missing description for "
-                        f"value: [{enum_value}]."
-                    ) from e
-                enum_value_description = "TODO(#12127): Add enum value description"
+                raise KeyError(
+                    "Must implement get_value_descriptions() for enum "
+                    f"class {enum_type.__name__} with descriptions "
+                    f"for each enum value. Missing description for "
+                    f"value: [{enum_value}]."
+                ) from e
 
             enum_value_description = _add_entity_and_enum_links_to_enum_description(
                 enum_value_description, all_enum_names, all_entity_names
