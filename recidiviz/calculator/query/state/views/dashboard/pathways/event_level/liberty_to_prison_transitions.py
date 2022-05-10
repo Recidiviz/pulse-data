@@ -25,7 +25,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -80,7 +80,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=LIBERTY_TO_PRISON_TRANSITIONS_DESCRIPTION,
     age_group=add_age_groups("age_start"),
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    enabled_states=str(tuple(ENABLED_STATES)),
+    enabled_states=str(tuple(get_pathways_enabled_states())),
     binned_time_periods=get_binned_time_period_months("transition_date"),
     length_of_stay=create_buckets_with_cap(
         convert_days_to_years("prior_incarcerations.prior_length_of_incarceration"), 11

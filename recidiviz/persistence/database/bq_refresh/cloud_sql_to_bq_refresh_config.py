@@ -60,22 +60,6 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-
-# TODO(#4302): Remove unused schema module imports
-# These imports are needed to ensure that the SQL Alchemy table metadata is loaded for the
-# metadata_base in this class. We would like to eventually have a better
-# way to achieve this and have the tables loaded alongside the DeclarativeMeta base class.
-# pylint:disable=unused-import
-from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
-from recidiviz.persistence.database.schema.case_triage import (
-    schema as case_triage_schema,
-)
-from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.schema.justice_counts import (
-    schema as justice_counts_schema,
-)
-from recidiviz.persistence.database.schema.operations import schema as operations_schema
-from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
@@ -386,6 +370,7 @@ class CloudSqlToBQConfig:
             # TODO(#7285): Enable for justice counts once standardized federated export
             #  has shipped to prod and support for Justice Counts schema is in place.
             SchemaType.JUSTICE_COUNTS,
+            SchemaType.PATHWAYS,
         ):
             return False
 

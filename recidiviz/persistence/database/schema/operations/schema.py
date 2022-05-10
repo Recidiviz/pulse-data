@@ -28,15 +28,21 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.sqltypes import Enum
 
 from recidiviz.common.constants.operations import enum_canonical_strings
-from recidiviz.persistence.database.base_schema import OperationsBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 direct_ingest_instance = Enum(
     enum_canonical_strings.direct_ingest_instance_primary,
     enum_canonical_strings.direct_ingest_instance_secondary,
     name="direct_ingest_instance",
+)
+
+# Defines the base class for all table classes in the shared operations schema.
+OperationsBase: DeclarativeMeta = declarative_base(
+    cls=DatabaseEntity, name="OperationsBase"
 )
 
 

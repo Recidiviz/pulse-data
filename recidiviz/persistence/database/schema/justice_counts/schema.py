@@ -33,7 +33,7 @@ import re
 from typing import Any, Dict, List, Optional, TypeVar
 
 from sqlalchemy import ForeignKey, Table
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship, validates
 from sqlalchemy.sql.schema import (
     Column,
     ForeignKeyConstraint,
@@ -52,7 +52,13 @@ from sqlalchemy.sql.sqltypes import (
 
 from recidiviz.common import fips
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.base_schema import JusticeCountsBase
+
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+
+# Defines the base class for all table classes in the justice counts schema.
+JusticeCountsBase: DeclarativeMeta = declarative_base(
+    cls=DatabaseEntity, name="JusticeCountsBase"
+)
 
 
 class AcquisitionMethod(enum.Enum):

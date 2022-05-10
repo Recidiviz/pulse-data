@@ -157,6 +157,18 @@ def test_get_all_table_classes() -> None:
         "tx_county_aggregate",
         "wv_facility_aggregate",
     ]
+    case_triage_table_names = [
+        "etl_clients",
+        "etl_officers",
+        "etl_opportunities",
+        "etl_client_events",
+        "case_update_actions",
+        "client_info",
+        "officer_notes",
+        "opportunity_deferrals",
+        "dashboard_user_restrictions",
+        "officer_metadata",
+    ]
     county_table_names = [
         "arrest",
         "arrest_history",
@@ -186,6 +198,9 @@ def test_get_all_table_classes() -> None:
         "agency_user_account_association",
         "context",
         "cell_history",
+    ]
+    pathways_table_names = [
+        "liberty_to_prison",
     ]
     state_table_names = [
         "state_agent",
@@ -228,10 +243,12 @@ def test_get_all_table_classes() -> None:
 
     expected_table_class_names = (
         aggregate_table_names
+        + case_triage_table_names
         + county_table_names
         + justice_counts_table_names
-        + state_table_names
         + operations_table_names
+        + pathways_table_names
+        + state_table_names
     )
 
     all_table_classes = get_all_table_classes()

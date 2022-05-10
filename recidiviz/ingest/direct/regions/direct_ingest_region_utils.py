@@ -66,8 +66,7 @@ def get_direct_ingest_states_with_sftp_queue() -> List[StateCode]:
     is in the sftp_state_alpha_codes terraform list."""
     yaml_path = os.path.join(
         os.path.dirname(deploy.__file__),
-        "terraform",
-        "sftp_state_alpha_codes.yaml",
+        "terraform/config/sftp_state_alpha_codes.yaml",
     )
     with open(yaml_path, "r", encoding="utf-8") as ymlfile:
         sftp_state_alpha_codes: List[str] = yaml.full_load(ymlfile)

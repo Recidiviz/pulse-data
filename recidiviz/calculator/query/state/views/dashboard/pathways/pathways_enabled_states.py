@@ -15,13 +15,35 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Lists the states for which pathways is enabled."""
+import os
+from typing import List
 
+import yaml
+
+import recidiviz
 from recidiviz.common.constants.states import StateCode
 
-ENABLED_STATES = [
-    StateCode.US_ID.value,
-    StateCode.US_ME.value,
-    StateCode.US_ND.value,
-    StateCode.US_TN.value,
-    StateCode.US_MO.value,
-]
+yaml_path = os.path.join(
+    os.path.dirname(recidiviz.__file__),
+    "tools/deploy/terraform/config/pathways_enabled_states.yaml",
+)
+
+_pathways_enabled_states: List[str] = []
+
+
+def get_pathways_enabled_states() -> List[str]:
+    global _pathways_enabled_states
+
+    if _pathways_enabled_states:
+        return _pathways_enabled_states
+
+    with open(yaml_path, "r", encoding="utf-8") as ymlfile:
+        pathways_enabled_states: List[str] = yaml.full_load(ymlfile)
+
+    _pathways_enabled_states = [
+        StateCode[state_code].value
+        for state_code in pathways_enabled_states
+        if StateCode.is_state_code(state_code)
+    ]
+
+    return _pathways_enabled_states

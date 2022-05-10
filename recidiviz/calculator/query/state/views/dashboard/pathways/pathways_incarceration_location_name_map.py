@@ -20,7 +20,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -28,7 +28,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_b
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ENABLED_STATE_CODES = ", ".join(f'"{state}"' for state in ENABLED_STATES)
+ENABLED_STATE_CODES = ", ".join(f'"{state}"' for state in get_pathways_enabled_states())
 
 PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_NAME = (
     "pathways_incarceration_location_name_map"

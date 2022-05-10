@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -75,7 +75,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_TO_LIBERTY_TRANSITIONS_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     first_known_location=first_known_location("compartment_location_end"),
-    enabled_states=str(tuple(ENABLED_STATES)),
+    enabled_states=str(tuple(get_pathways_enabled_states())),
     age_group=add_age_groups("age_end"),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "s.state_code",

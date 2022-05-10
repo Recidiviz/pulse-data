@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_constant
     get_constant_dimensions_unnested,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -78,7 +78,7 @@ values_by_dimension_and_state: Dict[str, Dict[str, str]] = {}
 
 for dimension, state_mapping in state_specific_dimensions.items():
     values_by_state = {}
-    for state_code in ENABLED_STATES:
+    for state_code in get_pathways_enabled_states():
         values_array_contents = [
             f'"{v}"' for v in state_mapping.get(state_code, ["ALL"])
         ]
@@ -173,7 +173,7 @@ PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER = SimpleBigQueryViewBui
     constant_dimensions=",".join(
         get_constant_dimensions_unnested(supervision_constant_dimensions)
     ),
-    enabled_states=str(ENABLED_STATES),
+    enabled_states=str(get_pathways_enabled_states()),
     state_specific_dimension_names=",".join(state_specific_dimensions.keys()),
     state_specific_joins=" ".join(state_specific_joins),
 )

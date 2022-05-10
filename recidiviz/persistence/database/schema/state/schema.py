@@ -35,14 +35,17 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import DeclarativeMeta, relationship
 
 from recidiviz.common.constants.state import (
     enum_canonical_strings as state_enum_strings,
 )
-from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.utils.string import StrictStringFormatter
+
+# Defines the base class for all table classes in the state schema.
+StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="StateBase")
 
 ASSOCIATON_TABLE_COMMENT_TEMPLATE = (
     "Association table that connects {first_object_name_plural} with "
