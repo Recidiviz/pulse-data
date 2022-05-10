@@ -41,6 +41,25 @@ class StateEarlyDischargeDecision(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateEarlyDischargeDecision"]:
         return _STATE_EARLY_DISCHARGE_DECISION_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The decision of an early discharge request."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_EARLY_DISCHARGE_DECISION_VALUE_DESCRIPTIONS
+
+
+_STATE_EARLY_DISCHARGE_DECISION_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateEarlyDischargeDecision.REQUEST_DENIED: "Used when the request for an early "
+    "discharge has been denied.",
+    StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED: "Used when the request "
+    "for an early discharge has been granted.",
+    StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED: "Used when the "
+    "request for an early discharge has resulted in the downgrade to unsupervised "
+    "probation. See `StateSupervisionLevel.UNSUPERVISED`.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -55,6 +74,26 @@ class StateEarlyDischargeDecisionStatus(StateEntityEnum):
     @staticmethod
     def _get_default_map() -> Dict[str, "StateEarlyDischargeDecisionStatus"]:
         return _STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The status of an early discharge request."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_EARLY_DISCHARGE_DECISION_STATUS_VALUE_DESCRIPTIONS
+
+
+_STATE_EARLY_DISCHARGE_DECISION_STATUS_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateEarlyDischargeDecisionStatus.DECIDED: "Used when a decision has been reached "
+    "in response to the early discharge request.",
+    StateEarlyDischargeDecisionStatus.INVALID: "Used when the early discharge request "
+    "has been deemed invalid.",
+    StateEarlyDischargeDecisionStatus.PENDING: "Used when the decision on an early "
+    "discharge request is pending.",
+}
 
 
 _STATE_EARLY_DISCHARGE_DECISION_MAP = {

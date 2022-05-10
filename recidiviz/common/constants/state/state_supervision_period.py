@@ -184,10 +184,10 @@ _STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     "supervision has started because the person was sentenced to serve some "
     "form of supervision by the court.",
     StateSupervisionPeriodAdmissionReason.INVESTIGATION: "Used for all periods with a "
-    "`supervision_type` of `StateSupervisionPeriodSupervisionType.``INVESTIGATION`.",
+    "`supervision_type` of `StateSupervisionPeriodSupervisionType.INVESTIGATION`.",
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION: "Used when a "
     "person’s supervision has resumed after a period of absconsion. See "
-    "`StateSupervisionPeriodSupervisionType.``ABSCONSION`.",
+    "`StateSupervisionPeriodSupervisionType.ABSCONSION`.",
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION: "Used when a "
     "person’s supervision has resumed after a period of time in which supervision was "
     "suspended. In some instances supervision may be suspended while a person awaits "
@@ -436,7 +436,7 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     "supervision ending because they have reached the maximum completion date on "
     "their sentence.",
     StateSupervisionPeriodTerminationReason.INVESTIGATION: "Used for all periods with "
-    "a `supervision_type` of `StateSupervisionPeriodSupervisionType.``INVESTIGATION`.",
+    "a `supervision_type` of `StateSupervisionPeriodSupervisionType.INVESTIGATION`.",
     # TODO(#12648): Change this to replace 'DISMISSED' with 'VACATED'
     StateSupervisionPeriodTerminationReason.PARDONED: "Describes a person being "
     "discharged from supervision because they have been pardoned. When a person is "
