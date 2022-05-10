@@ -391,7 +391,7 @@ class TestJusticeCountsReportMetric(TestCase):
             "value": 100,
             "contexts": [
                 {
-                    "key": metric_definition.contexts[0].key,
+                    "key": metric_definition.contexts[0].key.value,
                     "value": "definition of arrest",
                 }
             ],
@@ -439,7 +439,7 @@ class TestJusticeCountsReportMetric(TestCase):
             "value": 100,
             "contexts": [
                 {
-                    "key": metric_definition.contexts[0].key,
+                    "key": metric_definition.contexts[0].key.value,
                     "value": "additional context",
                 }
             ],

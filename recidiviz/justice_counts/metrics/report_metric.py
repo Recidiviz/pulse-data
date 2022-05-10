@@ -63,7 +63,7 @@ class ReportedContext:
     def from_json(
         cls: Type[ReportedContextT], json: Dict[str, Any]
     ) -> ReportedContextT:
-        return cls(key=json["key"], value=json["value"])
+        return cls(key=ContextKey[json["key"]], value=json["value"])
 
 
 @attr.define()

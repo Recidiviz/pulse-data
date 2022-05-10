@@ -15,19 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
+import datetime
 from http import HTTPStatus
 
 import pytest
 from flask import g, session
+from freezegun import freeze_time
 from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
+from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.constants import ContextKey
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
+    Report,
     ReportingFrequency,
     ReportStatus,
     Source,
@@ -244,6 +250,104 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["permissions"], None)
         db_item = self.session.query(UserAccount).one_or_none()
         self.assertEqual(db_item.to_json(), response_json)
+
+    def test_update_report(self) -> None:
+        update_datetime = datetime.datetime(2022, 2, 1, 0, 0, 0)
+        with freeze_time(update_datetime):
+            report = self.test_schema_objects.test_report_monthly
+            user = self.test_schema_objects.test_user_A
+            self.session.add_all([user, report])
+            self.session.commit()
+            with self.app.test_request_context():
+                user_account = UserAccountInterface.get_user_by_email_address(
+                    session=self.session, email_address=user.email_address
+                )
+                g.user_context = UserContext(
+                    auth0_user_id=user.auth0_user_id, user_account=user_account
+                )
+                value = 100
+                endpoint = f"/api/reports/{report.id}"
+                response = self.client.post(
+                    endpoint,
+                    json={
+                        "status": "DRAFT",
+                        "metrics": [
+                            {
+                                "key": law_enforcement.calls_for_service.key,
+                                "value": value,
+                            }
+                        ],
+                    },
+                )
+                self.assertEqual(response.status_code, 200)
+                report = (
+                    self.session.query(Report)
+                    .filter(Report.id == report.id)
+                    .one_or_none()
+                )
+                self.assertEqual(report.status, ReportStatus.DRAFT)
+                self.assertEqual(report.last_modified_at, update_datetime)
+                self.assertEqual(report.report_table_instances[0].cells[0].value, value)
+                self.assertEqual(
+                    report.modified_by,
+                    [user_account.id],
+                )
+                response = self.client.post(
+                    endpoint,
+                    json={
+                        "status": "PUBLISHED",
+                        "metrics": [
+                            {
+                                "key": law_enforcement.calls_for_service.key,
+                                "value": value + 10,
+                            },
+                            {
+                                "key": law_enforcement.annual_budget.key,
+                                "value": 2000000,
+                                "disaggregations": [
+                                    {
+                                        "key": SheriffBudgetType.dimension_identifier(),
+                                        "dimensions": [
+                                            {
+                                                "key": SheriffBudgetType.DETENTION.value,
+                                                "value": 500000,
+                                            },
+                                            {
+                                                "key": SheriffBudgetType.PATROL.value,
+                                                "value": 1500000,
+                                            },
+                                        ],
+                                    }
+                                ],
+                                "contexts": [
+                                    {
+                                        "key": ContextKey.PRIMARY_FUNDING_SOURCE.value,
+                                        "value": "test context",
+                                    }
+                                ],
+                            },
+                        ],
+                    },
+                )
+                self.assertEqual(response.status_code, 200)
+                report = (
+                    self.session.query(Report)
+                    .filter(Report.id == report.id)
+                    .one_or_none()
+                )
+                self.assertEqual(report.status, ReportStatus.PUBLISHED)
+                self.assertEqual(
+                    report.report_table_instances[0].cells[0].value, value + 10
+                )
+                self.assertEqual(
+                    report.report_table_instances[1].contexts[0].value, "test context"
+                )
+                self.assertEqual(
+                    report.report_table_instances[2].cells[0].value, 1500000
+                )
+                self.assertEqual(
+                    report.report_table_instances[2].cells[1].value, 500000
+                )
 
     def test_user_permissions(self) -> None:
         user_account = self.test_schema_objects.test_user_A

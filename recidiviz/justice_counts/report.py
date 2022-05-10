@@ -79,23 +79,26 @@ class ReportInterface:
         )
 
     @staticmethod
-    def update_report(
+    def update_report_metadata(
         session: Session,
         report_id: int,
+        editor_id: int,
         status: Optional[str] = None,
-        editor_id: Optional[int] = None,
     ) -> schema.Report:
         report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
+        ReportInterface._raise_if_user_is_unauthorized(
+            session=session, agency_id=report.source_id, user_account_id=editor_id
+        )
         if report.status.value == status and editor_id in report.modified_by:
             return report
 
         if status and report.status.value != status:
             report.status = schema.ReportStatus[status]
-        if editor_id is not None:
-            if report.modified_by is None:
-                report.modified_by = [editor_id]
-            elif editor_id not in report.modified_by:
-                report.modified_by = report.modified_by + [editor_id]
+
+        if report.modified_by is None:
+            report.modified_by = [editor_id]
+        elif editor_id not in report.modified_by:
+            report.modified_by = report.modified_by + [editor_id]
         report.last_modified_at = datetime.datetime.now()
         session.commit()
         return report
@@ -279,9 +282,7 @@ class ReportInterface:
                     report=report,
                     report_table_definition=report_table_definition,
                 )
-
-        # Finally, updated the Report object's `last_modified_at` and `modified_by` fields
-        # TODO(#12336) Update report editors and last modified
+        session.commit()
 
     @staticmethod
     def get_metrics_by_report_id(
