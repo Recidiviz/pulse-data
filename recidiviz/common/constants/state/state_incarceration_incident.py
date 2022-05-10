@@ -46,6 +46,33 @@ class StateIncarcerationIncidentType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateIncarcerationIncidentType"]:
         return _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The classification of an incident in a facility."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_INCIDENT_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_INCIDENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateIncarcerationIncidentType.CONTRABAND: "Used when a person is found with "
+    "contraband, which is an item that is not allowed in the facility.",
+    StateIncarcerationIncidentType.DISORDERLY_CONDUCT: "Used when a person is reported "
+    "for some kind of disorderly conduct.",
+    StateIncarcerationIncidentType.ESCAPE: "Used when a person is reported for "
+    "escaping the facility.",
+    StateIncarcerationIncidentType.MINOR_OFFENSE: "Used when a person is reported for "
+    "committing a minor infraction in the facility.",
+    StateIncarcerationIncidentType.POSITIVE: "Used when a report is submitted to "
+    "document an instance of good behavior on behalf of a person.",
+    StateIncarcerationIncidentType.REPORT: "Used when a report is submitted "
+    "to document a negative incident that does not fall into any of the other "
+    "categories.",
+    StateIncarcerationIncidentType.VIOLENCE: "Used when a person is reported for "
+    "violent behavior.",
+}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -70,9 +97,6 @@ class StateIncarcerationIncidentOutcomeType(StateEntityEnum):
     GOOD_TIME_LOSS = (
         state_enum_strings.state_incarceration_incident_outcome_good_time_loss
     )
-    MISCELLANEOUS = (
-        state_enum_strings.state_incarceration_incident_outcome_miscellaneous
-    )
     NOT_GUILTY = state_enum_strings.state_incarceration_incident_outcome_not_guilty
     PRIVILEGE_LOSS = (
         state_enum_strings.state_incarceration_incident_outcome_privilege_loss
@@ -91,6 +115,45 @@ class StateIncarcerationIncidentOutcomeType(StateEntityEnum):
     @staticmethod
     def _get_default_map() -> Dict[str, "StateIncarcerationIncidentOutcomeType"]:
         return _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The classification of the outcome following an incident in a facility."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_INCIDENT_OUTCOME_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_INCIDENT_OUTCOME_TYPE_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT: "Describes an incident "
+    "outcome in which a person is confined to their cell.",
+    StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR: "Describes an incident "
+    "outcome in which a person must perform labor.",
+    StateIncarcerationIncidentOutcomeType.DISMISSED: "Used when the incident is "
+    "dismissed and there is no other outcome.",
+    StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION: "Used when the "
+    "incident is prosecuted as a new crime.",
+    StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY: "Describes an incident "
+    "outcome in which a person is charged a fine.",
+    StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS: "Describes an incident "
+    "outcome in which a person loses good time that they have earned against "
+    "their sentence.",
+    StateIncarcerationIncidentOutcomeType.NOT_GUILTY: "Used when the person is found "
+    "to be not guilty of the reported incident.",
+    StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS: "Describes an incident "
+    "outcome in which a person loses some kind of privilege.",
+    StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT: "Describes an "
+    "incident outcome in which a person is confined to a restricted area. ",
+    StateIncarcerationIncidentOutcomeType.SOLITARY: "Describes an incident outcome in "
+    "which a person is placed in solitary confinement.",
+    StateIncarcerationIncidentOutcomeType.TREATMENT: "Describes an incident outcome "
+    "in which a person is placed in treatment.",
+    StateIncarcerationIncidentOutcomeType.WARNING: "Describes an incident outcome in "
+    "which a person is given a warning.",
+}
 
 
 _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
@@ -119,7 +182,6 @@ _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
     "EXTERNAL PROSECUTION": StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
     "FINANCIAL PENALTY": StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
     "GOOD TIME LOSS": StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
-    "MISCELLANEOUS": StateIncarcerationIncidentOutcomeType.MISCELLANEOUS,
     "PRIVILEGE LOSS": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
     "LOSS OF PRIVILEGE": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
     "NOT GUILTY": StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
