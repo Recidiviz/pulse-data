@@ -115,6 +115,12 @@ class JusticeCountsSchemaTestObjects:
             auth0_user_id="auth0_id_B",
             agencies=[self.test_agency_B],
         )
+        self.test_user_C = schema.UserAccount(
+            name="John Smith",
+            email_address="user@fake.com",
+            auth0_user_id="auth0_id_C",
+            agencies=[self.test_agency_A],
+        )
 
         # Reports
         self.test_report_monthly = schema.Report(
