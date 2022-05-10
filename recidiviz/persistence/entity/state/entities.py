@@ -65,7 +65,6 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -1364,15 +1363,6 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
     program_location_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    # TODO(#12766): Delete this deprecated field
-    discharge_reason: Optional[StateProgramAssignmentDischargeReason] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(StateProgramAssignmentDischargeReason),
-    )
-    # TODO(#12766): Delete this deprecated field
-    discharge_reason_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
     referral_metadata: Optional[str] = attr.ib(

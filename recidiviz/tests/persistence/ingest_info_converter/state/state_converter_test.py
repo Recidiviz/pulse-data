@@ -37,7 +37,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -225,7 +224,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             discharge_date="2019/02/12",
             program_id="PROGRAM_ID",
             program_location_id="PROGRAM_LOCATION_ID",
-            discharge_reason="COMPLETED",
             referring_agent_id="AGENT_ID4",
         )
         ingest_info.state_supervision_sentences.add(
@@ -420,8 +418,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             discharge_date=datetime.date(year=2019, month=2, day=12),
             program_id="PROGRAM_ID",
             program_location_id="PROGRAM_LOCATION_ID",
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
-            discharge_reason_raw_text="COMPLETED",
             referring_agent=StateAgent.new_with_defaults(
                 external_id="AGENT_ID4",
                 agent_type=StateAgentType.PRESENT_WITHOUT_INFO,

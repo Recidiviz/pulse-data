@@ -23,7 +23,6 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
@@ -53,12 +52,6 @@ def copy_fields_to_builder(
         metadata.enum_overrides,
     )
     new.participation_status_raw_text = getattr(proto, "participation_status")
-    new.discharge_reason = DefaultingAndNormalizingEnumParser(
-        getattr(proto, "discharge_reason"),
-        StateProgramAssignmentDischargeReason,
-        metadata.enum_overrides,
-    )
-    new.discharge_reason_raw_text = getattr(proto, "discharge_reason")
 
     # 1-to-1 mappings
     state_program_assignment_id = getattr(proto, "state_program_assignment_id")

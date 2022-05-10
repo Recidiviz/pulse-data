@@ -46,10 +46,6 @@ output:
                   $enum_mapping:
                     $raw_text: agnt_note_title
                     $custom_parser: us_id_custom_enum_parsers.participation_status_from_agnt_note_title
-                discharge_reason:
-                  $conditional:
-                    - $if: $variable(records_program_discharge)
-                      $then: $literal_enum(StateProgramAssignmentDischargeReason.COMPLETED)
                 start_date:
                   $conditional:
                     - $if: $variable(records_program_start)

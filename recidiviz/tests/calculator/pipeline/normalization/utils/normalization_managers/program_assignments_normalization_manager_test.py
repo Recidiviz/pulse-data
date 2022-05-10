@@ -27,7 +27,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_progr
     UsXxProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
@@ -71,7 +70,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         pg_2 = StateProgramAssignment.new_with_defaults(
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
             discharge_date=datetime.date(2001, 2, 3),
         )
         program_assignments = [null_dates, pg_1, pg_2]
@@ -97,13 +95,11 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
             StateProgramAssignment.new_with_defaults(
                 state_code=self.state_code,
                 participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-                discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
                 discharge_date=datetime.date(2000, 2, 3),
             ),
             StateProgramAssignment.new_with_defaults(
                 state_code=self.state_code,
                 participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-                discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
                 referral_date=datetime.date(2000, 1, 2),
                 start_date=datetime.date(2000, 2, 1),
                 discharge_date=datetime.date(2000, 5, 1),
@@ -133,7 +129,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
             state_code=self.state_code,
             program_assignment_id=2,
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
             discharge_date=datetime.date(2001, 2, 3),
         )
         program_assignments = [pg_1, pg_2]

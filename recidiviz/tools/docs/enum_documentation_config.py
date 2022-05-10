@@ -20,11 +20,5 @@ in-progress."""
 from typing import List, Type
 
 from recidiviz.common.constants.entity_enum import EntityEnum
-from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
-)
 
-ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
-    # TODO(#12766): Delete this deprecated enum
-    StateProgramAssignmentDischargeReason,
-]
+ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = []
