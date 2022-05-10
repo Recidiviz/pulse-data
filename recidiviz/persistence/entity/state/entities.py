@@ -1366,10 +1366,12 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     program_location_id: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    # TODO(#12766): Delete this deprecated field
     discharge_reason: Optional[StateProgramAssignmentDischargeReason] = attr.ib(
         default=None,
         validator=attr_validators.is_opt(StateProgramAssignmentDischargeReason),
     )
+    # TODO(#12766): Delete this deprecated field
     discharge_reason_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )

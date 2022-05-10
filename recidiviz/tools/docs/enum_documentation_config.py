@@ -21,10 +21,6 @@ from typing import List, Type
 
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_early_discharge import (
-    StateEarlyDischargeDecision,
-    StateEarlyDischargeDecisionStatus,
-)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
@@ -32,7 +28,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
-    StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
@@ -42,13 +37,11 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 
 ENUMS_WITH_INCOMPLETE_DOCS: List[Type[EntityEnum]] = [
     StateCustodialAuthority,
-    StateEarlyDischargeDecision,
-    StateEarlyDischargeDecisionStatus,
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
     StateIncarcerationType,
+    # TODO(#12766): Delete this deprecated enum
     StateProgramAssignmentDischargeReason,
-    StateProgramAssignmentParticipationStatus,
     StateSentenceStatus,
     StateSupervisionCaseType,
     StateSupervisionSentenceSupervisionType,

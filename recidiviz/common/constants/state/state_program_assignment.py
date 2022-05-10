@@ -44,6 +44,29 @@ class StateProgramAssignmentParticipationStatus(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateProgramAssignmentParticipationStatus"]:
         return _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The status of a person’s participation in a program."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_VALUE_DESCRIPTIONS
+
+
+_STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateProgramAssignmentParticipationStatus.DENIED: "Used when the referral for the "
+    "person to participate in the program has been denied.",
+    StateProgramAssignmentParticipationStatus.DISCHARGED: "Used when a person has been "
+    "discharged from the program.",
+    StateProgramAssignmentParticipationStatus.IN_PROGRESS: "Used when a person is "
+    "actively participating in the program.",
+    StateProgramAssignmentParticipationStatus.PENDING: "Used when the referral for "
+    "the person to participate in the program is pending approval.",
+    StateProgramAssignmentParticipationStatus.REFUSED: "Used when the person has "
+    "refused to participate in the program.",
+}
 
 _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
     "DENIED": StateProgramAssignmentParticipationStatus.DENIED,
@@ -57,6 +80,7 @@ _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
 }
 
 
+# TODO(#12766): Delete this deprecated enum
 @unique
 class StateProgramAssignmentDischargeReason(StateEntityEnum):
     ABSCONDED = state_enum_strings.state_program_assignment_discharge_reason_absconded
