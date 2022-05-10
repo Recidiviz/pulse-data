@@ -142,6 +142,10 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
     def human_readable_name(cls) -> str:
         return "Race / Ethnicity"
 
+    @classmethod
+    def display_name(cls) -> str:
+        return "Race / Ethnicities"
+
 
 class GenderRestricted(DimensionBase, enum.Enum):
     MALE = enum_strings.gender_male
@@ -156,6 +160,10 @@ class GenderRestricted(DimensionBase, enum.Enum):
 
     @classmethod
     def human_readable_name(cls) -> str:
+        return "Gender"
+
+    @classmethod
+    def display_name(cls) -> str:
         return "Gender"
 
 

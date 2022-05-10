@@ -58,6 +58,11 @@ class DimensionBase:
                 Example: facilities specific to a particular state
         """
 
+    @classmethod
+    def display_name(cls) -> str:
+        # Text displayed as label for aggregated dimension breakdowns in control panel (right of toggle)
+        return cls.human_readable_name() + "s"
+
     def to_enum(self) -> enum.Enum:
         if not isinstance(self, enum.Enum):
             raise ValueError("Subclasses of DimensionBase must also subclass Enum.")

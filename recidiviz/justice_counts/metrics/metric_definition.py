@@ -81,13 +81,6 @@ class AggregatedDimension:
     # Text displayed above aggregated dimension breakdowns
     helper_text: Optional[str] = None
 
-    @property
-    def display_name(self) -> str:
-        # Text displayed as label for aggregated dimension breakdowns in control panel (right of toggle)
-        return (
-            self.dimension.human_readable_name() + "s"
-        )  # Offense Type -> Offense Types
-
     def dimension_identifier(self) -> str:
         return self.dimension.dimension_identifier()
 

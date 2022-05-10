@@ -90,3 +90,19 @@ class TestJusticeCountsMetricDefinition(TestCase):
             RaceAndEthnicity.BLACK.reporting_note,
             "Race / Ethnicity: Black",
         )
+
+    def test_display_name(self) -> None:
+        self.assertEqual(
+            SheriffBudgetType.display_name(),
+            "Sheriff Budget Types",
+        )
+
+        self.assertEqual(
+            GenderRestricted.display_name(),
+            "Gender",
+        )
+
+        self.assertEqual(
+            RaceAndEthnicity.display_name(),
+            "Race / Ethnicities",
+        )
