@@ -16,7 +16,6 @@
 // =============================================================================
 import * as Sentry from "@sentry/react";
 import { computed, makeObservable, observable, when } from "mobx";
-import { identify } from "../analytics";
 import ErrorMessageStore from "./ErrorMessageStore";
 import UserStore, { FeatureVariants } from "./UserStore";
 import { captureExceptionWithLogs } from "../utils";
@@ -43,8 +42,6 @@ export interface FullName {
 
 interface BootstrapResponse {
   csrf: string;
-  segmentUserId: string;
-  intercomUserHash: string;
   knownExperiments: FeatureVariants;
   dashboardURL: string;
   officerFullName: FullName;
@@ -141,8 +138,6 @@ class API {
         .then(
           ({
             csrf,
-            segmentUserId,
-            intercomUserHash,
             knownExperiments: featureVariants,
             dashboardURL,
             officerFullName,
@@ -153,7 +148,6 @@ class API {
             shouldSeeOnboarding,
           }) => {
             this.csrfToken = csrf;
-            identify(segmentUserId, intercomUserHash);
             this.dashboardURL = dashboardURL;
             this.userStore.setFeatureVariants(featureVariants);
             this.userStore.setCaseTriageAccess(canAccessCaseTriage);
@@ -163,7 +157,6 @@ class API {
             this.userStore.setStateCode(stateCode);
             this.userStore.setShouldSeeOnboarding(shouldSeeOnboarding);
 
-            Sentry.setUser({ id: segmentUserId });
             Sentry.setTag("app.version", this.userStore.currentVersion);
 
             this.userStore.setOfficerMetadata(officerFullName, isImpersonating);
