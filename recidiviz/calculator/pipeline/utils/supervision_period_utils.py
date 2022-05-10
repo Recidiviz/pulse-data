@@ -55,7 +55,6 @@ CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.FAMILY_COURT,
     StateSupervisionCaseType.VETERANS_COURT,
     # End Diversionary courts
-    StateSupervisionCaseType.ALCOHOL_DRUG,
     StateSupervisionCaseType.GENERAL,
     # Unknown values
     StateSupervisionCaseType.INTERNAL_UNKNOWN,

@@ -906,7 +906,7 @@ class TestBidirectionalUpdates(TestCase):
             StateSupervisionCaseTypeEntry.new_with_defaults(
                 supervision_case_type_entry_id=456,
                 state_code=_STATE_CODE,
-                case_type=StateSupervisionCaseType.ALCOHOL_DRUG,
+                case_type=StateSupervisionCaseType.MENTAL_HEALTH_COURT,
             ),
         ]
 
@@ -969,7 +969,7 @@ class TestBidirectionalUpdates(TestCase):
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     supervision_case_type_entry_id=456,
                     state_code=_STATE_CODE,
-                    case_type=StateSupervisionCaseType.ALCOHOL_DRUG,
+                    case_type=StateSupervisionCaseType.MENTAL_HEALTH_COURT,
                 ),
             ],
         )
@@ -995,7 +995,7 @@ class TestBidirectionalUpdates(TestCase):
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     supervision_case_type_entry_id=456,
                     state_code=_STATE_CODE,
-                    case_type=StateSupervisionCaseType.ALCOHOL_DRUG,
+                    case_type=StateSupervisionCaseType.MENTAL_HEALTH_COURT,
                 ),
             ],
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
