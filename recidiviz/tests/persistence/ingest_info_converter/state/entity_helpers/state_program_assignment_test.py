@@ -20,7 +20,6 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.ingest.models import ingest_info_pb2
@@ -45,7 +44,6 @@ class StateProgramAssignmentConverterTest(unittest.TestCase):
         # Arrange
         ingest_program_assignment = ingest_info_pb2.StateProgramAssignment(
             participation_status="IN PROGRESS",
-            discharge_reason="COMPLETED",
             state_program_assignment_id="PROGRAM_ASSIGNMENT_ID",
             referral_date="1/2/2111",
             start_date="1/3/2111",
@@ -68,8 +66,6 @@ class StateProgramAssignmentConverterTest(unittest.TestCase):
         expected_result = entities.StateProgramAssignment.new_with_defaults(
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             participation_status_raw_text="IN PROGRESS",
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
-            discharge_reason_raw_text="COMPLETED",
             external_id="PROGRAM_ASSIGNMENT_ID",
             referral_date=date(year=2111, month=1, day=2),
             start_date=date(year=2111, month=1, day=3),

@@ -1848,7 +1848,6 @@ class StateProgramAssignment(IngestObject):
         state_code=None,
         program_id=None,
         program_location_id=None,
-        discharge_reason=None,
         referral_metadata=None,
         referring_agent=None,
     ):
@@ -1860,7 +1859,6 @@ class StateProgramAssignment(IngestObject):
         self.state_code: Optional[str] = state_code
         self.program_id: Optional[str] = program_id
         self.program_location_id: Optional[str] = program_location_id
-        self.discharge_reason: Optional[str] = discharge_reason
         self.referral_metadata: Optional[str] = referral_metadata
 
         self.referring_agent: Optional[StateAgent] = referring_agent

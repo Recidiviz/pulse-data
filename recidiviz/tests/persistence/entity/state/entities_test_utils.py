@@ -50,7 +50,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -278,8 +277,6 @@ def generate_full_graph_state_person(
         discharge_date=datetime.date(year=2019, month=2, day=12),
         program_id="program_id",
         program_location_id="program_location_id",
-        discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
-        discharge_reason_raw_text="COMPLETED",
         referring_agent=program_assignment_agent,
     )
 

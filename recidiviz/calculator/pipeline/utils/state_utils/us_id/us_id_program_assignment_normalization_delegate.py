@@ -50,8 +50,6 @@ class UsIdProgramAssignmentNormalizationDelegate(
                 merged_assignment = deep_entity_update(
                     current_assignment,
                     discharge_date=next_assignment.discharge_date,
-                    discharge_reason=next_assignment.discharge_reason,
-                    discharge_reason_raw_text=next_assignment.discharge_reason_raw_text,
                     participation_status=next_assignment.participation_status,
                     participation_status_raw_text=next_assignment.participation_status_raw_text,
                 )

@@ -495,19 +495,6 @@ state_program_assignment_participation_status = Enum(
     name="state_program_assignment_participation_status",
 )
 
-state_program_assignment_discharge_reason = Enum(
-    state_enum_strings.state_program_assignment_discharge_reason_absconded,
-    state_enum_strings.state_program_assignment_discharge_reason_adverse_termination,
-    state_enum_strings.state_program_assignment_discharge_reason_completed,
-    state_enum_strings.state_program_assignment_discharge_reason_moved,
-    state_enum_strings.state_program_assignment_discharge_reason_opted_out,
-    state_enum_strings.state_program_assignment_discharge_reason_program_transfer,
-    state_enum_strings.state_program_assignment_discharge_reason_reincarcerated,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    name="state_program_assignment_discharge_reason",
-)
-
 state_specialized_purpose_for_incarceration = Enum(
     state_enum_strings.state_specialized_purpose_for_incarceration_general,
     state_enum_strings.state_specialized_purpose_for_incarceration_parole_board_hold,
@@ -2424,13 +2411,6 @@ class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
     )
     participation_status_raw_text = Column(
         String(255), comment="The raw text value of the participation status."
-    )
-    discharge_reason = Column(
-        state_program_assignment_discharge_reason,
-        comment="The reason the person was discharged from the program, if applicable.",
-    )
-    discharge_reason_raw_text = Column(
-        String(255), comment="The raw text value for the discharge reason."
     )
     referral_date = Column(
         Date, comment="The date the person was referred to the program, if applicable."

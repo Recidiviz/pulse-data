@@ -63,7 +63,6 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -294,8 +293,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         result = deserialize_entity_factories.StateProgramAssignmentFactory.deserialize(
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             participation_status_raw_text="IP",
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
-            discharge_reason_raw_text="C",
             external_id="PROGRAM_ASSIGNMENT_ID",
             referral_date="1/2/2111",
             start_date="1/3/2111",
@@ -309,8 +306,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         expected_result = entities.StateProgramAssignment(
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             participation_status_raw_text="IP",
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
-            discharge_reason_raw_text="C",
             external_id="PROGRAM_ASSIGNMENT_ID",
             referral_date=date(year=2111, month=1, day=2),
             start_date=date(year=2111, month=1, day=3),

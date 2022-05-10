@@ -3002,7 +3002,6 @@ class StateProgramAssignment(google.protobuf.message.Message):
     STATE_CODE_FIELD_NUMBER: builtins.int
     PROGRAM_ID_FIELD_NUMBER: builtins.int
     PROGRAM_LOCATION_ID_FIELD_NUMBER: builtins.int
-    DISCHARGE_REASON_FIELD_NUMBER: builtins.int
     REFERRAL_METADATA_FIELD_NUMBER: builtins.int
     REFERRING_AGENT_ID_FIELD_NUMBER: builtins.int
     state_program_assignment_id: typing.Text = ...
@@ -3013,7 +3012,6 @@ class StateProgramAssignment(google.protobuf.message.Message):
     state_code: typing.Text = ...
     program_id: typing.Text = ...
     program_location_id: typing.Text = ...
-    discharge_reason: typing.Text = ...
     referral_metadata: typing.Text = ...
     referring_agent_id: typing.Text = ...
     def __init__(
@@ -3027,7 +3025,6 @@ class StateProgramAssignment(google.protobuf.message.Message):
         state_code: typing.Optional[typing.Text] = ...,
         program_id: typing.Optional[typing.Text] = ...,
         program_location_id: typing.Optional[typing.Text] = ...,
-        discharge_reason: typing.Optional[typing.Text] = ...,
         referral_metadata: typing.Optional[typing.Text] = ...,
         referring_agent_id: typing.Optional[typing.Text] = ...,
     ) -> None: ...
@@ -3036,8 +3033,6 @@ class StateProgramAssignment(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "discharge_date",
             b"discharge_date",
-            "discharge_reason",
-            b"discharge_reason",
             "participation_status",
             b"participation_status",
             "program_id",
@@ -3063,8 +3058,6 @@ class StateProgramAssignment(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "discharge_date",
             b"discharge_date",
-            "discharge_reason",
-            b"discharge_reason",
             "participation_status",
             b"participation_status",
             "program_id",

@@ -29,7 +29,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignm
     UsIdProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.states import StateCode
@@ -79,7 +78,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         pg_2 = StateProgramAssignment.new_with_defaults(
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
             discharge_date=datetime.date(2000, 2, 1),
         )
         pg_3 = StateProgramAssignment.new_with_defaults(
@@ -91,7 +89,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         pg_4 = StateProgramAssignment.new_with_defaults(
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
-            discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
             discharge_date=datetime.date(2000, 3, 1),
         )
         normalized_assignments = self._normalized_program_assignments_for_calculations(
@@ -106,7 +103,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         merged = attr.evolve(
             pg_1,
             participation_status=pg_2.participation_status,
-            discharge_reason=pg_2.discharge_reason,
             discharge_date=pg_2.discharge_date,
         )
         self.assertEqual([merged, pg_4, pg_3], normalized_assignments)
