@@ -418,7 +418,6 @@ state_incarceration_incident_outcome_type = Enum(
     state_enum_strings.state_incarceration_incident_outcome_external_prosecution,
     state_enum_strings.state_incarceration_incident_outcome_financial_penalty,
     state_enum_strings.state_incarceration_incident_outcome_good_time_loss,
-    state_enum_strings.state_incarceration_incident_outcome_miscellaneous,
     state_enum_strings.state_incarceration_incident_outcome_not_guilty,
     state_enum_strings.state_incarceration_incident_outcome_privilege_loss,
     state_enum_strings.state_incarceration_incident_outcome_restricted_confinement,

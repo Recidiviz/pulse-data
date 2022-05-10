@@ -38,6 +38,31 @@ class StateIncarcerationType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateIncarcerationType"]:
         return _STATE_INCARCERATION_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The classification of incarceration. This enum is currently used "
+            "more as a classification of the kind of facility that a person is "
+            "in. There is outstanding work to migrate this enum to explicitly "
+            "capture facility types (see TODO(#11509) and TODO(#2912))."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateIncarcerationType.COUNTY_JAIL: "Describes being incarcerated in a county "
+    "jail.",
+    StateIncarcerationType.FEDERAL_PRISON: "Describes being incarcerated in a federal "
+    "prison.",
+    StateIncarcerationType.OUT_OF_STATE: "Describes being incarcerated in some kind "
+    "of facility in a state other than the one in which the data is coming from.",
+    StateIncarcerationType.STATE_PRISON: "Describes being incarcerated in a state "
+    "prison.",
+}
+
 
 _STATE_INCARCERATION_TYPE_MAP: Dict[str, StateIncarcerationType] = {
     "JAIL": StateIncarcerationType.COUNTY_JAIL,

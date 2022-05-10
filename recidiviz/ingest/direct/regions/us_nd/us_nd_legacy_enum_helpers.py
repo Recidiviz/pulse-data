@@ -212,7 +212,7 @@ def generate_enum_overrides() -> EnumOverrides:
         StateIncarcerationIncidentOutcomeType.TREATMENT: ["RTX"],
         StateIncarcerationIncidentOutcomeType.DISMISSED: ["DSM"],
         StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION: ["RSA"],
-        StateIncarcerationIncidentOutcomeType.MISCELLANEOUS: [
+        StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN: [
             "COMB",
             "DELETED",
             "RED",
