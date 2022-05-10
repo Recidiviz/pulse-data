@@ -36,7 +36,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -114,7 +114,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
     sessions_dataset=SESSIONS_DATASET,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
-        state_code_column="state_code", enabled_states=ENABLED_STATES
+        state_code_column="state_code", enabled_states=get_pathways_enabled_states()
     ),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "s.state_code",

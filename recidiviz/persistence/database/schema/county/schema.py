@@ -46,16 +46,20 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import DeclarativeMeta, relationship, validates
 
 from recidiviz.common.constants.county import (
     enum_canonical_strings as county_enum_strings,
 )
-from recidiviz.persistence.database.base_schema import JailsBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.county.history_table_shared_columns_mixin import (
     HistoryTableSharedColumns,
 )
+
+# Defines the base class for all table classes for the Jails schema.
+# For actual schema definitions, see /aggregate/schema.py and /county/schema.py.
+JailsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="JailsBase")
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the primary and historical tables for each entity.

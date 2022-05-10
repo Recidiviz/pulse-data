@@ -87,9 +87,16 @@ module "pathways_database" {
   zone              = var.zone
   tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user = true
+
+  additional_databases = [
+    for value in local.pathways_enabled_states :
+    lower(value)
+  ]
 }
 
 locals {
+  pathways_enabled_states = yamldecode(file("${path.module}/config/pathways_enabled_states.yaml"))
+
   joined_connection_string = join(
     ", ",
     [

@@ -20,7 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import add_age_groups
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -57,7 +57,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     outflow_compartments='("SUPERVISION")',
     age_group=add_age_groups("sessions.age_end"),
-    enabled_states=str(tuple(ENABLED_STATES)),
+    enabled_states=str(tuple(get_pathways_enabled_states())),
 )
 
 if __name__ == "__main__":

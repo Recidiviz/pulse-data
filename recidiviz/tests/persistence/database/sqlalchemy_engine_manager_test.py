@@ -58,6 +58,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         f"{server_config.__name__}.get_existing_direct_ingest_states",
         return_value=[StateCode.US_XX, StateCode.US_WW],
     )
+    @patch(
+        f"{server_config.__name__}.get_pathways_enabled_states",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
+    )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.utils.environment.in_gcp_production")
     @patch("recidiviz.utils.environment.in_gcp")
@@ -68,6 +72,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_in_gcp: mock.MagicMock,
         mock_in_production: mock.MagicMock,
         mock_create_engine: mock.MagicMock,
+        _mock_pathways_enabled: mock.MagicMock,
         mock_get_states: mock.MagicMock,
     ) -> None:
         # Arrange
@@ -205,6 +210,34 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="pathways_db_user_value",
+                        password="pathways_db_password_value",
+                        port=5432,
+                        database="us_xx",
+                        query={"host": "/cloudsql/pathways_cloudsql_instance_id_value"},
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="pathways_db_user_value",
+                        password="pathways_db_password_value",
+                        port=5432,
+                        database="us_ww",
+                        query={"host": "/cloudsql/pathways_cloudsql_instance_id_value"},
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
         )
         mock_get_states.assert_called()
@@ -212,6 +245,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
     @patch(
         f"{server_config.__name__}.get_existing_direct_ingest_states",
         return_value=[StateCode.US_XX, StateCode.US_WW],
+    )
+    @patch(
+        f"{server_config.__name__}.get_pathways_enabled_states",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.utils.environment.in_gcp_staging")
@@ -223,6 +260,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_in_gcp: mock.MagicMock,
         mock_in_staging: mock.MagicMock,
         mock_create_engine: mock.MagicMock,
+        _mock_pathways_enabled: mock.MagicMock,
         mock_get_states: mock.MagicMock,
     ) -> None:
         # Arrange
@@ -360,6 +398,34 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="pathways_db_user_value",
+                        password="pathways_db_password_value",
+                        port=5432,
+                        database="us_xx",
+                        query={"host": "/cloudsql/pathways_cloudsql_instance_id_value"},
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="pathways_db_user_value",
+                        password="pathways_db_password_value",
+                        port=5432,
+                        database="us_ww",
+                        query={"host": "/cloudsql/pathways_cloudsql_instance_id_value"},
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
         )
         mock_get_states.assert_called()
@@ -375,13 +441,14 @@ class SQLAlchemyEngineManagerTest(TestCase):
             "project:region:333",
             "project:region:444",
             "project:region:555",
+            "project:region:666",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        self.assertEqual(ids, ["111", "222", "333", "444", "555"])
+        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666"])
         mock_secrets.assert_has_calls(
             [
                 mock.call("jails_v2_cloudsql_instance_id"),
@@ -389,6 +456,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 mock.call("operations_v2_cloudsql_instance_id"),
                 mock.call("justice_counts_cloudsql_instance_id"),
                 mock.call("case_triage_cloudsql_instance_id"),
+                mock.call("pathways_cloudsql_instance_id"),
             ],
             any_order=True,
         )

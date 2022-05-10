@@ -31,7 +31,13 @@ class TestServerConfig(unittest.TestCase):
         f"{server_config.__name__}.get_existing_direct_ingest_states",
         return_value=[StateCode.US_XX, StateCode.US_WW],
     )
-    def test_get_database_keys_for_schema(self, state_codes_fn: Mock) -> None:
+    @patch(
+        f"{server_config.__name__}.get_pathways_enabled_states",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
+    )
+    def test_get_database_keys_for_schema(
+        self, state_codes_fn: Mock, _pathways_enabled_states: Mock
+    ) -> None:
         all_keys = []
         for schema_type in SchemaType:
             all_keys.extend(server_config.database_keys_for_schema_type(schema_type))
@@ -45,6 +51,8 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_primary"),
             SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_xx_secondary"),
             SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_secondary"),
+            SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_xx"),
+            SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_ww"),
         ]
 
         self.assertCountEqual(expected_all_keys, all_keys)

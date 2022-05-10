@@ -19,13 +19,13 @@ from datetime import date
 from typing import Dict, List, Union
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.common.constants.county.person_characteristics import Ethnicity, Race
 
 # for dimensions that have constant values across all states, we need a series of unnest statements
 shared_constant_dimensions: Dict[str, Union[List[int], List[str]]] = {
-    "state_code": ENABLED_STATES,
+    "state_code": get_pathways_enabled_states(),
     "year": [date.today().year - y for y in range(6)],
     "month": list(range(1, 13)),
     "gender": ["MALE", "FEMALE", "ALL"],

@@ -66,6 +66,11 @@ variable "zone" {
 }
 
 
+variable "additional_databases" {
+  type = set(string)
+  default = []
+}
+
 # Used for allowing access from `prod-data-client` to the CloudSQL instance
 data "google_secret_manager_secret_version" "prod_data_client_cidr" { secret = "prod_data_client_cidr" }
 
@@ -224,6 +229,14 @@ resource "google_bigquery_connection" "default_db_bq_connection" {
     }
   }
 }
+
+
+resource "google_sql_database" "databases" {
+  for_each = var.additional_databases
+  name     = each.value
+  instance = google_sql_database_instance.data.name
+}
+
 
 output "dbusername" {
   value = var.has_readonly_user ? data.google_secret_manager_secret_version.db_readonly_user[0].secret_data : null

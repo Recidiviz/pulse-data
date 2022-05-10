@@ -36,11 +36,17 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship
 from sqlalchemy.sql import func
 from sqlalchemy.sql.expression import text
 
-from recidiviz.persistence.database.base_schema import CaseTriageBase
+# Defines the base class for all table classes in the case triage schema.
+# For actual schema definitions, see /case_triage/schema.py.
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+
+CaseTriageBase: DeclarativeMeta = declarative_base(
+    cls=DatabaseEntity, name="CaseTriageBase"
+)
 
 
 def _get_json_field_as_date(json_data: Dict[str, Any], field: str) -> Optional[date]:

@@ -190,6 +190,8 @@ class SQLAlchemyEngineManager:
             return "justice_counts"
         if schema_type == SchemaType.CASE_TRIAGE:
             return "case_triage"
+        if schema_type == SchemaType.PATHWAYS:
+            return "pathways"
 
         raise ValueError(f"Unexpected schema type [{schema_type}].")
 

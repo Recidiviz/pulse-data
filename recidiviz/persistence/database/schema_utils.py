@@ -32,6 +32,7 @@ from recidiviz.persistence.database.base_schema import (
     JailsBase,
     JusticeCountsBase,
     OperationsBase,
+    PathwaysBase,
     StateBase,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -47,20 +48,15 @@ from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
+from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
-
-SQLAlchemyModelType = Union[
-    JailsBase,
-    StateBase,
-    OperationsBase,
-    JusticeCountsBase,
-    CaseTriageBase,
-]
 
 _SCHEMA_MODULES: List[ModuleType] = [
     aggregate_schema,
+    case_triage_schema,
     county_schema,
     justice_counts_schema,
+    pathways_schema,
     state_schema,
     operations_schema,
 ]
@@ -252,11 +248,12 @@ class SchemaType(enum.Enum):
     OPERATIONS = "OPERATIONS"
     JUSTICE_COUNTS = "JUSTICE_COUNTS"
     CASE_TRIAGE = "CASE_TRIAGE"
+    PATHWAYS = "PATHWAYS"
 
     @property
     def is_multi_db_schema(self) -> bool:
         """Returns True if this schema is segmented into multiple databases"""
-        return self is SchemaType.STATE
+        return self in [SchemaType.STATE, SchemaType.PATHWAYS]
 
 
 DirectIngestSchemaType = Union[Literal[SchemaType.JAILS], Literal[SchemaType.STATE]]
@@ -284,6 +281,8 @@ def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
         return SchemaType.OPERATIONS
     if isinstance(schema_object, CaseTriageBase):
         return SchemaType.CASE_TRIAGE
+    if isinstance(schema_object, PathwaysBase):
+        return SchemaType.PATHWAYS
 
     raise ValueError(f"Object of type [{type(schema_object)}] has unknown schema base.")
 
@@ -299,5 +298,7 @@ def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
         return JusticeCountsBase
     if schema_type == SchemaType.CASE_TRIAGE:
         return CaseTriageBase
+    if schema_type == SchemaType.PATHWAYS:
+        return PathwaysBase
 
     raise ValueError(f"Unexpected schema type [{schema_type}].")

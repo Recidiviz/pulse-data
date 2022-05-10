@@ -28,7 +28,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    ENABLED_STATES,
+    get_pathways_enabled_states,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -100,7 +100,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryVie
     add_age_groups=add_age_groups(),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
-        state_code_column="pop.state_code", enabled_states=ENABLED_STATES
+        state_code_column="pop.state_code", enabled_states=get_pathways_enabled_states()
     ),
     formatted_name=get_person_full_name("person.full_name"),
     facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
