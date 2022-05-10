@@ -50,7 +50,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             gender,
             prioritized_race_or_ethnicity AS race,
             IFNULL(judicial_district_code_start, 'UNKNOWN') AS judicial_district,
-            IFNULL(previous_incarceration.session_length_days, 0) AS prior_length_of_incarceration,
+            IFNULL(previous_incarceration.session_length_days, 0) AS previous_incarceration_session_length_days,
             ROW_NUMBER() OVER (PARTITION BY compartment.state_code, compartment.person_id ORDER BY session_id_end DESC) AS rn,
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment
         LEFT JOIN `{project_id}.{sessions_dataset}.incarceration_super_sessions_materialized` previous_incarceration
@@ -60,16 +60,28 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         WHERE
             compartment.state_code IN {enabled_states}
             AND compartment.compartment_level_1 = 'INCARCERATION'
-            AND compartment.inflow_from_level_1 = 'RELEASE'
+            AND (compartment.inflow_from_level_1 = 'RELEASE' OR compartment.inflow_from_level_1 is NULL)
             AND compartment.start_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
             -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
     )
-
-    SELECT * EXCEPT (prior_length_of_incarceration, rn),
+    , sum_length AS (
+        SELECT
+            state_code,
+            person_id,
+            transition_date,
+            SUM(previous_incarceration_session_length_days) AS prior_length_of_incarceration_days
+        FROM prior_incarcerations
+        group by state_code, person_id, transition_date
+    )
+    SELECT
+        prior_incarcerations.* EXCEPT (previous_incarceration_session_length_days, transition_date),
+        sum_length.transition_date,
         {binned_time_periods} AS time_period,
+        sum_length.prior_length_of_incarceration_days,
         {length_of_stay} AS prior_length_of_incarceration
-    
     FROM prior_incarcerations
+    LEFT JOIN sum_length
+        USING(state_code, person_id)
     WHERE rn = 1
 """
 
@@ -81,9 +93,9 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     age_group=add_age_groups("age_start"),
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     enabled_states=str(tuple(get_pathways_enabled_states())),
-    binned_time_periods=get_binned_time_period_months("transition_date"),
+    binned_time_periods=get_binned_time_period_months("sum_length.transition_date"),
     length_of_stay=create_buckets_with_cap(
-        convert_days_to_years("prior_incarcerations.prior_length_of_incarceration"), 11
+        convert_days_to_years("sum_length.prior_length_of_incarceration_days"), 11
     ),
 )
 
