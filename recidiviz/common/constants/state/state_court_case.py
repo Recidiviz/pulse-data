@@ -35,6 +35,17 @@ class StateCourtType(StateEntityEnum):
     def _get_default_map() -> Dict[str, "StateCourtType"]:
         return _STATE_COURT_TYPE_MAP
 
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The classification of the court in which a court case was held."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_COURT_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_COURT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {}
+
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
@@ -47,6 +58,17 @@ class StateCourtCaseStatus(StateEntityEnum):
     @staticmethod
     def _get_default_map() -> Dict[str, "StateCourtCaseStatus"]:
         return _STATE_COURT_CASE_STATUS_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The status of the court case."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_COURT_CASE_STATUS_VALUE_DESCRIPTIONS
+
+
+_STATE_COURT_CASE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {}
 
 
 _STATE_COURT_TYPE_MAP: Dict[str, StateCourtType] = {
