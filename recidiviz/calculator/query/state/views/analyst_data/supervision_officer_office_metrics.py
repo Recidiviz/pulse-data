@@ -208,7 +208,7 @@ WITH date_array AS (
         a.state_code = b.state_code 
         AND a.person_id = b.person_id 
         AND a.drug_screen_date = b.date
-    GROUP BY 1,2,3,4,5,6
+    GROUP BY 1, 2, 3, 4, 5, 6
 )
 
 # skip revocations for now because the lag from temporary hold to actual revocation 
@@ -237,14 +237,14 @@ WITH date_array AS (
         SUM(
             DATE_DIFF(
                 LEAST(
-                    IFNULL(c.end_date, "9999-01-01"), 
+                    IFNULL(c.end_date, CURRENT_DATE("US/Eastern")), 
                     DATE_ADD(a.start_date, INTERVAL 365 DAY)
                 ), c.start_date, DAY
             )
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
-            d.employment_status_start_date, e.employment_start_date
+            d.employment_status_start_date, e.employer_name, e.employment_start_date
         ) AS days_incarcerated_1yr,
 
         # Number of days employed within a year of first assignment to officer
@@ -252,7 +252,7 @@ WITH date_array AS (
             CASE WHEN is_employed
             THEN DATE_DIFF(
                 LEAST(
-                    IFNULL(d.employment_status_end_date, "9999-01-01"), 
+                    IFNULL(d.employment_status_end_date, CURRENT_DATE("US/Eastern")), 
                     DATE_ADD(a.start_date, INTERVAL 365 DAY)
                 ), 
                 GREATEST(
@@ -264,16 +264,15 @@ WITH date_array AS (
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
-            c.start_date, e.employment_start_date
+            c.start_date, e.employer_name, e.employment_start_date
         ) AS days_employed_1yr,
 
         # Number of days at the longest stint with a consistent employer within a year 
         # of first assignment to officer
         MAX(
-            CASE WHEN NOT is_unemployed
-            THEN DATE_DIFF(
+            DATE_DIFF(
                 LEAST(
-                    IFNULL(e.employment_end_date, "9999-01-01"), 
+                    IFNULL(e.employment_end_date, CURRENT_DATE("US/Eastern")), 
                     DATE_ADD(a.start_date, INTERVAL 365 DAY)
                 ), 
                 GREATEST(
@@ -281,7 +280,6 @@ WITH date_array AS (
                     a.start_date
                 ), DAY
             )
-            WHEN is_unemployed THEN 0 END
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
@@ -289,7 +287,7 @@ WITH date_array AS (
         ) AS max_days_stable_employment_1yr,
 
         # Number of unique employers within a year of first assignment to officer
-        COUNT(DISTINCT IF(is_unemployed, NULL, employer_name)) OVER (
+        COUNT(DISTINCT employer_name) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
             c.start_date, d.employment_status_start_date
@@ -331,7 +329,25 @@ WITH date_array AS (
 
     # join employment periods for calculating employment stability and volatility metrics
     LEFT JOIN
-        `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized` e
+    (
+        # Deduplicate to a single employment period for each employment period start,
+        # taking the longest employment period starting on that date.
+        SELECT
+            state_code,
+            person_id,
+            employer_name,
+            employment_start_date,
+            NULLIF(
+                MAX(IFNULL(employment_end_date, "9999-01-01")) 
+                OVER (PARTITION BY state_code, person_id, employer_name, employment_start_date)
+            , CURRENT_DATE("US/Eastern")) AS employment_end_date,
+        FROM
+            `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized`
+        WHERE 
+            is_unemployed = FALSE
+        QUALIFY 
+            ROW_NUMBER() OVER (PARTITION BY state_code, person_id, employer_name, employment_start_date) = 1
+    ) e
     ON
         a.state_code = e.state_code
         AND a.person_id = e.person_id
