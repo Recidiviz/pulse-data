@@ -96,11 +96,17 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_treatme
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
+    US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_logic import (
     US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_referral import (
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_workflow_status import (
+    US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_overdue_for_discharge import (
     US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
@@ -143,4 +149,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
     US_TN_SUPERVISION_PLAN_LOGIC_VIEW_BUILDER,
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
+    US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
+    US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
 ] + SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS

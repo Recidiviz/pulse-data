@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.practices.clients_referral_completed
 from recidiviz.calculator.query.state.views.practices.clients_referral_form_viewed import (
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.practices.clients_referral_implemented import (
+    CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.practices.clients_surfaced import (
     CLIENTS_SURFACED_VIEW_BUILDER,
 )
@@ -44,4 +47,5 @@ PRACTICES_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
     CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER,
     CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
+    CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
 ]
