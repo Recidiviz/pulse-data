@@ -232,10 +232,10 @@ def create_buckets_with_cap(bucket_expr: str, max_value: int) -> str:
 
 def convert_days_to_years(day_expr: str) -> str:
     """Given a sql expression that resolves to a number of days, returns an expression
-    that transforms it into an approximate number of years."""
+    that transforms it into an approximate number of years, rounding up to the nearest whole number."""
 
     # 365.256 days in a year
-    return f"CAST(FLOOR({day_expr}/365.256) AS INT64)"
+    return f"CAST(CEILING({day_expr}/365.256) AS INT64)"
 
 
 def deduped_supervision_sessions(where_clause: Optional[str] = "") -> str:
