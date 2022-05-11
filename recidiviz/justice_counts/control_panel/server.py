@@ -73,7 +73,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
     app.config.from_object(config)
     app.secret_key = get_secret("justice_counts_secret_key")
     setup_scoped_sessions(
-        app=app, database_key=config.DATABASE_KEY, db_url=config.DB_URL
+        app=app, schema_type=config.SCHEMA_TYPE, database_url_override=config.DB_URL
     )
     app.register_blueprint(
         get_api_blueprint(
