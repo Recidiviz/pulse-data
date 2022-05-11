@@ -1,0 +1,18 @@
+file_tag: ADH_LOCATION_WING
+file_description: |-
+  This table contains information about location wings in various facilties, used in
+  conjunction with facility count sheets to determine incarcaration population.
+data_classification: source
+primary_key_cols:
+  - location_wing_id
+columns:
+  - name: location_wing_id
+    description: The OMNI-database generated ID for the location wing row
+  - name: location_id
+    description: The ID of the location, as referenced by the LOCATION table
+  - name: name
+    description: The human-readable for the location wing
+  - name: active_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node

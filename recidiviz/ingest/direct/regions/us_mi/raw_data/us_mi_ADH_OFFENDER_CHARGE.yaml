@@ -1,11 +1,16 @@
 file_tag: ADH_OFFENDER_CHARGE
 file_description: |-
-  TODO(#11282) fill out
+  This table contains all information about the charges against a person.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - offender_charge_id
 columns:
   - name: offender_charge_id
+    description: The OMNI-database generated ID for the charge row.
   - name: offender_booking_id
+    description: |-
+      The ID for the booking, or the person's jurisdiction that this charge is associated
+      with, as referenced by the OFFENDER_BOOKING table.
     is_pii: True
   - name: legal_order_id
   - name: charge_number

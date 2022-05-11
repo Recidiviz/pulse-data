@@ -1,8 +1,9 @@
 file_tag: ADH_SUPERVISION_CONDITION
 file_description: |-
-  TODO(#11282) fill out
+  This table contains information about a person's supervision conditions.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - supervision_condition_id
 columns:
   - name: supervision_condition_id
   - name: special_condition_id

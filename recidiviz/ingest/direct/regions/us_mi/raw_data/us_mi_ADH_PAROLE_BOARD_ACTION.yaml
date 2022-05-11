@@ -1,0 +1,47 @@
+file_tag: ADH_PAROLE_BOARD_ACTION
+file_description: |-
+  This is the main table that stores all of the parole board actions from parole board
+  hearings.
+data_classification: source
+primary_key_cols:
+  - download_date
+  - offender_number
+  - prefix
+  - parole_date
+columns:
+  - name: download_date
+  - name: offender_number
+  - name: prefix
+  - name: parole_date
+  - name: term_mos
+  - name: term_days
+  - name: expire_date
+  - name: amended_date
+  - name: field_office
+  - name: agent_assigned
+  - name: reside_with
+  - name: reside_area_cd
+  - name: reside_phone
+  - name: reside_address
+  - name: reside_city
+  - name: report_person
+  - name: report_phone
+  - name: loan
+  - name: loan_instrctions
+  - name: medication
+  - name: clothing
+  - name: restitution
+  - name: agt_name
+  - name: agt_phone_area
+  - name: agt_phone
+  - name: off_addr
+  - name: off_city
+  - name: off_zip
+  - name: supervision_fee
+  - name: victim_assessment
+  - name: status
+  - name: notification_sent
+  - name: termination_date
+  - name: termination_reason
+  - name: pba_type
+  - name: del_flag

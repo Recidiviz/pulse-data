@@ -1,8 +1,9 @@
 file_tag: ADH_LEGAL_ORDER
 file_description: |-
-  TODO(#11282) fill out
+  This table contains all legal orders for anyone who is called to court within MIDOC.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - legal_order_id
 columns:
   - name: legal_order_id
   - name: offender_booking_id

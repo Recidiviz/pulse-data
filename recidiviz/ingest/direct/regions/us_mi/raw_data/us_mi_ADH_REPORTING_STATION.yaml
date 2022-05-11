@@ -1,0 +1,20 @@
+file_tag: ADH_REPORTING_STATION
+file_description: |-
+  blahblhb
+data_classification: source
+primary_key_cols:
+  - reporting_station_id
+columns:
+  - name: reporting_station_id
+  - name: location_id
+  - name: building_id
+  - name: name
+  - name: housing_unit_flag
+  - name: notes
+  - name: begin_date
+  - name: end_date
+  - name: active_flag
+  - name: last_update_user
+  - name: last_update_date
+  - name: last_update_node
+  - name: reporting_station_count_flag

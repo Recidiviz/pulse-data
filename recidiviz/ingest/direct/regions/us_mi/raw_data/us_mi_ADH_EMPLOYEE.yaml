@@ -1,8 +1,9 @@
 file_tag: ADH_EMPLOYEE
 file_description: |-
-  TODO(#11282) fill out
+  Table containing metadata regarding MIDOC employees
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - employee_id
 columns:
   - name: employee_id
     is_pii: True

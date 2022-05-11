@@ -1,12 +1,17 @@
 file_tag: ADH_BUILDING
 file_description: |-
-  TODO(#11282) fill out
+  This table contains metadata for all buildings in all facilities and other offices that
+  are part of MIDOC.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - building_id
 columns:
   - name: building_id
+    description: The OMNI-database generated ID for the building row.
   - name: location_id
+    description: The location of the building, as referenced by the LOCATION table.
   - name: name
+    description: The human-readable name for the building
   - name: notes
   - name: active_flag
   - name: begin_date

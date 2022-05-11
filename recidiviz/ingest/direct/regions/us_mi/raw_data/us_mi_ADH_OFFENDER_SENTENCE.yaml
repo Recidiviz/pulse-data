@@ -1,8 +1,9 @@
 file_tag: ADH_OFFENDER_SENTENCE
 file_description: |-
-  TODO(#11282) fill out
+  This table contains sentence information for people under MIDOC jurisdiction.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - offender_sentence_id
 columns:
   - name: offender_sentence_id
   - name: offender_charge_id

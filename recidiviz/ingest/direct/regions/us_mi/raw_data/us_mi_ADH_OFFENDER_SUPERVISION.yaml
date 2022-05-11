@@ -1,6 +1,6 @@
 file_tag: ADH_OFFENDER_SUPERVISION
 file_description: |-
-  TODO(#11282) fill out
+  This table contains information about a person on supervision within MIDOC.
 data_classification: source
 primary_key_cols: []
 columns:
