@@ -30,6 +30,7 @@ write_to_file '6379' recidiviz/local/gsm/case_triage_sessions_redis_port
 
 # Database secrets
 write_to_file 'case_triage' recidiviz/local/gsm/case_triage_cloudsql_instance_id
+write_to_file 'localhost' recidiviz/local/gsm/case_triage_db_host
 write_to_file 'case_triage_user' recidiviz/local/gsm/case_triage_db_user
 write_to_file 'example' recidiviz/local/gsm/case_triage_db_password
 write_to_file '5432' recidiviz/local/gsm/case_triage_db_port

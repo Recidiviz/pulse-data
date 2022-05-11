@@ -55,7 +55,7 @@ class TestLoadFixtures(TestCase):
         # methods induce different orders.
         # The migration order is the one seen in staging/prod, as well as what
         # we do in development.
-        engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+        self.engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
             database_key=self.db_key,
             db_url=local_postgres_helpers.on_disk_postgres_db_url(),
         )
@@ -66,7 +66,7 @@ class TestLoadFixtures(TestCase):
                     "script_location": self.db_key.migrations_location,
                 }
             ),
-            engine,
+            self.engine,
         ) as r:
             r.migrate_up_to("head")
 
@@ -82,7 +82,7 @@ class TestLoadFixtures(TestCase):
 
     def test_load_fixtures_succeeds(self) -> None:
         # First order of business, this shouldn't crash.
-        reset_case_triage_fixtures(in_test=True)
+        reset_case_triage_fixtures(self.engine)
 
         # Make sure values are actually written to the tables we know about.
         with SessionFactory.using_database(

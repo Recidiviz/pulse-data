@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Recidiviz - a data platform for criminal justice reform
 # Copyright (C) 2021 Recidiviz, Inc.
 #
@@ -24,26 +22,28 @@ This will delete everything from the etl_* tables and then re-add them from the
 fixture files.
 
 Usage against default development database:
-python -m recidiviz.tools.case_triage.load_fixtures
-
-Usage against non-default development database:
-SQLALCHEMY_DB_HOST="" SQLALCHEMY_DB_USER="" SQLALCHEMY_DB_PASSWORD="" SQLALCHEMY_DB_NAME="" \
-python -m recidiviz.tools.case_triage.load_fixtures
+docker exec pulse-data_case_triage_backend_1 pipenv run python -m recidiviz.tools.case_triage.load_fixtures
 """
+import logging
 import os
 
+from sqlalchemy.engine import Engine
+
 from recidiviz.case_triage.views.view_config import ETL_TABLES
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
+from recidiviz.utils.environment import in_development
 
 
-def reset_case_triage_fixtures(in_test: bool = False) -> None:
+def reset_case_triage_fixtures(engine: Engine) -> None:
     """Deletes all ETL data and re-imports data from our fixture files"""
-
-    if not in_test:
-        os.environ["SQLALCHEMY_DB_NAME"] = "case_triage"
-
     reset_fixtures(
-        tables=ETL_TABLES,
+        engine=engine,
+        tables=list(ETL_TABLES.keys()),
         fixture_directory=os.path.join(
             os.path.dirname(__file__),
             "../../..",
@@ -53,4 +53,13 @@ def reset_case_triage_fixtures(in_test: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    reset_case_triage_fixtures()
+    if not in_development():
+        raise RuntimeError(
+            "Expected to be called inside a docker container. See usage in docstring"
+        )
+
+    logging.basicConfig(level=logging.INFO)
+    database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+    case_triage_engine = SQLAlchemyEngineManager.init_engine(database_key)
+
+    reset_case_triage_fixtures(case_triage_engine)
