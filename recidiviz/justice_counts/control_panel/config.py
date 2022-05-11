@@ -17,7 +17,6 @@
 """Flask configs for different environments."""
 
 import json
-import os
 from typing import Callable, Optional
 
 import attr
@@ -34,20 +33,16 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
     passthrough_authorization_decorator,
 )
-from recidiviz.utils.environment import in_ci, in_development
+from recidiviz.utils.environment import in_ci
 from recidiviz.utils.secrets import get_secret
-
-JUSTICE_COUNTS_DATABASE_KEY = SQLAlchemyDatabaseKey.for_schema(
-    SchemaType.JUSTICE_COUNTS
-)
-JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL = "JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL"
 
 
 @attr.define
 class Config:
     """Config class builds database and authentication objects for justice counts app"""
 
-    DATABASE_KEY: SQLAlchemyDatabaseKey = JUSTICE_COUNTS_DATABASE_KEY
+    SCHEMA_TYPE: SchemaType = SchemaType.JUSTICE_COUNTS
+    DATABASE_KEY: SQLAlchemyDatabaseKey = SQLAlchemyDatabaseKey.for_schema(SCHEMA_TYPE)
     # Indicates whether CSRF protection is enabled for the whole app. Should be set to False for tests.
     WTF_CSRF_ENABLED: bool = True
     DB_URL: str = attr.field()
@@ -56,9 +51,6 @@ class Config:
 
     @DB_URL.default
     def _db_url_factory(self) -> str:
-        if in_development():
-            return os.environ[JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL]
-
         return SQLAlchemyEngineManager.get_server_postgres_instance_url(
             database_key=self.DATABASE_KEY
         )

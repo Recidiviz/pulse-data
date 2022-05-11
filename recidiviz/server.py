@@ -19,7 +19,6 @@
 import datetime
 import gc
 import logging
-import os
 from http import HTTPStatus
 from typing import Tuple
 
@@ -104,20 +103,27 @@ config_integration.trace_integrations(
     ]
 )
 if environment.in_development():
-    # If we're running the server in development (e.g. via docker-compose),
-    # we can specify the URL of our local Postgres DBs via environment variables
-    # and initialize an engine that way. Currently we only connect to the Justice Counts
-    # database, which we need for its section of the admin panel, but we can add
-    # other connections in the future in the same way.
-    #
+    # We can connect to the justice counts / case triage database using the default `init_engine` configurations,
+    # which uses secrets in `recidiviz/local`. If you are missing these secrets, run these scripts:
+    # ./recidiviz/tools/case_triage/initialize_development_environment.sh
+    # ./recidiviz/tools/justice_counts/control_panel/initialize_development_environment.sh
+
     # If we fail to connect a message will be logged but we won't raise an error.
-    try:
-        engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            db_url=os.environ.get("JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL"),
-        )
-    except BaseException:
-        pass
+    enabled_development_schema_types = [
+        SchemaType.CASE_TRIAGE,
+        SchemaType.JUSTICE_COUNTS,
+    ]
+
+    for schema_type in enabled_development_schema_types:
+        try:
+            SQLAlchemyEngineManager.init_engine(
+                SQLAlchemyDatabaseKey.for_schema(schema_type),
+            )
+        except BaseException as e:
+            logging.warning(
+                "Could not initialize engine for %s - have you run `initialize_development_environment.sh`?",
+                schema_type,
+            )
 
     # We also set the project to recidiviz-staging
     metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)

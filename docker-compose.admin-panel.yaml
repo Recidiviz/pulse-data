@@ -10,8 +10,11 @@ services:
       - "./recidiviz:/app/recidiviz/"
       - "./frontends:/app/frontends/"
       - "~/.config:/root/.config"
+      - case_triage_db_socket:/cloudsql/case_triage
+      - justice_counts_db_socket:/cloudsql/justice_counts
     depends_on:
-      - db
+      - case_triage_db
+      - justice_counts_db
       - redis
     ports:
       - "5050:5000"
@@ -22,4 +25,3 @@ services:
       - GOOGLE_CLOUD_PROJECT=recidiviz-staging
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
-      - JUSTICE_COUNTS_DEVELOPMENT_POSTGRES_URL=postgresql://postgres:example@db/justice_counts
