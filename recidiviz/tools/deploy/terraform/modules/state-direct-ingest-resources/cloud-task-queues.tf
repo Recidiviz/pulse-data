@@ -31,12 +31,18 @@ module "scheduler-queue-secondary" {
   max_dispatches_per_second = 100
 }
 
-# Note: It's intentional that there is not a secondary BQ import queue - raw data import
-# only happens out of the primary instance.
 module "raw-data-import-queue" {
   source = "../serial-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-raw-data-import"
+  region                    = var.region
+  max_dispatches_per_second = 100
+}
+
+module "raw-data-import-queue-secondary" {
+  source = "../serial-task-queue"
+
+  queue_name                = "${local.direct_ingest_formatted_str}-raw-data-import-secondary"
   region                    = var.region
   max_dispatches_per_second = 100
 }
