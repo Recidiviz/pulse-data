@@ -37,6 +37,7 @@ from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     LANTERN_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
+    PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
     PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
     PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
     PATHWAYS_PRISON_VIEW_BUILDERS,
@@ -406,6 +407,9 @@ class ExportViewCollectionConfig:
 CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-case-triage-data"
 COVID_DASHBOARD_OUTPUT_DIRECTORY_URI = "gs://{project_id}-covid-dashboard-data"
 DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-dashboard-data"
+DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI = (
+    "gs://{project_id}-dashboard-event-level-data"
+)
 DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-dashboard-user-restrictions"
 )
@@ -532,6 +536,25 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=PATHWAYS_PRISON_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_PRISON",
+    ),
+    # Pathways event level
+    ExportViewCollectionConfig(
+        view_builders_to_export=[*PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS],
+        output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PATHWAYS_EVENT_LEVEL",
+        export_output_formats=[
+            ExportOutputFormatType.HEADERLESS_CSV,
+        ],
+    ),
+    # Pathways and projections event level. This is a separate export type because our export
+    # infrastructure assumes an export type can only belong to one product.
+    ExportViewCollectionConfig(
+        view_builders_to_export=[*PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS],
+        output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PATHWAYS_AND_PROJECTIONS_EVENT_LEVEL",
+        export_output_formats=[
+            ExportOutputFormatType.HEADERLESS_CSV,
+        ],
     ),
     # Practices V2 Firestore ETL views
     ExportViewCollectionConfig(

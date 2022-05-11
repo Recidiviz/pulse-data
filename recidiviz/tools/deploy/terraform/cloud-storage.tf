@@ -78,6 +78,13 @@ module "dashboard-data" {
   storage_class = "MULTI_REGIONAL"
 }
 
+module "dashboard-event-level-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "dashboard-event-level-data"
+}
+
 module "dashboard-user-restrictions-bucket" {
   source = "./modules/cloud-storage-bucket"
 
