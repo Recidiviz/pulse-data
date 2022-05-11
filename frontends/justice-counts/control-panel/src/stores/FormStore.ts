@@ -72,18 +72,19 @@ class FormStore {
   fullMetricsFromFormValues(reportID: number): Metric[] {
     const updatedMetrics = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
-        if (
-          this.metricsValues[reportID]?.[metric.key] ||
-          this.contexts[reportID]?.[metric.key] ||
-          this.disaggregations[reportID]?.[metric.key]
-        ) {
+        const metricValue = this.metricsValues[reportID]?.[metric.key];
+        const contexts = this.contexts[reportID]?.[metric.key];
+        const disaggregationForMetric =
+          this.disaggregations[reportID]?.[metric.key];
+
+        if (metricValue || contexts || disaggregationForMetric) {
           return {
             ...metric,
-            value: this.metricsValues?.[reportID]?.[metric.key],
+            value: metricValue,
             contexts: metric.contexts.map((context) => {
               return {
                 ...context,
-                value: this.contexts?.[reportID]?.[metric.key]?.[context.key],
+                value: contexts?.[context.key],
               };
             }),
             disaggregations: metric.disaggregations.map((disaggregation) => {
@@ -93,9 +94,9 @@ class FormStore {
                   return {
                     ...dimension,
                     value:
-                      this.disaggregations?.[reportID]?.[metric.key]?.[
-                        disaggregation.key
-                      ]?.[dimension.key],
+                      disaggregationForMetric?.[disaggregation.key]?.[
+                        dimension.key
+                      ],
                   };
                 }),
               };
@@ -141,6 +142,7 @@ class FormStore {
 
     /** Remove error if value is a number AND (required input and input is not empty OR optional input and input is empty) */
     if (
+      this.formErrors[reportID][metricKey][fieldKey] &&
       isInputNumber &&
       ((e.target.hasAttribute("required") && e.target.value) ||
         !e.target.hasAttribute("required"))
