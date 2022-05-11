@@ -43,24 +43,27 @@ CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE = f"""
         )}
     )
     SELECT
-        * EXCEPT (rn, opportunity_type),
-        -- this field was initially left out of the tracking calls by mistake;
-        -- if it's missing we can infer that it was supposed to be "compliantReporting"
-        -- because that was the only possible value at the time
-        IFNULL(opportunity_type, "compliantReporting") AS opportunity_type,
+        * EXCEPT (rn),
     FROM (
         SELECT
-            person_id,
-            state_code,
-            person_external_id,
-            timestamp,
-            status,
-            opportunity_type,
+            *,
             ROW_NUMBER() OVER (
                 PARTITION BY person_id, opportunity_type
                 ORDER BY timestamp DESC
             ) AS rn,
-        FROM status_updates
+        FROM (
+            SELECT
+            person_id,
+                state_code,
+                person_external_id,
+                timestamp,
+                status,
+                -- this field was initially left out of the tracking calls by mistake;
+                -- if it's missing we can infer that it was supposed to be "compliantReporting"
+                -- because that was the only possible value at the time
+                IFNULL(opportunity_type, "compliantReporting") AS opportunity_type,
+            FROM status_updates
+        )
     )
     -- use most recent status update to eliminate completions that were later undone
     WHERE rn = 1
