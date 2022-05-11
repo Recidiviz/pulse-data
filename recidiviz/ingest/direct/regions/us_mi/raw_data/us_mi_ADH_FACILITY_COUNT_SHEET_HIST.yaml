@@ -1,14 +1,19 @@
 file_tag: ADH_FACILITY_COUNT_SHEET_HIST
 file_description: |-
-  TODO(#11282) fill out
+  Table containing all historical facility counts in MIDOC.
 data_classification: validation
-primary_key_cols: []
+primary_key_cols:
+  - facility_count_sheet_id
 columns:
   - name: facility_count_sheet_id
+    description: The OMNI-database generated ID for the facility count sheet row
   - name: facility_count_unit_id
   - name: cell
   - name: bunk
   - name: offender_number
+    description: |-
+      The MIDOC number for a person who is incarceration, as referenced by the OFFENDER
+      table.
     is_pii: True
   - name: offender_last_name
     is_pii: True
@@ -19,6 +24,7 @@ columns:
   - name: last_update_date
   - name: last_update_node
   - name: unit_lock_id
+    description: The unit lock id for the person, as referenced by the UNIT_LOCK table.
   - name: in_flg
   - name: employee_id
     is_pii: True
