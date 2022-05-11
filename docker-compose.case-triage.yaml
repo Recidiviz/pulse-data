@@ -8,7 +8,6 @@ services:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
-      - "./frontends:/app/frontends/"
       - case_triage_db_socket:/cloudsql/case_triage
     depends_on:
       - case_triage_db
@@ -19,6 +18,9 @@ services:
     environment:
       - FLASK_APP=/app/recidiviz/case_triage/server.py
       - FLASK_ENV=development
+      # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
+      # They can safely be excluded from the stat reloader for a performance boost
+      - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
     links:

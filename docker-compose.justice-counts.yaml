@@ -18,4 +18,7 @@ services:
     environment:
       - FLASK_APP=/app/recidiviz/justice_counts/control_panel/server.py
       - FLASK_ENV=development
+      # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
+      # They can safely be excluded from the stat reloader for a performance boost
+      - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
       - IS_DEV=true
