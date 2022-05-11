@@ -107,6 +107,7 @@ products:
     description: Prison and Supervision populations and transitions over time which can be drilled down by geographic region, demographic categories, time period, etc. Also see PATHWAYS_AND_PROJECTIONS and PATHWAYS_PRISON for variations on the Pathways exports..
     exports:
       - PATHWAYS
+      - PATHWAYS_EVENT_LEVEL
     states:
       - state_code: US_ND
         environment: production
@@ -120,6 +121,7 @@ products:
     description: Prison and Supervision populations and transitions over time including prison and supervsion population projections. Also see PATHWAYS for Pathways exports that do not include projections.
     exports:
       - PATHWAYS_AND_PROJECTIONS
+      - PATHWAYS_AND_PROJECTIONS_EVENT_LEVEL
     states:
       - state_code: US_ID
         environment: production
