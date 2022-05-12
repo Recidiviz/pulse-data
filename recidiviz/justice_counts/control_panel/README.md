@@ -51,6 +51,30 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
+## Testing end-to-end
+
+1: Run the JC backend via docker:
+
+```bash
+pipenv run docker-jc
+```
+
+2: Load fixtures (fake data for testing):
+
+````bash
+pipenv run fixtures-jc
+
+3: Run the JC frontend (`yarn run dev` from the `frontends/justice-counts/control-panel` directory). Login with your Recidiviz email address. You should see a message saying that the user is not connected to an agency.
+
+4: Connect your user to an agency via the admin panel. Run the admin panel backend via docker:
+```bash
+pipenv run admin-jc
+````
+
+Then run the admin panel frontend (`yarn run dev` from the `frontends/admin-panel` directory). Go to the Agency Provisioning page in the left sidebar (scroll down) and connect your user to `Agency Alpha`.
+
+5: Go back to the JC frontend and reload. You should see a report!
+
 ## SQLAlchemy Primer
 
 - A _session_ is a "holding zone" for all the objects you’ve loaded (via `session.query()`) or associated with it (via `session.add()`) during its lifespan.
@@ -60,7 +84,7 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - In our API code, `session.commit()` will not be called for you automatically. Thus, at the end of any ObjectInterface method that creates or updates objects, remember to call `session.add()` followed by `session.commit()`. You should call these methods in the Interface classes, not in the API itself.
 - You generally shouldn't need to call `session.flush()` or `session.refresh()`. If you think you need to, add a comment explaining what was going wrong without it.
 
-## Testing the backend
+## Testing the backend API
 
 1: Download `justice-counts-auth0-m2m-files.zip` from the Justice Counts 1password vault. Extract the contents (there should be two files) into the directory `recidiviz/pulse-data/recidiviz/justice_counts/control_panel/local/gsm`
 
@@ -85,4 +109,9 @@ python -m recidiviz.tools.justice_counts.control_panel.request_api users '{"emai
 python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0, "month": 3, "year": 2022, "frequency": "MONTHLY"}' post
 ```
 
-Note that if you make changes to any of the fixtures .csv files, you'll have to re-run the `pipenv run fixtures` script.
+Note that if you make changes to any of the fixtures .csv files, you'll have to re-run the `pipenv run fixtures-jc` script.
+
+## Connect to the local postgres database
+
+1: Look for `pulse-data_justice_counts_db_1` in your Docker dashboard, hover over it, and choose the CLI icon
+2: In the terminal that opens, run `psql --dbname postgres -U justice_counts_user`
