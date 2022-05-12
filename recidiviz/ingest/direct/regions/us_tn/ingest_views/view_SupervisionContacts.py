@@ -39,15 +39,11 @@ SELECT
     *,
     ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY ContactNoteDateTime ASC) AS ContactSequenceNumber
 FROM contact_note_type_view
-WHERE CAST(ContactNoteDateTime AS DATETIME) >= CAST('1995-01-01' AS DATETIME)
-AND CAST(ContactNoteDateTime AS DATETIME) < CAST('1997-01-01' AS DATETIME)
 """
 
-# TODO(#11242): Remove datetime filters and remerge back to one SupervisionContacts
-# once scale issues are resolved.
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_tn",
-    ingest_view_name="SupervisionContacts1995to1997",
+    ingest_view_name="SupervisionContacts",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="OffenderID ASC",
 )
