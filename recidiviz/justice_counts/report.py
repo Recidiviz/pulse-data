@@ -95,10 +95,7 @@ class ReportInterface:
         if status and report.status.value != status:
             report.status = schema.ReportStatus[status]
 
-        if report.modified_by is None:
-            report.modified_by = [editor_id]
-        elif editor_id not in report.modified_by:
-            report.modified_by = report.modified_by + [editor_id]
+        report.modified_by = (report.modified_by or []) + [editor_id]
         report.last_modified_at = datetime.datetime.now()
         session.commit()
         return report
@@ -149,6 +146,8 @@ class ReportInterface:
             status=schema.ReportStatus.NOT_STARTED,
             date_range_start=date_range_start,
             date_range_end=date_range_end,
+            last_modified_at=datetime.datetime.utcnow(),
+            modified_by=[user_account_id],
         )
         session.add(report)
         session.commit()

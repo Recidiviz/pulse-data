@@ -184,9 +184,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
-        self.assertEqual(response_json["editors"], [])
+        self.assertEqual(response_json["editors"], ["Jane Doe"])
         self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
-        self.assertEqual(response_json["last_modified_at"], None)
+        self.assertIsNotNone(response_json["last_modified_at"])
         self.assertEqual(response_json["month"], 3)
         self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
         self.assertEqual(response_json["year"], 2022)
@@ -287,11 +287,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 )
                 self.assertEqual(report.status, ReportStatus.DRAFT)
                 self.assertEqual(report.last_modified_at, update_datetime)
-                self.assertEqual(report.report_table_instances[0].cells[0].value, value)
                 self.assertEqual(
                     report.modified_by,
                     [user_account.id],
                 )
+                # TODO(#12943) Re-implement add_or_update_metric with new schema
                 response = self.client.post(
                     endpoint,
                     json={
@@ -336,18 +336,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     .one_or_none()
                 )
                 self.assertEqual(report.status, ReportStatus.PUBLISHED)
-                self.assertEqual(
-                    report.report_table_instances[0].cells[0].value, value + 10
-                )
-                self.assertEqual(
-                    report.report_table_instances[1].contexts[0].value, "test context"
-                )
-                self.assertEqual(
-                    report.report_table_instances[2].cells[0].value, 1500000
-                )
-                self.assertEqual(
-                    report.report_table_instances[2].cells[1].value, 500000
-                )
+                # TODO(#12943) Re-implement add_or_update_metric with new schema
 
     def test_user_permissions(self) -> None:
         user_account = self.test_schema_objects.test_user_A

@@ -113,6 +113,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 new_monthly_report.date_range_end, datetime.date(2022, 3, 1)
             )
+            self.assertEqual(new_monthly_report.modified_by, [user_id])
             new_annual_report = ReportInterface.create_report(
                 session=session,
                 agency_id=agency_id,
@@ -132,7 +133,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 new_annual_report.date_range_end, datetime.date(2023, 3, 1)
             )
 
-    def test_update_report(self) -> None:
+    def test_update_report_metadata(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add_all(
                 [
@@ -168,7 +169,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     status=schema.ReportStatus.DRAFT.value,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
-                self.assertEqual(updated_report.modified_by, [user_a_id])
+                self.assertEqual(updated_report.modified_by, [user_a_id, user_a_id])
                 self.assertEqual(updated_report.last_modified_at, update_datetime)
                 user_c_id = UserAccountInterface.get_user_by_auth0_user_id(
                     session=session,
@@ -181,7 +182,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     status=schema.ReportStatus.DRAFT.value,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
-                self.assertEqual(updated_report.modified_by, [user_a_id, user_c_id])
+                self.assertEqual(
+                    updated_report.modified_by, [user_a_id, user_a_id, user_c_id]
+                )
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
                     report_id=report.id,
@@ -189,7 +192,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     editor_id=user_c_id,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.PUBLISHED)
-                self.assertEqual(updated_report.modified_by, [user_a_id, user_c_id])
+                self.assertEqual(
+                    updated_report.modified_by,
+                    [user_a_id, user_a_id, user_c_id, user_c_id],
+                )
 
     def test_add_budget_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
