@@ -23,6 +23,10 @@ import PreviewDataObject from "../../mocks/PreviewDataObject";
 import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import {
+  printCommaSeparatedList,
+  printElapsedDaysSinceDate,
+} from "../../utils";
+import {
   EditDetails,
   EditDetailsContent,
   EditDetailsTitle,
@@ -57,7 +61,9 @@ const TempSaveButton = styled.button`
 const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [tempFinalObject, setTempFinalObject] = useState({}); // Temporarily Displaying Final Object For Testing Purposes
-  const { formStore, reportStore } = useStore();
+  const { formStore, reportStore, userStore } = useStore();
+  const { editors, last_modified_at: lastModifiedAt } =
+    reportStore.reportOverviews[reportID];
 
   const toggleConfirmationDialogue = () =>
     setShowConfirmation(!showConfirmation);
@@ -86,11 +92,22 @@ const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
         <EditDetails>
           <EditDetailsTitle>Editors</EditDetailsTitle>
           <EditDetailsContent>
-            Person #1, Person #2, Person #3
+            {editors.length ? printCommaSeparatedList(editors) : userStore.name}
           </EditDetailsContent>
 
           <EditDetailsTitle>Details</EditDetailsTitle>
-          <EditDetailsContent>Created today by a Person #1</EditDetailsContent>
+
+          <EditDetailsContent>
+            {editors.length
+              ? `Last modified ${
+                  lastModifiedAt && printElapsedDaysSinceDate(lastModifiedAt)
+                } by ${editors[editors.length - 1]}`
+              : `Created ${
+                  (lastModifiedAt &&
+                    printElapsedDaysSinceDate(lastModifiedAt)) ||
+                  "today"
+                } by ${userStore.name}`}
+          </EditDetailsContent>
         </EditDetails>
       </PublishDataWrapper>
       {showConfirmation && (
