@@ -77,6 +77,13 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
     def temp_results_dataset(self) -> str:
         raise ValueError("Unexpected call to temp_results_dataset.")
 
+    def get_max_date_of_data_processed_before_datetime(
+        self, datetime_utc: datetime.datetime
+    ) -> Dict[str, Optional[datetime.datetime]]:
+        raise ValueError(
+            "Unexpected call to get_max_date_of_data_processed_before_datetime."
+        )
+
     def save_query_results(
         self,
         *,
