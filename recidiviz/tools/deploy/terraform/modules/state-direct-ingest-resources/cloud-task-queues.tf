@@ -15,8 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+
+locals {
+  raw_data_import_max_concurrent_dispatches = 5
+  materialize_ingest_view_max_concurrent_dispatches = 5
+}
+
 module "scheduler-queue" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-scheduler"
   region                    = var.region
@@ -24,7 +30,7 @@ module "scheduler-queue" {
 }
 
 module "scheduler-queue-secondary" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-scheduler-secondary"
   region                    = var.region
@@ -32,24 +38,26 @@ module "scheduler-queue-secondary" {
 }
 
 module "raw-data-import-queue" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-raw-data-import"
   region                    = var.region
+  max_concurrent_dispatches = local.raw_data_import_max_concurrent_dispatches
   max_dispatches_per_second = 100
 }
 
 module "raw-data-import-queue-secondary" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-raw-data-import-secondary"
   region                    = var.region
+  max_concurrent_dispatches = local.raw_data_import_max_concurrent_dispatches
   max_dispatches_per_second = 100
 }
 
 # TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "ingest-view-export-queue" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-ingest-view-export"
   region                    = var.region
@@ -58,7 +66,7 @@ module "ingest-view-export-queue" {
 
 # TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "ingest-view-export-queue-secondary" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-ingest-view-export-secondary"
   region                    = var.region
@@ -66,25 +74,27 @@ module "ingest-view-export-queue-secondary" {
 }
 
 module "materialize-ingest-view-queue" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-materialize-ingest-view"
   region                    = var.region
+  max_concurrent_dispatches = local.materialize_ingest_view_max_concurrent_dispatches
   max_dispatches_per_second = 100
 }
 
 module "materialize-ingest-view-queue-secondary" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-materialize-ingest-view-secondary"
   region                    = var.region
+  max_concurrent_dispatches = local.materialize_ingest_view_max_concurrent_dispatches
   max_dispatches_per_second = 100
 }
 
 
 # TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "process-job-queue" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-process-job-queue"
   region                    = var.region
@@ -93,7 +103,7 @@ module "process-job-queue" {
 
 # TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
 module "process-job-queue-secondary" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-process-job-queue-secondary"
   region                    = var.region
@@ -101,7 +111,7 @@ module "process-job-queue-secondary" {
 }
 
 module "extract-and-merge-queue" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-extract-and-merge"
   region                    = var.region
@@ -109,7 +119,7 @@ module "extract-and-merge-queue" {
 }
 
 module "extract-and-merge-queue-secondary" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-extract-and-merge-secondary"
   region                    = var.region

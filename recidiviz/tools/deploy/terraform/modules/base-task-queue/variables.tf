@@ -23,6 +23,13 @@ variable "region" {
   type = string
 }
 
+// Maps to `max_concurrent_dispatches` in the `google_cloud_tasks_queue` resource.
+// See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_tasks_queue#max_concurrent_dispatches
+variable "max_concurrent_dispatches" {
+  type    = number
+  default = 1
+}
+
 // Maps to `max_dispatches_per_second` in the `google_cloud_tasks_queue` resource.
 // See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_tasks_queue#max_dispatches_per_second
 variable "max_dispatches_per_second" {

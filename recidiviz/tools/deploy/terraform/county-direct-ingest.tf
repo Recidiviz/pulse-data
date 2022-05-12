@@ -31,7 +31,7 @@ module "direct_ingest_queues" {
     "direct-ingest-jpp-process-job-queue-v2",
   ])
 
-  source = "./modules/serial-task-queue"
+  source = "./modules/base-task-queue"
 
   queue_name                = each.key
   region                    = var.app_engine_region
