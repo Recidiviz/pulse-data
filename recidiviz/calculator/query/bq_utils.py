@@ -180,12 +180,15 @@ def length_of_stay_month_groups(
     END"""
 
 
-def get_binned_time_period_months(date_expr: str) -> str:
+def get_binned_time_period_months(
+    date_expr: str, special_case_expr: Optional[str] = ""
+) -> str:
     """Given a SQL expression that resolves to a date, assigns it to a bin representing
     various non-overlapping periods, looking back as far as the past 5 years.
     Will be NULL if the date is more than 5 years before the current date, or in the future."""
 
     return f"""CASE
+        {special_case_expr}
         WHEN {date_expr} > CURRENT_DATE('US/Eastern') THEN NULL
         WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH) THEN "months_0_6"
         WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 12 MONTH) THEN "months_7_12"
