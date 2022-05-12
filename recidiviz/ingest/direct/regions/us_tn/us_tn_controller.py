@@ -47,24 +47,10 @@ class UsTnController(BaseDirectIngestController):
             "SentencesChargesAndCourtCases",
         ]
 
-        # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes faster than current infra allows.
+        # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
+        #  faster than current infra allows.
+        # TODO(#11424): Cannot ungate until BQ materialization is shipped for TN.
         if not environment.in_gcp():
-            tags.extend(
-                [
-                    "SupervisionContactsPre1990",
-                    "SupervisionContacts1990to1995",
-                    "SupervisionContacts1995to1997",
-                    "SupervisionContacts1997to2000",
-                    "SupervisionContacts2000to2003",
-                    "SupervisionContacts2003to2005",
-                    "SupervisionContacts2005to2007",
-                    "SupervisionContacts2007to2010",
-                    "SupervisionContacts2010to2013",
-                    "SupervisionContacts2013to2015",
-                    "SupervisionContacts2015to2017",
-                    "SupervisionContacts2017to2020",
-                    "SupervisionContactsPost2020",
-                ]
-            )
+            tags.extend(["SupervisionContacts"])
 
         return tags
