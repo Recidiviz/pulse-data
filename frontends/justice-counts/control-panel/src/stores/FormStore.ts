@@ -17,37 +17,17 @@
 
 import { makeAutoObservable } from "mobx";
 
-import { FormContexts, FormDisaggregations, Metric } from "../shared/types";
+import {
+  FormStoreContextValues,
+  FormStoreDisaggregationValues,
+  FormStoreErrors,
+  FormStoreMetricValues,
+  Metric,
+  UpdatedMetricsValues,
+} from "../shared/types";
 import { combineTwoKeyNames } from "../utils";
 import ReportStore from "./ReportStore";
 
-interface FormStoreMetricValue {
-  [metricKey: string]: number | string;
-}
-interface FormStoreMetricValues {
-  [reportID: string]: FormStoreMetricValue;
-}
-
-interface FormStoreContextValue {
-  [metricKey: string]: FormContexts;
-}
-interface FormStoreContextValues {
-  [reportID: string]: FormStoreContextValue;
-}
-
-interface FormStoreDisaggregationValue {
-  [metricKey: string]: FormDisaggregations;
-}
-interface FormStoreDisaggregationValues {
-  [reportID: string]: FormStoreDisaggregationValue;
-}
-
-interface FormStoreError {
-  [metricKey: string]: { [fieldKey: string]: string };
-}
-interface FormStoreErrors {
-  [reportID: string]: FormStoreError;
-}
 class FormStore {
   reportStore: ReportStore;
 
@@ -111,6 +91,72 @@ class FormStore {
     return updatedMetrics || [];
   }
 
+  /**
+   * Maps updated values into data structure required by the backend.
+   * Backend requires a combination of updated values on updated fields,
+   * and default values (the ones retrieved from the backend on load) for
+   * fields that have not been updated.
+   *
+   * @returns updated array of metrics (in the required data structure)
+   */
+
+  reportUpdatedValuesForBackend(reportID: number): UpdatedMetricsValues[] {
+    const updatedMetricValues = this.reportStore.reportMetrics[reportID]?.map(
+      (metric) => {
+        /** Note: all empty string inputs (in the case of deleting an input entirely) will be converted to null */
+        const metricValue =
+          this.metricsValues[reportID]?.[metric.key] === ""
+            ? null
+            : this.metricsValues[reportID]?.[metric.key] || metric.value;
+
+        const combinedMetricValues: UpdatedMetricsValues = {
+          key: metric.key,
+          value: metricValue,
+          contexts: [],
+          disaggregations: [],
+        };
+
+        metric.contexts.forEach((context) => {
+          const contextValue =
+            this.contexts[reportID]?.[metric.key]?.[context.key] === ""
+              ? null
+              : this.contexts[reportID]?.[metric.key]?.[context.key] ||
+                context.value;
+
+          combinedMetricValues.contexts.push({
+            key: context.key,
+            value: contextValue,
+          });
+        });
+
+        metric.disaggregations.forEach((disaggregation) => {
+          combinedMetricValues.disaggregations.push({
+            key: disaggregation.key,
+            dimensions: disaggregation.dimensions.map((dimension) => {
+              const dimensionValue =
+                this.disaggregations[reportID]?.[metric.key]?.[
+                  disaggregation.key
+                ]?.[dimension.key] === ""
+                  ? null
+                  : this.disaggregations[reportID]?.[metric.key]?.[
+                      disaggregation.key
+                    ]?.[dimension.key] || dimension.value;
+
+              return {
+                key: dimension.key,
+                value: dimensionValue,
+              };
+            }),
+          });
+        });
+
+        return combinedMetricValues;
+      }
+    );
+
+    return updatedMetricValues || [];
+  }
+
   /** Simple validation to flesh out as we solidify necessary validations */
   validate = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -159,6 +205,10 @@ class FormStore {
   ): void => {
     this.validate(e, reportID, metricKey);
 
+    /**
+     * Create an empty object within the property if none exist to improve access
+     * speed and to help with isolating re-renders for each form component.
+     */
     if (!this.metricsValues[reportID]) {
       this.metricsValues[reportID] = {};
     }
@@ -178,15 +228,22 @@ class FormStore {
     );
     this.validate(e, reportID, metricKey, disaggregationDimensionKey);
 
+    /**
+     * Create empty objects within the properties if none exist to improve access
+     * speed and to help with isolating re-renders for each form component.
+     */
     if (!this.disaggregations[reportID]) {
       this.disaggregations[reportID] = {};
     }
 
     if (!this.disaggregations[reportID][metricKey]) {
-      this.disaggregations[reportID][metricKey] = {
-        [disaggregationKey]: {},
-      };
+      this.disaggregations[reportID][metricKey] = {};
     }
+
+    if (!this.disaggregations[reportID][metricKey][disaggregationKey]) {
+      this.disaggregations[reportID][metricKey][disaggregationKey] = {};
+    }
+
     this.disaggregations[reportID][metricKey][disaggregationKey][
       e.target.name
     ] = e.target.value;
@@ -197,6 +254,10 @@ class FormStore {
     metricKey: string,
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
+    /**
+     * Create an empty object within the property if none exist to improve access
+     * speed and to help with isolating re-renders for each form component.
+     */
     if (!this.contexts[reportID]) {
       this.contexts[reportID] = {};
     }

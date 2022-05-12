@@ -86,24 +86,65 @@ export interface CreateReportFormValuesType extends Record<string, unknown> {
   frequency: "MONTHLY" | "ANNUAL";
 }
 
-export type FormContexts = {
+export interface FormContexts {
   [contextKey: string]: string | number;
-};
+}
 
-export type FormDimensions = {
+export interface FormDimensions {
   [dimensionKey: string]: string | number;
-};
+}
 
-export type FormDisaggregations = {
+export interface FormDisaggregations {
   [disaggregationKey: string]: FormDimensions;
-};
+}
 
-export type FormMetric = {
+export interface FormMetric {
   value: string | number;
   contexts: FormContexts;
   disaggregations: FormDisaggregations;
-};
+}
 
-export type FormReport = {
+export interface FormReport {
   [metricKey: string]: FormMetric;
-};
+}
+
+export interface FormStoreMetricValue {
+  [metricKey: string]: number | string;
+}
+export interface FormStoreMetricValues {
+  [reportID: string]: FormStoreMetricValue;
+}
+
+export interface FormStoreContextValue {
+  [metricKey: string]: FormContexts;
+}
+export interface FormStoreContextValues {
+  [reportID: string]: FormStoreContextValue;
+}
+
+export interface FormStoreDisaggregationValue {
+  [metricKey: string]: FormDisaggregations;
+}
+export interface FormStoreDisaggregationValues {
+  [reportID: string]: FormStoreDisaggregationValue;
+}
+
+export interface FormStoreError {
+  [metricKey: string]: { [fieldKey: string]: string };
+}
+export interface FormStoreErrors {
+  [reportID: string]: FormStoreError;
+}
+
+export interface UpdatedMetricsValues {
+  key: string;
+  value: Metric["value"];
+  contexts: { key: string; value: MetricContext["value"] }[];
+  disaggregations: {
+    key: string;
+    dimensions: {
+      key: string;
+      value: MetricDisaggregationDimensions["value"];
+    }[];
+  }[];
+}
