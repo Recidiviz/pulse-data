@@ -52,14 +52,12 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             prioritized_race_or_ethnicity AS race,
             IFNULL(location_name, level_1_location_external_id) AS district,
             IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
-            INITCAP(given_names || ' ' || surname) AS officer_name,
+            supervising_officer
         FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
             ON transitions.state_code = location.state_code 
             AND transitions.level_1_location_external_id = location.location_id
-        LEFT JOIN `{project_id}.{reference_dataset}.agent_external_id_to_full_name` agent ON
-            transitions.state_code = agent.state_code
-            AND transitions.supervising_officer = agent.external_id
+
     )
     ,
     filtered_rows AS (
@@ -77,7 +75,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             race,
             district,
             supervision_level,
-            officer_name,
+            supervising_officer,
             COUNT(1) as event_count,
         FROM filtered_rows,
             UNNEST ([gender, 'ALL']) AS gender,
@@ -86,15 +84,33 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             UNNEST ([age_group, 'ALL']) AS age_group,
             UNNEST ([race, "ALL"]) AS race,
             UNNEST ([district, "ALL"]) AS district,
-            UNNEST([officer_name, "ALL"]) AS officer_name 
+            UNNEST([supervising_officer, "ALL"]) AS supervising_officer 
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     )
-
+    , officer_names AS (
+        SELECT
+            state_code,
+            external_id,
+            given_names,
+            surname,
+            ROW_NUMBER() OVER (PARTITION BY state_code, external_id ORDER BY surname DESC,given_names DESC) AS rn,
+        FROM `{project_id}.{reference_dataset}.agent_external_id_to_full_name`
+    )
     SELECT
         last_updated,
-        event_counts.*,
+        event_counts.* EXCEPT (supervising_officer),
+        IFNULL(INITCAP(given_names || ' ' || surname), supervising_officer) AS officer_name,
+        IFNULL(o.caseload, 0) AS caseload
     FROM event_counts
     LEFT JOIN data_freshness USING (state_code)
+    LEFT JOIN `{project_id}.{shared_metric_views_dataset}.supervision_officer_caseload` o
+        USING(state_code,time_period,gender,supervision_type,age_group,race,district,supervision_level,supervising_officer)
+    LEFT JOIN officer_names ON
+        event_counts.state_code = officer_names.state_code
+        AND event_counts.supervising_officer = officer_names.external_id
+        AND officer_names.rn = 1
+    WHERE supervising_officer IS NOT NULL
+    AND time_period IS NOT NULL
 """
 
 SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
