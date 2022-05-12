@@ -624,12 +624,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             <>
               <p>
                 Trigger a BigQuery refresh and run all historical pipelines by
-                running:
+                running this script locally inside a pipenv shell:
               </p>
               <p>
                 <CodeBlock enabled={currentStep === 16}>
-                  ./recidiviz/tools/deploy/trigger_historical_data_refresh.sh{" "}
-                  {projectId}
+                  python -m recidiviz.tools.deploy.trigger_post_deploy_tasks
+                  --project-id {projectId} --trigger-historical-dag 1
                 </CodeBlock>
               </p>
               <p>
