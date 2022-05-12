@@ -163,6 +163,10 @@ def get_case_triage_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(case_triage_schema)
 
 
+def get_pathways_table_classes() -> Iterator[Table]:
+    yield from get_all_table_classes_in_module(pathways_schema)
+
+
 def get_non_history_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
     for cls in _get_all_database_entities_in_module(state_schema):

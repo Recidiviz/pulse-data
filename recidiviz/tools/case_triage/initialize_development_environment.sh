@@ -35,6 +35,13 @@ write_to_file 'case_triage_user' recidiviz/local/gsm/case_triage_db_user
 write_to_file 'example' recidiviz/local/gsm/case_triage_db_password
 write_to_file '5432' recidiviz/local/gsm/case_triage_db_port
 
+# Database secrets
+write_to_file 'pathways' recidiviz/local/gsm/pathways_cloudsql_instance_id
+write_to_file 'localhost' recidiviz/local/gsm/pathways_db_host
+write_to_file 'pathways_user' recidiviz/local/gsm/pathways_db_user
+write_to_file 'example' recidiviz/local/gsm/pathways_db_password
+write_to_file '5432' recidiviz/local/gsm/pathways_db_port
+
 
 # Set up application-specific configuration in GCS
 write_to_file $(eval printf "%s" '[{\"email\": \"$USER_EMAIL\", \"is_admin\": true}]') recidiviz/case_triage/local/gcs/case-triage-data/allowlist_v2.json

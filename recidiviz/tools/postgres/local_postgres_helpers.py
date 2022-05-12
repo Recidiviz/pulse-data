@@ -41,6 +41,7 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_USER,
     SQLALCHEMY_USE_SSL,
 )
+from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -60,6 +61,7 @@ DECLARATIVE_BASES = [
     JusticeCountsBase,
     TestBase,
     CaseTriageBase,
+    PathwaysBase,
 ]
 LINUX_TEST_DB_OWNER_NAME = "recidiviz_test_db_owner"
 TEST_POSTGRES_DB_NAME = "recidiviz_test_db"

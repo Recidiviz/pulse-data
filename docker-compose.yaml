@@ -56,6 +56,19 @@ services:
       - SQLALCHEMY_DB_USER=justice_counts_user
       - SQLALCHEMY_DB_PASSWORD=example
 
+  pathways_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: pathways_user
+      POSTGRES_PASSWORD: example
+      POSTGRES_MULTIPLE_DATABASES: us_id,us_me,us_mo,us_nd,us_tn
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./recidiviz/tools/postgres/pg_init_scripts:/docker-entrypoint-initdb.d
+      - pathways_db_data:/var/lib/postgresql/data
+      - pathways_db_socket:/var/run/postgresql/
+
   redis:
     image: redis:5.0
     ports:
@@ -66,3 +79,5 @@ volumes:
   case_triage_db_socket:
   justice_counts_db_data:
   justice_counts_db_socket:
+  pathways_db_data:
+  pathways_db_socket:
