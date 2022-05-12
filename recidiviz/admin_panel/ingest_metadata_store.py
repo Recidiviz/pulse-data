@@ -16,10 +16,11 @@
 # =============================================================================
 """GCS Store used to keep counts of column values across the state ingest dataset
 specifically."""
-
+import datetime
 import json
 from typing import Dict, List, Optional, Union
 
+import attr
 from google.cloud.bigquery.table import Row
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
@@ -30,6 +31,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    InstanceIngestViewContentsImpl,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -68,6 +72,13 @@ def cloud_sql_refresh_status_query_for_schema(
     WHERE ordinal = 1
     AND schema = "{schema.name}"
     """
+
+
+@attr.define(frozen=True, kw_only=True)
+class StateDataFreshnessInfo:
+    state_code: StateCode
+    state_dataset_data_freshness: Optional[datetime.date]
+    last_state_dataset_refresh_time: Optional[datetime.datetime]
 
 
 class IngestDataFreshnessStore(AdminPanelStore):
@@ -180,6 +191,61 @@ class IngestDataFreshnessStore(AdminPanelStore):
                 StateCode(record.region_code) if record.region_code else None
             ] = record
         return records
+
+    def get_data_freshness_by_state(
+        self,
+        state_codes: List[StateCode],
+        ingest_instance: DirectIngestInstance,
+        dataset_prefix: Optional[str],
+    ) -> Dict[StateCode, StateDataFreshnessInfo]:
+        """
+        Returns the ingest "high water mark" for each state,
+        i.e. the latest date where all files on or before that date are processed for a that state.
+        """
+        date_freshness_by_state: Dict[StateCode, StateDataFreshnessInfo] = {}
+        refresh_status_bq = self.get_statuses_for_schema(SchemaType.STATE)
+
+        for state_code in state_codes:
+            content = InstanceIngestViewContentsImpl(
+                big_query_client=self.bq_client,
+                region_code=state_code.name.lower(),
+                dataset_prefix=dataset_prefix,
+                ingest_instance=ingest_instance,
+            )
+            max_date_of_processed_data = _pick_least_date(
+                list(
+                    content.get_max_date_of_data_processed_before_datetime(
+                        datetime_utc=refresh_status_bq[state_code].last_refresh_datetime
+                    ).values()
+                )
+            )
+            min_date_of_unprocessed_data = _pick_least_date(
+                list(content.get_min_date_of_unprocessed_data().values())
+            )
+            state_dataset_freshness = _pick_least_date(
+                [max_date_of_processed_data, min_date_of_unprocessed_data]
+            )
+
+            date_freshness_by_state[state_code] = StateDataFreshnessInfo(
+                state_code=state_code,
+                state_dataset_data_freshness=state_dataset_freshness,
+                last_state_dataset_refresh_time=refresh_status_bq[
+                    state_code
+                ].last_refresh_datetime
+                if refresh_status_bq.get(state_code)
+                else None,
+            )
+
+        return date_freshness_by_state
+
+
+def _pick_least_date(
+    dates: List[Optional[datetime.datetime]],
+) -> Optional[datetime.datetime]:
+    non_optional_dates = [d for d in dates if d is not None]
+    if not non_optional_dates:
+        return None
+    return min(non_optional_dates)
 
 
 def _bq_refresh_status_record_for_row(row: Row) -> CloudSqlToBqRefreshStatus:
