@@ -20,6 +20,7 @@ import React from "react";
 import styled from "styled-components/macro";
 
 import { Report } from "../../shared/types";
+import { useStore } from "../../stores";
 import { rem } from "../../utils";
 import { Button, PublishButton } from "../Forms";
 import { palette } from "../GlobalStyles";
@@ -103,9 +104,11 @@ const ButtonWrapper = styled.div`
 
 const PublishConfirmation: React.FC<{
   toggleConfirmationDialogue: () => void;
-  submitReport: (reportID: number) => void;
   tempFinalObject: Report;
-}> = ({ toggleConfirmationDialogue, submitReport, tempFinalObject }) => {
+  reportID: number;
+}> = ({ toggleConfirmationDialogue, tempFinalObject, reportID }) => {
+  const { formStore } = useStore();
+
   return (
     <ConfirmationDialogue>
       <ConfirmationDialogueWrapper>
@@ -130,7 +133,7 @@ const PublishConfirmation: React.FC<{
 
         <ButtonWrapper>
           <Button onClick={toggleConfirmationDialogue}>Cancel</Button>
-          <PublishButton onClick={() => submitReport(0)}>
+          <PublishButton onClick={() => formStore.submitReport(0)}>
             Publish Data
           </PublishButton>
         </ButtonWrapper>

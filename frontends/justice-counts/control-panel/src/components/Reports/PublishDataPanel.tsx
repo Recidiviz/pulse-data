@@ -17,7 +17,9 @@
 
 import { observer } from "mobx-react-lite";
 import React, { useState } from "react";
+import styled from "styled-components/macro";
 
+import PreviewDataObject from "../../mocks/PreviewDataObject";
 import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import {
@@ -28,19 +30,47 @@ import {
   PublishDataWrapper,
   Title,
 } from "../Forms";
+import { palette } from "../GlobalStyles";
 import PublishConfirmation from "./PublishConfirmation";
+
+const TempSaveButton = styled.button`
+  position: absolute;
+  top: 100px;
+  right: 26px;
+  background: none;
+  border: none;
+  color: ${palette.solid.blue};
+  font-size: 1rem;
+  transition: 0.2s ease;
+  border-bottom: 1px solid transparent;
+
+  &:hover {
+    cursor: pointer;
+    border-bottom: 1px solid ${palette.solid.blue};
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+`;
 
 const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [tempFinalObject, setTempFinalObject] = useState({}); // Temporarily Displaying Final Object For Testing Purposes
-  const { formStore } = useStore();
+  const { formStore, reportStore } = useStore();
 
   const toggleConfirmationDialogue = () =>
     setShowConfirmation(!showConfirmation);
 
+  const saveUpdatedMetrics = () => {
+    const updatedMetrics = formStore.reportUpdatedValuesForBackend(reportID);
+    reportStore.updateReport(reportID, updatedMetrics, "DRAFT");
+  };
+
   return (
     <>
       <PublishDataWrapper>
+        <TempSaveButton onClick={saveUpdatedMetrics}>Save</TempSaveButton>
         <Title>
           <PublishButton
             onClick={() => {
@@ -67,9 +97,17 @@ const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
         <PublishConfirmation
           toggleConfirmationDialogue={toggleConfirmationDialogue}
           tempFinalObject={tempFinalObject as Report}
-          submitReport={formStore.submitReport}
+          reportID={reportID}
         />
       )}
+
+      <PreviewDataObject
+        description="This is the request body that will be sent to the backend:"
+        objectToDisplay={{
+          status: "DRAFT",
+          metrics: formStore.reportUpdatedValuesForBackend(reportID),
+        }}
+      />
     </>
   );
 };

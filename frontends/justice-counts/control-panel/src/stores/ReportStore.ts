@@ -17,7 +17,13 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 
-import { Metric, Report, ReportOverview } from "../shared/types";
+import {
+  Metric,
+  Report,
+  ReportOverview,
+  ReportStatus,
+  UpdatedMetricsValues,
+} from "../shared/types";
 import API from "./API";
 import UserStore from "./UserStore";
 
@@ -89,16 +95,12 @@ class ReportStore {
       runInAction(() => {
         this.reportOverviews[reportID] = overview;
         this.reportMetrics[reportID] = metrics;
+        // this.reportMetrics[reportID] = mockReport.metrics;
       });
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }
   }
-
-  // TODO(#12358): Decide on API for this request
-  // async updateReport(reportID: number, body: Partial<Report>) {
-  // ...
-  // }
 
   async createReport(
     body: Record<string, unknown>
@@ -119,6 +121,28 @@ class ReportStore {
       throw new Error(
         "Either invalid user/agency information or no user or agency information initialized."
       );
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async updateReport(
+    reportID: number,
+    updatedMetrics: UpdatedMetricsValues[],
+    status: ReportStatus
+  ): Promise<Response | Error | undefined> {
+    try {
+      const response = (await this.api.request({
+        path: `/api/reports/${reportID}`,
+        body: { status, metrics: updatedMetrics },
+        method: "POST",
+      })) as Response;
+
+      if (response.status !== 200) {
+        throw new Error("There was an issue updating this report.");
+      }
+
+      return response;
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }

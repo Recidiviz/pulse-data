@@ -152,3 +152,21 @@ test("context value handler updates the context value", () => {
 
   expect.hasAssertions();
 });
+
+test("updatedReportValues maps all updated (and not updated) input values into required data structure", () => {
+  expect(JSON.stringify(formStore.reportUpdatedValuesForBackend(0))).toEqual(
+    JSON.stringify([
+      {
+        key: "PROSECUTION_STAFF",
+        value: 2000,
+        contexts: [{ key: "PROGRAMMATIC_OR_MEDICAL_STAFF", value: 100 }],
+        disaggregations: [
+          {
+            key: "PROSECUTION_STAFF_TYPE",
+            dimensions: [{ key: "SUPPORT", value: 200 }],
+          },
+        ],
+      },
+    ])
+  );
+});

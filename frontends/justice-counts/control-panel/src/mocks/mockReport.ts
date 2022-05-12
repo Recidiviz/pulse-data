@@ -315,19 +315,19 @@ export const mockMetrics = [
         display_name: "Gender",
         dimensions: [
           {
-            key: "WHITE",
+            key: "MALE",
             label: "Male",
             value: null,
             reporting_note: "Gender: Male",
           },
           {
-            key: "BLACK",
+            key: "FEMALE",
             label: "Female",
             value: null,
             reporting_note: "Gender: Female",
           },
           {
-            key: "HISPANIC_LATINX",
+            key: "NON_BINARY",
             label: "Non-binary",
             value: null,
             reporting_note: "Gender: Non-binary",
