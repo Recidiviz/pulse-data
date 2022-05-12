@@ -22,6 +22,10 @@ columns:
   - name: sequence_number
   - name: last_update_user
   - name: last_update_date
+    description: When the facility count was last updated.
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
   - name: unit_lock_id
     description: The unit lock id for the person, as referenced by the UNIT_LOCK table.
