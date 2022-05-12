@@ -127,6 +127,12 @@ FROM
   `{{project_id}}.{{results_dataset}}.{{results_table}}`
 """
 
+MAX_DATE_OF_DATA_PROCESSED_FOR_SCHEMA_TEMPLATE = f"""
+SELECT "{{ingest_view_name}}" AS ingest_view_name, MAX({_UPPER_BOUND_DATETIME_COL_NAME}) as {_UPPER_BOUND_DATETIME_COL_NAME}
+FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
+WHERE {_PROCESSED_TIME_COL_NAME} IS NOT NULL AND {_PROCESSED_TIME_COL_NAME} < DATETIME("{{datetime_utc}}")
+"""
+
 _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 
 
@@ -264,6 +270,12 @@ class InstanceIngestViewContents:
         batch_number: int,
     ) -> None:
         """Marks all ingest view results rows in a given batch as processed."""
+
+    @abc.abstractmethod
+    def get_max_date_of_data_processed_before_datetime(
+        self, datetime_utc: datetime.datetime
+    ) -> Dict[str, Optional[datetime.datetime]]:
+        """Returns a result with one row per ingest view and the max date result for that view."""
 
 
 class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
@@ -571,6 +583,55 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             num_processed_rows=row["num_processed_rows"],
             processed_rows_max_datetime=row["processed_rows_max_datetime"],
         )
+
+    def get_max_date_of_data_processed_before_datetime(
+        self, datetime_utc: datetime.datetime
+    ) -> Dict[str, Optional[datetime.datetime]]:
+        """Returns the most recent date of processed data for a given ingest view before the provided datetime."""
+        max_date_of_data_processed_before_datetime_for_view_queries = []
+
+        ingest_views_with_results = [
+            results_table.table_id
+            for results_table in self._big_query_client.list_tables(
+                self.results_dataset()
+            )
+        ]
+        if not ingest_views_with_results:
+            return {}
+
+        for ingest_view_name in ingest_views_with_results:
+            results_address = self._ingest_view_results_address(ingest_view_name)
+            max_date_of_data_processed_before_datetime_for_view_queries.append(
+                StrictStringFormatter().format(
+                    MAX_DATE_OF_DATA_PROCESSED_FOR_SCHEMA_TEMPLATE,
+                    project_id=metadata.project_id(),
+                    results_dataset=results_address.dataset_id,
+                    results_table=results_address.table_id,
+                    datetime_utc=datetime_utc,
+                    ingest_view_name=ingest_view_name,
+                )
+            )
+
+        all_views_query = "\nUNION ALL\n".join(
+            max_date_of_data_processed_before_datetime_for_view_queries
+        )
+
+        query_job = self._big_query_client.run_query_async(query_str=all_views_query)
+
+        result: Dict[str, Optional[datetime.datetime]] = {
+            ingest_view_name: None for ingest_view_name in ingest_views_with_results
+        }
+        row_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
+            query_job
+        ).get_contents_iterator()
+
+        for row in row_iterator:
+            ingest_view_name = row["ingest_view_name"]
+            result[ingest_view_name] = assert_type(
+                row[_UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
+            )
+
+        return result
 
 
 # Run this script if you are making changes to this file. It should produce the

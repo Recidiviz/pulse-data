@@ -596,3 +596,76 @@ FROM
             ],
             self.mock_bq_client.mock_calls,
         )
+
+    def test_get_max_date_of_data_processed_before_datetime(self) -> None:
+        datetime_utc = datetime.datetime(2022, 1, 1, 0, 0, 0, 0)
+        self.mock_bq_client.list_tables.return_value = iter(
+            [
+                bigquery.table.TableListItem(
+                    {
+                        "tableReference": {
+                            "projectId": self.project_id,
+                            "datasetId": "us_xx_ingest_view_results_primary",
+                            "tableId": ingest_view_name,
+                        }
+                    }
+                )
+                for ingest_view_name in [self.ingest_view_name, self.ingest_view_name_2]
+            ]
+        )
+        self.mock_bq_client.run_query_async.return_value = iter(
+            [
+                bigquery.table.Row(
+                    [self.ingest_view_name, datetime_utc],
+                    {
+                        "ingest_view_name": 0,
+                        "__upper_bound_datetime_inclusive": 1,
+                    },
+                ),
+                bigquery.table.Row(
+                    [self.ingest_view_name_2, datetime_utc],
+                    {
+                        "ingest_view_name": 0,
+                        "__upper_bound_datetime_inclusive": 1,
+                    },
+                ),
+            ]
+        )
+
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+        results = ingest_view_contents.get_max_date_of_data_processed_before_datetime(
+            datetime_utc=datetime_utc,
+        )
+
+        self.assertEqual(
+            {
+                ingest_view_name: datetime_utc
+                for ingest_view_name in [self.ingest_view_name, self.ingest_view_name_2]
+            },
+            results,
+        )
+
+        expected_query = f"""
+SELECT "{self.ingest_view_name}" AS ingest_view_name, MAX(__upper_bound_datetime_inclusive) as __upper_bound_datetime_inclusive
+FROM `recidiviz-456.us_xx_ingest_view_results_primary.{self.ingest_view_name}`
+WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_utc}")
+
+UNION ALL
+
+SELECT "{self.ingest_view_name_2}" AS ingest_view_name, MAX(__upper_bound_datetime_inclusive) as __upper_bound_datetime_inclusive
+FROM `recidiviz-456.us_xx_ingest_view_results_primary.{self.ingest_view_name_2}`
+WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_utc}")
+"""
+
+        self.assertEqual(
+            [
+                call.list_tables("us_xx_ingest_view_results_primary"),
+                call.run_query_async(query_str=expected_query),
+            ],
+            self.mock_bq_client.mock_calls,
+        )
