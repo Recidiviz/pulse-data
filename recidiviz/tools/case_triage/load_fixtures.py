@@ -21,8 +21,11 @@ This script should be run only after `docker-compose up` has been run.
 This will delete everything from the etl_* tables and then re-add them from the
 fixture files.
 
-Usage against default development database:
+Usage against default development database (docker-compose v1):
 docker exec pulse-data_case_triage_backend_1 pipenv run python -m recidiviz.tools.case_triage.load_fixtures
+
+Usage against default development database (docker-compose v2):
+docker exec pulse-data-case_triage_backend-1 pipenv run python -m recidiviz.tools.case_triage.load_fixtures
 """
 import logging
 import os

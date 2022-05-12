@@ -1,0 +1,4 @@
+transition_date,person_id,year,month,age_group,gender,race,judicial_district,time_period,prior_length_of_incarceration
+2022-01-01,1,2022,1,20-25,male,white,D1,months_0_6,months_0_3
+2022-02-01,2,2022,2,60+,male,white,D2,months_0_6,months_3_6
+2022-03-01,3,2022,3,60+,female,black,D1,months_0_6,months_0_3

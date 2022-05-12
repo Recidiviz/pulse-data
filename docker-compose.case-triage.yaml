@@ -9,8 +9,11 @@ services:
     volumes:
       - "./recidiviz:/app/recidiviz/"
       - case_triage_db_socket:/cloudsql/case_triage
+      - pathways_db_socket:/cloudsql/pathways
     depends_on:
       - case_triage_db
+      - pathways_db
+
     ports:
       - "5000:5000"
     # Running with threads and no debugger seems to improve latency on first request
