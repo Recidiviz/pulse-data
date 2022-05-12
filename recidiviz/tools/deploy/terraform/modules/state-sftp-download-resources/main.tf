@@ -35,7 +35,7 @@ module "sftp-storage-bucket" {
 }
 
 module "sftp-download-queue" {
-  source = "../serial-task-queue"
+  source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_sftp_str}-queue"
   region                    = var.region

@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-resource "google_cloud_tasks_queue" "serial_queue" {
+resource "google_cloud_tasks_queue" "base_queue" {
   name     = var.queue_name
   location = var.region
 
   rate_limits {
     max_dispatches_per_second = var.max_dispatches_per_second
-    max_concurrent_dispatches = 1
+    max_concurrent_dispatches = var.max_concurrent_dispatches
   }
 
   retry_config {
@@ -31,4 +31,13 @@ resource "google_cloud_tasks_queue" "serial_queue" {
   stackdriver_logging_config {
     sampling_ratio = var.logging_sampling_ratio
   }
+}
+
+# This block tells TF that the resource that used to be called serial_queue is now
+# named base_queue so that it doesn't delete and recreate the queues during the
+# rename. This block can be removed once it has been deployed to prod. For more, see:
+# https://www.terraform.io/language/modules/develop/refactoring.
+moved {
+  from = google_cloud_tasks_queue.serial_queue
+  to = google_cloud_tasks_queue.base_queue
 }

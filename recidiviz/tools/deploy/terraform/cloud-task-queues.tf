@@ -59,7 +59,7 @@ resource "google_cloud_tasks_queue" "cloud-sql-to-bq-refresh-scheduler-queue" {
 
 # Queue used to process tasks that mirror the data in our CloudSQL databases to BQ.
 module "cloud-sql-to-bq-refresh-queue" {
-  source = "./modules/serial-task-queue"
+  source = "./modules/base-task-queue"
 
   queue_name         = "cloud-sql-to-bq-refresh"
   region             = var.app_engine_region
@@ -68,7 +68,7 @@ module "cloud-sql-to-bq-refresh-queue" {
 
 # Queue used to process tasks that export the results of metric view queries to GCS.
 module "metric-view-export-queue" {
-  source = "./modules/serial-task-queue"
+  source = "./modules/base-task-queue"
 
   queue_name         = "metric-view-export"
   region             = var.app_engine_region
@@ -77,7 +77,7 @@ module "metric-view-export-queue" {
 
 # Queue used for tasks to update raw data `*_latest` views for all states.
 module "state-raw-data-latest-view-update-queue" {
-  source = "./modules/serial-task-queue"
+  source = "./modules/base-task-queue"
 
   queue_name         = "state-raw-data-latest-view-update"
   region             = var.app_engine_region
@@ -85,7 +85,7 @@ module "state-raw-data-latest-view-update-queue" {
 }
 
 module "case-triage-db-operations-queue" {
-  source = "./modules/serial-task-queue"
+  source = "./modules/base-task-queue"
 
   queue_name                = "case-triage-db-operations-queue"
   region                    = var.app_engine_region
