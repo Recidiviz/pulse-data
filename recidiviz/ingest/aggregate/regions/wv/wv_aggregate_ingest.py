@@ -89,6 +89,8 @@ def _parse_table(filename: str) -> pd.DataFrame:
     df["county"] = df["county"].str.strip()
     df = df[~df["facility_name"].str.startswith("Deaths:")]
     df = df[~df["facility_name"].str.startswith("About this report:")]
+    df = df[~df["county"].str.startswith("Inmate Totals:")]
+    df = df[~df["county"].str.startswith("Resident Totals:")]
 
     # The CSV sometimes doesn't list all values for the Braxton County Central Jail.
     if 1 in df.index and df.loc[1, "county"] == "Braxton" and df.loc[1].isna().any():
