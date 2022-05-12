@@ -133,6 +133,12 @@ FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
 WHERE {_PROCESSED_TIME_COL_NAME} IS NOT NULL AND {_PROCESSED_TIME_COL_NAME} < DATETIME("{{datetime_utc}}")
 """
 
+MIN_DATE_OF_UNPROCESSED_DATA_FOR_SCHEMA_TEMPLATE = f"""
+SELECT "{{ingest_view_name}}" AS ingest_view_name, MIN({_UPPER_BOUND_DATETIME_COL_NAME}) as {_UPPER_BOUND_DATETIME_COL_NAME}
+FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
+WHERE {_PROCESSED_TIME_COL_NAME} IS NULL
+"""
+
 _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 
 
@@ -276,6 +282,12 @@ class InstanceIngestViewContents:
         self, datetime_utc: datetime.datetime
     ) -> Dict[str, Optional[datetime.datetime]]:
         """Returns a result with one row per ingest view and the max date result for that view."""
+
+    @abc.abstractmethod
+    def get_min_date_of_unprocessed_data(
+        self,
+    ) -> Dict[str, Optional[datetime.datetime]]:
+        """Returns a dictionary with one entry per ingest view with the min date on any unprocessed results row."""
 
 
 class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
@@ -630,6 +642,52 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             result[ingest_view_name] = assert_type(
                 row[_UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
             )
+
+        return result
+
+    def get_min_date_of_unprocessed_data(
+        self,
+    ) -> Dict[str, Optional[datetime.datetime]]:
+        """Returns a dictionary with one entry per ingest view with the max date on any processed results row."""
+        min_date_of_unprocessed_data_for_view_queries = []
+
+        ingest_views_with_results = [
+            results_table.table_id
+            for results_table in self._big_query_client.list_tables(
+                self.results_dataset()
+            )
+        ]
+        if not ingest_views_with_results:
+            return {}
+
+        for ingest_view_name in ingest_views_with_results:
+            results_address = self._ingest_view_results_address(ingest_view_name)
+            min_date_of_unprocessed_data_for_view_queries.append(
+                StrictStringFormatter().format(
+                    MIN_DATE_OF_UNPROCESSED_DATA_FOR_SCHEMA_TEMPLATE,
+                    project_id=metadata.project_id(),
+                    results_dataset=results_address.dataset_id,
+                    results_table=results_address.table_id,
+                    ingest_view_name=ingest_view_name,
+                )
+            )
+
+        all_views_query = "\nUNION ALL\n".join(
+            min_date_of_unprocessed_data_for_view_queries
+        )
+
+        query_job = self._big_query_client.run_query_async(query_str=all_views_query)
+
+        result: Dict[str, Optional[datetime.datetime]] = {
+            ingest_view_name: None for ingest_view_name in ingest_views_with_results
+        }
+        row_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
+            query_job
+        ).get_contents_iterator()
+
+        for row in row_iterator:
+            ingest_view_name = row["ingest_view_name"]
+            result[ingest_view_name] = row[_UPPER_BOUND_DATETIME_COL_NAME]
 
         return result
 

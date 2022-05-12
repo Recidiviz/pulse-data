@@ -84,6 +84,11 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
             "Unexpected call to get_max_date_of_data_processed_before_datetime."
         )
 
+    def get_min_date_of_unprocessed_data(
+        self,
+    ) -> Dict[str, Optional[datetime.datetime]]:
+        raise ValueError("Unexpected call to get_min_date_of_unprocessed_data.")
+
     def save_query_results(
         self,
         *,
