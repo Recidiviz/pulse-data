@@ -39,7 +39,10 @@ WITH order_sentence_actions_by_date_per_sentence AS (
     FROM (
         SELECT 
             OrderedSentenceAction.*,
-            ROW_NUMBER() OVER ( PARTITION BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber ORDER BY ActionDate DESC ) as SentenceActionNumber
+            ROW_NUMBER() OVER (
+                PARTITION BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber
+                ORDER BY ActionDate DESC, CAST(SequenceNumber AS INT64) DESC
+            ) as SentenceActionNumber
         FROM {SentenceAction} OrderedSentenceAction
     ) OrderedSentenceAction
     WHERE SentenceActionNumber = 1
