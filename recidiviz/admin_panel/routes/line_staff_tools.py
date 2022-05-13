@@ -18,7 +18,7 @@
 import csv
 import logging
 import os
-from datetime import date
+import tempfile
 from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Tuple, Union
@@ -39,10 +39,7 @@ from recidiviz.admin_panel.line_staff_tools.constants import (
 )
 from recidiviz.admin_panel.line_staff_tools.rosters import RosterManager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_utils import (
-    make_bq_compatible_types_for_df,
-    normalize_column_name_for_bq,
-)
+from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -535,16 +532,22 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             return str(error), HTTPStatus.BAD_REQUEST
 
         df = pd.read_excel(request.files["file"], engine="openpyxl")
-        df["date_of_standards"] = date.fromisoformat(date_of_standards)
+        df["date_of_standards"] = date_of_standards
 
         df.rename(columns=normalize_column_name_for_bq, inplace=True)
-        df = make_bq_compatible_types_for_df(
-            df, convert_datetime_to_date=True, bool_map={"Y": True, "N": False}
-        )
+        # Convert to types that support pd.NA. This ensures that ints (which don't support pd.NA)
+        # get converted to Int32 (which does) instead of float (which also does).
+        df = df.convert_dtypes()
 
-        bq = BigQueryClientImpl()
-        insert_job = bq.load_into_table_from_dataframe_async(
-            df, bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET), table_name
-        )
-        insert_job.result()
+        # Convert our DataFrame to a CSV and upload that. BigQuery can understand our data types in
+        # CSV form without much fussing, and pandas->BQ has issues when a non-string column has
+        # no data in it.
+        with tempfile.TemporaryFile() as fp:
+            df.to_csv(fp, index=False, header=False)
+            bq = BigQueryClientImpl()
+            insert_job = bq.load_into_table_from_file_async(
+                fp, bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET), table_name
+            )
+
+            insert_job.result()
         return "", HTTPStatus.OK

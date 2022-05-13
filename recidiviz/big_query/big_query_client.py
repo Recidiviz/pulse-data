@@ -24,7 +24,7 @@ import logging
 import time
 from collections import defaultdict
 from concurrent import futures
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
+from typing import IO, Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pandas as pd
 import pytz
@@ -272,6 +272,31 @@ class BigQueryClient:
 
         Args:
             source: A DataFrame containing the contents to load into the table.
+            destination_dataset_ref: The BigQuery dataset to load the table into. Gets created
+                if it does not already exist.
+            destination_table_id: String name of the table to import.
+        Returns:
+            The LoadJob object containing job details.
+        """
+
+    @abc.abstractmethod
+    def load_into_table_from_file_async(
+        self,
+        source: IO,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+    ) -> bigquery.job.LoadJob:
+        """Loads a table from a file to BigQuery.
+
+        Given a desired table name and source file handle, loads the table into BigQuery.
+        Schema will be automatically inferred.
+
+        This starts the job, but does not wait until it completes.
+
+        Tables are created if they do not exist.
+
+        Args:
+            source: A file handle opened in binary mode for reading.
             destination_dataset_ref: The BigQuery dataset to load the table into. Gets created
                 if it does not already exist.
             destination_table_id: String name of the table to import.
@@ -940,6 +965,37 @@ class BigQueryClientImpl(BigQueryClient):
 
         load_job = self.client.load_table_from_dataframe(
             source, destination_table_ref, job_config=job_config
+        )
+
+        logging.info(
+            "Started load job [%s] for table [%s.%s.%s]",
+            load_job.job_id,
+            destination_table_ref.project,
+            destination_table_ref.dataset_id,
+            destination_table_ref.table_id,
+        )
+
+        return load_job
+
+    def load_into_table_from_file_async(
+        self,
+        source: IO,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+    ) -> bigquery.job.LoadJob:
+        self.create_dataset_if_necessary(destination_dataset_ref)
+
+        destination_table_ref = destination_dataset_ref.table(destination_table_id)
+
+        job_config = bigquery.LoadJobConfig()
+        job_config.allow_quoted_newlines = True
+        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_APPEND
+
+        load_job = self.client.load_table_from_file(
+            source,
+            destination_table_ref,
+            job_config=job_config,
+            rewind=True,  # ensure we're at the beginning of the file
         )
 
         logging.info(

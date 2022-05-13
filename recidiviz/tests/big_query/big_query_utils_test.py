@@ -16,16 +16,10 @@
 # =============================================================================
 """Tests for big_query_utils.py"""
 import unittest
-from datetime import date, time
 
-import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal
 
-from recidiviz.big_query.big_query_utils import (
-    make_bq_compatible_types_for_df,
-    normalize_column_name_for_bq,
-)
+from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 
 
 class BigQueryUtilsTest(unittest.TestCase):
@@ -64,43 +58,3 @@ class BigQueryUtilsTest(unittest.TestCase):
         for column_name in self.column_names:
             normalized = normalize_column_name_for_bq(column_name)
             self.assertEqual(normalized, self.valid_column_name)
-
-    def test_make_bq_compatible_types_for_df_convert_to_date(self) -> None:
-        df = make_bq_compatible_types_for_df(
-            self.df,
-            convert_datetime_to_date=True,
-            bool_map={"Y": True, "N": False},
-        )
-        expected_df = pd.DataFrame(
-            {
-                "string_col": pd.Series([pd.NA, "val a", "Y"], dtype="string"),
-                "int_col": pd.Series([2, 3, 10], dtype="Int64"),
-                "time_col": [time(4, 56), time(12, 34, 56), pd.NaT],
-                "date_col": [date(2022, 1, 1), pd.NA, date(2022, 3, 4)],
-                "bool_col": [pd.NA, True, False],
-            }
-        )
-
-        assert_frame_equal(df, expected_df, check_column_type=True)
-
-    def test_make_bq_compatible_types_for_df_no_convert_to_date(self) -> None:
-        df = make_bq_compatible_types_for_df(
-            self.df,
-            convert_datetime_to_date=False,
-            bool_map={"Y": True, "N": False},
-        )
-        expected_df = pd.DataFrame(
-            {
-                "string_col": pd.Series([pd.NA, "val a", "Y"], dtype="string"),
-                "int_col": pd.Series([2, 3, 10], dtype="Int64"),
-                "time_col": [time(4, 56), time(12, 34, 56), pd.NaT],
-                "date_col": [
-                    np.datetime64("2022-01-01 01:23:45"),
-                    pd.NaT,
-                    np.datetime64("2022-03-04"),
-                ],
-                "bool_col": [pd.NA, True, False],
-            }
-        )
-
-        assert_frame_equal(df, expected_df, check_column_type=True)

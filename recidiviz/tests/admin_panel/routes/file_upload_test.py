@@ -16,15 +16,12 @@
 # =============================================================================
 """Tests for file upload line staff tools route"""
 import os
-from datetime import date, time
 from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-import pandas as pd
 from flask import Blueprint, Flask
 from google.cloud import bigquery
-from pandas.testing import assert_frame_equal
 
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 
@@ -134,20 +131,8 @@ class FileUploadEndpointTests(TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        expected_date = date(2022, 3, 10)
-        expected_df = pd.DataFrame(
-            {
-                "string_col": pd.Series([pd.NA, "val a", "val, b"], dtype="string"),
-                "_1_int_col": pd.Series([2, 3, 10], dtype="Int64"),
-                "_time_col": [time(4, 56), time(12, 34, 56), pd.NaT],
-                "date_col": [date(2022, 1, 1), pd.NA, pd.NA],
-                "bool_col": [pd.NA, True, False],
-                "date_of_standards": [expected_date] * 3,
-            }
-        )
-
-        self.mock_bq_client.load_into_table_from_dataframe_async.assert_called_once()
-        args = self.mock_bq_client.load_into_table_from_dataframe_async.call_args.args
-        assert_frame_equal(args[0], expected_df, check_column_type=False)
+        self.mock_bq_client.load_into_table_from_file_async.assert_called_once()
+        args = self.mock_bq_client.load_into_table_from_file_async.call_args.args
+        # don't test the contents of the file since the file pointer has already been closed
         self.assertEqual(args[1], self.mock_dataset)
         self.assertEqual(args[2], "us_tn_standards_due")
