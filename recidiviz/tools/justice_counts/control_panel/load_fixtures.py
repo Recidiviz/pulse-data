@@ -29,38 +29,53 @@ Usage against default development database (docker-compose v2):
 docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 """
 import logging
-import os
+from typing import List
 
 from sqlalchemy.engine import Engine
 
 from recidiviz.persistence.database.schema.justice_counts.schema import (
+    JusticeCountsBase,
     Report,
     Source,
-    UserAccount,
-    agency_user_account_association_table,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.utils.fixture_helpers import reset_fixtures
+from recidiviz.tools.justice_counts.control_panel.generate_fixtures import (
+    generate_fixtures,
+)
+from recidiviz.tools.utils.fixture_helpers import _get_table_name
 from recidiviz.utils.environment import in_development
+
+logger = logging.getLogger(__name__)
 
 
 def reset_justice_counts_fixtures(engine: Engine) -> None:
     """Deletes all data and then re-imports data from our fixture files."""
-    reset_fixtures(
-        engine=engine,
-        # TODO(#11588): Add fixture data for all Justice Counts schema tables
-        tables=[Source, Report, UserAccount, agency_user_account_association_table],
-        fixture_directory=os.path.join(
-            os.path.dirname(__file__),
-            "../../../..",
-            "recidiviz/tools/justice_counts/control_panel/fixtures/",
-        ),
-        csv_headers=True,
-    )
+    logger.info("Resetting fixtures for database %s", engine.url)
+
+    tables: List[JusticeCountsBase] = [Source, Report]
+    session = Session(bind=engine)
+    for table in reversed(tables):
+        table_name = _get_table_name(module=table)
+        logger.info("Removing data from `%s` table", table_name)
+        session.query(table).delete()
+
+    # object_groups is a list of lists, each of which will get added,
+    # in order, via session.add_all() + session.commit(). Objects that
+    # depend on another object already being present in the db should
+    # be added in a subsequent object group.
+    object_groups = generate_fixtures()
+    for object_group in object_groups:
+        logger.info(
+            "Adding a group of %d objects to the db",
+            len(object_group),
+        )
+        session.add_all(object_group)
+        session.commit()
 
 
 if __name__ == "__main__":

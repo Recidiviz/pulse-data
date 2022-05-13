@@ -42,6 +42,9 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
+    reset_justice_counts_fixtures,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -74,6 +77,9 @@ class JusticeCountsDatabaseTestCase(TestCase):
             database_key=self.database_key,
             db_url=local_postgres_helpers.on_disk_postgres_db_url(),
         )
+
+    def load_fixtures(self) -> None:
+        reset_justice_counts_fixtures(self.engine)
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
