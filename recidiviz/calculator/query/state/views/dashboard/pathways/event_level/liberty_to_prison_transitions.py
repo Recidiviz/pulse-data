@@ -113,6 +113,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "race",
         "judicial_district",
         "prior_length_of_incarceration",
+        "state_code",
     ],
 )
 
