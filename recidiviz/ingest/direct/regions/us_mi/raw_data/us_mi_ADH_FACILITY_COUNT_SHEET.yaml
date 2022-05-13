@@ -16,6 +16,8 @@ columns:
       table.
     is_pii: True
   - name: offender_last_name
+    description: |-
+      The last name of the person who is incarcerated.
     is_pii: True
   - name: out_flag
   - name: empty_flag
