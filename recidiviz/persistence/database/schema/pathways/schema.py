@@ -43,15 +43,15 @@ class LibertyToPrisonTransitions(PathwaysBase):
     # Denormalized transition month
     month = Column(Integer, nullable=False)
     # Bin of when the transition occurred (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
-    time_period = Column(String, nullable=False)
+    time_period = Column(String, nullable=True)
     # Person ID for the transition
     person_id = Column(Integer, primary_key=True, nullable=False)
     # Age group of the person when the transition occurred (see recidiviz.calculator.query.bq_utils.add_age_groups)
-    age_group = Column(String, nullable=False)
+    age_group = Column(String, nullable=True)
     # Gender of the person
-    gender = Column(String, nullable=False)
+    gender = Column(String, nullable=True)
     # `prioritized_race_or_ethnicity` of the person
-    race = Column(String, nullable=False)
+    race = Column(String, nullable=True)
     # District the transition occurred in
     judicial_district = Column(String, nullable=False)
     # Total number of months the person was previously incarcerated
