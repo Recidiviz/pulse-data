@@ -10,9 +10,13 @@ function write_to_file {
 read -p "Enter your email: " USER_EMAIL
 run_cmd mkdir -p recidiviz/case_triage/local/gcs/case-triage-data/ recidiviz/local/gsm/
 
-# Load staging Auth0 configuration. Uses subshell to remove additional output from gcloud util
-AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=case_triage_auth0 --project recidiviz-staging))
-write_to_file "$AUTH0_CONFIGURATION" recidiviz/local/gsm/case_triage_auth0
+# Load staging Case Triage Auth0 configuration. Uses subshell to remove additional output from gcloud util
+CASE_TRIAGE_AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=case_triage_auth0 --project recidiviz-staging))
+write_to_file "$CASE_TRIAGE_AUTH0_CONFIGURATION" recidiviz/local/gsm/case_triage_auth0
+
+# Load staging Dashboard Auth0 configuration. Uses subshell to remove additional output from gcloud util
+DASHBOARD_AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=dashboard_auth0 --project recidiviz-staging))
+write_to_file "$DASHBOARD_AUTH0_CONFIGURATION" recidiviz/local/gsm/dashboard_auth0
 
 # Load staging INTERCOM_APP_KEY. Uses subshell to remove additional output from gcloud util
 INTERCOM_APP_KEY=$(echo $(gcloud secrets versions access latest --secret=case_triage_intercom_app_key --project recidiviz-staging))
