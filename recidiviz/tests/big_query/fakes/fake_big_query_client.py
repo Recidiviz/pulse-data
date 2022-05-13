@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A fake implementation of BigQueryClient for use in tests."""
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
+from typing import IO, Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pandas as pd
 import sqlalchemy
@@ -175,6 +175,14 @@ class FakeBigQueryClient(BigQueryClient):
     def load_into_table_from_dataframe_async(
         self,
         source: pd.DataFrame,
+        destination_dataset_ref: bigquery.DatasetReference,
+        destination_table_id: str,
+    ) -> bigquery.job.LoadJob:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def load_into_table_from_file_async(
+        self,
+        source: IO,
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
     ) -> bigquery.job.LoadJob:
