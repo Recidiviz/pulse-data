@@ -29,12 +29,12 @@ PathwaysBase: DeclarativeMeta = declarative_base(
 )
 
 
-class LibertyToPrison(PathwaysBase):
+class LibertyToPrisonTransitions(PathwaysBase):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions`
     """
 
-    __tablename__ = "liberty_to_prison"
+    __tablename__ = "liberty_to_prison_transitions"
 
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
