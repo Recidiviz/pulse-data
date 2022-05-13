@@ -53,7 +53,7 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
             return
         raise e
 
-    session["user_permissions"] = get_permissions_from_token(jwt_claims)
+    session["user_permissions"] = get_permissions_from_token(jwt_claims) or []
     g.user_context = UserContext(
         auth0_user_id=session["jwt_sub"], permissions=session["user_permissions"]
     )

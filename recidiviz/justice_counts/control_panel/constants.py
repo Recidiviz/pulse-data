@@ -20,4 +20,3 @@ import enum
 
 class ControlPanelPermission(enum.Enum):
     CREATE_REPORT = "create:report:all"
-    READ_REPORTS = "read:reports:all"
