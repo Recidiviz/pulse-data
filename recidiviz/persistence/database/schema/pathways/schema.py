@@ -56,3 +56,5 @@ class LibertyToPrisonTransitions(PathwaysBase):
     judicial_district = Column(String, nullable=False)
     # Total number of months the person was previously incarcerated
     prior_length_of_incarceration = Column(String, nullable=False)
+    # State code for the transition
+    state_code = Column(String, nullable=False)
