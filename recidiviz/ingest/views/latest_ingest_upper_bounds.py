@@ -22,6 +22,8 @@ from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#11424): Delete this view once BQ materialization has shipped to all states
+#  and the reference to this view in `ingest_metadata_store.py` has been deleted.
 LATEST_INGESTED_UPPER_BOUNDS_QUERY_TEMPLATE = """
 WITH
 primary_ingest_file_dates AS (

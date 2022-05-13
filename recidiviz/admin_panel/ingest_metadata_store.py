@@ -77,7 +77,7 @@ def cloud_sql_refresh_status_query_for_schema(
 @attr.define(frozen=True, kw_only=True)
 class StateDataFreshnessInfo:
     state_code: StateCode
-    state_dataset_data_freshness: Optional[datetime.date]
+    state_dataset_data_freshness: Optional[datetime.datetime]
     last_state_dataset_refresh_time: Optional[datetime.datetime]
 
 
@@ -108,18 +108,59 @@ class IngestDataFreshnessStore(AdminPanelStore):
 
         regions_paused = bq_export_config.region_codes_to_exclude
 
-        latest_upper_bounds_path = GcsfsFilePath.from_absolute_path(
-            f"gs://{metadata.project_id()}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"
-        )
-        latest_upper_bounds_json = self.gcs_fs.download_as_string(
-            latest_upper_bounds_path
-        )
         latest_upper_bounds: List[Dict[str, Union[Optional[str], bool]]] = []
 
         ingest_view_materialization_gating_context = (
             IngestViewMaterializationGatingContext.load_from_gcs()
         )
 
+        ingested_states = get_direct_ingest_states_launched_in_env()
+
+        bq_enabled_states = [
+            state_code
+            for state_code in ingested_states
+            if ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
+                state_code, DirectIngestInstance.PRIMARY
+            )
+            and state_code != StateCode.US_ND
+        ]
+
+        no_bq_materialization_enabled_states = [
+            state_code
+            for state_code in ingested_states
+            if state_code not in bq_enabled_states
+        ]
+
+        state_data_freshness = self.get_data_freshness_by_state(
+            state_codes=bq_enabled_states,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+        # TODO(#11424): Loop over ingested_states directly once BQ materialization is
+        #  shipped in all states.
+        for state_code in bq_enabled_states:
+            latest_upper_bounds.append(
+                {
+                    "state": state_code.name,
+                    # TODO(#11413): Update to pass the correct date through here (PR 9).
+                    "date": _iso_date_string_from_optional_datetime(
+                        state_data_freshness[state_code].state_dataset_data_freshness
+                    ),
+                    "lastRefreshDate": _iso_date_string_from_optional_datetime(
+                        state_data_freshness[state_code].last_state_dataset_refresh_time
+                    ),
+                    "ingestPaused": state_code.name in regions_paused,
+                }
+            )
+
+        # START POST BQ MIGRATION CLEANUP BLOCK
+        # TODO(#11424): Delete this block once BQ materialization is shipped in all states.
+        latest_upper_bounds_path = GcsfsFilePath.from_absolute_path(
+            f"gs://{metadata.project_id()}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"
+        )
+        latest_upper_bounds_json = self.gcs_fs.download_as_string(
+            latest_upper_bounds_path
+        )
         refresh_status_bq = self.get_statuses_for_schema(SchemaType.STATE)
         processed_date_by_state_code: Dict[str, str] = {}
         for line in latest_upper_bounds_json.splitlines():
@@ -131,44 +172,21 @@ class IngestDataFreshnessStore(AdminPanelStore):
             processed_date_by_state_code[state_code_str.upper()] = struct.get(
                 "processed_date"
             )
+        for state_code in no_bq_materialization_enabled_states:
+            latest_upper_bounds.append(
+                {
+                    "state": state_code.name,
+                    "date": processed_date_by_state_code.get(state_code.name),
+                    "lastRefreshDate": refresh_status_bq[
+                        state_code
+                    ].last_refresh_datetime.isoformat()
+                    if refresh_status_bq.get(state_code)
+                    else None,
+                    "ingestPaused": state_code.name in regions_paused,
+                }
+            )
+        # END POST BQ MIGRATION CLEANUP BLOCK
 
-        for state_code in get_direct_ingest_states_launched_in_env():
-            # Check PRIMARY for bq materialization since that is where BQ is exported to.
-            if ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
-                state_code, DirectIngestInstance.PRIMARY
-            ):
-                latest_upper_bounds.append(
-                    {
-                        "state": state_code.name,
-                        # TODO(#11413): Update to pass the correct date through here (PR 9).
-                        "date": processed_date_by_state_code.get(state_code.name),
-                        "lastRefreshDate": refresh_status_bq[
-                            state_code
-                        ].last_refresh_datetime.isoformat()
-                        if refresh_status_bq.get(state_code)
-                        else None,
-                        "ingestPaused": state_code.name in regions_paused,
-                        # TODO(#11413): Delete this flag and frontend usage once we
-                        #  have proper support for BQ materialization.
-                        "isBQMaterializationEnabled": True,
-                    }
-                )
-            else:
-                latest_upper_bounds.append(
-                    {
-                        "state": state_code.name,
-                        "date": processed_date_by_state_code.get(state_code.name),
-                        "lastRefreshDate": refresh_status_bq[
-                            state_code
-                        ].last_refresh_datetime.isoformat()
-                        if refresh_status_bq.get(state_code)
-                        else None,
-                        "ingestPaused": state_code.name in regions_paused,
-                        # TODO(#11413): Delete this flag and frontend usage once we
-                        #  have proper support for BQ materialization.
-                        "isBQMaterializationEnabled": False,
-                    }
-                )
         self.data_freshness_results = latest_upper_bounds
 
     def get_statuses_for_schema(
@@ -198,9 +216,8 @@ class IngestDataFreshnessStore(AdminPanelStore):
         ingest_instance: DirectIngestInstance,
         dataset_prefix: Optional[str],
     ) -> Dict[StateCode, StateDataFreshnessInfo]:
-        """
-        Returns the ingest "high water mark" for each state,
-        i.e. the latest date where all files on or before that date are processed for a that state.
+        """Returns the ingest "high water mark" for each state, i.e. the latest date
+        where all files on or before that date are processed for a that state
         """
         date_freshness_by_state: Dict[StateCode, StateDataFreshnessInfo] = {}
         refresh_status_bq = self.get_statuses_for_schema(SchemaType.STATE)
@@ -212,23 +229,40 @@ class IngestDataFreshnessStore(AdminPanelStore):
                 dataset_prefix=dataset_prefix,
                 ingest_instance=ingest_instance,
             )
-            max_date_of_processed_data = _pick_least_date(
-                list(
-                    content.get_max_date_of_data_processed_before_datetime(
-                        datetime_utc=refresh_status_bq[state_code].last_refresh_datetime
-                    ).values()
-                )
+            max_dates = content.get_max_date_of_data_processed_before_datetime(
+                datetime_utc=refresh_status_bq[state_code].last_refresh_datetime
             )
-            min_date_of_unprocessed_data = _pick_least_date(
-                list(content.get_min_date_of_unprocessed_data().values())
-            )
-            state_dataset_freshness = _pick_least_date(
-                [max_date_of_processed_data, min_date_of_unprocessed_data]
-            )
+            min_dates = content.get_min_date_of_unprocessed_data()
 
+            done_processing_views_max_date = None
+            still_processing_views_min_date = None
+            all_ingest_view_names = {*max_dates.keys(), *min_dates.keys()}
+            for ingest_view_name in all_ingest_view_names:
+                max_processed_date = max_dates.get(ingest_view_name, None)
+                min_unprocessed_date = min_dates.get(ingest_view_name, None)
+
+                if min_unprocessed_date is not None:
+                    # If there are still unprocessed data for this ingest view, then
+                    # we can't show a "freshness" date after the max_processed_date
+                    # of this view.
+                    still_processing_views_min_date = _pick_min_date(
+                        [still_processing_views_min_date, max_processed_date]
+                    )
+                else:
+                    # For all views that are done processing, we pick the max date
+                    # of all those views to show the freshness of the data.
+                    done_processing_views_max_date = _pick_max_date(
+                        [done_processing_views_max_date, max_processed_date]
+                    )
+
+            state_dataset_data_freshness = (
+                still_processing_views_min_date
+                if still_processing_views_min_date
+                else done_processing_views_max_date
+            )
             date_freshness_by_state[state_code] = StateDataFreshnessInfo(
                 state_code=state_code,
-                state_dataset_data_freshness=state_dataset_freshness,
+                state_dataset_data_freshness=state_dataset_data_freshness,
                 last_state_dataset_refresh_time=refresh_status_bq[
                     state_code
                 ].last_refresh_datetime
@@ -239,13 +273,30 @@ class IngestDataFreshnessStore(AdminPanelStore):
         return date_freshness_by_state
 
 
-def _pick_least_date(
+def _iso_date_string_from_optional_datetime(
+    dt: Optional[datetime.datetime],
+) -> Optional[str]:
+    if not dt:
+        return None
+    return dt.date().isoformat()
+
+
+def _pick_min_date(
     dates: List[Optional[datetime.datetime]],
 ) -> Optional[datetime.datetime]:
     non_optional_dates = [d for d in dates if d is not None]
     if not non_optional_dates:
         return None
     return min(non_optional_dates)
+
+
+def _pick_max_date(
+    dates: List[Optional[datetime.datetime]],
+) -> Optional[datetime.datetime]:
+    non_optional_dates = [d for d in dates if d is not None]
+    if not non_optional_dates:
+        return None
+    return max(non_optional_dates)
 
 
 def _bq_refresh_status_record_for_row(row: Row) -> CloudSqlToBqRefreshStatus:
