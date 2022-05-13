@@ -123,6 +123,25 @@ class ReportInterface:
         ReportInterface._raise_if_user_is_unauthorized(
             session=session, agency_id=agency_id, user_account_id=user_account_id
         )
+        report = ReportInterface.create_report_object(
+            agency_id=agency_id,
+            user_account_id=user_account_id,
+            year=year,
+            month=month,
+            frequency=frequency,
+        )
+        session.add(report)
+        session.commit()
+        return report
+
+    @staticmethod
+    def create_report_object(
+        agency_id: int,
+        user_account_id: int,
+        year: int,
+        month: int,
+        frequency: str,
+    ) -> schema.Report:
         report_type = (
             ReportingFrequency.MONTHLY.value
             if frequency == ReportingFrequency.MONTHLY.value
@@ -134,7 +153,7 @@ class ReportInterface:
             if frequency == ReportingFrequency.MONTHLY.value
             else datetime.date(year + 1, month, 1)
         )
-        report = schema.Report(
+        return schema.Report(
             source_id=agency_id,
             type=report_type,
             instance=ReportInterface._get_report_instance(
@@ -149,9 +168,6 @@ class ReportInterface:
             last_modified_at=datetime.datetime.utcnow(),
             modified_by=[user_account_id],
         )
-        session.add(report)
-        session.commit()
-        return report
 
     @staticmethod
     def to_json_response(session: Session, report: schema.Report) -> Dict[str, Any]:

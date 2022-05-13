@@ -68,7 +68,7 @@ pipenv run fixtures-jc
 
 4: Connect your user to an agency via the admin panel. Run the admin panel backend via docker:
 ```bash
-pipenv run admin-jc
+pipenv run docker-admin
 ````
 
 Then run the admin panel frontend (`yarn run dev` from the `frontends/admin-panel` directory). Go to the Agency Provisioning page in the left sidebar (scroll down) and connect your user to `Agency Alpha`.
