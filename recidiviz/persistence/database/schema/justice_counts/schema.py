@@ -52,7 +52,6 @@ from sqlalchemy.sql.sqltypes import (
 
 from recidiviz.common import fips
 from recidiviz.common.constants.states import StateCode
-
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 # Defines the base class for all table classes in the justice counts schema.
@@ -273,7 +272,7 @@ class UserAccount(JusticeCountsBase):
             "email_address": self.email_address,
             "name": self.name,
             "agencies": [agency.to_json() for agency in self.agencies],
-            "permissions": permissions,
+            "permissions": permissions or [],
         }
 
 

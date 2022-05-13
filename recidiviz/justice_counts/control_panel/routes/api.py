@@ -65,7 +65,7 @@ def get_api_blueprint(
         updated_user: UserAccount = UserAccountInterface.get_user_by_email_address(
             session=current_session, email_address=email_address
         )
-        permissions = g.user_context.permissions if "user_context" in g else None
+        permissions = g.user_context.permissions if "user_context" in g else []
         return make_response(updated_user.to_json(permissions=permissions), 200)
 
     @api_blueprint.route("/reports/<report_id>", methods=["GET"])

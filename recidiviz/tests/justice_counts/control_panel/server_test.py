@@ -223,7 +223,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["email_address"], email_address)
         self.assertEqual(response_json["auth0_user_id"], None)
         self.assertEqual(response_json["name"], name)
-        self.assertEqual(response_json["permissions"], None)
+        self.assertEqual(response_json["permissions"], [])
         db_item = self.session.query(UserAccount).one_or_none()
         self.assertEqual(db_item.to_json(), response_json)
 
@@ -247,7 +247,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["email_address"], email_address)
         self.assertEqual(response_json["auth0_user_id"], auth0_user_id)
         self.assertEqual(response_json["name"], "Jane Doe")
-        self.assertEqual(response_json["permissions"], None)
+        self.assertEqual(response_json["permissions"], [])
         db_item = self.session.query(UserAccount).one_or_none()
         self.assertEqual(db_item.to_json(), response_json)
 
@@ -346,7 +346,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user_account.auth0_user_id,
-                permissions=[ControlPanelPermission.READ_REPORTS.value],
+                permissions=[ControlPanelPermission.CREATE_REPORT.value],
             )
             user_response = self.client.post(
                 "/api/users",
@@ -359,7 +359,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertIsNotNone(user_response.json)
         self.assertEqual(
             user_response.json["permissions"] if user_response.json else [],
-            [ControlPanelPermission.READ_REPORTS.value],
+            [ControlPanelPermission.CREATE_REPORT.value],
         )
 
     def test_session(self) -> None:
