@@ -16,7 +16,9 @@
 #  =============================================================================
 """People who have transitioned from liberty to prison by date of incarceration."""
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
     convert_days_to_years,
@@ -73,19 +75,22 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         FROM prior_incarcerations
         group by state_code, person_id, transition_date
     )
-    SELECT
-        prior_incarcerations.* EXCEPT (previous_incarceration_session_length_days, transition_date),
-        sum_length.transition_date,
-        {binned_time_periods} AS time_period,
-        sum_length.prior_length_of_incarceration_days,
-        {length_of_stay} AS prior_length_of_incarceration
-    FROM prior_incarcerations
-    LEFT JOIN sum_length
-        USING(state_code, person_id)
-    WHERE rn = 1
+    , all_transitions AS (
+        SELECT
+            prior_incarcerations.* EXCEPT (previous_incarceration_session_length_days, transition_date),
+            sum_length.transition_date,
+            {binned_time_periods} AS time_period,
+            sum_length.prior_length_of_incarceration_days,
+            {length_of_stay} AS prior_length_of_incarceration
+        FROM prior_incarcerations
+        LEFT JOIN sum_length
+            USING(state_code, person_id)
+        WHERE rn = 1
+    )
+    SELECT {columns} FROM all_transitions
 """
 
-LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=LIBERTY_TO_PRISON_TRANSITIONS_VIEW_NAME,
     view_query_template=LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
@@ -97,6 +102,18 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     length_of_stay=create_buckets_with_cap(
         convert_days_to_years("sum_length.prior_length_of_incarceration_days"), 11
     ),
+    columns=[
+        "transition_date",
+        "year",
+        "month",
+        "time_period",
+        "person_id",
+        "age_group",
+        "gender",
+        "race",
+        "judicial_district",
+        "prior_length_of_incarceration",
+    ],
 )
 
 if __name__ == "__main__":

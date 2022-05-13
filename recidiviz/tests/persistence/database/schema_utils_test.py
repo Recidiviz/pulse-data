@@ -200,7 +200,7 @@ def test_get_all_table_classes() -> None:
         "cell_history",
     ]
     pathways_table_names = [
-        "liberty_to_prison",
+        "liberty_to_prison_transitions",
     ]
     state_table_names = [
         "state_agent",

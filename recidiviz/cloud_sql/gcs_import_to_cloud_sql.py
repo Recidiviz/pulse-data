@@ -187,6 +187,7 @@ def import_gcs_csv_to_cloud_sql(
     columns: List[str],
     region_code: Optional[str] = None,
     seconds_to_wait: int = 60 * 5,  # 5 minutes
+    db_name: Optional[str] = None,
 ) -> None:
     """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
     results to the temporary table, and then swapping the contents of the table.
@@ -194,7 +195,11 @@ def import_gcs_csv_to_cloud_sql(
     If a region_code is provided, selects all rows in the destination_table that do not equal the region_code and
     inserts them into the temp table before swapping.
     """
-    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
+    database_key = (
+        SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
+        if db_name is None
+        else SQLAlchemyDatabaseKey(schema_type=schema_type, db_name=db_name)
+    )
 
     destination_table = model.__tablename__
 
