@@ -28,6 +28,9 @@ columns:
       - value: "12551"
         description: SECURITY_LEVEL_IS
   - name: reporting_station_id
+    description: |-
+      The ID indicating the reporting station, for facility count purposes, as referenced
+      by the REPORTING_STATION table.
   - name: cell_type_id
     description: |-
       The type of cell designated for the unit, as indicated by the REFERENCE_CODE table.

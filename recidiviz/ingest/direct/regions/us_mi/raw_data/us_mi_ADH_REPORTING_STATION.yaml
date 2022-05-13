@@ -1,12 +1,15 @@
 file_tag: ADH_REPORTING_STATION
 file_description: |-
-  blahblhb
+  This table contains information on the reporting station for the various facilities in MIDOC.
 data_classification: source
 primary_key_cols:
   - reporting_station_id
 columns:
   - name: reporting_station_id
+    description: The OMNI-database generated ID for the reporting station row.
   - name: location_id
+    description: |-
+      The ID of the location of the reporting station, as referenced by the LOCATION table.
   - name: building_id
   - name: name
   - name: housing_unit_flag

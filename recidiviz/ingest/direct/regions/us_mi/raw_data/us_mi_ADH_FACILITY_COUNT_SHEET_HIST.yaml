@@ -12,10 +12,12 @@ columns:
   - name: bunk
   - name: offender_number
     description: |-
-      The MIDOC number for a person who is incarceration, as referenced by the OFFENDER
+      The MIDOC number for a person who is incarcerated, as referenced by the OFFENDER
       table.
     is_pii: True
   - name: offender_last_name
+    description: |-
+      The last name of the person who is incarcerated.
     is_pii: True
   - name: out_flag
   - name: empty_flag
