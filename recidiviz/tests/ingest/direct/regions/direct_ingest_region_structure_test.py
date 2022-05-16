@@ -30,7 +30,6 @@ from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -43,7 +42,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_name,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
@@ -206,9 +205,8 @@ class DirectIngestRegionDirStructureBase:
                 self.test.assertEqual(region_code, controller_class.region_code())
 
     def primary_ingest_bucket_for_region(self, region: Region) -> GcsfsBucketPath:
-        return gcsfs_direct_ingest_bucket_for_region(
+        return gcsfs_direct_ingest_bucket_for_state(
             region_code=region.region_code,
-            system_level=SystemLevel.for_region(region),
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
 

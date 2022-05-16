@@ -47,7 +47,6 @@ from typing import List, Optional, Tuple
 from progress.bar import Bar
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     get_direct_ingest_queues_for_state,
 )
@@ -55,8 +54,8 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
-    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
+    gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -106,16 +105,14 @@ class MoveFilesFromStorageController:
         self.dry_run = dry_run
         self.file_filter = file_filter
 
-        self.storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_region(
+        self.storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_state(
             region_code=region,
-            system_level=SystemLevel.STATE,
             # Raw files are only ever stored in the PRIMARY storage bucket
             ingest_instance=DirectIngestInstance.PRIMARY,
             project_id=self.project_id,
         )
-        self.ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+        self.ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
             region_code=region,
-            system_level=SystemLevel.STATE,
             # Raw files are only ever processed in the PRIMARY ingest bucket
             ingest_instance=DirectIngestInstance.PRIMARY,
             project_id=self.project_id,

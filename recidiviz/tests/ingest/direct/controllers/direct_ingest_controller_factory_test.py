@@ -20,7 +20,6 @@ import unittest
 from mock import Mock, patch
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -30,7 +29,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
@@ -45,7 +44,6 @@ from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
     MATERIALIZATION_CONFIG_YAML,
 )
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.utils.regions import get_region
 
 CONTROLLER_FACTORY_PACKAGE_NAME = direct_ingest_controller_factory.__name__
 
@@ -89,11 +87,9 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
 
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
         for region_code in get_existing_region_dir_names():
-            region = get_region(region_code, is_direct_ingest=True)
             for ingest_instance in DirectIngestInstance:
-                ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+                ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
                     region_code=region_code,
-                    system_level=SystemLevel.for_region(region),
                     ingest_instance=ingest_instance,
                 )
                 controller = DirectIngestControllerFactory.build(
@@ -108,11 +104,9 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         self,
     ) -> None:
         for region_code in get_existing_region_dir_names():
-            region = get_region(region_code, is_direct_ingest=True)
             for ingest_instance in DirectIngestInstance:
-                ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+                ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
                     region_code=region_code,
-                    system_level=SystemLevel.for_region(region),
                     ingest_instance=ingest_instance,
                 )
                 controller = DirectIngestControllerFactory.build(
@@ -145,9 +139,8 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             "recidiviz.utils.regions.get_region",
             Mock(return_value=mock_region),
         ):
-            ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+            ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
                 region_code=mock_region.region_code,
-                system_level=SystemLevel.for_region(mock_region),
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
             with self.assertRaisesRegex(
@@ -177,9 +170,8 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             "recidiviz.utils.regions.get_region",
             Mock(return_value=mock_region),
         ):
-            ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+            ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
                 region_code=mock_region.region_code,
-                system_level=SystemLevel.for_region(mock_region),
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
             controller = DirectIngestControllerFactory.build(
@@ -190,9 +182,8 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             self.assertEqual(ingest_bucket_path, controller.ingest_bucket_path)
 
     def test_build_for_unsupported_region_throws(self) -> None:
-        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code="us_xx",
-            system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
         with self.assertRaisesRegex(

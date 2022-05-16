@@ -35,7 +35,6 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct import direct_ingest_control
@@ -52,7 +51,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
@@ -150,9 +149,8 @@ class TestDirectIngestControl(unittest.TestCase):
         self.task_manager_patcher.start().return_value = self.mock_task_manager
 
         self.region_code = "us_nd"
-        self.primary_bucket = gcsfs_direct_ingest_bucket_for_region(
+        self.primary_bucket = gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region_code,
-            system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
@@ -250,7 +248,6 @@ class TestDirectIngestControl(unittest.TestCase):
         bucket_name = build_ingest_bucket_name(
             project_id="recidiviz-xxx",
             region_code=self.region_code,
-            system_level_str="state",
             suffix="",
         )
 
@@ -297,7 +294,6 @@ class TestDirectIngestControl(unittest.TestCase):
         bucket_name = build_ingest_bucket_name(
             project_id="recidiviz-xxx",
             region_code=self.region_code,
-            system_level_str="state",
             suffix="",
         )
 
@@ -509,7 +505,6 @@ class TestDirectIngestControl(unittest.TestCase):
         bucket_name = build_ingest_bucket_name(
             project_id="recidiviz-xxx",
             region_code=self.region_code,
-            system_level_str="state",
             suffix="",
         )
 
@@ -1014,7 +1009,6 @@ class TestDirectIngestControl(unittest.TestCase):
         bucket_name = build_ingest_bucket_name(
             project_id="recidiviz-xxx",
             region_code=self.region_code,
-            system_level_str="state",
             suffix="",
         )
 
@@ -1062,7 +1056,6 @@ class TestDirectIngestControl(unittest.TestCase):
         bucket_name = build_ingest_bucket_name(
             project_id="recidiviz-xxx",
             region_code=region_code,
-            system_level_str="state",
             suffix="",
         )
 
@@ -1151,9 +1144,6 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
 
         fake_supported_regions = {
-            "us_tx_brazos": fake_region(
-                region_code="us_tx_brazos", environment="staging"
-            ),
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"
@@ -1203,12 +1193,8 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         mock_supported_region_codes.assert_called()
-        for region_code, controllers in region_to_mock_controller.items():
-            if region_code == "us_tx_brazos":
-                # Only run for PRIMARY instance
-                self.assertEqual(len(controllers), 1)
-            else:
-                self.assertEqual(len(controllers), len(DirectIngestInstance))
+        for controllers in region_to_mock_controller.values():
+            self.assertEqual(len(controllers), len(DirectIngestInstance))
             for mock_controller in controllers:
                 mock_controller.kick_scheduler.assert_called_once()
 
@@ -1223,9 +1209,6 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
 
         fake_supported_regions = {
-            "us_tx_brazos": fake_region(
-                region_code="us_tx_brazos", environment="staging"
-            ),
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"
@@ -1267,12 +1250,8 @@ class TestDirectIngestControl(unittest.TestCase):
         kick_all_schedulers()
 
         mock_supported_region_codes.assert_called()
-        for region_code, controllers in region_to_mock_controller.items():
-            if region_code == "us_tx_brazos":
-                # Only run for PRIMARY instance
-                self.assertEqual(len(controllers), 1)
-            else:
-                self.assertEqual(len(controllers), len(DirectIngestInstance))
+        for controllers in region_to_mock_controller.values():
+            self.assertEqual(len(controllers), len(DirectIngestInstance))
             for mock_controller in controllers:
                 mock_controller.kick_scheduler.assert_called_once()
 
@@ -1287,9 +1266,6 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
 
         fake_supported_regions = {
-            "us_tx_brazos": fake_region(
-                region_code="us_tx_brazos", environment="staging"
-            ),
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"

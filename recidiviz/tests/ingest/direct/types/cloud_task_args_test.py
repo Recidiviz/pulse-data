@@ -19,12 +19,11 @@ import datetime
 from unittest import TestCase
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_name,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.cloud_task_args import (
@@ -101,10 +100,9 @@ class TestCloudTaskArgs(TestCase):
     # TODO(#11424): Delete this test once BQ materialization is enabled for all states.
     def test_legacy_extract_and_merge_args(self) -> None:
         dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-        bucket = gcsfs_direct_ingest_bucket_for_region(
+        bucket = gcsfs_direct_ingest_bucket_for_state(
             project_id="recidiviz-456",
             region_code="us_xx",
-            system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
         ingest_view_file_path = GcsfsFilePath.from_directory_and_file_name(

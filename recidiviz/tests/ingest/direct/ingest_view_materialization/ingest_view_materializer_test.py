@@ -27,9 +27,8 @@ from google.cloud.bigquery import ScalarQueryParameter
 from mock import Mock, patch
 from more_itertools import one
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
     BQBasedMaterializerDelegate,
@@ -232,10 +231,9 @@ ORDER BY colA, colC
 
 _PROJECT_ID = "recidiviz-456"
 _INGEST_INSTANCE = DirectIngestInstance.SECONDARY
-_OUTPUT_BUCKET_NAME = gcsfs_direct_ingest_bucket_for_region(
+_OUTPUT_BUCKET_NAME = gcsfs_direct_ingest_bucket_for_state(
     project_id=_PROJECT_ID,
     region_code="us_xx",
-    system_level=SystemLevel.STATE,
     ingest_instance=_INGEST_INSTANCE,
 ).bucket_name
 

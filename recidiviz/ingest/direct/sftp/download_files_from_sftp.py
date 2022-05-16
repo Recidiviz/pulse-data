@@ -33,7 +33,6 @@ from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
@@ -42,7 +41,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_sftp_download_bucket_path_for_region,
+    gcsfs_sftp_download_bucket_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
@@ -149,8 +148,8 @@ class DownloadFilesFromSftpController:
 
         self.lower_bound_update_datetime = lower_bound_update_datetime
         self.bucket = (
-            gcsfs_sftp_download_bucket_path_for_region(
-                region_code, SystemLevel.STATE, project_id=self.project_id
+            gcsfs_sftp_download_bucket_path_for_state(
+                region_code, project_id=self.project_id
             )
             if gcs_destination_path is None
             else gcs_destination_path

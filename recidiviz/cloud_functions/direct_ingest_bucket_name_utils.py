@@ -70,11 +70,9 @@ def is_secondary_ingest_bucket(ingest_bucket_name: str) -> bool:
     return match_obj.group("suffix") == INGEST_SECONDARY_BUCKET_SUFFIX
 
 
-def build_ingest_bucket_name(
-    *, project_id: str, region_code: str, system_level_str: str, suffix: str
-) -> str:
+def build_ingest_bucket_name(*, project_id: str, region_code: str, suffix: str) -> str:
     normalized_region_code = region_code.lower().replace("_", "-")
-    bucket_name = f"{project_id}-direct-ingest-{system_level_str}-{normalized_region_code}{suffix}"
+    bucket_name = f"{project_id}-direct-ingest-state-{normalized_region_code}{suffix}"
     if not re.match(_DIRECT_INGEST_BUCKET_REGEX, bucket_name):
         raise ValueError(
             f"Generated ingest bucket name [{bucket_name}] does not match expected regex."
@@ -82,10 +80,8 @@ def build_ingest_bucket_name(
     return bucket_name
 
 
-def build_ingest_storage_bucket_name(
-    *, project_id: str, system_level_str: str, suffix: str
-) -> str:
-    bucket_name = f"{project_id}-direct-ingest-{system_level_str}-storage{suffix}"
+def build_ingest_storage_bucket_name(*, project_id: str, suffix: str) -> str:
+    bucket_name = f"{project_id}-direct-ingest-state-storage{suffix}"
     if not re.match(_DIRECT_INGEST_STORAGE_BUCKET_REGEX, bucket_name):
         raise ValueError(
             f"Generated ingest bucket name [{bucket_name}] does not match expected regex."

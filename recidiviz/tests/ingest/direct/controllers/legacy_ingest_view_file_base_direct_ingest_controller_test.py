@@ -174,24 +174,6 @@ class SingleTagStateTestDirectIngestController(StateTestDirectIngestController):
         return ["tagBasicData"]
 
 
-class CountyTestDirectIngestController(BaseDirectIngestControllerForTests):
-    @classmethod
-    def region_code(cls) -> str:
-        return "us_xx_yyyyy"
-
-    @property
-    def region(self) -> Region:
-        return fake_region(
-            region_code=self.region_code(),
-            agency_type="jail",
-            environment="production",
-            region_module=fake_regions_module,
-        )
-
-    def get_ingest_view_rank_list(self) -> List[str]:
-        return ["tagFullyEmptyFile", "tagHeadersNoContents"]
-
-
 def check_all_paths_processed(
     test_case: unittest.TestCase,
     controller: BaseDirectIngestController,
@@ -730,11 +712,6 @@ class FileBaseMaterializationDirectIngestControllerTest(unittest.TestCase):
         # Assert that there are no leftover locks
         self.assertTrue(
             controller.region_lock_manager.lock_manager.no_active_locks_with_prefix("")
-        )
-
-    def test_county_runs_files_in_order(self) -> None:
-        self.run_async_file_order_test_for_controller_cls(
-            CountyTestDirectIngestController
         )
 
     def test_state_single_split_tag(self) -> None:

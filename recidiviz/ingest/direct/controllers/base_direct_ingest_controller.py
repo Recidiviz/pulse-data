@@ -72,7 +72,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_storage_directory_path_for_state,
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
@@ -195,6 +195,14 @@ class BaseDirectIngestController:
     ) -> None:
         """Initialize the controller."""
         self.region_module_override = region_module_override
+        if (
+            region_system_level := SystemLevel.for_region(self.region)
+        ) != SystemLevel.STATE:
+            raise ValueError(
+                f"Direct ingest does not support system level: [{region_system_level}]"
+            )
+
+        self.system_level = SystemLevel.STATE
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
             ingest_bucket_path
@@ -207,9 +215,8 @@ class BaseDirectIngestController:
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.ingest_bucket_path = ingest_bucket_path
         self.storage_directory_path = (
-            gcsfs_direct_ingest_storage_directory_path_for_region(
+            gcsfs_direct_ingest_storage_directory_path_for_state(
                 region_code=self.region_code(),
-                system_level=self.system_level,
                 ingest_instance=self.ingest_instance,
             )
         )
@@ -370,10 +377,6 @@ class BaseDirectIngestController:
         the current environment and whose results can be processed and commiteed to
         our central data model.
         """
-
-    @property
-    def system_level(self) -> SystemLevel:
-        return SystemLevel.for_region(self.region)
 
     @property
     def ingest_database_key(self) -> SQLAlchemyDatabaseKey:
