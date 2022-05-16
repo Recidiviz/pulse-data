@@ -23,6 +23,7 @@ from typing import Tuple
 from flask import Flask, request
 from google.cloud import pubsub
 from google.protobuf import json_format
+from google.protobuf.json_format import ParseError
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
@@ -96,11 +97,19 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
 @app.route("/import/trigger_pathways", methods=["POST"])
 def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint to trigger standard GCS imports."""
-    req = json_format.ParseDict(request.get_json(), pubsub.types.ReceivedMessage())
-    if not req.message.attributes:
+    data = request.get_json()
+    if not isinstance(data, dict) or "message" not in data:
         return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
 
-    attributes = req.message.attributes
+    try:
+        message = json_format.ParseDict(data["message"], pubsub.types.PubsubMessage())
+    except ParseError:
+        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+    else:
+        if not message.attributes:
+            return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+
+    attributes = message.attributes
 
     bucket_id = attributes["bucketId"]
     object_id = attributes["objectId"]
