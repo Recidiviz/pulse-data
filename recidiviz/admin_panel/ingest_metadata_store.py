@@ -142,7 +142,6 @@ class IngestDataFreshnessStore(AdminPanelStore):
             latest_upper_bounds.append(
                 {
                     "state": state_code.name,
-                    # TODO(#11413): Update to pass the correct date through here (PR 9).
                     "date": _iso_date_string_from_optional_datetime(
                         state_data_freshness[state_code].state_dataset_data_freshness
                     ),
