@@ -169,7 +169,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     status=schema.ReportStatus.DRAFT.value,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
-                self.assertEqual(updated_report.modified_by, [user_a_id, user_a_id])
+                self.assertEqual(updated_report.modified_by, [user_a_id])
                 self.assertEqual(updated_report.last_modified_at, update_datetime)
                 user_c_id = UserAccountInterface.get_user_by_auth0_user_id(
                     session=session,
@@ -182,19 +182,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     status=schema.ReportStatus.DRAFT.value,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
-                self.assertEqual(
-                    updated_report.modified_by, [user_a_id, user_a_id, user_c_id]
-                )
+                self.assertEqual(updated_report.modified_by, [user_a_id, user_c_id])
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
                     report_id=report.id,
                     status=schema.ReportStatus.PUBLISHED.value,
-                    editor_id=user_c_id,
+                    editor_id=user_a_id,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.PUBLISHED)
                 self.assertEqual(
                     updated_report.modified_by,
-                    [user_a_id, user_a_id, user_c_id, user_c_id],
+                    [user_c_id, user_a_id],
                 )
 
     def test_add_budget_metric(self) -> None:
