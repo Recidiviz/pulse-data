@@ -226,7 +226,13 @@ class Agency(Source):
     }
 
     def to_json(self) -> Dict[str, Any]:
-        return {"id": self.id, "name": self.name}
+        return {
+            "id": self.id,
+            "name": self.name,
+            "system": self.system.value if self.system else None,
+            "state_code": self.state_code,
+            "fips_county_code": self.fips_county_code,
+        }
 
 
 class UserAccount(JusticeCountsBase):

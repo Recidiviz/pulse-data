@@ -207,19 +207,37 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         email_address = "user@gmail.com"
         agency_name = "Agency Alpha"
         name = "John Doe"
-        self.session.add(Agency(name=agency_name, id=1))
+        system = "CORRECTIONS"
+        state_code = "us_ca"
+        fips_county_code = "us_ca_sacramento"
+        self.session.add(
+            Agency(
+                name=agency_name,
+                id=1,
+                system=system,
+                state_code=state_code,
+                fips_county_code=fips_county_code,
+            )
+        )
 
         admin_response = self.client.post(
             "/api/users",
-            json={
-                "email_address": email_address,
-                "agency_ids": [1],
-                "name": name,
-            },
+            json={"email_address": email_address, "agency_ids": [1], "name": name},
         )
         self.assertEqual(admin_response.status_code, 200)
         response_json = assert_type(admin_response.json, dict)
-        self.assertEqual(response_json["agencies"], [{"id": 1, "name": agency_name}])
+        self.assertEqual(
+            response_json["agencies"],
+            [
+                {
+                    "fips_county_code": fips_county_code,
+                    "id": 1,
+                    "name": agency_name,
+                    "system": system,
+                    "state_code": state_code,
+                }
+            ],
+        )
         self.assertEqual(response_json["email_address"], email_address)
         self.assertEqual(response_json["auth0_user_id"], None)
         self.assertEqual(response_json["name"], name)
@@ -229,8 +247,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
     def test_update_user(self) -> None:
         agency_name = "Agency Alpha"
+        system = "CORRECTIONS"
+        state_code = "us_ca"
+        fips_county_code = "us_ca_sacramento"
         email_address = "user@gmail.com"
-        agency = Agency(name=agency_name, id=1)
+        agency = Agency(
+            name=agency_name,
+            id=1,
+            system=system,
+            state_code=state_code,
+            fips_county_code=fips_county_code,
+        )
         user_account = UserAccount(
             id=1, name="Jane Doe", agencies=[agency], email_address=email_address
         )
@@ -243,7 +270,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(user_response.status_code, 200)
         response_json = assert_type(user_response.json, dict)
-        self.assertEqual(response_json["agencies"], [{"id": 1, "name": agency_name}])
+        self.assertEqual(
+            response_json["agencies"],
+            [
+                {
+                    "fips_county_code": fips_county_code,
+                    "id": 1,
+                    "name": agency_name,
+                    "system": system,
+                    "state_code": state_code,
+                }
+            ],
+        )
         self.assertEqual(response_json["email_address"], email_address)
         self.assertEqual(response_json["auth0_user_id"], auth0_user_id)
         self.assertEqual(response_json["name"], "Jane Doe")

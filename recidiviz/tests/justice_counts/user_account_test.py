@@ -31,8 +31,33 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            for agency_name in ["Agency Alpha", "Agency Beta", "Agency Gamma"]:
-                AgencyInterface.create_agency(session=session, name=agency_name)
+            for agency in [
+                {
+                    "name": "Agency Alpha",
+                    "system": "LAW_ENFORCEMENT",
+                    "state_code": "us_ca",
+                    "fips_county_code": "us_ca_sacramento",
+                },
+                {
+                    "name": "Agency Beta",
+                    "system": "LAW_ENFORCEMENT",
+                    "state_code": "us_ak",
+                    "fips_county_code": "us_ak_anchorage",
+                },
+                {
+                    "name": "Agency Gamma",
+                    "system": "LAW_ENFORCEMENT",
+                    "state_code": "us_ar",
+                    "fips_county_code": "us_ar_lee",
+                },
+            ]:
+                AgencyInterface.create_agency(
+                    session=session,
+                    name=agency["name"],
+                    system=agency["system"],
+                    state_code=agency["state_code"],
+                    fips_county_code=agency["fips_county_code"],
+                )
 
             UserAccountInterface.create_or_update_user(
                 session=session,

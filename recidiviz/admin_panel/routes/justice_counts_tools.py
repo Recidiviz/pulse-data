@@ -25,6 +25,7 @@ from sqlalchemy.exc import IntegrityError
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.persistence.database.schema.justice_counts.schema import System
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -48,7 +49,18 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 if request.method == "POST":
                     request_json = assert_type(request.json, dict)
                     name = assert_type(request_json.get("name"), str)
-                    agency = AgencyInterface.create_agency(session=session, name=name)
+                    system = assert_type(request_json.get("system"), str)
+                    state_code = assert_type(request_json.get("state_code"), str)
+                    fips_county_code = assert_type(
+                        request_json.get("fips_county_code"), str
+                    )
+                    agency = AgencyInterface.create_agency(
+                        session=session,
+                        name=name,
+                        system=system,
+                        state_code=state_code,
+                        fips_county_code=fips_county_code,
+                    )
                     return (
                         jsonify({"agency": agency.to_json()}),
                         HTTPStatus.OK,
@@ -62,7 +74,8 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                                 for agency in AgencyInterface.get_agencies(
                                     session=session
                                 )
-                            ]
+                            ],
+                            "systems": [enum.value for enum in System],
                         }
                     ),
                     HTTPStatus.OK,

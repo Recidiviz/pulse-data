@@ -29,8 +29,27 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            for agency_name in ["Agency Alpha", "Beta Initiative"]:
-                AgencyInterface.create_agency(session=session, name=agency_name)
+            for agency in [
+                {
+                    "name": "Agency Alpha",
+                    "system": "LAW_ENFORCEMENT",
+                    "state_code": "us_ca",
+                    "fips_county_code": "us_ca_sacramento",
+                },
+                {
+                    "name": "Beta Initiative",
+                    "system": "LAW_ENFORCEMENT",
+                    "state_code": "us_ak",
+                    "fips_county_code": "us_ak_anchorage",
+                },
+            ]:
+                AgencyInterface.create_agency(
+                    session=session,
+                    name=agency["name"],
+                    system=agency["system"],
+                    state_code=agency["state_code"],
+                    fips_county_code=agency["fips_county_code"],
+                )
 
     def test_get_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -69,8 +88,27 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
 
     def test_create_agency(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            for agency_name in ["Agency Gamma", "Agency Delta"]:
-                AgencyInterface.create_agency(session=session, name=agency_name)
+            for agency in [
+                {
+                    "name": "Agency Gamma",
+                    "system": "LAW_ENFORCEMENT",
+                    "state_code": "us_ca",
+                    "fips_county_code": "us_ca_sacramento",
+                },
+                {
+                    "name": "Agency Delta",
+                    "system": "LAW_ENFORCEMENT",
+                    "state_code": "us_ak",
+                    "fips_county_code": "us_ak_anchorage",
+                },
+            ]:
+                AgencyInterface.create_agency(
+                    session=session,
+                    name=agency["name"],
+                    system=agency["system"],
+                    state_code=agency["state_code"],
+                    fips_county_code=agency["fips_county_code"],
+                )
 
         agencies = AgencyInterface.get_agencies(session=session)
         self.assertEqual(
@@ -83,4 +121,10 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
             IntegrityError,
             "psycopg2.errors.UniqueViolation",
         ):
-            AgencyInterface.create_agency(session=session, name="Agency Delta")
+            AgencyInterface.create_agency(
+                session=session,
+                name="Agency Alpha",
+                system="LAW_ENFORCEMENT",
+                state_code="us_ca",
+                fips_county_code="us_ca_sacramento",
+            )

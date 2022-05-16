@@ -24,6 +24,7 @@ import {
   Typography,
   message,
   Space,
+  Select,
 } from "antd";
 import * as React from "react";
 import { SearchOutlined } from "@ant-design/icons";
@@ -31,24 +32,41 @@ import { FilterDropdownProps } from "antd/lib/table/interface";
 import { getAgencies, createAgency } from "../../AdminPanelAPI";
 import {
   AgenciesResponse,
-  Agency,
   CreateAgencyRequest,
   CreateAgencyResponse,
   ErrorResponse,
+  FipsCountyCode,
+  FipsCountyCodeKey,
+  StateCode,
+  StateCodeKey,
 } from "./constants";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = React.useState(false);
+  const [selectedStateCode, setSelectedStateCode] = React.useState<string>("");
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
 
-  const onFinish = async ({ name }: CreateAgencyRequest) => {
+  const onFinish = async ({
+    name,
+    system,
+    stateCode,
+    fipsCountyCode,
+  }: CreateAgencyRequest) => {
     const nameTrimmed = name.trim();
+    const systemTrimmed = system.trim();
+    const stateCodeTrimmed = stateCode.trim().toLocaleLowerCase();
+    const fipsCountyCodeTrimmed = fipsCountyCode.trim().toLocaleLowerCase();
     setShowSpinner(true);
     try {
-      const response = await createAgency(nameTrimmed);
+      const response = await createAgency(
+        nameTrimmed,
+        systemTrimmed,
+        stateCodeTrimmed,
+        fipsCountyCodeTrimmed
+      );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         setShowSpinner(false);
@@ -58,6 +76,7 @@ const AgencyProvisioningView = (): JSX.Element => {
       const { agency } = (await response.json()) as CreateAgencyResponse;
       setData({
         agencies: data?.agencies ? [...data.agencies, agency] : [agency],
+        systems: data?.systems || [],
       });
       form.resetFields();
       setShowSpinner(false);
@@ -68,7 +87,15 @@ const AgencyProvisioningView = (): JSX.Element => {
     }
   };
 
-  const getColumnSearchProps = (dataIndex: keyof Agency) => ({
+  type AgencyRecord = {
+    id: number;
+    name: string;
+    system: string;
+    state: string;
+    county: string;
+  };
+
+  const getColumnSearchProps = (dataIndex: keyof AgencyRecord) => ({
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -104,7 +131,7 @@ const AgencyProvisioningView = (): JSX.Element => {
     filterIcon: (filtered: boolean) => (
       <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
     ),
-    onFilter: (value: string | number | boolean, record: Agency) => {
+    onFilter: (value: string | number | boolean, record: AgencyRecord) => {
       const result = record[dataIndex];
       return result
         ? result
@@ -122,6 +149,24 @@ const AgencyProvisioningView = (): JSX.Element => {
       key: "name",
       ...getColumnSearchProps("name"),
     },
+    {
+      title: "System",
+      dataIndex: "system",
+      key: "system",
+      ...getColumnSearchProps("system"),
+    },
+    {
+      title: "State",
+      dataIndex: "state",
+      key: "stateCode",
+      ...getColumnSearchProps("state"),
+    },
+    {
+      title: "County",
+      dataIndex: "county",
+      key: "fipsCountyCode",
+      ...getColumnSearchProps("county"),
+    },
   ];
 
   return (
@@ -129,7 +174,13 @@ const AgencyProvisioningView = (): JSX.Element => {
       <PageHeader title="Agency Provisioning" />
       <Table
         columns={columns}
-        dataSource={data?.agencies}
+        dataSource={data?.agencies.map((agency) => ({
+          ...agency,
+          system: agency.system,
+          state:
+            StateCode[agency.state_code?.toLocaleLowerCase() as StateCodeKey],
+          county: FipsCountyCode[agency.fips_county_code as FipsCountyCodeKey],
+        }))}
         pagination={{
           hideOnSinglePage: true,
           showSizeChanger: true,
@@ -151,6 +202,56 @@ const AgencyProvisioningView = (): JSX.Element => {
         </Typography.Title>
         <Form.Item label="Name" name="name" rules={[{ required: true }]}>
           <Input disabled={showSpinner} />
+        </Form.Item>
+        <Form.Item label="System" name="system" rules={[{ required: true }]}>
+          <Select disabled={showSpinner || !data?.systems}>
+            {data?.systems?.map((system) => (
+              <Select.Option key={system} value={system}>
+                {system}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+        <Form.Item label="State" name="stateCode" rules={[{ required: true }]}>
+          <Select
+            showSearch
+            optionFilterProp="children"
+            disabled={showSpinner}
+            filterOption={(input, option) =>
+              option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            onSelect={(stateCode: string) => {
+              setSelectedStateCode(stateCode);
+            }}
+          >
+            {Object.keys(StateCode).map((stateCode) => (
+              <Select.Option key={stateCode} value={stateCode}>
+                {StateCode[stateCode as StateCodeKey]}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+        <Form.Item
+          label="County"
+          name="fipsCountyCode"
+          rules={[{ required: true }]}
+        >
+          <Select
+            showSearch
+            optionFilterProp="children"
+            disabled={showSpinner || !selectedStateCode}
+            filterOption={(input, option) =>
+              option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+          >
+            {Object.keys(FipsCountyCode)
+              .filter((code) => code.startsWith(selectedStateCode))
+              .map((fipsCountyCode) => (
+                <Select.Option key={fipsCountyCode} value={fipsCountyCode}>
+                  {FipsCountyCode[fipsCountyCode as FipsCountyCodeKey]}
+                </Select.Option>
+              ))}
+          </Select>
         </Form.Item>
         <Form.Item {...formTailLayout}>
           <Button type="primary" htmlType="submit" disabled={showSpinner}>

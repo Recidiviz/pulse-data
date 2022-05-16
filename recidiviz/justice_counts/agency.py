@@ -27,8 +27,15 @@ class AgencyInterface:
     """Contains methods for setting and getting Agency info."""
 
     @staticmethod
-    def create_agency(session: Session, name: str) -> Agency:
-        agency = Agency(name=name)
+    def create_agency(
+        session: Session, name: str, system: str, state_code: str, fips_county_code: str
+    ) -> Agency:
+        agency = Agency(
+            name=name,
+            system=system,
+            state_code=state_code,
+            fips_county_code=fips_county_code,
+        )
         session.add(agency)
         session.commit()
         return agency
