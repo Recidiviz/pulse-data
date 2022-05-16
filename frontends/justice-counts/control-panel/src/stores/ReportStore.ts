@@ -71,8 +71,8 @@ class ReportStore {
         runInAction(() => {
           allReports.forEach((report: ReportOverview) => {
             this.reportOverviews[report.id] = report;
-            this.loadingOverview = false;
           });
+          this.loadingOverview = false;
         });
       } else {
         throw new Error("No user or agency information initialized.");
