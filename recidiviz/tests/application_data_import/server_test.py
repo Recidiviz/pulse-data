@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Application Data Import Flask server."""
-
+import base64
 from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -48,10 +48,11 @@ class TestApplicationDataImportRoutes(TestCase):
                 "/import/trigger_pathways",
                 json={
                     "message": {
+                        "data": base64.b64encode(b"anything").decode(),
                         "attributes": {
                             "bucketId": self.bucket,
                             "objectId": "US_XX/test-file.csv",
-                        }
+                        },
                     }
                 },
             )
@@ -81,8 +82,9 @@ class TestApplicationDataImportRoutes(TestCase):
                         "attributes": {
                             "bucketId": "invalid-bucket",
                             "objectId": "US_XX/test-file.csv",
-                        }
-                    }
+                        },
+                    },
+                    "subscription": "test-subscription",
                 },
             )
             self.assertEqual(
