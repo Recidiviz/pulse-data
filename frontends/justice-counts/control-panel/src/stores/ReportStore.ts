@@ -36,6 +36,8 @@ class ReportStore {
 
   reportMetrics: { [reportID: string]: Metric[] }; // key by report ID
 
+  loadingOverview: boolean;
+
   constructor(userStore: UserStore, api: API) {
     makeAutoObservable(this);
 
@@ -43,6 +45,7 @@ class ReportStore {
     this.userStore = userStore;
     this.reportOverviews = {};
     this.reportMetrics = {};
+    this.loadingOverview = true;
   }
 
   get reportOverviewList(): ReportOverview[] {
@@ -68,6 +71,7 @@ class ReportStore {
         runInAction(() => {
           allReports.forEach((report: ReportOverview) => {
             this.reportOverviews[report.id] = report;
+            this.loadingOverview = false;
           });
         });
       } else {
