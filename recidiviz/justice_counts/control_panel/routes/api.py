@@ -109,7 +109,7 @@ def get_api_blueprint(
 
     @api_blueprint.route("/reports", methods=["GET"])
     @auth_decorator
-    def get_report_by_agency_id() -> Response:
+    def get_reports_by_agency_id() -> Response:
         request_dict = assert_type(request.args.to_dict(), dict)
         user_id = get_user_account_id(request_dict=assert_type(request_dict, dict))
         agency_id = int(assert_type(request_dict.get("agency_id"), str))

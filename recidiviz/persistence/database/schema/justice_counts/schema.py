@@ -281,6 +281,9 @@ class UserAccount(JusticeCountsBase):
             "permissions": permissions or [],
         }
 
+    def name_or_email(self) -> str:
+        return self.name or self.email_address
+
 
 class Report(JusticeCountsBase):
     """A document that is published by a source that contains data pertaining to the Justice Counts Framework."""

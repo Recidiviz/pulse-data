@@ -95,7 +95,13 @@ class ReportInterface:
         if status and report.status.value != status:
             report.status = schema.ReportStatus[status]
 
-        report.modified_by = (report.modified_by or []) + [editor_id]
+        already_modified_by = set(report.modified_by or [])
+        if editor_id not in already_modified_by:
+            modified_by = list(already_modified_by) + [editor_id]
+        else:
+            # bump most recent modifier to end of list
+            modified_by = list(already_modified_by - {editor_id}) + [editor_id]
+        report.modified_by = modified_by
         report.last_modified_at = datetime.datetime.now()
         session.commit()
         return report
@@ -174,9 +180,10 @@ class ReportInterface:
         editor_names = [
             UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=id
-            ).name
+            ).name_or_email()
             for id in report.modified_by or []
         ]
+
         reporting_frequency = report.get_reporting_frequency()
         return {
             "id": report.id,
