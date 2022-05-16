@@ -66,6 +66,25 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         FROM supervision_sessions_in_system
         GROUP BY 1
     ),
+    -- This CTE pulls out important information about current and past supervision levels which is used to determine 
+    -- eligible supervision level and time on supervision level
+    sup_levels AS (
+        SELECT * 
+        FROM (
+            SELECT sl.person_id,
+                start_date,
+                end_date,
+                sl.supervision_level,
+                supervision_level_raw_text,
+                previous_supervision_level,
+                previous_supervision_level_raw_text,
+                LAG(start_date) OVER(PARTITION BY sl.person_id ORDER BY start_date) AS previous_start_date,
+                MAX(CASE WHEN sl.supervision_level IN ("IN_CUSTODY", "MAXIMUM", "HIGH", "MEDIUM") THEN start_date END) OVER(PARTITION BY sl.person_id) AS latest_start_higher_sup_level,
+            FROM `{project_id}.{sessions_dataset}.supervision_level_raw_text_sessions_materialized` sl
+            WHERE sl.state_code = 'US_TN'
+        )
+        WHERE end_date IS NULL
+    ),
     -- This CTE uses standards list and creates flags to apply supervision level and time spent criteria, as well as bringing various supervision and system session dates
     standards AS (
         SELECT standards.* EXCEPT(Offender_ID),
@@ -73,130 +92,110 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 latest_system_session_start_date,
                 earliest_supervision_start_date_in_latest_system,
                 latest_supervision_start_date,
+                sup_levels.start_date AS current_supervision_level_start,
+                sup_levels.previous_start_date AS previous_supervision_level_start,
                 LPAD(CAST(Offender_ID AS string), 8, '0') AS Offender_ID,
-                -- Criteria: 1 year on Minimum, 18 months on Medium
-                CASE WHEN Supervision_Level LIKE '%MINIMUM%' AND DATE_DIFF(current_date('US/Eastern'),Plan_Start_Date,MONTH)>=12 THEN 1
-                     WHEN Supervision_Level LIKE '%MEDIUM%' AND DATE_DIFF(current_date('US/Eastern'),Plan_Start_Date,MONTH)>=18 THEN 1
-                     ELSE 0 END AS time_on_level_flag,
-                -- Criteria: Currently on Minimum or Medium
-                CASE WHEN (Supervision_Level LIKE '%MEDIUM%' OR Supervision_Level LIKE '%MINIMUM%') THEN 1 ELSE 0 END AS eligible_supervision_level,
-                -- Calculate date when someone became eligible based on supervision level and time on level
-                CASE WHEN Supervision_Level LIKE "%MINIMUM%" THEN DATE_ADD(Plan_Start_Date, INTERVAL 12 MONTH)
-                     WHEN Supervision_Level LIKE "%MEDIUM%" THEN DATE_ADD(Plan_Start_Date, INTERVAL 18 MONTH)
+                -- Criteria: Currently on Minimum/Medium
+                # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
+                -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
+                CASE WHEN ( standards.Supervision_Level LIKE '%MINIMUM%'
+                            AND sup_levels.supervision_level = 'MINIMUM'
+                          )
+                            OR 
+                          ( standards.Supervision_Level LIKE ('%MEDIUM%') 
+                            AND sup_levels.supervision_level = 'MEDIUM'
+                            AND supervision_level_raw_text != '6P3'
+                            )  
+                    THEN 1 
+                    ELSE 0 END AS eligible_supervision_level,
+                -- Criteria: Medium or Less for 18+ months
+                CASE WHEN (
+                            standards.Supervision_Level LIKE ('%MINIMUM%') 
+                            AND sup_levels.supervision_level = 'MINIMUM'
+                            AND DATE_DIFF(current_date('US/Eastern'),sup_levels.start_date,MONTH)>=12
+                            )
+                        OR (
+                            standards.Supervision_Level LIKE ('%MEDIUM%') 
+                            AND sup_levels.supervision_level = 'MEDIUM'
+                            AND supervision_level_raw_text != '6P3' 
+                            AND DATE_DIFF(current_date('US/Eastern'),sup_levels.start_date,MONTH)>=18
+                             )
+                        THEN 1
+                    WHEN standards.Supervision_Level LIKE ('%MINIMUM%')
+                        AND sup_levels.supervision_level = 'MINIMUM'
+                        AND previous_supervision_level IN ('MEDIUM') 
+                        AND previous_supervision_level_raw_text != '6P3' 
+                        AND DATE_DIFF(current_date('US/Eastern'),sup_levels.previous_start_date,MONTH)>=18 
+                        THEN 2
+                     WHEN standards.Supervision_Level LIKE ('%MEDIUM%')
+                        AND sup_levels.supervision_level = 'MEDIUM' 
+                        AND supervision_level_raw_text != '6P3'
+                        AND previous_supervision_level IN ('MINIMUM') 
+                        AND DATE_DIFF(current_date('US/Eastern'),sup_levels.previous_start_date,MONTH)>=18 
+                        THEN 2
+                    ELSE 0 END AS time_on_level_flag,
+                CASE WHEN standards.Supervision_Level LIKE "%MINIMUM%" THEN DATE_ADD(sup_levels.start_date, INTERVAL 12 MONTH)
+                     WHEN standards.Supervision_Level LIKE "%MEDIUM%" THEN DATE_ADD(sup_levels.start_date, INTERVAL 18 MONTH)
                     ELSE '9999-01-01' END AS date_sup_level_eligible,
+                -- Criteria: No Arrests in past year
+                -- Implemented as "no ARRP in past year" which could be true even if Last_ARR_note is over 12 months old and the last check *was* positive. 
+                -- However, VERY few people have arrest checks that are more than 12 months old, so effectively this means we're just checking that the last ARR check is negative
+                -- If someone had a positive arrest check in the past year, but their last one is negative, we're still considering them eligible
+                -- We don't have full arrest history so we can't check this another way
+                CASE WHEN Last_ARR_Type = 'ARRP' AND DATE_DIFF(current_date('US/Eastern'),Last_ARR_Note,MONTH)<12 THEN 0
+                     ELSE 1 END AS no_arrests_flag,
+                CASE WHEN DATE_DIFF(current_date('US/Eastern'),Last_ARR_Note,MONTH)<12 THEN Last_ARR_Type
+                    ELSE NULL END AS arrests_past_year,
+                -- Date when someone became eligible for this criteria
+                -- If last ARR type is ARRP (positive), add 1 year to Last_ARR_Note, i.e. they became eligible 1 year since that check
+                -- Else, pick some *very early date* since someone could have met the criteria of "no arrests in past year" at any time in the past, and it's likely
+                -- that another eligibility date will be the "limiting" date
+                CASE WHEN Last_ARR_Type = 'ARRP' THEN DATE_ADD(Last_ARR_Note, INTERVAL 12 MONTH)
+                     ELSE '1900-01-01'
+                     END AS date_arrest_check_eligible
             FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due` standards
             LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
                 ON pei.external_id = LPAD(CAST(Offender_ID AS string), 8, '0')
             LEFT JOIN calc_dates
                 ON pei.person_id = calc_dates.person_id
+            LEFT JOIN sup_levels
+                ON pei.person_id = sup_levels.person_id
             WHERE date_of_standards = (
                 SELECT MAX(date_of_standards)
                 FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due`
             )
     ), 
-    -- This CTE pulls past supervision plan information to catch edge cases where if someone moved from minimum -> medium less than 18 months ago,
-    -- but collectively has been on medium or less for 18 months, that still counts
-    supervision_plan_2 AS (
-        SELECT *
-        FROM `{project_id}.{analyst_dataset}.us_tn_supervision_plan_logic_materialized`
-        -- Logic: If someone has an open plan, is on Medium, was on Minimum, and time on medium is < 18 months but time since previous minimum
-        -- is > 18 months, we include them
-        WHERE SupervisionLevelClean = 'MEDIUM' 
-        AND prev_level = 'MINIMUM' 
-        AND time_since_prev_start >= 18 
-        AND time_since_current_start < 18
-        AND PlanEndDate IS NULL
-        -- After applying these filters, there should be no duplicates left, but just in case there are multiple open plan periods, this line dedups
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY PlanStartDate DESC, PlanType) = 1
-    ),
-    -- This CTE pulls past supervision plan information to catch edge cases where if someone moved from medium -> minimum less than 12 months ago,
-    -- but collectively has been on medium or less for 18 months, that still counts
-    supervision_plan_3 AS (
-        SELECT *
-        FROM `{project_id}.{analyst_dataset}.us_tn_supervision_plan_logic_materialized`
-        -- Logic: If someone has an open plan, is on Minimum, was on Medium, and time on Minimum is < 12 months but time since previous Medium
-        -- is >= 18 months, we include them
-        WHERE SupervisionLevelClean = 'MINIMUM' 
-        AND prev_level = 'MEDIUM' 
-        AND time_since_prev_start >= 18
-        AND time_since_current_start < 12
-        AND PlanEndDate IS NULL
-        -- After applying these filters, there should be no duplicates left, but just in case there are multiple open plan periods, this line dedups
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY PlanStartDate DESC, PlanType) = 1
-    ),
-    -- This CTE combines the people with edge case situations in the 2nd CTE and 3rd CTE to the main list in the first CTE
-    -- It also creates a flag for "no arrests in past year" which is implemented as "no ARRP in past year" which could be true even if Last_ARR_note is over 12 months old and the last check *was* positive. 
-    -- However, VERY few people have arrest checks that are more than 12 months old, so effectively this means we're just checking that the last ARR check is negative
-    -- If someone had a positive arrest check in the past year, but their last one is negative, we're still considering them eligible
-    -- We don't have full arrest history so we can't check this another way
-    sup_plan_standards AS (
-        SELECT standards.*,
-            CASE WHEN standards.supervision_level LIKE '%MEDIUM%' AND supervision_plan_2.Offender_ID IS NOT NULL THEN 1
-                WHEN standards.supervision_level LIKE '%MINIMUM%' AND supervision_plan_3.Offender_ID IS NOT NULL THEN 1
-                ELSE time_on_level_flag
-                END AS time_on_level_flag_adj,
-            CASE WHEN standards.supervision_level LIKE '%MEDIUM%' AND supervision_plan_2.Offender_ID IS NOT NULL THEN supervision_plan_2.prev_start
-                WHEN standards.supervision_level LIKE '%MINIMUM%' AND supervision_plan_3.Offender_ID IS NOT NULL THEN supervision_plan_3.prev_start
-                ELSE Plan_Start_Date 
-                END AS eligible_level_start,
-            -- Criteria: No Arrests in past year
-            CASE WHEN Last_ARR_Type = 'ARRP' AND DATE_DIFF(current_date('US/Eastern'),Last_ARR_Note,MONTH)<12 THEN 0
-                 ELSE 1 END AS no_arrests_flag,
-            CASE WHEN DATE_DIFF(current_date('US/Eastern'),Last_ARR_Note,MONTH)<12 THEN Last_ARR_Type
-                ELSE NULL END AS arrests_past_year,
-            -- Date when someone became eligible for this criteria
-            -- If last ARR type is ARRP (positive), add 1 year to Last_ARR_Note, i.e. they became eligible 1 year since that check
-            -- Else, pick some *very early date* since someone could have met the criteria of "no arrests in past year" at any time in the past, and it's likely
-            -- that another eligibility date will be the "limiting" date
-            CASE WHEN Last_ARR_Type = 'ARRP' THEN DATE_ADD(Last_ARR_Note, INTERVAL 12 MONTH)
-                 ELSE '1900-01-01'
-                 END AS date_arrest_check_eligible
-        FROM standards
-        LEFT JOIN supervision_plan_2 
-            USING(Offender_ID)
-        LEFT JOIN supervision_plan_3 
-            USING(Offender_ID)
-    ),
-    -- For ISC folks, pull in supervision level higher than minimum for current system session 
-    sup_levels AS (
-        SELECT * 
-        FROM (
-            SELECT person_id,
-                end_date,
-                supervision_level,
-                previous_supervision_level,
-                MAX(CASE WHEN supervision_level IN ("IN_CUSTODY", "MAXIMUM", "HIGH", "MEDIUM") THEN start_date END) OVER(PARTITION BY person_id) AS latest_start_higher_sup_level,
-            FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
-            WHERE state_code = 'US_TN'
-        )
-        WHERE end_date IS NULL
-    ),
     -- Joins together sentences and standards sheet
     sentences_join AS (
-        SELECT  sup_plan_standards.*, 
+        SELECT  standards.*, 
                 sentence_put_together.* EXCEPT(Offender_ID),
                 sl.previous_supervision_level,
+                sl.supervision_level AS supervision_level_internal,
                 latest_start_higher_sup_level,
                 CASE WHEN sentence_put_together.Offender_ID IS NULL THEN 1 ELSE 0 END AS missing_sent_info,
                 -- Criteria: For people on ISC (interstate compact) who are currently on minimum, were assigned to minimum right after supervision intake
                 -- (unassigned supervision level) and haven't had a higher supervision level during this system session, we mark them as automatically
                 -- eligible for compliant reporting
+                # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
+                -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
                 CASE WHEN sl.previous_supervision_level = 'UNASSIGNED'
+                        AND standards.Supervision_Level LIKE ('%MINIMUM%')
                         AND sl.supervision_level = 'MINIMUM'
                         AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
                         THEN 'Eligible'
                     -- For people where the previous supervision level is not Intake (Unassigned) but could be Limited (Compliant Reporting), Unknown, Null, etc
                     -- but who are on minimum without a higher level this system session, we flag them as eligible pending review
                      WHEN COALESCE(sl.previous_supervision_level,'MISSING') != 'UNASSIGNED'
-                        AND sl.supervision_level = 'MINIMUM' 
+                        AND standards.Supervision_Level LIKE ('%MINIMUM%') 
+                        AND sl.supervision_level = 'MINIMUM'
                         AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
                         THEN 'Needs Review'
                     END AS no_sup_level_higher_than_mininmum
-        FROM sup_plan_standards
+        FROM standards
         LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_sentence_logic_materialized` sentence_put_together
             USING(Offender_ID)
         LEFT JOIN sup_levels sl
-            ON sl.person_id = sup_plan_standards.person_id
+            ON sl.person_id = standards.person_id
     ),
     -- This CTE pulls information on drug contacts to understand who satisfies the criteria for drug screens
     contacts_cte AS (
@@ -390,16 +389,16 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     -- than actual amount owed (invoice minus exempt). When that happens, actual unpaid balance is set to the difference between unpaid and exempt
     -- Otherwise, we take the UnpaidAmount and sum it 
     arrearages_latest AS (
-            SELECT sup_plan_standards.Offender_ID, 
+            SELECT standards.Offender_ID, 
                     accounts.AccountSAK, 
                     SUM(
                         CASE WHEN COALESCE(inv_1.InvoiceAmount,0) - COALESCE(inv_1.UnPaidAmount,0) >= COALESCE(inv_1.InvoiceAmount,0) - COALESCE(exemption_1.ExemptAmount,0) THEN COALESCE(inv_1.UnPaidAmount,0) - COALESCE(exemption_1.ExemptAmount,0)
                              ELSE COALESCE(inv_1.UnPaidAmount,0)
                              END
                     ) as unpaid_total_latest,
-            FROM sup_plan_standards
+            FROM standards
             LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderAccounts_latest` accounts
-                ON sup_plan_standards.Offender_ID = accounts.OffenderID
+                ON standards.Offender_ID = accounts.OffenderID
             LEFT JOIN inv inv_1 
                 ON accounts.AccountSAK = inv_1.AccountSAK
                 AND inv_1.InvoiceDate >= COALESCE(DATE_TRUNC(latest_supervision_start_date,MONTH),DATE_TRUNC(latest_system_session_start_date,MONTH),'1900-01-01')
@@ -411,16 +410,16 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             GROUP BY 1,2
     ),
     arrearages_all AS (
-            SELECT sup_plan_standards.Offender_ID, 
+            SELECT standards.Offender_ID, 
                     accounts.AccountSAK, 
                     SUM(
                         CASE WHEN COALESCE(inv_2.InvoiceAmount,0) - COALESCE(inv_2.UnPaidAmount,0) >= COALESCE(inv_2.InvoiceAmount,0) - COALESCE(exemption_2.ExemptAmount,0) THEN COALESCE(inv_2.UnPaidAmount,0) - COALESCE(exemption_2.ExemptAmount,0)
                              ELSE COALESCE(inv_2.UnPaidAmount,0)
                              END
                     ) as unpaid_total_all,
-            FROM sup_plan_standards
+            FROM standards
             LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderAccounts_latest` accounts
-                ON sup_plan_standards.Offender_ID = accounts.OffenderID
+                ON standards.Offender_ID = accounts.OffenderID
             LEFT JOIN inv inv_2 
                 ON accounts.AccountSAK = inv_2.AccountSAK
             LEFT JOIN exemptions exemption_2
@@ -505,10 +504,10 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             ON condition = codes.Code
     ),
     relevant_conditions AS (
-        SELECT sup_plan_standards.Offender_ID, ARRAY_AGG(STRUCT(condition, condition_description)) AS board_conditions
-        FROM sup_plan_standards
+        SELECT standards.Offender_ID, ARRAY_AGG(STRUCT(condition, condition_description)) AS board_conditions
+        FROM standards
         JOIN board_conditions
-            ON sup_plan_standards.Offender_ID = board_conditions.Offender_ID
+            ON standards.Offender_ID = board_conditions.Offender_ID
             AND hearing_date >= COALESCE(latest_system_session_start_date,'1900-01-01')
         GROUP BY 1
     ),
@@ -552,6 +551,10 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 zt_codes,
                 high_ad_client,
                 assessment_date AS latest_assessment_date,
+                CASE WHEN time_on_level_flag = 2 THEN previous_supervision_level_start
+                     WHEN time_on_level_flag = 1 THEN current_supervision_level_start
+                    END AS eligible_level_start,
+                CASE WHEN time_on_level_flag > 0 THEN 1 ELSE 0 END AS time_on_level_flag_adj,
             -- General pattern:
             -- a) if dont have the flag now, didnt have it in past sentences or prior record, eligible
             -- b) if don't have the flag now, didnt have it in prior record, DID have it in past sentences but those sentences expired over 10 years ago, eligible
@@ -765,9 +768,11 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             Staff_Last_Name AS staff_last_name,
             Case_Type AS supervision_type,
             judicial_district,
+            supervision_level_internal,
             Supervision_Level AS supervision_level,
             eligible_level_start,
             Plan_Start_Date AS supervision_level_start,
+            current_supervision_level_start AS supervision_level_start_internal,
             no_sup_level_higher_than_mininmum,
             previous_supervision_level,
             latest_start_higher_sup_level,
@@ -1024,6 +1029,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             AND latest_off_mvmt.latest_mvmt_date >= latest_tepe.latest_tepe_date
     )
     SELECT *,
+        -- These fields are not currently being used in analysis or determining who is eligible - they were created to
+        -- determine when someone did or will be eligible, but the plan is to answer those questions going forward using
+         -- a sessionized view like compliant_reporting_sessions
         GREATEST(date_offenses_eligible,
                 date_sup_level_eligible,
                 date_arrest_check_eligible,
