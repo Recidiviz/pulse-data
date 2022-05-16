@@ -20,6 +20,7 @@ import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import Loading from "../components/Loading";
 import {
   ArrowDownIcon,
   Badge,
@@ -146,57 +147,64 @@ const Reports: React.FC = () => {
 
       {/* Reports List Table */}
       <Table>
-        {filteredReportsMemoized.length > 0 ? (
-          filteredReportsMemoized.map(
-            (report: ReportOverview, index: number) => (
-              <Fragment key={report.id}>
-                <Row
-                  onClick={() => {
-                    navigate(`/reports/${report.id}`);
-                  }}
-                >
-                  {/* Report Period */}
-                  <Cell id="report_period">
-                    {printReportTitle(
-                      report.month,
-                      report.year,
-                      report.frequency
-                    )}
-                    <Badge status={report.status}>
-                      {removeSnakeCase(report.status).toLowerCase()}
-                    </Badge>
-                  </Cell>
-
-                  {/* Status */}
-                  <Cell capitalize>{report.frequency.toLowerCase()}</Cell>
-
-                  {/* Editors */}
-                  <Cell>
-                    {report.editors.length === 0
-                      ? "-"
-                      : printCommaSeparatedList(report.editors)}
-                  </Cell>
-
-                  {/* Last Modified */}
-                  <Cell>
-                    {!report.last_modified_at
-                      ? "-"
-                      : printElapsedDaysSinceDate(report.last_modified_at)}
-                  </Cell>
-                </Row>
-
-                {/* Report Year Marker */}
-                {renderReportYearRow(
-                  filteredReportsMemoized,
-                  index,
-                  report.year
-                )}
-              </Fragment>
-            )
-          )
+        {reportStore.loadingOverview ? (
+          <Loading />
         ) : (
-          <NoReportsDisplay>No reports to display.</NoReportsDisplay>
+          <>
+            {filteredReportsMemoized.length > 0 ? (
+              filteredReportsMemoized.map(
+                (report: ReportOverview, index: number) => (
+                  <Fragment key={report.id}>
+                    <Row
+                      onClick={() => {
+                        navigate(`/reports/${report.id}`);
+                      }}
+                    >
+                      {/* Report Period */}
+                      <Cell id="report_period">
+                        {printReportTitle(
+                          report.month,
+                          report.year,
+                          report.frequency
+                        )}
+                        <Badge status={report.status}>
+                          {removeSnakeCase(report.status).toLowerCase()}
+                        </Badge>
+                      </Cell>
+
+                      {/* Status */}
+                      <Cell capitalize>{report.frequency.toLowerCase()}</Cell>
+
+                      {/* Editors */}
+                      <Cell>
+                        {report.editors.length === 0
+                          ? "-"
+                          : printCommaSeparatedList(report.editors)}
+                      </Cell>
+
+                      {/* Last Modified */}
+                      <Cell>
+                        {!report.last_modified_at
+                          ? "-"
+                          : printElapsedDaysSinceDate(report.last_modified_at)}
+                      </Cell>
+                    </Row>
+
+                    {/* Report Year Marker */}
+                    {renderReportYearRow(
+                      filteredReportsMemoized,
+                      index,
+                      report.year
+                    )}
+                  </Fragment>
+                )
+              )
+            ) : (
+              <NoReportsDisplay>No reports to display.</NoReportsDisplay>
+            )}
+          </>
         )}
+
         {userStore.userAgencies?.length === 0 && (
           <NoReportsDisplay>
             It looks like no agency is tied to this account. Please reach out to

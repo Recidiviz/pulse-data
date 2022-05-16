@@ -32,6 +32,7 @@ jest.mock("react-router-dom", () => ({
 
 beforeEach(() => {
   rootStore.reportStore.reportOverviews = {};
+  rootStore.reportStore.loadingOverview = false;
 });
 
 test("displayed created reports", async () => {

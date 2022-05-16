@@ -49,6 +49,19 @@ test("sort in reportOverviewList", () => {
   );
 });
 
+test("no reports to display", () => {
+  render(
+    <StoreProvider>
+      <Reports />
+    </StoreProvider>
+  );
+
+  const noReportsLoaded = screen.getByText(/Loading data.../i);
+  expect(noReportsLoaded).toBeInTheDocument();
+
+  expect.hasAssertions();
+});
+
 test("displayed reports", () => {
   render(
     <StoreProvider>
@@ -57,6 +70,7 @@ test("displayed reports", () => {
   );
 
   runInAction(() => {
+    rootStore.reportStore.loadingOverview = false;
     rootStore.reportStore.reportOverviews = mockUnorderedReportsMap;
   });
 
@@ -68,19 +82,6 @@ test("displayed reports", () => {
   expect(april2022).toBeInTheDocument();
   expect(december2020).toBeInTheDocument();
   expect(annualReport2019).toBeInTheDocument();
-
-  expect.hasAssertions();
-});
-
-test("no reports to display", () => {
-  render(
-    <StoreProvider>
-      <Reports />
-    </StoreProvider>
-  );
-
-  const noReportsLoaded = screen.getByText(/No reports to display./i);
-  expect(noReportsLoaded).toBeInTheDocument();
 
   expect.hasAssertions();
 });
