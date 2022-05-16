@@ -78,6 +78,9 @@ class ReportStore {
         throw new Error("No user or agency information initialized.");
       }
     } catch (error) {
+      runInAction(() => {
+        this.loadingOverview = false;
+      });
       if (error instanceof Error) return new Error(error.message);
     }
   }
