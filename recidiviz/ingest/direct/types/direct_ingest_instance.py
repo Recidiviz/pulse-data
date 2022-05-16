@@ -43,12 +43,10 @@ class DirectIngestInstance(Enum):
         """Throws a DirectIngestInstanceError if this is not a valid instance for the
         given system level.
         """
-        if system_level == SystemLevel.COUNTY:
-            if self != self.PRIMARY:
-                raise DirectIngestInstanceError(
-                    f"Direct ingest for [{system_level}] only has single, "
-                    f"primary ingest instance. Ingest instance [{self}] not valid."
-                )
+        if system_level != SystemLevel.STATE:
+            raise DirectIngestInstanceError(
+                f"Direct ingest for [{system_level}] not supported."
+            )
 
     def database_key_for_state(self, state_code: StateCode) -> SQLAlchemyDatabaseKey:
         """Returns the key to the database corresponding to the provided state code and

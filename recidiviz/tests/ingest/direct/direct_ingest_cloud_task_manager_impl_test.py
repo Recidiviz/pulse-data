@@ -30,7 +30,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     DirectIngestQueueType,
@@ -43,7 +42,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_name,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.cloud_task_args import (
@@ -67,16 +66,14 @@ _REGION = regions.Region(
     is_direct_ingest=True,
 )
 
-_PRIMARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_region(
+_PRIMARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_state(
     project_id="recidiviz-456",
     region_code=_REGION.region_code,
-    system_level=SystemLevel.STATE,
     ingest_instance=DirectIngestInstance.PRIMARY,
 )
-_SECONDARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_region(
+_SECONDARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_state(
     project_id="recidiviz-456",
     region_code=_REGION.region_code,
-    system_level=SystemLevel.STATE,
     ingest_instance=DirectIngestInstance.SECONDARY,
 )
 
@@ -252,10 +249,9 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
     """Tests for the ExtractAndMergeCloudTaskQueueInfo."""
 
     def setUp(self) -> None:
-        bucket = gcsfs_direct_ingest_bucket_for_region(
+        bucket = gcsfs_direct_ingest_bucket_for_state(
             project_id="recidiviz-456",
             region_code=_REGION.region_code,
-            system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
         self.ingest_view_file_path = GcsfsFilePath.from_directory_and_file_name(

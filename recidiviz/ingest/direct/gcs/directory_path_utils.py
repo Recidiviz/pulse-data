@@ -26,7 +26,6 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     build_ingest_storage_bucket_name,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
@@ -53,10 +52,9 @@ def _bucket_suffix_for_ingest_instance(ingest_instance: DirectIngestInstance) ->
     raise ValueError(f"Unexpected ingest instance [{ingest_instance}]")
 
 
-def gcsfs_direct_ingest_storage_directory_path_for_region(
+def gcsfs_direct_ingest_storage_directory_path_for_state(
     *,
     region_code: str,
-    system_level: SystemLevel,
     ingest_instance: DirectIngestInstance,
     file_type: Optional[GcsfsDirectIngestFileType] = None,
     project_id: Optional[str] = None,
@@ -69,7 +67,6 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
     suffix = _bucket_suffix_for_ingest_instance(ingest_instance)
     bucket_name = build_ingest_storage_bucket_name(
         project_id=project_id,
-        system_level_str=system_level.value.lower(),
         suffix=suffix,
     )
     storage_bucket = GcsfsBucketPath(bucket_name)
@@ -81,10 +78,9 @@ def gcsfs_direct_ingest_storage_directory_path_for_region(
     return GcsfsDirectoryPath.from_dir_and_subdir(storage_bucket, subdir)
 
 
-def gcsfs_direct_ingest_bucket_for_region(
+def gcsfs_direct_ingest_bucket_for_state(
     *,
     region_code: str,
-    system_level: SystemLevel,
     ingest_instance: DirectIngestInstance,
     project_id: Optional[str] = None,
 ) -> GcsfsBucketPath:
@@ -97,14 +93,13 @@ def gcsfs_direct_ingest_bucket_for_region(
     bucket_name = build_ingest_bucket_name(
         project_id=project_id,
         region_code=region_code,
-        system_level_str=system_level.value.lower(),
         suffix=suffix,
     )
     return GcsfsBucketPath(bucket_name=bucket_name)
 
 
-def gcsfs_sftp_download_bucket_path_for_region(
-    region_code: str, system_level: SystemLevel, project_id: Optional[str] = None
+def gcsfs_sftp_download_bucket_path_for_state(
+    region_code: str, project_id: Optional[str] = None
 ) -> GcsfsBucketPath:
     """Returns the GCS Directory Path for the bucket that will hold the SFTP downloaded files."""
     if project_id is None:
@@ -115,7 +110,6 @@ def gcsfs_sftp_download_bucket_path_for_region(
     bucket_name = build_ingest_bucket_name(
         project_id=project_id,
         region_code=region_code,
-        system_level_str=system_level.value.lower(),
         suffix=INGEST_SFTP_BUCKET_SUFFIX,
     )
     return GcsfsBucketPath(bucket_name)

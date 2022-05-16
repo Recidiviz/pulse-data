@@ -26,7 +26,6 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     get_direct_ingest_queues_for_state,
@@ -35,8 +34,8 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
-    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
+    gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
@@ -122,9 +121,8 @@ class IngestOperationsStore(AdminPanelStore):
         region = get_region(formatted_state_code, is_direct_ingest=True)
 
         # Get the ingest bucket for this region and instance
-        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code=formatted_state_code,
-            system_level=SystemLevel.for_region(region),
             ingest_instance=instance,
             project_id=metadata.project_id(),
         )
@@ -268,9 +266,8 @@ class IngestOperationsStore(AdminPanelStore):
         formatted_state_code = state_code.value.lower()
 
         # Get the ingest bucket path
-        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code=formatted_state_code,
-            system_level=SystemLevel.STATE,
             ingest_instance=ingest_instance,
             project_id=metadata.project_id(),
         )
@@ -278,9 +275,8 @@ class IngestOperationsStore(AdminPanelStore):
         ingest_bucket_metadata = self._get_bucket_metadata(ingest_bucket_path)
 
         # Get the storage bucket for this instance
-        storage_bucket_path = gcsfs_direct_ingest_storage_directory_path_for_region(
+        storage_bucket_path = gcsfs_direct_ingest_storage_directory_path_for_state(
             region_code=formatted_state_code,
-            system_level=SystemLevel.STATE,
             ingest_instance=ingest_instance,
             project_id=metadata.project_id(),
         )

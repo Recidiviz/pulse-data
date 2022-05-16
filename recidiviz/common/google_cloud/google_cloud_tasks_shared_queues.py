@@ -16,16 +16,6 @@
 # =============================================================================
 """Queue names for shared Google Cloud Task queues."""
 
-
-# TODO(#6455) - This queue should ideally be renamed to "direct-ingest-jpp-scheduler"
-DIRECT_INGEST_JAILS_SCHEDULER_QUEUE_V2 = "direct-ingest-scheduler-v2"
-
-# TODO(#6455) - This queue should ideally be renamed to "direct-ingest-jpp-bq-import-materialize"
-DIRECT_INGEST_JAILS_BQ_IMPORT_EXPORT_QUEUE_V2 = "direct-ingest-bq-import-export-v2"
-
-# TODO(#6455) - This queue should ideally be renamed to "direct-ingest-jpp-bq-extract-and-merge"
-DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2 = "direct-ingest-jpp-process-job-queue-v2"
-
 CLOUD_SQL_TO_BQ_REFRESH_QUEUE = "cloud-sql-to-bq-refresh"
 CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE = "cloud-sql-to-bq-refresh-scheduler"
 

@@ -19,7 +19,7 @@ import unittest
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -32,9 +32,8 @@ class TestDirectIngestInstance(unittest.TestCase):
     """Tests for the DirectIngestInstance."""
 
     def test_from_state_ingest_bucket(self) -> None:
-        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code="us_xx",
-            system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.PRIMARY,
             project_id="recidiviz-456",
         )
@@ -44,9 +43,8 @@ class TestDirectIngestInstance(unittest.TestCase):
             DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket_path),
         )
 
-        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code="us_xx",
-            system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.SECONDARY,
             project_id="recidiviz-456",
         )
@@ -56,30 +54,16 @@ class TestDirectIngestInstance(unittest.TestCase):
             DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket_path),
         )
 
-    def test_from_county_ingest_bucket(self) -> None:
-        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
-            region_code="us_xx_yyyyy",
-            system_level=SystemLevel.COUNTY,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            project_id="recidiviz-456",
-        )
-
-        self.assertEqual(
-            DirectIngestInstance.PRIMARY,
-            DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket_path),
-        )
-
     def test_check_is_valid_system_level(self) -> None:
-        for system_level in SystemLevel:
-            # Shouldn't crash for any system level
-            DirectIngestInstance.PRIMARY.check_is_valid_system_level(system_level)
+        for ingest_instance in DirectIngestInstance:
+            # Shouldn't crash for any instance for STATE
+            ingest_instance.check_is_valid_system_level(SystemLevel.STATE)
 
-        DirectIngestInstance.SECONDARY.check_is_valid_system_level(SystemLevel.STATE)
-        with self.assertRaisesRegex(
-            DirectIngestInstanceError,
-            r"^Direct ingest for \[SystemLevel.COUNTY\] only has single, primary ingest "
-            r"instance. Ingest instance \[DirectIngestInstance.SECONDARY\] not valid.$",
-        ):
-            DirectIngestInstance.SECONDARY.check_is_valid_system_level(
-                system_level=SystemLevel.COUNTY
-            )
+        for ingest_instance in DirectIngestInstance:
+            with self.assertRaisesRegex(
+                DirectIngestInstanceError,
+                r"^Direct ingest for \[SystemLevel.COUNTY\] not supported.$",
+            ):
+                ingest_instance.check_is_valid_system_level(
+                    system_level=SystemLevel.COUNTY
+                )

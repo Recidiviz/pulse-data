@@ -30,14 +30,13 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
@@ -90,9 +89,8 @@ class BaseUploadStateFilesToIngestBucketController:
         # Raw data uploads always default to primary ingest bucket
         self.destination_ingest_bucket = (
             destination_bucket_override
-            or gcsfs_direct_ingest_bucket_for_region(
+            or gcsfs_direct_ingest_bucket_for_state(
                 region_code=region,
-                system_level=SystemLevel.STATE,
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 project_id=self.project_id,
             )

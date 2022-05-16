@@ -32,11 +32,6 @@ from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
 )
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    DIRECT_INGEST_JAILS_BQ_IMPORT_EXPORT_QUEUE_V2,
-    DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2,
-    DIRECT_INGEST_JAILS_SCHEDULER_QUEUE_V2,
-)
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
@@ -215,24 +210,10 @@ def _queue_name_for_queue_type(
     ingest_instance: DirectIngestInstance,
 ) -> str:
     system_level = SystemLevel.for_region_code(region_code, is_direct_ingest=True)
-    if system_level is SystemLevel.STATE:
-        return _build_direct_ingest_queue_name(region_code, queue_type, ingest_instance)
+    if system_level != SystemLevel.STATE:
+        raise ValueError(f"Unexpected system_level: [{system_level}]")
 
-    if system_level is SystemLevel.COUNTY:
-        if queue_type == DirectIngestQueueType.SFTP_QUEUE:
-            raise ValueError("No SFTP queue yet configured for county direct ingest")
-        if queue_type == DirectIngestQueueType.SCHEDULER:
-            return DIRECT_INGEST_JAILS_SCHEDULER_QUEUE_V2
-        if queue_type == DirectIngestQueueType.PROCESS_JOB_QUEUE:
-            return DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
-        if queue_type in (
-            DirectIngestQueueType.RAW_DATA_IMPORT,
-            DirectIngestQueueType.INGEST_VIEW_EXPORT,
-        ):
-            return DIRECT_INGEST_JAILS_BQ_IMPORT_EXPORT_QUEUE_V2
-        raise ValueError(f"Unexpected queue_type: [{queue_type}]")
-
-    raise ValueError(f"Unexpected system_level: [{system_level}]")
+    return _build_direct_ingest_queue_name(region_code, queue_type, ingest_instance)
 
 
 def get_direct_ingest_queues_for_state(state_code: StateCode) -> List[str]:

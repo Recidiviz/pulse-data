@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# TODO(#12407): Delete all county direct ingest TF resources.
 module "county_direct_ingest_buckets" {
   for_each = toset(keys(local.direct_ingest_county_manifests))
   source   = "./modules/county-direct-ingest-resources"
@@ -26,8 +27,8 @@ module "county_direct_ingest_buckets" {
 
 module "direct_ingest_queues" {
   for_each = toset([
-    "direct-ingest-scheduler-v2",        # TODO(#6455) Rename to "direct-ingest-jpp-scheduler-v2"
-    "direct-ingest-bq-import-export-v2", # TODO(#6455) Rename to "direct-ingest-jpp-bq-import-export-v2"
+    "direct-ingest-scheduler-v2",
+    "direct-ingest-bq-import-export-v2",
     "direct-ingest-jpp-process-job-queue-v2",
   ])
 

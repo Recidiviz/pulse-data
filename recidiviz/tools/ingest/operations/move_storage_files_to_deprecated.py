@@ -42,9 +42,8 @@ from datetime import date
 from typing import List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -95,9 +94,8 @@ class MoveFilesToDeprecatedController:
             )
 
         self.region_storage_dir_path = (
-            gcsfs_direct_ingest_storage_directory_path_for_region(
+            gcsfs_direct_ingest_storage_directory_path_for_state(
                 region_code=region_code,
-                system_level=SystemLevel.STATE,
                 ingest_instance=ingest_instance,
                 project_id=self.project_id,
             )

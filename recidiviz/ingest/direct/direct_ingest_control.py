@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
@@ -270,11 +270,8 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
         with monitoring.push_region_tag(
             region_code, ingest_instance=ingest_instance.value
         ):
-            ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+            ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
                 region_code=region_code,
-                system_level=SystemLevel.for_region(
-                    _region_for_region_code(region_code)
-                ),
                 ingest_instance=ingest_instance,
             )
             try:
@@ -552,11 +549,8 @@ def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
             {TagKey.INGEST_VIEW_MATERIALIZATION_TAG: args.task_id_tag()}
         ):
             try:
-                ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+                ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
                     region_code=region_code,
-                    system_level=SystemLevel.for_region(
-                        _region_for_region_code(region_code)
-                    ),
                     ingest_instance=ingest_instance,
                 )
                 controller = DirectIngestControllerFactory.build(
@@ -706,11 +700,8 @@ def extract_and_merge() -> Tuple[str, HTTPStatus]:
 
         with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
             try:
-                ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+                ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
                     region_code=region_code,
-                    system_level=SystemLevel.for_region(
-                        _region_for_region_code(region_code)
-                    ),
                     ingest_instance=ingest_instance,
                 )
                 controller = DirectIngestControllerFactory.build(
@@ -812,9 +803,8 @@ def kick_all_schedulers() -> None:
                     ingest_instance.check_is_valid_system_level(system_level)
                 except DirectIngestInstanceError:
                     continue
-                ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
+                ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
                     region_code=region_code,
-                    system_level=system_level,
                     ingest_instance=ingest_instance,
                 )
                 controller = DirectIngestControllerFactory.build(

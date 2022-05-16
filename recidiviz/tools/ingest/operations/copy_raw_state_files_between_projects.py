@@ -29,9 +29,8 @@ python -m recidiviz.tools.ingest.operations.copy_raw_state_files_between_project
 import argparse
 import logging
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_storage_directory_path_for_region,
+    gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -88,16 +87,14 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    source_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_region(
+    source_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_state(
         region_code=args.region,
-        system_level=SystemLevel.STATE,
         # Raw files are only ever stored in the PRIMARY storage bucket
         ingest_instance=DirectIngestInstance.PRIMARY,
         project_id=args.source_project_id,
     )
-    destination_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_region(
+    destination_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_state(
         region_code=args.region,
-        system_level=SystemLevel.STATE,
         # Raw files are only ever stored in the PRIMARY storage bucket
         ingest_instance=DirectIngestInstance.PRIMARY,
         project_id=args.destination_project_id,

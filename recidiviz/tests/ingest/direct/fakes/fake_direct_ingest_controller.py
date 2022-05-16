@@ -30,7 +30,6 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     GcsfsFilePath,
 )
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -38,7 +37,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
     BQBasedMaterializerDelegate,
@@ -477,12 +476,8 @@ def build_fake_direct_ingest_controller(
                 new=regions_module,
             ):
                 controller = controller_cls(
-                    ingest_bucket_path=gcsfs_direct_ingest_bucket_for_region(
+                    ingest_bucket_path=gcsfs_direct_ingest_bucket_for_state(
                         region_code=controller_cls.region_code(),
-                        system_level=SystemLevel.for_region_code(
-                            controller_cls.region_code(),
-                            is_direct_ingest=True,
-                        ),
                         ingest_instance=ingest_instance,
                         project_id="recidiviz-xxx",
                     )
