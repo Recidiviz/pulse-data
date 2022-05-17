@@ -18,38 +18,70 @@
 # Create a new service account for Case Triage Cloud Run
 resource "google_service_account" "cloud_run" {
   account_id   = "cloud-run-service-account"
-  display_name = "Cloud Run Service Account"
+  display_name = "Case Triage Cloud Run Service Account"
+  description  = <<EOT
+Service Account that acts as the identity for the Case Triage Cloud Run service.
+The account and its IAM policies are managed in Terraform.
+EOT
 }
 
-resource "google_project_iam_member" "cloud_run_admin" {
-  project = var.project_id
-  role    = "roles/run.admin"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+resource "google_service_account" "application_data_import_cloud_run" {
+  account_id   = "application-data-import-cr"
+  display_name = "Application Data Import Cloud Run Service Account"
+  description  = <<EOT
+Service Account that acts as the identity for the Application Data Import Cloud Run service.
+The account and its IAM policies are managed in Terraform (see #13024).
+EOT
 }
 
-resource "google_project_iam_member" "cloud_run_secret_accessor" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+locals {
+  cloud_run_common_roles = [
+    "roles/run.admin",
+    "roles/secretmanager.secretAccessor",
+    "roles/cloudsql.client",
+    google_project_iam_custom_role.gcs-object-and-bucket-viewer.name,
+    "roles/logging.logWriter"
+  ]
 }
 
-resource "google_project_iam_member" "cloud_run_cloud_sql" {
-  project = var.project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+moved {
+  from = google_project_iam_member.cloud_run_secret_accessor
+  to   = google_project_iam_member.case_triage_iam["roles/secretmanager.secretAccessor"]
+}
+moved {
+  from = google_project_iam_member.cloud_run_admin
+  to   = google_project_iam_member.case_triage_iam["roles/run.admin"]
 }
 
-resource "google_project_iam_member" "cloud_run_gcs_access" {
-  project = var.project_id
-  role    = google_project_iam_custom_role.gcs-object-and-bucket-viewer.name
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+moved {
+  from = google_project_iam_member.cloud_run_cloud_sql
+  to   = google_project_iam_member.case_triage_iam["roles/cloudsql.client"]
 }
 
-resource "google_project_iam_member" "cloud_run_log_writer" {
-  project = var.project_id
-  role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+moved {
+  from = google_project_iam_member.cloud_run_gcs_access
+  to   = google_project_iam_member.case_triage_iam["projects/recidiviz-staging/roles/gcsObjectAndBucketViewer"]
 }
+
+moved {
+  from = google_project_iam_member.cloud_run_log_writer
+  to   = google_project_iam_member.case_triage_iam["roles/logging.logWriter"]
+}
+
+resource "google_project_iam_member" "case_triage_iam" {
+  for_each = toset(local.cloud_run_common_roles)
+  project  = var.project_id
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+resource "google_project_iam_member" "application_data_import_iam" {
+  for_each = toset(local.cloud_run_common_roles)
+  project  = var.project_id
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
+}
+
 
 # Use existing Justice Counts service account for Justice Counts Cloud Run
 data "google_service_account" "justice_counts_cloud_run" {
@@ -209,10 +241,17 @@ resource "google_cloud_run_service" "application-data-import" {
         }
       }
 
-      # TODO(#12449): Add a new service account
+      service_account_name = google_service_account.application_data_import_cloud_run.email
     }
 
     metadata {
+      annotations = {
+        # No need for a min scale. We don't need fast start times for this, so we can have no
+        # instances when it's not being used.
+        "autoscaling.knative.dev/maxScale"      = var.max_application_import_instances
+        "run.googleapis.com/cloudsql-instances" = local.application_data_connection_string
+      }
+
       # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
       # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
       # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
