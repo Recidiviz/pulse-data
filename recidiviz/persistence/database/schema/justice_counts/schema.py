@@ -32,7 +32,6 @@ import enum
 import re
 from typing import Any, Dict, List, Optional, TypeVar
 
-from sqlalchemy import ForeignKey, Table
 from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship, validates
 from sqlalchemy.sql.schema import (
     Column,
@@ -159,15 +158,6 @@ class ReportStatus(enum.Enum):
     PUBLISHED = "PUBLISHED"
 
 
-# This table maintains the many-to-many relationship between UserAccount and Agency.
-agency_user_account_association_table = Table(
-    "agency_user_account_association",
-    JusticeCountsBase.metadata,
-    Column("agency_id", ForeignKey("source.id"), primary_key=True),
-    Column("user_account_id", ForeignKey("user_account.id"), primary_key=True),
-)
-
-
 class Source(JusticeCountsBase):
     """A website or organization that publishes reports.
 
@@ -215,12 +205,6 @@ class Agency(Source):
         fips.validate_county_code(fips_county_code)
         return fips_county_code
 
-    user_accounts = relationship(
-        "UserAccount",
-        secondary=agency_user_account_association_table,
-        back_populates="agencies",
-    )
-
     __mapper_args__ = {
         "polymorphic_identity": "agency",
     }
@@ -257,12 +241,6 @@ class UserAccount(JusticeCountsBase):
     # Used to match up users added manually with users who later sign in via Auth0
     email_address = Column(String(255), nullable=False)
 
-    agencies = relationship(
-        "Agency",
-        secondary=agency_user_account_association_table,
-        back_populates="user_accounts",
-    )
-
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
@@ -271,13 +249,17 @@ class UserAccount(JusticeCountsBase):
         ]
     )
 
-    def to_json(self, permissions: Optional[List[str]] = None) -> Dict[str, Any]:
+    def to_json(
+        self,
+        permissions: Optional[List[str]] = None,
+        agencies: Optional[List[Agency]] = None,
+    ) -> Dict[str, Any]:
         return {
             "id": self.id,
             "auth0_user_id": self.auth0_user_id,
             "email_address": self.email_address,
             "name": self.name,
-            "agencies": [agency.to_json() for agency in self.agencies],
+            "agencies": [agency.to_json() for agency in agencies or []],
             "permissions": permissions or [],
         }
 

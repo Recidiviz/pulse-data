@@ -65,12 +65,6 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
                 name="User",
                 auth0_user_id="id0",
             )
-            for agency_name in ["Agency Alpha", "Agency Beta"]:
-                UserAccountInterface.add_agency_to_user(
-                    session=session,
-                    email_address="user@gmail.com",
-                    agency_name=agency_name,
-                )
 
     def test_create_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -87,15 +81,9 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id="auth0_id",
             )
 
-            # can create user with agency_ids
-            agencies = AgencyInterface.get_agencies_by_name(
-                session=session, names=["Agency Beta", "Agency Gamma"]
-            )
-
             UserAccountInterface.create_user(
                 session=session,
                 email_address="user3@test.com",
-                agency_ids=[agency.id for agency in agencies],
             )
 
             user1 = UserAccountInterface.get_user_by_email_address(
@@ -107,11 +95,6 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
                 session=session, email_address="user2@test.com"
             )
             self.assertEqual(user2.auth0_user_id, "auth0_id")
-
-            user3 = UserAccountInterface.get_user_by_email_address(
-                session=session, email_address="user3@test.com"
-            )
-            self.assertEqual(user3.agencies, agencies)
 
             # Cannot create user with the same email address
             with self.assertRaisesRegex(
@@ -146,23 +129,6 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id="auth0_id",
             )
 
-            # can update user with agency_ids
-            agencies = AgencyInterface.get_agencies_by_name(
-                session=session, names=["Agency Beta", "Agency Gamma"]
-            )
-
-            UserAccountInterface.create_or_update_user(
-                session=session,
-                email_address="user2@gmail.com",
-                agency_ids=[agency.id for agency in agencies],
-            )
-
-            user = UserAccountInterface.get_user_by_email_address(
-                session=session, email_address="user2@gmail.com"
-            )
-            self.assertEqual(user.auth0_user_id, "auth0_id")
-            self.assertEqual(user.agencies, agencies)
-
             # Cannot create user with invalid email address
             with self.assertRaisesRegex(ValueError, "Invalid email address"):
                 UserAccountInterface.create_or_update_user(
@@ -177,9 +143,6 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(user.auth0_user_id, "id0")
             self.assertEqual(user.name, "User")
-            self.assertEqual(
-                {a.name for a in user.agencies}, {"Agency Alpha", "Agency Beta"}
-            )
 
             # Raise error if no user found
             with self.assertRaises(NoResultFound):
@@ -202,24 +165,4 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
             with self.assertRaises(NoResultFound):
                 UserAccountInterface.get_user_by_auth0_user_id(
                     session=session, auth0_user_id="blah"
-                )
-
-    def test_add_agency_to_user(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            UserAccountInterface.add_agency_to_user(
-                session=session,
-                email_address="user@gmail.com",
-                agency_name="Agency Gamma",
-            )
-            user = UserAccountInterface.get_user_by_email_address(
-                session=session, email_address="user@gmail.com"
-            )
-            self.assertIn("Agency Gamma", {a.name for a in user.agencies})
-
-            # Raise error if agency does not exist
-            with self.assertRaises(NoResultFound):
-                UserAccountInterface.add_agency_to_user(
-                    session=session,
-                    email_address="user@gmail.com",
-                    agency_name="Agency Delta",
                 )

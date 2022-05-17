@@ -22,7 +22,6 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, cast
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
-from recidiviz.justice_counts.exceptions import JusticeCountsPermissionError
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     ReportingFrequency,
@@ -46,31 +45,13 @@ class ReportInterface:
     """Contains methods for setting and getting Report info."""
 
     @staticmethod
-    def _raise_if_user_is_unauthorized(
-        session: Session, agency_id: int, user_account_id: int
-    ) -> None:
-        user = UserAccountInterface.get_user_by_id(
-            session=session, user_account_id=user_account_id
-        )
-        if not agency_id in {a.id for a in user.agencies}:
-            raise JusticeCountsPermissionError(
-                code="justice_counts_agency_permission",
-                description=f"User (user_id: {user_account_id}) does not have access to reports from current agency (agency_id: {agency_id}).",
-            )
-
-    @staticmethod
     def get_report_by_id(session: Session, report_id: int) -> schema.Report:
         return session.query(schema.Report).filter(schema.Report.id == report_id).one()
 
     @staticmethod
     def get_reports_by_agency_id(
-        session: Session, agency_id: int, user_account_id: int
+        session: Session, agency_id: int
     ) -> List[schema.Report]:
-        ReportInterface._raise_if_user_is_unauthorized(
-            session=session,
-            agency_id=agency_id,
-            user_account_id=user_account_id,
-        )
         return (
             session.query(schema.Report)
             .filter(schema.Report.source_id == agency_id)
@@ -86,9 +67,6 @@ class ReportInterface:
         status: Optional[str] = None,
     ) -> schema.Report:
         report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
-        ReportInterface._raise_if_user_is_unauthorized(
-            session=session, agency_id=report.source_id, user_account_id=editor_id
-        )
         if report.status.value == status and editor_id in report.modified_by:
             return report
 
@@ -126,9 +104,6 @@ class ReportInterface:
         frequency: str,
     ) -> schema.Report:
         """Creates empty report in Justice Counts DB"""
-        ReportInterface._raise_if_user_is_unauthorized(
-            session=session, agency_id=agency_id, user_account_id=user_account_id
-        )
         report = ReportInterface.create_report_object(
             agency_id=agency_id,
             user_account_id=user_account_id,
@@ -308,7 +283,7 @@ class ReportInterface:
 
     @staticmethod
     def get_metrics_by_report_id(
-        session: Session, report_id: int, user_account_id: int
+        session: Session, report_id: int
     ) -> List[ReportMetric]:
         """Given a report_id, determine all MetricDefinitions that must be populated
         on this report, and convert them to ReportMetrics. If the agency has already
@@ -330,9 +305,6 @@ class ReportInterface:
         """
 
         report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
-        ReportInterface._raise_if_user_is_unauthorized(
-            session=session, agency_id=report.source_id, user_account_id=user_account_id
-        )
         # We determine which metrics to include on this report based on:
         #   - Agency system (e.g. only law enforcement)
         #   - Report frequency (e.g. only annual metrics)

@@ -22,8 +22,12 @@ from flask import Blueprint, Response, g, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
+from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
-from recidiviz.justice_counts.control_panel.utils import get_user_account_id
+from recidiviz.justice_counts.control_panel.utils import (
+    get_user_account_id,
+    raise_if_user_is_unauthorized,
+)
 from recidiviz.justice_counts.exceptions import JusticeCountsPermissionError
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -53,33 +57,37 @@ def get_api_blueprint(
         email_address = request_json["email_address"]
         name = request_json.get("name")
         auth0_user_id = request_json.get("auth0_user_id")
-        agency_ids = request_json.get("agency_ids")
         UserAccountInterface.create_or_update_user(
             session=current_session,
             email_address=email_address,
             name=name,
             auth0_user_id=auth0_user_id,
-            agency_ids=agency_ids,
         )
 
         updated_user: UserAccount = UserAccountInterface.get_user_by_email_address(
             session=current_session, email_address=email_address
         )
+        agency_ids = g.user_context.agency_ids if "user_context" in g else []
+        agencies = AgencyInterface.get_agencies_by_id(
+            session=current_session, agency_ids=agency_ids
+        )
         permissions = g.user_context.permissions if "user_context" in g else []
-        return make_response(updated_user.to_json(permissions=permissions), 200)
+        return make_response(
+            updated_user.to_json(permissions=permissions, agencies=agencies),
+            200,
+        )
 
     @api_blueprint.route("/reports/<report_id>", methods=["GET"])
     @auth_decorator
+    @raise_if_user_is_unauthorized
     def get_report_by_id(report_id: Optional[str] = None) -> Response:
         report_id_int = int(assert_type(report_id, str))
         report = ReportInterface.get_report_by_id(
             session=current_session, report_id=report_id_int
         )
-        user_id = get_user_account_id(request_dict=request.args.to_dict())
         report_metrics = ReportInterface.get_metrics_by_report_id(
             session=current_session,
             report_id=report_id_int,
-            user_account_id=user_id,
         )
 
         report_definition_json = ReportInterface.to_json_response(
@@ -92,6 +100,7 @@ def get_api_blueprint(
 
     @api_blueprint.route("/reports/<report_id>", methods=["POST"])
     @auth_decorator
+    @raise_if_user_is_unauthorized
     def update_report(report_id: Optional[str] = None) -> Response:
         report_id_int = int(assert_type(report_id, str))
         request_dict = assert_type(request.json, dict)
@@ -109,12 +118,12 @@ def get_api_blueprint(
 
     @api_blueprint.route("/reports", methods=["GET"])
     @auth_decorator
+    @raise_if_user_is_unauthorized
     def get_reports_by_agency_id() -> Response:
         request_dict = assert_type(request.args.to_dict(), dict)
-        user_id = get_user_account_id(request_dict=assert_type(request_dict, dict))
         agency_id = int(assert_type(request_dict.get("agency_id"), str))
         reports = ReportInterface.get_reports_by_agency_id(
-            session=current_session, agency_id=agency_id, user_account_id=user_id
+            session=current_session, agency_id=agency_id
         )
         report_json = jsonify(
             [

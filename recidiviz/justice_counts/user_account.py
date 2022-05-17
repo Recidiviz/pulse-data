@@ -22,7 +22,6 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import coalesce
 
-from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 
@@ -36,22 +35,14 @@ class UserAccountInterface:
         email_address: str,
         name: Optional[str] = None,
         auth0_user_id: Optional[str] = None,
-        agency_ids: Optional[List[int]] = None,
     ) -> UserAccount:
         """Creates a user"""
         validate_email_address(email_address)
-        agencies = []
-
-        if agency_ids is not None:
-            agencies = AgencyInterface.get_agencies_by_id(
-                session=session, agency_ids=agency_ids
-            )
 
         user = UserAccount(
             email_address=email_address,
             name=name,
             auth0_user_id=auth0_user_id,
-            agencies=agencies,
         )
 
         session.add(user)
@@ -64,7 +55,6 @@ class UserAccountInterface:
         email_address: str,
         name: Optional[str] = None,
         auth0_user_id: Optional[str] = None,
-        agency_ids: Optional[List[int]] = None,
     ) -> UserAccount:
         """Creates a user or updates an existing user"""
         validate_email_address(email_address)
@@ -83,14 +73,7 @@ class UserAccountInterface:
         )
 
         result = session.execute(insert_statement)
-
         user = session.query(UserAccount).get(result.inserted_primary_key)
-        if agency_ids is not None:
-            agencies = AgencyInterface.get_agencies_by_id(
-                session=session, agency_ids=agency_ids
-            )
-            user.agencies = agencies
-
         session.commit()
         return user
 
@@ -117,19 +100,5 @@ class UserAccountInterface:
     @staticmethod
     def get_user_by_id(session: Session, user_account_id: int) -> UserAccount:
         return (
-            session.query(UserAccount)
-            .filter(UserAccount.id == user_account_id)
-            .one_or_none()
+            session.query(UserAccount).filter(UserAccount.id == user_account_id).one()
         )
-
-    @staticmethod
-    def add_agency_to_user(
-        session: Session, email_address: str, agency_name: str
-    ) -> None:
-        user = UserAccountInterface.get_user_by_email_address(
-            session=session, email_address=email_address
-        )
-        agency = AgencyInterface.get_agency_by_name(session=session, name=agency_name)
-        user.agencies.append(agency)
-        session.add(user)
-        session.commit()

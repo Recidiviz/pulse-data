@@ -53,41 +53,35 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
         with SessionFactory.using_database(self.database_key) as session:
-            user_A = UserAccountInterface.get_user_by_auth0_user_id(
-                session=session, auth0_user_id="auth0_id_A"
-            )
             agency_A = AgencyInterface.get_agency_by_name(
                 session=session, name="Agency Alpha"
             )
             reports_agency_A = ReportInterface.get_reports_by_agency_id(
                 session=session,
                 agency_id=agency_A.id,
-                user_account_id=user_A.id,
             )
             self.assertEqual(reports_agency_A[0].source_id, agency_A.id)
-            user_B = UserAccountInterface.get_user_by_auth0_user_id(
-                session=session, auth0_user_id="auth0_id_B"
-            )
             agency_B = AgencyInterface.get_agency_by_name(
                 session=session, name="Agency Beta"
             )
             reports_agency_B = ReportInterface.get_reports_by_agency_id(
                 session=session,
                 agency_id=agency_B.id,
-                user_account_id=user_B.id,
             )
             self.assertEqual(reports_agency_B[0].source_id, agency_B.id)
 
     def test_create_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                self.test_schema_objects.test_agency_A,
-                self.test_schema_objects.test_user_A,
+            session.add_all(
+                [
+                    self.test_schema_objects.test_agency_A,
+                    self.test_schema_objects.test_user_A,
+                ]
             )
 
             session.flush()
             session.refresh(self.test_schema_objects.test_agency_A)
-            session.refresh(self.test_schema_objects.test_agency_A)
+            session.refresh(self.test_schema_objects.test_user_A)
 
             user_id = UserAccountInterface.get_user_by_auth0_user_id(
                 session=session,
@@ -377,6 +371,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_update_metric_no_change(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_user_A)
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
@@ -402,6 +397,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_update_metric_with_new_values(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_user_A)
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
@@ -448,6 +444,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_update_metric_with_new_contexts(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_user_A)
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
@@ -496,6 +493,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_remove_disaggregation_from_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_user_A)
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
@@ -532,12 +530,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             session.flush()
             report_id = self.test_schema_objects.test_report_monthly.id
-            user_account_id = self.test_schema_objects.test_user_A.id
             metrics = sorted(
                 ReportInterface.get_metrics_by_report_id(
                     session=session,
                     report_id=report_id,
-                    user_account_id=user_account_id,
                 ),
                 key=lambda x: x.key,
             )
@@ -560,7 +556,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             session.flush()
             report_id = self.test_schema_objects.test_report_monthly.id
-            user_account_id = self.test_schema_objects.test_user_A.id
 
             report = ReportInterface.get_report_by_id(
                 session=session, report_id=report_id
@@ -572,7 +567,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
             metrics = ReportInterface.get_metrics_by_report_id(
-                session=session, report_id=report_id, user_account_id=user_account_id
+                session=session, report_id=report_id
             )
             self.assertEqual(len(metrics), 6)
             calls_for_service = [
@@ -606,6 +601,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_cell_histories(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_user_A)
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
