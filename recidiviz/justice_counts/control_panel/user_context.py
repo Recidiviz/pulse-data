@@ -33,7 +33,8 @@ class UserContext:
 
     auth0_user_id: str
     user_account: Optional[schema.UserAccount] = attr.field()
-    permissions: Optional[List[str]] = None
+    agency_ids: List[int] = attr.field(factory=list)
+    permissions: List[str] = attr.field(factory=list)
 
     @user_account.default
     def _user_account_factory(self) -> Optional[schema.UserAccount]:

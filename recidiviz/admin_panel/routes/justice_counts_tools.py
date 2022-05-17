@@ -115,21 +115,18 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     )
                 request_json = assert_type(request.json, dict)
                 email = assert_type(request_json.get("email"), str)
-                agency_ids = request_json.get("agency_ids")
                 name = request_json.get("name")
                 try:
                     if request.method == "POST":
                         user = UserAccountInterface.create_user(
                             session=session,
                             email_address=email,
-                            agency_ids=agency_ids,
                             name=name,
                         )
                     else:
                         user = UserAccountInterface.create_or_update_user(
                             session=session,
                             email_address=email,
-                            agency_ids=agency_ids,
                             name=name,
                         )
                 except ValueError as e:

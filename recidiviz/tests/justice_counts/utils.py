@@ -113,19 +113,16 @@ class JusticeCountsSchemaTestObjects:
             name="Jane Doe",
             auth0_user_id="auth0_id_A",
             email_address="user@gmail.com",
-            agencies=[self.test_agency_A],
         )
         self.test_user_B = schema.UserAccount(
             name="John Doe",
             email_address="user@email.gov",
             auth0_user_id="auth0_id_B",
-            agencies=[self.test_agency_B],
         )
         self.test_user_C = schema.UserAccount(
             name="John Smith",
             email_address="user@fake.com",
             auth0_user_id="auth0_id_C",
-            agencies=[self.test_agency_A],
         )
 
         # Reports
