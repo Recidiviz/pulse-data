@@ -37,4 +37,10 @@ columns:
   - name: submit_date
   - name: temperature
   - name: perm_temp_flg
+    description: Whether a person is in the unit on a permanent or temporary (visitor) basis.
+    known_values:
+      - value: "1"
+        description: Permanent
+      - value: "0"
+        description: Temporary
   - name: visitor_flag
