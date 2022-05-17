@@ -109,4 +109,13 @@ locals {
       module.state_database_v2.connection_name,
     ]
   )
+
+  # SQL connections to databases that will be imported into via the application-data-import service.
+  application_data_connection_string = join(
+    ", ",
+    [
+      module.case_triage_database.connection_name,
+      module.pathways_database.connection_name,
+    ]
+  )
 }

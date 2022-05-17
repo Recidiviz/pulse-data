@@ -66,7 +66,15 @@ variable "max_case_triage_instances" {
 }
 
 variable "max_justice_counts_instances" {
+  type    = number
+  default = 3
+}
+
+variable "max_application_import_instances" {
   type = number
+  # Start with 3 as the default to match our other services. The Cloud Run
+  # default is 100, and if we had a bug causing us to scale that high that
+  # could be a costly error.
   default = 3
 }
 
@@ -99,7 +107,7 @@ EOT
 }
 
 locals {
-  repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_${var.github_username}_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
-  is_production = var.project_id == "recidiviz-123"
-  recidiviz_root      = "${path.root}/../../.."
+  repo_url       = "https://source.developers.google.com/projects/${var.project_id}/repos/github_${var.github_username}_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
+  is_production  = var.project_id == "recidiviz-123"
+  recidiviz_root = "${path.root}/../../.."
 }
