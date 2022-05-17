@@ -217,9 +217,10 @@ combined_officer_and_level AS (
 all_supervision_periods AS (
     SELECT 
         combined_officer_and_level.*,
-        -- If the admission or termination reason is null, we mark it as a transfer 
+        -- If the admission or termination reason is null, we mark it as a transfer
         COALESCE(officer_period_start.AdmissionReason,'TRANS') AS AdmissionReason,
-        COALESCE(officer_period_end.TerminationReason,'TRANS') AS TerminationReason
+        -- If the end date is null, it is an open period and should not have a termination reason assigned to it yet, so we keep the termination reason null
+        CASE WHEN combined_officer_and_level.EndDate IS NOT NULL THEN COALESCE(officer_period_end.TerminationReason,'TRANS') ELSE NULL END AS TerminationReason
     FROM combined_officer_and_level
     LEFT JOIN cleaned_assignment_periods officer_period_start
         ON combined_officer_and_level.OffenderID = officer_period_start.OffenderID 
