@@ -16,11 +16,15 @@ columns:
   - name: START_DATE
     is_datetime: True
     description: |-
-      When this sentence was first imposed.
+      When this sentence term started.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}, r'^(.*)12:00:00AM$')))"
   - name: END_DATE
     is_datetime: True
     description: |-
-      When this sentence expires.
+      When this sentence term finished or will finish.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATE('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}, r'^(.*)12:00:00AM$')))"
   - name: YEARS
     description: |-
       Years component of the maximum sentence length.
