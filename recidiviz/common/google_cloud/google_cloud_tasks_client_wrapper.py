@@ -22,7 +22,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pytz
 from google.cloud import exceptions, tasks_v2
@@ -114,7 +114,8 @@ class GoogleCloudTasksClientWrapper:
         self,
         *,
         queue_name: str,
-        relative_uri: str,
+        relative_uri: Optional[str] = None,
+        absolute_uri: Optional[str] = None,
         task_id: Optional[str] = None,
         body: Optional[Dict[str, Any]] = None,
         schedule_delay_seconds: int = 0,
@@ -137,6 +138,14 @@ class GoogleCloudTasksClientWrapper:
             http_method: The method for this request (i.e. GET or POST)
         """
 
+        if (not absolute_uri and not relative_uri) or (absolute_uri and relative_uri):
+            raise ValueError(
+                "Must provide either an absolute URI or relative URI to the cloud task"
+            )
+
+        if body is None:
+            body = {}
+
         schedule_timestamp = None
         if schedule_delay_seconds > 0:
             schedule_timestamp = timestamp_pb2.Timestamp()
@@ -144,11 +153,7 @@ class GoogleCloudTasksClientWrapper:
                 datetime.now(tz=pytz.UTC) + timedelta(seconds=schedule_delay_seconds)
             )
 
-        task_builder = ProtobufBuilder(task_pb2.Task).update_args(
-            app_engine_http_request={
-                "relative_uri": relative_uri,
-            },
-        )
+        task_builder = ProtobufBuilder(task_pb2.Task)
 
         if task_id is not None:
             task_name = self.format_task_path(queue_name, task_id)
@@ -161,18 +166,27 @@ class GoogleCloudTasksClientWrapper:
                 schedule_time=schedule_timestamp,
             )
 
+        http_request: Dict[str, Union[str, bytes]] = {}
+
         if http_method is not None:
-            task_builder.update_args(
-                app_engine_http_request={
-                    "http_method": http_method.value,
-                },
-            )
+            http_request["http_method"] = http_method.value
 
         if http_method in (HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH):
-            if body is None:
-                body = {}
+            http_request["body"] = json.dumps(body).encode()
+
+        if relative_uri:
             task_builder.update_args(
-                app_engine_http_request={"body": json.dumps(body).encode()},
+                app_engine_http_request={
+                    **http_request,
+                    "relative_uri": relative_uri,
+                }
+            )
+        else:
+            task_builder.update_args(
+                http_request={
+                    **http_request,
+                    "url": absolute_uri,
+                }
             )
 
         task = task_builder.build()

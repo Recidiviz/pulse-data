@@ -17,9 +17,13 @@
 from typing import Optional, Union
 
 class RestClientOptions:
+    telemetry: bool
+    timeout: float
+    retries: int
+
     def __init__(
         self,
         telemetry: Optional[bool] = None,
         timeout: Optional[Union[float, tuple]] = None,
         retries: Optional[int] = None,
-    ): ...
+    ) -> None: ...

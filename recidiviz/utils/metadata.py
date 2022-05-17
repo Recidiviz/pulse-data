@@ -16,11 +16,13 @@
 # =============================================================================
 
 """Utility methods for fetching app engine related metadata."""
+import json
 import logging
 import os
 from typing import Any, Dict, Optional
 
 import requests
+import attr
 
 from recidiviz.utils import environment
 
@@ -163,3 +165,37 @@ def region() -> Optional[str]:
         region_string = "-".join(region_split)
 
     return region_string
+
+
+def service_token() -> Optional[str]:
+    token_response = _get_metadata("instance/service-accounts/default/token")
+
+    if token_response:
+        return json.loads(token_response)["access_token"]
+
+    return token_response
+
+
+@attr.s(auto_attribs=True)
+class CloudRunMetadata:
+    project_id: str
+    region: str
+    url: str
+
+    @classmethod
+    def build_from_metadata_server(cls, service_name: str):
+        """Builds the CloudRunMetadata from the googleapis
+        https://cloud.google.com/run/docs/reference/rest/v1/namespaces.services/get
+        """
+        _project_id = project_id()
+        _region = region()
+        service_metadata = requests.get(
+            f"https://{_region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/{_project_id}/services/{service_name}",
+            headers={"Authorization": f"Bearer {service_token()}"},
+        ).json()
+
+        return cls(
+            project_id=_project_id,
+            region=_region,
+            url=service_metadata["status"]["url"],
+        )

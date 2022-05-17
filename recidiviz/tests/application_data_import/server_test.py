@@ -60,8 +60,7 @@ class TestApplicationDataImportRoutes(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
             mock_task_manager.return_value.create_task.assert_called_with(
-                relative_uri="/import/pathways/US_XX/test-file.csv",
-                body={},
+                absolute_uri="http://localhost:5000/import/pathways/US_XX/test-file.csv",
             )
 
     def test_import_trigger_pathways_bad_message(self) -> None:

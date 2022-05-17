@@ -62,6 +62,7 @@ types-PyYAML = "*"
 msal = "*"
 types-pysftp = "*"
 Faker = "*"
+responses = "*"
 
 [packages]
 callee = "*"

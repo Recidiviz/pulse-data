@@ -77,15 +77,17 @@ class CloudTaskQueueManager(Generic[QueueInfoType]):
     def create_task(
         self,
         *,
-        relative_uri: str,
-        body: Dict[str, str],
+        body: Optional[Dict[str, str]] = None,
         task_id: Optional[str] = None,
+        relative_uri: Optional[str] = None,
+        absolute_uri: Optional[str] = None,
         schedule_delay_seconds: int = 0
     ) -> None:
         self.cloud_task_client.create_task(
             task_id=task_id,
             queue_name=self.queue_name,
             relative_uri=relative_uri,
+            absolute_uri=absolute_uri,
             body=body,
             schedule_delay_seconds=schedule_delay_seconds,
         )

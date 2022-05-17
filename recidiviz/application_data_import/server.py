@@ -45,9 +45,21 @@ from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import in_gcp
+from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.string import StrictStringFormatter
 
 app = Flask(__name__)
+
+
+if in_gcp():
+    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
+        "application-data-import"
+    )
+else:
+    cloud_run_metadata = CloudRunMetadata(
+        project_id="123", region="us-central1", url="http://localhost:5000"
+    )
 
 
 @app.route("/import/pathways/<state_code>/<filename>", methods=["POST"])
@@ -123,7 +135,7 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
     )
     cloud_task_manager.create_task(
-        relative_uri=f"/import/pathways/{object_id}", body={}
+        absolute_uri=f"{cloud_run_metadata.url}/import/pathways/{object_id}"
     )
     logging.info("Enqueued gcs_import task to %s", CASE_TRIAGE_DB_OPERATIONS_QUEUE)
     return "", HTTPStatus.OK
