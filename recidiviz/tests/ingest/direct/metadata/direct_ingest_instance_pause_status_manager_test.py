@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements tests for the DirectIngestInstanceStatusManager."""
+"""Implements tests for the DirectIngestInstancePauseStatusManager."""
 from typing import Optional
 from unittest.case import TestCase
 
 import pytest
 
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
+    DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -30,8 +30,8 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 
 @pytest.mark.uses_db
-class DirectIngestInstanceStatusManagerTest(TestCase):
-    """Implements tests for DirectIngestInstanceStatusManager."""
+class DirectIngestInstancePauseStatusManagerManagerTest(TestCase):
+    """Implements tests for DirectIngestInstancePauseStatusManager."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -44,10 +44,10 @@ class DirectIngestInstanceStatusManagerTest(TestCase):
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
 
-        self.us_xx_manager = DirectIngestInstanceStatusManager.add_instance(
+        self.us_xx_manager = DirectIngestInstancePauseStatusManager.add_instance(
             "US_XX", DirectIngestInstance.PRIMARY, True
         )
-        self.us_ww_manager = DirectIngestInstanceStatusManager.add_instance(
+        self.us_ww_manager = DirectIngestInstancePauseStatusManager.add_instance(
             "US_WW", DirectIngestInstance.PRIMARY, False
         )
 

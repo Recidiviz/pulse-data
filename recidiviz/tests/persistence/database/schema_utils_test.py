@@ -110,7 +110,7 @@ def test_get_all_database_entity_classes() -> None:
         "DirectIngestViewMaterializationMetadata",
         "DirectIngestRawFileMetadata",
         "DirectIngestSftpFileMetadata",
-        "DirectIngestInstanceStatus",
+        "DirectIngestInstancePauseStatus",
     ]
 
     expected_qualified_names = (
@@ -238,7 +238,7 @@ def test_get_all_table_classes() -> None:
         "direct_ingest_view_materialization_metadata",
         "direct_ingest_raw_file_metadata",
         "direct_ingest_sftp_file_metadata",
-        "direct_ingest_instance_status",
+        "direct_ingest_instance_pause_status",
     ]
 
     expected_table_class_names = (

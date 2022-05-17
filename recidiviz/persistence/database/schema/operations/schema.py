@@ -260,14 +260,14 @@ class DirectIngestViewMaterializationMetadata(OperationsBase):
     is_invalidated = Column(Boolean, nullable=False)
 
 
-class DirectIngestInstanceStatus(OperationsBase):
+class DirectIngestInstancePauseStatus(OperationsBase):
     """This type is used to indicate the current operating status of a given state/instance
     pair. When `is_paused` is true, our ingest processes will all skip operations for the
     given state/instance pair.
 
     This will allow us to dynamically pause and resume ingest on the fly."""
 
-    __tablename__ = "direct_ingest_instance_status"
+    __tablename__ = "direct_ingest_instance_pause_status"
 
     __table_args__ = (
         UniqueConstraint(

@@ -45,8 +45,8 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
     IngestViewContentsSummary,
     InstanceIngestViewContentsImpl,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
+    DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
@@ -417,7 +417,7 @@ class IngestOperationsStore(AdminPanelStore):
         else:
             raise ValueError(f"Unexpected ingest instance: [{ingest_instance}]")
 
-        ingest_instance_status_manager = DirectIngestInstanceStatusManager(
+        ingest_instance_status_manager = DirectIngestInstancePauseStatusManager(
             state_code.value, ingest_instance
         )
         logging.info("Checking is instance [%s] paused", ingest_instance.value)

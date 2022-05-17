@@ -233,7 +233,7 @@ class TestOperationsMigrations(MigrationsTestBase):
         ```
         def upgrade() -> None:
             op.execute("""
-                INSERT INTO direct_ingest_instance_status (region_code, instance, is_paused) VALUES
+                INSERT INTO direct_ingest_instance_pause_status (region_code, instance, is_paused) VALUES
                 ('US_XX', 'PRIMARY', TRUE),
                 ('US_XX', 'SECONDARY', TRUE);
             """)
@@ -251,7 +251,7 @@ class TestOperationsMigrations(MigrationsTestBase):
 
             conn = engine.connect()
             rows = conn.execute(
-                "SELECT region_code, instance FROM direct_ingest_instance_status;"
+                "SELECT region_code, instance FROM direct_ingest_instance_pause_status;"
             )
 
             instance_to_state_codes = defaultdict(set)

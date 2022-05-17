@@ -58,8 +58,8 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
+    DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestIngestFileMetadataManager,
@@ -314,10 +314,10 @@ class FileBaseMaterializationDirectIngestControllerTest(unittest.TestCase):
         )
         self.ingest_instance = DirectIngestInstance.PRIMARY
 
-        # Insert test states into DirectIngestInstanceStatus
+        # Insert test states into DirectIngestInstancePauseStatus
         for region in ["US_XX", "US_XX_YYYYY"]:
             for instance in DirectIngestInstance:
-                DirectIngestInstanceStatusManager.add_instance(
+                DirectIngestInstancePauseStatusManager.add_instance(
                     region, instance, (instance != DirectIngestInstance.PRIMARY)
                 )
 

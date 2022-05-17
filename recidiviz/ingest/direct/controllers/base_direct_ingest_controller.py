@@ -120,8 +120,8 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
     LegacyIngestViewProcessor,
     LegacyIngestViewProcessorDelegate,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
+    DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
@@ -353,7 +353,7 @@ class BaseDirectIngestController:
             launched_ingest_views=self.get_ingest_view_rank_list(),
         )
 
-        self.ingest_instance_status_manager = DirectIngestInstanceStatusManager(
+        self.ingest_instance_status_manager = DirectIngestInstancePauseStatusManager(
             self.region_code(), self.ingest_instance
         )
         self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())

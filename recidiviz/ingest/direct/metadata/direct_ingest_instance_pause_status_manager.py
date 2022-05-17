@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A class that manages reading and updating DirectIngestInstanceStatuses."""
+"""A class that manages reading and updating DirectIngestInstancePauseStatuses."""
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestInstanceStatus,
+    DirectIngestInstancePauseStatus,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -26,8 +26,8 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.utils import environment
 
 
-class DirectIngestInstanceStatusManager:
-    """An interface for reading and updating DirectIngestInstanceStatuses."""
+class DirectIngestInstancePauseStatusManager:
+    """An interface for reading and updating DirectIngestInstancePauseStatuses."""
 
     def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
         self.region_code = region_code.upper()
@@ -35,12 +35,14 @@ class DirectIngestInstanceStatusManager:
 
         self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
-    def _get_status_using_session(self, session: Session) -> DirectIngestInstanceStatus:
+    def _get_status_using_session(
+        self, session: Session
+    ) -> DirectIngestInstancePauseStatus:
         return (
-            session.query(DirectIngestInstanceStatus)
+            session.query(DirectIngestInstancePauseStatus)
             .filter(
-                DirectIngestInstanceStatus.region_code == self.region_code,
-                DirectIngestInstanceStatus.instance == self.ingest_instance.value,
+                DirectIngestInstancePauseStatus.region_code == self.region_code,
+                DirectIngestInstancePauseStatus.instance == self.ingest_instance.value,
             )
             .one()
         )
@@ -64,16 +66,16 @@ class DirectIngestInstanceStatusManager:
     @environment.test_only
     def add_instance(
         region_code: str, ingest_instance: DirectIngestInstance, is_paused: bool
-    ) -> "DirectIngestInstanceStatusManager":
+    ) -> "DirectIngestInstancePauseStatusManager":
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         ) as session:
             session.add(
-                DirectIngestInstanceStatus(
+                DirectIngestInstancePauseStatus(
                     region_code=region_code.upper(),
                     instance=ingest_instance.value,
                     is_paused=is_paused,
                 )
             )
 
-        return DirectIngestInstanceStatusManager(region_code, ingest_instance)
+        return DirectIngestInstancePauseStatusManager(region_code, ingest_instance)
