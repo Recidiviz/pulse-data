@@ -103,11 +103,11 @@ class FormStore {
   reportUpdatedValuesForBackend(reportID: number): UpdatedMetricsValues[] {
     const updatedMetricValues = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
-        /** Note: all empty string inputs (in the case of deleting an input entirely) will be converted to null */
+        /** Note: all empty inputs will be represented by null */
         const metricValue =
-          this.metricsValues[reportID]?.[metric.key] === ""
-            ? null
-            : this.metricsValues[reportID]?.[metric.key] || metric.value;
+          this.metricsValues[reportID]?.[metric.key] === 0
+            ? 0
+            : this.metricsValues[reportID]?.[metric.key] || null;
 
         const combinedMetricValues: UpdatedMetricsValues = {
           key: metric.key,
@@ -118,10 +118,9 @@ class FormStore {
 
         metric.contexts.forEach((context) => {
           const contextValue =
-            this.contexts[reportID]?.[metric.key]?.[context.key] === ""
-              ? null
-              : this.contexts[reportID]?.[metric.key]?.[context.key] ||
-                context.value;
+            this.contexts[reportID]?.[metric.key]?.[context.key] === 0
+              ? 0
+              : this.contexts[reportID]?.[metric.key]?.[context.key] || null;
 
           combinedMetricValues.contexts.push({
             key: context.key,
@@ -136,11 +135,11 @@ class FormStore {
               const dimensionValue =
                 this.disaggregations[reportID]?.[metric.key]?.[
                   disaggregation.key
-                ]?.[dimension.key] === ""
-                  ? null
+                ]?.[dimension.key] === 0
+                  ? 0
                   : this.disaggregations[reportID]?.[metric.key]?.[
                       disaggregation.key
-                    ]?.[dimension.key] || dimension.value;
+                    ]?.[dimension.key] || null;
 
               return {
                 key: dimension.key,
@@ -158,40 +157,37 @@ class FormStore {
   }
 
   /** Simple validation to flesh out as we solidify necessary validations */
+  /** Metric values are always required */
   validate = (
-    e: React.ChangeEvent<HTMLInputElement>,
+    value: string | number,
     reportID: number,
     metricKey: string,
-    key?: string
+    key?: string,
+    required?: boolean
   ) => {
-    const fieldKey = key || e.target.name;
-    const numbersOnlyRegex = /^[0-9]*$/g;
-    const isInputNumber =
-      typeof e.target.value === "number" ||
-      e.target.value.match(numbersOnlyRegex);
-
-    if (!this.formErrors[reportID]) {
-      this.formErrors[reportID] = {};
-    }
-
-    if (!this.formErrors[reportID][metricKey]) {
-      this.formErrors[reportID][metricKey] = {};
-    }
+    const fieldKey = key || metricKey;
+    /** Being aware that 0 is a falsy value, we check if the value is 0 first - if not, check if the value is a positive number */
+    const isPositiveNumber =
+      value === 0 || (Boolean(Number(value)) && Number(value) >= 0);
 
     /** Raise error if value is not a number OR the field is required and the input is empty */
-    if (
-      !isInputNumber ||
-      (e.target.hasAttribute("required") && !e.target.value)
-    ) {
+    if (!isPositiveNumber || (required && value !== null)) {
+      if (!this.formErrors[reportID]) {
+        this.formErrors[reportID] = {};
+      }
+
+      if (!this.formErrors[reportID][metricKey]) {
+        this.formErrors[reportID][metricKey] = {};
+      }
+
       this.formErrors[reportID][metricKey][fieldKey] = "Error";
     }
 
     /** Remove error if value is a number AND (required input and input is not empty OR optional input and input is empty) */
     if (
-      this.formErrors[reportID][metricKey][fieldKey] &&
-      isInputNumber &&
-      ((e.target.hasAttribute("required") && e.target.value) ||
-        !e.target.hasAttribute("required"))
+      this.formErrors[reportID]?.[metricKey]?.[fieldKey] &&
+      isPositiveNumber &&
+      ((required && value !== null) || !required)
     ) {
       delete this.formErrors[reportID][metricKey][fieldKey];
     }
@@ -201,9 +197,9 @@ class FormStore {
   updateMetricsValues = (
     reportID: number,
     metricKey: string,
-    e: React.ChangeEvent<HTMLInputElement>
+    updatedValue: string | number
   ): void => {
-    this.validate(e, reportID, metricKey);
+    this.validate(updatedValue, reportID, metricKey);
 
     /**
      * Create an empty object within the property if none exist to improve access
@@ -213,20 +209,28 @@ class FormStore {
       this.metricsValues[reportID] = {};
     }
 
-    this.metricsValues[reportID][metricKey] = e.target.value;
+    this.metricsValues[reportID][metricKey] = updatedValue;
   };
 
   updateDisaggregationDimensionValue = (
     reportID: number,
     metricKey: string,
     disaggregationKey: string,
-    e: React.ChangeEvent<HTMLInputElement>
+    dimensionKey: string,
+    updatedValue: string | number,
+    required: boolean
   ): void => {
     const disaggregationDimensionKey = combineTwoKeyNames(
       disaggregationKey,
-      e.target.name
+      dimensionKey
     );
-    this.validate(e, reportID, metricKey, disaggregationDimensionKey);
+    this.validate(
+      updatedValue,
+      reportID,
+      metricKey,
+      disaggregationDimensionKey,
+      required
+    );
 
     /**
      * Create empty objects within the properties if none exist to improve access
@@ -244,16 +248,27 @@ class FormStore {
       this.disaggregations[reportID][metricKey][disaggregationKey] = {};
     }
 
-    this.disaggregations[reportID][metricKey][disaggregationKey][
-      e.target.name
-    ] = e.target.value;
+    this.disaggregations[reportID][metricKey][disaggregationKey][dimensionKey] =
+      updatedValue;
   };
 
   updateContextValue = (
     reportID: number,
     metricKey: string,
-    e: React.ChangeEvent<HTMLInputElement>
+    contextKey: string,
+    updatedValue: string | number,
+    contextType?: string
   ): void => {
+    if (contextType === "NUMBER") {
+      this.validate(
+        updatedValue === "" ? Number(updatedValue) : updatedValue, // enables us to not throw an error state when an optional context is emptied, and to clear out an error when the field is empty
+        reportID,
+        metricKey,
+        contextKey,
+        false
+      );
+    }
+
     /**
      * Create an empty object within the property if none exist to improve access
      * speed and to help with isolating re-renders for each form component.
@@ -266,16 +281,15 @@ class FormStore {
       this.contexts[reportID][metricKey] = {};
     }
 
-    this.contexts[reportID][metricKey][e.target.name] = e.target.value;
+    this.contexts[reportID][metricKey][contextKey] = updatedValue;
   };
 
   resetBinaryInput = (
     reportID: number,
     metricKey: string,
-    e: React.MouseEvent<HTMLDivElement>
+    contextKey: string
   ): void => {
-    const fieldKey = e.currentTarget.dataset.name as string;
-    this.contexts[reportID][metricKey][fieldKey] = "";
+    this.contexts[reportID][metricKey][contextKey] = "";
   };
 
   submitReport = (reportID: number) => {

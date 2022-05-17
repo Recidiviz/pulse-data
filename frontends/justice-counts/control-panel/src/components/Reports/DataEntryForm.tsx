@@ -139,9 +139,12 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
                           />
                         </BinaryRadioGroupWrapper>
                         <BinaryRadioGroupClearButton
-                          data-name={context.key}
-                          onClick={(e) =>
-                            formStore.resetBinaryInput(reportID, metric.key, e)
+                          onClick={() =>
+                            formStore.resetBinaryInput(
+                              reportID,
+                              metric.key,
+                              context.key
+                            )
                           }
                         >
                           Clear Input

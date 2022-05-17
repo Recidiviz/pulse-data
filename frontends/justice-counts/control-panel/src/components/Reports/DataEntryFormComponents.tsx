@@ -28,6 +28,11 @@ import { useStore } from "../../stores";
 import { combineTwoKeyNames } from "../../utils";
 import { BinaryRadioButton, TextInput } from "../Forms";
 
+const sanitizeValue = (value: string): string | number => {
+  /** TODO(#12850): extend function to trim and remove commas */
+  return value === "0" ? 0 : Number(value) || value;
+};
+
 interface MetricTextInputProps {
   reportID: number;
   metric: Metric;
@@ -38,18 +43,19 @@ export const MetricTextInput = observer(
     const { formStore } = useStore();
     const { metricsValues, updateMetricsValues, formErrors } = formStore;
 
+    const handleMetricChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+      updateMetricsValues(reportID, metric.key, sanitizeValue(e.target.value));
+
     return (
       <TextInput
         label={metric.label}
-        error={
-          (formErrors[reportID]?.[metric.key]?.[metric.key] as string) || ""
-        }
+        error={formErrors[reportID]?.[metric.key]?.[metric.key]}
         type="text"
         name={metric.key}
         id={metric.key}
         valueLabel={metric.unit}
         context={metric.reporting_note}
-        onChange={(e) => updateMetricsValues(reportID, metric.key, e)}
+        onChange={handleMetricChange}
         value={
           metricsValues[reportID]?.[metric.key] !== undefined
             ? metricsValues[reportID][metric.key]
@@ -67,6 +73,7 @@ interface DisaggregationDimensionTextInputProps extends MetricTextInputProps {
   dimension: MetricDisaggregationDimensions;
   dimensionIndex: number;
 }
+
 export const DisaggregationDimensionTextInput = observer(
   ({
     reportID,
@@ -84,28 +91,29 @@ export const DisaggregationDimensionTextInput = observer(
       dimension.key
     );
 
+    const handleDisaggregationDimensionChange = (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) =>
+      updateDisaggregationDimensionValue(
+        reportID,
+        metric.key,
+        disaggregation.key,
+        dimension.key,
+        sanitizeValue(e.target.value),
+        disaggregation.required
+      );
+
     return (
       <TextInput
         key={dimension.key}
         label={dimension.label}
-        error={
-          (formErrors[reportID]?.[metric.key]?.[
-            disaggregationDimensionKey
-          ] as string) || ""
-        }
+        error={formErrors[reportID]?.[metric.key]?.[disaggregationDimensionKey]}
         type="text"
         name={dimension.key}
         id={dimension.key}
         valueLabel={metric.unit}
         context={dimension.reporting_note}
-        onChange={(e) =>
-          updateDisaggregationDimensionValue(
-            reportID,
-            metric.key,
-            disaggregation.key,
-            e
-          )
-        }
+        onChange={handleDisaggregationDimensionChange}
         value={
           disaggregations?.[reportID]?.[metric.key]?.[disaggregation.key]?.[
             dimension.key
@@ -133,6 +141,14 @@ export const BinaryRadioButtonInputs = observer(
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
 
+    const handleContextChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+      updateContextValue(
+        reportID,
+        metric.key,
+        context.key,
+        sanitizeValue(e.target.value)
+      );
+
     return (
       <>
         <BinaryRadioButton
@@ -140,18 +156,18 @@ export const BinaryRadioButtonInputs = observer(
           id={`${context.key}-yes`}
           name={context.key}
           label="Yes"
-          value="Yes"
-          onChange={(e) => updateContextValue(reportID, metric.key, e)}
-          checked={contexts?.[reportID]?.[metric.key]?.[context.key] === "Yes"}
+          value="YES"
+          onChange={handleContextChange}
+          checked={contexts?.[reportID]?.[metric.key]?.[context.key] === "YES"}
         />
         <BinaryRadioButton
           type="radio"
           id={`${context.key}-no`}
           name={context.key}
           label="No"
-          value="No"
-          onChange={(e) => updateContextValue(reportID, metric.key, e)}
-          checked={contexts?.[reportID]?.[metric.key]?.[context.key] === "No"}
+          value="NO"
+          onChange={handleContextChange}
+          checked={contexts?.[reportID]?.[metric.key]?.[context.key] === "NO"}
         />
       </>
     );
@@ -166,7 +182,16 @@ export const AdditionalContextInput = observer(
     contextIndex,
   }: AdditionalContextInputsProps) => {
     const { formStore } = useStore();
-    const { contexts, updateContextValue } = formStore;
+    const { contexts, updateContextValue, formErrors } = formStore;
+
+    const handleContextChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+      updateContextValue(
+        reportID,
+        metric.key,
+        context.key,
+        sanitizeValue(e.target.value),
+        context.type
+      );
 
     return (
       <TextInput
@@ -175,13 +200,14 @@ export const AdditionalContextInput = observer(
         id={context.key}
         label="Type here..."
         context={context.reporting_note || ""}
-        onChange={(e) => updateContextValue(reportID, metric.key, e)}
+        onChange={handleContextChange}
         value={
           contexts?.[reportID]?.[metric.key]?.[context.key] !== undefined
             ? contexts[reportID]?.[metric.key][context.key]
             : (metric.contexts[contextIndex].value as string) || ""
         }
         additionalContext
+        error={formErrors[reportID]?.[metric.key][context.key]}
       />
     );
   }
