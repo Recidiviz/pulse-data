@@ -246,6 +246,42 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             ),
         )
 
+    def test_create_absolute_uri(self) -> None:
+        self.client_wrapper.create_task(
+            queue_name=self.QUEUE_NAME,
+            absolute_uri="https://recidiviz/my_endpoint?region=us_mo",
+            body={},
+        )
+
+        self.mock_client.create_task.assert_called_with(
+            parent="projects/my-project-id/locations/us-east1/queues/queue-name",
+            task=tasks_v2.types.task_pb2.Task(
+                http_request={
+                    "http_method": "POST",
+                    "url": "https://recidiviz/my_endpoint?region=us_mo",
+                    "body": b"{}",
+                },
+            ),
+        )
+
+    def test_absolute_relative_handling(self) -> None:
+        with self.assertRaises(ValueError) as em:
+            self.client_wrapper.create_task(
+                queue_name=self.QUEUE_NAME,
+                absolute_uri="https://uri",
+                relative_uri="/uri",
+            )
+        self.assertEqual(
+            em.exception.args[0],
+            "Must provide either an absolute URI or relative URI to the cloud task",
+        )
+        with self.assertRaises(ValueError) as em:
+            self.client_wrapper.create_task(queue_name=self.QUEUE_NAME)
+        self.assertEqual(
+            em.exception.args[0],
+            "Must provide either an absolute URI or relative URI to the cloud task",
+        )
+
     def test_delete_task(self) -> None:
         self.client_wrapper.delete_task("task_name")
 

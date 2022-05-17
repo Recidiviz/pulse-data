@@ -16,11 +16,16 @@
 # =============================================================================
 """Tests for utils/metadata.py."""
 import unittest
+from unittest.mock import Mock, patch
+
+import responses
+from responses import matchers
 
 from recidiviz.utils import metadata
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.metadata import CloudRunMetadata, local_project_id_override
 
 
+@patch.dict("recidiviz.utils.metadata._metadata_cache", {})
 class MetadataTest(unittest.TestCase):
     """Tests for utils/metadata.py."""
 
@@ -54,3 +59,59 @@ class MetadataTest(unittest.TestCase):
             self.assertEqual("recidiviz-456", metadata.project_id())
 
         self.assertEqual(original_project, metadata.project_id())
+
+    @responses.activate
+    def test_project_id(self) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/project/project-id",
+            body="recidiviz-456",
+        )
+
+        self.assertEqual("recidiviz-456", metadata.project_id())
+
+    @responses.activate
+    def test_region(self) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/instance/zone",
+            body="projects/123/zones/us-east1-c",
+        )
+
+        self.assertEqual("us-east1", metadata.region())
+
+    @responses.activate
+    def test_zone(self) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/instance/zone",
+            body="projects/123/zones/us-east1-c",
+        )
+
+        self.assertEqual("us-east1-c", metadata.zone())
+
+    @responses.activate
+    @patch("recidiviz.utils.metadata.project_id", return_value="fake-project")
+    @patch("recidiviz.utils.metadata.region", return_value="us-east1")
+    def test_service_metadata(self, _mock_project_id: Mock, _mock_region: Mock) -> None:
+        responses.add(
+            responses.GET,
+            "http://metadata/computeMetadata/v1/instance/service-accounts/default/token",
+            json={"access_token": "fake-token"},
+        )
+
+        responses.add(
+            responses.GET,
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/test-service",
+            json={"status": {"url": "http://test-service.cloudrun"}},
+            match=[matchers.header_matcher({"Authorization": "Bearer fake-token"})],
+        )
+
+        self.assertEqual(
+            CloudRunMetadata.build_from_metadata_server("test-service"),
+            CloudRunMetadata(
+                project_id="fake-project",
+                region="us-east1",
+                url="http://test-service.cloudrun",
+            ),
+        )
