@@ -39,8 +39,8 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
+    DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -205,7 +205,7 @@ class DeployedUploadStateFilesToIngestBucketDelegate(
     UploadStateFilesToIngestBucketDelegate
 ):
     def __init__(self, region_code: str, ingest_instance: DirectIngestInstance) -> None:
-        self.ingest_status_manager = DirectIngestInstanceStatusManager(
+        self.ingest_status_manager = DirectIngestInstancePauseStatusManager(
             region_code=region_code, ingest_instance=ingest_instance
         )
 

@@ -49,8 +49,8 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
     IngestViewMaterializationGatingContext,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
+    DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
@@ -346,7 +346,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
-        ingest_status_manager = DirectIngestInstanceStatusManager(
+        ingest_status_manager = DirectIngestInstancePauseStatusManager(
             region_code=state_code.value, ingest_instance=ingest_instance
         )
         try:
@@ -369,7 +369,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
-        ingest_status_manager = DirectIngestInstanceStatusManager(
+        ingest_status_manager = DirectIngestInstancePauseStatusManager(
             region_code=state_code.value, ingest_instance=ingest_instance
         )
         try:

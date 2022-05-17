@@ -167,7 +167,7 @@ class DirectIngestViewMaterializationMetadata(
 
 
 @attr.s(eq=False)
-class DirectIngestInstanceStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
+class DirectIngestInstancePauseStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
     """Status of a direct instance ingest process."""
 
     region_code: str = attr.ib()

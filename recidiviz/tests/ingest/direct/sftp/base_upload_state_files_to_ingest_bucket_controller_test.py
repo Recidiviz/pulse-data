@@ -21,8 +21,8 @@ from unittest.mock import Mock, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.results import MultiRequestResultWithSkipped
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
+    DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -64,11 +64,15 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             SchemaType.OPERATIONS
         )
         fakes.use_in_memory_sqlite_database(self.operations_database_key)
-        self.us_xx_primary_manager = DirectIngestInstanceStatusManager.add_instance(
-            self.region, DirectIngestInstance.PRIMARY, is_paused=False
+        self.us_xx_primary_manager = (
+            DirectIngestInstancePauseStatusManager.add_instance(
+                self.region, DirectIngestInstance.PRIMARY, is_paused=False
+            )
         )
-        self.us_xx_secondary_manager = DirectIngestInstanceStatusManager.add_instance(
-            self.region, DirectIngestInstance.SECONDARY, is_paused=False
+        self.us_xx_secondary_manager = (
+            DirectIngestInstancePauseStatusManager.add_instance(
+                self.region, DirectIngestInstance.SECONDARY, is_paused=False
+            )
         )
 
     def tearDown(self) -> None:
