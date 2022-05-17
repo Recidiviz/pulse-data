@@ -61,6 +61,7 @@ class TestApplicationDataImportRoutes(TestCase):
 
             mock_task_manager.return_value.create_task.assert_called_with(
                 absolute_uri="http://localhost:5000/import/pathways/US_XX/test-file.csv",
+                service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
             )
 
     def test_import_trigger_pathways_bad_message(self) -> None:

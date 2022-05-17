@@ -21,8 +21,8 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
-import requests
 import attr
+import requests
 
 from recidiviz.utils import environment
 
@@ -181,6 +181,7 @@ class CloudRunMetadata:
     project_id: str
     region: str
     url: str
+    service_account_email: str
 
     @classmethod
     def build_from_metadata_server(cls, service_name: str):
@@ -198,4 +199,7 @@ class CloudRunMetadata:
             project_id=_project_id,
             region=_region,
             url=service_metadata["status"]["url"],
+            service_account_email=service_metadata["spec"]["template"]["spec"][
+                "serviceAccountName"
+            ],
         )
