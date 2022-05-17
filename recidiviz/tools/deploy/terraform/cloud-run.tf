@@ -76,7 +76,7 @@ resource "google_project_iam_member" "case_triage_iam" {
 }
 
 resource "google_project_iam_member" "application_data_import_iam" {
-  for_each = toset(local.cloud_run_common_roles)
+  for_each = toset(concat(local.cloud_run_common_roles, ["roles/cloudtasks.enqueuer"]))
   project  = var.project_id
   role     = each.key
   member   = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
