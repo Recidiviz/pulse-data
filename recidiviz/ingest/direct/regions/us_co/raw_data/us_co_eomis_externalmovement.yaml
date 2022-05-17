@@ -9,7 +9,7 @@ primary_key_cols:
 columns:
   - name: OFFENDERID
     description: |-
-      This is a unique identifier assigned to each particular person.
+      This is a unique identifier assigned to each particular person (PID).
   - name: EXTERNALMOVEMENTDATE
     description: |-
       Date of external movement.
@@ -496,25 +496,28 @@ columns:
         description: From ISP-I
   - name: EXTERNALMVMTCOMMENTS
     description: |-
-      TODO(#12372)
+      Comments informing details about the movement with fields used in the old system.
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date the movement details were last updated.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time the movement details were last updated.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      Staff user to make the last update.
   - name: INMMOVEMENTESCORT
     description: |-
-      TODO(#12372)
+      Indicates who or if the movement was escorted by someone - most fields are null.
   - name: JURISDICTIONALAGENCY
     description: |-
-      TODO(#12372)
+      The jurisdictional agency over the movment. #TODO(#12372)
   - name: BODYSEARCHCONDUCTED
     description: |-
-      TODO(#12372)
+      To indicate if a body search was conducted during the movement - all fields are U for Unknown or null.
+    known_values:
+      - value: "U"
+        desciption: Unknown
   - name: LEGALFILEJACKETSENT
     description: |-
       TODO(#12372)

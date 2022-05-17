@@ -1,0 +1,59 @@
+file_tag: eomis_sentcreditdbt
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - COMMITMENTPREFIX
+columns:
+  - name: OFFENDERID
+    description: |-
+      TODO(#12372)
+  - name: SENTENCECREDITENTRYDATE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCECREDITENTRYTIME
+    description: |-
+      TODO(#12372)
+  - name: SENTCREDITDEBITTYPE
+    description: |-
+      TODO(#12372)
+  - name: GOODTIMEEARNINGCLASS
+    description: |-
+      TODO(#12372)
+  - name: GOODTIMECLASSDURATION
+    description: |-
+      TODO(#12372)
+  - name: CREDITDEBITDAYS
+    description: |-
+      TODO(#12372)
+  - name: GOODTIMECHANGEREASON
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMESTATUS
+    description: |-
+      TODO(#12372)
+  - name: SENTENCECREDITVESTEDDATE
+    description: |-
+      TODO(#12372)
+  - name: COMMITMENTPREFIX
+    description: |-
+      TODO(#12372)
+  - name: INMSENTCOMPONENT
+    description: |-
+      TODO(#12372)
+  - name: SENTENCECREDITEFFECTIVEDT
+    description: |-
+      TODO(#12372)
+  - name: SENTCRDDEBITCOMMENTS
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)

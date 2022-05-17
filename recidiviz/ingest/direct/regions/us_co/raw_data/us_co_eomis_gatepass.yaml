@@ -1,0 +1,60 @@
+file_tag: eomis_gatepass
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: PARTYID
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSISSUEDATE
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSSEQNBR
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSDESTINATION
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSREASON
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSESCORT
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSPROJRETURNTIME
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSREQBY
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSPREPAREDBY
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSPREPDATE
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSPREPTIME
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSSTATUS
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSSTATUSDATE
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSREMARKS
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: GATEPASSRETURNDATE
+    description: |-
+      TODO(#12372)

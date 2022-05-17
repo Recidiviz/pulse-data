@@ -9,10 +9,10 @@ primary_key_cols:
 columns:
   - name: PARTYID
     description: |-
-      TODO(#12372)
+      A unique id that can join to OTHERLOCATIONCODE or LOCATIONREPORTMOVEMENT depending on if the type of movement is on or out of a facility.
   - name: ORGANIZATIONNAME
     description: |-
-      TODO(#12372)
+      The name of an organization - facility, court, hospital, etc.
   - name: ORGANIZATIONTYPE
     description: |-
       ORGTYPE code for type of organization.
@@ -153,7 +153,7 @@ columns:
         description: Temporarily Closed
   - name: ORGSTATUSDATE
     description: |-
-      TODO(#12372)
+      Date of the ORGSTATUS (ie date it became active, closed, etc)
   - name: ORGCOMMONID
     description: |-
       TODO(#12372)
@@ -195,31 +195,31 @@ columns:
       TODO(#12372)
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date of last update.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time of last update.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      Staff user to make last update.
   - name: CLSCOUNASSIGNMETHOD
     description: |-
       TODO(#12372)
     known_values:
       - value: "Z"
-        description: Not applicable
+        description: "Not applicable"
   - name: CASEANALYSTASSIGNMETHOD
     description: |-
       TODO(#12372)
     known_values:
       - value: "Z"
-        description: Not applicable
+        description: "Not applicable"
   - name: CASERCDSTECHASSIGNMETHOD
     description: |-
       TODO(#12372)
     known_values:
       - value: "Z"
-        description: Not applicable
+        description: "Not applicable"
   - name: WORKRELEASEEMPLOYER
     description: |-
       TODO(#12372)

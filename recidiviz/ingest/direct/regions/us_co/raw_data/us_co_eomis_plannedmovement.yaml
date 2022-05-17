@@ -1,0 +1,75 @@
+file_tag: eomis_plannedmovement
+file_description: |-
+  This file documents planned upcoming movements for incarcerated individuals.
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - PLANNINGMOVEMENTDATE
+  - PLANNINGMOVEMENTTIME
+columns:
+  - name: OFFENDERID
+    description: |-
+      TODO(#12372)
+  - name: PLANNINGMOVEMENTDATE
+    description: |-
+      TODO(#12372)
+  - name: PLANNINGMOVEMENTTIME
+    description: |-
+      TODO(#12372)
+  - name: PLANNINGMOVEMENTFROMLOCATION
+    description: |-
+      TODO(#12372)
+  - name: INMATEMOVEMENTCATEGORY
+    description: |-
+      TODO(#12372)
+  - name: EXTERNALMOVEMENTCODE
+    description: |-
+      TODO(#12372)
+  - name: REASONFORMOVEMENT
+    description: |-
+      TODO(#12372)
+  - name: SCHEDULEDMOVEMENTDATE
+    description: |-
+      TODO(#12372)
+  - name: SCHEDULEDMOVEMENTTIME
+    description: |-
+      TODO(#12372)
+  - name: SCHEDULEDMOVEMENTTOLOCATION
+    description: |-
+      TODO(#12372)
+  - name: INMMOVEMENTESCORT
+    description: |-
+      TODO(#12372)
+  - name: SCHEDULEDMOVEMENTINSTRUCTIONS
+    description: |-
+      TODO(#12372)
+  - name: SCHEDULEDMOVEMENTSOURCE
+    description: |-
+      TODO(#12372)
+  - name: SCHEDULEDMOVEMENTSTATUS
+    description: |-
+      TODO(#12372)
+  - name: SCHEDULEDMOVEMENTSTATUSDATE
+    description: |-
+      TODO(#12372)
+  - name: PLANNINGMOVEMENTCOMMENTS
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: ACTUALMOVEMENTDATE
+    description: |-
+      TODO(#12372)
+  - name: ACTUALMOVEMENTTIME
+    description: |-
+      TODO(#12372)
+  - name: AUDIT_SRL
+    description: |-
+      TODO(#12372)

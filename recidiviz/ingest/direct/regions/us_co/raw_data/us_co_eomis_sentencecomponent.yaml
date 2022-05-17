@@ -9,13 +9,13 @@ primary_key_cols:
 columns:
   - name: OFFENDERID
     description: |-
-      TODO(#12372)
+      This is a unique identifier assigned to each incarcerated person (PID).
   - name: COMMITMENTPREFIX
     description: |-
-      TODO(#12372)
+      Commitment prefix is used as one of multiple primary keys in a table to contribute to a unique identifier.
   - name: SENTENCECOMPONENT
     description: |-
-      TODO(#12372)
+      Number sequence used in combintation with the two other primary keys to make a unique combination.
   - name: CJISCHARGECOUNT
     description: |-
       TODO(#12372)
@@ -40,7 +40,7 @@ columns:
       - value: "FGSA"
         description: Guilty Set Aside
       - value: "GU"
-        description: TODO(#12372)
+        description: Guilty (Conversion)
       - value: "PRVN"
         description: Proven
       - value: "UNKN"
@@ -74,7 +74,7 @@ columns:
         description: Unknown
   - name: SENTENCEPLEADATE
     description: |-
-      Date of sentence plea.
+      Date of sentence plea, same as SENTENCEFINDINGDATE.
   - name: JAILTIME
     description: |-
       TODO(#12372)
@@ -86,7 +86,7 @@ columns:
       Type of sentence from CMSNTYPE code.
     known_values:
       - value: IC
-        description: TODO(#12372)
+        description: Interstate Compact
       - value: PT
         description: Parole Timeline
       - value: SP
@@ -95,37 +95,37 @@ columns:
         description: Youth Offender Services
   - name: SENTENCETYPE2
     description: |-
-      TODO(#12372)
+      All values in this field are null.
   - name: SENTENCETYPE3
     description: |-
-      TODO(#12372)
+      All values in this field are null.
   - name: SENTENCETYPE4
     description: |-
-      TODO(#12372)
+      All values in this field are null.
   - name: OFFENSEDATE
     description: |-
-      TODO(#12372)
+      Date the offense occured.
   - name: OFFENSEDATE2
     description: |-
-      TODO(#12372)
+      Date the offense occured, same as OFFENSEDATE.
   - name: CJISSTATUTECODE
     description: |-
-      TODO(#12372)
+      Criminal Justice Inforation System (CJIS) Statute code relating to offense.
   - name: CJISSTATUTEDESC
     description: |-
-      TODO(#12372)
+      Descriptions of the CJIS Statute Codes (ie. Possessoan I-II, Forgercy, etc.)
   - name: STATUTE1
     description: |-
-      TODO(#12372)
+      More populated field than CJISSTATUSCODE with the primary statute pertaining to the offense and sentence.
   - name: STATUTE2
     description: |-
-      TODO(#12372)
+      A secondary Statute involved in offense and/or sentence - most values are null.
   - name: STATUTE3
     description: |-
-      TODO(#12372)
+      All values in this field are null.
   - name: STATUTE4
     description: |-
-      TODO(#12372)
+      All values in this field are null.
   - name: CRIMECATEGORY
     description: |-
       TODO(#12372)
@@ -260,22 +260,22 @@ columns:
         description: Homicide
   - name: MINPRISONTERMY
     description: |-
-      TODO(#12372)
+      The minimum prison term years - counted as 360 day years.
   - name: MINPRISONTERMM
     description: |-
-      TODO(#12372)
+      The minimum prison term months - counted as 30 day months.
   - name: MINPRISONTERMD
     description: |-
-      TODO(#12372)
+      The minimum prison days.
   - name: MAXPRISONTERMY
     description: |-
-      TODO(#12372)
+      The maximum prison term years.
   - name: MAXPRISONTERMM
     description: |-
-      TODO(#12372)
+      The maximum prison term months.
   - name: MAXPRISONTERMD
     description: |-
-      TODO(#12372)
+      The maximum prison term days.
   - name: ILLOGICALFLAG
     description: |-
       TODO(#12372)
@@ -283,17 +283,17 @@ columns:
     description: |-
       TODO(#12372)
     known_values:
-      - value: H
+      - value: "H"
         description: Attempt
-      - value: J
+      - value: "J"
         description: Conspiracy
-      - value: L
+      - value: "L"
         description: Solicitation
       - value: "N"
         description: Accessory
   - name: PRIORVIOLENTCOUNT
     description: |-
-      TODO(#12372)
+      Count of prior violent convictions.
   - name: OFFENSESPECIALID
     description: |-
       TODO(#12372)
@@ -310,8 +310,6 @@ columns:
         description: At-Risk Adult / Juvenile
       - value: "6"
         description: Elderly / Disabled Victim
-      - value: "7"
-        description: TODO(#12372)
       - value: "8"
         description: Habitual Burglar
       - value: "9"
@@ -319,26 +317,33 @@ columns:
   - name: OFFENSESPECIALID2
     description: |-
       TODO(#12372)
+    known_values:
+      - value: "2"
+        description: Domestic Violence
+      - value: "4"
+        description: School Zone / Public Housing
+      - value: "5"
+        description: At-Risk Adult / Juvenile
   - name: OFFENSESPECIALID3
     description: |-
-      TODO(#12372)
+      All values in this field are null.
   - name: LIFESENTENCETYPE
     description: |-
       CMLIFETYPE code indicating the type of life sentence received.
     known_values:
       - value: "1Tl"
         description: One day to Life
-      - value: DTH
+      - value: "DTH"
         description: Death
-      - value: LSX
+      - value: "LSX"
         description: Lifetime Supv of Sex Offense
-      - value: MXL
+      - value: "MXL"
         description: Indeterminate Min to Life Max
       - value: "N/A"
         description: "Not Applicable"
-      - value: WIP
+      - value: "WIP"
         description: Life with Parole
-      - value: WOP
+      - value: "WOP"
         description: Life w/o Parole
   - name: MANDATORYVIOLENTSENTENCEFLAG
     description: |-
@@ -352,7 +357,7 @@ columns:
         description: Unknown
   - name: VIOLENTTODOCSTAFF
     description: |-
-      TODO(#12372)
+      Indicates if person has been or has a history of being violent to DOC staff.
     known_values:
       - value: "N"
         description: "No"
@@ -371,7 +376,7 @@ columns:
       TODO(#12372)
   - name: SEXCRIMEFLAG
     description: |-
-      TODO(#12372)
+      Yes or No flag indicating if the crime was a sex crime.
   - name: OFFENSEENHANCEMENTCODE
     description: |-
       TODO(#12372)
@@ -461,7 +466,7 @@ columns:
         description: "Y2"
   - name: COMPSTATUSCODE
     description: |-
-      TODO(#12372)
+      The status of sentece (ie active).
     known_values:
       - value: "1"
         description: Active (Imposed)
@@ -493,28 +498,28 @@ columns:
         description: Splinter CS/CC
   - name: COMPSTATUSDATE
     description: |-
-      TODO(#12372)
+      The date of the status (ie date it was suspended).
   - name: SENTCOMPCOMMENTS
     description: |-
-      TODO(#12372)
+      Comments on the sentence containing data fields from previous data system.
   - name: CJISCOMMENTS
     description: |-
       TODO(#12372)
   - name: DATEFIRSTCREATED
     description: |-
-      TODO(#12372)
+      Date the sentence information was first created.
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date the sentence information was last updated.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time the sentence information was last updated.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      Staff user to make the last data.
   - name: SENTENCINGDATACONDITION
     description: |-
-      TODO(#12372)
+      Field indicating the current status of the data (ie ready or in need of review)
     known_values:
       - value: "1"
         description: Data Ready for Use
@@ -524,15 +529,15 @@ columns:
         description: Imported from CJIS - Data Missing
   - name: COMPUTEDFLAG
     description: |-
-      TODO(#12372)
+      Field indicating if the data was computed and published, pending review, or not computed.
     known_values:
-      - value: C
+      - value: "C"
         description: Computed, under review
-      - value: N
+      - value: "N"
         description: "No"
       - value: "Y"
         description: Computed and Published
-      - value: Z
+      - value: "Z"
         description: Not included in Computation
   - name: SENTENCECOUNT
     description: |-
@@ -542,7 +547,7 @@ columns:
       TODO(#12372)
   - name: COMPONENTEFFECTIVEDATE
     description: |-
-      TODO(#12372)
+      Date the sentence component became effective.
   - name: TIMECOMPFLAG
     description: |-
       TODO(#12372)

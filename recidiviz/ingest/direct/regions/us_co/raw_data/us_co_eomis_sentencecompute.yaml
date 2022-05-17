@@ -1,0 +1,337 @@
+file_tag: eomis_sentencecompute
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - INCARCERATIONBEGINDT
+  - CHAINSEQUENCE
+  - SENTENCESEQUENCE
+columns:
+  - name: OFFENDERID
+    description: |-
+      TODO(#12372)
+  - name: INCARCERATIONBEGINDT
+    description: |-
+      TODO(#12372)
+  - name: CHAINSEQUENCE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCESEQUENCE
+    description: |-
+      TODO(#12372)
+  - name: TIMELINETYPE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCESTATUSFLAG
+    description: |-
+      TODO(#12372)
+  - name: TIMESTARTDATE
+    description: |-
+      TODO(#12372)
+  - name: MAXIMUMTERM
+    description: |-
+      TODO(#12372)
+  - name: MAXSENTDAYSMR
+    description: |-
+      TODO(#12372)
+  - name: CNTYJAILTIME
+    description: |-
+      TODO(#12372)
+  - name: CNTYJAILTIMEMAX
+    description: |-
+      TODO(#12372)
+  - name: CNTYJAILCREDIT
+    description: |-
+      TODO(#12372)
+  - name: CNTYJAILCREDITMAX
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEREDUCTIONMAX
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEREDUCTIONLOSTMAX
+    description: |-
+      TODO(#12372)
+  - name: NULLTIMEBEFOREMR
+    description: |-
+      TODO(#12372)
+  - name: MANDATORYRELEASEDATECTRL
+    description: |-
+      TODO(#12372)
+  - name: STATUTORYGOODTIME
+    description: |-
+      TODO(#12372)
+  - name: TRUSTYTIME
+    description: |-
+      TODO(#12372)
+  - name: TRUSTYTIMELOST
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEVESTED
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEDISASTERRELIEFVESTED
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEACHIEVEMENTSVESTED
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEXCEPCONDUCTVESTED
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPROJECTED
+    description: |-
+      TODO(#12372)
+  - name: PROVEARNEDTIMEPROJECTED
+    description: |-
+      TODO(#12372)
+  - name: MANDATORYRELEASEDATEACTUAL
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIME
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEDISASTERRELIEF
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEACHIEVEMENTS
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEXCEPTIONALCONDUCT
+    description: |-
+      TODO(#12372)
+  - name: NULLTIMEACTIVEMR
+    description: |-
+      TODO(#12372)
+  - name: MANDATORYRELEASEDATEESTIMATED
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOSSIBLEMONTHS
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOSSIBLE
+    description: |-
+      TODO(#12372)
+  - name: MANDATORYRELEASEDATEPOSSIBLE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOTENTIALMONTHS
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOTENTIAL
+    description: |-
+      TODO(#12372)
+  - name: MANDATORYRELEASEDATEPOTENTIAL
+    description: |-
+      TODO(#12372)
+  - name: EARNEDRELEASETIME
+    description: |-
+      TODO(#12372)
+  - name: EARNEDRELEASEDATE
+    description: |-
+      TODO(#12372)
+  - name: MRRULINGINDICATOR
+    description: |-
+      TODO(#12372)
+  - name: TIMESERVEDTO
+    description: |-
+      TODO(#12372)
+  - name: TIMEREMAININGTOMR
+    description: |-
+      TODO(#12372)
+  - name: NETETBEFOREMR
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEBEGINDTPE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEREDUCTION
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEREDUCTIONLOSTVESTED
+    description: |-
+      TODO(#12372)
+  - name: NULLTIMEBEFOREPE
+    description: |-
+      TODO(#12372)
+  - name: PAROLEELIGIBILITYDATECTRL
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEVESTEDPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEDISASTERRLFVESTEDPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEACHIEVEVESTEDPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEXCEPCONDUCTVESTEDPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPROJECTEDPE
+    description: |-
+      TODO(#12372)
+  - name: PROVEARNEDTIMEPROJECTEDPE
+    description: |-
+      TODO(#12372)
+  - name: PAROLEELIGIBILITYDATEACTUAL
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEDISASTERRELIEFPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEACHIEVEMENTSPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEXCEPTIONALCONDUCTPE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEREDUCTIONLOST
+    description: |-
+      TODO(#12372)
+  - name: NULLTIMEACTIVEPE
+    description: |-
+      TODO(#12372)
+  - name: PAROLEELIGIBILITYDATEESTIMATED
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOSSIBLEMONTHSPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOSSIBLEPE
+    description: |-
+      TODO(#12372)
+  - name: PAROLEELIGIBILITYDATEPOSSIBLE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOTENTIALMONTHSPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEPOTENTIALPE
+    description: |-
+      TODO(#12372)
+  - name: PAROLEELIGIBILITYDATEPOTENTIAL
+    description: |-
+      TODO(#12372)
+  - name: PERULINGINDICATOR
+    description: |-
+      TODO(#12372)
+  - name: TIMEGAPEFFECTSTHISPED
+    description: |-
+      TODO(#12372)
+  - name: PETIMESERVED
+    description: |-
+      TODO(#12372)
+  - name: TIMEREMAININGTOPE
+    description: |-
+      TODO(#12372)
+  - name: NETETBEFOREPE
+    description: |-
+      TODO(#12372)
+  - name: MINIMUMTERM
+    description: |-
+      TODO(#12372)
+  - name: MINSENTDAYS
+    description: |-
+      TODO(#12372)
+  - name: STATUTORYGOODTIMEMIN
+    description: |-
+      TODO(#12372)
+  - name: TRUSTYTIMEMIN
+    description: |-
+      TODO(#12372)
+  - name: TRUSTYTIMELOSTMIN
+    description: |-
+      TODO(#12372)
+  - name: SCHEDSUPERVTERMDT
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEENDDATE
+    description: |-
+      TODO(#12372)
+  - name: PAROLEREVOKEDFLAG
+    description: |-
+      TODO(#12372)
+  - name: LASTRULSENTSEQNO
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: OLDMRDATE
+    description: |-
+      TODO(#12372)
+  - name: OLDPEDATE
+    description: |-
+      TODO(#12372)
+  - name: PAROLETERMINATIONDATECTRL
+    description: |-
+      TODO(#12372)
+  - name: PAROLETERMINATIONDATEACTUAL
+    description: |-
+      TODO(#12372)
+  - name: PAROLETERMINATIONDATEESTIMATED
+    description: |-
+      TODO(#12372)
+  - name: MINIMUMSUPVENDDATE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEDISCHARGEDATEACTUAL
+    description: |-
+      TODO(#12372)
+  - name: SENTENCEDISCHARGEDATEESTIMATED
+    description: |-
+      TODO(#12372)
+  - name: SENTENCELAWCODE
+    description: |-
+      TODO(#12372)
+  - name: OCSEARLIESTSTARTDATE
+    description: |-
+      TODO(#12372)
+  - name: OCSINITIALLENGTH
+    description: |-
+      TODO(#12372)
+  - name: OCSPSCC
+    description: |-
+      TODO(#12372)
+  - name: OCSPSCCGOODTIME
+    description: |-
+      TODO(#12372)
+  - name: OCSPRECONTROLEARNEDTIME
+    description: |-
+      TODO(#12372)
+  - name: MINIMUMTOSERVEPERCENTAGE
+    description: |-
+      TODO(#12372)
+  - name: MINTOSERVEPERCEARLIEST
+    description: |-
+      TODO(#12372)
+  - name: SENTREDUCTIONEARLIEST
+    description: |-
+      TODO(#12372)
+  - name: OCSNULLTIME
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEMERGRELIEFVESTED
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEMERGRELIEF
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEMERGRLFVESTEDPE
+    description: |-
+      TODO(#12372)
+  - name: EARNEDTIMEEMERGRELIEFPE
+    description: |-
+      TODO(#12372)
