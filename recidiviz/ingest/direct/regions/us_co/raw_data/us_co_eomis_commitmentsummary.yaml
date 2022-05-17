@@ -7,40 +7,117 @@ primary_key_cols:
   - COMMITMENTPREFIX
 columns:
   - name: OFFENDERID
+    description: |-
+      This is a unique identifier assigned to each incarcerated person (PID).
   - name: COMMITMENTPREFIX
+    description: |-
+      Commitment prefix is used as one of multiple primary keys in a table to contribute to a unique identifier.
   - name: TYPEORDER
+    description: |-
+      TODO(#12372)
   - name: OTHSTATE
+    description: |-
+      TODO(#12372)
   - name: COURTCASETYPE
+    description: |-
+      TODO(#12372)
   - name: COUNTYOFCONVICTION
+    description: |-
+      County where convicted.
+    known_values: []
   - name: DOCKETNUMBER
+    description: |-
+      TODO(#12372)
   - name: CURRCOMMITCONVICTIONDT
+    description: |-
+      TODO(#12372)
   - name: SENTENCEIMPOSEDDATE
+    description: |-
+      Date the sentence was imposed.
   - name: SENTENCEEFFECTIVEDATE
+    description: |-
+      Date the sentence became effective.
   - name: JUDGENAME
+    description: |-
+      The name of the judge in the case.
   - name: DEFENSEATTORNEYNAME
+    description: |-
+      The name of the defense attorney involved in commitment.
   - name: STATEATTORNEYNAME
+    description: |-
+      The name of the state attorney involved in commitment.
   - name: SEXVLNTPRED
+    description: |-
+      TODO(#12372)
   - name: OVERALLFINDING
+    description: |-
+      TODO(#12372)
   - name: INCARCERATIONSTART
+    description: |-
+      TODO(#12372)
   - name: EARLIESTSENTENCEBEGINDATE
+    description: |-
+      TODO(#12372)
   - name: PAROLETERMINMONTHS
+    description: |-
+      TODO(#12372)
   - name: JAILTIME
+    description: |-
+      TODO(#12372)
   - name: JAILCREDITS
+    description: |-
+      TODO(#12372)
   - name: COMMITMENTSTATUS
+    description: |-
+      TODO(#12372)
   - name: COMMSTATUSDATE
+    description: |-
+      TODO(#12372)
   - name: COURTCMTCOMMENTS
+    description: |-
+      TODO(#12372)
   - name: CJISCOMMENTS
+    description: |-
+      TODO(#12372)
   - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
   - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
   - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
   - name: MAXIMUMPRISONTERM
+    description: |-
+      TODO(#12372)
   - name: SENTENCINGDATACONDITION
+    description: |-
+      TODO(#12372)
   - name: AMENDEDDATAFROMCJIS
+    description: |-
+      TODO(#12372)
   - name: OBLIGATIONSFLAG
+    description: |-
+      TODO(#12372)
   - name: COURTID
+    description: |-
+      TODO(#12372)
   - name: INTAKEDATE
+    description: |-
+      TODO(#12372)
   - name: COUNTYOFSENTENCING
+    description: |-
+      TODO(#12372)
   - name: OFFENDERVERSIONOFCRIME
+    description: |-
+      TODO(#12372)
   - name: CODEFENDANTNAME
+    description: |-
+      TODO(#12372)
   - name: OVERALLPLEA
+    description: |-
+      TODO(#12372)
   - name: CO_MITT_SRL
+    description: |-
+      TODO(#12372)

@@ -1,0 +1,191 @@
+file_tag: eomis_admissionsummary
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - INCARCERATIONBEGINDT
+columns:
+  - name: OFFENDERID
+    description: |-
+      TODO(#12372)
+  - name: INCARCERATIONBEGINDT
+    description: |-
+      TODO(#12372)
+  - name: COMMITMENTSUFFIXCODE
+    description: |-
+      TODO(#12372)
+  - name: COUNTYJAILBACKUPSTATUS
+    description: |-
+      TODO(#12372)
+  - name: COUNTYJAILBACKUPSTATDATE
+    description: |-
+      TODO(#12372)
+  - name: INTAKECOUNSELORID
+    description: |-
+      TODO(#12372)
+  - name: PARENTUNITCODE
+    description: |-
+      TODO(#12372)
+  - name: PROJECTEDEXECUTIONDATE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCINGSUMMARY
+    description: |-
+      TODO(#12372)
+  - name: PHYCHARACTERISTICSINTAKE
+    description: |-
+      TODO(#12372)
+  - name: OFFENDERPHOTOINTAKE
+    description: |-
+      TODO(#12372)
+  - name: DEMOGRAPHICPROFILEINTAKE
+    description: |-
+      TODO(#12372)
+  - name: RELATIVESASSOCIATESINTAKE
+    description: |-
+      TODO(#12372)
+  - name: EMERGENCYCONTACTINTAKE
+    description: |-
+      TODO(#12372)
+  - name: RESIDENTIALHISTORYINTAKE
+    description: |-
+      TODO(#12372)
+  - name: EMPLOYMENTHISTORYINTAKE
+    description: |-
+      TODO(#12372)
+  - name: EDUCATIONHISTORYINTAKE
+    description: |-
+      TODO(#12372)
+  - name: MILITARYHISTORYINTAKE
+    description: |-
+      TODO(#12372)
+  - name: WORKSKILLSINTAKE
+    description: |-
+      TODO(#12372)
+  - name: DRUGALUSEASMTINTAKE
+    description: |-
+      TODO(#12372)
+  - name: SUICIDEHISTORYINTAKE
+    description: |-
+      TODO(#12372)
+  - name: PROGRAMACHIEVEMINTAKE
+    description: |-
+      TODO(#12372)
+  - name: SEPARATIONALERTSINTAKE
+    description: |-
+      TODO(#12372)
+  - name: SENTCOMPONENTINTAKE
+    description: |-
+      TODO(#12372)
+  - name: SPECIALCONDITIONSINTAKE
+    description: |-
+      TODO(#12372)
+  - name: ARRESTHISTORYINTAKE
+    description: |-
+      TODO(#12372)
+  - name: PRIORCONFINEMENTSINTAKE
+    description: |-
+      TODO(#12372)
+  - name: NONCONFINEMENTSINTAKE
+    description: |-
+      TODO(#12372)
+  - name: ESCAPEHISTORYINTAKE
+    description: |-
+      TODO(#12372)
+  - name: NOTIFYPRIORTORELEASEIND
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: BOOTCAMPENDDATE
+    description: |-
+      TODO(#12372)
+  - name: ADMISSIONCOMMENTS
+    description: |-
+      TODO(#12372)
+  - name: COUNTYBUSSEQUENCENUMBER
+    description: |-
+      TODO(#12372)
+  - name: INTEGRATEDHOUSINGREVIEWINTAKE
+    description: |-
+      TODO(#12372)
+  - name: INITIALHOUSINGREVIEWINTAKE
+    description: |-
+      TODO(#12372)
+  - name: INITIALHEALTHSCREENINTAKE
+    description: |-
+      TODO(#12372)
+  - name: CLARKSCREENINGINTAKE
+    description: |-
+      TODO(#12372)
+  - name: INITIALINTAKEAUDITCOMPLETED
+    description: |-
+      TODO(#12372)
+  - name: CLSSCORESHEETPREPAREDINTAKE
+    description: |-
+      TODO(#12372)
+  - name: INSTISTAFFRECOMMENDINTAKE
+    description: |-
+      TODO(#12372)
+  - name: ENDORSEMENTMADEINTAKE
+    description: |-
+      TODO(#12372)
+  - name: RRCOMPLETEDDATE
+    description: |-
+      TODO(#12372)
+  - name: HEALTHSERVICESCOMPLETEDDATE
+    description: |-
+      TODO(#12372)
+  - name: RECORDSCOMPLETEDDATE
+    description: |-
+      TODO(#12372)
+  - name: EDUCATIONCOMPLETEDDATE
+    description: |-
+      TODO(#12372)
+  - name: CORRCOUNSELORCOMPLETEDDATE
+    description: |-
+      TODO(#12372)
+  - name: CLSSTAFFREPRESENTATIVECOMPLETE
+    description: |-
+      TODO(#12372)
+  - name: ACTUALRECEPTIONCENTER
+    description: |-
+      TODO(#12372)
+  - name: ARRIVALGROUPDATE
+    description: |-
+      TODO(#12372)
+  - name: ARRIVEDFROMCOUNTYCODE
+    description: |-
+      TODO(#12372)
+  - name: ACTUALBUSSEQUENCENUMBER
+    description: |-
+      TODO(#12372)
+  - name: RCPROCESSINGSTATUS
+    description: |-
+      TODO(#12372)
+  - name: INCARCERATIONNUMBER
+    description: |-
+      TODO(#12372)
+  - name: ADMISSIONTYPE
+    description: |-
+      TODO(#12372)
+  - name: INMATEINCOUNTYJAILTYPE
+    description: |-
+      TODO(#12372)
+  - name: PREAASSESSMENTINTAKE
+    description: |-
+      TODO(#12372)
+  - name: ARRIVALGROUPTIME
+    description: |-
+      TODO(#12372)
+  - name: PAROLEBOARDAGENDATYPE
+    description: |-
+      TODO(#12372)

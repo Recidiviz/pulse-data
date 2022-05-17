@@ -1,0 +1,116 @@
+file_tag: informix_incarcer
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: validation
+primary_key_cols:
+  - DOCNO
+  - INCRNO
+columns:
+  - name: DOCNO
+    description: |-
+      TODO(#12372)
+  - name: INCRNO
+    description: |-
+      TODO(#12372)
+  - name: SENT_EFF_DTD
+    description: |-
+      TODO(#12372)
+  - name: ADMN_DTD
+    description: |-
+      TODO(#12372)
+  - name: INTAK_DTD
+    description: |-
+      TODO(#12372)
+  - name: INTERSTATE_FLG
+    description: |-
+      TODO(#12372)
+  - name: PAR_DTD
+    description: |-
+      TODO(#12372)
+  - name: RLS_DTD
+    description: |-
+      TODO(#12372)
+  - name: STAT_LAW_CD
+    description: |-
+      TODO(#12372)
+  - name: GOVN_MIN_SENT
+    description: |-
+      TODO(#12372)
+  - name: GOVN_MAX_SENT
+    description: |-
+      TODO(#12372)
+  - name: RECOMP_FLG
+    description: |-
+      TODO(#12372)
+  - name: VICTIM_NOTIC_FLG
+    description: |-
+      TODO(#12372)
+  - name: PAR_REV
+    description: |-
+      TODO(#12372)
+  - name: SENTDISC_DTD
+    description: |-
+      TODO(#12372)
+  - name: EST_SENTDISC_DTD
+    description: |-
+      TODO(#12372)
+  - name: PARELIG_DTD
+    description: |-
+      TODO(#12372)
+  - name: EST_PARELIG_DTD
+    description: |-
+      TODO(#12372)
+  - name: MANDRLS_DTD
+    description: |-
+      TODO(#12372)
+  - name: EST_MANDRLS_DTD
+    description: |-
+      TODO(#12372)
+  - name: TIMETRAN_TYP
+    description: |-
+      TODO(#12372)
+  - name: NXT_PAR_HRG_DTD
+    description: |-
+      TODO(#12372)
+  - name: PARTERM_DTD
+    description: |-
+      TODO(#12372)
+  - name: EST_PARTERM_DTD
+    description: |-
+      TODO(#12372)
+  - name: LST_TCOMP_DTD
+    description: |-
+      TODO(#12372)
+  - name: COMM_ELIG_TYP
+    description: |-
+      TODO(#12372)
+  - name: COMM_ELIG_DTD
+    description: |-
+      TODO(#12372)
+  - name: COMM_REF_DTD
+    description: |-
+      TODO(#12372)
+  - name: COMM_REFUSE_FLG
+    description: |-
+      TODO(#12372)
+  - name: PAR_AGENDA_TYP
+    description: |-
+      TODO(#12372)
+  - name: CCL_CIC_NO
+    description: |-
+      TODO(#12372)
+  - name: TIMETRAN_AWARD_TYP
+    description: |-
+      TODO(#12372)
+  - name: LAWCD_SRL
+    description: |-
+      TODO(#12372)
+  - name: MAND_RE_PAR_DTD
+    description: |-
+      TODO(#12372)
+  - name: RMN_TTRANS_DAYS
+    description: |-
+      TODO(#12372)
+  - name: DWNLD_DTD
+    description: |-
+      TODO(#12372)

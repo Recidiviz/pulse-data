@@ -214,6 +214,8 @@ columns:
     known_values:
       - value: "01"
         description: New CO Commitment
+      - value: "03"
+        description: YOS Commitment
       - value: "06"
         description: Recommitment
       - value: "07"
@@ -310,6 +312,8 @@ columns:
         description: Initial Classification
       - value: "14"
         description: Returned to Sending State
+      - value: "19"
+        description: GP Placement
       - value: "22"
         description: Progression
       - value: "24"
@@ -342,6 +346,8 @@ columns:
         description: Out Of State Parole Supervision
       - value: "54"
         description: Parole Reinstated
+      - value: "55"
+        description: Technical Parole Violator
       - value: "56"
         description: Absconder in Custody In-State
       - value: "59"
@@ -458,19 +464,19 @@ columns:
     description: |-
       Letter and/or number CFHICUST code indicating Custody/Security Code.
     known_values:
-      - value: "C1"
+      - value: C1
         description: Minimum
-      - value: "C2"
+      - value: C2
         description: Minimum-Restrictive (or below)
-      - value: "C3"
+      - value: C3
         description: Medium (or below)
-      - value: "C6"
+      - value: C6
         description: Close (or below)
-      - value: "C7"
+      - value: C7
         description: Maximum (or below)
-      - value: "UK"
+      - value: UK
         description: Unknown - Conversion
-      - value: "UN"
+      - value: UN
         description: Unknown
   - name: CURRENTTOTALCUSTODYSCORE
     description: |-
@@ -479,16 +485,16 @@ columns:
     description: |-
       CDPARCL code for current good time earning class.
     known_values:
-      - value: "IV"
+      - value: IV
         description: Class IV
-      - value: "UN"
+      - value: UN
         description: Unknown
   - name: JOBPGMCATEGORYAM
     description: |-
-      Job / Program Category Assignment AM with WRKPGMCAT code.
+      Job / Program Category Assignment AM with WRKPGMCAT code for letters and related code 'FACLACTY2' for numbers.
     known_values:
       - value: "07"
-        description: TODO(#12372)
+        description: Facility Work Assignment
       - value: "J"
         description: Other Job
       - value: "U"
@@ -497,20 +503,20 @@ columns:
     description: |-
       Work/ Program Assignment AM populated by CIWRKPGM.
     known_values:
-      - value: "95.00"
-        descriptiom: Unassigned
       - value: "07.0197"
         description: TODO(#12372)
       - value: "11.0198"
         description: TODO(#12372)
+      - value: "95.00"
+        description: Unassigned
       - value: "99.99"
         description: Unknown
   - name: JOBPGMCATEGORYPM
     description: |-
-      Job / Program Category Assignment PM with WRKPGMCAT code.
+      Job / Program Category Assignment PM with WRKPGMCAT code for letters and related code 'FACLACTY2' for numbers.
     known_values:
       - value: "07"
-        description: TODO(#12372)
+        description: Facility Work Assignment
       - value: "J"
         description: Other Job
       - value: "U"
@@ -519,17 +525,17 @@ columns:
     description: |-
       Work / Program Category Assignment PM with CIWRKPGM code.
     known_values:
-      - value: "95.00"
-        descriptiom: Unassigned
       - value: "07.0197"
         description: TODO(#12372)
       - value: "11.0198"
         description: TODO(#12372)
+      - value: "95.00"
+        description: Unassigned
       - value: "99.99"
         description: Unknown
   - name: OUTONGATEPASSFLAG
     description: |-
-      TODO(#12372)
+      A yes or no flag indicating if a person can pass between gates within or sometimes outside of a facility for certain work programs.
     known_values:
       - value: "N"
         description: "No"
@@ -569,19 +575,19 @@ columns:
       Latest drug test date.
   - name: CURRMEDICALCLASSIFCODE
     description: |-
-      Current medical classification code - CMMEDICL.
+      Current medical classification code - CMMEDICL, see "D and M codes with descriptions" PDF.
     known_values:
-      - value: "M1"
-        description: M1
-      - value: "M2"
-        description: M2
-      - value: "M3"
-        description: M3
-      - value: "M4"
-        description: M4
-      - value: "M5"
-        description: M5
-      - value: "UN"
+      - value: M1
+        description: M1 - Acute conditions (easily treated on an out-patient basis), Healthy (no limitations), and Medications (no chronic medications).
+      - value: M2
+        description: M2 - mild conditions and medications, see PDF for more detail.
+      - value: M3
+        description: M3 - moderate conditions and medications, see PDF for more detail.
+      - value: M4
+        description: M4 - more serious health conditions and medications, see PDF for more detail.
+      - value: M5
+        description: M5 - end stage chronic / terminal diseases, high medical needs (e.g. high risk pregnancy), or infectious diseases - see PDF for more details.
+      - value: UN
         description: Unknown
   - name: PERMITTEDTOHANDLEFOOD
     description: |-
@@ -609,7 +615,137 @@ columns:
   - name: INMCNTYCNVCFCURCOMMIT
     description: |-
       County of conviction for current commit - CDCOARAG code.
-    known_values: [] #TODO(#12372)
+    known_values:
+      - value: "000"
+        description: Other State
+      - value: "001"
+        description: Adams
+      - value: "002"
+        description: Alamosa
+      - value: "003"
+        description: Arapahoe
+      - value: "004"
+        description: Archuleta
+      - value: "005"
+        description: Baca
+      - value: "006"
+        description: Bent
+      - value: "007"
+        description: Boulder
+      - value: "008"
+        description: Chaffee
+      - value: "009"
+        description: Cheyenne
+      - value: "010"
+        description: Clear Creek
+      - value: "011"
+        description: Conejos
+      - value: "012"
+        description: Costilla
+      - value: "013"
+        description: Crowley
+      - value: "014"
+        description: Custer
+      - value: "015"
+        description: Delta
+      - value: "016"
+        description: Denver
+      - value: "017"
+        description: Dolores
+      - value: "018"
+        description: Douglas
+      - value: "019"
+        description: Eagle
+      - value: "020"
+        description: Elbert
+      - value: "021"
+        description: El Paso
+      - value: "022"
+        description: Fremont
+      - value: "023"
+        description: Garfield
+      - value: "024"
+        description: Gilpin
+      - value: "025"
+        description: Grand
+      - value: "026"
+        description: Gunnison
+      - value: "027"
+        description: Hinsdale
+      - value: "028"
+        description: Huerfano
+      - value: "029"
+        description: Jackson
+      - value: "030"
+        description: Jefferson
+      - value: "031"
+        description: Kiowa
+      - value: "032"
+        description: Kit Carson
+      - value: "033"
+        description: Lake
+      - value: "034"
+        description: La Plata
+      - value: "035"
+        description: Larimer
+      - value: "036"
+        description: Las Animas
+      - value: "037"
+        description: Lincoln
+      - value: "038"
+        description: Logan
+      - value: "039"
+        description: Mesa
+      - value: "041"
+        description: Moffat
+      - value: "042"
+        description: Montezuma
+      - value: "043"
+        description: Montrose
+      - value: "044"
+        description: Morgan
+      - value: "045"
+        description: Otero
+      - value: "046"
+        description: Ouray
+      - value: "047"
+        description: Park
+      - value: "048"
+        description: Phillips
+      - value: "049"
+        description: Pitkin
+      - value: "050"
+        description: Prowers
+      - value: "051"
+        description: Pueblo
+      - value: "052"
+        description: Rio Blanco
+      - value: "053"
+        description: Rio Grande
+      - value: "054"
+        description: Routt
+      - value: "055"
+        description: Saguache
+      - value: "057"
+        description: San Miguel
+      - value: "058"
+        description: Sedgwick
+      - value: "059"
+        description: Summit
+      - value: "060"
+        description: Teller
+      - value: "061"
+        description: Washington
+      - value: "062"
+        description: Weld
+      - value: "063"
+        description: Yuma
+      - value: "080"
+        description: Broomfield
+      - value: "099"
+        description: Unknown/NA
+      - value: "99"
+        description: Unknown
   - name: PRIMARYOFFENSECURRINCAR
     description: |-
       The primary offense leading to current incarceration - CDADCOFF code.
@@ -686,9 +822,9 @@ columns:
         description: Crimes against Person
       - value: "7399"
         description: Public Order Crimes
-      - value: "9999"
-        description: Homicide
       - value: "999"
+        description: Homicide
+      - value: "9999"
         description: Homicide
   - name: TOTALSENTENCELENGTH
     description: |-
@@ -713,12 +849,12 @@ columns:
       Mandatory release date (MRD) - projected release date.
   - name: SGTLAWUSEDTOCALCMR
     description: |-
-      SGT law used to caculate mandatory release - CDSGTLAW code.
+      SGT law used to caculate mandatory release - Mandatory or Discretionary.
     known_values:
       - value: D
-        description: TODO(#12372)
+        description: Discretionary
       - value: M
-        description: TODO(#12372)
+        description: Mandatory
   - name: DATEPRDLASTRECALC
     description: |-
       Last time computation date.
@@ -729,10 +865,10 @@ columns:
     description: |-
       Parole eligibility status.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: FINALPEDCOMMITMENT
     description: |-
       Final PED Commitment.
@@ -744,8 +880,72 @@ columns:
       Parole Eligibility Date (PED).
   - name: SGTLAWUSEDTOCALCPED
     description: |-
-      SGT Law used to calculate PED.
-    known_values: [] #TODO(#12372)
+      SGT Law used to calculate PED - from CILAWCODE code.
+    known_values:
+      - value: "."
+        description: Interstate Compact
+      - value: "0R"
+        description: "0R"
+      - value: "79"
+        description: Old Law
+      - value: "B"
+        description: New Law
+      - value: "BS"
+        description: New Law with Mandatory Parole
+      - value: "BV"
+        description: BV
+      - value: "E1"
+        description: V enh (one prior violent)
+      - value: "E2"
+        description: V enh (two or more prior violent)
+      - value: "E3"
+        description: B enh (93-04 one prior violent)
+      - value: "E4"
+        description: B enh (93-04 two or more prior violent)
+      - value: "F"
+        description: "F Law"
+      - value: "J"
+        description: Mandatory years habitual
+      - value: "J3"
+        description: J enh (93-03 one prior violent)
+      - value: "J4"
+        description: J enh (93-03 two or more prior violent)
+      - value: "LS"
+        description: LS
+      - value: "N"
+        description: N Law
+      - value: "P"
+        description: P Law
+      - value: "R0"
+        description: B enh (felony class 2 or 3)
+      - value: "R2"
+        description: B enh (felony 2/3, 1 prior OR 2 or more prior)
+      - value: "S"
+        description: Mandatory years sex offender
+      - value: "S1"
+        description: S enh (87-93 one prior violent)
+      - value: "S2"
+        description: S enh (87-93 two or more prior violent)
+      - value: "S3"
+        description: S enh (93-02 one prior violent)
+      - value: "S4"
+        description: S enh (93-02 two or more prior violent)
+      - value: "V"
+        description: V (Discretionary) Law
+      - value: "V1"
+        description: "V1"
+      - value: "V2"
+        description: "V2"
+      - value: "VB"
+        description: "VB"
+      - value: "X"
+        description: Martin/Cooper
+      - value: "X3"
+        description: X enh (one prior violent)
+      - value: "X4"
+        description: X enh (two or more prior violent)
+      - value: "Y2"
+        description: "Y2"
   - name: LATESTPAROLEBOARDHEARDT
     description: |-
       Last/Next Parole Board Hearing Date.
@@ -764,7 +964,7 @@ columns:
       Last/Next Parole Board action code - CIBDACT1.
     known_values:
       - value: "0"
-        description:
+        description: TODO(#12372)
       - value: "01"
         description: Parole Granted
       - value: "08"
@@ -788,7 +988,7 @@ columns:
       - value: "DC"
         description: Discharged
       - value: "NA"
-        description: No Action Needed
+        description: "No Action Needed"
       - value: "OP"
         description: Parole Ordered
       - value: "WI"
@@ -823,7 +1023,7 @@ columns:
       Vine notification VINESFLG code.
     known_values:
       - value: "00"
-        description: No Changes to Report
+        description: "No Changes to Report"
       - value: "02"
         description: Bookings change
       - value: "99"
@@ -841,10 +1041,10 @@ columns:
     description: |-
       Outstanding H/S Condition Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: TOTALBONDAMOUNT
     description: |-
       The total bond amount.
@@ -852,10 +1052,10 @@ columns:
     description: |-
       "Idigent Inmate Indicator" - IBSINDIG code.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: INDIGENTCANTEENSALESBALANCE
     description: |-
       "Indigent Inmate Canteen Sales Balance"
@@ -878,7 +1078,7 @@ columns:
         description: Unassigned
   - name: STGAFFILIATIONCODE
     description: |-
-      Inmate STG Flag - STGFLAG code.
+      Inmate Security Threat Group Flag - STGFLAG code.
     known_values:
       - value: "0"
         description: N/A
@@ -892,18 +1092,18 @@ columns:
     description: |-
       Active Transfer Hold Exists Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: INMSTGASSOCIATIONFLAG
     description: |-
       Inmate STG Association Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: INMSTGASSOCIATIONDATE
     description: |-
       Inmate STG Association as of Date.
@@ -911,26 +1111,26 @@ columns:
     description: |-
       Active Detainer Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: ACTIVESPNSEPARATIONFLAG
     description: |-
       Active Offender Separation Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: PREARISKLEVEL
     description: |-
       PREA Risk Level Flag
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: INCARCERATIONNUMBER
     description: |-
       Incarceration Period Sequence Number (Old).
@@ -944,10 +1144,10 @@ columns:
     description: |-
       Active Warrant Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: CURRENTINCARCARRIVALDATE
     description: |-
       Current Incarceration Arrival Date.
@@ -1000,40 +1200,40 @@ columns:
     description: |-
       Victim Enrolled for Notification - VICENROLL code.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: ICCINMATEFLAG
     description: |-
       ICC Inmate Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: HIGHPROFILECASEFLAG
     description: |-
       High Profile Case Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: INMATEADAFLAG
     description: |-
       Inmate ADA Flag.
     known_values:
-      - value: "Y"
-        description: "Yes"
       - value: "N"
         description: "No"
+      - value: "Y"
+        description: "Yes"
   - name: SEXUALAGGRESSIVEBEHAVIORLEVEL
     description: |-
       Sexually Aggressive Behavior Level - SABLEVEL code.
     known_values:
       - value: "0"
-        description: N/A
+        description: "N/A"
       - value: "3"
         description: "3"
       - value: "4"
@@ -1045,7 +1245,7 @@ columns:
       Sexual Vulnerability Risk Level - SVRLEVEL code.
     known_values:
       - value: "0"
-        description: N/A
+        description: "N/A"
       - value: "3"
         description: "3"
       - value: "4"
@@ -1057,7 +1257,7 @@ columns:
       Last Time Computation Time of Day.
   - name: PRIMARYSTATUTECODE
     description: |-
-      Primary Statute Code (i.e., most serious) - PRISTATUTE code.
+      Primary Statute Code (most serious or governing statute) - PRISTATUTE code.
   - name: GATEPASSREASONCODE
     description: |-
       Current Gate Pass Reason - CFGPRSN code.

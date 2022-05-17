@@ -1,0 +1,40 @@
+file_tag: eomis_sentcompchaining
+file_description: |-
+  TODO(#12372)(): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - INCARCERATIONBEGINDT
+  - CHAINSEQUENCE
+  - SENTENCESEQUENCE
+columns:
+  - name: OFFENDERID
+    description: |-
+      TODO(#12372)
+  - name: INCARCERATIONBEGINDT
+    description: |-
+      TODO(#12372)
+  - name: CHAINSEQUENCE
+    description: |-
+      TODO(#12372)
+  - name: SENTENCESEQUENCE
+    description: |-
+      TODO(#12372)
+  - name: COMMITMENTPREFIX
+    description: |-
+      TODO(#12372)
+  - name: SENTENCECOMPONENT
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: GOVERNS
+    description: |-
+      TODO(#12372)

@@ -1,0 +1,162 @@
+file_tag: eomis_facilitybed
+file_description: |-
+  This file contains detail about the beds available in a facility.
+data_classification: source
+primary_key_cols:
+  - PARTYID
+  - FACILITYBUILDINGID
+  - FACILITYBEDNUMBER
+columns:
+  - name: PARTYID
+    description: |-
+      TODO(#12372)
+  - name: FACILITYBUILDINGID
+    description: |-
+      TODO(#12372)
+  - name: FACILITYBEDNUMBER
+    description: |-
+      TODO(#12372)
+  - name: UPPERLOWERBUNK
+    description: |-
+      TODO(#12372)
+  - name: BEDCOUNTCATEGORY
+    description: |-
+      TODO(#12372)
+  - name: CAPACITYTYPECODE
+    description: |-
+      TODO(#12372)
+  - name: BEDADACERTIFIED
+    description: |-
+      TODO(#12372)
+  - name: TYPEOFBED
+    description: |-
+      TODO(#12372)
+  - name: PRIMARYUSEOFBED
+    description: |-
+      TODO(#12372)
+  - name: HIGHESTCUSTODYALLOWED
+    description: |-
+      TODO(#12372)
+  - name: BEDSTATUS
+    description: |-
+      TODO(#12372)
+  - name: BEDSTATUSDATE
+    description: |-
+      TODO(#12372)
+  - name: BEDSTATUSUNTILDATE
+    description: |-
+      TODO(#12372)
+  - name: FACILITYBEDOCCUPANT
+    description: |-
+      TODO(#12372)
+  - name: FACILITYBEDASSIGNRSN
+    description: |-
+      TODO(#12372)
+  - name: BEDDESCRIPTCOMMENTS
+    description: |-
+      TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      TODO(#12372)
+  - name: BEDTIER
+    description: |-
+      TODO(#12372)
+  - name: FACILITYBEDGENDER
+    description: |-
+      TODO(#12372)
+  - name: CELLNUMBER
+    description: |-
+      TODO(#12372)
+  - name: WETDRYCELLROOM
+    description: |-
+      TODO(#12372)
+  - name: STROBEINSTALLED
+    description: |-
+      TODO(#12372)
+  - name: GRABBARINSTALLED
+    description: |-
+      TODO(#12372)
+  - name: CAMERAINSTALLEDINCELL
+    description: |-
+      TODO(#12372)
+  - name: NEGATIVEPRESSUREINCELL
+    description: |-
+      TODO(#12372)
+  - name: BEDRESTRAINTSINCELL
+    description: |-
+      TODO(#12372)
+  - name: EMERGENCYBED
+    description: |-
+      TODO(#12372)
+  - name: BEDPOSITIONWITHINCELL
+    description: |-
+      TODO(#12372)
+  - name: DDPINMATEALLOWED
+    description: |-
+      TODO(#12372)
+  - name: CONTINUOUSPOWER
+    description: |-
+      TODO(#12372)
+  - name: POSITIVEPRESSUREINCELL
+    description: |-
+      TODO(#12372)
+  - name: BEDREDLINERSN
+    description: |-
+      TODO(#12372)
+  - name: BEDSTATUSAUTHBYSTAFF
+    description: |-
+      TODO(#12372)
+  - name: ADASHOWERACCESSIBLE
+    description: |-
+      TODO(#12372)
+  - name: TRIPLEBUNK
+    description: |-
+      TODO(#12372)
+  - name: DDPSCELLBEDID
+    description: |-
+      TODO(#12372)
+  - name: DDPSFACILITY
+    description: |-
+      TODO(#12372)
+  - name: FACILITYBEDSECURITYLEVEL
+    description: |-
+      TODO(#12372)
+  - name: CORRCOUNSELORASSIGNEDTOBED
+    description: |-
+      TODO(#12372)
+  - name: SECURITYLEVEL
+    description: |-
+      TODO(#12372)
+  - name: ADADESIGNATED
+    description: |-
+      TODO(#12372)
+  - name: TRAYSLOT
+    description: |-
+      TODO(#12372)
+  - name: BEDINTERCOM
+    description: |-
+      TODO(#12372)
+  - name: BARIATRICBED
+    description: |-
+      TODO(#12372)
+  - name: TALLBUNK
+    description: |-
+      TODO(#12372)
+  - name: AUDIBLESIRENINSTALLED
+    description: |-
+      TODO(#12372)
+  - name: ROOMCELLSTAIRS
+    description: |-
+      TODO(#12372)
+  - name: WHEELCHAIRACCESSIBLE
+    description: |-
+      TODO(#12372)
+  - name: LOCALBEDID
+    description: |-
+      TODO(#12372)
