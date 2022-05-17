@@ -119,7 +119,8 @@ class GoogleCloudTasksClientWrapper:
         task_id: Optional[str] = None,
         body: Optional[Dict[str, Any]] = None,
         schedule_delay_seconds: int = 0,
-        http_method: HttpMethod = HttpMethod.POST
+        http_method: HttpMethod = HttpMethod.POST,
+        service_account_email: Optional[str] = None
     ) -> None:
         """Creates a task with the given details.
 
@@ -132,10 +133,12 @@ class GoogleCloudTasksClientWrapper:
             queue_name: The queue on which to schedule the task
             schedule_delay_seconds: The number of seconds by which to delay the
                 scheduling of the given task.
-            relative_uri: The relative uri to hit.
+            relative_uri: The relative uri to hit. Exactly one of this and absolute_uri must be set.
+            absolute_uri: The absolute uri to hit. Exactly one of this and relative_uri must be set.
             body: Dictionary of values that will be converted to JSON and
             included in the request.
             http_method: The method for this request (i.e. GET or POST)
+            service_account_email: A service account email to be used to generate an OIDC token for the endpoint.
         """
 
         if (not absolute_uri and not relative_uri) or (absolute_uri and relative_uri):
@@ -166,13 +169,18 @@ class GoogleCloudTasksClientWrapper:
                 schedule_time=schedule_timestamp,
             )
 
-        http_request: Dict[str, Union[str, bytes]] = {}
+        http_request: Dict[str, Union[str, bytes, dict]] = {}
 
         if http_method is not None:
             http_request["http_method"] = http_method.value
 
         if http_method in (HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH):
             http_request["body"] = json.dumps(body).encode()
+
+        if service_account_email is not None:
+            http_request["oidc_token"] = {
+                "service_account_email": service_account_email
+            }
 
         if relative_uri:
             task_builder.update_args(

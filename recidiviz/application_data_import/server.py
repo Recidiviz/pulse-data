@@ -58,7 +58,10 @@ if in_gcp():
     )
 else:
     cloud_run_metadata = CloudRunMetadata(
-        project_id="123", region="us-central1", url="http://localhost:5000"
+        project_id="123",
+        region="us-central1",
+        url="http://localhost:5000",
+        service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
     )
 
 
@@ -135,7 +138,8 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
     )
     cloud_task_manager.create_task(
-        absolute_uri=f"{cloud_run_metadata.url}/import/pathways/{object_id}"
+        absolute_uri=f"{cloud_run_metadata.url}/import/pathways/{object_id}",
+        service_account_email=cloud_run_metadata.service_account_email,
     )
     logging.info("Enqueued gcs_import task to %s", CASE_TRIAGE_DB_OPERATIONS_QUEUE)
     return "", HTTPStatus.OK
