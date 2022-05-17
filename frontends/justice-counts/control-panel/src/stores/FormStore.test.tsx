@@ -86,69 +86,42 @@ beforeEach(() => {
 });
 
 test("metrics value handler updates the metric value", () => {
-  const mockEvent = {
-    target: {
-      name: "PROSECUTION_STAFF",
-      value: 2000,
-      hasAttribute: (str: string) => str === "required",
-    },
-  } as unknown as React.ChangeEvent<HTMLInputElement>;
+  formStore.updateMetricsValues(0, "PROSECUTION_STAFF", 2000);
 
-  formStore.updateMetricsValues(
-    0,
-    "PROSECUTION_STAFF",
-    mockEvent as React.ChangeEvent<HTMLInputElement>
-  );
-
-  expect(formStore.metricsValues[0].PROSECUTION_STAFF).toEqual(
-    mockEvent.target.value
-  );
+  expect(formStore.metricsValues[0].PROSECUTION_STAFF).toEqual(2000);
 
   expect.hasAssertions();
 });
 
 test("disaggregation dimension value handler updates the disaggregation dimension value", () => {
-  const mockEvent = {
-    target: {
-      name: "SUPPORT",
-      value: 200,
-      hasAttribute: (str: string) => str === "required",
-    },
-  } as unknown as React.ChangeEvent<HTMLInputElement>;
-
   formStore.updateDisaggregationDimensionValue(
     0,
     "PROSECUTION_STAFF",
     "PROSECUTION_STAFF_TYPE",
-    mockEvent as React.ChangeEvent<HTMLInputElement>
+    "SUPPORT",
+    200,
+    false
   );
 
   expect(
     formStore.disaggregations[0].PROSECUTION_STAFF.PROSECUTION_STAFF_TYPE
       .SUPPORT
-  ).toEqual(mockEvent.target.value);
+  ).toEqual(200);
 
   expect.hasAssertions();
 });
 
 test("context value handler updates the context value", () => {
-  const mockEvent = {
-    target: {
-      name: "PROGRAMMATIC_OR_MEDICAL_STAFF",
-      value: 100,
-      hasAttribute: (str: string) => str === "required",
-    },
-  } as unknown as React.ChangeEvent<HTMLInputElement>;
-
   formStore.updateContextValue(
     0,
     "PROSECUTION_STAFF",
-    mockEvent as React.ChangeEvent<HTMLInputElement>
+    "PROGRAMMATIC_OR_MEDICAL_STAFF",
+    100
   );
 
   expect(
     formStore.contexts[0].PROSECUTION_STAFF.PROGRAMMATIC_OR_MEDICAL_STAFF
-  ).toEqual(mockEvent.target.value);
+  ).toEqual(100);
 
   expect.hasAssertions();
 });

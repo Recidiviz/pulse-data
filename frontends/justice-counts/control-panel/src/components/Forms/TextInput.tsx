@@ -46,7 +46,9 @@ export const Input = styled.input<InputProps>`
     if (error) {
       return palette.highlight.red;
     }
-    return value ? palette.highlight.lightblue : palette.highlight.grey1;
+    return value || value === 0
+      ? palette.highlight.lightblue
+      : palette.highlight.grey1;
   }};
 
   border: none;
@@ -58,7 +60,9 @@ export const Input = styled.input<InputProps>`
       if (disabled) {
         return palette.highlight.grey4;
       }
-      return value ? palette.solid.blue : palette.highlight.grey6;
+      return value || value === 0
+        ? palette.solid.blue
+        : palette.highlight.grey6;
     }};
 
   &:focus ~ label {
@@ -194,7 +198,7 @@ export const TextInput: React.FC<TextInputProps> = ({
       <InputLabel
         htmlFor={name}
         required={required}
-        inputHasValue={Boolean(value)}
+        inputHasValue={value === 0 ? true : Boolean(value)}
         isDisabled={disabled}
         additionalContext={additionalContext}
         error={error}
