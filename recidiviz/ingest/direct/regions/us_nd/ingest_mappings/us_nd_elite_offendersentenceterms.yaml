@@ -13,6 +13,7 @@ input_columns:
   - TERM_SEQ
   - SENTENCE_TERM_CODE
 unused_columns:
+  - SENTENCE_TERM_CODE
   - END_DATE # No apparent use for these at the moment
   - TERM_SEQ
   - CREATE_DATETIME # No apparent use for these at the moment
@@ -28,33 +29,25 @@ output:
                 dec_str: OFFENDER_BOOK_ID
           id_type: $literal("US_ND_ELITE_BOOKING")
     incarceration_sentences:
-      # TODO(#10389): Consider updating the exclusion of suspended sentences when we redesign our sentencing model
-      - $conditional:
-          - $if:
-              $not_in:
-                $value: SENTENCE_TERM_CODE
-                $options:
-                  - $literal("SUSP")
-            $then:
-              StateIncarcerationSentence:
-                # Other fields on the StateIncarcerationSentence entity are
-                # hydrated in the other ingest views that also bring in
-                # StateIncarcerationSentence information. Those
-                # StateIncarcerationSentences are then merged with these ones
-                # via entity matching.
-                external_id:
-                  $concat:
-                    $values:
-                      - $custom:
-                          $function: us_nd_custom_parsers.decimal_str_as_int_str
-                          $args:
-                            dec_str: OFFENDER_BOOK_ID
-                      - SENTENCE_SEQ
-                date_imposed: START_DATE
-                max_length_days:
-                  $custom:
-                    $function: us_nd_custom_parsers.max_length_days_from_ymd
+      - StateIncarcerationSentence:
+          # Other fields on the StateIncarcerationSentence entity are
+          # hydrated in the other ingest views that also bring in
+          # StateIncarcerationSentence information. Those
+          # StateIncarcerationSentences are then merged with these ones
+          # via entity matching.
+          external_id:
+            $concat:
+              $values:
+                - $custom:
+                    $function: us_nd_custom_parsers.decimal_str_as_int_str
                     $args:
-                      years: YEARS
-                      months: MONTHS
-                      days: DAYS
+                      dec_str: OFFENDER_BOOK_ID
+                - SENTENCE_SEQ
+          date_imposed: START_DATE
+          max_length_days:
+            $custom:
+              $function: us_nd_custom_parsers.max_length_days_from_ymd
+              $args:
+                years: YEARS
+                months: MONTHS
+                days: DAYS

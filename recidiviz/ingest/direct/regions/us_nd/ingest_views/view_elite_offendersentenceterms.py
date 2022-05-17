@@ -25,12 +25,37 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#10389): Consider updating the exclusion of suspended sentences when we
 #  redesign our sentencing model
 VIEW_QUERY_TEMPLATE = """
-SELECT * 
-FROM {elite_offendersentenceterms}
--- We avoid bringing in "SUSPENDED" sentences that are placeholders in case someone's 
--- probation is revoked. We get no info about these sentences other than a length (
--- start/end dates are null).
-WHERE SENTENCE_TERM_CODE != 'SUSP'
+WITH all_terms AS (
+    SELECT
+      *,
+      ROW_NUMBER() OVER (
+        PARTITION BY OFFENDER_BOOK_ID, SENTENCE_SEQ
+        ORDER BY IF(END_DATE IS NULL, 1, 0), START_DATE, END_DATE
+      ) AS term_priority
+    FROM {elite_offendersentenceterms}
+    -- We avoid bringing in "SUSPENDED" sentences that are placeholders in case someone's 
+    -- probation is revoked. We get no info about these sentences other than a length (
+    -- start/end dates are null).
+    WHERE SENTENCE_TERM_CODE != 'SUSP'
+)
+SELECT
+  OFFENDER_BOOK_ID,
+  START_DATE,
+  END_DATE,
+  YEARS,
+  MONTHS,
+  DAYS,
+  CREATE_DATETIME,
+  MODIFY_DATETIME,
+  SENTENCE_SEQ,
+  TERM_SEQ,
+  SENTENCE_TERM_CODE
+FROM all_terms
+-- TODO(#10389): As of 5/16/22 there are about 40 sentences that have more than one
+-- non-supsended term. We are more or less arbitrarily (but deterministically!) picking
+-- one based on the START_DATE/END_DATE fields, but in the future it might make more
+-- sense to generate one sentence per term.
+WHERE term_priority = 1
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
