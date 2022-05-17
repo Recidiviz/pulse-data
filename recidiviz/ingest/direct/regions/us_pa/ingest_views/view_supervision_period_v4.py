@@ -205,6 +205,8 @@ agent_history_base AS (
     FROM {dbo_RelAgentHistory} agent_history
     LEFT OUTER JOIN agent_employee_numbers
     USING (AgentName)
+    WHERE agent_history.AgentName NOT LIKE '%Vacant, Position%'
+      AND agent_history.AgentName NOT LIKE '%Position, Vacant%'
 ),
 agent_update_dates AS (
   SELECT *
