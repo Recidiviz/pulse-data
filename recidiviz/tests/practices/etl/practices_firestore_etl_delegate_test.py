@@ -15,11 +15,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests for the Firestore ETL Delegate."""
+from datetime import datetime, timezone
 from typing import Optional, Tuple
 from unittest import TestCase
 from unittest.mock import patch
 
 import mock.mock
+from freezegun import freeze_time
 
 from recidiviz.practices.etl.practices_etl_delegate import (
     MAX_FIRESTORE_RECORDS_PER_BATCH,
@@ -38,16 +40,24 @@ class TestETLDelegate(PracticesFirestoreETLDelegate):
 
 
 class FakeBatchWriter(TestCase):
-    def __init__(self) -> None:
+    def __init__(
+        self, verify_batch_size: bool = False, verify_timestamp: datetime = None
+    ) -> None:
         super().__init__()
         self.doc_count = 0
+        self.verify_batch_size = verify_batch_size
+        self.verify_timestamp = verify_timestamp
 
     def set(self, doc_id: str, doc: dict) -> None:  # pylint: disable=unused-argument
         self.doc_count += 1
-        self.assertGreaterEqual(MAX_FIRESTORE_RECORDS_PER_BATCH, self.doc_count)
+        if self.verify_batch_size:
+            self.assertGreaterEqual(MAX_FIRESTORE_RECORDS_PER_BATCH, self.doc_count)
+        if self.verify_timestamp is not None:
+            self.assertEqual(doc["__loadedAt"], self.verify_timestamp)
 
     def commit(self) -> None:
-        self.assertGreaterEqual(MAX_FIRESTORE_RECORDS_PER_BATCH, self.doc_count)
+        if self.verify_batch_size:
+            self.assertGreaterEqual(MAX_FIRESTORE_RECORDS_PER_BATCH, self.doc_count)
         self.doc_count = 0
 
 
@@ -83,8 +93,7 @@ class PracticesFirestoreEtlDelegateTest(TestCase):
         mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
     ) -> None:
         """Tests that the ETL Delegate respects the max batch size for writing to Firestore."""
-        # mock_firestore_client.batch.return_value = FakeBatchWriter()
-        mock_batch_writer.return_value = FakeBatchWriter()
+        mock_batch_writer.return_value = FakeBatchWriter(verify_batch_size=True)
         mock_get_file_stream.return_value = [FakeFileStream(3000)]
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate()
@@ -92,3 +101,26 @@ class PracticesFirestoreEtlDelegateTest(TestCase):
 
         mock_delete_collection.assert_called_once_with("test_collection")
         mock_get_collection.assert_called_once_with("test_collection")
+
+    @patch("google.cloud.firestore.Client")
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl")
+    @patch(
+        "recidiviz.practices.etl.practices_etl_delegate.PracticesETLDelegate.get_file_stream"
+    )
+    def test_run_etl_timestamp(
+        self,
+        mock_get_file_stream: mock.MagicMock,
+        mock_firestore_client_impl: mock.MagicMock,
+        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
+        """Tests that the ETL Delegate adds timestamp to each loaded record."""
+        mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
+
+        mock_firestore_client_impl.batch.return_value = FakeBatchWriter(
+            verify_timestamp=mock_now
+        )
+        mock_get_file_stream.return_value = [FakeFileStream(2)]
+        with local_project_id_override("test-project"):
+            delegate = TestETLDelegate()
+            with freeze_time(mock_now):
+                delegate.run_etl()
