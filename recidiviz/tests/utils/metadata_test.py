@@ -103,12 +103,7 @@ class MetadataTest(unittest.TestCase):
         responses.add(
             responses.GET,
             "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/test-service",
-            json={
-                "status": {"url": "http://test-service.cloudrun"},
-                "spec": {
-                    "template": {"spec": {"serviceAccountName": "test-sa@iam.com"}}
-                },
-            },
+            json={"status": {"url": "http://test-service.cloudrun"}},
             match=[matchers.header_matcher({"Authorization": "Bearer fake-token"})],
         )
 
@@ -118,6 +113,5 @@ class MetadataTest(unittest.TestCase):
                 project_id="fake-project",
                 region="us-east1",
                 url="http://test-service.cloudrun",
-                service_account_email="test-sa@iam.com",
             ),
         )

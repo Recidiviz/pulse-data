@@ -81,8 +81,7 @@ class CloudTaskQueueManager(Generic[QueueInfoType]):
         task_id: Optional[str] = None,
         relative_uri: Optional[str] = None,
         absolute_uri: Optional[str] = None,
-        schedule_delay_seconds: int = 0,
-        service_account_email: Optional[str] = None,
+        schedule_delay_seconds: int = 0
     ) -> None:
         self.cloud_task_client.create_task(
             task_id=task_id,
@@ -91,7 +90,6 @@ class CloudTaskQueueManager(Generic[QueueInfoType]):
             absolute_uri=absolute_uri,
             body=body,
             schedule_delay_seconds=schedule_delay_seconds,
-            service_account_email=service_account_email,
         )
 
     def delete_task(self, *, task_name: str) -> None:
