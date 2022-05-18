@@ -45,7 +45,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         sessions.end_date + 1 AS transition_date,
         IF(sessions.compartment_level_2 = 'DUAL', 'PAROLE', sessions.compartment_level_2) AS supervision_type,
         IF({state_specific_supervision_level} IN {non_active_supervision_levels},
-            supervision_sessions.most_recent_active_supervision_level, {state_specific_supervision_level}) AS supervision_level,
+            {supervision_sessions_state_specific_supervision_level}, {state_specific_supervision_level}) AS supervision_level,
         sessions.age_end AS age,
         {age_group}
         sessions.gender,
@@ -89,6 +89,10 @@ SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "sessions.state_code",
         "sessions.correctional_level_end",
+    ),
+    supervision_sessions_state_specific_supervision_level=pathways_state_specific_supervision_level(
+        "supervision_sessions.state_code",
+        "supervision_sessions.most_recent_active_supervision_level",
     ),
 )
 
