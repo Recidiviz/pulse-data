@@ -17,13 +17,16 @@
 
 import { when } from "mobx";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useStore } from "../../stores";
+import logo from "../assets/jc-logo-vector.png";
 import Menu from "../Menu";
-import { HeaderCell, HeaderRow } from ".";
+import { HeaderCell, HeaderRow, Logo, LogoContainer } from ".";
 
 const Header = () => {
   const [agencyName, setAgencyName] = useState<string>("");
+  const navigate = useNavigate();
   const { userStore } = useStore();
 
   useEffect(
@@ -42,7 +45,11 @@ const Header = () => {
 
   return (
     <HeaderRow>
-      <HeaderCell>Justice Counts Data Publisher</HeaderCell>
+      <HeaderCell>
+        <LogoContainer onClick={() => navigate("/")}>
+          <Logo src={logo} alt="" />
+        </LogoContainer>
+      </HeaderCell>
       <HeaderCell>
         {agencyName}
         <Menu />

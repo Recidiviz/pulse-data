@@ -21,7 +21,7 @@ import { palette } from "../GlobalStyles/Palette";
 
 export const HeaderRow = styled.header`
   width: 100%;
-  height: 50px;
+  height: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -35,4 +35,27 @@ export const HeaderRow = styled.header`
 export const HeaderCell = styled.div`
   display: flex;
   align-items: center;
+`;
+
+export const LogoContainer = styled.div`
+  height: 64px;
+  width: 64px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: ${palette.solid.green};
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: 0.3s ease;
+
+  &:hover {
+    cursor: pointer;
+    opacity: 0.9;
+  }
+`;
+
+export const Logo = styled.img`
+  width: 48px;
+  height: 48px;
 `;
