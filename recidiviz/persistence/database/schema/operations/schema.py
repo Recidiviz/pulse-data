@@ -25,6 +25,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Integer,
+    PrimaryKeyConstraint,
     String,
     UniqueConstraint,
 )
@@ -40,10 +41,46 @@ direct_ingest_instance = Enum(
     name="direct_ingest_instance",
 )
 
+direct_ingest_status = Enum(
+    enum_canonical_strings.direct_ingest_status_rerun_with_raw_data_import_started,
+    enum_canonical_strings.direct_ingest_status_standard_rerun_started,
+    enum_canonical_strings.direct_ingest_status_secondary_rerun_results_flashed,
+    enum_canonical_strings.direct_ingest_status_raw_data_import_in_progress,
+    enum_canonical_strings.direct_ingest_status_ingest_view_materialization_in_progress,
+    enum_canonical_strings.direct_ingest_status_extract_and_merge_in_progress,
+    enum_canonical_strings.direct_ingest_status_ready_to_flash,
+    enum_canonical_strings.direct_ingest_status_stale_raw_data,
+    enum_canonical_strings.direct_ingest_status_up_to_date,
+    enum_canonical_strings.direct_ingest_status_flash_in_progress,
+    enum_canonical_strings.direct_ingest_status_flash_completed,
+    name="direct_ingest_status",
+)
+
 # Defines the base class for all table classes in the shared operations schema.
 OperationsBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="OperationsBase"
 )
+
+
+class DirectIngestInstanceStatus(OperationsBase):
+    """Represents the status and various metadata about an ingest instance over time. Allows us to track the duration
+    of reruns and the time spent on each part of ingest."""
+
+    __tablename__ = "direct_ingest_instance_status"
+
+    # The region code of a particular instance doing ingest.
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The timestamp of when the status of a particular instance changes.
+    timestamp = Column(DateTime, nullable=False)
+
+    # The particular instance doing ingest.
+    instance = Column(direct_ingest_instance, nullable=False, index=True)
+
+    # The status of a particular instance doing ingest.
+    status = Column(direct_ingest_status, nullable=False)
+
+    _table_args__ = PrimaryKeyConstraint(region_code, timestamp, instance)
 
 
 class DirectIngestSftpFileMetadata(OperationsBase):
@@ -271,7 +308,9 @@ class DirectIngestInstancePauseStatus(OperationsBase):
 
     __table_args__ = (
         UniqueConstraint(
-            "region_code", "instance", name="single_row_per_ingest_instance"
+            "region_code",
+            "instance",
+            name="single_row_per_ingest_instance",
         ),
     )
 
