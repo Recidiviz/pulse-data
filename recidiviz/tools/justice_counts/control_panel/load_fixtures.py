@@ -33,11 +33,7 @@ from typing import List
 
 from sqlalchemy.engine import Engine
 
-from recidiviz.persistence.database.schema.justice_counts.schema import (
-    JusticeCountsBase,
-    Report,
-    Source,
-)
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -57,7 +53,11 @@ def reset_justice_counts_fixtures(engine: Engine) -> None:
     """Deletes all data and then re-imports data from our fixture files."""
     logger.info("Resetting fixtures for database %s", engine.url)
 
-    tables: List[JusticeCountsBase] = [Source, Report]
+    tables: List[schema.JusticeCountsBase] = [
+        schema.UserAccount,
+        schema.Source,
+        schema.Report,
+    ]
     session = Session(bind=engine)
     for table in reversed(tables):
         table_name = _get_table_name(module=table)

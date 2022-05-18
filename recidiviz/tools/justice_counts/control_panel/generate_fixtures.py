@@ -30,16 +30,23 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
     that extends from JusticeCountsDatabaseTestCase via self.load_fixtures().
     """
 
-    # Should be a list of object groups, each of which will get added,
-    # in order, via session.add_all() + session.commit(). Objects that
-    # depend on another object already being present in the db should
+    # `object_groups` should be a *list of list of objects*. Each list (group of objects)
+    # will get added to the database, in order, via session.add_all() + session.commit().
+    # Objects that depend on another object already being present in the db should
     # be added in a subsequent object group.
     object_groups = []
 
-    agency_names = ["Agency Alpha", "Department of Beta"]
+    # First add a group of Users
+    object_groups.append(
+        [schema.UserAccount(id=0, email_address="john@fake.com", name="John Smith")]
+    )
 
+    # Next add a group of Agencies
+    # Use the id that the Agency has on staging, so that users have access
+    # on both staging environment and local development
+    agency_tuples = [(147, "Agency Alpha")]
     agencies = []
-    for agency_id, agency_name in enumerate(agency_names):
+    for agency_id, agency_name in agency_tuples:
         agencies.append(
             schema.Agency(
                 id=agency_id,
@@ -51,8 +58,9 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
         )
     object_groups.append(agencies)
 
+    # Finally add a group of reports (which depend on agencies already being in the DB)
     reports = []
-    for agency_id, agency_name in enumerate(agency_names):
+    for agency_id, agency_name in agency_tuples:
         # For each agency, create two reports, one monthly and one annual.
         monthly_report = ReportInterface.create_report_object(
             agency_id=agency_id,
