@@ -19,13 +19,13 @@
 from unittest import TestCase
 
 import recidiviz.justice_counts.metrics.law_enforcement as law_enforcement_metric_definitions
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     OffenseType,
     SheriffBudgetType,
 )
 from recidiviz.justice_counts.dimensions.person import GenderRestricted, StaffType
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
     ReportedContext,

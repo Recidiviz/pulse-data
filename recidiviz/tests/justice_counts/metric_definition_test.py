@@ -18,13 +18,13 @@
 
 from unittest import TestCase
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_registry import METRICS
 from recidiviz.utils.types import assert_type
 

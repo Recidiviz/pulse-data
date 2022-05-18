@@ -33,3 +33,10 @@ class JusticeCountsPermissionError(FlaskException):
 
     def __init__(self, code: str, description: str) -> None:
         super().__init__(code, description, HTTPStatus.UNAUTHORIZED)
+
+
+class JusticeCountsDataError(FlaskException):
+    """Exception for when the a user submits invalid data for a metric"""
+
+    def __init__(self, code: str, description: str) -> None:
+        super().__init__(code, description, HTTPStatus.NOT_ACCEPTABLE)

@@ -29,6 +29,7 @@ from recidiviz.justice_counts.control_panel.utils import (
     raise_if_user_is_unauthorized,
 )
 from recidiviz.justice_counts.exceptions import JusticeCountsPermissionError
+from recidiviz.justice_counts.metrics.report_metric import ReportMetric
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
@@ -105,7 +106,13 @@ def get_api_blueprint(
         report_id_int = int(assert_type(report_id, str))
         request_dict = assert_type(request.json, dict)
         user_account_id = get_user_account_id(request_dict=request_dict)
-
+        user_account = UserAccountInterface.get_user_by_id(
+            session=current_session, user_account_id=user_account_id
+        )
+        report = ReportInterface.get_report_by_id(
+            session=current_session,
+            report_id=report_id_int,
+        )
         ReportInterface.update_report_metadata(
             session=current_session,
             report_id=report_id_int,
@@ -113,7 +120,14 @@ def get_api_blueprint(
             status=request_dict["status"],
         )
 
-        # TODO(#12943) Re-implement add_or_update_metric with new schema
+        for metric_json in request_dict.get("metrics", []):
+            report_metric = ReportMetric.from_json(metric_json)
+            ReportInterface.add_or_update_metric(
+                session=current_session,
+                report=report,
+                report_metric=report_metric,
+                user_account=user_account,
+            )
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     @api_blueprint.route("/reports", methods=["GET"])

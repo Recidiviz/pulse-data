@@ -23,13 +23,13 @@ from flask import g, session
 from freezegun import freeze_time
 from sqlalchemy.engine import Engine
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
@@ -346,11 +346,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 )
                 self.assertEqual(report.status, ReportStatus.DRAFT)
                 self.assertEqual(report.last_modified_at, update_datetime)
+                self.assertEqual(report.datapoints[0].get_value(), value)
                 self.assertEqual(
                     report.modified_by,
                     [user_account.id],
                 )
-                # TODO(#12943) Re-implement add_or_update_metric with new schema
                 response = self.client.post(
                     endpoint,
                     json={
@@ -395,7 +395,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     .one_or_none()
                 )
                 self.assertEqual(report.status, ReportStatus.PUBLISHED)
-                # TODO(#12943) Re-implement add_or_update_metric with new schema
+                self.assertEqual(report.datapoints[0].get_value(), 110)
+                self.assertEqual(report.datapoints[1].get_value(), 2000000)
+                self.assertEqual(report.datapoints[2].get_value(), 1500000)
+                self.assertEqual(report.datapoints[3].get_value(), 500000)
+                self.assertEqual(report.datapoints[4].get_value(), "test context")
 
     def test_user_permissions(self) -> None:
         user_account = self.test_schema_objects.test_user_A

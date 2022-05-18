@@ -21,11 +21,11 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import attr
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
@@ -54,7 +54,7 @@ class ReportedContext:
             "key": self.key.value,
             "reporting_note": context_definition.reporting_note,
             "display_name": context_definition.label,
-            "type": context_definition.context_type.value,
+            "type": context_definition.value_type.value,
             "required": context_definition.required,
             "value": self.value,
         }
@@ -210,12 +210,10 @@ class ReportMetric:
                     raise ValueError(f"The required context {context.key} is missing.")
                 continue
 
-            if not isinstance(
-                reported_context.value, context.context_type.python_type()
-            ):
+            if not isinstance(reported_context.value, context.value_type.python_type()):
                 raise ValueError(
                     f"The context {context.key} is reported as a {type(reported_context.value)} "
-                    f"but typed as a {context.context_type.python_type()}."
+                    f"but typed as a {context.value_type.python_type()}."
                 )
 
     @aggregated_dimensions.validator

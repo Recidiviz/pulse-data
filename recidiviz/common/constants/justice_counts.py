@@ -32,7 +32,7 @@ class ContextKey(enum.Enum):
     PRIMARY_FUNDING_SOURCE = "PRIMARY_FUNDING_SOURCE"
 
 
-class ContextType(enum.Enum):
+class ValueType(enum.Enum):
     """Different Context input types."""
 
     TEXT = "TEXT"
@@ -40,7 +40,7 @@ class ContextType(enum.Enum):
     BOOLEAN = "BOOLEAN"
 
     @classmethod
-    def context_type_to_python_type(cls) -> Dict[str, Tuple[Type[Any], ...]]:
+    def value_type_to_python_type(cls) -> Dict[str, Tuple[Type[Any], ...]]:
         return {
             "TEXT": (str,),
             "NUMBER": (int, float),
@@ -48,4 +48,4 @@ class ContextType(enum.Enum):
         }
 
     def python_type(self) -> Tuple[Type[Any], ...]:
-        return ContextType.context_type_to_python_type()[self.value]
+        return ValueType.value_type_to_python_type()[self.value]

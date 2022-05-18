@@ -19,6 +19,7 @@
 from typing import Optional, Tuple, Type
 
 from sqlalchemy import cast
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.schema import UniqueConstraint
 
@@ -43,8 +44,13 @@ def get_existing_entity(
             value = getattr(ingested_entity, column.name[: -len("_id")]).id
         else:
             value = getattr(ingested_entity, column.name)
-        # Cast to the type because array types aren't deduced properly.
-        query = query.filter(column == cast(value, column.type))
+        # Cast to the type because array types aren't deduced properly. If value is None, we don't want
+        # to cast to the column type (e.g. would result in "None" if the column type is a string).
+        # If column.type is JSONB, the casting also causes problems for an unknown reason.
+        if value is not None or isinstance(column.type, JSONB):
+            query = query.filter(column == cast(value, column.type))
+        else:
+            query = query.filter(column == value)
     table_entity: Optional[JusticeCountsBase] = query.first()
     return table_entity
 
