@@ -91,7 +91,7 @@ export const MetricSectionTitle = styled.div`
 
 export const MetricSectionSubTitle = styled.div`
   font-size: ${rem("18px")};
-  color: ${palette.highlight.grey6};
+  color: ${palette.highlight.grey7};
   margin-top: 5px;
   padding-bottom: 19px;
 `;
@@ -181,22 +181,27 @@ export const PublishDataWrapper = styled.div`
   background: ${palette.solid.white};
 `;
 
-export const PublishButton = styled.button`
+export const PublishButton = styled.button<{ disabled?: boolean }>`
   width: 315px;
   height: 56px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: ${palette.solid.blue};
-  color: ${palette.solid.white};
-  border: 1px solid ${palette.highlight.grey3};
+  background: ${({ disabled }) => (disabled ? "none" : palette.solid.blue)};
+  color: ${({ disabled }) =>
+    disabled ? palette.highlight.grey6 : palette.solid.white};
+  border: 1px solid
+    ${({ disabled }) =>
+      disabled ? palette.highlight.grey3 : palette.highlight.grey3};
   border-radius: 2px;
-  font-size: 1rem;
+  font-size: ${rem("18px")};
+  line-height: 24px;
   transition: 0.2s ease;
 
   &:hover {
     cursor: pointer;
-    background: ${palette.solid.darkblue};
+    background: ${({ disabled }) =>
+      disabled ? "none" : palette.solid.darkblue};
   }
 `;
 

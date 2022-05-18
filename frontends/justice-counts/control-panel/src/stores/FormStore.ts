@@ -291,17 +291,6 @@ class FormStore {
   ): void => {
     this.contexts[reportID][metricKey][contextKey] = "";
   };
-
-  submitReport = (reportID: number) => {
-    /** Submit Report Logic Goes Here */
-    /** Final Validation Logic Goes Here (users should not be able to publish an empty/invalid report) */
-
-    /** Temporarily Returning Final Object For Testing Purposes */
-    return {
-      ...this.reportStore.reportOverviews[reportID],
-      metrics: this.fullMetricsFromFormValues(reportID),
-    };
-  };
 }
 
 export default FormStore;

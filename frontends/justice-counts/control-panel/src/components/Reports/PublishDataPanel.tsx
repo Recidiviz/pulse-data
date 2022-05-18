@@ -20,7 +20,6 @@ import React, { useState } from "react";
 import styled from "styled-components/macro";
 
 import PreviewDataObject from "../../mocks/PreviewDataObject";
-import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import {
   printCommaSeparatedList,
@@ -60,7 +59,6 @@ const TempSaveButton = styled.button`
 
 const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [tempFinalObject, setTempFinalObject] = useState({}); // Temporarily Displaying Final Object For Testing Purposes
   const { formStore, reportStore, userStore } = useStore();
   const { editors, last_modified_at: lastModifiedAt } =
     reportStore.reportOverviews[reportID];
@@ -82,10 +80,9 @@ const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
             onClick={() => {
               /** Should trigger a confirmation dialogue before submitting */
               toggleConfirmationDialogue();
-              setTempFinalObject(formStore.submitReport(reportID)); // Temporarily Displaying Final Object For Testing Purposes
             }}
           >
-            Publish Data
+            Publish Data (Review)
           </PublishButton>
         </Title>
 
@@ -98,22 +95,23 @@ const PublishDataPanel: React.FC<{ reportID: number }> = ({ reportID }) => {
           <EditDetailsTitle>Details</EditDetailsTitle>
 
           <EditDetailsContent>
-            {editors.length
-              ? `Last modified ${
-                  lastModifiedAt && printElapsedDaysSinceDate(lastModifiedAt)
-                } by ${editors[editors.length - 1]}`
-              : `Created ${
-                  (lastModifiedAt &&
-                    printElapsedDaysSinceDate(lastModifiedAt)) ||
-                  "today"
-                } by ${userStore.name}`}
+            {editors.length === 1 &&
+              !lastModifiedAt &&
+              `Created today by ${editors[0]}`}
+
+            {editors.length >= 1 &&
+              lastModifiedAt &&
+              `Last modified ${printElapsedDaysSinceDate(lastModifiedAt)} by ${
+                editors[editors.length - 1]
+              }`}
+
+            {!editors.length && ``}
           </EditDetailsContent>
         </EditDetails>
       </PublishDataWrapper>
       {showConfirmation && (
         <PublishConfirmation
           toggleConfirmationDialogue={toggleConfirmationDialogue}
-          tempFinalObject={tempFinalObject as Report}
           reportID={reportID}
         />
       )}

@@ -62,7 +62,7 @@ export const Input = styled.input<InputProps>`
       }
       return value || value === 0
         ? palette.solid.blue
-        : palette.highlight.grey6;
+        : palette.highlight.grey7;
     }};
 
   &:focus ~ label {
