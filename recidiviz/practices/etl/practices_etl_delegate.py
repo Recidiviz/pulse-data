@@ -19,6 +19,7 @@ practices frontend database(s)."""
 import abc
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Iterator, Optional, TextIO, Tuple
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -93,6 +94,11 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
         """Prepares a row of the exported file for Firestore ingestion.
         Returns a tuple of the document ID and the document contents."""
 
+    @property
+    def timestamp_key(self) -> str:
+        """Name of the key this delegate will insert into each document to record when it was loaded."""
+        return "__loadedAt"
+
     def run_etl(self) -> None:
         logging.info(
             'Starting export of gs://%s to the Firestore collection "%s".',
@@ -106,11 +112,14 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
         num_records_to_write = 0
         total_records_written = 0
 
+        etl_timestamp = datetime.now(timezone.utc)
+
         for file_stream in self.get_file_stream():
             while line := file_stream.readline():
-                row_id, new_document = self.transform_row(line)
-                if row_id is None:
+                row_id, document_fields = self.transform_row(line)
+                if row_id is None or document_fields is None:
                     continue
+                new_document = {**document_fields, self.timestamp_key: etl_timestamp}
                 batch.set(firestore_collection.document(row_id), new_document)
                 num_records_to_write += 1
                 total_records_written += 1
