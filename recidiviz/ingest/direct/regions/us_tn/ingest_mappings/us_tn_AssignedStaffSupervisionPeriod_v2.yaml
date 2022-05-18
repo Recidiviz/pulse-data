@@ -207,6 +207,7 @@ output:
                         - 9IC # ADM - IN CUST TDOC SENT
                         - ICU # IN CUST ON TDOC/BOPP SENT
                         - ZCU # VIOLATOR IN CUSTODY
+                        - 9DT # ADM - DETAINER
 
                       StateSupervisionLevel.UNASSIGNED:
                         - 2IN # RESTRICTED - INTAKE
@@ -224,6 +225,9 @@ output:
                         - 9SD # ADM - SUSP OF DIRECT SUPVN
                         - SDS # SUSPENSION OF DIRECT SUPV
 
+                      StateSupervisionLevel.INTERSTATE_COMPACT:
+                        - 9IS # ADM - ISC OUTGOING
+
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.INTERNAL_UNKNOWN:
                         - 1SA # SPEC RESTRCT - SANCTIONED
@@ -237,8 +241,6 @@ output:
                         - 6P4 # PSU TRANSITIONAL (SEX OFFENDER)
                         - 9AB # ADM - ABSCONDED OFFENDER
                         - 9DP # ADM - DEPORTED
-                        - 9DT # ADM - DETAINER
-                        - 9IS # ADM - ISC OUTGOING
                         - 9RT # ADM - RES. TREATMNT PLCMT
                         - 9WR # ADM - WARRANT
                         - ABS # ABSCONDED OFFENDER
@@ -274,3 +276,4 @@ output:
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
                         - ZWS # WARRANT STATUS
+
