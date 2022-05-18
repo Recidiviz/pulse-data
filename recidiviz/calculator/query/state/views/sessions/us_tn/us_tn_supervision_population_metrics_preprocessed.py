@@ -52,8 +52,6 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             WHEN COALESCE(supervision_level, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN" THEN supervision_level
             WHEN supervision_level_raw_text IN ("9WR",  "ZWS") THEN "WARRANT"
             WHEN supervision_level_raw_text =  "9AB" THEN "ABSCONDED"
-            WHEN supervision_level_raw_text =  "9IS" THEN "ICOTS_OUT"
-            WHEN supervision_level_raw_text =  "9DT" THEN "DETAINER"
             ELSE "INTERNAL_UNKNOWN"
         END AS correctional_level,
         supervision_level_raw_text AS correctional_level_raw_text,
