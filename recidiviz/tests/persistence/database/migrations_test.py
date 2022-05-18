@@ -216,7 +216,9 @@ class TestOperationsMigrations(MigrationsTestBase):
     def schema_type(self) -> SchemaType:
         return SchemaType.OPERATIONS
 
-    def test_direct_ingest_instance_status_contains_data_for_all_states(self) -> None:
+    def test_direct_ingest_instance_pause_status_contains_data_for_all_states(
+        self,
+    ) -> None:
         '''Enforces that after all migrations the set of direct ingest instance statuses
         matches the list of known states.
 
