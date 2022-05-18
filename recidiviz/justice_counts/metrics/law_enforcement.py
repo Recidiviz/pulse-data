@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Law Enforcement system."""
 
+from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.corrections import PopulationType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
@@ -28,7 +29,6 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
     StaffType,
 )
-from recidiviz.justice_counts.metrics.constants import ContextKey, ContextType
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
@@ -56,7 +56,7 @@ annual_budget = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            context_type=ContextType.TEXT,
+            value_type=ValueType.TEXT,
             label="Primary funding source.",
             required=False,
         )
@@ -79,7 +79,7 @@ residents = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_AREA,
-            context_type=ContextType.NUMBER,
+            value_type=ValueType.NUMBER,
             label="The land size (area) of the jurisdiction",
             required=False,
         )
@@ -113,13 +113,13 @@ calls_for_service = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
-            context_type=ContextType.BOOLEAN,
+            value_type=ValueType.BOOLEAN,
             label="Whether number includes all calls or just calls responded to.",
             required=True,
         ),
         Context(
             key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,
-            context_type=ContextType.TEXT,
+            value_type=ValueType.TEXT,
             label="All agencies available for response.",
             required=False,
         ),
@@ -158,7 +158,7 @@ total_arrests = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_ARREST,
-            context_type=ContextType.TEXT,
+            value_type=ValueType.TEXT,
             label="The jurisdiction definition of arrest",
             required=True,
         )
@@ -205,7 +205,7 @@ officer_use_of_force_incidents = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
-            context_type=ContextType.TEXT,
+            value_type=ValueType.TEXT,
             label="The jurisdiction definition of use of force",
             required=True,
         )

@@ -195,8 +195,8 @@ def test_get_all_table_classes() -> None:
         "report_table_instance",
         "cell",
         "user_account",
-        "context",
-        "cell_history",
+        "datapoint",
+        "datapoint_history",
     ]
     pathways_table_names = [
         "liberty_to_prison_transitions",

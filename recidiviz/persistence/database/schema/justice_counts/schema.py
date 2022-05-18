@@ -32,6 +32,7 @@ import enum
 import re
 from typing import Any, Dict, List, Optional, TypeVar
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship, validates
 from sqlalchemy.sql.schema import (
     Column,
@@ -50,6 +51,7 @@ from sqlalchemy.sql.sqltypes import (
 )
 
 from recidiviz.common import fips
+from recidiviz.common.constants.justice_counts import ValueType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
@@ -329,6 +331,14 @@ class Report(JusticeCountsBase):
         passive_deletes=True,
     )
 
+    datapoints = relationship(
+        "Datapoint",
+        back_populates="report",
+        cascade="all, delete",
+        lazy="selectin",
+        passive_deletes=True,
+    )
+
     def get_reporting_frequency(self) -> ReportingFrequency:
         if (
             self.date_range_end.year == self.date_range_start.year
@@ -387,6 +397,71 @@ class ReportTableDefinition(JusticeCountsBase):
     )
 
 
+class Datapoint(JusticeCountsBase):
+    """A single data point reported by an Agency. This table is essentially
+    a collapsed version of ReportTableInstance + Cell.
+    """
+
+    __tablename__ = "datapoint"
+
+    id = Column(Integer, autoincrement=True)
+
+    report_id = Column(Integer, nullable=False)
+    metric_definition_key = Column(String, nullable=False)
+
+    # Datapoints that are not contexts will not have a context key.
+    context_key = Column(String, nullable=True)
+
+    # Value for contexts can be numbers, booleans, or text.
+    value_type = Column(Enum(ValueType), nullable=True)
+
+    # The window of time that this data point is measured over,
+    # represented by a start date (inclusive) and an end date (exclusive).
+    # The data could represent an instant measurement, where the start and end are equal,
+    # or a window, e.g. ADP over the last month.
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+
+    # Maps dimension identifier to dimension enum value
+    # (e.g {"global/gender/restricted": "FEMALE"})
+    dimension_identifier_to_member = Column(JSONB, nullable=True)
+
+    # Numeric value of this datapoint. All values are saved as strings.
+    value = Column(String, nullable=False)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(
+                report_id,
+                start_date,
+                end_date,
+                dimension_identifier_to_member,
+                context_key,
+                metric_definition_key,
+            ),
+            ForeignKeyConstraint([report_id], [Report.id], ondelete="CASCADE"),
+        ]
+    )
+
+    report = relationship(Report, back_populates="datapoints")
+    datapoint_histories = relationship(
+        "DatapointHistory",
+        back_populates="datapoint",
+        cascade="all, delete",
+        lazy="selectin",
+        passive_deletes=True,
+    )
+
+    def get_value(self) -> Any:
+        value = self.value
+        if self.context_key is None or self.value_type == ValueType.NUMBER:
+            value = int(value)
+        elif self.value_type == ValueType.BOOLEAN:
+            value = bool(value)
+        return value
+
+
 class ReportTableInstance(JusticeCountsBase):
     """An instance of a table that contains an actual set of data points along a shared set of dimensions.
 
@@ -442,13 +517,6 @@ class ReportTableInstance(JusticeCountsBase):
         cascade="all, delete",
         passive_deletes=True,
     )
-    contexts = relationship(
-        "Context",
-        back_populates="report_table_instance",
-        lazy="selectin",
-        cascade="all, delete",
-        passive_deletes=True,
-    )
 
 
 class Cell(JusticeCountsBase):
@@ -474,63 +542,30 @@ class Cell(JusticeCountsBase):
     )
 
     report_table_instance = relationship(ReportTableInstance, back_populates="cells")
-    cell_histories = relationship(
-        "CellHistory",
-        back_populates="cell",
-        cascade="all, delete",
-        lazy="selectin",
-        passive_deletes=True,
-    )
 
 
-class CellHistory(JusticeCountsBase):
-    """Represents a history of changes made to a Cell."""
+class DatapointHistory(JusticeCountsBase):
+    """Represents a history of changes made to a Datapoint."""
 
-    __tablename__ = "cell_history"
+    __tablename__ = "datapoint_history"
 
     id = Column(Integer, autoincrement=True)
 
-    cell_id = Column(Integer, nullable=False)
+    datapoint_id = Column(Integer, nullable=False)
     user_account_id = Column(Integer, nullable=False)
     timestamp = Column(DateTime, nullable=False)
-    old_value = Column(Integer, nullable=False)
-    new_value = Column(Integer, nullable=False)
+    old_value = Column(String, nullable=False)
+    new_value = Column(String, nullable=False)
 
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
-            ForeignKeyConstraint([cell_id], [Cell.id], ondelete="CASCADE"),
+            ForeignKeyConstraint([datapoint_id], [Datapoint.id], ondelete="CASCADE"),
             ForeignKeyConstraint([user_account_id], [UserAccount.id]),
         ]
     )
 
-    cell = relationship(Cell, back_populates="cell_histories")
-
-
-class Context(JusticeCountsBase):
-    """Additional context provided about data points."""
-
-    __tablename__ = "context"
-
-    id = Column(Integer, autoincrement=True)
-
-    report_table_instance_id = Column(Integer, nullable=False)
-    # Uniquely identifies the type of context provided. Should be an instance of ContextKey.
-    key = Column(String(255), nullable=False)
-    # What the agency reported for this piece of context.
-    value = Column(String(255), nullable=False)
-
-    __table_args__ = tuple(
-        [
-            PrimaryKeyConstraint(id),
-            UniqueConstraint(report_table_instance_id, key),
-            ForeignKeyConstraint(
-                [report_table_instance_id], [ReportTableInstance.id], ondelete="CASCADE"
-            ),
-        ]
-    )
-
-    report_table_instance = relationship(ReportTableInstance, back_populates="contexts")
+    datapoint = relationship(Datapoint, back_populates="datapoint_histories")
 
 
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same

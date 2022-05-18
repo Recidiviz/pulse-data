@@ -23,6 +23,7 @@ from unittest import TestCase
 import pytest
 from sqlalchemy.engine import Engine
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     OffenseType,
@@ -30,7 +31,6 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.constants import ContextKey
 from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
     ReportedContext,
@@ -101,11 +101,13 @@ class JusticeCountsSchemaTestObjects:
             name="Agency Alpha",
             state_code="US_XX",
             fips_county_code="us_ak_anchorage",
+            system=schema.System.LAW_ENFORCEMENT,
         )
         self.test_agency_B = schema.Agency(
             name="Agency Beta",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
+            system=schema.System.LAW_ENFORCEMENT,
         )
 
         # Users

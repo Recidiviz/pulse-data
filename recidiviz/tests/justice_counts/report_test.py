@@ -22,8 +22,11 @@ import datetime
 from freezegun import freeze_time
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.dimensions.corrections import PopulationType
-from recidiviz.justice_counts.dimensions.location import Agency, County, State
+from recidiviz.justice_counts.dimensions.law_enforcement import (
+    CallType,
+    SheriffBudgetType,
+)
+from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -32,6 +35,7 @@ from recidiviz.tests.justice_counts.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
 )
+from recidiviz.utils.types import assert_type
 
 
 class TestReportInterface(JusticeCountsDatabaseTestCase):
@@ -198,57 +202,32 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
 
-            # We should have two definitions, one for the aggregated Law Enforcement budget
-            # and one for the Law Enforcement budget disaggregated by budget type
-            queried_definitions = (
-                session.query(schema.ReportTableDefinition)
-                .order_by(schema.ReportTableDefinition.id)
-                .all()
-            )
-            self.assertEqual(len(queried_definitions), 2)
+            # We should have four datapoints, one for the aggregated Law Enforcement budget
+            # two for each breakdown (DETENTION and PATROL) and one for the context.
+            queried_datapoints = session.query(schema.Datapoint).all()
+            self.assertEqual(len(queried_datapoints), 4)
+            report_metric = self.test_schema_objects.reported_budget_metric
             self.assertEqual(
-                queried_definitions[0].label,
-                "LAW_ENFORCEMENT_BUDGET__metric/law_enforcement/budget/type",
+                queried_datapoints[0].get_value(),
+                report_metric.value,
+            )
+            aggregated_dimensions = assert_type(
+                report_metric.aggregated_dimensions, list
             )
             self.assertEqual(
-                queried_definitions[1].label,
-                "LAW_ENFORCEMENT_BUDGET__metric/law_enforcement/budget/type",
+                queried_datapoints[1].get_value(),
+                aggregated_dimensions[0].dimension_to_value[
+                    SheriffBudgetType.DETENTION
+                ],
             )
-
-            # We should have two instances, one for the aggregated Law Enforcement budget
-            # and one for the Law Enforcement budget disaggregated by budget type
-            queried_instances = (
-                session.query(schema.ReportTableInstance)
-                .order_by(schema.ReportTableInstance.id)
-                .all()
-            )
-            self.assertEqual(len(queried_instances), 2)
-
-            # The aggregated instance should have one cell with the total budget value
-            aggregate_cells = queried_instances[0].cells
-            self.assertEqual(len(aggregate_cells), 1)
-            self.assertEqual(aggregate_cells[0].value, 100000)
-
-            # The disaggregated instance should have two cells, one with the budget
-            # value for each type
-            disaggregated_cells = sorted(
-                queried_instances[1].cells, key=lambda x: x.value
-            )
-            self.assertEqual(len(disaggregated_cells), 2)
             self.assertEqual(
-                disaggregated_cells[0].aggregated_dimension_values, ["PATROL"]
+                queried_datapoints[2].get_value(),
+                aggregated_dimensions[0].dimension_to_value[SheriffBudgetType.PATROL],
             )
-            self.assertEqual(disaggregated_cells[0].value, 33334)
             self.assertEqual(
-                disaggregated_cells[1].aggregated_dimension_values, ["DETENTION"]
+                queried_datapoints[3].get_value(),
+                assert_type(report_metric.contexts, list)[0].value,
             )
-            self.assertEqual(disaggregated_cells[1].value, 66666)
-
-            # The aggregated instance should have one context
-            contexts = queried_instances[0].contexts
-            self.assertEqual(len(contexts), 1)
-            self.assertEqual(contexts[0].key, "PRIMARY_FUNDING_SOURCE")
-            self.assertEqual(contexts[0].value, "government")
 
     def test_add_empty_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -264,153 +243,48 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
 
-            # Two ReportTableInstances should be saved, but both should be empty.
-            queried_instances = (
-                session.query(schema.ReportTableInstance)
-                .order_by(schema.ReportTableInstance.id)
-                .all()
+            # We should have no datapoints
+            queried_datapoints = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
             )
-            self.assertEqual(len(queried_instances), 2)
-            self.assertEqual(len(queried_instances[0].cells), 0)
-            self.assertEqual(len(queried_instances[1].cells), 0)
-            self.assertEqual(len(queried_instances[0].contexts), 0)
-            self.assertEqual(len(queried_instances[1].contexts), 0)
+            self.assertEqual(len(queried_datapoints), 0)
 
     def test_add_incomplete_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            incomplete_report = self.test_schema_objects.get_reported_budget_metric(
+                value=None,
+                detention_value=50,
+                patrol_value=None,
+            )
+
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.get_reported_budget_metric(
-                    value=None,
-                    detention_value=50,
-                    patrol_value=None,
-                ),
+                report_metric=incomplete_report,
                 user_account=self.test_schema_objects.test_user_A,
             )
 
-            # Two ReportTableInstances should be saved, but the first should
-            # only have a context attached, not any cells.
-            queried_instances = (
-                session.query(schema.ReportTableInstance)
-                .order_by(schema.ReportTableInstance.id)
-                .all()
+            # There should be two datapoints, one containing the detention value, the other with the context
+            queried_datapoints = session.query(schema.Datapoint).all()
+
+            self.assertEqual(len(queried_datapoints), 2)
+            reported_aggregated_dimensions = assert_type(
+                incomplete_report.aggregated_dimensions, list
             )
-            self.assertEqual(len(queried_instances), 2)
-            self.assertEqual(len(queried_instances[0].cells), 0)
-            self.assertEqual(len(queried_instances[0].contexts), 1)
-            self.assertEqual(len(queried_instances[1].cells), 1)
-            self.assertEqual(queried_instances[1].cells[0].value, 50)
+            self.assertEqual(
+                queried_datapoints[0].get_value(),
+                reported_aggregated_dimensions[0].dimension_to_value[
+                    SheriffBudgetType.DETENTION
+                ],
+            )
+            self.assertEqual(
+                queried_datapoints[1].get_value(),
+                assert_type(incomplete_report.contexts, list)[0].value,
+            )
 
     def test_add_calls_for_service_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_calls_for_service_metric,
-                user_account=self.test_schema_objects.test_user_A,
-            )
-
-            # We should have two instances, one for the aggregated and one for disaggregated
-            queried_instances = (
-                session.query(schema.ReportTableInstance)
-                .order_by(schema.ReportTableInstance.id)
-                .all()
-            )
-            self.assertEqual(len(queried_instances), 2)
-
-            # The aggregated instance should have one context
-            contexts = queried_instances[0].contexts
-            self.assertEqual(len(contexts), 1)
-            self.assertEqual(contexts[0].key, "ALL_CALLS_OR_CALLS_RESPONDED")
-            self.assertEqual(bool(contexts[0].value), True)
-
-    def test_add_population_metric(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            report = self.test_schema_objects.test_report_monthly
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=report,
-                report_metric=self.test_schema_objects.reported_residents_metric,
-                user_account=self.test_schema_objects.test_user_A,
-            )
-
-            # We should have two definitions, one for aggregated (total) residents
-            # and one for residents disaggregated by race and ethnicity
-            queried_definitions = (
-                session.query(schema.ReportTableDefinition)
-                .order_by(schema.ReportTableDefinition.id)
-                .all()
-            )
-            self.assertEqual(len(queried_definitions), 2)
-
-            # Both of these definitions should have the same filtered dimensions:
-            # namely, filtered to the same location (country, state, and county)
-            # and to PopulationType.RESIDENTS
-            for definition in queried_definitions:
-                filtered_dimensions = definition.filtered_dimensions
-                filtered_dimension_values = definition.filtered_dimension_values
-                self.assertEqual(
-                    filtered_dimensions,
-                    [
-                        PopulationType.dimension_identifier(),
-                        State.dimension_identifier(),
-                        County.dimension_identifier(),
-                        Agency.dimension_identifier(),
-                    ],
-                )
-                self.assertEqual(
-                    filtered_dimension_values,
-                    [
-                        PopulationType.RESIDENTS.value,
-                        report.source.state_code,
-                        report.source.fips_county_code,
-                        report.source.name,
-                    ],
-                )
-
-    def test_update_metric_no_change(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_user_A)
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_budget_metric,
-                user_account=self.test_schema_objects.test_user_A,
-            )
-
-            # This should be a no-op, because the metric definition is the same
-            # according to our unique constraints, so we update the existing records
-            # (which does nothing, since nothing has changed)
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_budget_metric,
-                user_account=self.test_schema_objects.test_user_A,
-            )
-
-            queried_definitions = session.query(schema.ReportTableDefinition).all()
-            self.assertEqual(len(queried_definitions), 2)
-
-            queried_instances = session.query(schema.ReportTableInstance).all()
-            self.assertEqual(len(queried_instances), 2)
-
-    def test_update_metric_with_new_values(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_user_A)
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_budget_metric,
-                user_account=self.test_schema_objects.test_user_A,
-            )
-
-            # This should result in an update to the existing database objects
-            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
-                value=1000,
-                detention_value=600,
-                patrol_value=400,
-            )
+            report_metric = self.test_schema_objects.reported_calls_for_service_metric
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
@@ -418,29 +292,213 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
 
-            queried_instances = (
-                session.query(schema.ReportTableInstance)
-                .order_by(schema.ReportTableInstance.id)
-                .all()
-            )
-            self.assertEqual(len(queried_instances), 2)
+            # We should have five datapoints, one aggregate value, three breakdowns, and one context.
+            queried_datapoints = session.query(schema.Datapoint).all()
 
-            aggregate_cells = queried_instances[0].cells
-            self.assertEqual(len(aggregate_cells), 1)
-            self.assertEqual(aggregate_cells[0].value, 1000)
+            self.assertEqual(len(queried_datapoints), 5)
 
-            disaggregated_cells = sorted(
-                queried_instances[1].cells, key=lambda x: x.value
-            )
-            self.assertEqual(len(disaggregated_cells), 2)
             self.assertEqual(
-                disaggregated_cells[0].aggregated_dimension_values, ["PATROL"]
+                queried_datapoints[0].get_value(),
+                report_metric.value,
             )
-            self.assertEqual(disaggregated_cells[0].value, 400)
+            aggregated_dimensions = assert_type(
+                report_metric.aggregated_dimensions, list
+            )
             self.assertEqual(
-                disaggregated_cells[1].aggregated_dimension_values, ["DETENTION"]
+                queried_datapoints[1].get_value(),
+                aggregated_dimensions[0].dimension_to_value[CallType.EMERGENCY],
             )
-            self.assertEqual(disaggregated_cells[1].value, 600)
+            self.assertEqual(
+                queried_datapoints[2].get_value(),
+                aggregated_dimensions[0].dimension_to_value[CallType.NON_EMERGENCY],
+            )
+            self.assertEqual(
+                queried_datapoints[3].get_value(),
+                aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
+            )
+            self.assertEqual(
+                queried_datapoints[4].get_value(),
+                assert_type(report_metric.contexts, list)[0].value,
+            )
+
+    def test_add_population_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            report = self.test_schema_objects.test_report_monthly
+            report_metric = self.test_schema_objects.reported_residents_metric
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=report,
+                report_metric=report_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+
+            # We should have nine datapoints, one for aggregated (total) residents
+            # and eight for each race and ethnicity
+            queried_datapoints = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
+            )
+
+            self.assertEqual(len(queried_datapoints), 9)
+
+            self.assertEqual(
+                queried_datapoints[0].get_value(),
+                report_metric.value,
+            )
+            aggregated_dimensions = assert_type(
+                report_metric.aggregated_dimensions, list
+            )
+            self.assertEqual(
+                queried_datapoints[1].get_value(),
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.AMERICAN_INDIAN_ALASKAN_NATIVE
+                ],
+            )
+            self.assertEqual(
+                queried_datapoints[2].get_value(),
+                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.ASIAN],
+            )
+            self.assertEqual(
+                queried_datapoints[3].get_value(),
+                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.BLACK],
+            )
+            self.assertEqual(
+                queried_datapoints[3].get_value(),
+                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.BLACK],
+            )
+            self.assertEqual(
+                queried_datapoints[4].get_value(),
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.EXTERNAL_UNKNOWN
+                ],
+            )
+            self.assertEqual(
+                queried_datapoints[5].get_value(),
+                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.HISPANIC],
+            )
+            self.assertEqual(
+                queried_datapoints[6].get_value(),
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.NATIVE_HAWAIIAN_PACIFIC_ISLANDER
+                ],
+            )
+            self.assertEqual(
+                queried_datapoints[7].get_value(),
+                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.OTHER],
+            )
+            self.assertEqual(
+                queried_datapoints[8].get_value(),
+                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.WHITE],
+            )
+
+    def test_update_metric_no_change(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            report = self.test_schema_objects.test_report_monthly
+            session.add(report)
+            report = session.query(schema.Report).one_or_none()
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=report,
+                report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+            queried_datapoints = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
+            )
+
+            self.assertEqual(len(queried_datapoints), 4)
+            # This shoulxd be a no-op, because the metric definition is the same
+            # according to our unique constraints, so we update the existing records
+            # (which does nothing, since nothing has changed)
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=report,
+                report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+            queried_datapoints_no_op = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
+            )
+            self.assertEqual(len(queried_datapoints_no_op), 4)
+            self.assertAlmostEqual(queried_datapoints, queried_datapoints_no_op)
+
+    def test_update_metric_with_new_values(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(self.test_schema_objects.test_user_A)
+            report_metric = self.test_schema_objects.reported_budget_metric
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=report_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+            queried_datapoints = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
+            )
+
+            self.assertEqual(len(queried_datapoints), 4)
+            aggregated_dimensions = assert_type(
+                report_metric.aggregated_dimensions, list
+            )
+            self.assertEqual(
+                queried_datapoints[0].get_value(),
+                report_metric.value,
+            )
+            self.assertEqual(
+                queried_datapoints[1].get_value(),
+                aggregated_dimensions[0].dimension_to_value[
+                    SheriffBudgetType.DETENTION
+                ],
+            )
+            self.assertEqual(
+                queried_datapoints[2].get_value(),
+                aggregated_dimensions[0].dimension_to_value[SheriffBudgetType.PATROL],
+            )
+            self.assertEqual(
+                queried_datapoints[3].get_value(),
+                assert_type(report_metric.contexts, list)[0].value,
+            )
+            # This should result in an update to the existing database objects
+            new_report_metric = (
+                JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+                    value=1000,
+                    detention_value=600,
+                    patrol_value=400,
+                )
+            )
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=new_report_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+
+            queried_datapoints = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
+            )
+
+            self.assertEqual(len(queried_datapoints), 4)
+
+            self.assertEqual(
+                queried_datapoints[0].get_value(),
+                new_report_metric.value,
+            )
+            aggregated_dimensions = assert_type(
+                new_report_metric.aggregated_dimensions, list
+            )
+            self.assertEqual(
+                queried_datapoints[1].get_value(),
+                aggregated_dimensions[0].dimension_to_value[
+                    SheriffBudgetType.DETENTION
+                ],
+            )
+            self.assertEqual(
+                queried_datapoints[2].get_value(),
+                aggregated_dimensions[0].dimension_to_value[SheriffBudgetType.PATROL],
+            )
+            self.assertEqual(
+                queried_datapoints[3].get_value(),
+                assert_type(new_report_metric.contexts, list)[0].value,
+            )
 
     def test_update_metric_with_new_contexts(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -461,16 +519,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ),
                 user_account=self.test_schema_objects.test_user_A,
             )
-            queried_instances = (
-                session.query(schema.ReportTableInstance)
-                .order_by(schema.ReportTableInstance.id)
-                .all()
+            queried_datapoints = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
             )
 
-            # The aggregated instance should have two contexts
-            contexts = sorted(queried_instances[0].contexts, key=lambda x: x.key)
+            self.assertEqual(len(queried_datapoints), 6)
+
+            # There should be two contexts associated with the metric
+            contexts = [d for d in queried_datapoints if d.context_key is not None]
             self.assertEqual(len(contexts), 2)
-            self.assertEqual(contexts[0].value, "agency0")
 
             # Update a context
             ReportInterface.add_or_update_metric(
@@ -481,44 +538,48 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ),
                 user_account=self.test_schema_objects.test_user_A,
             )
-            queried_instances = (
-                session.query(schema.ReportTableInstance)
-                .order_by(schema.ReportTableInstance.id)
-                .all()
+            queried_datapoints = (
+                session.query(schema.Datapoint).order_by(schema.Datapoint.id).all()
             )
 
-            contexts = sorted(queried_instances[0].contexts, key=lambda x: x.key)
+            contexts = [d for d in queried_datapoints if d.context_key is not None]
             self.assertEqual(len(contexts), 2)
-            self.assertEqual(contexts[0].value, "agency0, agency1")
+            self.assertEqual(contexts[0].get_value(), True)
+            self.assertEqual(contexts[1].get_value(), "agency0, agency1")
 
     def test_remove_disaggregation_from_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_user_A)
+            report = self.test_schema_objects.test_report_monthly
+            session.add(report)
+            report_with_id = session.query(schema.Report).one()
             ReportInterface.add_or_update_metric(
                 session=session,
-                report=self.test_schema_objects.test_report_monthly,
+                report=report_with_id,
                 report_metric=self.test_schema_objects.reported_budget_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
-
+            queried_datapoints = session.query(schema.Datapoint).all()
+            self.assertEqual(len(queried_datapoints), 4)
             # User decides they don't want to report the disaggregation
             report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
                 include_disaggregations=False
             )
             ReportInterface.add_or_update_metric(
                 session=session,
-                report=self.test_schema_objects.test_report_monthly,
+                report=report_with_id,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
 
-            # Should only have one instance and cell in the db
+            # Should only have one datapoint for aggregated value and one datapoint for context
             # (corresponding to the aggregated value)
-            queried_instances = session.query(schema.ReportTableInstance).all()
-            self.assertEqual(len(queried_instances), 1)
-
-            queried_instances = session.query(schema.Cell).all()
-            self.assertEqual(len(queried_instances), 1)
+            queried_datapoints = session.query(schema.Datapoint).all()
+            self.assertEqual(len(queried_datapoints), 2)
+            self.assertEqual(queried_datapoints[0].get_value(), report_metric.value)
+            self.assertEqual(
+                queried_datapoints[1].get_value(),
+                assert_type(report_metric.contexts, list)[0].value,
+            )
 
     def test_get_metrics_for_empty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -599,7 +660,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 self.test_schema_objects.reported_calls_for_service_metric.aggregated_dimensions,
             )
 
-    def test_cell_histories(self) -> None:
+    def test_datapoint_histories(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_user_A)
             ReportInterface.add_or_update_metric(
@@ -635,27 +696,30 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
 
-            cell_histories = (
-                session.query(schema.CellHistory)
-                .order_by(schema.CellHistory.cell_id, schema.CellHistory.timestamp)
+            datapoint_history = (
+                session.query(schema.DatapointHistory)
+                .order_by(
+                    schema.DatapointHistory.datapoint_id,
+                    schema.DatapointHistory.timestamp,
+                )
                 .all()
             )
-            self.assertEqual(len(cell_histories), 6)
+            self.assertEqual(len(datapoint_history), 6)
 
             # Aggregated value goes from 100000 -> 1000 -> 100
-            self.assertEqual(cell_histories[0].old_value, 100000)
-            self.assertEqual(cell_histories[0].new_value, 1000)
-            self.assertEqual(cell_histories[1].old_value, 1000)
-            self.assertEqual(cell_histories[1].new_value, 100)
+            self.assertEqual(datapoint_history[0].old_value, str(100000))
+            self.assertEqual(datapoint_history[0].new_value, str(1000))
+            self.assertEqual(datapoint_history[1].old_value, str(1000))
+            self.assertEqual(datapoint_history[1].new_value, str(100))
 
             # First disaggregated value goes from 66666 -> 600 -> 60
-            self.assertEqual(cell_histories[2].old_value, 66666)
-            self.assertEqual(cell_histories[2].new_value, 600)
-            self.assertEqual(cell_histories[3].old_value, 600)
-            self.assertEqual(cell_histories[3].new_value, 60)
+            self.assertEqual(datapoint_history[2].old_value, str(66666))
+            self.assertEqual(datapoint_history[2].new_value, str(600))
+            self.assertEqual(datapoint_history[3].old_value, str(600))
+            self.assertEqual(datapoint_history[3].new_value, str(60))
 
             # Second disaggregated value goes from 33334 -> 400 -> 40
-            self.assertEqual(cell_histories[4].old_value, 33334)
-            self.assertEqual(cell_histories[4].new_value, 400)
-            self.assertEqual(cell_histories[5].old_value, 400)
-            self.assertEqual(cell_histories[5].new_value, 40)
+            self.assertEqual(datapoint_history[4].old_value, str(33334))
+            self.assertEqual(datapoint_history[4].new_value, str(400))
+            self.assertEqual(datapoint_history[5].old_value, str(400))
+            self.assertEqual(datapoint_history[5].new_value, str(40))
