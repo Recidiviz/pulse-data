@@ -54,7 +54,7 @@ const AccountSettings = () => {
   return (
     <AccountSettingsPage>
       <GoBackLink
-        style={{ position: "absolute", top: 70, left: 20 }}
+        style={{ position: "absolute", top: 100, left: 20 }}
         onClick={() => navigate("/")}
       >
         ← Go back to reports

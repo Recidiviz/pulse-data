@@ -23,7 +23,7 @@ export const ReportsHeader = styled.div`
   width: 100%;
   background: ${palette.solid.white};
   position: fixed;
-  top: 36px;
+  top: 64px;
   padding: 0px 22px;
 `;
 
@@ -68,7 +68,7 @@ export const SortBy = styled.div`
 `;
 
 export const Table = styled.div`
-  padding: 235px 0 50px 0;
+  padding: 266px 0 50px 0;
 `;
 
 export const Row = styled.div<{

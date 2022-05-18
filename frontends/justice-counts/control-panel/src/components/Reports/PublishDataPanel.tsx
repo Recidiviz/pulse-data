@@ -39,7 +39,7 @@ import PublishConfirmation from "./PublishConfirmation";
 
 const TempSaveButton = styled.button`
   position: absolute;
-  top: 100px;
+  top: 195px;
   right: 26px;
   background: none;
   border: none;

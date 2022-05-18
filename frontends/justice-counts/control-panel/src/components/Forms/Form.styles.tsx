@@ -24,7 +24,7 @@ export const PageWrapper = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-  padding-top: 80px;
+  padding-top: 96px;
   position: absolute;
   top: 0;
   z-index: 0;
@@ -100,9 +100,10 @@ export const ReportSummaryWrapper = styled.div`
   width: 355px;
   height: 100%;
   position: fixed;
+  top: 0;
   left: 0;
   z-index: 1;
-  padding: 0 24px;
+  padding: 96px 24px 0 24px;
   background: ${palette.solid.white};
 `;
 
@@ -172,9 +173,10 @@ export const ReportSummaryProgressIndicator = styled.div<ReportSummaryProgressIn
 export const PublishDataWrapper = styled.div`
   width: 360px;
   position: fixed;
+  top: 0;
   right: 0;
   z-index: 1;
-  padding: 16px 24px 0 24px;
+  padding: 112px 24px 0 24px;
   height: 100%;
   background: ${palette.solid.white};
 `;
