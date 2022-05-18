@@ -282,28 +282,6 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             "Must provide either an absolute URI or relative URI to the cloud task",
         )
 
-    def test_create_with_service_account(self) -> None:
-        self.client_wrapper.create_task(
-            queue_name=self.QUEUE_NAME,
-            absolute_uri="https://recidiviz/my_endpoint?region=us_mo",
-            body={},
-            service_account_email="my-service-account@my-project-id.iam.gserviceaccount.com",
-        )
-
-        self.mock_client.create_task.assert_called_with(
-            parent="projects/my-project-id/locations/us-east1/queues/queue-name",
-            task=tasks_v2.types.task_pb2.Task(
-                http_request={
-                    "http_method": "POST",
-                    "url": "https://recidiviz/my_endpoint?region=us_mo",
-                    "body": b"{}",
-                    "oidc_token": {
-                        "service_account_email": "my-service-account@my-project-id.iam.gserviceaccount.com"
-                    },
-                },
-            ),
-        )
-
     def test_delete_task(self) -> None:
         self.client_wrapper.delete_task("task_name")
 
