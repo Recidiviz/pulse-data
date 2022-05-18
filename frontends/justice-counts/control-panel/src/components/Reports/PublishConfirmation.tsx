@@ -16,129 +16,249 @@
 // =============================================================================
 
 import { observer } from "mobx-react-lite";
-import React from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import styled from "styled-components/macro";
 
-import { Report } from "../../shared/types";
+import { Metric as MetricType } from "../../shared/types";
 import { useStore } from "../../stores";
 import { rem } from "../../utils";
 import { Button, PublishButton } from "../Forms";
 import { palette } from "../GlobalStyles";
 
-const ConfirmationDialogue = styled.div`
+const ConfirmationDialogueWrapper = styled.div`
   width: 100vw;
   height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   background: ${palette.solid.white};
   position: fixed;
   top: 0;
   left: 0;
   z-index: 2;
-`;
-
-const ConfirmationDialogueWrapper = styled.div`
-  width: 676px;
-  max-height: 881px;
-  display: flex;
-  flex-direction: column;
-  padding: 10px 15px;
-  text-align: left;
-`;
-
-const ConfirmationTitle = styled.div`
-  font-size: ${rem("32px")};
-  font-weight: 600;
-  line-height: 48px;
-`;
-
-const ConfirmationSubTitle = styled.div`
-  max-width: 524px;
-  font-size: ${rem("20px")};
-  font-weight: 500;
-  line-height: 30px;
-  margin-top: 16px;
-  margin-bottom: 72px;
-`;
-
-const ConfirmationSection = styled.div`
-  height: 400px;
-  border-top: 1px solid ${palette.solid.darkgrey};
-  border-bottom: 1px solid ${palette.solid.darkgrey};
-`;
-
-const ReportReview = styled.div`
-  height: 495px;
-  display: flex;
-  flex-direction: column;
+  padding: 80px 0;
   overflow: scroll;
 `;
 
-const ReportItem = styled.div`
+const ConfirmationDialogue = styled.div`
+  width: 865px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  margin: 0 auto;
+`;
+
+const ConfirmationTitle = styled.div`
+  font-size: ${rem("64px")};
+  font-weight: 500;
+  line-height: 64px;
+  letter-spacing: -0.02em;
+`;
+
+const ConfirmationSubTitle = styled.div`
+  width: 314px;
+  height: 48px;
+
+  font-size: ${rem("15px")};
+  line-height: 24px;
+  font-weight: 500;
+  margin: 24px 0;
+`;
+
+const MetricsRow = styled.div`
   display: flex;
   justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px dashed ${palette.solid.darkgrey};
+  border-top: 2px solid ${palette.solid.darkgrey};
+  margin-bottom: 40px;
 `;
 
-const ReportItemLabel = styled.div`
-  transition: 0.2s;
-
-  &:hover {
-    cursor: pointer;
-    color: ${palette.solid.blue};
-  }
+const Metric = styled.div`
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: space-between;
+  padding-top: 16px;
 `;
 
-const ReportItemValue = styled.div<{ missingValue?: boolean }>`
+const MetricSectionWrapper = styled.div`
+  flex: 0 1 424px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding-top: 16px;
+`;
+
+const MetricValueLabel = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  font-size: ${rem("15px")};
+  line-height: 24px;
+  font-weight: 700;
+`;
+
+const MetricValue = styled.div<{ missingValue?: boolean }>`
+  height: 64px;
+  font-size: ${rem("64px")};
+  line-height: 64px;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
   color: ${({ missingValue }) => missingValue && palette.solid.red};
+`;
+
+const Breakdown = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed ${palette.solid.darkgrey};
+  padding: 8px 0 4px 0;
+  font-size: ${rem("15px")};
+  line-height: 24px;
+  font-weight: 500;
+`;
+
+const BreakdownLabel = styled.div`
+  display: flex;
+  flex: 1;
+`;
+
+const BreakdownValue = styled.div`
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
 `;
 
 const ButtonWrapper = styled.div`
   padding-top: 16px;
   display: flex;
   flex: 1 1 auto;
+  align-items: center;
   justify-content: space-between;
 `;
 
-const PublishConfirmation: React.FC<{
-  toggleConfirmationDialogue: () => void;
-  tempFinalObject: Report;
-  reportID: number;
-}> = ({ toggleConfirmationDialogue, tempFinalObject, reportID }) => {
-  const { formStore } = useStore();
+const EmptyValue = styled.div`
+  width: 24px;
+  height: 24px;
+  background: ${palette.solid.orange};
+`;
+
+const IncompleteChip = styled.div`
+  background: ${palette.solid.orange};
+  padding: 4px 8px;
+  font-size: ${rem("12px")};
+  line-height: 16px;
+  font-weight: 600;
+  color: ${palette.solid.white};
+`;
+
+const MetricsDisplay: React.FC<{ metric: MetricType }> = ({ metric }) => {
+  const [incomplete, setIncomplete] = useState(false);
+  const flagAsIncomplete = () => setIncomplete(true);
+
+  if (!metric.value && !incomplete) flagAsIncomplete();
 
   return (
-    <ConfirmationDialogue>
-      <ConfirmationDialogueWrapper>
-        <ConfirmationTitle>Review before Publishing</ConfirmationTitle>
-        <ConfirmationSubTitle>
-          Take a moment to review the answers for each of the fields before
-          submitting the report.
-        </ConfirmationSubTitle>
+    <Metric>
+      <MetricSectionWrapper>
+        {/* Overall Metric Value */}
+        <MetricValue>{metric.value?.toLocaleString("en-US")}</MetricValue>
+        <MetricValueLabel>
+          {metric.label}
+          {incomplete && <IncompleteChip>Incomplete</IncompleteChip>}
+        </MetricValueLabel>
+      </MetricSectionWrapper>
 
-        <ConfirmationSection>
-          <ReportReview>
-            {tempFinalObject.metrics.map((metric) => {
-              return (
-                <ReportItem key={metric.key}>
-                  <ReportItemLabel>{metric.label}</ReportItemLabel>
-                  <ReportItemValue>{metric.value}</ReportItemValue>
-                </ReportItem>
-              );
-            })}
-          </ReportReview>
-        </ConfirmationSection>
+      <MetricSectionWrapper>
+        {/* Disaggregations > Dimensions */}
+        {metric.disaggregations.length > 0 &&
+          metric.disaggregations.map((disaggregation) => {
+            return (
+              disaggregation.dimensions.length > 0 &&
+              disaggregation.dimensions.map((dimension) => {
+                if (disaggregation.required && !dimension.value && !incomplete)
+                  flagAsIncomplete();
 
+                return (
+                  <Fragment key={dimension.key}>
+                    <Breakdown>
+                      <BreakdownLabel>{dimension.label}</BreakdownLabel>
+                      <BreakdownValue>
+                        {dimension.value?.toLocaleString("en-US") || (
+                          <EmptyValue />
+                        )}
+                      </BreakdownValue>
+                    </Breakdown>
+                  </Fragment>
+                );
+              })
+            );
+          })}
+
+        {/* Contexts */}
+        {metric.contexts.length > 0 &&
+          metric.contexts.map((context) => {
+            if (context.required && !context.value && !incomplete)
+              flagAsIncomplete();
+            return (
+              <Fragment key={context.key}>
+                <Breakdown>
+                  <BreakdownLabel>{context.display_name}</BreakdownLabel>
+                  <BreakdownValue>
+                    {context.value?.toLocaleString("en-US") || <EmptyValue />}
+                  </BreakdownValue>
+                </Breakdown>
+              </Fragment>
+            );
+          })}
+      </MetricSectionWrapper>
+    </Metric>
+  );
+};
+
+const PublishConfirmation: React.FC<{
+  toggleConfirmationDialogue: () => void;
+  reportID: number;
+}> = ({ toggleConfirmationDialogue, reportID }) => {
+  const { formStore, reportStore } = useStore();
+  const metricsPreview = formStore.fullMetricsFromFormValues(reportID);
+
+  const publishReport = () => {
+    const finalMetricsToPublish =
+      formStore.reportUpdatedValuesForBackend(reportID);
+    reportStore.updateReport(reportID, finalMetricsToPublish, "PUBLISHED");
+  };
+
+  /** Prevent body from scrolling when this dialog is open */
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, []);
+
+  return (
+    <ConfirmationDialogueWrapper>
+      <ConfirmationDialogue>
+        <ConfirmationTitle>Overview</ConfirmationTitle>
         <ButtonWrapper>
-          <Button onClick={toggleConfirmationDialogue}>Cancel</Button>
-          <PublishButton onClick={() => formStore.submitReport(0)}>
+          <ConfirmationSubTitle>
+            Take a moment to review the numbers that will be published.
+          </ConfirmationSubTitle>
+
+          {/* `disabled` should be dependent on the logic that determines whether or not the report is publishable */}
+          <PublishButton onClick={publishReport} disabled>
             Publish Data
           </PublishButton>
         </ButtonWrapper>
-      </ConfirmationDialogueWrapper>
-    </ConfirmationDialogue>
+
+        {metricsPreview.map((metric) => {
+          return (
+            <MetricsRow key={metric.key}>
+              <MetricsDisplay metric={metric} />
+            </MetricsRow>
+          );
+        })}
+
+        <Button onClick={toggleConfirmationDialogue}>Cancel</Button>
+      </ConfirmationDialogue>
+    </ConfirmationDialogueWrapper>
   );
 };
 
