@@ -515,8 +515,14 @@ def pathways_state_specific_supervision_level(
     """State-specific logic to normalize supervision level for Pathways."""
     return f"""
         CASE 
-            WHEN {state_code_query}='US_ID' and COALESCE({supervision_level_query}, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
-                THEN "OTHER"
+            WHEN {state_code_query}='US_ID' THEN
+                (CASE
+                    WHEN COALESCE({supervision_level_query}, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
+                        THEN "OTHER"
+                    WHEN {supervision_level_query} = "MAXIMUM"
+                        THEN "HIGH"
+                    ELSE IFNULL({supervision_level_query}, "EXTERNAL_UNKNOWN")
+                END)
             ELSE IFNULL({supervision_level_query}, "EXTERNAL_UNKNOWN")
         END
     """

@@ -73,7 +73,7 @@ SUPERVISION_OFFICER_CASELOAD_QUERY_TEMPLATE = """
             {age_group}
             IF(cte.compartment_level_2 = 'DUAL', 'PAROLE', cte.compartment_level_2) AS supervision_type,
             IF({state_specific_supervision_level} IN {non_active_supervision_levels},
-                supervision_sessions.most_recent_active_supervision_level, {state_specific_supervision_level}) AS supervision_level,
+                {supervision_sessions_state_specific_supervision_level}, {state_specific_supervision_level}) AS supervision_level,
         FROM cte
         LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` cs
             ON cte.state_code = cs.state_code
@@ -126,8 +126,12 @@ SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     age_group=add_age_groups("cs.age_end"),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
-        "cs.state_code",
+        "cte.state_code",
         "cte.correctional_level",
+    ),
+    supervision_sessions_state_specific_supervision_level=pathways_state_specific_supervision_level(
+        "supervision_sessions.state_code",
+        "supervision_sessions.most_recent_active_supervision_level",
     ),
     non_active_supervision_levels=non_active_supervision_levels(),
 )
