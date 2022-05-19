@@ -1,13 +1,20 @@
 # Configuration for which validations to run for region US_TN.
 
 region_code: US_TN
-# TODO(#5582): Enable validations for US_TN.
-dev_mode: True
 exclusions: []
 max_allowed_error_overrides:
   - validation_name: case_termination_by_type_comparison_discharges
-    hard_max_allowed_error_override: 0.2
+    hard_max_allowed_error_override: 0.25
     override_reason: TODO(#12170) Needs investigation.
+  - validation_name: incarceration_population_by_facility_external_comparison
+    hard_max_allowed_error_override: 1.0
+    override_reason: TODO(#13057) Needs investigation.
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: 0.15
+    override_reason: TODO(#13057) Needs investigation.
+  - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
+    hard_max_allowed_error_override: 1.0
+    override_reason: TODO(#13057) Needs investigation.
   - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
     hard_max_allowed_error_override: 0.25
     override_reason: TODO(#12167) Needs investigation.
@@ -15,18 +22,18 @@ num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 400
     override_reason: TODO(#12167) Needs investigation. Ingest view mishandling zero-day incarceration periods
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 80
+    override_reason: TODO(#13055) Needs investigation.
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 58
+    hard_num_allowed_rows_override: 90
     override_reason: TODO(#12166) Needs investigation. Ingest mappings don't account currently map to temp custody releases
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 3
-    override_reason: Edge cases in TN data where there are two OffenderMovements of Departures on the same day, causing two periods to be generated.
+    hard_num_allowed_rows_override: 60
+    override_reason: Edge cases in TN data where there are two OffenderMovements of Departures on the same day, causing two periods to be generated. Error is increasing over time and should be addressed in some way to better handle zero-day periods. Error is 47 as of 5/18/22.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 75000
     override_reason: In TN, there can be concurrent periods for the same offender under different supervision types. We expect this number to by high and grow gradually, but will keep an eye on it for any abnormal spikes.
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 300
     override_reason: TODO(#12165) Needs investigation. Ingest view is mishandling supervision events during a supervision period with overlap and duplicating periods by reversing their dates.
-  - validation_name: supervision_termination_reason_no_date
-    hard_num_allowed_rows_override: 3
-    override_reason: TODO(#12164)- Needs investigation. Appears to be edge cases in administration on the TN side.
