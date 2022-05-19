@@ -194,10 +194,11 @@ def import_gcs_csv_to_cloud_sql(
     If a region_code is provided, selects all rows in the destination_table that do not equal the region_code and
     inserts them into the temp table before swapping.
     """
-    destination_table = model.__tablename__
+    destination_table = model.__table__
+    destination_table_name = model.__tablename__
 
     # Generate DDL statements for the temporary table
-    temporary_table = build_temporary_sqlalchemy_table(model.__table__)
+    temporary_table = build_temporary_sqlalchemy_table(destination_table)
     temporary_table_model_sql = ModelSQL(table=temporary_table)
 
     with SessionFactory.using_database(database_key=database_key) as session:
@@ -220,15 +221,15 @@ def import_gcs_csv_to_cloud_sql(
         if region_code is not None:
             # Import the rest of the regions into temp table
             session.execute(
-                f"INSERT INTO {temporary_table.name} SELECT * FROM {destination_table} "
+                f"INSERT INTO {temporary_table.name} SELECT * FROM {destination_table_name} "
                 f"WHERE state_code != '{region_code}'"
             )
 
         # Drop the destination table
-        session.execute(f"DROP TABLE {destination_table}")
+        session.execute(DropTable(destination_table, if_exists=True))
 
         rename_queries = temporary_table_model_sql.build_rename_ddl_queries(
-            destination_table
+            destination_table_name
         )
 
         # Rename temporary table and all indexes / constraint on the temporary table
