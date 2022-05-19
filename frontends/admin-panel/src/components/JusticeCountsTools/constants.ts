@@ -40,7 +40,7 @@ export type User = {
 
 export type CreateUserRequest = {
   email: string;
-  agencyId: number;
+  agencyIds: number[];
   name?: string;
 };
 

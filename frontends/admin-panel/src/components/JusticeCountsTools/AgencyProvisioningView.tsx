@@ -14,22 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { SearchOutlined } from "@ant-design/icons";
 import {
-  PageHeader,
-  Table,
+  Button,
   Form,
   Input,
-  Button,
-  Spin,
-  Typography,
   message,
-  Space,
+  PageHeader,
   Select,
+  Space,
+  Spin,
+  Table,
+  Typography,
 } from "antd";
-import * as React from "react";
-import { SearchOutlined } from "@ant-design/icons";
 import { FilterDropdownProps } from "antd/lib/table/interface";
-import { getAgencies, createAgency } from "../../AdminPanelAPI";
+import * as React from "react";
+import { createAgency, getAgencies } from "../../AdminPanelAPI";
+import { useFetchedDataJSON } from "../../hooks";
+import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   CreateAgencyRequest,
@@ -40,8 +42,6 @@ import {
   StateCode,
   StateCodeKey,
 } from "./constants";
-import { useFetchedDataJSON } from "../../hooks";
-import { formLayout, formTailLayout } from "../constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = React.useState(false);
@@ -143,6 +143,12 @@ const AgencyProvisioningView = (): JSX.Element => {
   });
 
   const columns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      ...getColumnSearchProps("id"),
+    },
     {
       title: "Name",
       dataIndex: "name",

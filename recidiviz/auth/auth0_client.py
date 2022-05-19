@@ -53,10 +53,15 @@ REST_REQUEST_TIMEOUT = 15.0
 class Auth0Client:
     """Wrapper around the Auth0 Client for interacting with the Auth0 Management API"""
 
-    def __init__(self) -> None:
-        domain = secrets.get_secret("auth0_api_domain")
-        client_id = secrets.get_secret("auth0_api_client_id")
-        client_secret = secrets.get_secret("auth0_api_client_secret")
+    def __init__(  # nosec
+        self,
+        domain_secret_name: str = "auth0_api_domain",
+        client_id_secret_name: str = "auth0_api_client_id",
+        client_secret_secret_name: str = "auth0_api_client_secret",
+    ) -> None:
+        domain = secrets.get_secret(domain_secret_name)
+        client_id = secrets.get_secret(client_id_secret_name)
+        client_secret = secrets.get_secret(client_secret_secret_name)
 
         if not domain:
             raise ValueError("Missing required domain for Auth0 Management API")
@@ -92,6 +97,24 @@ class Auth0Client:
     def access_token(self) -> str:
         token = self.get_token()
         return token["access_token"]
+
+    def get_user_by_id(self, user_id: str) -> Auth0User:
+        """Given an Auth0 user id, return the corresponding user."""
+        return self.client.users.get(id=user_id)
+
+    def get_all_users(self) -> List[Auth0User]:
+        """Return a list of all Auth0 users associated with this tenant."""
+        all_users = []
+        continue_fetching = True
+        while continue_fetching:
+            response = self.client.users.list(
+                per_page=MAX_RESULTS_PER_PAGE,
+                fields=["user_id", "email", "app_metadata"],
+            )
+            users = response["users"]
+            all_users.extend(users)
+            continue_fetching = len(users) == MAX_RESULTS_PER_PAGE
+        return all_users
 
     def get_all_users_by_email_addresses(
         self, email_addresses: List[str]
