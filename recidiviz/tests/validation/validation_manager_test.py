@@ -505,7 +505,7 @@ class TestFetchValidations(TestCase):
         # list to confirm you've updated all relevant external data validation tables in production to include
         # validation data for the newly promoted region.
         self.assertCountEqual(
-            launched_state_codes, ["US_ID", "US_MO", "US_ND", "US_PA"]
+            launched_state_codes, ["US_ID", "US_MO", "US_ND", "US_PA", "US_TN"]
         )
 
         num_exclusions = sum(
