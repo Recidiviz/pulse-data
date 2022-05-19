@@ -126,6 +126,12 @@ class ReportedAggregatedDimension:
     def from_json(
         cls: Type[ReportedAggregatedDimensionT], json: Dict[str, Any]
     ) -> ReportedAggregatedDimensionT:
+        """
+        - The input json is expected to be of the format {dimension name -> value}, e.g. {"BLACK": 50}
+        - The input json does not need to include all dimension names, i.e. it can be partial/incomplete
+        - This function will create a dimension_to_value dictionary that does include all dimension names
+        - The dimensions that were reported in json will be copied over to dimension_to_value
+        """
         # convert dimension name -> value mapping to dimension class -> value mapping
         # e.g "BLACK" : 50 -> RaceAndEthnicity().BLACK : 50
         dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
@@ -135,7 +141,7 @@ class ReportedAggregatedDimension:
             dim["key"]: dim["value"] for dim in json["dimensions"]
         }  # example: {"BLACK": 50, "WHITE": 20, ...}
         dimension_to_value = {
-            dimension: dimension_enum_value_to_value[dimension.to_enum().value]
+            dimension: dimension_enum_value_to_value.get(dimension.to_enum().value)
             for dimension in dimension_class
         }  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20}
         return cls(dimension_to_value=dimension_to_value)

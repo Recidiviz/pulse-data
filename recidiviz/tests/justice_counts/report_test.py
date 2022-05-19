@@ -22,11 +22,22 @@ import datetime
 from freezegun import freeze_time
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.dimensions.dimension_registry import (
+    DIMENSION_IDENTIFIER_TO_DIMENSION,
+)
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     SheriffBudgetType,
 )
-from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.person import (
+    GenderRestricted,
+    RaceAndEthnicity,
+)
+from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.report_metric import (
+    ReportedAggregatedDimension,
+    ReportedContext,
+)
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -658,14 +669,40 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
-            calls_for_service = metrics[0]
-            population = metrics[1]
+            arrests_by_gender = metrics[0]
+            arrests_by_race_and_ethnicity = metrics[1]
 
             # Population metric should be blank
-            self.assertEqual(population.value, None)
+            self.assertEqual(arrests_by_race_and_ethnicity.value, None)
+            self.assertEqual(
+                assert_type(arrests_by_race_and_ethnicity.aggregated_dimensions, list)[
+                    0
+                ].dimension_to_value,
+                {d: None for d in RaceAndEthnicity},
+            )
+            self.assertEqual(
+                arrests_by_race_and_ethnicity.contexts,
+                [
+                    ReportedContext(key=context.key, value=None)
+                    for context in law_enforcement.arrests_by_race_and_ethnicity.contexts
+                ],
+            )
 
             # Calls for service metric should be blank
-            self.assertEqual(calls_for_service.value, None)
+            self.assertEqual(arrests_by_gender.value, None)
+            self.assertEqual(
+                assert_type(arrests_by_gender.aggregated_dimensions, list)[
+                    0
+                ].dimension_to_value,
+                {d: None for d in GenderRestricted},
+            )
+            self.assertEqual(
+                arrests_by_gender.contexts,
+                [
+                    ReportedContext(key=context.key, value=None)
+                    for context in law_enforcement.arrests_by_gender.contexts
+                ],
+            )
 
     def test_get_metrics_for_nonempty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -709,6 +746,27 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             # Population metric should be blank
             self.assertEqual(population.value, None)
+            self.assertEqual(
+                population.contexts,
+                [
+                    ReportedContext(key=c.key, value=None)
+                    for c in law_enforcement.residents.contexts
+                ],
+            )
+            self.assertEqual(
+                population.aggregated_dimensions,
+                [
+                    ReportedAggregatedDimension(
+                        dimension_to_value={
+                            d: None
+                            for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
+                                a.dimension.dimension_identifier()
+                            ]
+                        }
+                    )
+                    for a in law_enforcement.residents.aggregated_dimensions or []
+                ],
+            )
 
             # Calls for service metric should be populated
             self.assertEqual(
