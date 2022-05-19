@@ -1,0 +1,24 @@
+# .github/release.yml
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - "Type: Dependency Upgrade"
+  # prettier-ignore
+  categories:
+    - title: "Bug Fixes :beetle:"
+      labels:
+        - "Type: Bug"
+    - title: "New Features :tada:"
+      labels:
+        - "Type: Feature"
+    - title: "Breaking Change :wrench:"
+      labels:
+        - "Type: Breaking Change"
+    - title: "Non-breaking refactor :nut_and_bolt:"
+      labels:
+        - "Type: Non-breaking refactor"
+    - title: "Configuration Change :triangular_ruler:"
+      labels:
+        - "Type: Configuration Change"

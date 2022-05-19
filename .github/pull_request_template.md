@@ -4,13 +4,16 @@
 
 ## Type of change
 
-> Check the types that apply, and delete any that are not applicable to your changes
+> All pull requests must have at least one of the following labels applied (otherwise the PR will fail):
 
-- [ ] Bug fix (non-breaking change that fixes an issue)
-- [ ] New feature (non-breaking change that adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Non-breaking refactor (change addresses some tech debt item or prepares for a later change, but does not change functionality)
-- [ ] Configuration change (adjusts configuration to achieve some end related to functionality, development, performance, or security)
+| Label                       	| Description                                                                                               	|
+|-----------------------------	|-----------------------------------------------------------------------------------------------------------	|
+| Type: Bug                   	| non-breaking change that fixes an issue                                                                   	|
+| Type: Feature               	| non-breaking change that adds functionality                                                               	|
+| Type: Breaking Change       	| fix or feature that would cause existing functionality to not work as expected                            	|
+| Type: Non-breaking refactor 	| change addresses some tech debt item or prepares for a later change, but does not change functionality    	|
+| Type: Configuration Change  	| adjusts configuration to achieve some end related to functionality, development, performance, or security 	|
+| Type: Dependency Upgrade      | upgrades a project dependency - these changes are not included in release notes                             |
 
 ## Related issues
 
