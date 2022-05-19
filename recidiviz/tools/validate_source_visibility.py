@@ -322,6 +322,7 @@ def main() -> int:
                 "recidiviz.big_query.big_query_utils",
                 # TODO(#6859): Get rid of this dependency
                 "recidiviz.calculator.pipeline",
+                "recidiviz.calculator.query.state.views.dashboard.pathways",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",

@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Case Triage Flask server."""
-from typing import List, Any, Dict, Callable, Type, Optional
+from typing import Any, Callable, Dict, List, Optional, Type
 from unittest import TestCase
 
-from marshmallow import ValidationError, Schema
+from marshmallow import Schema, ValidationError
 
 from recidiviz.case_triage.api_schemas import CaseUpdateSchema, PolicyRequirementsSchema
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.common.str_field_utils import snake_to_camel
 
 
 class SchemaTestCase(TestCase):
@@ -31,7 +32,7 @@ class SchemaTestCase(TestCase):
 def valid_schema_test(data: Dict[Any, Any]) -> Callable:
     def inner(self: SchemaTestCase) -> None:
         schema = self.schema()
-        self.assertIsNotNone(schema.load(data))
+        self.assertIsNotNone(schema.load(data), schema.validate(data))
 
     return inner
 
@@ -43,13 +44,14 @@ def invalid_schema_test(
 
     def inner(self: SchemaTestCase) -> None:
         schema = self.schema()
-
         with self.assertRaises(ValidationError) as exception_context:
             schema.load(data)
 
         if invalid_keys:
             for key in invalid_keys:
-                self.assertIn(key, exception_context.exception.messages)
+                # Catch keys in tests that have not been updated when fields are renamed
+                self.assertIn(key, schema.fields.keys())
+                self.assertIn(snake_to_camel(key), exception_context.exception.messages)
 
     return inner
 
@@ -76,7 +78,7 @@ class TestCaseUpdateSchema(SchemaTestCase):
             "person_external_id": "123",
             "actions": [CaseUpdateActionType.NOT_ON_CASELOAD.value],
         },
-        invalid_keys=["personExternalId"],
+        invalid_keys=["person_external_id"],
     )
 
     test_missing_action = invalid_schema_test(
@@ -84,7 +86,6 @@ class TestCaseUpdateSchema(SchemaTestCase):
             "personExternalId": "123",
             "action": [CaseUpdateActionType.NOT_ON_CASELOAD.value],
         },
-        invalid_keys=["action"],
     )
 
     test_action_type = invalid_schema_test(
@@ -92,7 +93,7 @@ class TestCaseUpdateSchema(SchemaTestCase):
             "personExternalId": "123",
             "actionType": False,
         },
-        invalid_keys=["actionType"],
+        invalid_keys=["action_type"],
     )
 
     test_action_invalid = invalid_schema_test(
@@ -100,11 +101,11 @@ class TestCaseUpdateSchema(SchemaTestCase):
             "personExternalId": "123",
             "actionType": "imaginary-action",
         },
-        invalid_keys=["actionType"],
+        invalid_keys=["action_type"],
     )
 
     test_invalid_actions = invalid_schema_test(
-        {"personExternalId": "123", "actions": []}, invalid_keys=["actions"]
+        {"personExternalId": "123", "actions": []}
     )
 
     test_valid_data = valid_schema_test(
@@ -120,7 +121,6 @@ class TestCaseUpdateSchema(SchemaTestCase):
             "actionType": CaseUpdateActionType.NOT_ON_CASELOAD.value,
             "comments": "Incorrect key",
         },
-        invalid_keys=["comments"],
     )
 
     test_valid_comment = valid_schema_test(

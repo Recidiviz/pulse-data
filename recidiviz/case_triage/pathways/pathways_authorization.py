@@ -29,7 +29,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     AuthorizationError,
-    build_auth0_authorization_decorator,
+    build_auth0_authorization_handler,
 )
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.secrets import get_secret
@@ -42,14 +42,14 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     Otherwise, raises an AuthorizationError
     """
     # All pathways routes are expected to require a `state_code` in their view args
-    if not request.view_args or "state_code" not in request.view_args:
+    if not request.view_args or "state" not in request.view_args:
         raise FlaskException(
             code="state_required",
             description="A state must be passed to the route",
             status_code=HTTPStatus.BAD_REQUEST,
         )
 
-    requested_state = request.view_args["state_code"]
+    requested_state = request.view_args["state"]
 
     if not StateCode.is_state_code(requested_state):
         raise FlaskException(
@@ -79,7 +79,7 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     raise AuthorizationError(code="not_authorized", description="Access denied")
 
 
-def build_authorization_decorator() -> Callable:
+def build_authorization_handler() -> Callable:
     """Loads Auth0 configuration secret and builds the middleware"""
     dashboard_auth0_configuration = get_secret("dashboard_auth0")
 
@@ -90,6 +90,6 @@ def build_authorization_decorator() -> Callable:
         json.loads(dashboard_auth0_configuration)
     )
 
-    return build_auth0_authorization_decorator(
+    return build_auth0_authorization_handler(
         authorization_config, on_successful_authorization
     )
