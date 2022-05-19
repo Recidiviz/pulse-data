@@ -25,7 +25,11 @@ import {
   Metric,
   UpdatedMetricsValues,
 } from "../shared/types";
-import { combineTwoKeyNames } from "../utils";
+import {
+  combineTwoKeyNames,
+  removeCommaSpaceAndTrim,
+  sanitizeInputValue,
+} from "../utils";
 import ReportStore from "./ReportStore";
 
 class FormStore {
@@ -60,11 +64,14 @@ class FormStore {
         if (metricValue || contexts || disaggregationForMetric) {
           return {
             ...metric,
-            value: metricValue,
+            value: sanitizeInputValue(metricValue, metric.value),
             contexts: metric.contexts.map((context) => {
               return {
                 ...context,
-                value: contexts?.[context.key],
+                value: sanitizeInputValue(
+                  contexts?.[context.key],
+                  context.value
+                ),
               };
             }),
             disaggregations: metric.disaggregations.map((disaggregation) => {
@@ -73,10 +80,12 @@ class FormStore {
                 dimensions: disaggregation.dimensions?.map((dimension) => {
                   return {
                     ...dimension,
-                    value:
+                    value: sanitizeInputValue(
                       disaggregationForMetric?.[disaggregation.key]?.[
                         dimension.key
                       ],
+                      dimension.value
+                    ),
                   };
                 }),
               };
@@ -104,10 +113,10 @@ class FormStore {
     const updatedMetricValues = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
         /** Note: all empty inputs will be represented by null */
-        const metricValue =
-          this.metricsValues[reportID]?.[metric.key] === 0
-            ? 0
-            : this.metricsValues[reportID]?.[metric.key] || null;
+        const metricValue = sanitizeInputValue(
+          this.metricsValues[reportID]?.[metric.key],
+          metric.value
+        );
 
         const combinedMetricValues: UpdatedMetricsValues = {
           key: metric.key,
@@ -117,10 +126,10 @@ class FormStore {
         };
 
         metric.contexts.forEach((context) => {
-          const contextValue =
-            this.contexts[reportID]?.[metric.key]?.[context.key] === 0
-              ? 0
-              : this.contexts[reportID]?.[metric.key]?.[context.key] || null;
+          const contextValue = sanitizeInputValue(
+            this.contexts[reportID]?.[metric.key]?.[context.key],
+            context.value
+          );
 
           combinedMetricValues.contexts.push({
             key: context.key,
@@ -132,14 +141,12 @@ class FormStore {
           combinedMetricValues.disaggregations.push({
             key: disaggregation.key,
             dimensions: disaggregation.dimensions.map((dimension) => {
-              const dimensionValue =
+              const dimensionValue = sanitizeInputValue(
                 this.disaggregations[reportID]?.[metric.key]?.[
                   disaggregation.key
-                ]?.[dimension.key] === 0
-                  ? 0
-                  : this.disaggregations[reportID]?.[metric.key]?.[
-                      disaggregation.key
-                    ]?.[dimension.key] || null;
+                ]?.[dimension.key],
+                dimension.value
+              );
 
               return {
                 key: dimension.key,
@@ -156,22 +163,21 @@ class FormStore {
     return updatedMetricValues || [];
   }
 
-  /** Simple validation to flesh out as we solidify necessary validations */
-  /** Metric values are always required */
-  validate = (
-    value: string | number,
+  validateNumber = (
+    value: string,
     reportID: number,
     metricKey: string,
     key?: string,
     required?: boolean
   ) => {
     const fieldKey = key || metricKey;
-    /** Being aware that 0 is a falsy value, we check if the value is 0 first - if not, check if the value is a positive number */
+    const cleanValue = removeCommaSpaceAndTrim(value);
     const isPositiveNumber =
-      value === 0 || (Boolean(Number(value)) && Number(value) >= 0);
+      (cleanValue !== "" && Number(cleanValue) === 0) || Number(cleanValue) > 0;
+    const isRequiredButEmpty = required && cleanValue === "";
 
-    /** Raise error if value is not a number OR the field is required and the input is empty */
-    if (!isPositiveNumber || (required && value !== null)) {
+    /** Raise error if value is not a positive number OR the field is required and the input is empty */
+    if (!isPositiveNumber || isRequiredButEmpty) {
       if (!this.formErrors[reportID]) {
         this.formErrors[reportID] = {};
       }
@@ -180,16 +186,25 @@ class FormStore {
         this.formErrors[reportID][metricKey] = {};
       }
 
-      this.formErrors[reportID][metricKey][fieldKey] = "Error";
+      if (!isPositiveNumber) {
+        this.formErrors[reportID][metricKey][fieldKey] =
+          "Please enter a valid number.";
+      }
+
+      if (isRequiredButEmpty) {
+        this.formErrors[reportID][metricKey][fieldKey] =
+          "This is a required field. Please enter a valid number.";
+      }
     }
 
-    /** Remove error if value is a number AND (required input and input is not empty OR optional input and input is empty) */
-    if (
-      this.formErrors[reportID]?.[metricKey]?.[fieldKey] &&
-      isPositiveNumber &&
-      ((required && value !== null) || !required)
-    ) {
-      delete this.formErrors[reportID][metricKey][fieldKey];
+    if (this.formErrors[reportID]?.[metricKey]?.[fieldKey]) {
+      /** Remove error if (value is a positive number AND required input and input is not empty) OR optional input and input is empty) */
+      if (
+        (isPositiveNumber && required && cleanValue !== "") ||
+        (!required && (cleanValue === "" || isPositiveNumber))
+      ) {
+        delete this.formErrors[reportID][metricKey][fieldKey];
+      }
     }
   };
 
@@ -197,9 +212,9 @@ class FormStore {
   updateMetricsValues = (
     reportID: number,
     metricKey: string,
-    updatedValue: string | number
+    updatedValue: string
   ): void => {
-    this.validate(updatedValue, reportID, metricKey);
+    this.validateNumber(updatedValue, reportID, metricKey, undefined, true);
 
     /**
      * Create an empty object within the property if none exist to improve access
@@ -217,14 +232,14 @@ class FormStore {
     metricKey: string,
     disaggregationKey: string,
     dimensionKey: string,
-    updatedValue: string | number,
+    updatedValue: string,
     required: boolean
   ): void => {
     const disaggregationDimensionKey = combineTwoKeyNames(
       disaggregationKey,
       dimensionKey
     );
-    this.validate(
+    this.validateNumber(
       updatedValue,
       reportID,
       metricKey,
@@ -256,16 +271,17 @@ class FormStore {
     reportID: number,
     metricKey: string,
     contextKey: string,
-    updatedValue: string | number,
+    updatedValue: string,
+    required: boolean,
     contextType?: string
   ): void => {
     if (contextType === "NUMBER") {
-      this.validate(
-        updatedValue === "" ? Number(updatedValue) : updatedValue, // enables us to not throw an error state when an optional context is emptied, and to clear out an error when the field is empty
+      this.validateNumber(
+        updatedValue,
         reportID,
         metricKey,
         contextKey,
-        false
+        required
       );
     }
 
