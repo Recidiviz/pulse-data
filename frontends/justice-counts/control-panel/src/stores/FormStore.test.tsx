@@ -86,9 +86,9 @@ beforeEach(() => {
 });
 
 test("metrics value handler updates the metric value", () => {
-  formStore.updateMetricsValues(0, "PROSECUTION_STAFF", 2000);
+  formStore.updateMetricsValues(0, "PROSECUTION_STAFF", "2000");
 
-  expect(formStore.metricsValues[0].PROSECUTION_STAFF).toEqual(2000);
+  expect(formStore.metricsValues[0].PROSECUTION_STAFF).toEqual("2000");
 
   expect.hasAssertions();
 });
@@ -99,14 +99,14 @@ test("disaggregation dimension value handler updates the disaggregation dimensio
     "PROSECUTION_STAFF",
     "PROSECUTION_STAFF_TYPE",
     "SUPPORT",
-    200,
+    "200",
     false
   );
 
   expect(
     formStore.disaggregations[0].PROSECUTION_STAFF.PROSECUTION_STAFF_TYPE
       .SUPPORT
-  ).toEqual(200);
+  ).toEqual("200");
 
   expect.hasAssertions();
 });
@@ -116,12 +116,13 @@ test("context value handler updates the context value", () => {
     0,
     "PROSECUTION_STAFF",
     "PROGRAMMATIC_OR_MEDICAL_STAFF",
-    100
+    "100",
+    true
   );
 
   expect(
     formStore.contexts[0].PROSECUTION_STAFF.PROGRAMMATIC_OR_MEDICAL_STAFF
-  ).toEqual(100);
+  ).toEqual("100");
 
   expect.hasAssertions();
 });

@@ -128,9 +128,11 @@ export const InputLabel = styled.label<InputLabelProps>`
 
 type InputContextLabelProps = {
   isDisabled?: boolean;
+  error?: string;
 };
 
 export const InputContextLabel = styled.span<InputContextLabelProps>`
+  ${({ error }) => error && `color: ${palette.solid.red};`};
   ${({ isDisabled }) => isDisabled && `color: ${palette.highlight.grey4};`}
   font-size: ${rem("12px")};
   line-height: 16px;
@@ -207,7 +209,9 @@ export const TextInput: React.FC<TextInputProps> = ({
       </InputLabel>
 
       {/* Context Description (appears below text input) */}
-      <InputContextLabel isDisabled={disabled}>{context}</InputContextLabel>
+      <InputContextLabel isDisabled={disabled} error={error}>
+        {error || context}
+      </InputContextLabel>
 
       {/* Value Label Chip (appears inside of text input) */}
       <NotificationLabel

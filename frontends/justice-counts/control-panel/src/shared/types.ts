@@ -87,11 +87,11 @@ export interface CreateReportFormValuesType extends Record<string, unknown> {
 }
 
 export interface FormContexts {
-  [contextKey: string]: string | number;
+  [contextKey: string]: string;
 }
 
 export interface FormDimensions {
-  [dimensionKey: string]: string | number;
+  [dimensionKey: string]: string;
 }
 
 export interface FormDisaggregations {
@@ -109,7 +109,7 @@ export interface FormReport {
 }
 
 export interface FormStoreMetricValue {
-  [metricKey: string]: number | string;
+  [metricKey: string]: string;
 }
 export interface FormStoreMetricValues {
   [reportID: string]: FormStoreMetricValue;

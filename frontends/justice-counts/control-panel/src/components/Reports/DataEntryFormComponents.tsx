@@ -28,11 +28,6 @@ import { useStore } from "../../stores";
 import { combineTwoKeyNames } from "../../utils";
 import { BinaryRadioButton, TextInput } from "../Forms";
 
-const sanitizeValue = (value: string): string | number => {
-  /** TODO(#12850): extend function to trim and remove commas */
-  return value === "0" ? 0 : Number(value) || value;
-};
-
 interface MetricTextInputProps {
   reportID: number;
   metric: Metric;
@@ -44,7 +39,7 @@ export const MetricTextInput = observer(
     const { metricsValues, updateMetricsValues, formErrors } = formStore;
 
     const handleMetricChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-      updateMetricsValues(reportID, metric.key, sanitizeValue(e.target.value));
+      updateMetricsValues(reportID, metric.key, e.target.value);
 
     return (
       <TextInput
@@ -59,7 +54,7 @@ export const MetricTextInput = observer(
         value={
           metricsValues[reportID]?.[metric.key] !== undefined
             ? metricsValues[reportID][metric.key]
-            : (metric.value as string) || ""
+            : (metric.value?.toString() as string) || ""
         }
         required
       />
@@ -99,7 +94,7 @@ export const DisaggregationDimensionTextInput = observer(
         metric.key,
         disaggregation.key,
         dimension.key,
-        sanitizeValue(e.target.value),
+        e.target.value,
         disaggregation.required
       );
 
@@ -123,7 +118,7 @@ export const DisaggregationDimensionTextInput = observer(
               ]
             : (metric.disaggregations?.[disaggregationIndex]?.dimensions?.[
                 dimensionIndex
-              ].value as string) || ""
+              ].value?.toString() as string) || ""
         }
         required={disaggregation.required}
       />
@@ -146,7 +141,8 @@ export const BinaryRadioButtonInputs = observer(
         reportID,
         metric.key,
         context.key,
-        sanitizeValue(e.target.value)
+        e.target.value,
+        context.required
       );
 
     return (
@@ -189,7 +185,8 @@ export const AdditionalContextInput = observer(
         reportID,
         metric.key,
         context.key,
-        sanitizeValue(e.target.value),
+        e.target.value,
+        context.required,
         context.type
       );
 
@@ -204,10 +201,10 @@ export const AdditionalContextInput = observer(
         value={
           contexts?.[reportID]?.[metric.key]?.[context.key] !== undefined
             ? contexts[reportID]?.[metric.key][context.key]
-            : (metric.contexts[contextIndex].value as string) || ""
+            : (metric.contexts[contextIndex].value?.toString() as string) || ""
         }
         additionalContext
-        error={formErrors[reportID]?.[metric.key][context.key]}
+        error={formErrors[reportID]?.[metric.key]?.[context.key]}
       />
     );
   }

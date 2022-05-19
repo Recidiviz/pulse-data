@@ -56,3 +56,48 @@ export const combineTwoKeyNames = (
 ) => {
   return `${key1}${separator || "_"}${key2}`;
 };
+
+/**
+ * Remove commas, spaces and trim string
+ *
+ * @returns a trimmed string free from spaces and commas
+ * @example "   1,000,00  0 " becomes "1000000"
+ */
+
+export const removeCommaSpaceAndTrim = (
+  value: string | undefined
+): string | undefined => {
+  return value?.replaceAll(",", "").replaceAll(" ", "").trim();
+};
+
+/**
+ * Sanitize by formatting and converting string input to appropriate value for backend.
+ *
+ * @param value input value
+ * @param previousValue previously saved value retrieved from the backend
+ * @returns
+ * * `previousValue` from the backend if `value` is undefined
+ * * `null` for empty string or no previous value
+ * * number `0` for true zeros ("0", "0.000", etc.)
+ * * `value` converted to number
+ * * `value` itself (if it is not a number)
+ */
+
+export const sanitizeInputValue = (
+  value: string | undefined,
+  previousValue: string | number | boolean | null | undefined
+): string | number | boolean | null | undefined => {
+  const cleanValue = removeCommaSpaceAndTrim(value);
+
+  if (value === undefined) {
+    return previousValue;
+  }
+
+  if (cleanValue === "" || (Number(previousValue) !== 0 && !previousValue)) {
+    return null;
+  }
+  if (Number(cleanValue) === 0) {
+    return 0;
+  }
+  return Number(cleanValue) || value;
+};

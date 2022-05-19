@@ -187,6 +187,35 @@ test("expect negative number value to add field error (formErrors should contain
   fireEvent.change(input, { target: { value: "-1000" } });
 
   expect(JSON.stringify(rootStore.formStore.formErrors[0])).toBe(
-    JSON.stringify({ PROSECUTION_STAFF: { PROSECUTION_STAFF: "Error" } })
+    JSON.stringify({
+      PROSECUTION_STAFF: {
+        PROSECUTION_STAFF: "Please enter a valid number.",
+      },
+    })
+  );
+});
+
+test("expect empty value in required field to add field error (formErrors should contain an error property for the field)", () => {
+  render(
+    <StoreProvider>
+      <MemoryRouter initialEntries={["/reports/0"]}>
+        <Routes>
+          <Route path="/reports/:id" element={<ReportDataEntry />} />
+        </Routes>
+      </MemoryRouter>
+    </StoreProvider>
+  );
+
+  const input = screen.getAllByLabelText("Total Staff")[0];
+
+  fireEvent.change(input, { target: { value: "" } });
+
+  expect(JSON.stringify(rootStore.formStore.formErrors[0])).toBe(
+    JSON.stringify({
+      PROSECUTION_STAFF: {
+        PROSECUTION_STAFF:
+          "This is a required field. Please enter a valid number.",
+      },
+    })
   );
 });
