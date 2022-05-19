@@ -68,6 +68,7 @@ class JusticeCountsDatabaseTestCase(TestCase):
         # Auto-generate all tables that exist in our schema in this database
         self.engine = self.get_engine()
         self.database_key.declarative_meta.metadata.create_all(self.engine)
+        self.maxDiff = None
 
     def get_engine(self) -> Engine:
         """Return the Engine that this test class should use to connect to

@@ -68,22 +68,6 @@ class TestJusticeCountsReportMetric(TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Not all members of the dimension enum have a reported value",
-        ):
-            ReportMetric(
-                key=law_enforcement.annual_budget.key,
-                value=100000,
-                aggregated_dimensions=[
-                    ReportedAggregatedDimension(
-                        dimension_to_value={
-                            SheriffBudgetType.DETENTION: 50000,
-                        }
-                    )
-                ],
-            )
-
-        with self.assertRaisesRegex(
-            ValueError,
             "Sums across dimension metric/law_enforcement/budget/type do not equal the total",
         ):
             ReportMetric(

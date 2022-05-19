@@ -55,16 +55,39 @@ class ReportInterface:
         dimension_datapoints: List[schema.Datapoint] = attr.field(factory=list)
         aggregated_value: Optional[int] = None
 
-        def get_reported_contexts(self) -> List[ReportedContext]:
-            return [
-                ReportedContext(key=datapoint.context_key, value=datapoint.get_value())
+        def get_reported_contexts(
+            self, metric_definition: MetricDefinition
+        ) -> List[ReportedContext]:
+            """
+            - This method first determines which contexts we expect for this dimension definition
+            - Then it looks at the contexts already reported in the database, and fills in any of
+            the expected contexts that have already been reported with their reported value
+            """
+            context_key_to_context_value = {
+                datapoint.context_key: datapoint.get_value()
                 for datapoint in self.context_datapoints
+            }
+            return [
+                ReportedContext(
+                    key=context.key, value=context_key_to_context_value.get(context.key)
+                )
+                for context in metric_definition.contexts
             ]
 
         def get_reported_aggregated_dimensions(
-            self,
+            self, metric_definition: MetricDefinition
         ) -> List[ReportedAggregatedDimension]:
-            """Parses aggregated dimension datapoints to ReportedAggregatedDimensions"""
+            """
+            - This method first looks at all dimensions that have already been reported in
+            the database, and extracts them into a dictionary dimension_id_to_dimension_values_dicts.
+            - As we fill out this dictionary, we make sure that each dimension_values dict is "complete",
+            i.e. contains all member values for that dimension. If one of the members hasn't been reported yet, it's value will be None.
+            - It's possible that not all dimensions we expect for this metric are in this dictionary,
+            i.e. if the user hasn't filled out any values for a particular dimension yet.
+            - Thus, at the end of the function, we look at all the dimensions that are expected for this metric,
+            and if one doesn't exist in the dictionary, we add it with all values set to None.
+            """
+
             # dimension_id_to_dimension_values_dicts maps dimension identifier to their correspoinding dimension_to_values dictionary
             # e.g global/gender/restricted -> {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20...}
             dimension_id_to_dimension_values_dicts: Dict[
@@ -86,25 +109,38 @@ class ReportInterface:
                     dimension_datapoint.dimension_identifier_to_member.values()
                 ).pop()
 
-                curr_dimension_to_values = dimension_id_to_dimension_values_dicts.get(
-                    dimension_identifier, {}
-                )  # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10}
                 dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
                     dimension_identifier
                 ]  # example: dimension_class = GenderRestricted
+
+                curr_dimension_to_values = dimension_id_to_dimension_values_dicts.get(
+                    dimension_identifier,
+                    {d: None for d in dimension_class},
+                )  # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: None, GenderRestricted.NON_BINARY: None...}
+
                 curr_dimension_to_values[
                     dimension_class[dimension_value]
                 ] = dimension_datapoint.get_value()
                 # update curr_dimension_to_values to add new dimension datapoint.
-                # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20...}
+                # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
                 dimension_id_to_dimension_values_dicts[
                     dimension_identifier
                 ] = curr_dimension_to_values
-                # update dimension_id_to_dimension_values_dicts dictionary -> {"global/race_and_ethnicity": {RaceAndEthnicity.BLACK: 20, RaceAndEthnicity.WHITE: 10}
+                # update dimension_id_to_dimension_values_dicts dictionary -> {"global/gender/restricted": {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
 
             return [
-                ReportedAggregatedDimension(dimension_to_value=dimension_to_value)
-                for dimension_to_value in dimension_id_to_dimension_values_dicts.values()
+                ReportedAggregatedDimension(
+                    dimension_to_value=dimension_id_to_dimension_values_dicts.get(
+                        aggregated_dimension.dimension_identifier(),
+                        {
+                            d: None
+                            for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
+                                aggregated_dimension.dimension.dimension_identifier()
+                            ]
+                        },
+                    )
+                )
+                for aggregated_dimension in metric_definition.aggregated_dimensions
                 or []
             ]
 
@@ -275,8 +311,8 @@ class ReportInterface:
             )
 
         # Next, add a datapoint for each dimension with a value
-        for dimension in report_metric.aggregated_dimensions or []:
-            for d, value in dimension.dimension_to_value.items():
+        for reported_aggregated_dimension in report_metric.aggregated_dimensions or []:
+            for d, value in reported_aggregated_dimension.dimension_to_value.items():
                 # Breakdowns with no value won't get a row in the dimension table.
                 if value is not None:
                     DatapointInterface.add_datapoint(
@@ -385,12 +421,19 @@ class ReportInterface:
             reported_datapoints = metric_key_to_data_points.get(
                 metric_definition.key, ReportInterface.DatapointsForMetricDefinition()
             )
+            reported_contexts = reported_datapoints.get_reported_contexts(
+                # convert context datapoints to ReportedContexts
+                metric_definition=metric_definition
+            )
             report_metrics.append(
                 ReportMetric(
                     key=metric_definition.key,
                     value=reported_datapoints.aggregated_value,
-                    contexts=reported_datapoints.get_reported_contexts(),
-                    aggregated_dimensions=reported_datapoints.get_reported_aggregated_dimensions(),
+                    contexts=reported_contexts,
+                    aggregated_dimensions=reported_datapoints.get_reported_aggregated_dimensions(
+                        # convert dimension datapoints to ReportedAggregatedDimensions
+                        metric_definition=metric_definition
+                    ),
                 )
             )
 
