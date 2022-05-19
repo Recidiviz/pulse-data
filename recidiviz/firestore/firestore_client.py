@@ -17,11 +17,13 @@
 """Client wrapper for interacting with Firestore."""
 import abc
 import logging
-from typing import Dict, Optional
+from datetime import datetime
+from typing import Dict, Optional, Union
 
 from google.cloud import firestore
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
+from google.cloud.firestore_v1.query import Query
 
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
@@ -59,6 +61,12 @@ class FirestoreClient(abc.ABC):
     @abc.abstractmethod
     def delete_collection(self, collection_path: str) -> None:
         """Deletes a collection from Firestore."""
+
+    @abc.abstractmethod
+    def delete_old_documents(
+        self, collection_path: str, timestamp_field: str, cutoff: datetime
+    ) -> None:
+        """Deletes documents timestamped before the cutoff from a Firestore collection."""
 
 
 class FirestoreClientImpl(FirestoreClient):
@@ -101,18 +109,34 @@ class FirestoreClientImpl(FirestoreClient):
     def delete_collection(self, collection_path: str) -> None:
         logging.info('Deleting collection "%s"', collection_path)
         collection = self.get_collection(collection_path)
-        total_docs_deleted = self._delete_collection_batch(collection)
+        total_docs_deleted = self._delete_documents_batch(collection)
         logging.info(
             'Deleted %d documents from collection "%s"',
             total_docs_deleted,
             collection_path,
         )
 
-    def _delete_collection_batch(
-        self, collection: CollectionReference, deleted_so_far: int = 0
+    def delete_old_documents(
+        self, collection_path: str, timestamp_field: str, cutoff: datetime
+    ) -> None:
+        logging.info(
+            'Deleting documents older than %s from "%s"', cutoff, collection_path
+        )
+        collection = self.get_collection(collection_path)
+        total_docs_deleted = self._delete_documents_batch(
+            collection.where(timestamp_field, "<", cutoff)
+        )
+        logging.info(
+            'Deleted %d documents from collection "%s"',
+            total_docs_deleted,
+            collection_path,
+        )
+
+    def _delete_documents_batch(
+        self, query: Union[CollectionReference, Query], deleted_so_far: int = 0
     ) -> int:
         batch = self.batch()
-        docs = collection.limit(FIRESTORE_DELETE_BATCH_SIZE).stream()
+        docs = query.limit(FIRESTORE_DELETE_BATCH_SIZE).stream()
         deleted_count = 0
 
         for doc in docs:
@@ -122,8 +146,6 @@ class FirestoreClientImpl(FirestoreClient):
         batch.commit()
 
         if deleted_count >= FIRESTORE_DELETE_BATCH_SIZE:
-            return self._delete_collection_batch(
-                collection, deleted_so_far + deleted_count
-            )
+            return self._delete_documents_batch(query, deleted_so_far + deleted_count)
 
         return deleted_so_far + deleted_count

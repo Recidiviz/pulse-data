@@ -74,20 +74,24 @@ class FakeFileStream:
         return str(self.values_written)
 
 
+# Because we are testing an abstract class, we need to subclass it within this test,
+# which ultimately means we have to patch the individual client methods instead of the
+# entire class (because our test instance already has a reference to the real class,
+# which also references google.cloud at instantiation, which is why we have to patch that too)
+@patch("google.cloud.firestore.Client")
+@patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
+@patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
+@patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents")
+@patch(
+    "recidiviz.practices.etl.practices_etl_delegate.PracticesETLDelegate.get_file_stream"
+)
 class PracticesFirestoreEtlDelegateTest(TestCase):
     """Tests for the Firestore ETL Delegate."""
 
-    @patch("google.cloud.firestore.Client")
-    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
-    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
-    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_collection")
-    @patch(
-        "recidiviz.practices.etl.practices_etl_delegate.PracticesETLDelegate.get_file_stream"
-    )
     def test_run_etl_respects_batching(
         self,
         mock_get_file_stream: mock.MagicMock,
-        mock_delete_collection: mock.MagicMock,
+        mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
         mock_batch_writer: mock.MagicMock,
         mock_get_collection: mock.MagicMock,
         mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
@@ -99,28 +103,42 @@ class PracticesFirestoreEtlDelegateTest(TestCase):
             delegate = TestETLDelegate()
             delegate.run_etl()
 
-        mock_delete_collection.assert_called_once_with("test_collection")
         mock_get_collection.assert_called_once_with("test_collection")
 
-    @patch("google.cloud.firestore.Client")
-    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl")
-    @patch(
-        "recidiviz.practices.etl.practices_etl_delegate.PracticesETLDelegate.get_file_stream"
-    )
     def test_run_etl_timestamp(
         self,
         mock_get_file_stream: mock.MagicMock,
-        mock_firestore_client_impl: mock.MagicMock,
+        mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_batch_writer: mock.MagicMock,
+        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
         mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
     ) -> None:
         """Tests that the ETL Delegate adds timestamp to each loaded record."""
         mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
 
-        mock_firestore_client_impl.batch.return_value = FakeBatchWriter(
-            verify_timestamp=mock_now
-        )
+        mock_batch_writer.return_value = FakeBatchWriter(verify_timestamp=mock_now)
         mock_get_file_stream.return_value = [FakeFileStream(2)]
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate()
             with freeze_time(mock_now):
                 delegate.run_etl()
+
+    def test_run_etl_delete_outdated(
+        self,
+        mock_get_file_stream: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_delete_old_documents: mock.MagicMock,
+        mock_batch_writer: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
+        """Tests that the ETL Delegate deletes records with outdated timestamps"""
+        mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
+
+        with local_project_id_override("test-project"):
+            delegate = TestETLDelegate()
+            with freeze_time(mock_now):
+                delegate.run_etl()
+
+        mock_delete_old_documents.assert_called_once_with(
+            "test_collection", "__loadedAt", mock_now
+        )

@@ -106,7 +106,6 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
             self.COLLECTION_NAME,
         )
         firestore_client = FirestoreClientImpl()
-        firestore_client.delete_collection(self.COLLECTION_NAME)
         batch = firestore_client.batch()
         firestore_collection = firestore_client.get_collection(self.COLLECTION_NAME)
         num_records_to_write = 0
@@ -114,6 +113,7 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
 
         etl_timestamp = datetime.now(timezone.utc)
 
+        # step 1: load new documents
         for file_stream in self.get_file_stream():
             while line := file_stream.readline():
                 row_id, document_fields = self.transform_row(line)
@@ -134,4 +134,9 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
             '%d records written to Firestore collection "%s".',
             total_records_written,
             self.COLLECTION_NAME,
+        )
+
+        # step 2: delete any pre-existing documents that we didn't just overwrite
+        firestore_client.delete_old_documents(
+            self.COLLECTION_NAME, self.timestamp_key, etl_timestamp
         )
