@@ -135,62 +135,77 @@ def get_token_auth_header() -> str:
     return token
 
 
+def build_auth0_authorization_handler(
+    authorization_config: Auth0Config, on_successful_authorization: Callable
+) -> Callable:
+    """Builds a callable which processes Auth0 authorization"""
+
+    def authorization_handler() -> None:
+        """
+        Determines if the access token provided in the request `Authorization` header is valid
+        If it is not valid, raise an exception
+        If it is valid, call our `on_successful_authorization` callback before executing the decorated route
+        """
+        token = get_token_auth_header()
+        unverified_header = jwt.get_unverified_header(token)
+        rsa_key = authorization_config.get_key(unverified_header["kid"])
+
+        if rsa_key:
+            try:
+                payload = jwt.decode(
+                    token,
+                    # `jwt.decode` specifies this argument as a string, but `RSAAlgorithm.prepare_key` accepts an
+                    # instance of `RSAPublicKey`
+                    rsa_key,  # type: ignore
+                    algorithms=authorization_config.algorithms,
+                    issuer=authorization_config.issuer,
+                    audience=authorization_config.audience,
+                )
+            except jwt.ExpiredSignatureError as e:
+                raise AuthorizationError(
+                    code="token_expired",
+                    description="token is expired",
+                ) from e
+            except (
+                jwt.InvalidIssuerError,
+                jwt.InvalidAudienceError,
+                jwt.MissingRequiredClaimError,
+            ) as e:
+                raise AuthorizationError(
+                    code="invalid_claims",
+                    description="incorrect claims, please check the audience and issuer",
+                ) from e
+            except Exception as e:
+                raise AuthorizationError(
+                    code="invalid_header",
+                    description="Unable to parse authentication token.",
+                ) from e
+
+            on_successful_authorization(payload)
+        else:
+            raise AuthorizationError(
+                code="invalid_header",
+                description="Unable to find appropriate key",
+            )
+
+    return authorization_handler
+
+
 def build_auth0_authorization_decorator(
     authorization_config: Auth0Config, on_successful_authorization: Callable
 ) -> Callable:
     """Decorator builder for Auth0 authorization"""
 
+    handle_authorization = build_auth0_authorization_handler(
+        authorization_config, on_successful_authorization
+    )
+
     def decorated(route: Callable) -> Callable:
         @wraps(route)
         def inner(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-            """
-            Determines if the access token provided in the request `Authorization` header is valid
-            If it is not valid, raise an exception
-            If it is valid, call our `on_successful_authorization` callback before executing the decorated route
-            """
-            token = get_token_auth_header()
-            unverified_header = jwt.get_unverified_header(token)
-            rsa_key = authorization_config.get_key(unverified_header["kid"])
+            handle_authorization()
 
-            if rsa_key:
-                try:
-                    payload = jwt.decode(
-                        token,
-                        # `jwt.decode` specifies this argument as a string, but `RSAAlgorithm.prepare_key` accepts an
-                        # instance of `RSAPublicKey`
-                        rsa_key,  # type: ignore
-                        algorithms=authorization_config.algorithms,
-                        issuer=authorization_config.issuer,
-                        audience=authorization_config.audience,
-                    )
-                except jwt.ExpiredSignatureError as e:
-                    raise AuthorizationError(
-                        code="token_expired",
-                        description="token is expired",
-                    ) from e
-                except (
-                    jwt.InvalidIssuerError,
-                    jwt.InvalidAudienceError,
-                    jwt.MissingRequiredClaimError,
-                ) as e:
-                    raise AuthorizationError(
-                        code="invalid_claims",
-                        description="incorrect claims, please check the audience and issuer",
-                    ) from e
-                except Exception as e:
-                    raise AuthorizationError(
-                        code="invalid_header",
-                        description="Unable to parse authentication token.",
-                    ) from e
-
-                on_successful_authorization(payload)
-
-                return route(*args, **kwargs)
-
-            raise AuthorizationError(
-                code="invalid_header",
-                description="Unable to find appropriate key",
-            )
+            return route(*args, **kwargs)
 
         return inner
 

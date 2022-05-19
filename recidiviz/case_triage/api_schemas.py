@@ -18,7 +18,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Type, Union
 
 from flask import g, request
-from marshmallow import Schema, ValidationError, fields
+from marshmallow import RAISE, Schema, ValidationError, fields
 from marshmallow.fields import Field
 from marshmallow_enum import EnumField
 
@@ -99,21 +99,22 @@ class SetHasSeenOnboardingSchema(CamelCaseSchema):
     has_seen_onboarding = fields.Bool(required=True)
 
 
+def load_api_schema(api_schema: Union[type, Type[Schema]], source_data: Any) -> Dict:
+    data: Union[Mapping[str, Any], Iterable[Mapping[str, Any]]]
+
+    try:
+        data = assert_type(source_data, dict)
+    except ValueError:
+        data = assert_type(source_data, list)
+
+    return api_schema(unknown=RAISE).load(data)
+
+
 def requires_api_schema(api_schema: Type[Schema]) -> Callable:
     def inner(route: Callable) -> Callable:
         @wraps(route)
         def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-
-            request_json: Union[Mapping[str, Any], Iterable[Mapping[str, Any]]]
-            try:
-                request_json = assert_type(request.json, dict)
-            except ValueError:
-                request_json = assert_type(request.json, list)
-
-            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
-            g.api_data = api_schema().load(  # pylint: disable=assigning-non-slot
-                request_json
-            )
+            g.api_data = load_api_schema(api_schema, request.json)
 
             return route(*args, **kwargs)
 

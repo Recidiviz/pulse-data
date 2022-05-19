@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ class LibertyToPrisonTransitions(PathwaysBase):
     # Bin of when the transition occurred (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
     time_period = Column(String, nullable=True)
     # Person ID for the transition
-    person_id = Column(Integer, primary_key=True, nullable=False)
+    person_id = Column(String, primary_key=True, nullable=False)
     # Age group of the person when the transition occurred (see recidiviz.calculator.query.bq_utils.add_age_groups)
     age_group = Column(String, nullable=True)
     # Gender of the person

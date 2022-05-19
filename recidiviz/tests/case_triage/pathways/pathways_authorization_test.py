@@ -29,9 +29,9 @@ from recidiviz.utils.auth.auth0 import AuthorizationError, FlaskException
 test_app = Flask("test_pathways_authorization")
 
 
-@test_app.get("/<state_code>")
-def index(state_code: str) -> Response:
-    return make_response(state_code)
+@test_app.get("/<state>")
+def index(state: str) -> Response:
+    return make_response(state)
 
 
 @test_app.get("/")

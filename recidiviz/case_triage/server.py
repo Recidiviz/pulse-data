@@ -36,6 +36,7 @@ from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
+from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
 from recidiviz.case_triage.redis_sessions import RedisSessionInterface
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.util import (
@@ -178,9 +179,11 @@ segment_client = CaseTriageSegmentClient(write_key)
 
 # Routes & Blueprints
 api_blueprint = create_api_blueprint(segment_client, requires_authorization)
+pathways_api_blueprint = create_pathways_api_blueprint()
 auth_blueprint = create_auth_blueprint(authorization_config)
 
 app.register_blueprint(api_blueprint, url_prefix="/api")
+app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
 app.register_blueprint(auth_blueprint, url_prefix="/auth")
 app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
 
