@@ -10,8 +10,17 @@ function write_to_file {
 run_cmd mkdir -p recidiviz/local/gsm/
 
 # Load staging Auth0 configuration. Uses subshell to remove additional output from gcloud util
+# This secret is used by the Control Panel frontend to access the backend
 AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=justice_counts_auth0 --project recidiviz-staging))
 write_to_file "$AUTH0_CONFIGURATION" recidiviz/local/gsm/justice_counts_auth0
+# These secrets are used by the Admin Panel to access the Auth0 Management API and manage our users
+AUTH0_DOMAIN=$(echo $(gcloud secrets versions access latest --secret=justice_counts_auth0_api_domain --project recidiviz-staging))
+AUTH0_CLIENT_ID=$(echo $(gcloud secrets versions access latest --secret=justice_counts_auth0_api_client_id --project recidiviz-staging))
+AUTH0_CLIENT_SECRET=$(echo $(gcloud secrets versions access latest --secret=justice_counts_auth0_api_client_secret --project recidiviz-staging))
+write_to_file "$AUTH0_DOMAIN" recidiviz/local/gsm/justice_counts_auth0_api_domain
+write_to_file "$AUTH0_CLIENT_ID" recidiviz/local/gsm/justice_counts_auth0_api_client_id
+write_to_file "$AUTH0_CLIENT_SECRET" recidiviz/local/gsm/justice_counts_auth0_api_client_secret
+
 
 # Database secrets
 write_to_file 'justice_counts' recidiviz/local/gsm/justice_counts_cloudsql_instance_id

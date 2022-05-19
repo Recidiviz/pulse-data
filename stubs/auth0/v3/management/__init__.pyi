@@ -14,15 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from recidiviz.auth.auth0_client import Auth0AppMetadata
+from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0User
 
 from ..rest import RestClientOptions
 
 class Users:
-    def list(self, per_page: int, fields: List[str], q: str) -> Dict[str, Any]: ...
+    def list(
+        self, per_page: int, fields: List[str], q: Optional[str] = None
+    ) -> Dict[str, Any]: ...
     def update(self, id: str, body: Dict[str, Auth0AppMetadata]) -> None: ...
+    def get(self, id: str) -> Auth0User: ...
 
 class Auth0:
     users: Users

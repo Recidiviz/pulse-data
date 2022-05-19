@@ -14,34 +14,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { SearchOutlined } from "@ant-design/icons";
 import {
-  PageHeader,
-  Table,
+  Button,
   Form,
   Input,
-  Button,
-  Spin,
-  Typography,
   message,
+  PageHeader,
   Select,
   Space,
+  Spin,
+  Table,
+  Typography,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import * as React from "react";
-import { SearchOutlined } from "@ant-design/icons";
-import { getUsers, createUser, getAgencies } from "../../AdminPanelAPI";
+import { createUser, getAgencies, getUsers } from "../../AdminPanelAPI";
+import { createOrUpdateUser } from "../../AdminPanelAPI/JusticeCountsTools";
+import { useFetchedDataJSON } from "../../hooks";
+import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
   CreateUserRequest,
   CreateUserResponse,
-  UsersResponse,
   ErrorResponse,
   User,
+  UsersResponse,
 } from "./constants";
-import { useFetchedDataJSON } from "../../hooks";
-import { formLayout, formTailLayout } from "../constants";
-import { createOrUpdateUser } from "../../AdminPanelAPI/JusticeCountsTools";
 
 const UserProvisioningView = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = React.useState(false);
@@ -51,30 +51,30 @@ const UserProvisioningView = (): JSX.Element => {
     useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
 
-  const onChange = async (email: string, agencyId: number) => {
+  const onChange = async (email: string, agencyIds: number[]) => {
     try {
-      const response = await createOrUpdateUser(email, [agencyId]);
+      const response = await createOrUpdateUser(email, agencyIds);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
         return;
       }
       message.success(
-        `"${email}" moved to "${
-          agenciesData?.agencies.find((agency) => agency.id === agencyId)?.name
-        }"!`
+        `"${email}" moved to "${agenciesData?.agencies
+          .filter((agency) => agencyIds.includes(agency.id))
+          ?.map((agency) => agency.name)}"!`
       );
     } catch (err) {
       message.error(`An error occured: ${err}`);
     }
   };
 
-  const onFinish = async ({ email, agencyId, name }: CreateUserRequest) => {
+  const onFinish = async ({ email, agencyIds, name }: CreateUserRequest) => {
     const emailTrimmed = email.trim();
     const nameTrimmed = name?.trim();
     setShowSpinner(true);
     try {
-      const response = await createUser(emailTrimmed, [agencyId], nameTrimmed);
+      const response = await createUser(emailTrimmed, agencyIds, nameTrimmed);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         setShowSpinner(false);
@@ -140,6 +140,21 @@ const UserProvisioningView = (): JSX.Element => {
 
   const columns = [
     {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      ...getColumnSearchProps("id"),
+      width: "10%",
+    },
+    {
+      title: "Auth0 ID",
+      dataIndex: "auth0_user_id",
+      key: "auth0_user_id",
+      ...getColumnSearchProps("auth0_user_id"),
+      width: "10%",
+      ellipsis: true,
+    },
+    {
       title: "Email",
       dataIndex: "email_address",
       key: "email_address",
@@ -156,17 +171,19 @@ const UserProvisioningView = (): JSX.Element => {
       dataIndex: "agencies",
       key: "agency",
       render: (agencies: Agency[], { email_address: email }: User) => {
-        const [currentAgency] = agencies;
+        const currentAgencies = agencies;
         return (
           <Select
-            defaultValue={currentAgency?.id}
+            mode="multiple"
+            allowClear
+            defaultValue={currentAgencies.map((agency) => agency.id)}
             showSearch
             optionFilterProp="children"
             disabled={showSpinner}
             filterOption={(input, option) =>
               option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
-            onChange={(agencyId: number) => onChange(email, agencyId)}
+            onChange={(agencyIds: number[]) => onChange(email, agencyIds)}
             style={{ minWidth: 250 }}
           >
             {/* #TODO(#12091): Replace with debounced search bar */}
@@ -214,6 +231,8 @@ const UserProvisioningView = (): JSX.Element => {
         </Form.Item>
         <Form.Item label="Agency" name="agencyId" rules={[{ required: true }]}>
           <Select
+            mode="multiple"
+            allowClear
             showSearch
             optionFilterProp="children"
             disabled={showSpinner}
