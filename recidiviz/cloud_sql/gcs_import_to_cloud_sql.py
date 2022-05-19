@@ -36,7 +36,6 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOpportunity,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -140,7 +139,7 @@ def _recreate_table(database_key: SQLAlchemyDatabaseKey, model_sql: ModelSQL) ->
 
 
 def _import_csv_to_temp_table(
-    schema_type: SchemaType,
+    database_key: SQLAlchemyDatabaseKey,
     tmp_table_name: str,
     gcs_uri: GcsfsFilePath,
     columns: List[str],
@@ -155,7 +154,7 @@ def _import_csv_to_temp_table(
 
     cloud_sql_client = CloudSQLClientImpl()
     instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
-        schema_type=schema_type
+        schema_type=database_key.schema_type
     )
     if instance_name is None:
         raise ValueError("Could not find instance name.")
@@ -163,6 +162,7 @@ def _import_csv_to_temp_table(
     # Create temp table with CSV file
     operation_id = cloud_sql_client.import_gcs_csv(
         instance_name=instance_name,
+        db_name=database_key.db_name,
         table_name=tmp_table_name,
         gcs_uri=gcs_uri,
         columns=columns,
@@ -181,13 +181,12 @@ def _import_csv_to_temp_table(
 
 
 def import_gcs_csv_to_cloud_sql(
-    schema_type: SchemaType,
+    database_key: SQLAlchemyDatabaseKey,
     model: SQLAlchemyModelType,
     gcs_uri: GcsfsFilePath,
     columns: List[str],
     region_code: Optional[str] = None,
     seconds_to_wait: int = 60 * 5,  # 5 minutes
-    db_name: Optional[str] = None,
 ) -> None:
     """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
     results to the temporary table, and then swapping the contents of the table.
@@ -195,12 +194,6 @@ def import_gcs_csv_to_cloud_sql(
     If a region_code is provided, selects all rows in the destination_table that do not equal the region_code and
     inserts them into the temp table before swapping.
     """
-    database_key = (
-        SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
-        if db_name is None
-        else SQLAlchemyDatabaseKey(schema_type=schema_type, db_name=db_name)
-    )
-
     destination_table = model.__tablename__
 
     # Generate DDL statements for the temporary table
@@ -216,7 +209,7 @@ def import_gcs_csv_to_cloud_sql(
             session.execute(query)
 
     _import_csv_to_temp_table(
-        schema_type=schema_type,
+        database_key=database_key,
         tmp_table_name=temporary_table.name,
         gcs_uri=gcs_uri,
         columns=columns,

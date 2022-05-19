@@ -152,6 +152,7 @@ class CloudSQLClientImpl:
     def import_gcs_csv(
         self,
         instance_name: str,
+        db_name: str,
         table_name: str,
         gcs_uri: GcsfsFilePath,
         columns: List[str],
@@ -166,7 +167,7 @@ class CloudSQLClientImpl:
                         "columns": columns,
                         "table": table_name,
                     },
-                    "database": "postgres",
+                    "database": db_name,
                     "fileType": "CSV",
                     "uri": f"gs://{gcs_uri.abs_path()}",
                 },

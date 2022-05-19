@@ -114,7 +114,7 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
         )
 
         import_gcs_csv_to_cloud_sql(
-            schema_type=SchemaType.CASE_TRIAGE,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
             model=DashboardUserRestrictions,
             gcs_uri=csv_path,
             columns=view_builder.columns,
