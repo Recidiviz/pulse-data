@@ -20,9 +20,9 @@ from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from sqlalchemy import Column, Index, Integer, String, Table
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.sql.ddl import CreateIndex, CreateTable, SetColumnComment
+from sqlalchemy import Column, Index, Integer, String, Table, Text
+from sqlalchemy.orm import DeclarativeMeta, declarative_base
+from sqlalchemy.sql.ddl import CreateIndex, CreateTable, DDLElement, SetColumnComment
 
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     ModelSQL,
@@ -70,6 +70,15 @@ def build_list_unique_indexes_query(schema: str, table: str) -> str:
           AND pg_namespace_table.nspname = '{schema}'
           AND pg_class_table.relname = '{table}';
   """
+
+
+FakeBase: DeclarativeMeta = declarative_base()
+
+
+class FakeModel(FakeBase):
+    __tablename__ = "fake_model"
+    id = Column(Integer, primary_key=True, index=True)
+    comment = Column(Text)
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -134,6 +143,38 @@ class TestGCSImportToCloudSQL(TestCase):
                 f"VALUES {','.join(csv_values)}"
             )
             return "fake-id"
+
+    @patch(f"{import_gcs_csv_to_cloud_sql.__module__}.SessionFactory.using_database")
+    def test_import_gcs_csv_queries(self, session_mock: MagicMock) -> None:
+        """Smoke test of queries issued to a database"""
+        execute_mock = session_mock.return_value.__enter__.return_value.execute
+
+        import_gcs_csv_to_cloud_sql(
+            database_key=self.database_key,
+            model=FakeModel,
+            gcs_uri=GcsfsFilePath.from_absolute_path(
+                "gs://recidiviz-test-dashboard-event-level-data/US_TN/fake_model.csv"
+            ),
+            columns=["id", "comment"],
+        )
+
+        issued_ddl_statements = [
+            str(call.args[0]).strip()
+            for call in execute_mock.mock_calls
+            if len(call.args) and isinstance(call.args[0], (str, DDLElement))
+        ]
+
+        self.assertEqual(
+            [
+                "DROP TABLE IF EXISTS tmp__fake_model",
+                "CREATE TABLE tmp__fake_model (\n\tid INTEGER NOT NULL, \n\tcomment TEXT, \n\tPRIMARY KEY (id)\n)",
+                "CREATE INDEX ix_tmp__fake_model_id ON tmp__fake_model (id)",
+                "DROP TABLE IF EXISTS fake_model",
+                "ALTER TABLE tmp__fake_model RENAME TO fake_model",
+                "ALTER INDEX ix_tmp__fake_model_id RENAME TO ix_fake_model_id",
+            ],
+            issued_ddl_statements,
+        )
 
     def test_import_gcs_csv_to_cloud_sql_swaps_tables(self) -> None:
         """Assert that the temp table and destination are successfully swapped."""
