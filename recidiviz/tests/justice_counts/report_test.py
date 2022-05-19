@@ -131,6 +131,66 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 new_annual_report.date_range_end, datetime.date(2023, 3, 1)
             )
 
+    def test_create_recurring_report(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add_all(
+                [
+                    self.test_schema_objects.test_agency_A,
+                    self.test_schema_objects.test_user_A,
+                ]
+            )
+
+            session.flush()
+            session.refresh(self.test_schema_objects.test_agency_A)
+            session.refresh(self.test_schema_objects.test_user_A)
+
+            user_id = UserAccountInterface.get_user_by_auth0_user_id(
+                session=session,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            ).id
+            agency_id = self.test_schema_objects.test_agency_A.id
+
+            recurring_report = ReportInterface.create_report(
+                session=session,
+                agency_id=agency_id,
+                user_account_id=user_id,
+                month=1,
+                year=2022,
+                frequency=schema.ReportingFrequency.MONTHLY.value,
+                is_recurring=True,
+            )
+
+            self.assertEqual(recurring_report.is_recurring, True)
+            self.assertIsNone(recurring_report.recurring_report)
+
+            child_report = ReportInterface.create_report(
+                session=session,
+                agency_id=agency_id,
+                user_account_id=user_id,
+                month=2,
+                year=2022,
+                frequency=schema.ReportingFrequency.MONTHLY.value,
+                is_recurring=False,
+                recurring_report=recurring_report,
+            )
+
+            self.assertEqual(child_report.is_recurring, False)
+            self.assertEqual(child_report.recurring_report, recurring_report)
+            self.assertEqual(recurring_report.children, [child_report])
+
+            child_report_2 = ReportInterface.create_report(
+                session=session,
+                agency_id=agency_id,
+                user_account_id=user_id,
+                month=3,
+                year=2022,
+                frequency=schema.ReportingFrequency.MONTHLY.value,
+                is_recurring=False,
+                recurring_report=recurring_report,
+            )
+
+            self.assertEqual(recurring_report.children, [child_report, child_report_2])
+
     def test_update_report_metadata(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add_all(
