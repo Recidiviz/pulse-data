@@ -36,48 +36,52 @@ from recidiviz.utils.types import assert_type
 def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Justice Counts Admin Panel API routes to an input Blueprint."""
 
-    @bp.route("/api/justice_counts_tools/agencies", methods=["GET", "POST"])
+    @bp.route("/api/justice_counts_tools/agencies", methods=["GET"])
     @requires_gae_auth
-    def agencies() -> Tuple[Response, HTTPStatus]:
-        """On GET request: Returns all Agency records.
-        On POST request: Creates an Agency and returns the created Agency. Returns an error message if the Agency already exists with that name.
+    def get_all_agencies() -> Tuple[Response, HTTPStatus]:
+        """Returns all Agency records."""
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            return (
+                jsonify(
+                    {
+                        "agencies": [
+                            agency.to_json()
+                            for agency in AgencyInterface.get_agencies(session=session)
+                        ],
+                        "systems": [enum.value for enum in System],
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+    @bp.route("/api/justice_counts_tools/agencies", methods=["POST"])
+    @requires_gae_auth
+    def create_agency() -> Tuple[Response, HTTPStatus]:
+        """Creates an Agency and returns the created Agency.
+        Returns an error message if the Agency already exists with that name.
         """
         try:
             with SessionFactory.using_database(
                 SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
             ) as session:
-                if request.method == "POST":
-                    request_json = assert_type(request.json, dict)
-                    name = assert_type(request_json.get("name"), str)
-                    system = assert_type(request_json.get("system"), str)
-                    state_code = assert_type(request_json.get("state_code"), str)
-                    fips_county_code = assert_type(
-                        request_json.get("fips_county_code"), str
-                    )
-                    agency = AgencyInterface.create_agency(
-                        session=session,
-                        name=name,
-                        system=system,
-                        state_code=state_code,
-                        fips_county_code=fips_county_code,
-                    )
-                    return (
-                        jsonify({"agency": agency.to_json()}),
-                        HTTPStatus.OK,
-                    )
-                # else request.method must be "GET"
+                request_json = assert_type(request.json, dict)
+                name = assert_type(request_json.get("name"), str)
+                system = assert_type(request_json.get("system"), str)
+                state_code = assert_type(request_json.get("state_code"), str)
+                fips_county_code = assert_type(
+                    request_json.get("fips_county_code"), str
+                )
+                agency = AgencyInterface.create_agency(
+                    session=session,
+                    name=name,
+                    system=system,
+                    state_code=state_code,
+                    fips_county_code=fips_county_code,
+                )
                 return (
-                    jsonify(
-                        {
-                            "agencies": [
-                                agency.to_json()
-                                for agency in AgencyInterface.get_agencies(
-                                    session=session
-                                )
-                            ],
-                            "systems": [enum.value for enum in System],
-                        }
-                    ),
+                    jsonify({"agency": agency.to_json()}),
                     HTTPStatus.OK,
                 )
         except IntegrityError as e:
@@ -88,31 +92,37 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 )
             raise e
 
-    @bp.route("/api/justice_counts_tools/users", methods=["GET", "POST", "PUT"])
+    @bp.route("/api/justice_counts_tools/users", methods=["GET"])
     @requires_gae_auth
-    def users() -> Tuple[Response, HTTPStatus]:
-        """On GET request: Returns all UserAccount records.
-        On POST request: Creates a User and returns the created User. Returns an error message if the user already exists with that email address.
+    def get_all_users() -> Tuple[Response, HTTPStatus]:
+        """Returns all UserAccount records."""
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            return (
+                jsonify(
+                    {
+                        "users": [
+                            user.to_json()
+                            for user in UserAccountInterface.get_users(session=session)
+                        ]
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+    @bp.route("/api/justice_counts_tools/users", methods=["POST", "PUT"])
+    @requires_gae_auth
+    def create_or_update_user() -> Tuple[Response, HTTPStatus]:
+        """
+        On POST request: Creates a User and returns the created User.
+            Returns an error message if the user already exists with that email address.
         On PUT request: Creates or updates a User and returns the User.
         """
         try:
             with SessionFactory.using_database(
                 SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
             ) as session:
-                if request.method == "GET":
-                    return (
-                        jsonify(
-                            {
-                                "users": [
-                                    user.to_json()
-                                    for user in UserAccountInterface.get_users(
-                                        session=session
-                                    )
-                                ]
-                            }
-                        ),
-                        HTTPStatus.OK,
-                    )
                 request_json = assert_type(request.json, dict)
                 email = assert_type(request_json.get("email"), str)
                 name = request_json.get("name")
@@ -134,7 +144,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                         jsonify({"error": str(e)}),
                         HTTPStatus.UNPROCESSABLE_ENTITY,
                     )
-
                 return (
                     jsonify({"user": user.to_json()}),
                     HTTPStatus.OK,
