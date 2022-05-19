@@ -38,6 +38,7 @@ class ClientRecordEtlDelegateTest(TestCase):
             "client_record.json",
         )
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
+            # first row is comprehensive
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "200")
@@ -109,7 +110,26 @@ class ClientRecordEtlDelegateTest(TestCase):
                 },
             )
 
+            # second row has none of the nullable fields
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
-            self.assertIsNone(doc_id)
-            self.assertIsNone(row)
+            self.assertEqual(doc_id, "201")
+            self.assertEqual(
+                row,
+                {
+                    "personExternalId": "201",
+                    "pseudonymizedId": "p201",
+                    "stateCode": "US_XX",
+                    "personName": {
+                        "givenNames": "Harry",
+                        "middleNames": "Henry",
+                        "nameSuffix": "",
+                        "surname": "Houdini IV",
+                    },
+                    "officerId": "102",
+                    "currentBalance": 282,
+                    "district": "DISTRICT X",
+                    "supervisionType": "ISC",
+                    "specialConditions": "NULL",
+                },
+            )

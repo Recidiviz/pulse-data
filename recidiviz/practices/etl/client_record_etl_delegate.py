@@ -46,9 +46,6 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
 
-        if not "compliant_reporting_eligible" in data:
-            return None, None
-
         # First fill the non-nullable fields
         new_document = {
             "personExternalId": data["person_external_id"],
@@ -122,7 +119,7 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
             ]
 
         # add nullable objects
-        if data["compliant_reporting_eligible"]:
+        if "compliant_reporting_eligible" in data:
             new_document["compliantReportingEligible"] = {
                 "eligibilityCategory": data["compliant_reporting_eligible"],
                 "currentOffenses": data.get("current_offenses"),
