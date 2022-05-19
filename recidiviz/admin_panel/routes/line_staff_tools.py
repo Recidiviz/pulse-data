@@ -185,7 +185,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             # matches the view id of the corresponding builder here. This invariant isn't enforced
             # in code (yet), but the aim is to preserve this invariant for as long as possible.
             import_gcs_csv_to_cloud_sql(
-                SchemaType.CASE_TRIAGE,
+                SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
                 get_database_entity_by_table_name(case_triage_schema, view_id),
                 csv_path,
                 columns,

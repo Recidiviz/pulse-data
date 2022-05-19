@@ -143,13 +143,14 @@ class TestGCSImportToCloudSQL(TestCase):
         self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
 
         import_gcs_csv_to_cloud_sql(
-            schema_type=SchemaType.CASE_TRIAGE,
+            database_key=self.database_key,
             model=self.model,
             gcs_uri=self.dashboard_user_restrictions_uri,
             columns=self.columns,
         )
         self.mock_cloud_sql_client.import_gcs_csv.assert_called_with(
             instance_name=self.mock_instance_id,
+            db_name="postgres",
             table_name=f"tmp__{self.table_name}",
             gcs_uri=self.dashboard_user_restrictions_uri,
             columns=self.columns,
@@ -191,7 +192,7 @@ class TestGCSImportToCloudSQL(TestCase):
         self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
 
         import_gcs_csv_to_cloud_sql(
-            schema_type=SchemaType.CASE_TRIAGE,
+            database_key=self.database_key,
             model=self.model,
             gcs_uri=self.dashboard_user_restrictions_uri,
             columns=self.columns,
@@ -223,7 +224,9 @@ class TestGCSImportToCloudSQL(TestCase):
                 Exception, "^Error while importing CSV to temp table$"
             ):
                 import_gcs_csv_to_cloud_sql(
-                    schema_type=SchemaType.CASE_TRIAGE,
+                    database_key=SQLAlchemyDatabaseKey.for_schema(
+                        SchemaType.CASE_TRIAGE
+                    ),
                     model=self.model,
                     gcs_uri=self.dashboard_user_restrictions_uri,
                     columns=self.columns,
@@ -250,7 +253,9 @@ class TestGCSImportToCloudSQL(TestCase):
 
             with self.assertRaisesRegex(Exception, "An error occurred!"):
                 import_gcs_csv_to_cloud_sql(
-                    schema_type=SchemaType.CASE_TRIAGE,
+                    database_key=SQLAlchemyDatabaseKey.for_schema(
+                        SchemaType.CASE_TRIAGE
+                    ),
                     model=DashboardUserRestrictions,
                     gcs_uri=self.dashboard_user_restrictions_uri,
                     columns=self.columns,
@@ -265,7 +270,7 @@ class TestGCSImportToCloudSQL(TestCase):
         self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
 
         import_gcs_csv_to_cloud_sql(
-            schema_type=SchemaType.CASE_TRIAGE,
+            database_key=self.database_key,
             model=ETLClient,
             gcs_uri=GcsfsFilePath.from_absolute_path("US_ID/etl_clients.csv"),
             columns=[],
@@ -296,7 +301,7 @@ class TestGCSImportToCloudSQL(TestCase):
         self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
 
         import_gcs_csv_to_cloud_sql(
-            schema_type=SchemaType.CASE_TRIAGE,
+            database_key=self.database_key,
             model=ETLOpportunity,
             gcs_uri=GcsfsFilePath.from_absolute_path("US_ID/etl_opportunities.csv"),
             columns=[],

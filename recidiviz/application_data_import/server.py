@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views im
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
+from recidiviz.case_triage.pathways.pathways_database_manager import (
+    PathwaysDatabaseManager,
+)
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -41,7 +44,6 @@ from recidiviz.metrics.export.export_config import (
 )
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_database_entity_by_table_name,
 )
 from recidiviz.utils import metadata
@@ -94,12 +96,12 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
             state_code + "/" + filename,
         )
     )
+
     import_gcs_csv_to_cloud_sql(
-        SchemaType.PATHWAYS,
+        PathwaysDatabaseManager.database_key_for_state(state_code),
         db_entity,
         csv_path,
         view_builder.columns,
-        db_name=state_code.lower(),
     )
     logging.info("View (%s) successfully imported", view_builder.view_id)
 

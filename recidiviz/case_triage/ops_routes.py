@@ -42,6 +42,7 @@ from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_database_entity_by_table_name,
 )
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value
@@ -75,7 +76,7 @@ def _run_gcs_imports() -> Tuple[str, HTTPStatus]:
         )
 
         import_gcs_csv_to_cloud_sql(
-            SchemaType.CASE_TRIAGE,
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
             get_database_entity_by_table_name(case_triage_schema, builder.view_id),
             csv_path,
             builder.columns,

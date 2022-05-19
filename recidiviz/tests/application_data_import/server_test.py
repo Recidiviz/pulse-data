@@ -26,6 +26,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -102,13 +103,14 @@ class TestApplicationDataImportRoutes(TestCase):
                 f"/import/pathways/US_XX/{self.pathways_view}.csv",
             )
             mock_import_csv.assert_called_with(
-                schema_type=SchemaType.PATHWAYS,
+                database_key=SQLAlchemyDatabaseKey(
+                    schema_type=SchemaType.PATHWAYS, db_name="us_xx"
+                ),
                 model=LibertyToPrisonTransitions,
                 gcs_uri=GcsfsFilePath.from_bucket_and_blob_name(
                     self.bucket, f"US_XX/{self.pathways_view}.csv"
                 ),
                 columns=self.columns,
-                db_name="us_xx",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
