@@ -166,6 +166,8 @@ class ReportInterface:
         year: int,
         month: int,
         frequency: str,
+        is_recurring: bool = False,
+        recurring_report: Optional[schema.Report] = None,
     ) -> schema.Report:
         """Creates empty report in Justice Counts DB"""
         report = ReportInterface.create_report_object(
@@ -174,6 +176,8 @@ class ReportInterface:
             year=year,
             month=month,
             frequency=frequency,
+            is_recurring=is_recurring,
+            recurring_report=recurring_report,
         )
         session.add(report)
         session.commit()
@@ -186,6 +190,8 @@ class ReportInterface:
         year: int,
         month: int,
         frequency: str,
+        is_recurring: bool = False,
+        recurring_report: Optional[schema.Report] = None,
     ) -> schema.Report:
         report_type = (
             ReportingFrequency.MONTHLY.value
@@ -212,6 +218,8 @@ class ReportInterface:
             date_range_end=date_range_end,
             last_modified_at=datetime.datetime.utcnow(),
             modified_by=[user_account_id],
+            is_recurring=is_recurring,
+            recurring_report=recurring_report,
         )
 
     @staticmethod
@@ -234,6 +242,7 @@ class ReportInterface:
             "last_modified_at": report.last_modified_at,
             "editors": editor_names,
             "status": report.status.value,
+            "is_recurring": report.is_recurring,
         }
 
     @staticmethod

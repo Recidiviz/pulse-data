@@ -33,7 +33,13 @@ import re
 from typing import Any, Dict, List, Optional, TypeVar
 
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship, validates
+from sqlalchemy.orm import (
+    DeclarativeMeta,
+    backref,
+    declarative_base,
+    relationship,
+    validates,
+)
 from sqlalchemy.sql.schema import (
     Column,
     ForeignKeyConstraint,
@@ -42,6 +48,7 @@ from sqlalchemy.sql.schema import (
 )
 from sqlalchemy.sql.sqltypes import (
     ARRAY,
+    Boolean,
     Date,
     DateTime,
     Enum,
@@ -312,16 +319,24 @@ class Report(JusticeCountsBase):
     last_modified_at = Column(DateTime)
     # List of ids of users who have modified the report
     modified_by = Column(ARRAY(Integer))
+    # Whether or not the report is "recurring" or not. A recurring report creates a new report on a periodic basis.
+    is_recurring = Column(Boolean)
+    # If a report is created from a recurring report, this refers to the recurring report that created it.
+    recurring_report_id = Column(Integer)
 
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
             UniqueConstraint(source_id, type, instance),
             ForeignKeyConstraint([source_id], [Source.id]),
+            ForeignKeyConstraint([recurring_report_id], ["report.id"]),
         ]
     )
 
     source = relationship(Source)
+    recurring_report = relationship(
+        "Report", uselist=False, remote_side=[id], backref=backref("children")
+    )
 
     report_table_instances = relationship(
         "ReportTableInstance",
