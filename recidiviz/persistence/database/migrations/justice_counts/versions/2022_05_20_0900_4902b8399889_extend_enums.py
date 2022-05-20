@@ -1,19 +1,20 @@
 # pylint: skip-file
-"""extend metric and system enums
+"""extend enums
 
-Revision ID: b91a05e9c518
-Revises: 0111aac99da0
-Create Date: 2022-05-19 10:19:04.479200
+Revision ID: 4902b8399889
+Revises: 1c82a74bc64e
+Create Date: 2022-05-20 09:00:32.960650
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "b91a05e9c518"
-down_revision = "0111aac99da0"
+revision = "4902b8399889"
+down_revision = "1c82a74bc64e"
 branch_labels = None
 depends_on = None
+
 
 old_metric_type_values = [
     "ADMISSIONS",
