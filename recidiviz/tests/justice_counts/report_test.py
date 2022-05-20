@@ -264,6 +264,19 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     [user_c_id, user_a_id],
                 )
 
+            update_datetime = datetime.datetime(2022, 2, 1, 1, 0, 0)
+            with freeze_time(update_datetime):
+                updated_report = ReportInterface.update_report_metadata(
+                    session=session,
+                    report_id=report.id,
+                    status=schema.ReportStatus.PUBLISHED.value,
+                    editor_id=user_a_id,
+                )
+                self.assertEqual(
+                    updated_report.last_modified_at,
+                    update_datetime,
+                )
+
     def test_add_budget_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             ReportInterface.add_or_update_metric(
