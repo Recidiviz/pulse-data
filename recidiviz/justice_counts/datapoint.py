@@ -16,16 +16,13 @@
 # =============================================================================
 """Interface for working with the Datapoint model."""
 import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.base import DimensionBase
-from recidiviz.justice_counts.utils.persistence_utils import (
-    delete_existing,
-    update_existing_or_create,
-)
+from recidiviz.justice_counts.utils.persistence_utils import update_existing_or_create
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -33,9 +30,9 @@ class DatapointInterface:
     """Contains methods for working with Datapoint.
     Datapoints can either be numeric metric values, or contexts associated with a metric.
     In either case, metric_definition_key indicates which metric the datapoint applies to.
-    If context_key is not None, the datapoint is a context.
-    value_type will be numeric for non-context datapoints, and otherwise will indicate the type of context.
-    If dimension_identifier_to_member is not None the numeric value applies to a particular dimension.
+    If context_key is not None, the datapoint is a context. value_type will be numeric for non-context
+    datapoints, and otherwise will indicate the type of context. If dimension_identifier_to_member is not
+    None the numeric value applies to a particular dimension.
     """
 
     @staticmethod
@@ -49,12 +46,15 @@ class DatapointInterface:
         context_key: Optional[ContextKey] = None,
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
-    ) -> schema.Datapoint:
-        """Given a Report and a ReportMetric, add a row to the datapoint table"""
+    ) -> Optional[schema.Datapoint]:
+        """Given a Report and a ReportMetric, add a row to the datapoint table.
+        All datapoints associated with a metric are saved, even if no value was reported.
+        An empty form field is represented by a None value.
+        """
 
         datapoint, existing_datapoint = update_existing_or_create(
             schema.Datapoint(
-                value=str(value),
+                value=str(value) if value is not None else value,
                 report_id=report.id,
                 metric_definition_key=metric_definition_key,
                 context_key=context_key.value if context_key else None,
@@ -74,58 +74,12 @@ class DatapointInterface:
         if existing_datapoint:
             if existing_datapoint.value != datapoint.value:
                 datapoint_history = schema.DatapointHistory(
+                    datapoint_id=existing_datapoint.id,
                     user_account_id=user_account.id,
                     timestamp=current_time,
                     old_value=existing_datapoint.value,
-                    new_value=str(value),
+                    new_value=str(value) if value is not None else value,
                 )
+
                 datapoint.datapoint_histories.append(datapoint_history)
         return datapoint
-
-    @staticmethod
-    def get_aggregation_datapoints_by_report_id(
-        session: Session,
-        report_id: int,
-        metric_definition_key: str,
-        dimension_identifier: str,
-    ) -> List[schema.Datapoint]:
-
-        return (
-            session.query(schema.Datapoint)
-            .filter(
-                schema.Datapoint.report_id == report_id,
-                schema.Datapoint.metric_definition_key == metric_definition_key,
-                schema.Datapoint.dimension_identifier_to_member.is_not(None),
-                schema.Datapoint.dimension_identifier_to_member.has_key(
-                    dimension_identifier
-                ),
-            )
-            .all()
-        )
-
-    @staticmethod
-    def delete_from_reported_metric(
-        session: Session,
-        report: schema.Report,
-        value: Any,
-        metric_definition_key: str,
-        context_key: Optional[ContextKey] = None,
-        value_type: Optional[ValueType] = None,
-        dimension_identifier_to_member: Optional[Dict] = None,
-    ) -> None:
-        # TODO(#12337) Update datapoint histories when datapoint is deleted
-        delete_existing(
-            session,
-            schema.Datapoint(
-                value=value,
-                report_id=report.id,
-                metric_definition_key=metric_definition_key,
-                context_key=context_key,
-                value_type=value_type,
-                start_date=report.date_range_start,
-                end_date=report.date_range_end,
-                report=report,
-                dimension_identifier_to_member=dimension_identifier_to_member,
-            ),
-            schema.Datapoint,
-        )

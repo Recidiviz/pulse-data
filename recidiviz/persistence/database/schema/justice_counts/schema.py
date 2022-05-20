@@ -465,8 +465,9 @@ class Datapoint(JusticeCountsBase):
     # (e.g {"global/gender/restricted": "FEMALE"})
     dimension_identifier_to_member = Column(JSONB, nullable=True)
 
-    # Numeric value of this datapoint. All values are saved as strings.
-    value = Column(String, nullable=False)
+    # Numeric value of this datapoint. All non-null values are saved as strings.
+    # datapoints that represent unreported metric values will have a value of None.
+    value = Column(String, nullable=True)
 
     __table_args__ = tuple(
         [
@@ -494,6 +495,8 @@ class Datapoint(JusticeCountsBase):
 
     def get_value(self) -> Any:
         value = self.value
+        if value is None:
+            return value
         if self.context_key is None or self.value_type == ValueType.NUMBER:
             value = int(value)
         elif self.value_type == ValueType.BOOLEAN:
@@ -593,8 +596,8 @@ class DatapointHistory(JusticeCountsBase):
     datapoint_id = Column(Integer, nullable=False)
     user_account_id = Column(Integer, nullable=False)
     timestamp = Column(DateTime, nullable=False)
-    old_value = Column(String, nullable=False)
-    new_value = Column(String, nullable=False)
+    old_value = Column(String, nullable=True)
+    new_value = Column(String, nullable=True)
 
     __table_args__ = tuple(
         [
