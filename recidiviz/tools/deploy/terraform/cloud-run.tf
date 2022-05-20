@@ -42,12 +42,6 @@ locals {
     google_project_iam_custom_role.gcs-object-and-bucket-viewer.name,
     "roles/logging.logWriter"
   ]
-  application_import_roles = concat(local.cloud_run_common_roles, [
-    "roles/cloudtasks.enqueuer",
-    # Use role_id to get a value known at plan-time so Terraform can calculate the length of
-    # toset(application_import_roles) before the custom role has been created.
-    "roles/${google_project_iam_custom_role.sql-importer.role_id}"
-  ])
 }
 
 moved {
@@ -82,7 +76,7 @@ resource "google_project_iam_member" "case_triage_iam" {
 }
 
 resource "google_project_iam_member" "application_data_import_iam" {
-  for_each = toset(local.application_import_roles)
+  for_each = toset(concat(local.cloud_run_common_roles, ["roles/cloudtasks.enqueuer"]))
   project  = var.project_id
   role     = each.key
   member   = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
