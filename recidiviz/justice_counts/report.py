@@ -167,8 +167,6 @@ class ReportInterface:
         status: Optional[str] = None,
     ) -> schema.Report:
         report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
-        if report.status.value == status and editor_id in report.modified_by:
-            return report
 
         if status and report.status.value != status:
             report.status = schema.ReportStatus[status]
@@ -180,7 +178,9 @@ class ReportInterface:
             # bump most recent modifier to end of list
             modified_by = list(already_modified_by - {editor_id}) + [editor_id]
         report.modified_by = modified_by
-        report.last_modified_at = datetime.datetime.now()
+
+        report.last_modified_at = datetime.datetime.utcnow()
+
         session.commit()
         return report
 
