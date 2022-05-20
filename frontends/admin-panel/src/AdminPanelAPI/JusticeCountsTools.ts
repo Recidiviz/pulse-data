@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { User } from "../components/JusticeCountsTools/constants";
 import { getResource, postWithURLAndBody, putWithURLAndBody } from "./utils";
 
 // Agency Provisioning
@@ -41,26 +42,14 @@ export const getUsers = async (): Promise<Response> => {
   return getResource(`/api/justice_counts_tools/users`);
 };
 
-export const createUser = async (
-  email: string,
-  agencyIds: number[],
-  name?: string
-): Promise<Response> => {
-  return postWithURLAndBody(`/api/justice_counts_tools/users`, {
-    email,
-    agency_ids: agencyIds,
-    name,
-  });
-};
-
 export const createOrUpdateUser = async (
-  email: string,
-  agencyIds?: number[],
-  name?: string
+  user: User,
+  agencyIds?: number[]
 ): Promise<Response> => {
   return putWithURLAndBody(`/api/justice_counts_tools/users`, {
-    email,
+    email: user.email_address,
+    name: user.name,
+    auth0_user_id: user.auth0_user_id,
     agency_ids: agencyIds,
-    name,
   });
 };

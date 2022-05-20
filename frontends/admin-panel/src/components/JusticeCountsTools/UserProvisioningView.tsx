@@ -23,21 +23,16 @@ import {
   PageHeader,
   Select,
   Space,
-  Spin,
   Table,
-  Typography,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import * as React from "react";
-import { createUser, getAgencies, getUsers } from "../../AdminPanelAPI";
+import { getAgencies, getUsers } from "../../AdminPanelAPI";
 import { createOrUpdateUser } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
-import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
-  CreateUserRequest,
-  CreateUserResponse,
   ErrorResponse,
   User,
   UsersResponse,
@@ -51,45 +46,20 @@ const UserProvisioningView = (): JSX.Element => {
     useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
 
-  const onChange = async (email: string, agencyIds: number[]) => {
+  const onChange = async (user: User, agencyIds: number[]) => {
     try {
-      const response = await createOrUpdateUser(email, agencyIds);
+      const response = await createOrUpdateUser(user, agencyIds);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
         return;
       }
       message.success(
-        `"${email}" moved to "${agenciesData?.agencies
+        `"${user.email_address}" moved to "${agenciesData?.agencies
           .filter((agency) => agencyIds.includes(agency.id))
           ?.map((agency) => agency.name)}"!`
       );
     } catch (err) {
-      message.error(`An error occured: ${err}`);
-    }
-  };
-
-  const onFinish = async ({ email, agencyIds, name }: CreateUserRequest) => {
-    const emailTrimmed = email.trim();
-    const nameTrimmed = name?.trim();
-    setShowSpinner(true);
-    try {
-      const response = await createUser(emailTrimmed, agencyIds, nameTrimmed);
-      if (!response.ok) {
-        const { error } = (await response.json()) as ErrorResponse;
-        setShowSpinner(false);
-        message.error(`An error occured: ${error}`);
-        return;
-      }
-      const { user } = (await response.json()) as CreateUserResponse;
-      setUsersData({
-        users: usersData?.users ? [...usersData.users, user] : [user],
-      });
-      form.resetFields();
-      setShowSpinner(false);
-      message.success(`"${emailTrimmed}" added!`);
-    } catch (err) {
-      setShowSpinner(false);
       message.error(`An error occured: ${err}`);
     }
   };
@@ -170,7 +140,7 @@ const UserProvisioningView = (): JSX.Element => {
       title: "Agency",
       dataIndex: "agencies",
       key: "agency",
-      render: (agencies: Agency[], { email_address: email }: User) => {
+      render: (agencies: Agency[], user: User) => {
         const currentAgencies = agencies;
         return (
           <Select
@@ -183,7 +153,7 @@ const UserProvisioningView = (): JSX.Element => {
             filterOption={(input, option) =>
               option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
-            onChange={(agencyIds: number[]) => onChange(email, agencyIds)}
+            onChange={(agencyIds: number[]) => onChange(user, agencyIds)}
             style={{ minWidth: 250 }}
           >
             {/* #TODO(#12091): Replace with debounced search bar */}
@@ -211,50 +181,6 @@ const UserProvisioningView = (): JSX.Element => {
         }}
         rowKey={(user) => user.id}
       />
-      <Form
-        {...formLayout}
-        form={form}
-        onFinish={onFinish}
-        requiredMark={false}
-      >
-        <Typography.Title
-          level={4}
-          style={{ paddingTop: 16, paddingBottom: 8 }}
-        >
-          Add User
-        </Typography.Title>
-        <Form.Item label="Email" name="email" rules={[{ required: true }]}>
-          <Input disabled={showSpinner} />
-        </Form.Item>
-        <Form.Item label="Name" name="name" rules={[{ required: false }]}>
-          <Input disabled={showSpinner} />
-        </Form.Item>
-        <Form.Item label="Agency" name="agencyId" rules={[{ required: true }]}>
-          <Select
-            mode="multiple"
-            allowClear
-            showSearch
-            optionFilterProp="children"
-            disabled={showSpinner}
-            filterOption={(input, option) =>
-              option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
-          >
-            {/* #TODO(#12091): Replace with debounced search bar */}
-            {agenciesData?.agencies.map((agency) => (
-              <Select.Option key={agency.id} value={agency.id}>
-                {agency.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
-        <Form.Item {...formTailLayout}>
-          <Button type="primary" htmlType="submit" disabled={showSpinner}>
-            Submit
-          </Button>
-          {showSpinner && <Spin style={{ marginLeft: 16 }} />}
-        </Form.Item>
-      </Form>
     </>
   );
 };

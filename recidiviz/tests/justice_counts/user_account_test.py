@@ -16,7 +16,6 @@
 # =============================================================================
 """This class implements tests for the Justice Counts UserInterface."""
 
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -65,54 +64,6 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
                 name="User",
                 auth0_user_id="id0",
             )
-
-    def test_create_user(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            # Can create user with just email address
-            UserAccountInterface.create_user(
-                session=session,
-                email_address="user1@test.com",
-            )
-
-            # can create user with auth0_user_id
-            UserAccountInterface.create_user(
-                session=session,
-                email_address="user2@test.com",
-                auth0_user_id="auth0_id",
-            )
-
-            UserAccountInterface.create_user(
-                session=session,
-                email_address="user3@test.com",
-            )
-
-            user1 = UserAccountInterface.get_user_by_email_address(
-                session=session, email_address="user1@test.com"
-            )
-            self.assertEqual(user1.email_address, "user1@test.com")
-
-            user2 = UserAccountInterface.get_user_by_email_address(
-                session=session, email_address="user2@test.com"
-            )
-            self.assertEqual(user2.auth0_user_id, "auth0_id")
-
-            # Cannot create user with the same email address
-            with self.assertRaisesRegex(
-                IntegrityError, "psycopg2.errors.UniqueViolation"
-            ):
-                UserAccountInterface.create_user(
-                    session=session,
-                    email_address="user1@test.com",
-                )
-
-            session.rollback()
-
-            # Cannot create user with invalid email address
-            with self.assertRaisesRegex(ValueError, "Invalid email address"):
-                UserAccountInterface.create_user(
-                    session=session,
-                    email_address="xyz",
-                )
 
     def test_create_or_update_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
