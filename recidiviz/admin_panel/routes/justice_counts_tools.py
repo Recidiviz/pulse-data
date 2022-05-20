@@ -36,6 +36,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils import environment
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.types import assert_type
 
@@ -61,6 +62,13 @@ class JusticeCountsUser:
 
 def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Justice Counts Admin Panel API routes to an input Blueprint."""
+
+    if environment.in_development() or environment.in_gcp():
+        auth0 = Auth0Client(  # nosec
+            domain_secret_name="justice_counts_auth0_api_domain",
+            client_id_secret_name="justice_counts_auth0_api_client_id",
+            client_secret_secret_name="justice_counts_auth0_api_client_secret",
+        )
 
     @bp.route("/api/justice_counts_tools/agencies", methods=["GET"])
     @requires_gae_auth
@@ -124,11 +132,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         """Returns all UserAccount records. Joins the records in our database with the
         records obtained by the Auth0 management API.
         """
-        auth0 = Auth0Client(  # nosec
-            domain_secret_name="justice_counts_auth0_api_domain",
-            client_id_secret_name="justice_counts_auth0_api_client_id",
-            client_secret_secret_name="justice_counts_auth0_api_client_secret",
-        )
         auth0_users = auth0.get_all_users()
 
         with SessionFactory.using_database(
@@ -144,51 +147,41 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
-    @bp.route("/api/justice_counts_tools/users", methods=["POST", "PUT"])
+    @bp.route("/api/justice_counts_tools/users", methods=["PUT"])
     @requires_gae_auth
     def create_or_update_user() -> Tuple[Response, HTTPStatus]:
         """
-        On POST request: Creates a User and returns the created User.
-            Returns an error message if the user already exists with that email address.
-        On PUT request: Creates or updates a User and returns the User.
+        Creates or updates a User and returns the User.
         """
-        try:
-            with SessionFactory.using_database(
-                SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
-            ) as session:
-                request_json = assert_type(request.json, dict)
-                email = assert_type(request_json.get("email"), str)
-                name = request_json.get("name")
-                try:
-                    if request.method == "POST":
-                        user = UserAccountInterface.create_user(
-                            session=session,
-                            email_address=email,
-                            name=name,
-                        )
-                    else:
-                        user = UserAccountInterface.create_or_update_user(
-                            session=session,
-                            email_address=email,
-                            name=name,
-                        )
-                except ValueError as e:
-                    return (
-                        jsonify({"error": str(e)}),
-                        HTTPStatus.UNPROCESSABLE_ENTITY,
-                    )
-
-                return (
-                    jsonify({"user": user.to_json()}),
-                    HTTPStatus.OK,
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            email = assert_type(request_json.get("email"), str)
+            name = request_json.get("name")
+            auth0_user_id = request_json.get("auth0_user_id")
+            agency_ids = request_json.get("agency_ids")
+            try:
+                user = UserAccountInterface.create_or_update_user(
+                    session=session,
+                    email_address=email,
+                    name=name,
                 )
-        except IntegrityError as e:
-            if isinstance(e.orig, UniqueViolation):  # proves the original exception
+                _update_auth0_user_app_metadata(
+                    auth0_client=auth0,
+                    auth0_user_id=auth0_user_id,
+                    agency_ids=agency_ids,
+                )
+            except ValueError as e:
                 return (
-                    jsonify({"error": "User already exists."}),
+                    jsonify({"error": str(e)}),
                     HTTPStatus.UNPROCESSABLE_ENTITY,
                 )
-            raise e
+
+            return (
+                jsonify({"user": user.to_json()}),
+                HTTPStatus.OK,
+            )
 
 
 def _merge_auth0_and_db_users(
@@ -251,3 +244,24 @@ def _merge_auth0_and_db_users(
         ]
 
     return list(all_users_by_email.values())
+
+
+def _update_auth0_user_app_metadata(
+    auth0_client: Auth0Client,
+    auth0_user_id: Optional[str],
+    agency_ids: Optional[List[int]],
+) -> None:
+    """Update the user's Auth0 app_metadata to include the given `agency_ids`."""
+    if agency_ids is None:
+        return
+
+    if auth0_user_id is None:
+        raise ValueError(
+            "Agency_ids were specified, but user has no auth0_user_id, "
+            "so we cannot update their app_metadata to connect them with these agencies."
+        )
+
+    app_metadata = {"agency_ids": agency_ids}
+    auth0_client.update_user_app_metadata(
+        user_id=auth0_user_id, app_metadata=app_metadata
+    )

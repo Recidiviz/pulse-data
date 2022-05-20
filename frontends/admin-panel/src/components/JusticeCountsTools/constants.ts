@@ -48,10 +48,6 @@ export type UsersResponse = {
   users: User[];
 };
 
-export type CreateUserResponse = {
-  user: User;
-};
-
 /* eslint-disable camelcase */
 export enum StateCode {
   us_ak = "Alaska",

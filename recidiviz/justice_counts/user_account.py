@@ -30,26 +30,6 @@ class UserAccountInterface:
     """Contains methods for setting and getting User info."""
 
     @staticmethod
-    def create_user(
-        session: Session,
-        email_address: str,
-        name: Optional[str] = None,
-        auth0_user_id: Optional[str] = None,
-    ) -> UserAccount:
-        """Creates a user"""
-        validate_email_address(email_address)
-
-        user = UserAccount(
-            email_address=email_address,
-            name=name,
-            auth0_user_id=auth0_user_id,
-        )
-
-        session.add(user)
-        session.commit()
-        return user
-
-    @staticmethod
     def create_or_update_user(
         session: Session,
         email_address: str,
