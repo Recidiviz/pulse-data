@@ -294,88 +294,59 @@ class ReportInterface:
 
         Adding (or updating) a metric to a report actually involves adding
         a row to the datapoint table for each value submitted (total and
-        breakdown values) as well as context.
+        breakdown values) as well as context. If no value is reported for a
+        particular field, a new datapoint will be added to the datapoint table
+        with a value of None.
         """
 
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.utcnow()
         metric_definition = METRIC_KEY_TO_METRIC[report_metric.key]
-        if report_metric.value is not None:
-            DatapointInterface.add_datapoint(
-                session=session,
-                user_account=user_account,
-                current_time=current_time,
-                metric_definition_key=metric_definition.key,
-                report=report,
-                value=report_metric.value,
+        DatapointInterface.add_datapoint(
+            session=session,
+            user_account=user_account,
+            current_time=current_time,
+            metric_definition_key=metric_definition.key,
+            report=report,
+            value=report_metric.value,
+        )
+
+        # Next, add a datapoint for each dimension
+        all_dimensions_to_values: Dict[DimensionBase, Optional[float]] = {}
+        for reported_aggregated_dimension in report_metric.aggregated_dimensions or []:
+            all_dimensions_to_values.update(
+                reported_aggregated_dimension.dimension_to_value
             )
 
-        # Next, add a datapoint for each dimension with a value
-        for reported_aggregated_dimension in report_metric.aggregated_dimensions or []:
-            for d, value in reported_aggregated_dimension.dimension_to_value.items():
-                # Breakdowns with no value won't get a row in the dimension table.
-                if value is not None:
-                    DatapointInterface.add_datapoint(
-                        session=session,
-                        user_account=user_account,
-                        current_time=current_time,
-                        metric_definition_key=metric_definition.key,
-                        report=report,
-                        value=value,
-                        dimension=d,
-                    )
-
-        # Finally, add contexts to the datapoint table
-        context_key_to_context_definition = {
-            context.key: context for context in metric_definition.contexts or []
-        }
-        for context in report_metric.contexts or []:
-            if context.value is not None:
-                context_definition = context_key_to_context_definition[context.key]
+        for aggregated_dimension in metric_definition.aggregated_dimensions or []:
+            for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
+                aggregated_dimension.dimension.dimension_identifier()
+            ]:
                 DatapointInterface.add_datapoint(
                     session=session,
                     user_account=user_account,
                     current_time=current_time,
                     metric_definition_key=metric_definition.key,
                     report=report,
-                    value=context.value,
-                    context_key=context_definition.key,
-                    value_type=context_definition.value_type,
+                    value=all_dimensions_to_values.get(d),
+                    dimension=d,
                 )
-        # If any disaggregated dimensions that are defined on the metric
-        # were explicitly not reported by the agency, this means that the agency
-        # decided to remove them, so delete them from the DB
-        definition_dimension_identifiers = {
-            dimension.dimension_identifier()
-            for dimension in report_metric.metric_definition.aggregated_dimensions or []
-        }
-        reported_dimension_identifiers = {
-            dimension.dimension_identifier()
-            for dimension in report_metric.aggregated_dimensions or []
-        }
-        dimension_identifiers_to_delete = (
-            definition_dimension_identifiers - reported_dimension_identifiers
-        )
-        for dimension_identifier in dimension_identifiers_to_delete:
-            datapoints_to_delete = (
-                DatapointInterface.get_aggregation_datapoints_by_report_id(
-                    session=session,
-                    report_id=report.id,
-                    metric_definition_key=metric_definition.key,
-                    dimension_identifier=dimension_identifier,
-                )
-            )
 
-            for datapoint in datapoints_to_delete:
-                DatapointInterface.delete_from_reported_metric(
-                    session=session,
-                    metric_definition_key=metric_definition.key,
-                    report=report,
-                    value=datapoint.value,
-                    context_key=datapoint.context_key,
-                    value_type=datapoint.value_type,
-                    dimension_identifier_to_member=datapoint.dimension_identifier_to_member,
-                )
+        # Finally, add a datapoint for each context
+        context_key_to_value = {
+            context.key: context.value for context in report_metric.contexts or []
+        }
+        for context in metric_definition.contexts or []:
+            DatapointInterface.add_datapoint(
+                session=session,
+                user_account=user_account,
+                current_time=current_time,
+                metric_definition_key=metric_definition.key,
+                report=report,
+                value=context_key_to_value.get(context.key),
+                context_key=context.key,
+                value_type=context.value_type,
+            )
         session.commit()
 
     @staticmethod
@@ -417,19 +388,17 @@ class ReportInterface:
         # For each metric that should be filled out on this report,
         # construct a ReportMetric object
         for metric_definition in metric_definitions:
-
             reported_datapoints = metric_key_to_data_points.get(
                 metric_definition.key, ReportInterface.DatapointsForMetricDefinition()
-            )
-            reported_contexts = reported_datapoints.get_reported_contexts(
-                # convert context datapoints to ReportedContexts
-                metric_definition=metric_definition
             )
             report_metrics.append(
                 ReportMetric(
                     key=metric_definition.key,
                     value=reported_datapoints.aggregated_value,
-                    contexts=reported_contexts,
+                    contexts=reported_datapoints.get_reported_contexts(
+                        # convert context datapoints to ReportedContexts
+                        metric_definition=metric_definition
+                    ),
                     aggregated_dimensions=reported_datapoints.get_reported_aggregated_dimensions(
                         # convert dimension datapoints to ReportedAggregatedDimensions
                         metric_definition=metric_definition

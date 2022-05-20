@@ -395,11 +395,24 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     .one_or_none()
                 )
                 self.assertEqual(report.status, ReportStatus.PUBLISHED)
+                datapoints = report.datapoints
                 self.assertEqual(report.datapoints[0].get_value(), 110)
-                self.assertEqual(report.datapoints[1].get_value(), 2000000)
-                self.assertEqual(report.datapoints[2].get_value(), 1500000)
-                self.assertEqual(report.datapoints[3].get_value(), 500000)
-                self.assertEqual(report.datapoints[4].get_value(), "test context")
+                # Empty CallType dimension values
+                self.assertEqual(datapoints[1].get_value(), None)
+                self.assertEqual(datapoints[2].get_value(), None)
+                self.assertEqual(datapoints[3].get_value(), None)
+                self.assertEqual(datapoints[4].get_value(), None)
+                # Empty contexts from calls_for_service metric
+                self.assertEqual(datapoints[5].get_value(), None)
+                self.assertEqual(datapoints[6].get_value(), None)
+
+                self.assertEqual(datapoints[7].get_value(), 2000000)
+                self.assertEqual(report.datapoints[8].get_value(), 1500000)
+                self.assertEqual(report.datapoints[9].get_value(), 500000)
+                self.assertEqual(report.datapoints[10].get_value(), "test context")
+                self.assertEqual(
+                    report.datapoints[11].get_value(), None
+                )  # empty context from calls from budget metric
 
     def test_user_permissions(self) -> None:
         user_account = self.test_schema_objects.test_user_A

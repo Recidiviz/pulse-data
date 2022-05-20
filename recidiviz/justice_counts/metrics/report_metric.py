@@ -176,6 +176,10 @@ class ReportMetric:
     def validate_value(self, _attribute: attr.Attribute, value: Any) -> None:
         # Validate that for each reported aggregate dimension for which sum_to_total = True,
         # the reported values for this aggregate dimension sum to the total value metric
+
+        if value is None:
+            return
+
         dimension_identifier_to_reported_dimension = {
             dimension.dimension_identifier(): dimension
             for dimension in self.aggregated_dimensions or {}
