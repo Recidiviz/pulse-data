@@ -132,6 +132,11 @@ resource "google_cloud_run_service" "case-triage" {
           value = data.google_secret_manager_secret_version.segment_write_key.secret_data
         }
 
+        env {
+          name  = "AUTH0_CLAIM_NAMESPACE"
+          value = "https://dashboard.recidiviz.org"
+        }
+
         resources {
           limits = {
             cpu    = "1000m"
