@@ -53,7 +53,6 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             prioritized_race_or_ethnicity AS race,
             IFNULL(judicial_district_code_start, 'UNKNOWN') AS judicial_district,
             IFNULL(previous_incarceration.session_length_days, 0) AS previous_incarceration_session_length_days,
-            ROW_NUMBER() OVER (PARTITION BY compartment.state_code, compartment.person_id ORDER BY session_id_end DESC) AS rn,
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment
         LEFT JOIN `{project_id}.{sessions_dataset}.incarceration_super_sessions_materialized` previous_incarceration
         ON compartment.state_code = previous_incarceration.state_code
@@ -84,10 +83,9 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             {length_of_stay} AS prior_length_of_incarceration
         FROM prior_incarcerations
         LEFT JOIN sum_length
-            USING(state_code, person_id)
-        WHERE rn = 1
+            USING(state_code, person_id, transition_date)
     )
-    SELECT {columns} FROM all_transitions
+    SELECT DISTINCT {columns} FROM all_transitions
 """
 
 LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
