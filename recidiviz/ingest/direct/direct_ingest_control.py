@@ -64,9 +64,7 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
     CloudTaskArgs,
-    GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -415,76 +413,6 @@ def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-# TODO(#11424): Delete this endpoint entirely once all traffic has been directed to
-#  the new /direct/materialize_ingest_view endpoint.
-@direct_ingest_control.route("/ingest_view_export", methods=["POST"])
-@requires_gae_auth
-def ingest_view_export() -> Tuple[str, HTTPStatus]:
-    """Exports an ingest view from BQ to a file in the region's GCS File System ingest bucket that is ready to be
-    processed and ingested into our Recidiviz DB.
-    """
-    logging.info(
-        "Received request to do direct ingest view export: [%s]", request.values
-    )
-    region_code = get_str_param_value("region", request.values)
-    output_bucket_name = get_str_param_value(
-        "output_bucket", request.values, preserve_case=True
-    )
-
-    if not region_code or not output_bucket_name:
-        response = f"Bad parameters [{request.values}]"
-        logging.error(response)
-        return response, HTTPStatus.BAD_REQUEST
-
-    with monitoring.push_region_tag(
-        region_code,
-        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
-            GcsfsBucketPath(output_bucket_name)
-        ).value,
-    ):
-        json_data = request.get_data(as_text=True)
-        ingest_view_export_args = _parse_cloud_task_args(json_data)
-
-        if not ingest_view_export_args:
-            raise DirectIngestError(
-                msg="raw_data_import was called with no GcsfsIngestViewExportArgs.",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
-        if not isinstance(ingest_view_export_args, GcsfsIngestViewExportArgs):
-            raise DirectIngestError(
-                msg=f"raw_data_import was called with incorrect args type [{type(ingest_view_export_args)}].",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
-        if output_bucket_name != ingest_view_export_args.output_bucket_name:
-            raise DirectIngestError(
-                msg=f"Different buckets were passed in the url and request body\n"
-                f"url: {output_bucket_name}\n"
-                f"body: {ingest_view_export_args.output_bucket_name}",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
-        with monitoring.push_tags(
-            {TagKey.INGEST_VIEW_EXPORT_TAG: ingest_view_export_args.task_id_tag()}
-        ):
-            try:
-                controller = DirectIngestControllerFactory.build(
-                    ingest_bucket_path=GcsfsBucketPath(
-                        ingest_view_export_args.output_bucket_name
-                    ),
-                    allow_unlaunched=False,
-                )
-            except DirectIngestError as e:
-                if e.is_bad_request():
-                    logging.error(str(e))
-                    return str(e), HTTPStatus.BAD_REQUEST
-                raise e
-
-            controller.do_ingest_view_materialization(ingest_view_export_args)
-    return "", HTTPStatus.OK
-
-
 @direct_ingest_control.route("/materialize_ingest_view", methods=["POST"])
 @requires_gae_auth
 def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
@@ -564,76 +492,6 @@ def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
                 raise e
 
             controller.do_ingest_view_materialization(args)
-    return "", HTTPStatus.OK
-
-
-# TODO(#11424): Delete this endpoint entirely once all traffic has been directed to
-#  the new /direct/extract_and_merge endpoint.
-@direct_ingest_control.route("/process_job", methods=["POST"])
-@requires_gae_auth
-def process_job() -> Tuple[str, HTTPStatus]:
-    """Processes a single direct ingest file, specified in the provided ingest
-    arguments.
-    """
-    logging.info("Received request to process direct ingest job: [%s]", request.values)
-    region_code = get_str_param_value("region", request.values)
-    file_path = get_str_param_value("file_path", request.values, preserve_case=True)
-
-    if not region_code or not file_path:
-        response = f"Bad parameters [{request.values}]"
-        logging.error(response)
-        return response, HTTPStatus.BAD_REQUEST
-
-    gcsfs_path = GcsfsFilePath.from_absolute_path(file_path)
-
-    with monitoring.push_region_tag(
-        region_code,
-        ingest_instance=DirectIngestInstanceFactory.for_ingest_bucket(
-            gcsfs_path.bucket_path
-        ).value,
-    ):
-        json_data = request.get_data(as_text=True)
-        ingest_args = _parse_cloud_task_args(json_data)
-
-        if not ingest_args:
-            raise DirectIngestError(
-                msg="process_job was called with no LegacyExtractAndMergeArgs.",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
-        if not isinstance(ingest_args, LegacyExtractAndMergeArgs):
-            raise DirectIngestError(
-                msg=f"process_job was called with incorrect args type [{type(ingest_args)}].",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
-        if gcsfs_path != ingest_args.file_path:
-            raise DirectIngestError(
-                msg=f"Different paths were passed in the url and request body\n"
-                f"url: {gcsfs_path.uri()}\n"
-                f"body: {ingest_args.file_path.uri()}",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
-        with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
-            try:
-                controller = DirectIngestControllerFactory.build(
-                    ingest_bucket_path=ingest_args.file_path.bucket_path,
-                    allow_unlaunched=False,
-                )
-            except DirectIngestError as e:
-                if e.is_bad_request():
-                    logging.error(str(e))
-                    return str(e), HTTPStatus.BAD_REQUEST
-                raise e
-
-            try:
-                controller.run_extract_and_merge_job_and_kick_scheduler_on_completion(
-                    ingest_args
-                )
-            except GCSPseudoLockAlreadyExists as e:
-                logging.warning(str(e))
-                return str(e), HTTPStatus.CONFLICT
     return "", HTTPStatus.OK
 
 

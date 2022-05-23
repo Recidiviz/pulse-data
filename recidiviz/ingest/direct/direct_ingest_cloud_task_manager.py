@@ -184,8 +184,8 @@ def _build_direct_ingest_queue_name(
         _build_direct_ingest_queue_name('us_id', SFTP_QUEUE, PRIMARY) ->
         'direct-ingest-state-us-id-sftp-queue'
 
-         _build_direct_ingest_queue_name('us_nd', PROCESS_JOB_QUEUE, SECONDARY) ->
-        'direct-ingest-state-us-nd-process-job-queue-secondary'
+         _build_direct_ingest_queue_name('us_nd', EXTRACT_AND_MERGE, SECONDARY) ->
+        'direct-ingest-state-us-nd-extract-and-merge-secondary'
     """
     if not queue_type.exists_for_instance(ingest_instance):
         raise ValueError(
