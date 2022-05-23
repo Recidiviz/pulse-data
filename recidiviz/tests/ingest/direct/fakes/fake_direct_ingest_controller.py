@@ -42,9 +42,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
     BQBasedMaterializerDelegate,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer_delegate import (
-    FileBasedMaterializerDelegate,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializer,
 )
@@ -59,10 +56,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     RawDataClassification,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    GcsfsIngestViewExportArgs,
-    IngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -85,10 +79,7 @@ from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents impo
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
-    _get_fixture_for_direct_ingest_path,
-    direct_ingest_fixture_path,
-)
+from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.utils.regions import Region
 from recidiviz.utils.types import assert_type
 
@@ -316,38 +307,19 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
 
         self.delegate.prepare_for_job(ingest_view_materialization_args)
 
-        if isinstance(self.delegate, FileBasedMaterializerDelegate):
-            # TODO(#11424): Delete this whole block once BQ materialization is shipped
-            #  to all states.
-            if not isinstance(
-                ingest_view_materialization_args, GcsfsIngestViewExportArgs
-            ):
-                raise ValueError(
-                    f"Unexpected args type [{ingest_view_materialization_args}]"
-                )
-            export_path = FileBasedMaterializerDelegate.generate_output_path(
-                ingest_view_materialization_args
-            )
-            data_local_path = _get_fixture_for_direct_ingest_path(
-                export_path, region_code=self.region.region_code.upper()
-            )
-            if not data_local_path:
-                raise ValueError("No support yet for actually running export queries")
-            self.fs.test_add_path(export_path, data_local_path)
-        else:
-            data_local_path = direct_ingest_fixture_path(
-                region_code=self.region.region_code,
-                file_name=f"{ingest_view_materialization_args.ingest_view_name}.csv",
-            )
-            delegate = assert_type(self.delegate, BQBasedMaterializerDelegate)
-            ingest_view_contents = assert_type(
-                delegate.ingest_view_contents, FakeInstanceIngestViewContents
-            )
-            ingest_view_contents.test_add_batches_for_data(
-                ingest_view_name=ingest_view_materialization_args.ingest_view_name,
-                upper_bound_datetime_inclusive=ingest_view_materialization_args.upper_bound_datetime_inclusive,
-                data_local_path=data_local_path,
-            )
+        data_local_path = direct_ingest_fixture_path(
+            region_code=self.region.region_code,
+            file_name=f"{ingest_view_materialization_args.ingest_view_name}.csv",
+        )
+        delegate = assert_type(self.delegate, BQBasedMaterializerDelegate)
+        ingest_view_contents = assert_type(
+            delegate.ingest_view_contents, FakeInstanceIngestViewContents
+        )
+        ingest_view_contents.test_add_batches_for_data(
+            ingest_view_name=ingest_view_materialization_args.ingest_view_name,
+            upper_bound_datetime_inclusive=ingest_view_materialization_args.upper_bound_datetime_inclusive,
+            data_local_path=data_local_path,
+        )
 
         self.delegate.mark_job_complete(ingest_view_materialization_args)
         self.processed_args.append(ingest_view_materialization_args)
