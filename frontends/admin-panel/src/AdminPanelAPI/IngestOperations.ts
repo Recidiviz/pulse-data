@@ -259,29 +259,3 @@ export const transferIngestViewMetadataToNewInstance = async (
     }
   );
 };
-
-// Ungate BQ materialization instance
-export const ungateMaterializationInstance = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/ungate_materialization_instance",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Ungate BQ materialization instance
-export const getInstanceMaterializationBQBool = async (
-  stateCode: string
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/get_instance_materialization_bq_bool",
-    {
-      stateCode,
-    }
-  );
-};

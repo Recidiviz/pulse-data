@@ -20,7 +20,6 @@ import {
   message,
   Modal,
   PageHeader,
-  Spin,
   StepProps,
   Steps,
 } from "antd";
@@ -31,7 +30,6 @@ import {
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
-  getInstanceMaterializationBQBool,
   importDatabaseFromGCS,
   markInstanceIngestViewDataInvalidated,
   moveIngestViewResultsBetweenInstances,
@@ -39,7 +37,6 @@ import {
   pauseDirectIngestInstance,
   releaseBQExportLock,
   transferIngestViewMetadataToNewInstance,
-  ungateMaterializationInstance,
   updateIngestQueuesState,
 } from "../AdminPanelAPI";
 import {
@@ -85,17 +82,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   const [currentStep, setCurrentStep] = React.useState(0);
   const [stateInfo, setStateInfo] = React.useState<StateCodeInfo | null>(null);
   const [modalVisible, setModalVisible] = React.useState(true);
-  const [
-    isPrimaryInstanceBQMaterializationEnabled,
-    setPrimaryIsBQMaterializationEnabled,
-  ] = React.useState(false);
-  const [
-    isSecondaryInstanceBQMaterializationEnabled,
-    setSecondaryIsBQMaterializationEnabled,
-  ] = React.useState(false);
-  // TODO(#11424): Delete loading logic and code related to BQ materialization flags
-  // once BQ materialization has shipped to all states.
-  const [isLoading, setIsLoading] = React.useState(true);
 
   const history = useHistory();
 
@@ -113,19 +99,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     return true;
   };
 
-  const getInstanceBQMaterializationFlags = async (stateCode: string) => {
-    const response = await getInstanceMaterializationBQBool(stateCode);
-    const json = await response.json();
-    setPrimaryIsBQMaterializationEnabled(json.primary);
-    setSecondaryIsBQMaterializationEnabled(json.secondary);
-    setIsLoading(false);
-  };
-
   const setNewState = async (info: StateCodeInfo) => {
     setCurrentStep(0);
-    setIsLoading(true);
     setStateInfo(info);
-    getInstanceBQMaterializationFlags(info.code);
   };
 
   const StyledStep = ({
@@ -197,9 +173,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       isProduction ? "prod" : "dev"
     }-state-data-operations`;
 
-    return isLoading ? (
-      <Spin />
-    ) : (
+    return (
       <Steps progressDot current={currentStep} direction="vertical">
         <StyledStep
           title="Pause Queues"
@@ -280,107 +254,41 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             </>
           }
         />
-        {isPrimaryInstanceBQMaterializationEnabled ? (
-          <StyledStep
-            title="Backup primary ingest view results"
-            description={
-              <>
-                <p>
-                  Move all primary instance ingest view results to a backup
-                  dataset in BQ.
-                </p>
-              </>
-            }
-            actionButtonTitle="Move to Backup"
-            onActionButtonClick={async () =>
-              moveIngestViewResultsToBackup(
-                stateCode,
-                DirectIngestInstance.PRIMARY
-              )
-            }
-          />
-        ) : (
-          <StyledStep
-            title="Move primary files to storage"
-            description={
-              <>
-                <p>
-                  Move all primary instance ingest view files to deprecated
-                  storage:
-                </p>
-                <p>
-                  <CodeBlock enabled={currentStep === 5}>
-                    python -m
-                    recidiviz.tools.ingest.operations.move_storage_files_to_deprecated
-                    \<br />
-                    {"    "}--file-type ingest_view \<br />
-                    {"    "}--region {stateCode.toLowerCase()} \<br />
-                    {"    "}--ingest-instance PRIMARY \<br />
-                    {"    "}--project-id {projectId} \<br />
-                    {"    "}--dry-run False
-                  </CodeBlock>
-                </p>
-              </>
-            }
-          />
-        )}
-
-        {isPrimaryInstanceBQMaterializationEnabled ? (
-          <StyledStep
-            title="Deprecate primary instance operation database rows"
-            description={
+        <StyledStep
+          title="Backup primary ingest view results"
+          description={
+            <>
               <p>
-                Mark all <code>PRIMARY</code> instance rows in the{" "}
-                <code>direct_ingest_view_materialization_metadata</code>{" "}
-                operations database table as invalidated.
+                Move all primary instance ingest view results to a backup
+                dataset in BQ.
               </p>
-            }
-            actionButtonTitle="Invalidate primary rows"
-            onActionButtonClick={async () =>
-              markInstanceIngestViewDataInvalidated(
-                stateCode,
-                DirectIngestInstance.PRIMARY
-              )
-            }
-          />
-        ) : (
-          <StyledStep
-            title="Deprecate primary instance operation database rows"
-            description={
-              <>
-                <p>
-                  Drop all <code>{stateCode.toLowerCase()}_primary</code> from
-                  operations database.
-                </p>
-                <ol style={{ paddingLeft: 20 }}>
-                  <li>
-                    Run{" "}
-                    <code>
-                      ./recidiviz/tools/postgres/access_cloudsql_instance.sh
-                    </code>{" "}
-                    in pipenv shell. Select <code>{projectId}</code>,{" "}
-                    <code>operations_v2</code>, then{" "}
-                    <code>operations_v2_db_user</code>.
-                  </li>
-                  <li>
-                    Drop all rows for{" "}
-                    <code>{stateCode.toLowerCase()}_primary</code> from{" "}
-                    <code>direct_ingest_ingest_file_metadata</code>:
-                    <CodeBlock enabled={currentStep === 6}>
-                      UPDATE direct_ingest_ingest_file_metadata <br />
-                      SET is_invalidated = TRUE <br />
-                      WHERE region_code = &#39;{stateCode}&#39; <br />
-                      {"  "}AND ingest_database_name = &#39;
-                      {stateCode.toLowerCase()}
-                      _primary&#39;;
-                    </CodeBlock>
-                  </li>
-                </ol>
-              </>
-            }
-          />
-        )}
-
+            </>
+          }
+          actionButtonTitle="Move to Backup"
+          onActionButtonClick={async () =>
+            moveIngestViewResultsToBackup(
+              stateCode,
+              DirectIngestInstance.PRIMARY
+            )
+          }
+        />
+        <StyledStep
+          title="Deprecate primary instance operation database rows"
+          description={
+            <p>
+              Mark all <code>PRIMARY</code> instance rows in the{" "}
+              <code>direct_ingest_view_materialization_metadata</code>{" "}
+              operations database table as invalidated.
+            </p>
+          }
+          actionButtonTitle="Invalidate primary rows"
+          onActionButtonClick={async () =>
+            markInstanceIngestViewDataInvalidated(
+              stateCode,
+              DirectIngestInstance.PRIMARY
+            )
+          }
+        />
         <StyledStep
           title="Import data from secondary"
           description={
@@ -406,114 +314,43 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             )
           }
         />
-
-        {isSecondaryInstanceBQMaterializationEnabled ? (
-          <StyledStep
-            title="Move secondary ingest view metadata to primary"
-            description={
-              <p>
-                Update all rows in the{" "}
-                <code>direct_ingest_view_materialization_metadata</code>{" "}
-                operations database that had instance <code>PRIMARY</code> with
-                updated instance <code>SECONDARY</code>.
-              </p>
-            }
-            actionButtonTitle="Move Secondary Metadata"
-            onActionButtonClick={async () =>
-              transferIngestViewMetadataToNewInstance(
-                stateCode,
-                DirectIngestInstance.SECONDARY,
-                DirectIngestInstance.PRIMARY
-              )
-            }
-          />
-        ) : (
-          <StyledStep
-            title="Transition secondary instance operations information to primary"
-            description={
-              <>
-                <p>
-                  Update all rows in operations database that had database{" "}
-                  <code>{stateCode.toLowerCase()}_secondary</code> with updated
-                  database name <code>{stateCode.toLowerCase()}_primary</code>.
-                  <br />
-                  You can check your progress in the{" "}
-                  <NewTabLink href={operationsPageURL}>
-                    Operations section
-                  </NewTabLink>{" "}
-                  of the STATE SQL instance page. If this request times out, but
-                  the operation succeeds, just select &#39;Mark Done&#39;.
-                </p>
-                <ol style={{ paddingLeft: 20 }}>
-                  <li>
-                    Run{" "}
-                    <code>
-                      ./recidiviz/tools/postgres/access_cloudsql_instance.sh
-                    </code>{" "}
-                    in pipenv shell . Select <code>{projectId}</code>,{" "}
-                    <code>operations_v2</code>, then{" "}
-                    <code>operations_v2_db_user</code>.
-                  </li>
-                  <li>
-                    Run the following SQL query to update the tables:
-                    <CodeBlock enabled={currentStep === 8}>
-                      UPDATE direct_ingest_ingest_file_metadata <br />
-                      SET ingest_database_name = &#39;{stateCode.toLowerCase()}
-                      _primary&#39; <br />
-                      WHERE ingest_database_name = &#39;
-                      {stateCode.toLowerCase()}_secondary&#39; <br />
-                      {"  "}AND region_code = &#39;{stateCode}&#39;;
-                    </CodeBlock>
-                  </li>
-                </ol>
-              </>
-            }
-          />
-        )}
-
-        {isSecondaryInstanceBQMaterializationEnabled ? (
-          <StyledStep
-            title="Move secondary ingest view data to primary"
-            description={
-              <p>
-                Move all ingest view results from BQ dataset{" "}
-                <code>{secondaryIngestViewResultsDataset}</code> to BQ dataset{" "}
-                <code>{primaryIngestViewResultsDataset}</code>
-              </p>
-            }
-            actionButtonTitle="Move Secondary Data"
-            onActionButtonClick={async () =>
-              moveIngestViewResultsBetweenInstances(
-                stateCode,
-                DirectIngestInstance.SECONDARY,
-                DirectIngestInstance.PRIMARY
-              )
-            }
-          />
-        ) : (
-          <StyledStep
-            title="Update ingest view files"
-            description={
-              <>
-                <p>
-                  Move all ingest_view files from secondary storage to primary
-                  storage.
-                </p>
-                <p>
-                  <CodeBlock enabled={currentStep === 9}>
-                    python -m
-                    recidiviz.tools.ingest.operations.move_ingest_views_from_secondary_to_primary
-                    \<br />
-                    {"    "}--region {stateCode.toLowerCase()} \<br />
-                    {"    "}--project-id {projectId} \<br />
-                    {"    "}--dry-run False
-                  </CodeBlock>
-                </p>
-              </>
-            }
-          />
-        )}
-
+        <StyledStep
+          title="Move secondary ingest view metadata to primary"
+          description={
+            <p>
+              Update all rows in the{" "}
+              <code>direct_ingest_view_materialization_metadata</code>{" "}
+              operations database that had instance <code>PRIMARY</code> with
+              updated instance <code>SECONDARY</code>.
+            </p>
+          }
+          actionButtonTitle="Move Secondary Metadata"
+          onActionButtonClick={async () =>
+            transferIngestViewMetadataToNewInstance(
+              stateCode,
+              DirectIngestInstance.SECONDARY,
+              DirectIngestInstance.PRIMARY
+            )
+          }
+        />
+        <StyledStep
+          title="Move secondary ingest view data to primary"
+          description={
+            <p>
+              Move all ingest view results from BQ dataset{" "}
+              <code>{secondaryIngestViewResultsDataset}</code> to BQ dataset{" "}
+              <code>{primaryIngestViewResultsDataset}</code>
+            </p>
+          }
+          actionButtonTitle="Move Secondary Data"
+          onActionButtonClick={async () =>
+            moveIngestViewResultsBetweenInstances(
+              stateCode,
+              DirectIngestInstance.SECONDARY,
+              DirectIngestInstance.PRIMARY
+            )
+          }
+        />
         <StyledStep
           title="Release PRIMARY Ingest Lock"
           description={
@@ -584,28 +421,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             )
           }
         />
-
-        {!isPrimaryInstanceBQMaterializationEnabled &&
-        isSecondaryInstanceBQMaterializationEnabled ? (
-          <StyledStep
-            title="Ungate BQ materialization in primary"
-            description={
-              <p>
-                Primary materialization type is <code>FILE</code> but Secondary
-                materialization type is <code>BQ</code>, make Primary{" "}
-                <code>BQ</code>.
-              </p>
-            }
-            actionButtonTitle="Ungate Primary"
-            onActionButtonClick={async () =>
-              ungateMaterializationInstance(
-                stateCode,
-                DirectIngestInstance.PRIMARY
-              )
-            }
-          />
-        ) : null}
-
         <StyledStep
           title="Unpause queues"
           description={
