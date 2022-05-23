@@ -70,9 +70,6 @@ if environment.in_gcp():
     )
     trace_sampler: samplers.Sampler = trace.CompositeSampler(
         {
-            # TODO(#11424): Delete /process_job from this list once all traffic is
-            #  diverted to /extract_and_merge.
-            "/direct/process_job": samplers.AlwaysOnSampler(),
             "/direct/extract_and_merge": samplers.AlwaysOnSampler(),
             # There are a lot of scraper requests, so they can use the default rate of 1 in 10k.
             "/scraper/": samplers.ProbabilitySampler(),

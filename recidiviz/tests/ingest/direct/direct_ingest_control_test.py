@@ -75,7 +75,6 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
-    GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
     LegacyExtractAndMergeArgs,
     NewExtractAndMergeArgs,
@@ -216,105 +215,6 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         mock_controller.schedule_next_ingest_task.assert_not_called()
 
-    # TODO(#11424): Delete this test once all traffic has been directed to the new
-    #  /direct/extract_and_merge endpoint.
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch("recidiviz.utils.regions.get_region")
-    def test_process_job(
-        self,
-        mock_region: mock.MagicMock,
-        mock_environment: mock.MagicMock,
-    ) -> None:
-        mock_environment.return_value = "staging"
-        mock_controller = create_autospec(BaseDirectIngestController)
-        self.mock_controller_factory.build.return_value = mock_controller
-        mock_region.return_value = fake_region(
-            region_code=self.region_code, environment="staging"
-        )
-        bucket_name = build_ingest_bucket_name(
-            project_id="recidiviz-xxx",
-            region_code=self.region_code,
-            suffix="",
-        )
-
-        file_path = to_normalized_unprocessed_file_path(
-            f"{bucket_name}/ingest_view_name.csv",
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-        )
-        ingest_args = LegacyExtractAndMergeArgs(
-            datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
-        )
-        request_args = {"region": self.region_code, "file_path": file_path}
-        body = {
-            "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "LegacyExtractAndMergeArgs",
-        }
-        body_encoded = json.dumps(body).encode()
-
-        headers = APP_ENGINE_HEADERS
-
-        response = self.client.post(
-            "/process_job",
-            query_string=request_args,
-            headers=headers,
-            data=body_encoded,
-        )
-        self.assertEqual(200, response.status_code)
-        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_called_with(
-            ingest_args
-        )
-
-    # TODO(#11424): Delete this test once all traffic has been directed to the new
-    #  /direct/extract_and_merge endpoint.
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_process_job_unlaunched_region(
-        self,
-        mock_environment: mock.MagicMock,
-    ) -> None:
-        mock_environment.return_value = "production"
-        self.mock_controller_factory.build.side_effect = DirectIngestError(
-            msg="Test bad input error",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
-        bucket_name = build_ingest_bucket_name(
-            project_id="recidiviz-xxx",
-            region_code=self.region_code,
-            suffix="",
-        )
-
-        file_path = to_normalized_unprocessed_file_path(
-            f"{bucket_name}/ingest_view_name.csv",
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-        )
-        ingest_args = LegacyExtractAndMergeArgs(
-            datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
-        )
-        request_args = {
-            "region": self.region_code,
-            "file_path": file_path,
-        }
-        body = {
-            "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "LegacyExtractAndMergeArgs",
-        }
-        body_encoded = json.dumps(body).encode()
-
-        headers = APP_ENGINE_HEADERS
-
-        response = self.client.post(
-            "/process_job",
-            query_string=request_args,
-            headers=headers,
-            data=body_encoded,
-        )
-        self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            response.get_data().decode(),
-            "Test bad input error",
-        )
-
     @patch("recidiviz.utils.regions.get_region")
     def test_extract_and_merge(self, mock_region: mock.MagicMock) -> None:
         mock_controller = create_autospec(BaseDirectIngestController)
@@ -354,48 +254,6 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_called_with(
             ingest_args
-        )
-
-    # TODO(#11424): Delete this test once all traffic has been directed to the new
-    #  /direct/extract_and_merge endpoint.
-    def test_extract_and_merge_unlaunched_region(self) -> None:
-        self.mock_controller_factory.build.side_effect = DirectIngestError(
-            msg="Test bad input error",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
-
-        dt = datetime.datetime(year=2019, month=6, day=20)
-        ingest_view_name = "myIngestViewName"
-        ingest_args = NewExtractAndMergeArgs(
-            ingest_time=datetime.datetime(year=2019, month=7, day=20),
-            ingest_view_name=ingest_view_name,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            upper_bound_datetime_inclusive=dt,
-            batch_number=2,
-        )
-        request_args = {
-            "region": self.region_code,
-            "ingest_view_name": ingest_view_name,
-            "ingest_instance": "primary",
-        }
-        body = {
-            "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "NewExtractAndMergeArgs",
-        }
-        body_encoded = json.dumps(body).encode()
-
-        headers = APP_ENGINE_HEADERS
-
-        response = self.client.post(
-            "/extract_and_merge",
-            query_string=request_args,
-            headers=headers,
-            data=body_encoded,
-        )
-        self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            response.get_data().decode(),
-            "Test bad input error",
         )
 
     @patch("recidiviz.utils.regions.get_region")
@@ -1022,56 +880,6 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
         mock_controller.do_raw_data_import.assert_called_with(import_args)
-
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch("recidiviz.utils.regions.get_region")
-    def test_ingest_view_export(
-        self,
-        mock_region: mock.MagicMock,
-        mock_environment: mock.MagicMock,
-    ) -> None:
-
-        region_code = "us_xx"
-
-        mock_environment.return_value = "staging"
-        mock_controller = create_autospec(BaseDirectIngestController)
-        self.mock_controller_factory.build.return_value = mock_controller
-        mock_region.return_value = fake_region(
-            region_code=region_code, environment="staging"
-        )
-        bucket_name = build_ingest_bucket_name(
-            project_id="recidiviz-xxx",
-            region_code=region_code,
-            suffix="",
-        )
-
-        export_args = GcsfsIngestViewExportArgs(
-            ingest_view_name="my_ingest_view",
-            output_bucket_name=bucket_name,
-            lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
-            upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
-        )
-
-        request_args = {
-            "region": region_code,
-            "output_bucket": bucket_name,
-        }
-        body = {
-            "cloud_task_args": export_args.to_serializable(),
-            "args_type": "GcsfsIngestViewExportArgs",
-        }
-        body_encoded = json.dumps(body).encode()
-
-        headers = APP_ENGINE_HEADERS
-
-        response = self.client.post(
-            "/ingest_view_export",
-            query_string=request_args,
-            headers=headers,
-            data=body_encoded,
-        )
-        self.assertEqual(200, response.status_code)
-        mock_controller.do_ingest_view_materialization.assert_called_with(export_args)
 
     @patch("recidiviz.utils.regions.get_region")
     def test_materialize_ingest_view(
