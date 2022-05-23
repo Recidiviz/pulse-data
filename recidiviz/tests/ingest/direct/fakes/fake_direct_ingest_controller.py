@@ -56,9 +56,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     RawDataClassification,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -295,14 +293,14 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         self.region = region
         self.fs = big_query_client.fs
         self.delegate = delegate
-        self.processed_args: List[BQIngestViewMaterializationArgs] = []
+        self.processed_args: List[IngestViewMaterializationArgs] = []
 
         self.ingest_instance = ingest_instance
         self.view_collector = view_collector
         self.launched_ingest_views = launched_ingest_views
 
     def materialize_view_for_args(
-        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
+        self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> bool:
         if ingest_view_materialization_args in self.processed_args:
             return False

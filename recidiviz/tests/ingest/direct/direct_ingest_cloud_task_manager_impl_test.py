@@ -46,9 +46,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    NewExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import regions
@@ -174,15 +174,15 @@ class TestIngestViewMaterializationCloudTaskQueueInfo(TestCase):
     """Tests for the IngestViewMaterializationCloudTaskQueueInfo."""
 
     def setUp(self) -> None:
-        self.primary_ingest_view_export_args = BQIngestViewMaterializationArgs(
+        self.primary_ingest_view_export_args = IngestViewMaterializationArgs(
             ingest_view_name="my_file_tag",
-            ingest_instance_=DirectIngestInstance.PRIMARY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             lower_bound_datetime_exclusive=None,
             upper_bound_datetime_inclusive=datetime.datetime.now(),
         )
         self.secondary_ingest_view_export_args = attr.evolve(
             self.primary_ingest_view_export_args,
-            ingest_instance_=DirectIngestInstance.SECONDARY,
+            ingest_instance=DirectIngestInstance.SECONDARY,
         )
 
     def test_info_no_tasks(self) -> None:
@@ -254,7 +254,7 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
         # Arrange
         info = ExtractAndMergeCloudTaskQueueInfo(queue_name="queue_name", task_names=[])
 
-        gcsfs_args = NewExtractAndMergeArgs(
+        gcsfs_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_instance=self.ingest_instance,
             ingest_view_name=self.ingest_view_name,
@@ -276,7 +276,7 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
 
     def test_info_single_task(self) -> None:
         # Arrange
-        gcsfs_args = NewExtractAndMergeArgs(
+        gcsfs_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_instance=self.ingest_instance,
             ingest_view_name=self.ingest_view_name,
@@ -294,7 +294,7 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
                 f"projects/path/to/{full_task_name}",
             ],
         )
-        gcsfs_args = NewExtractAndMergeArgs(
+        gcsfs_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_instance=self.ingest_instance,
             ingest_view_name=self.ingest_view_name,
@@ -320,7 +320,7 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
 
     def test_info_tasks_both_instances(self) -> None:
         # Arrange
-        gcsfs_args = NewExtractAndMergeArgs(
+        gcsfs_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_instance=self.ingest_instance,
             ingest_view_name=self.ingest_view_name,
@@ -347,7 +347,7 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
                 for full_task_name in full_task_names
             ],
         )
-        gcsfs_args = NewExtractAndMergeArgs(
+        gcsfs_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_instance=self.ingest_instance,
             ingest_view_name=self.ingest_view_name,
@@ -474,7 +474,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     ) -> None:
         # Arrange
         dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-        args = NewExtractAndMergeArgs(
+        args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_view_name="my_ingest_view_name",
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -483,7 +483,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         )
         body = {
             "cloud_task_args": args.to_serializable(),
-            "args_type": "NewExtractAndMergeArgs",
+            "args_type": "ExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"
@@ -533,7 +533,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     ) -> None:
         # Arrange
         dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-        args = NewExtractAndMergeArgs(
+        args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_view_name="my_ingest_view_name",
             ingest_instance=DirectIngestInstance.SECONDARY,
@@ -542,7 +542,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         )
         body = {
             "cloud_task_args": args.to_serializable(),
-            "args_type": "NewExtractAndMergeArgs",
+            "args_type": "ExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"
@@ -652,15 +652,15 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        export_args = BQIngestViewMaterializationArgs(
+        export_args = IngestViewMaterializationArgs(
             ingest_view_name="my_ingest_view",
-            ingest_instance_=DirectIngestInstance.PRIMARY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
             upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
         )
         body = {
             "cloud_task_args": export_args.to_serializable(),
-            "args_type": "BQIngestViewMaterializationArgs",
+            "args_type": "IngestViewMaterializationArgs",
         }
         body_encoded = json.dumps(body).encode()
         uuid = "random-uuid"

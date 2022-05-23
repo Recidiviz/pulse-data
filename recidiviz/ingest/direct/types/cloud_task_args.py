@@ -51,50 +51,14 @@ class CloudTaskArgs:
 
 @attr.s(frozen=True)
 class ExtractAndMergeArgs(CloudTaskArgs):
-    """Arguments for a task that extracts Python schema objects from the row-based
-    results of an ingest view query, then merges those schema objects into our central
-    data model.
-    """
-
     # The time this extract and merge task was scheduled.
     ingest_time: datetime.datetime = attr.ib()
 
-    @abc.abstractmethod
-    def task_id_tag(self) -> str:
-        pass
-
-    @property
-    @abc.abstractmethod
-    def ingest_instance(self) -> DirectIngestInstance:
-        pass
-
-    @property
-    @abc.abstractmethod
-    def ingest_view_name(self) -> str:
-        pass
-
-    @abc.abstractmethod
-    def job_tag(self) -> str:
-        """Returns a (short) string tag to identify an ingest run in logs."""
-
-
-# TODO(#11424): Merge this class with the base class.
-@attr.s(frozen=True)
-class NewExtractAndMergeArgs(ExtractAndMergeArgs):
-    # These are private attributes that must be accessed via @property
-    _ingest_view_name: str = attr.ib()
-    _ingest_instance: DirectIngestInstance = attr.ib()
+    ingest_view_name: str = attr.ib()
+    ingest_instance: DirectIngestInstance = attr.ib()
 
     upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
     batch_number: int = attr.ib()
-
-    @property
-    def ingest_instance(self) -> DirectIngestInstance:
-        return self._ingest_instance
-
-    @property
-    def ingest_view_name(self) -> str:
-        return self._ingest_view_name
 
     def task_id_tag(self) -> str:
         return (
@@ -135,26 +99,7 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
     # reflect data received up until this date.
     upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
 
-    @property
-    @abc.abstractmethod
-    def ingest_instance(self) -> DirectIngestInstance:
-        pass
-
-    @abc.abstractmethod
-    def task_id_tag(self) -> str:
-        pass
-
-
-# TODO(#11424): Merge this class with base class.
-@attr.s(frozen=True)
-class BQIngestViewMaterializationArgs(IngestViewMaterializationArgs):
-    # TODO(#11424): Rename this attribute to ingest_instance when this class is merged
-    #  with base class.
-    ingest_instance_: DirectIngestInstance = attr.ib()
-
-    @property
-    def ingest_instance(self) -> DirectIngestInstance:
-        return self.ingest_instance_
+    ingest_instance: DirectIngestInstance = attr.ib()
 
     def task_id_tag(self) -> str:
         tag = (

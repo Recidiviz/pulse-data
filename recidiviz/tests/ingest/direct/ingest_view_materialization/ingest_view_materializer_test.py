@@ -41,9 +41,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
@@ -231,9 +229,9 @@ _OUTPUT_BUCKET_NAME = gcsfs_direct_ingest_bucket_for_state(
 
 _LEGACY_TEMP_DATASET = "us_xx_ingest_views_20220414_secondary"
 
-_BQ_BASED_ARGS = BQIngestViewMaterializationArgs(
+_BQ_BASED_ARGS = IngestViewMaterializationArgs(
     ingest_view_name="ingest_view",
-    ingest_instance_=_INGEST_INSTANCE,
+    ingest_instance=_INGEST_INSTANCE,
     lower_bound_datetime_exclusive=_DATE_1,
     upper_bound_datetime_inclusive=_DATE_2,
 )
@@ -330,7 +328,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
         return ScalarQueryParameter("update_timestamp", "DATETIME", date_param)
 
     def assert_materialized_with_query(
-        self, args: BQIngestViewMaterializationArgs, expected_query: str
+        self, args: IngestViewMaterializationArgs, expected_query: str
     ) -> None:
         self.mock_ingest_view_contents.save_query_results.assert_called_with(
             ingest_view_name=args.ingest_view_name,
@@ -438,9 +436,9 @@ class IngestViewMaterializerTest(unittest.TestCase):
     def test_materializeViewForArgs_noLowerBound(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        args = BQIngestViewMaterializationArgs(
+        args = IngestViewMaterializationArgs(
             ingest_view_name="ingest_view",
-            ingest_instance_=_INGEST_INSTANCE,
+            ingest_instance=_INGEST_INSTANCE,
             lower_bound_datetime_exclusive=None,
             upper_bound_datetime_inclusive=_DATE_2,
         )
@@ -703,9 +701,9 @@ ORDER BY colA, colC;"""
     def test_materializeViewForArgs_detectRowDeletionView_noLowerBound(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        args = BQIngestViewMaterializationArgs(
+        args = IngestViewMaterializationArgs(
             ingest_view_name="ingest_view",
-            ingest_instance_=_INGEST_INSTANCE,
+            ingest_instance=_INGEST_INSTANCE,
             lower_bound_datetime_exclusive=None,
             upper_bound_datetime_inclusive=_DATE_2,
         )

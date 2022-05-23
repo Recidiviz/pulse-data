@@ -30,9 +30,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
 )
@@ -55,17 +53,17 @@ class BQBasedMaterializerDelegate(IngestViewMaterializerDelegate):
         return self.ingest_view_contents.temp_results_dataset
 
     def get_job_completion_time_for_args(
-        self, args: BQIngestViewMaterializationArgs
+        self, args: IngestViewMaterializationArgs
     ) -> Optional[datetime.datetime]:
         return self.metadata_manager.get_job_completion_time_for_args(args)
 
-    def prepare_for_job(self, args: BQIngestViewMaterializationArgs) -> None:
+    def prepare_for_job(self, args: IngestViewMaterializationArgs) -> None:
         # No work to do
         pass
 
     def materialize_query_results(
         self,
-        args: BQIngestViewMaterializationArgs,
+        args: IngestViewMaterializationArgs,
         ingest_view: DirectIngestPreProcessedIngestView,
         query: str,
     ) -> None:
@@ -77,5 +75,5 @@ class BQBasedMaterializerDelegate(IngestViewMaterializerDelegate):
             order_by_cols_str=ingest_view.order_by_cols,
         )
 
-    def mark_job_complete(self, args: BQIngestViewMaterializationArgs) -> None:
+    def mark_job_complete(self, args: IngestViewMaterializationArgs) -> None:
         self.metadata_manager.mark_ingest_view_materialized(args)

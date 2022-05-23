@@ -32,9 +32,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
     DirectIngestPreProcessedIngestViewBuilder,
@@ -109,7 +107,7 @@ class IngestViewMaterializationArgsGenerator:
 
     def get_ingest_view_materialization_task_args(
         self,
-    ) -> List[BQIngestViewMaterializationArgs]:
+    ) -> List[IngestViewMaterializationArgs]:
         """Looks at what files have been exported for a given region and returns args for all the export jobs that
         should be started, given what has updated in the raw data tables since the last time we exported data. Also
         returns any tasks that have not yet completed.

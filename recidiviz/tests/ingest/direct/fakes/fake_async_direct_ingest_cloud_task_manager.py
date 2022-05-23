@@ -33,9 +33,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    NewExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -76,7 +76,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
-        task_args: NewExtractAndMergeArgs,
+        task_args: ExtractAndMergeArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -169,7 +169,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
-        task_args: BQIngestViewMaterializationArgs,
+        task_args: IngestViewMaterializationArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")

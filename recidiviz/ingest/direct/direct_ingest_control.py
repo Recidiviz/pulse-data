@@ -62,10 +62,10 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
     DownloadFilesFromSftpController,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
     CloudTaskArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    NewExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -447,11 +447,11 @@ def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
 
         if not args:
             raise DirectIngestError(
-                msg="materialize_ingest_view was called with no BQIngestViewMaterializationArgs.",
+                msg="materialize_ingest_view was called with no IngestViewMaterializationArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        if not isinstance(args, BQIngestViewMaterializationArgs):
+        if not isinstance(args, IngestViewMaterializationArgs):
             raise DirectIngestError(
                 msg=f"materialize_ingest_view was called with incorrect args type [{type(args)}].",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
@@ -529,11 +529,11 @@ def extract_and_merge() -> Tuple[str, HTTPStatus]:
         ingest_args = _parse_cloud_task_args(json_data)
 
         if not ingest_args:
-            response = "/extract_and_merge was called with no NewExtractAndMergeArgs."
+            response = "/extract_and_merge was called with no ExtractAndMergeArgs."
             logging.error(response)
             return response, HTTPStatus.BAD_REQUEST
 
-        if not isinstance(ingest_args, NewExtractAndMergeArgs):
+        if not isinstance(ingest_args, ExtractAndMergeArgs):
             response = f"/extract_and_merge was called with incorrect args type [{type(ingest_args)}]."
             logging.error(response)
             return response, HTTPStatus.BAD_REQUEST
