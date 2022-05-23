@@ -286,42 +286,28 @@ MATERIALIZATION_CONFIG_YAML = """
 states:
 - US_ND:
    PRIMARY: FILE
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_MO:
    PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_ID:
    PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_PA:
    PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_TN:
    PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_ME:
    PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_MI:
    PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_CO:
    PRIMARY: FILE
-   # TODO(#9717): Flip this to 'BQ' to test BQ materialization functionality in
-   #  controller tests.
-   SECONDARY: FILE
+   SECONDARY: BQ
 - US_XX:
    PRIMARY: BQ
    SECONDARY: BQ

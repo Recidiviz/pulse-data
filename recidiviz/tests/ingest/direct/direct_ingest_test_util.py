@@ -26,35 +26,12 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
-    LegacyExtractAndMergeArgs,
-)
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
 )
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-
-
-def ingest_args_for_fixture_file(
-    controller: BaseDirectIngestController,
-    filename: str,
-    should_normalize: bool = True,
-) -> ExtractAndMergeArgs:
-    file_path = path_for_fixture_file(
-        controller,
-        filename,
-        should_normalize,
-        file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-    )
-    if not isinstance(file_path, GcsfsFilePath):
-        raise ValueError(f"Unexpected type [{file_path}]")
-    return LegacyExtractAndMergeArgs(
-        ingest_time=datetime.datetime.now(),
-        file_path=file_path,
-    )
 
 
 def path_for_fixture_file(

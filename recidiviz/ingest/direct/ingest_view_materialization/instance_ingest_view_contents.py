@@ -147,7 +147,7 @@ _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 #  possible that this will not be necessary once all views have been migrated to v2
 #  mappings and it's worth revisiting at that time.
 def to_string_value_converter(
-    field_name: str,  # pylint: disable=unused-argument
+    field_name: str,
     value: Any,
 ) -> str:
     if value is None:
@@ -159,7 +159,9 @@ def to_string_value_converter(
     if isinstance(value, (datetime.datetime, datetime.date)):
         return value.isoformat()
 
-    raise ValueError(f"Unexpected value type [{type(value)}]: {value}")
+    raise ValueError(
+        f"Unexpected value type [{type(value)}] for field [{field_name}]: {value}"
+    )
 
 
 @attr.define(frozen=True, kw_only=True)

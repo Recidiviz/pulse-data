@@ -29,19 +29,26 @@ import pytz
 from freezegun import freeze_time
 from mock import patch
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
     DirectIngestInstancePauseStatusManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    ExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
+    LegacyExtractAndMergeArgs,
+    NewExtractAndMergeArgs,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.database.base_schema import StateBase
@@ -69,11 +76,14 @@ from recidiviz.persistence.persistence import (
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
-    ingest_args_for_fixture_file,
+    path_for_fixture_file,
     run_task_queues_to_empty,
 )
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
     build_fake_direct_ingest_controller,
+)
+from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
+    FakeInstanceIngestViewContents,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
@@ -82,6 +92,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import in_ci
+from recidiviz.utils.types import assert_type
 
 FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
@@ -236,10 +247,31 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
             cls.temp_db_dir
         )
 
+    # TODO(#11424): Delete this function once we have migrated all states to use BQ
+    #  materialization.
+    def _legacy_extract_and_merge_args_for_fixture_file(
+        self,
+        ingest_view_name: str,
+        should_normalize: bool = True,
+    ) -> LegacyExtractAndMergeArgs:
+        filename = f"{ingest_view_name}.csv"
+        file_path = path_for_fixture_file(
+            self.controller,
+            filename,
+            should_normalize,
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+        )
+        if not isinstance(file_path, GcsfsFilePath):
+            raise ValueError(f"Unexpected type [{file_path}]")
+        return LegacyExtractAndMergeArgs(
+            ingest_time=datetime.datetime.now(),
+            file_path=file_path,
+        )
+
     # TODO(#8905): Delete this function once we have migrated all states to use the new
     #   version of ingest mappings that skip ingest info entirely.
     def run_legacy_parse_file_test(
-        self, expected: IngestInfo, fixture_file_name: str
+        self, expected: IngestInfo, ingest_view_name: str
     ) -> IngestInfo:
         """Runs a test that reads and parses a given fixture file. Returns the
         parsed IngestInfo object for tests to run further validations."""
@@ -248,8 +280,6 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
             raise ValueError(
                 "This function is only for use in legacy states where ingest is fully launched."
             )
-
-        args = ingest_args_for_fixture_file(self.controller, f"{fixture_file_name}.csv")
 
         if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -263,30 +293,49 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
 
         materialization_job_args = self._register_materialization_job(
             controller=self.controller,
-            ingest_view_name=fixture_file_name,
+            ingest_view_name=ingest_view_name,
             upper_bound_datetime=now,
             lower_bound_datetime=yesterday,
         )
+
+        if self.controller.is_bq_materialization_enabled:
+            ingest_view_contents = assert_type(
+                self.controller.ingest_view_contents, FakeInstanceIngestViewContents
+            )
+            # Make batch size large so all fixture data is processed in one batch
+            ingest_view_contents.batch_size = 10000
 
         self.controller.ingest_view_materializer.materialize_view_for_args(
             materialization_job_args
         )
 
+        if self.controller.is_bq_materialization_enabled:
+            extract_and_merge_args: ExtractAndMergeArgs = assert_type(
+                self.controller.job_prioritizer.get_next_job_args(),
+                NewExtractAndMergeArgs,
+            )
+        else:
+            extract_and_merge_args = (
+                self._legacy_extract_and_merge_args_for_fixture_file(ingest_view_name)
+            )
+
         # pylint:disable=protected-access
-        fixture_contents_handle = self.controller._get_contents_handle(args)
+        fixture_contents_handle = self.controller._get_contents_handle(
+            extract_and_merge_args
+        )
 
         if fixture_contents_handle is None:
             self.fail("fixture_contents_handle should not be None")
-        processor = self.controller.get_ingest_view_processor(args)
+        processor = self.controller.get_ingest_view_processor(extract_and_merge_args)
 
         if not isinstance(processor, LegacyIngestViewProcessor):
             raise ValueError(f"Unexpected processor type: {type(processor)}")
 
         # pylint:disable=protected-access
         final_info = processor._parse_ingest_info(
-            args,
+            extract_and_merge_args,
             fixture_contents_handle,
-            self.controller._get_ingest_metadata(args),
+            self.controller._get_ingest_metadata(extract_and_merge_args),
         )
 
         print_visible_header_label("FINAL")
@@ -300,9 +349,19 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         return final_info
 
     def invalidate_ingest_view_metadata(self) -> None:
+        # TODO(#11424): Delete this once all regions have been migrated to BQ materialization.
         with SessionFactory.using_database(self.operations_database_key) as session:
             session.query(operations_schema.DirectIngestIngestFileMetadata).update(
                 {operations_schema.DirectIngestIngestFileMetadata.is_invalidated: True}
+            )
+
+        with SessionFactory.using_database(self.operations_database_key) as session:
+            session.query(
+                operations_schema.DirectIngestViewMaterializationMetadata
+            ).update(
+                {
+                    operations_schema.DirectIngestViewMaterializationMetadata.is_invalidated: True
+                }
             )
 
     def _run_ingest_job_for_filename(
@@ -333,9 +392,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
             lower_bound_datetime=yesterday,
         )
 
-        self.controller.ingest_view_materializer.materialize_view_for_args(
-            materialization_job_args
-        )
+        self.controller.do_ingest_view_materialization(materialization_job_args)
 
         run_task_queues_to_empty(self.controller)
 
@@ -359,6 +416,11 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
 
     def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:
         self.invalidate_ingest_view_metadata()
+        if self.controller.is_bq_materialization_enabled:
+            ingest_view_contents = assert_type(
+                self.controller.ingest_view_contents, FakeInstanceIngestViewContents
+            )
+            ingest_view_contents.test_clear_data()
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f"{file_tag}.csv", is_rerun=True)
         self.did_rerun_for_idempotence = True

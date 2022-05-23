@@ -67,7 +67,6 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
-    IngestViewMaterializationArgs,
     LegacyExtractAndMergeArgs,
     NewExtractAndMergeArgs,
 )
@@ -1072,22 +1071,6 @@ class FileBaseMaterializationDirectIngestControllerTest(unittest.TestCase):
                 ("tagHeadersNoContents", True),
             ],
         )
-
-    @staticmethod
-    def _register_materialization_job(
-        controller: BaseDirectIngestController,
-        ingest_view_name: str,
-        upper_bound_datetime: datetime.datetime,
-        lower_bound_datetime: Optional[datetime.datetime],
-    ) -> IngestViewMaterializationArgs:
-        delegate = controller.ingest_view_materialization_args_generator.delegate
-        args = delegate.build_new_args(
-            ingest_view_name=ingest_view_name,
-            upper_bound_datetime_inclusive=upper_bound_datetime,
-            lower_bound_datetime_exclusive=lower_bound_datetime,
-        )
-        delegate.register_new_job(args)
-        return args
 
     def test_extract_and_merge_task_run_twice(self) -> None:
         # Cloud Tasks has an at-least once guarantee - make sure rerunning a task in series does not crash

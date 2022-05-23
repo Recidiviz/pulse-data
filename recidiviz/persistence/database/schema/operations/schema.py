@@ -256,7 +256,7 @@ class DirectIngestViewMaterializationMetadata(OperationsBase):
         ),
         CheckConstraint(
             "materialization_time IS NULL OR "
-            "materialization_time > job_creation_time",
+            "materialization_time >= job_creation_time",
             name="job_times_ordering",
         ),
         # Note: The tuple (region_code, instance, ingest_view_name,

@@ -132,9 +132,25 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
         raise ValueError(f"Did not find data for batch: [{batch_to_find}]")
 
     @staticmethod
-    def _fake_query_job_for_batch(batch_data: _MockBatchData) -> FakeQueryJob:
+    def _read_results_from_file(file_path: str) -> pd.DataFrame:
+        results = pd.read_csv(
+            file_path,
+            # Do not convert integer / float values to numerical values
+            dtype="string",
+            # Do not convert the literal value "NULL" to NaN
+            keep_default_na=False,
+        )
+        # Convert all numpy.NaN values to None to match behavior of data coming out
+        # of BigQuery.
+        results = results.where(pd.notnull(results), None)
+        return results
+
+    @classmethod
+    def _fake_query_job_for_batch(cls, batch_data: _MockBatchData) -> FakeQueryJob:
         def run_query_fn() -> pd.DataFrame:
-            return pd.read_csv(batch_data.data_file)
+            if batch_data.data_file is None:
+                raise ValueError(f"Expected nonnull data file for batch: {batch_data}")
+            return cls._read_results_from_file(file_path=batch_data.data_file)
 
         return FakeQueryJob(run_query_fn=run_query_fn)
 
@@ -187,7 +203,7 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
     ) -> None:
         """Splits up the data in the file at |data_local_path| into the appropriate
         number of batches based on this class' batch size."""
-        full_df = pd.read_csv(data_local_path)
+        full_df = self._read_results_from_file(data_local_path)
         num_data_rows = len(full_df.index)
         if num_data_rows == 0:
             return
