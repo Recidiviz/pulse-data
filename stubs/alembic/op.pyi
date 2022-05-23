@@ -48,7 +48,7 @@ def alter_column(
     autoincrement: Optional[bool] = False,
 ) -> None: ...
 def create_check_constraint(
-    cosntraint_name: str, table_name: str, condition: str
+    constraint_name: str, table_name: str, condition: str
 ) -> None: ...
 def create_foreign_key(
     constraint_name: str,

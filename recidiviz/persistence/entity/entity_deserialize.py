@@ -148,7 +148,10 @@ def entity_deserialize(
         if is_forward_ref(field) or is_list(field):
             return field_value
 
-        raise ValueError(f"Unsupported field {field.name} with value: {field_value}.")
+        raise ValueError(
+            f"Unsupported field {field.name} with value: "
+            f"{field_value} ({type(field_value)})."
+        )
 
     converted_args = {}
     fields = set()
