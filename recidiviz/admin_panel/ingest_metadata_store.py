@@ -17,7 +17,6 @@
 """GCS Store used to keep counts of column values across the state ingest dataset
 specifically."""
 import datetime
-import json
 from typing import Dict, List, Optional, Union
 
 import attr
@@ -29,9 +28,6 @@ from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientI
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
-    IngestViewMaterializationGatingContext,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
@@ -48,7 +44,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
-from recidiviz.utils.types import assert_type
 
 
 def cloud_sql_refresh_status_query_for_schema(
@@ -110,35 +105,14 @@ class IngestDataFreshnessStore(AdminPanelStore):
 
         latest_upper_bounds: List[Dict[str, Union[Optional[str], bool]]] = []
 
-        ingest_view_materialization_gating_context = (
-            IngestViewMaterializationGatingContext.load_from_gcs()
-        )
-
         ingested_states = get_direct_ingest_states_launched_in_env()
 
-        bq_enabled_states = [
-            state_code
-            for state_code in ingested_states
-            if ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
-                state_code, DirectIngestInstance.PRIMARY
-            )
-            and state_code != StateCode.US_ND
-        ]
-
-        no_bq_materialization_enabled_states = [
-            state_code
-            for state_code in ingested_states
-            if state_code not in bq_enabled_states
-        ]
-
         state_data_freshness = self.get_data_freshness_by_state(
-            state_codes=bq_enabled_states,
+            state_codes=ingested_states,
             ingest_instance=DirectIngestInstance.PRIMARY,
             dataset_prefix=None,
         )
-        # TODO(#11424): Loop over ingested_states directly once BQ materialization is
-        #  shipped in all states.
-        for state_code in bq_enabled_states:
+        for state_code in ingested_states:
             latest_upper_bounds.append(
                 {
                     "state": state_code.name,
@@ -151,40 +125,6 @@ class IngestDataFreshnessStore(AdminPanelStore):
                     "ingestPaused": state_code.name in regions_paused,
                 }
             )
-
-        # START POST BQ MIGRATION CLEANUP BLOCK
-        # TODO(#11424): Delete this block once BQ materialization is shipped in all states.
-        latest_upper_bounds_path = GcsfsFilePath.from_absolute_path(
-            f"gs://{metadata.project_id()}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json"
-        )
-        latest_upper_bounds_json = self.gcs_fs.download_as_string(
-            latest_upper_bounds_path
-        )
-        refresh_status_bq = self.get_statuses_for_schema(SchemaType.STATE)
-        processed_date_by_state_code: Dict[str, str] = {}
-        for line in latest_upper_bounds_json.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            struct = json.loads(line)
-            state_code_str = assert_type(struct["state_code"], str)
-            processed_date_by_state_code[state_code_str.upper()] = struct.get(
-                "processed_date"
-            )
-        for state_code in no_bq_materialization_enabled_states:
-            latest_upper_bounds.append(
-                {
-                    "state": state_code.name,
-                    "date": processed_date_by_state_code.get(state_code.name),
-                    "lastRefreshDate": refresh_status_bq[
-                        state_code
-                    ].last_refresh_datetime.isoformat()
-                    if refresh_status_bq.get(state_code)
-                    else None,
-                    "ingestPaused": state_code.name in regions_paused,
-                }
-            )
-        # END POST BQ MIGRATION CLEANUP BLOCK
 
         self.data_freshness_results = latest_upper_bounds
 
