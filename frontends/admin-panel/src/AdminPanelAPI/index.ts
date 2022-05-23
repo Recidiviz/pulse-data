@@ -95,7 +95,6 @@ export {
   fetchIngestStateCodes,
   getIngestInstanceSummary,
   getIngestQueuesState,
-  getInstanceMaterializationBQBool,
   importDatabaseFromGCS,
   markInstanceIngestViewDataInvalidated,
   moveIngestViewResultsBetweenInstances,
@@ -104,7 +103,6 @@ export {
   releaseBQExportLock,
   startIngestRun,
   transferIngestViewMetadataToNewInstance,
-  ungateMaterializationInstance,
   unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "./IngestOperations";

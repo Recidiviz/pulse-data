@@ -24,7 +24,6 @@ import {
   IngestInstanceSummary,
 } from "./constants";
 import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
-import LegacyInstanceIngestViewMetadata from "./LegacyIntanceIngestViewMetadata";
 
 interface IngestInstanceCardProps {
   data: IngestInstanceSummary;
@@ -142,13 +141,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       </Descriptions>
       <br />
       <h1>Ingest views</h1>
-      {/* TODO(#11424): Update to always return InstanceIngestViewMetadata once we have migrated
-          all states to BQ // ingest view materialization. */}
-      {data.isBQMaterializationEnabled ? (
-        <InstanceIngestViewMetadata stateCode={stateCode} data={data} />
-      ) : (
-        <LegacyInstanceIngestViewMetadata data={data} />
-      )}
+      <InstanceIngestViewMetadata stateCode={stateCode} data={data} />
       <br />
       <h1>Resources</h1>
       <Descriptions bordered>
