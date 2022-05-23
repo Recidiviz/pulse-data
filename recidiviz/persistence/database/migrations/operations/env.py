@@ -30,7 +30,7 @@ from recidiviz.persistence.database.migrations.base_env import (
 # declarations are run within the Alembic environment
 # pylint:disable=unused-import
 from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestIngestFileMetadata,
+    DirectIngestRawFileMetadata,
 )
 
 # this is the Alembic Config object, which provides
