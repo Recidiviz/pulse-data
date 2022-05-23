@@ -51,7 +51,7 @@ WITH date_array AS (
     INNER JOIN 
         date_array 
     ON 
-        date BETWEEN start_date AND end_date 
+        date BETWEEN start_date AND IFNULL(end_date, CURRENT_DATE("US/Eastern"))
 )
 
 ###############
@@ -108,6 +108,7 @@ WITH date_array AS (
         district,
         office,
         IF(a.supervision_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
+        a.supervision_level,
         date,
     FROM
         `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` a
@@ -138,7 +139,50 @@ WITH date_array AS (
     ON 
         a.state_code = b.state_code 
         AND a.person_id = b.person_id 
-        AND a.response_date = b.date
+        AND a.earliest_available_date = b.date
+)
+# Absconsion or bench warrant periods
+, absconsions_bench_warrants AS (
+    SELECT DISTINCT * 
+    FROM
+    (
+        SELECT
+            a.state_code,
+            a.person_id,
+            supervising_officer_external_id,
+            district,
+            office,
+            date,
+        FROM
+            `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
+        INNER JOIN 
+            officer_office_sessions_unnested b
+        ON 
+            a.state_code = b.state_code 
+            AND a.person_id = b.person_id 
+            AND a.start_date = b.date
+        WHERE
+            compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
+            AND compartment_level_2 IN ("ABSCONSION", "BENCH_WARRANT")
+        UNION ALL
+        SELECT
+            a.state_code,
+            a.person_id,
+            supervising_officer_external_id,
+            district,
+            office,
+            date,
+        FROM
+            `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` a
+        INNER JOIN 
+            officer_office_sessions_unnested b
+        ON 
+            a.state_code = b.state_code 
+            AND a.person_id = b.person_id 
+            AND a.start_date = b.date
+        WHERE
+            supervision_level IN ("ABSCONDED", "WARRANT")
+    )
 )
 # Transitions from supervision to incarceration
 , incarcerations AS (
@@ -186,7 +230,7 @@ WITH date_array AS (
         # edge case: treat jobs at supervision start as employment gains
         # but no job at supervision start is not an employment loss
         is_employed != IFNULL(LAG(is_employed) OVER (
-            PARTITION BY person_id, supervising_officer_external_id, district, office, date
+            PARTITION BY person_id, supervising_officer_external_id, district, office
             ORDER BY employment_status_start_date
         ), FALSE)
 )
@@ -210,7 +254,76 @@ WITH date_array AS (
         AND a.drug_screen_date = b.date
     GROUP BY 1, 2, 3, 4, 5, 6
 )
-
+, lsir_assessments AS (
+    SELECT DISTINCT
+        a.state_code,
+        a.person_id,
+        supervising_officer_external_id,
+        district,
+        office,
+        date,
+        a.assessment_score - LAG(a.assessment_score) OVER (
+            PARTITION BY a.state_code, a.person_id, supervising_officer_external_id, district, office ORDER BY date
+        ) AS lsir_score_change,
+    FROM `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` a
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON
+        a.state_code = b.state_code
+        AND a.person_id = b.person_id
+        AND a.assessment_date = b.date
+    WHERE a.assessment_type = "LSIR"
+)
+, contacts AS (
+    SELECT
+        a.state_code,
+        a.person_id,
+        supervising_officer_external_id,
+        district,
+        office,
+        date,
+        LOGICAL_OR(
+            location = "RESIDENCE"
+            AND contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
+            AND status = "COMPLETED"
+        ) AS any_home_visit_contact,
+        LOGICAL_OR(
+            contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
+            AND status = "COMPLETED"
+        ) AS any_face_to_face_contact,
+        LOGICAL_OR(status = "COMPLETED") AS any_completed_contact,
+        LOGICAL_OR(status = "ATTEMPTED") AS any_attempted_contact,
+    FROM `{project_id}.{base_dataset}.state_supervision_contact` a
+    INNER JOIN 
+        officer_office_sessions_unnested b
+    ON
+        a.state_code = b.state_code
+        AND a.person_id = b.person_id
+        AND a.contact_date = b.date
+    GROUP BY 1, 2, 3, 4, 5, 6
+)
+# The following cte creates spans of contact dates and the subsequent contact date,
+# to help us identify the most recent completed contact in the `caseload_attributes` cte.
+, contacts_completed_sessionized AS (
+    SELECT
+        state_code, 
+        person_id,
+        contact_date,
+        DATE_SUB(
+            LEAD(contact_date) OVER (
+                PARTITION BY person_id
+                ORDER BY contact_date
+            ), INTERVAL 1 DAY
+        ) AS next_contact_date
+    FROM (
+        SELECT DISTINCT
+            state_code,
+            person_id,
+            contact_date
+        FROM `{project_id}.{base_dataset}.state_supervision_contact`
+        WHERE status = "COMPLETED"
+    )
+)
 # skip revocations for now because the lag from temporary hold to actual revocation 
 # makes it challenging to associate revocation with an officer
 
@@ -340,7 +453,7 @@ WITH date_array AS (
             NULLIF(
                 MAX(IFNULL(employment_end_date, "9999-01-01")) 
                 OVER (PARTITION BY state_code, person_id, employer_name, employment_start_date)
-            , CURRENT_DATE("US/Eastern")) AS employment_end_date,
+            , "9999-01-01") AS employment_end_date,
         FROM
             `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized`
         WHERE 
@@ -401,23 +514,40 @@ WITH date_array AS (
             "MENTAL_HEALTH_COURT"), c.person_id, NULL)) AS caseload_other_case_type,
         COUNT(DISTINCT IF(case_type_start IS NULL, c.person_id, NULL)
             ) AS caseload_unknown,
-        AVG(assessment_score) AS avg_lsir_score,
-        COUNT(DISTINCT IF(assessment_score IS NULL, score.person_id, NULL)) 
+        AVG(score_initial.assessment_score) AS avg_lsir_score_at_assignment,
+        AVG(score.assessment_score) AS avg_lsir_score,
+        AVG(DATE_DIFF(date, score.assessment_date, DAY)) AS avg_days_since_latest_lsir,
+        COUNT(DISTINCT IF(score.assessment_score IS NULL, score.person_id, NULL)) 
             AS caseload_no_lsir_score,
-        COUNT(DISTINCT IF(assessment_level IN ("LOW", "LOW_MEDIUM", "MINIMUM"), score.person_id,
+        COUNT(DISTINCT IF(score.assessment_level IN ("LOW", "LOW_MEDIUM", "MINIMUM"), score.person_id,
             NULL)) AS caseload_low_risk_level,
-        COUNT(DISTINCT IF(assessment_level IN ("HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"), 
+        COUNT(DISTINCT IF(score.assessment_level IN ("HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"), 
             score.person_id, NULL)) AS caseload_high_risk_level,
-        COUNT(DISTINCT IF(assessment_level IS NULL OR assessment_level LIKE "%UNKNOWN",
+        COUNT(DISTINCT IF(score.assessment_level IS NULL OR score.assessment_level LIKE "%UNKNOWN",
             score.person_id, NULL)) AS caseload_unknown_risk_level,
         AVG(DATE_DIFF(date, birthdate, DAY) / 365.25) AS avg_age,
         COUNT(DISTINCT IF(is_employed, e.person_id, NULL)) AS caseload_is_employed,
+        AVG(DATE_DIFF(date, f.contact_date, DAY)) AS avg_days_since_latest_completed_contact,
+        COUNT(DISTINCT IF(COALESCE(DATE_DIFF(date, f.contact_date, DAY) > 365, TRUE), f.person_id, NULL)) 
+            AS caseload_no_completed_contact_past_1yr,
     FROM
         date_array d
     INNER JOIN
         `{project_id}.{sessions_dataset}.supervision_officer_office_sessions_materialized` b
     ON
         d.date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+    INNER JOIN
+        `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` sss
+    ON
+        sss.state_code = b.state_code
+        AND sss.person_id = b.person_id
+        AND b.start_date BETWEEN sss.start_date AND IFNULL(sss.end_date, "9999-01-01")
+    INNER JOIN
+        `{project_id}.{sessions_dataset}.system_sessions_materialized` sys
+    ON
+        sys.state_code = b.state_code
+        AND sys.person_id = b.person_id
+        AND b.start_date BETWEEN sys.start_date AND IFNULL(sys.end_date, "9999-01-01")
     INNER JOIN (
         SELECT 
             state_code,
@@ -442,8 +572,18 @@ WITH date_array AS (
     ON
         score.state_code = c.state_code
         AND score.person_id = c.person_id
-        AND date BETWEEN assessment_date AND IFNULL(score_end_date, "9999-01-01")
-        AND assessment_type = "LSIR"
+        AND date BETWEEN score.assessment_date AND IFNULL(score.score_end_date, "9999-01-01")
+        AND score.assessment_type = "LSIR"
+        # Only consider assessments occurring within the same system session as date of evaluation
+        AND score.assessment_date BETWEEN sys.start_date AND IFNULL(sys.end_date, "9999-01-01")
+    # Get assessment scores of caseload at time of assignment
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` score_initial
+    ON
+        score_initial.state_code = c.state_code
+        AND score_initial.person_id = c.person_id
+        AND b.start_date BETWEEN score_initial.assessment_date AND IFNULL(score_initial.score_end_date, "9999-01-01")
+        AND score_initial.assessment_type = "LSIR"
     LEFT JOIN
         `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` e
     ON 
@@ -451,6 +591,14 @@ WITH date_array AS (
         AND e.person_id = c.person_id
         AND date BETWEEN employment_status_start_date AND 
             IFNULL(employment_status_end_date, "9999-01-01")
+    LEFT JOIN
+        contacts_completed_sessionized f
+    ON
+        f.state_code = c.state_code
+        AND f.person_id = c.person_id
+        AND date BETWEEN f.contact_date AND IFNULL(f.next_contact_date, "9999-01-01")
+        # Only consider completed contacts occurring within the same supervision super session as date of evaluation
+        AND f.contact_date BETWEEN sss.start_date AND IFNULL(sss.end_date, "9999-01-01")
     LEFT JOIN
         `{project_id}.{sessions_dataset}.person_demographics_materialized` bday
     ON
@@ -487,6 +635,9 @@ LEFT JOIN (
         COUNT(DISTINCT IF(
             supervision_level_changes.change_type = "UPGRADE",
             supervision_level_changes.person_id, NULL)) AS supervision_upgrades,
+        COUNT(DISTINCT IF(
+            supervision_level_changes.supervision_level = "LIMITED",
+            supervision_level_changes.person_id, NULL)) AS supervision_downgrades_to_limited,
 
         # violations (max one per person per day per type)
         COUNT(DISTINCT violations.person_id) AS violations,
@@ -496,6 +647,9 @@ LEFT JOIN (
             "MISDEMEANOR", "MUNICIPAL"), violations.person_id, NULL)) AS violations_legal,
         COUNT(DISTINCT IF(violations.most_serious_violation_type = "TECHNICAL",
             violations.person_id, NULL)) AS violations_technical,
+        
+        # absconsions/bench warrants
+        COUNT(DISTINCT absconsions_bench_warrants.person_id) AS absconsions_bench_warrants,
 
         # incarcerations
         COUNT(DISTINCT IF(incarcerations.temporary_flag, incarcerations.person_id, 
@@ -506,6 +660,18 @@ LEFT JOIN (
         COUNT(DISTINCT IF(drug_screens.is_positive_result, drug_screens.person_id, 
             NULL)) AS drug_screens_positive,
         COUNT(DISTINCT drug_screens.person_id) AS drug_screens_all,
+        
+        # risk assessments
+        COUNT(DISTINCT lsir_assessments.person_id) AS lsir_assessments,
+        COUNT(DISTINCT IF(lsir_assessments.lsir_score_change > 0, lsir_assessments.person_id, NULL)) AS lsir_risk_increase,
+        COUNT(DISTINCT IF(lsir_assessments.lsir_score_change < 0, lsir_assessments.person_id, NULL)) AS lsir_risk_decrease,
+        AVG(lsir_score_change) AS lsir_score_change,
+
+        # contacts
+        COUNT(DISTINCT IF(contacts.any_completed_contact, contacts.person_id, NULL)) AS contacts_completed,
+        COUNT(DISTINCT IF(contacts.any_attempted_contact, contacts.person_id, NULL)) AS contacts_attempted,
+        COUNT(DISTINCT IF(contacts.any_face_to_face_contact, contacts.person_id, NULL)) AS contacts_face_to_face,
+        COUNT(DISTINCT IF(contacts.any_home_visit_contact, contacts.person_id, NULL)) AS contacts_home_visit,
 
         # employment starts (transitions from unemployed to employed)
         COUNT(DISTINCT IF(is_employed, employment_changes.person_id, 
@@ -535,9 +701,12 @@ LEFT JOIN (
     LEFT JOIN earned_discharge_requests USING({join_columns})
     LEFT JOIN supervision_level_changes USING({join_columns})
     LEFT JOIN violations USING({join_columns})
+    LEFT JOIN absconsions_bench_warrants USING({join_columns})
     LEFT JOIN incarcerations USING({join_columns})
     LEFT JOIN employment_changes USING({join_columns})
     LEFT JOIN drug_screens USING({join_columns})
+    LEFT JOIN lsir_assessments USING({join_columns})
+    LEFT JOIN contacts USING({join_columns})
     LEFT JOIN window_metrics USING({join_columns})
     GROUP BY 1, 2, 3, 4, 5
 ) 
