@@ -29,7 +29,6 @@ from more_itertools import first
 from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
@@ -40,7 +39,10 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
-from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestFixtureDataFileType,
+    direct_ingest_fixture_path,
+)
 from recidiviz.utils.regions import get_region
 
 Faker.seed(0)
@@ -131,7 +133,7 @@ class RawDataFixturesGenerator:
             region_code=self.region_code,
             file_name=f"{self.output_filename}.csv",
             file_tag=raw_table_file_tag,
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+            fixture_file_type=DirectIngestFixtureDataFileType.RAW,
         )
 
     def write_results_to_csv(
