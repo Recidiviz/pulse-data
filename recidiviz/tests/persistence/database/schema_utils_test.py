@@ -104,9 +104,6 @@ def test_get_all_database_entity_classes() -> None:
         "StateSupervisionViolationResponseDecisionEntry",
     ]
     operations_database_entity_names = [
-        # TODO(#11424): Delete DirectIngestIngestFileMetadata from this list when BQ
-        #  materialization has shipped to all states.
-        "DirectIngestIngestFileMetadata",
         "DirectIngestViewMaterializationMetadata",
         "DirectIngestRawFileMetadata",
         "DirectIngestSftpFileMetadata",
@@ -232,9 +229,6 @@ def test_get_all_table_classes() -> None:
         "state_supervision_violation_response_decision_agent_association",
     ]
     operations_table_names = [
-        # TODO(#11424): Delete direct_ingest_ingest_file_metadata from this list when BQ
-        #  materialization has shipped to all states.
-        "direct_ingest_ingest_file_metadata",
         "direct_ingest_view_materialization_metadata",
         "direct_ingest_raw_file_metadata",
         "direct_ingest_sftp_file_metadata",

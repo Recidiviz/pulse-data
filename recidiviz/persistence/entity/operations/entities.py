@@ -86,48 +86,6 @@ class DirectIngestRawFileMetadata(OperationsEntity, BuildableAttr, DefaultableAt
         return self.file_tag.startswith("RECIDIVIZ_REFERENCE")
 
 
-# TODO(#11424): Delete this class once all states have shipped to BQ-based
-#  ingest view materialization.
-@attr.s(eq=False)
-class DirectIngestIngestFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr):
-    """Metadata about a SQL-preprocessed, persistence-ready direct ingest files."""
-
-    file_id: int = attr.ib()
-    region_code: str = attr.ib()
-
-    # Shortened name for the raw file that corresponds to its YAML schema definition
-    file_tag: str = attr.ib()
-
-    # Unprocessed normalized file name for this file before export
-    normalized_file_name: Optional[str] = attr.ib()
-
-    # Time when the file is actually discovered by our controller's handle_new_files endpoint.
-    discovery_time: Optional[datetime.datetime] = attr.ib()
-
-    # Time when we have finished fully processing this file importing to Postgres.
-    processed_time: Optional[datetime.datetime] = attr.ib()
-
-    # These fields are first set at export job creation time
-    is_invalidated: bool = attr.ib()
-
-    # If true, indicates that this file is a split of an original ingest view export. If
-    # false, this file was exported directly from BigQuery.
-    is_file_split: bool = attr.ib()
-
-    # Time the export job is first scheduled for these time bounds
-    job_creation_time: datetime.datetime = attr.ib()
-    datetimes_contained_lower_bound_exclusive: Optional[datetime.datetime] = attr.ib()
-    datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
-
-    # Time of the actual view export (when the file is done writing to GCS), set at same
-    # time as normalized_file_name
-    export_time: Optional[datetime.datetime] = attr.ib()
-
-    # The name of the database that the data in this file has been or will be written
-    # to.
-    ingest_database_name: str = attr.ib()
-
-
 @attr.s(eq=False)
 class DirectIngestViewMaterializationMetadata(
     OperationsEntity, BuildableAttr, DefaultableAttr

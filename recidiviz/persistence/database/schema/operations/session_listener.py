@@ -23,7 +23,6 @@ from typing import Any
 from sqlalchemy import event
 
 from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestIngestFileMetadata,
     DirectIngestViewMaterializationMetadata,
 )
 from recidiviz.persistence.database.session import Session
@@ -38,32 +37,7 @@ def session_listener(session: Session) -> None:
     def _pending_to_persistent(session: Session, instance: Any) -> None:
         """Called when a SQLAlchemy object transitions to a persistent object. If this function throws, the session
         will be rolled back and that object will not be committed."""
-        if isinstance(instance, DirectIngestIngestFileMetadata):
-            # TODO(#11424): Delete this block once BQ materialization is shipped to all
-            #  states.
-            results = (
-                session.query(DirectIngestIngestFileMetadata)
-                .filter_by(
-                    is_invalidated=False,
-                    is_file_split=False,
-                    region_code=instance.region_code,
-                    file_tag=instance.file_tag,
-                    ingest_database_name=instance.ingest_database_name,
-                    datetimes_contained_lower_bound_exclusive=instance.datetimes_contained_lower_bound_exclusive,
-                    datetimes_contained_upper_bound_inclusive=instance.datetimes_contained_upper_bound_inclusive,
-                )
-                .all()
-            )
-
-            if len(results) > 1:
-                raise IntegrityError(
-                    f"Attempting to commit repeated non-file split DirectIngestIngestFileMetadata row for "
-                    f"region_code={instance.region_code}, file_tag={instance.file_tag}, "
-                    f"ingest_database_name={instance.ingest_database_name}",
-                    f"datetimes_contained_lower_bound_exclusive={instance.datetimes_contained_lower_bound_exclusive}, "
-                    f"datetimes_contained_upper_bound_inclusive={instance.datetimes_contained_upper_bound_inclusive}",
-                )
-        elif isinstance(instance, DirectIngestViewMaterializationMetadata):
+        if isinstance(instance, DirectIngestViewMaterializationMetadata):
             results = (
                 session.query(DirectIngestViewMaterializationMetadata)
                 .filter_by(
