@@ -17,23 +17,23 @@
 """Tests for methods in common_utils.py."""
 import datetime
 import unittest
-from mock import MagicMock, call
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
+from mock import MagicMock, call
 
 from recidiviz.common.common_utils import (
     create_generated_id,
-    is_generated_id,
-    retry_grpc,
     create_synthetic_id,
-    get_external_id,
     date_intersects_with_span,
     date_spans_overlap_exclusive,
     date_spans_overlap_inclusive,
+    get_external_id,
+    is_generated_id,
+    retry_grpc,
 )
 
 GO_AWAY_ERROR = exceptions.InternalServerError("500 GOAWAY received")
-DEADLINE_EXCEEDED_ERROR = exceptions.InternalServerError("504 Deadline " "Exceeded")
+DEADLINE_EXCEEDED_ERROR = exceptions.DeadlineExceeded("504 Deadline Exceeded")
 OTHER_ERROR = exceptions.InternalServerError("500 received")
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
@@ -105,7 +105,7 @@ class CommonUtilsTest(unittest.TestCase):
         # Always a DEADLINE_EXCEEDED error
         fn.side_effect = DEADLINE_EXCEEDED_ERROR
 
-        with self.assertRaises(exceptions.InternalServerError):
+        with self.assertRaises(exceptions.DeadlineExceeded):
             retry_grpc(3, fn, 1, b=2)
 
         fn.assert_has_calls([call(1, b=2)] * 4)
