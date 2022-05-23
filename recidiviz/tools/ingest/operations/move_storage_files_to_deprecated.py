@@ -48,7 +48,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
 )
 from recidiviz.tools.ingest.operations.operate_on_storage_ingest_files_controller import (
@@ -134,8 +133,6 @@ class MoveFilesToDeprecatedController:
         #  appropriate data has been deleted from operations db.
         if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
             operations_table = DirectIngestRawFileMetadata.__tablename__
-        elif self.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-            operations_table = DirectIngestIngestFileMetadata.__tablename__
         else:
             raise ValueError(f"Unexpected file type [{self.file_type}].")
 
