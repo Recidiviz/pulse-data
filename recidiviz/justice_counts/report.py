@@ -69,7 +69,8 @@ class ReportInterface:
             }
             return [
                 ReportedContext(
-                    key=context.key, value=context_key_to_context_value.get(context.key)
+                    key=context.key,
+                    value=context_key_to_context_value.get(context.key.value),
                 )
                 for context in metric_definition.contexts
             ]
