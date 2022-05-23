@@ -103,9 +103,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
     IngestViewMaterializationArgsGeneratorDelegate,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
-    IngestViewMaterializationGatingContext,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
 )
@@ -248,18 +245,8 @@ class BaseDirectIngestController:
             self.region, self.get_ingest_view_rank_list()
         )
 
-        materialization_gating_context = (
-            IngestViewMaterializationGatingContext.load_from_gcs()
-        )
-        self.is_bq_materialization_enabled = (
-            (
-                materialization_gating_context.is_bq_ingest_view_materialization_enabled(
-                    StateCode(self.region_code().upper()), self.ingest_instance
-                )
-            )
-            if StateCode.is_state_code(self.region_code().upper())
-            else False
-        )
+        # TODO(#11424): Delete this var and clean up all now-unused code in this class
+        self.is_bq_materialization_enabled = True
 
         self.job_prioritizer: ExtractAndMergeJobPrioritizer
         materialization_args_generator_delegate: IngestViewMaterializationArgsGeneratorDelegate
