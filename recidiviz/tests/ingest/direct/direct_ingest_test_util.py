@@ -90,18 +90,18 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
         while (
             tm.get_scheduler_queue_info(*queue_args).size()
             or tm.get_extract_and_merge_queue_info(
-                *queue_args, controller.is_bq_materialization_enabled
+                *queue_args, is_bq_materialization_enabled=True
             ).size()
             or tm.get_raw_data_import_queue_info(controller.region).size()
             or tm.get_ingest_view_materialization_queue_info(
-                *queue_args, controller.is_bq_materialization_enabled
+                *queue_args, is_bq_materialization_enabled=True
             ).size()
         ):
             if tm.get_raw_data_import_queue_info(controller.region).size():
                 tm.test_run_next_raw_data_import_task()
                 tm.test_pop_finished_raw_data_import_task()
             if tm.get_ingest_view_materialization_queue_info(
-                *queue_args, controller.is_bq_materialization_enabled
+                *queue_args, is_bq_materialization_enabled=True
             ).size():
                 tm.test_run_next_ingest_view_materialization_task()
                 tm.test_pop_finished_ingest_view_materialization_task()
@@ -109,7 +109,7 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
                 tm.test_run_next_scheduler_task()
                 tm.test_pop_finished_scheduler_task()
             if tm.get_extract_and_merge_queue_info(
-                *queue_args, controller.is_bq_materialization_enabled
+                *queue_args, is_bq_materialization_enabled=True
             ).size():
                 tm.test_run_next_extract_and_merge_task()
                 tm.test_pop_finished_extract_and_merge_task()

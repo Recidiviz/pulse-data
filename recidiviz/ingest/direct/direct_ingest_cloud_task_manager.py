@@ -389,7 +389,7 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
-        task_args: ExtractAndMergeArgs,
+        task_args: NewExtractAndMergeArgs,
         is_bq_materialization_enabled: bool,
     ) -> None:
         """Queues a direct ingest process job task. All direct ingest data
@@ -650,7 +650,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
-        task_args: ExtractAndMergeArgs,
+        task_args: NewExtractAndMergeArgs,
         is_bq_materialization_enabled: bool,
     ) -> None:
         task_id = build_extract_and_merge_task_id(region, task_args)
