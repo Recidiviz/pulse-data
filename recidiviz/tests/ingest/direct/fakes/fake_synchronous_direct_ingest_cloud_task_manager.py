@@ -34,9 +34,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
     IngestViewMaterializationArgs,
+    NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -55,7 +55,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def __init__(self) -> None:
         super().__init__()
-        self.extract_and_merge_tasks: List[Tuple[str, ExtractAndMergeArgs]] = []
+        self.extract_and_merge_tasks: List[Tuple[str, NewExtractAndMergeArgs]] = []
         self.num_finished_extract_and_merge_tasks = 0
         self.scheduler_tasks: List[Tuple[str, GcsfsBucketPath, bool]] = []
         self.num_finished_scheduler_tasks = 0
@@ -116,7 +116,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
-        task_args: ExtractAndMergeArgs,
+        task_args: NewExtractAndMergeArgs,
         is_bq_materialization_enabled: bool,
     ) -> None:
         """Queues *but does not run* a process job task."""
@@ -324,7 +324,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def test_pop_finished_extract_and_merge_task(
         self,
-    ) -> Tuple[str, ExtractAndMergeArgs]:
+    ) -> Tuple[str, NewExtractAndMergeArgs]:
         """Removes most recently run process job task from the queue."""
         if self.num_finished_extract_and_merge_tasks == 0:
             raise ValueError("No finished tasks to pop.")

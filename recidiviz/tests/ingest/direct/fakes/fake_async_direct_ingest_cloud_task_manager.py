@@ -33,9 +33,9 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
     IngestViewMaterializationArgs,
+    NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -76,7 +76,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
-        task_args: ExtractAndMergeArgs,
+        task_args: NewExtractAndMergeArgs,
         is_bq_materialization_enabled: bool,
     ) -> None:
         if not self.controller:

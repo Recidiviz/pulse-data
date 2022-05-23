@@ -24,22 +24,11 @@ import os
 from types import ModuleType
 from typing import List, Optional
 
-import pandas
-
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
-from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
-    ReadOneGcsfsCsvReaderDelegate,
-    SplittingGcsfsCsvReaderDelegate,
-)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
-    GcsfsDirectoryPath,
-    GcsfsFilePath,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
@@ -54,9 +43,6 @@ from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer impor
     ExtractAndMergeJobPrioritizer,
     ExtractAndMergeJobPrioritizerImpl,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
-    GcsfsDirectIngestJobPrioritizer,
-)
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
     IngestViewProcessorImpl,
@@ -67,9 +53,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_scheduler_task_id,
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    SPLIT_FILE_SUFFIX,
     DirectIngestGCSFileSystem,
-    to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
@@ -91,12 +75,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializatio
 from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
     BQBasedMaterializerDelegate,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.file_based_materialization_args_generator_delegate import (
-    FileBasedMaterializationArgsGeneratorDelegate,
-)
-from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer_delegate import (
-    FileBasedMaterializerDelegate,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
 )
@@ -110,7 +88,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
     IngestViewMaterializerDelegate,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContents,
     InstanceIngestViewContentsImpl,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
@@ -124,17 +101,14 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
     DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestIngestFileMetadataManager,
     PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
     IngestViewMaterializationArgs,
-    LegacyExtractAndMergeArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -150,40 +124,13 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestIngestFileMetadata,
-)
 from recidiviz.utils import environment, regions, trace
 from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
-# TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
-class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
-    def __init__(
-        self,
-        path: GcsfsFilePath,
-        fs: DirectIngestGCSFileSystem,
-        output_directory_path: GcsfsDirectoryPath,
-    ):
-        super().__init__(path, fs, include_header=True)
-        self.output_directory_path = output_directory_path
-
-    def transform_dataframe(self, df: pandas.DataFrame) -> pandas.DataFrame:
-        return df
-
-    def get_output_path(self, chunk_num: int) -> GcsfsFilePath:
-        name, _extension = os.path.splitext(self.path.file_name)
-
-        return GcsfsFilePath.from_directory_and_file_name(
-            self.output_directory_path, f"temp_direct_ingest_{name}_{chunk_num}.csv"
-        )
-
-
 class BaseDirectIngestController:
     """Parses and persists individual-level info from direct ingest partners."""
-
-    _INGEST_FILE_SPLIT_LINE_LIMIT = 2500
 
     def __init__(
         self,
@@ -222,10 +169,6 @@ class BaseDirectIngestController:
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
 
-        # TODO(#11424): Delete once BQ ingest view materialization is enabled for all
-        #  states.
-        self.ingest_file_split_line_limit = self._INGEST_FILE_SPLIT_LINE_LIMIT
-
         self.raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
             ingest_database_name=self.ingest_database_key.db_name,
@@ -245,81 +188,35 @@ class BaseDirectIngestController:
             self.region, self.get_ingest_view_rank_list()
         )
 
-        # TODO(#11424): Delete this var and clean up all now-unused code in this class
-        self.is_bq_materialization_enabled = True
-
         self.job_prioritizer: ExtractAndMergeJobPrioritizer
         materialization_args_generator_delegate: IngestViewMaterializationArgsGeneratorDelegate
         materializer_delegate: IngestViewMaterializerDelegate
 
-        # TODO(#11424): Delete this variable once BQ ingest view materialization is
-        #  enabled for all states.
-        self.ingest_file_metadata_manager: Optional[
-            PostgresDirectIngestIngestFileMetadataManager
-        ] = None
-        # TODO(#11424): Update the type of this variable to non-optional once BQ ingest
-        #  view materialization is enabled for all states and remove all checks in this
-        #  file for optional view_materialization_metadata_manager.
-        self.view_materialization_metadata_manager: Optional[
-            DirectIngestViewMaterializationMetadataManager
-        ] = None
-        # TODO(#11424): Update the type of this variable to non-optional once BQ ingest
-        #  view materialization is enabled for all states and remove all checks in this
-        #  file for optional view_materialization_metadata_manager.
-        self.ingest_view_contents: Optional[InstanceIngestViewContents] = None
-
-        if not self.is_bq_materialization_enabled:
-            # TODO(#11424): Delete this branch once BQ ingest view materialization is
-            #  enabled for all states.
-            self.ingest_file_metadata_manager = (
-                PostgresDirectIngestIngestFileMetadataManager(
-                    region_code=self.region.region_code,
-                    ingest_database_name=self.ingest_database_key.db_name,
-                )
-            )
-            self.job_prioritizer = GcsfsDirectIngestJobPrioritizer(
-                self.fs,
-                self.ingest_bucket_path,
-                self.get_ingest_view_rank_list(),
-            )
-            materialization_args_generator_delegate = (
-                FileBasedMaterializationArgsGeneratorDelegate(
-                    output_bucket_name=self.ingest_bucket_path.bucket_name,
-                    ingest_file_metadata_manager=self.ingest_file_metadata_manager,
-                )
-            )
-            materializer_delegate = FileBasedMaterializerDelegate(
-                ingest_file_metadata_manager=self.ingest_file_metadata_manager,
-                big_query_client=big_query_client,
+        self.view_materialization_metadata_manager = (
+            DirectIngestViewMaterializationMetadataManager(
                 region_code=self.region_code(),
                 ingest_instance=self.ingest_instance,
             )
-        else:
-            self.view_materialization_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManager(
-                    region_code=self.region_code(),
-                    ingest_instance=self.ingest_instance,
-                )
+        )
+        self.ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=big_query_client,
+            region_code=self.region_code(),
+            ingest_instance=self.ingest_instance,
+            dataset_prefix=None,
+        )
+        self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
+            ingest_view_contents=self.ingest_view_contents,
+            ingest_view_rank_list=self.get_ingest_view_rank_list(),
+        )
+        materializer_delegate = BQBasedMaterializerDelegate(
+            metadata_manager=self.view_materialization_metadata_manager,
+            ingest_view_contents=self.ingest_view_contents,
+        )
+        materialization_args_generator_delegate = (
+            BQBasedMaterializationArgsGeneratorDelegate(
+                metadata_manager=self.view_materialization_metadata_manager
             )
-            self.ingest_view_contents = InstanceIngestViewContentsImpl(
-                big_query_client=big_query_client,
-                region_code=self.region_code(),
-                ingest_instance=self.ingest_instance,
-                dataset_prefix=None,
-            )
-            self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
-                ingest_view_contents=self.ingest_view_contents,
-                ingest_view_rank_list=self.get_ingest_view_rank_list(),
-            )
-            materializer_delegate = BQBasedMaterializerDelegate(
-                metadata_manager=self.view_materialization_metadata_manager,
-                ingest_view_contents=self.ingest_view_contents,
-            )
-            materialization_args_generator_delegate = (
-                BQBasedMaterializationArgsGeneratorDelegate(
-                    metadata_manager=self.view_materialization_metadata_manager
-                )
-            )
+        )
 
         self.ingest_view_materialization_args_generator = (
             IngestViewMaterializationArgsGenerator(
@@ -461,7 +358,7 @@ class BaseDirectIngestController:
             self.cloud_task_manager.get_extract_and_merge_queue_info(
                 self.region,
                 self.ingest_instance,
-                is_bq_materialization_enabled=self.is_bq_materialization_enabled,
+                is_bq_materialization_enabled=True,
             )
         )
         if (
@@ -478,7 +375,7 @@ class BaseDirectIngestController:
             )
             return
 
-        next_job_args = self._get_next_job_args()
+        next_job_args = self.job_prioritizer.get_next_job_args()
 
         if not next_job_args:
             logging.info(
@@ -510,7 +407,7 @@ class BaseDirectIngestController:
         self.cloud_task_manager.create_direct_ingest_extract_and_merge_task(
             region=self.region,
             task_args=next_job_args,
-            is_bq_materialization_enabled=self.is_bq_materialization_enabled,
+            is_bq_materialization_enabled=True,
         )
 
     def _schedule_raw_data_import_tasks(self) -> bool:
@@ -565,7 +462,7 @@ class BaseDirectIngestController:
         queue_info = self.cloud_task_manager.get_ingest_view_materialization_queue_info(
             self.region,
             self.ingest_instance,
-            is_bq_materialization_enabled=self.is_bq_materialization_enabled,
+            is_bq_materialization_enabled=True,
         )
         if queue_info.has_ingest_view_materialization_jobs_queued(
             self.region_code(), self.ingest_instance
@@ -614,47 +511,11 @@ class BaseDirectIngestController:
                 self.cloud_task_manager.create_direct_ingest_view_materialization_task(
                     self.region,
                     task_args,
-                    is_bq_materialization_enabled=self.is_bq_materialization_enabled,
+                    is_bq_materialization_enabled=True,
                 )
                 did_schedule = True
 
         return did_schedule
-
-    def _get_next_job_args(self) -> Optional[ExtractAndMergeArgs]:
-        """Returns args for the next ingest job, or None if there is nothing to process."""
-        args = self.job_prioritizer.get_next_job_args()
-
-        if not args:
-            return None
-
-        # TODO(#11424): Delete this block once BQ materialization is enabled for
-        #  all states.
-        if not self.is_bq_materialization_enabled:
-            if not isinstance(args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{args}]")
-            if not self.ingest_file_metadata_manager:
-                raise ValueError(
-                    "Legacy ingest_file_metadata_manager is unexpectedly None."
-                )
-            discovered = (
-                self.ingest_file_metadata_manager.has_ingest_view_file_been_discovered(
-                    args.file_path
-                )
-            )
-
-            if not discovered:
-                # If the file path has not actually been discovered by the controller
-                # yet, it likely was just added and a subsequent call to handle_files
-                # will register it and trigger another call to this function so we can
-                # schedule the appropriate job.
-                logging.info(
-                    "Found args [%s] for a file that has not been discovered by the "
-                    "metadata manager yet - not scheduling.",
-                    args,
-                )
-                return None
-
-        return args
 
     # =================== #
     # SINGLE JOB RUN CODE #
@@ -669,7 +530,7 @@ class BaseDirectIngestController:
         return 3600
 
     def run_extract_and_merge_job_and_kick_scheduler_on_completion(
-        self, args: ExtractAndMergeArgs
+        self, args: NewExtractAndMergeArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
@@ -696,7 +557,7 @@ class BaseDirectIngestController:
             self.kick_scheduler(just_finished_job=True)
             logging.info("Done running task. Returning.")
 
-    def _run_extract_and_merge_job(self, args: ExtractAndMergeArgs) -> bool:
+    def _run_extract_and_merge_job(self, args: NewExtractAndMergeArgs) -> bool:
         """
         Runs the full extract and merge process for this controller - reading and
         parsing ingest view query results, transforming it to Python objects that model
@@ -709,33 +570,6 @@ class BaseDirectIngestController:
 
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", args.job_tag())
-
-        if not self.is_bq_materialization_enabled:
-            # TODO(#11424): We should be able to delete this check once we're reading
-            #   chunks of data directly from BigQuery.
-            if not isinstance(args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{args}]")
-
-            # Checking if contents "exist" is the same as checking if they are empty in
-            # the BQ-materialization world. Do this check (checks if the file exists)
-            # only for file-based materialization states
-            if not self._contents_file_exists(args):
-                logging.warning(
-                    "Contents does not exist for ingest run [%s] - returning.",
-                    args.job_tag(),
-                )
-                return False
-
-            if not self._ingest_view_file_contents_meet_scale_requirements(args):
-                logging.warning(
-                    "Cannot proceed with contents for ingest run [%s] - returning.",
-                    args.job_tag(),
-                )
-                # If we get here, we've failed to properly split a file picked up
-                # by the scheduler. We don't want to schedule a new job after
-                # returning here, otherwise we'll get ourselves in a loop where we
-                # continually try to schedule this file.
-                return False
 
         contents_handle = self._get_contents_handle(args)
 
@@ -752,14 +586,7 @@ class BaseDirectIngestController:
 
         logging.info("Successfully read contents for ingest run [%s]", args.job_tag())
 
-        if not self.is_bq_materialization_enabled:
-            # TODO(#11424): Delete this block once BQ ingest view materialization is
-            #  enabled for all states.
-            if not isinstance(args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{args}]")
-            contents_are_empty = self._are_contents_empty_legacy(args)
-        else:
-            contents_are_empty = self._are_contents_empty(contents_handle)
+        contents_are_empty = self._are_contents_empty(contents_handle)
 
         if not contents_are_empty:
             self._parse_and_persist_contents(args, contents_handle)
@@ -782,7 +609,7 @@ class BaseDirectIngestController:
         return True
 
     def get_ingest_view_processor(
-        self, args: ExtractAndMergeArgs
+        self, args: NewExtractAndMergeArgs
     ) -> IngestViewProcessor:
         """Returns the appropriate ingest view processor for this extract and merge
         job.
@@ -825,7 +652,7 @@ class BaseDirectIngestController:
 
     @trace.span
     def _parse_and_persist_contents(
-        self, args: ExtractAndMergeArgs, contents_handle: ContentsHandle
+        self, args: NewExtractAndMergeArgs, contents_handle: ContentsHandle
     ) -> None:
         """
         Runs the full ingest process for this controller for files with
@@ -846,7 +673,7 @@ class BaseDirectIngestController:
 
         logging.info("Successfully persisted for ingest run [%s]", args.job_tag())
 
-    def _get_ingest_metadata(self, args: ExtractAndMergeArgs) -> IngestMetadata:
+    def _get_ingest_metadata(self, args: NewExtractAndMergeArgs) -> IngestMetadata:
         if isinstance(self, LegacyIngestViewProcessorDelegate):
             # TODO(#8905): Remove this block once we have migrated all direct ingest
             #  states to ingest mappings v2.
@@ -872,7 +699,7 @@ class BaseDirectIngestController:
         )
 
     def _get_contents_handle(
-        self, args: ExtractAndMergeArgs
+        self, args: NewExtractAndMergeArgs
     ) -> Optional[ContentsHandle]:
         """Returns a handle to the ingest view contents allows us to iterate over the
         contents and also manages cleanup of resources once we are done with the
@@ -881,39 +708,11 @@ class BaseDirectIngestController:
         Will return None if the contents could not be read (i.e. if they no
         longer exist).
         """
-        if not self.is_bq_materialization_enabled:
-            # TODO(#11424): Delete this block once BQ ingest view materialization is
-            #  enabled for all states.
-            if not isinstance(args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{type(args)}]")
-            return self.fs.download_to_temp_file(args.file_path)
-
-        if not isinstance(args, NewExtractAndMergeArgs):
-            raise ValueError(f"Unexpected args type: [{type(args)}]")
-
-        # TODO(#11424): Remove this check once the ingest_view_contents is non-optional.
-        if not self.ingest_view_contents:
-            raise ValueError("Found null ingest_view_contents_provider")
         return self.ingest_view_contents.get_unprocessed_rows_for_batch(
             ingest_view_name=args.ingest_view_name,
             upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
             batch_number=args.batch_number,
         )
-
-    # TODO(#11424): We should be able to delete this function once we're reading
-    #   chunks of data directly from BigQuery.
-    def _are_contents_empty_legacy(
-        self,
-        args: LegacyExtractAndMergeArgs,
-    ) -> bool:
-        """Returns true if the CSV file is empty, i.e. it contains no non-header
-        rows.
-        """
-        delegate = ReadOneGcsfsCsvReaderDelegate()
-        self.csv_reader.streaming_read(
-            args.file_path, delegate=delegate, chunk_size=1, skiprows=1
-        )
-        return delegate.df is None
 
     def _are_contents_empty(self, contents_handle: ContentsHandle) -> bool:
         """Returns True if there any materialized ingest view results in the contents
@@ -923,156 +722,15 @@ class BaseDirectIngestController:
             return False
         return True
 
-    def _do_cleanup(self, args: ExtractAndMergeArgs) -> None:
+    def _do_cleanup(self, args: NewExtractAndMergeArgs) -> None:
         """Does necessary cleanup once ingest view contents have been successfully
         persisted to Postgres.
         """
-        if not self.is_bq_materialization_enabled:
-            # TODO(#11424): Delete this block once BQ ingest view materialization is
-            #  enabled for all states.
-            if not isinstance(args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{type(args)}]")
-            if not self.ingest_file_metadata_manager:
-                raise ValueError(
-                    "Legacy ingest_file_metadata_manager is unexpectedly None."
-                )
-
-            self.fs.mv_path_to_processed_path(args.file_path)
-
-            self.ingest_file_metadata_manager.mark_ingest_view_file_as_processed(
-                args.file_path
-            )
-
-            parts = filename_parts_from_path(args.file_path)
-            self._move_processed_files_to_storage_as_necessary(
-                last_processed_date_str=parts.date_str
-            )
-            return
-
-        if not isinstance(args, NewExtractAndMergeArgs):
-            raise ValueError(f"Unexpected args type: [{type(args)}]")
-
-        # TODO(#11424): Remove this check once the ingest_view_contents is non-optional.
-        if not self.ingest_view_contents:
-            raise ValueError("The ingest_view_contents is unexpectedly None.")
-
         logging.info("Marking rows processed for ingest run [%s]", args.job_tag())
         self.ingest_view_contents.mark_rows_as_processed(
             ingest_view_name=args.ingest_view_name,
             upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
             batch_number=args.batch_number,
-        )
-
-    # TODO(#11424): Delete this function once BQ ingest view materialization is
-    #  enabled for all states.
-    def _contents_file_exists(self, args: LegacyExtractAndMergeArgs) -> bool:
-        if self.is_bq_materialization_enabled:
-            raise ValueError(
-                "Function should not be called for BQ-materialization-enabled states."
-            )
-
-        if not self.fs.exists(args.file_path):
-            logging.warning(
-                "Path [%s] does not exist - returning.",
-                args.file_path.abs_path(),
-            )
-            return False
-        return True
-
-    # TODO(#11424): We should be able to delete this check once we're reading
-    #   chunks of data directly from BigQuery.
-    def _ingest_view_file_contents_meet_scale_requirements(
-        self, args: LegacyExtractAndMergeArgs
-    ) -> bool:
-        """Given a pointer to the contents, returns whether the controller can continue
-        ingest for a file of this size.
-        """
-        parts = filename_parts_from_path(args.file_path)
-        return self._are_contents_empty_legacy(args) or not self._must_split_contents(
-            parts.file_type, args.file_path
-        )
-
-    # TODO(#11424): We should be able to delete this check once we're reading
-    #   chunks of data directly from BigQuery.
-    def _must_split_contents(
-        self, file_type: GcsfsDirectIngestFileType, path: GcsfsFilePath
-    ) -> bool:
-        if file_type == GcsfsDirectIngestFileType.RAW_DATA:
-            return False
-
-        return not self._file_meets_file_line_limit(
-            self.ingest_file_split_line_limit, path
-        )
-
-    # TODO(#11424): We should be able to delete this check once we're reading
-    #   chunks of data directly from BigQuery.
-    def _file_meets_file_line_limit(self, line_limit: int, path: GcsfsFilePath) -> bool:
-        """Returns True if the file meets the expected line limit, false otherwise."""
-        delegate = ReadOneGcsfsCsvReaderDelegate()
-
-        # Read a chunk up to one line bigger than the acceptable size
-        try:
-            self.csv_reader.streaming_read(
-                path, delegate=delegate, chunk_size=(line_limit + 1)
-            )
-        except GCSBlobDoesNotExistError:
-            return True
-
-        if delegate.df is None:
-            # If the file is empty, it's fine.
-            return True
-
-        # If length of the only chunk is less than or equal to the acceptable
-        # size, file meets line limit.
-        return len(delegate.df) <= line_limit
-
-    # TODO(#11424): This whole function will be deleted once we have migrated to BQ-based
-    #   ingest view results processing.
-    def _move_processed_files_to_storage_as_necessary(
-        self, last_processed_date_str: str
-    ) -> None:
-        """Moves files that have already been ingested/processed, up to and including the given date, into storage,
-        if there is nothing more left to ingest/process, i.e. we are not expecting more files."""
-
-        if not isinstance(self.job_prioritizer, GcsfsDirectIngestJobPrioritizer):
-            raise ValueError(
-                f"Unexpected job_prioritizer type: [{self.job_prioritizer}]"
-            )
-
-        next_args = self.job_prioritizer.get_next_job_args()
-
-        should_move_last_processed_date = False
-        if not next_args:
-            are_more_jobs_expected = (
-                self.job_prioritizer.are_more_jobs_expected_for_day(
-                    last_processed_date_str
-                )
-            )
-            if not are_more_jobs_expected:
-                should_move_last_processed_date = True
-        else:
-            if not isinstance(next_args, LegacyExtractAndMergeArgs):
-                raise ValueError(f"Unexpected args type: [{type(next_args)}]")
-            next_date_str = filename_parts_from_path(next_args.file_path).date_str
-            if next_date_str < last_processed_date_str:
-                logging.info(
-                    "Found a file [%s] from a date previous to our "
-                    "last processed date - not moving anything to "
-                    "storage."
-                )
-                return
-
-            # If there are still more to process on this day, do not move files
-            # from this day.
-            should_move_last_processed_date = next_date_str != last_processed_date_str
-
-        # Note: at this point, we expect RAW file type files to already have been moved once they were imported to BQ.
-        self.fs.mv_processed_paths_before_date_to_storage(
-            self.ingest_bucket_path,
-            self.storage_directory_path,
-            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
-            date_str_bound=last_processed_date_str,
-            include_bound=should_move_last_processed_date,
         )
 
     # ================= #
@@ -1087,22 +745,6 @@ class BaseDirectIngestController:
         if self.fs.is_processed_file(path):
             logging.info("File [%s] is already processed, returning.", path.abs_path())
             return
-
-        if self.fs.is_normalized_file_path(path):
-            parts = filename_parts_from_path(path)
-
-            if (
-                parts.is_file_split
-                and parts.file_split_size
-                and parts.file_split_size <= self.ingest_file_split_line_limit
-            ):
-                self.kick_scheduler(just_finished_job=False)
-                logging.info(
-                    "File [%s] is already normalized and split split "
-                    "with correct size, kicking scheduler.",
-                    path.abs_path(),
-                )
-                return
 
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
@@ -1119,31 +761,13 @@ class BaseDirectIngestController:
                     path
                 ):
                     self.raw_file_metadata_manager.mark_raw_file_as_discovered(path)
-            elif parts.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-                if self.is_bq_materialization_enabled:
-                    raise ValueError(
-                        f"Found INGEST_VIEW file for region with BQ materialization "
-                        f"enabled: [{path.uri()}]."
-                    )
-                if not self.ingest_file_metadata_manager:
-                    raise ValueError(
-                        "Legacy ingest_file_metadata_manager is unexpectedly None."
-                    )
-                if not self.ingest_file_metadata_manager.has_ingest_view_file_been_discovered(
-                    path
-                ):
-                    self.ingest_file_metadata_manager.mark_ingest_view_file_as_discovered(
-                        path
-                    )
             else:
                 raise ValueError(f"Unexpected file type [{parts.file_type}]")
 
     @trace.span
     def handle_new_files(self, *, current_task_id: str, can_start_ingest: bool) -> None:
         """Searches the ingest directory for new/unprocessed files. Normalizes
-        file names and splits files as necessary, schedules the next ingest job
-        if allowed.
-
+        new raw file names as necessary, then schedules the next ingest job if allowed.
 
         Should only be called from the scheduler queue.
         """
@@ -1190,10 +814,6 @@ class BaseDirectIngestController:
 
         check_is_region_launched_in_env(self.region)
 
-        unprocessed_ingest_view_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_bucket_path,
-            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
-        )
         unprocessed_raw_paths = self.fs.get_unprocessed_file_paths(
             self.ingest_bucket_path,
             file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
@@ -1210,34 +830,6 @@ class BaseDirectIngestController:
             )
 
         self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
-
-        self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
-
-        # TODO(#11424): Delete all file-splitting code once BQ materialization is
-        #  enabled for all states.
-        did_split = False
-        for path in unprocessed_ingest_view_paths:
-            if self._split_file_if_necessary(path):
-                did_split = True
-
-        if did_split:
-            post_split_unprocessed_ingest_view_paths = (
-                self.fs.get_unprocessed_file_paths(
-                    self.ingest_bucket_path,
-                    file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
-                )
-            )
-            self._register_all_new_paths_in_metadata(
-                post_split_unprocessed_ingest_view_paths
-            )
-
-            logging.info(
-                "Split at least one path - returning, will handle split "
-                "files separately."
-            )
-            # Writing new split files to storage will cause the cloud function
-            # that calls this function to be re-triggered.
-            return
 
         # Even if there are no unprocessed paths, we still want to look for the next
         # job because there may be new files to generate.
@@ -1327,170 +919,6 @@ class BaseDirectIngestController:
                 ingest_bucket=self.ingest_bucket_path,
                 can_start_ingest=True,
             )
-
-    # TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
-    def _should_split_file(self, path: GcsfsFilePath) -> bool:
-        """Returns a handle to the contents of this path if this file should be split, None otherwise."""
-        parts = filename_parts_from_path(path)
-
-        if parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW:
-            raise ValueError(
-                f"Should not be attempting to split files other than ingest view files, found path with "
-                f"file type: {parts.file_type}"
-            )
-
-        if parts.file_tag not in self.get_ingest_view_rank_list():
-            logging.info(
-                "File tag [%s] for path [%s] not in rank list - not splitting.",
-                parts.file_tag,
-                path.abs_path(),
-            )
-            return False
-
-        if (
-            parts.is_file_split
-            and parts.file_split_size
-            and parts.file_split_size <= self.ingest_file_split_line_limit
-        ):
-            logging.info(
-                "File [%s] already split with size [%s].",
-                path.abs_path(),
-                parts.file_split_size,
-            )
-            return False
-
-        return self._must_split_contents(parts.file_type, path)
-
-    # TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
-    @trace.span
-    def _split_file_if_necessary(self, path: GcsfsFilePath) -> bool:
-        """Checks if the given file needs to be split according to this controller's |file_split_line_limit|.
-
-        Returns True if the file was split, False if splitting was not necessary.
-        """
-        if self.is_bq_materialization_enabled:
-            raise ValueError(
-                "Function should not be called for BQ-materialization-enabled states."
-            )
-        if not self.ingest_file_metadata_manager:
-            raise ValueError(
-                "Legacy ingest_file_metadata_manager is unexpectedly None."
-            )
-
-        should_split = self._should_split_file(path)
-        if not should_split:
-            logging.info("No need to split file path [%s].", path.abs_path())
-            return False
-
-        logging.info("Proceeding to file splitting for path [%s].", path.abs_path())
-
-        original_metadata = (
-            self.ingest_file_metadata_manager.get_ingest_view_file_metadata(path)
-        )
-
-        output_dir = GcsfsDirectoryPath.from_file_path(path)
-
-        split_contents_paths = self._split_file(path)
-        upload_paths = []
-        for i, split_contents_path in enumerate(split_contents_paths):
-            upload_path = self._create_split_file_path(path, output_dir, split_num=i)
-
-            logging.info(
-                "Copying split [%s] to direct ingest directory at path [%s].",
-                i,
-                upload_path.abs_path(),
-            )
-
-            upload_paths.append(upload_path)
-            try:
-                self.fs.mv(split_contents_path, upload_path)
-            except Exception as e:
-                logging.error(
-                    "Threw error while copying split files from temp bucket - attempting to clean up before rethrowing."
-                    " [%s]",
-                    e,
-                )
-                for p in upload_paths:
-                    self.fs.delete(p)
-                raise e
-
-        # We wait to register files with metadata manager until all files have been successfully copied to avoid leaving
-        # the metadata manager in an inconsistent state.
-        if not isinstance(original_metadata, DirectIngestIngestFileMetadata):
-            raise ValueError("Attempting to split a non-ingest view type file")
-
-        logging.info(
-            "Registering [%s] split files with the metadata manager.",
-            len(upload_paths),
-        )
-
-        for upload_path in upload_paths:
-            ingest_file_metadata = (
-                self.ingest_file_metadata_manager.register_ingest_file_split(
-                    original_metadata, upload_path
-                )
-            )
-            self.ingest_file_metadata_manager.mark_ingest_view_exported(
-                ingest_file_metadata
-            )
-
-        self.ingest_file_metadata_manager.mark_ingest_view_file_as_processed(path)
-
-        logging.info(
-            "Done splitting file [%s] into [%s] paths, moving it to storage.",
-            path.abs_path(),
-            len(split_contents_paths),
-        )
-
-        self.fs.mv_path_to_storage(path, self.storage_directory_path)
-
-        return True
-
-    def _create_split_file_path(
-        self,
-        original_file_path: GcsfsFilePath,
-        output_dir: GcsfsDirectoryPath,
-        split_num: int,
-    ) -> GcsfsFilePath:
-        parts = filename_parts_from_path(original_file_path)
-
-        rank_str = str(split_num + 1).zfill(5)
-        updated_file_name = (
-            f"{parts.stripped_file_name}_{rank_str}"
-            f"_{SPLIT_FILE_SUFFIX}_size{self.ingest_file_split_line_limit}"
-            f".{parts.extension}"
-        )
-
-        return GcsfsFilePath.from_directory_and_file_name(
-            output_dir,
-            to_normalized_unprocessed_file_path(
-                updated_file_name,
-                file_type=parts.file_type,
-                dt=parts.utc_upload_datetime,
-            ),
-        )
-
-    # TODO(#11424): Delete once BQ ingest view materialization is enabled for all states.
-    def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
-        """Splits a file accessible via the provided path into multiple
-        files and uploads those files to GCS. Returns the list of upload paths.
-        """
-
-        parts = filename_parts_from_path(path)
-
-        if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-            raise ValueError(
-                f"Splitting raw files unsupported. Attempting to split [{path.abs_path()}]"
-            )
-
-        delegate = DirectIngestFileSplittingGcsfsCsvReaderDelegate(
-            path, self.fs, self.temp_output_directory_path
-        )
-        self.csv_reader.streaming_read(
-            path, delegate=delegate, chunk_size=self.ingest_file_split_line_limit
-        )
-
-        return delegate.output_paths
 
 
 def check_is_region_launched_in_env(region: Region) -> None:
