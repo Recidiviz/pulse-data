@@ -37,10 +37,10 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
     CloudTaskArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    NewExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -119,7 +119,7 @@ def build_raw_data_import_task_id(
 
 def build_ingest_view_materialization_task_id(
     region: Region,
-    materialization_args: BQIngestViewMaterializationArgs,
+    materialization_args: IngestViewMaterializationArgs,
 ) -> str:
     return _build_task_id(
         region.region_code,
@@ -130,7 +130,7 @@ def build_ingest_view_materialization_task_id(
 
 
 def build_extract_and_merge_task_id(
-    region: Region, extract_and_merge_args: NewExtractAndMergeArgs
+    region: Region, extract_and_merge_args: ExtractAndMergeArgs
 ) -> str:
     return _build_task_id(
         region.region_code,
@@ -270,7 +270,7 @@ class ExtractAndMergeCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     """
 
     def is_task_already_queued(
-        self, region_code: str, ingest_args: NewExtractAndMergeArgs
+        self, region_code: str, ingest_args: ExtractAndMergeArgs
     ) -> bool:
         """Returns true if the ingest_args correspond to a task currently in
         the queue.
@@ -320,7 +320,7 @@ class IngestViewMaterializationCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo
     def is_ingest_view_materialization_task_already_queued(
         self,
         region_code: str,
-        task_args: BQIngestViewMaterializationArgs,
+        task_args: IngestViewMaterializationArgs,
     ) -> bool:
         return any(
             task_args.task_id_tag() in task_name
@@ -379,7 +379,7 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
-        task_args: NewExtractAndMergeArgs,
+        task_args: ExtractAndMergeArgs,
     ) -> None:
         """Queues a direct ingest extract and merge task. All direct ingest data
         processing should happen through this endpoint.
@@ -439,7 +439,7 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
-        task_args: BQIngestViewMaterializationArgs,
+        task_args: IngestViewMaterializationArgs,
     ) -> None:
         pass
 
@@ -467,12 +467,12 @@ class DirectIngestCloudTaskManager:
             cloud_task_args_dict = json_data["cloud_task_args"]
             if args_type == GcsfsRawDataBQImportArgs.__name__:
                 return GcsfsRawDataBQImportArgs.from_serializable(cloud_task_args_dict)
-            if args_type == BQIngestViewMaterializationArgs.__name__:
-                return BQIngestViewMaterializationArgs.from_serializable(
+            if args_type == IngestViewMaterializationArgs.__name__:
+                return IngestViewMaterializationArgs.from_serializable(
                     cloud_task_args_dict
                 )
-            if args_type == NewExtractAndMergeArgs.__name__:
-                return NewExtractAndMergeArgs.from_serializable(cloud_task_args_dict)
+            if args_type == ExtractAndMergeArgs.__name__:
+                return ExtractAndMergeArgs.from_serializable(cloud_task_args_dict)
             logging.error("Unexpected args_type in json_data: %s", args_type)
         return None
 
@@ -609,7 +609,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: Region,
-        task_args: NewExtractAndMergeArgs,
+        task_args: ExtractAndMergeArgs,
     ) -> None:
         task_id = build_extract_and_merge_task_id(region, task_args)
 
@@ -700,7 +700,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
-        task_args: BQIngestViewMaterializationArgs,
+        task_args: IngestViewMaterializationArgs,
     ) -> None:
         task_id = build_ingest_view_materialization_task_id(region, task_args)
 

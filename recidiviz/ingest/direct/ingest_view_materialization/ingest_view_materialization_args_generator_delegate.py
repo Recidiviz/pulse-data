@@ -23,9 +23,7 @@ from typing import List, Optional
 
 import attr
 
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 
 
 @attr.s(frozen=True)
@@ -50,7 +48,7 @@ class IngestViewMaterializationArgsGeneratorDelegate:
     @abc.abstractmethod
     def get_registered_jobs_pending_completion(
         self,
-    ) -> List[BQIngestViewMaterializationArgs]:
+    ) -> List[IngestViewMaterializationArgs]:
         """Returns a lists of materialization jobs that have been registered via
         |register_new_job| but have not completed.
         """
@@ -62,13 +60,13 @@ class IngestViewMaterializationArgsGeneratorDelegate:
         ingest_view_name: str,
         upper_bound_datetime_inclusive: datetime.datetime,
         lower_bound_datetime_exclusive: Optional[datetime.datetime],
-    ) -> BQIngestViewMaterializationArgs:
+    ) -> IngestViewMaterializationArgs:
         """Builds a new set of |IngestViewMaterializationArgs| of the appropriate type,
         given the input information about the materialization job.
         """
 
     @abc.abstractmethod
-    def register_new_job(self, args: BQIngestViewMaterializationArgs) -> None:
+    def register_new_job(self, args: IngestViewMaterializationArgs) -> None:
         """Register the materialization job represented by these |args| in the
         appropriate datastore.
         """

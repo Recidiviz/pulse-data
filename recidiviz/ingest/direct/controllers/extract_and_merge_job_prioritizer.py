@@ -27,7 +27,7 @@ import pytz
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContents,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import NewExtractAndMergeArgs
+from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
 
 
 class ExtractAndMergeJobPrioritizer:
@@ -38,7 +38,7 @@ class ExtractAndMergeJobPrioritizer:
     @abc.abstractmethod
     def get_next_job_args(
         self,
-    ) -> Optional[NewExtractAndMergeArgs]:
+    ) -> Optional[ExtractAndMergeArgs]:
         """Returns a set of args defining the next chunk of data to process."""
 
 
@@ -57,7 +57,7 @@ class ExtractAndMergeJobPrioritizerImpl(ExtractAndMergeJobPrioritizer):
 
     def get_next_job_args(
         self,
-    ) -> Optional[NewExtractAndMergeArgs]:
+    ) -> Optional[ExtractAndMergeArgs]:
 
         logging.info("Getting next extract and merge job args")
         highest_pri_batch = None
@@ -94,7 +94,7 @@ class ExtractAndMergeJobPrioritizerImpl(ExtractAndMergeJobPrioritizer):
             highest_pri_batch.ingest_view_name,
             highest_pri_batch.upper_bound_datetime_inclusive,
         )
-        return NewExtractAndMergeArgs(
+        return ExtractAndMergeArgs(
             ingest_time=datetime.now(tz=pytz.UTC),
             ingest_instance=self.ingest_view_contents.ingest_instance,
             ingest_view_name=highest_pri_batch.ingest_view_name,

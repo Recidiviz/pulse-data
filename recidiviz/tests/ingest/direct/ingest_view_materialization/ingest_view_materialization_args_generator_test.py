@@ -36,9 +36,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -165,9 +163,9 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         self.assertListEqual(
             args,
             [
-                BQIngestViewMaterializationArgs(
+                IngestViewMaterializationArgs(
                     ingest_view_name="ingest_view",
-                    ingest_instance_=self.ingest_instance,
+                    ingest_instance=self.ingest_instance,
                     lower_bound_datetime_exclusive=_DATE_1,
                     upper_bound_datetime_inclusive=_DATE_2,
                 )
@@ -291,9 +289,9 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
             [
                 # We create args for the time between DATE 1 and DATE 2 but not for
                 # the time between None and DATE 1 (e.g. the historical query).
-                BQIngestViewMaterializationArgs(
+                IngestViewMaterializationArgs(
                     ingest_view_name="ingest_view",
-                    ingest_instance_=self.ingest_instance,
+                    ingest_instance=self.ingest_instance,
                     lower_bound_datetime_exclusive=_DATE_1,
                     upper_bound_datetime_inclusive=_DATE_2,
                 )
@@ -381,7 +379,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         ingest_view_name: str,
         committed_raw_file_metadata: List[_RawFileMetadata],
         committed_ingest_materialization_metadata: List[_IngestFileMetadata],
-    ) -> List[BQIngestViewMaterializationArgs]:
+    ) -> List[IngestViewMaterializationArgs]:
         """Runs test to generate ingest view materialization args given provided DB state."""
         region = fake_region(environment="production")
 

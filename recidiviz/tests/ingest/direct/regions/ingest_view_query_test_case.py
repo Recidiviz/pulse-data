@@ -35,9 +35,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileConfig,
     augment_raw_data_df_with_metadata_columns,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -215,11 +213,11 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         view_query = str(
             IngestViewMaterializerImpl.debug_query_for_args(
                 ingest_views_by_name={view_builder.ingest_view_name: view},
-                ingest_view_materialization_args=BQIngestViewMaterializationArgs(
+                ingest_view_materialization_args=IngestViewMaterializationArgs(
                     ingest_view_name=view_builder.ingest_view_name,
                     lower_bound_datetime_exclusive=lower_bound_datetime_exclusive_,
                     upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_,
-                    ingest_instance_=DirectIngestInstance.PRIMARY,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
                 ),
             )
         )

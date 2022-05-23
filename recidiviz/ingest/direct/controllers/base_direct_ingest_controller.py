@@ -107,9 +107,9 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    NewExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -526,7 +526,7 @@ class BaseDirectIngestController:
         return 3600
 
     def run_extract_and_merge_job_and_kick_scheduler_on_completion(
-        self, args: NewExtractAndMergeArgs
+        self, args: ExtractAndMergeArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
@@ -553,7 +553,7 @@ class BaseDirectIngestController:
             self.kick_scheduler(just_finished_job=True)
             logging.info("Done running task. Returning.")
 
-    def _run_extract_and_merge_job(self, args: NewExtractAndMergeArgs) -> bool:
+    def _run_extract_and_merge_job(self, args: ExtractAndMergeArgs) -> bool:
         """
         Runs the full extract and merge process for this controller - reading and
         parsing ingest view query results, transforming it to Python objects that model
@@ -605,7 +605,7 @@ class BaseDirectIngestController:
         return True
 
     def get_ingest_view_processor(
-        self, args: NewExtractAndMergeArgs
+        self, args: ExtractAndMergeArgs
     ) -> IngestViewProcessor:
         """Returns the appropriate ingest view processor for this extract and merge
         job.
@@ -648,7 +648,7 @@ class BaseDirectIngestController:
 
     @trace.span
     def _parse_and_persist_contents(
-        self, args: NewExtractAndMergeArgs, contents_handle: ContentsHandle
+        self, args: ExtractAndMergeArgs, contents_handle: ContentsHandle
     ) -> None:
         """
         Runs the full ingest process for this controller for files with
@@ -669,7 +669,7 @@ class BaseDirectIngestController:
 
         logging.info("Successfully persisted for ingest run [%s]", args.job_tag())
 
-    def _get_ingest_metadata(self, args: NewExtractAndMergeArgs) -> IngestMetadata:
+    def _get_ingest_metadata(self, args: ExtractAndMergeArgs) -> IngestMetadata:
         if isinstance(self, LegacyIngestViewProcessorDelegate):
             # TODO(#8905): Remove this block once we have migrated all direct ingest
             #  states to ingest mappings v2.
@@ -695,7 +695,7 @@ class BaseDirectIngestController:
         )
 
     def _get_contents_handle(
-        self, args: NewExtractAndMergeArgs
+        self, args: ExtractAndMergeArgs
     ) -> Optional[ContentsHandle]:
         """Returns a handle to the ingest view contents allows us to iterate over the
         contents and also manages cleanup of resources once we are done with the
@@ -718,7 +718,7 @@ class BaseDirectIngestController:
             return False
         return True
 
-    def _do_cleanup(self, args: NewExtractAndMergeArgs) -> None:
+    def _do_cleanup(self, args: ExtractAndMergeArgs) -> None:
         """Does necessary cleanup once ingest view contents have been successfully
         persisted to Postgres.
         """
@@ -887,7 +887,7 @@ class BaseDirectIngestController:
         self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_materialization(
-        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
+        self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
 

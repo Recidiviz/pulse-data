@@ -19,8 +19,8 @@ import datetime
 from unittest import TestCase
 
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-    NewExtractAndMergeArgs,
+    ExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -32,11 +32,11 @@ class TestCloudTaskArgs(TestCase):
         dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
         dt_upper = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
 
-        args = BQIngestViewMaterializationArgs(
+        args = IngestViewMaterializationArgs(
             ingest_view_name="my_ingest_view_name",
             lower_bound_datetime_exclusive=None,
             upper_bound_datetime_inclusive=dt_upper,
-            ingest_instance_=DirectIngestInstance.PRIMARY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
         self.assertEqual(args.ingest_instance, DirectIngestInstance.PRIMARY)
@@ -45,11 +45,11 @@ class TestCloudTaskArgs(TestCase):
             args.task_id_tag(),
         )
 
-        args = BQIngestViewMaterializationArgs(
+        args = IngestViewMaterializationArgs(
             ingest_view_name="my_ingest_view_name",
             lower_bound_datetime_exclusive=dt_lower,
             upper_bound_datetime_inclusive=dt_upper,
-            ingest_instance_=DirectIngestInstance.SECONDARY,
+            ingest_instance=DirectIngestInstance.SECONDARY,
         )
 
         self.assertEqual(args.ingest_instance, DirectIngestInstance.SECONDARY)
@@ -60,7 +60,7 @@ class TestCloudTaskArgs(TestCase):
 
     def test_extract_and_merge_args(self) -> None:
         dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-        args = NewExtractAndMergeArgs(
+        args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
             ingest_view_name="my_ingest_view_name",
             ingest_instance=DirectIngestInstance.PRIMARY,

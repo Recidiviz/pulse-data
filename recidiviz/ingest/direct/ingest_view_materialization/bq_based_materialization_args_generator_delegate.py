@@ -27,9 +27,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestViewMaterializationMetadata,
@@ -52,7 +50,7 @@ class BQBasedMaterializationArgsGeneratorDelegate(
 
     def get_registered_jobs_pending_completion(
         self,
-    ) -> List[BQIngestViewMaterializationArgs]:
+    ) -> List[IngestViewMaterializationArgs]:
         metadata_pending_export = self.metadata_manager.get_jobs_pending_completion()
         return self._materialization_args_from_metadata(metadata_pending_export)
 
@@ -62,15 +60,15 @@ class BQBasedMaterializationArgsGeneratorDelegate(
         ingest_view_name: str,
         upper_bound_datetime_inclusive: datetime.datetime,
         lower_bound_datetime_exclusive: Optional[datetime.datetime],
-    ) -> BQIngestViewMaterializationArgs:
-        return BQIngestViewMaterializationArgs(
+    ) -> IngestViewMaterializationArgs:
+        return IngestViewMaterializationArgs(
             ingest_view_name=ingest_view_name,
             lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
             upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
-            ingest_instance_=self.metadata_manager.ingest_instance,
+            ingest_instance=self.metadata_manager.ingest_instance,
         )
 
-    def register_new_job(self, args: BQIngestViewMaterializationArgs) -> None:
+    def register_new_job(self, args: IngestViewMaterializationArgs) -> None:
         self.metadata_manager.register_ingest_materialization_job(args)
 
     def get_most_recent_registered_job(
@@ -92,13 +90,13 @@ class BQBasedMaterializationArgsGeneratorDelegate(
     @staticmethod
     def _materialization_args_from_metadata(
         metadata_list: List[DirectIngestViewMaterializationMetadata],
-    ) -> List[BQIngestViewMaterializationArgs]:
+    ) -> List[IngestViewMaterializationArgs]:
         return [
-            BQIngestViewMaterializationArgs(
+            IngestViewMaterializationArgs(
                 ingest_view_name=metadata.ingest_view_name,
                 lower_bound_datetime_exclusive=metadata.lower_bound_datetime_exclusive,
                 upper_bound_datetime_inclusive=metadata.upper_bound_datetime_inclusive,
-                ingest_instance_=DirectIngestInstance(metadata.instance),
+                ingest_instance=DirectIngestInstance(metadata.instance),
             )
             for metadata in metadata_list
         ]

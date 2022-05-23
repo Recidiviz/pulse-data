@@ -25,9 +25,7 @@ import attr
 import pytz
 from sqlalchemy import and_, func
 
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -112,7 +110,7 @@ class DirectIngestViewMaterializationMetadataManager:
         return entity_metadata
 
     def register_ingest_materialization_job(
-        self, job_args: BQIngestViewMaterializationArgs
+        self, job_args: IngestViewMaterializationArgs
     ) -> DirectIngestViewMaterializationMetadata:
         """Writes a new row to the ingest view metadata table with the expected path
         once the export job completes.
@@ -133,7 +131,7 @@ class DirectIngestViewMaterializationMetadataManager:
             return self._schema_object_to_entity(metadata)
 
     def get_job_completion_time_for_args(
-        self, job_args: BQIngestViewMaterializationArgs
+        self, job_args: IngestViewMaterializationArgs
     ) -> Optional[datetime.datetime]:
         """Returns the completion time of the materialization job represented by the
         provided args.
@@ -141,7 +139,7 @@ class DirectIngestViewMaterializationMetadataManager:
         return self._get_metadata_for_job_args(job_args).materialization_time
 
     def mark_ingest_view_materialized(
-        self, job_args: BQIngestViewMaterializationArgs
+        self, job_args: IngestViewMaterializationArgs
     ) -> None:
         """Commits the current time as the materialization_time for the given ingest
         view materialization job.
@@ -213,7 +211,7 @@ class DirectIngestViewMaterializationMetadataManager:
             return [self._schema_object_to_entity(metadata) for metadata in results]
 
     def _get_metadata_for_job_args(
-        self, job_args: BQIngestViewMaterializationArgs
+        self, job_args: IngestViewMaterializationArgs
     ) -> DirectIngestViewMaterializationMetadata:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -234,7 +232,7 @@ class DirectIngestViewMaterializationMetadataManager:
 
     @environment.test_only
     def get_metadata_for_job_args(
-        self, job_args: BQIngestViewMaterializationArgs
+        self, job_args: IngestViewMaterializationArgs
     ) -> DirectIngestViewMaterializationMetadata:
         return self._get_metadata_for_job_args(job_args)
 

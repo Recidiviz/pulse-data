@@ -74,9 +74,9 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
     SftpAuth,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    BQIngestViewMaterializationArgs,
+    ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
-    NewExtractAndMergeArgs,
+    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
@@ -224,7 +224,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         dt = datetime.datetime(year=2019, month=6, day=20)
         ingest_view_name = "myIngestViewName"
-        ingest_args = NewExtractAndMergeArgs(
+        ingest_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime(year=2019, month=7, day=20),
             ingest_view_name=ingest_view_name,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -238,7 +238,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "NewExtractAndMergeArgs",
+            "args_type": "ExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
 
@@ -267,7 +267,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         dt = datetime.datetime(year=2019, month=6, day=20)
         ingest_view_name = "myIngestViewName"
-        ingest_args = NewExtractAndMergeArgs(
+        ingest_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime(year=2019, month=7, day=20),
             ingest_view_name=ingest_view_name,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -281,7 +281,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "NewExtractAndMergeArgs",
+            "args_type": "ExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
 
@@ -308,7 +308,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         dt = datetime.datetime(year=2019, month=6, day=20)
         ingest_view_name = "myIngestViewName"
-        ingest_args = NewExtractAndMergeArgs(
+        ingest_args = ExtractAndMergeArgs(
             ingest_time=datetime.datetime(year=2019, month=7, day=20),
             ingest_view_name=ingest_view_name,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -322,7 +322,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "NewExtractAndMergeArgs",
+            "args_type": "ExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
 
@@ -894,9 +894,9 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
         ingest_view_name = "my_ingest_view"
-        materialization_args = BQIngestViewMaterializationArgs(
+        materialization_args = IngestViewMaterializationArgs(
             ingest_view_name=ingest_view_name,
-            ingest_instance_=DirectIngestInstance.PRIMARY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
             upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
         )
@@ -908,7 +908,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         body = {
             "cloud_task_args": materialization_args.to_serializable(),
-            "args_type": "BQIngestViewMaterializationArgs",
+            "args_type": "IngestViewMaterializationArgs",
         }
         body_encoded = json.dumps(body).encode()
 
