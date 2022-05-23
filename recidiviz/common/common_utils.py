@@ -83,7 +83,7 @@ def retry_grpc(
     for i in range(num_retries + 1):
         try:
             return fn(*args, **kwargs)
-        except exceptions.InternalServerError as e:
+        except exceptions.ServerError as e:
             if i == num_retries:
                 raise
             if "GOAWAY" in str(e) or "Deadline Exceeded" in str(e):
