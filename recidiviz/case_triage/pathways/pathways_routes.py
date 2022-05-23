@@ -100,6 +100,8 @@ def create_pathways_api_blueprint() -> Blueprint:
         response.access_control_allow_headers = parse_set_header(
             "authorization, sentry-trace"
         )
+        # Cache preflight responses for 2 hours
+        response.access_control_max_age = 2 * 60 * 60
         return response
 
     @api.get("/<state>/<metric_name>")

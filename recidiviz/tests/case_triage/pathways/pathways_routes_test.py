@@ -259,6 +259,7 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
         expected_headers={
             "Access-Control-Allow-Origin": "http://localhost:3000",
             "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Max-Age": "7200",
             "Vary": "Origin",
         },
     )
