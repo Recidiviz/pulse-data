@@ -31,18 +31,12 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
-    IngestViewMaterializationGatingContext,
-)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_names,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
-    MATERIALIZATION_CONFIG_YAML,
-)
 from recidiviz.tests.utils.fake_region import fake_region
 
 CONTROLLER_FACTORY_PACKAGE_NAME = direct_ingest_controller_factory.__name__
@@ -60,15 +54,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
 
         def mock_build_fs() -> FakeGCSFileSystem:
-            fake_fs = FakeGCSFileSystem()
-            # TODO(#11424): Delete this line once all states have been migrated to BQ-based
-            #  ingest view materialization.
-            fake_fs.upload_from_string(
-                path=IngestViewMaterializationGatingContext.gating_config_path(),
-                contents=MATERIALIZATION_CONFIG_YAML,
-                content_type="text/yaml",
-            )
-            return fake_fs
+            return FakeGCSFileSystem()
 
         self.fs_patcher = patch.object(GcsfsFactory, "build", new=mock_build_fs)
 

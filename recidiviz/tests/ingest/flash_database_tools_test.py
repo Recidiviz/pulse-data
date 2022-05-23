@@ -25,21 +25,11 @@ from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
-    IngestViewMaterializationGatingContext,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
     move_ingest_view_results_between_instances,
     move_ingest_view_results_to_backup,
-    ungate_bq_materialization_for_instance,
-)
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context_test import (
-    GATING_CONTEXT_PACKAGE_NAME,
-    SIMPLE_CONFIG_YAML,
 )
 
 
@@ -59,23 +49,8 @@ class FlashDatabaseToolsTest(unittest.TestCase):
 
         self.mock_bq_client.dataset_ref_for_id = fake_dataset_ref_for_id
 
-        self.gcs_factory_patcher = patch(
-            f"{GATING_CONTEXT_PACKAGE_NAME}.GcsfsFactory.build"
-        )
-        self.fake_gcs = FakeGCSFileSystem()
-        self.gcs_factory_patcher.start().return_value = self.fake_gcs
-
     def tearDown(self) -> None:
         self.mock_project_id_patcher.stop()
-        self.gcs_factory_patcher.stop()
-
-    def set_config_yaml(self, contents: str) -> None:
-        path = GcsfsFilePath.from_absolute_path(
-            f"gs://{self.mock_project_id}-configs/bq_materialization_gating_config.yaml"
-        )
-        self.fake_gcs.upload_from_string(
-            path=path, contents=contents, content_type="text/yaml"
-        )
 
     def test_move_ingest_view_results_to_backup_primary_instance(self) -> None:
         move_to_backup_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
@@ -212,65 +187,3 @@ class FlashDatabaseToolsTest(unittest.TestCase):
                 ),
             ]
         )
-
-    def test_ungate_bq_materialization_instance_valid(self) -> None:
-        # Arrange
-        self.set_config_yaml(SIMPLE_CONFIG_YAML)
-
-        # Act
-        ungate_bq_materialization_for_instance(
-            state_code=self.region_code, ingest_instance=DirectIngestInstance.PRIMARY
-        )
-
-        updated_gating_context = IngestViewMaterializationGatingContext.load_from_gcs()
-
-        # Assert
-        self.assertTrue(
-            updated_gating_context.is_bq_ingest_view_materialization_enabled(
-                StateCode.US_XX, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            updated_gating_context.is_bq_ingest_view_materialization_enabled(
-                StateCode.US_XX, DirectIngestInstance.SECONDARY
-            )
-        )
-        for ingest_instance in DirectIngestInstance:
-            self.assertFalse(
-                updated_gating_context.is_bq_ingest_view_materialization_enabled(
-                    StateCode.US_YY, ingest_instance
-                )
-            )
-        for ingest_instance in DirectIngestInstance:
-            self.assertTrue(
-                updated_gating_context.is_bq_ingest_view_materialization_enabled(
-                    StateCode.US_WW, ingest_instance
-                )
-            )
-
-    def test_ungate_bq_materialization_instance_invalid_state(self) -> None:
-        # Arrange
-        self.set_config_yaml(SIMPLE_CONFIG_YAML)
-
-        # Act
-        with self.assertRaisesRegex(
-            ValueError, r"Did not find \[US_AK\] in the gating context."
-        ):
-            ungate_bq_materialization_for_instance(
-                state_code=StateCode.US_AK,
-                ingest_instance=DirectIngestInstance.SECONDARY,
-            )
-
-    def test_ungate_bq_materialization_instance_primary_before_secondary(self) -> None:
-        # Arrange
-        self.set_config_yaml(SIMPLE_CONFIG_YAML)
-
-        # Act
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Attempting to enable BQ materialization for \[US_YY\] in PRIMARY before "
-            r"materialization has been enabled in SECONDARY.",
-        ):
-            ungate_bq_materialization_for_instance(
-                state_code=StateCode.US_YY, ingest_instance=DirectIngestInstance.PRIMARY
-            )

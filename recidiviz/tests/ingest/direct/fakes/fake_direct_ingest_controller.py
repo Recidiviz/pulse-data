@@ -45,9 +45,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_d
 from recidiviz.ingest.direct.ingest_view_materialization.file_based_materializer_delegate import (
     FileBasedMaterializerDelegate,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
-    IngestViewMaterializationGatingContext,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializer,
 )
@@ -280,40 +277,6 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
         return builders
 
 
-# TODO(#11424): Delete this once all states have been migrated to BQ-based ingest view
-#  materialization.
-MATERIALIZATION_CONFIG_YAML = """
-states:
-- US_ND:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_MO:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_ID:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_PA:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_TN:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_ME:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_MI:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_CO:
-   PRIMARY: FILE
-   SECONDARY: BQ
-- US_XX:
-   PRIMARY: BQ
-   SECONDARY: BQ
-"""
-
-
 class _MockBigQueryClientForControllerTests:
     """A fake BQ client that only wraps a test FS that other mocks can access."""
 
@@ -402,9 +365,6 @@ def build_fake_direct_ingest_controller(
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
-    # TODO(#11424): Delete this arg once all states have been migrated to BQ-based
-    #  ingest view materialization.
-    materialization_config_yaml: str = MATERIALIZATION_CONFIG_YAML,
 ) -> BaseDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal
     classes mocked properly.
@@ -413,14 +373,6 @@ def build_fake_direct_ingest_controller(
 
     def mock_build_fs() -> FakeGCSFileSystem:
         return fake_fs
-
-    # TODO(#11424): Delete this line once all states have been migrated to BQ-based
-    #  ingest view materialization.
-    fake_fs.upload_from_string(
-        path=IngestViewMaterializationGatingContext.gating_config_path(),
-        contents=materialization_config_yaml,
-        content_type="text/yaml",
-    )
 
     if "TestDirectIngestController" in controller_cls.__name__:
         view_collector_cls: Type[
