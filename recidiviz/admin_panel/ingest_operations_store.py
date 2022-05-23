@@ -38,9 +38,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_gating_context import (
-    IngestViewMaterializationGatingContext,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     IngestViewContentsSummary,
     InstanceIngestViewContentsImpl,
@@ -53,7 +50,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
     IngestViewMaterializationSummary,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestIngestFileMetadataManager,
     PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -80,16 +76,11 @@ class IngestOperationsStore(AdminPanelStore):
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
-        self.ingest_view_materialization_gating_context: Optional[
-            IngestViewMaterializationGatingContext
-        ] = None
 
     def recalculate_store(self) -> None:
         # This store currently does not store any internal state that can be refreshed.
         # Data must be fetched manually from other public methods.
-        self.ingest_view_materialization_gating_context = (
-            IngestViewMaterializationGatingContext.load_from_gcs()
-        )
+        pass
 
     @property
     def state_codes_launched_in_env(self) -> List[StateCode]:
@@ -293,13 +284,6 @@ class IngestOperationsStore(AdminPanelStore):
             "Getting ingest view materialization gating context for [%s]",
             ingest_instance.value,
         )
-        if not self.ingest_view_materialization_gating_context:
-            self.ingest_view_materialization_gating_context = (
-                IngestViewMaterializationGatingContext.load_from_gcs()
-            )
-        is_bq_materialization_enabled = self.ingest_view_materialization_gating_context.is_bq_ingest_view_materialization_enabled(
-            state_code=state_code, ingest_instance=ingest_instance
-        )
         logging.info("Done getting instance summary for [%s]", ingest_instance.value)
         return {
             "instance": ingest_instance.value,
@@ -307,10 +291,6 @@ class IngestOperationsStore(AdminPanelStore):
             "ingest": ingest_bucket_metadata,
             "dbName": ingest_db_name,
             "operations": operations_db_metadata,
-            # TODO(#11424): Delete this flag once BQ materialization has been fully
-            #  shipped to all states and admin panel frontend no longer references
-            #  this value.
-            "isBQMaterializationEnabled": is_bq_materialization_enabled,
         }
 
     @staticmethod
@@ -369,26 +349,12 @@ class IngestOperationsStore(AdminPanelStore):
                         num_unprocessed_rows=10,
                     ).as_api_dict()
                 ],
-                # TODO(#11424): Delete these three fields once BQ materialization
-                #  migration is complete.
-                "unprocessedFilesIngestView": -3,
-                "processedFilesIngestView": -4,
-                "dateOfEarliestUnprocessedIngestView": datetime(2021, 4, 28),
             }
 
         logging.info(
             "Getting operations DB metadata for instance [%s]", ingest_instance.value
         )
         raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
-            region_code=state_code.value,
-            ingest_database_name=ingest_instance.database_key_for_state(
-                state_code
-            ).db_name,
-        )
-
-        # TODO(#11424): Remove this reference to the legacy metadata manager once
-        #  BQ materialization migration has completed.
-        ingest_file_metadata_manager = PostgresDirectIngestIngestFileMetadataManager(
             region_code=state_code.value,
             ingest_database_name=ingest_instance.database_key_for_state(
                 state_code
@@ -463,9 +429,4 @@ class IngestOperationsStore(AdminPanelStore):
                 for summary in contents_summaries
                 if summary is not None
             ],
-            # TODO(#11424): Delete these three fields once BQ materialization
-            #  migration is complete.
-            "unprocessedFilesIngestView": ingest_file_metadata_manager.get_num_unprocessed_ingest_files(),
-            "processedFilesIngestView": ingest_file_metadata_manager.get_num_processed_ingest_files(),
-            "dateOfEarliestUnprocessedIngestView": ingest_file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),
         }

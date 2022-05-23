@@ -22,14 +22,10 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.ingest.views.enum_counter import (
     StateTableEnumCounterBigQueryViewCollector,
 )
-from recidiviz.ingest.views.latest_ingest_upper_bounds import (
-    LATEST_INGESTED_UPPER_BOUNDS_VIEW_BUILDER,
-)
 from recidiviz.ingest.views.non_enum_counter import (
     StateTableNonEnumCounterBigQueryViewCollector,
 )
 from recidiviz.ingest.views.state_person_counter import StatePersonBigQueryViewCollector
-
 
 INGEST_METADATA_BUILDERS: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
@@ -37,7 +33,6 @@ INGEST_METADATA_BUILDERS: Sequence[BigQueryViewBuilder] = list(
             StateTableEnumCounterBigQueryViewCollector().collect_view_builders(),
             StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders(),
             StatePersonBigQueryViewCollector().collect_view_builders(),
-            [LATEST_INGESTED_UPPER_BOUNDS_VIEW_BUILDER],
         )
     )
 )
