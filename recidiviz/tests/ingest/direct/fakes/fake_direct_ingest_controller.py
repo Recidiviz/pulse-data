@@ -79,7 +79,10 @@ from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents impo
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestFixtureDataFileType,
+    direct_ingest_fixture_path,
+)
 from recidiviz.utils.regions import Region
 from recidiviz.utils.types import assert_type
 
@@ -310,6 +313,7 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         data_local_path = direct_ingest_fixture_path(
             region_code=self.region.region_code,
             file_name=f"{ingest_view_materialization_args.ingest_view_name}.csv",
+            fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
         )
         delegate = assert_type(self.delegate, BQBasedMaterializerDelegate)
         ingest_view_contents = assert_type(

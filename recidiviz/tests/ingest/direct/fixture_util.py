@@ -17,11 +17,11 @@
 """Utility methods for working with fixture files specific to direct ingest"""
 
 import os
+from enum import Enum
 from typing import Optional, Union
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
@@ -67,32 +67,72 @@ def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath, region_code: str) -
         file_name = path.file_name
 
     # TODO(#10301): Move the fixture files used by parser / integration tests to ingest view subdir
-    return direct_ingest_fixture_path(region_code=region_code, file_name=file_name)
+    return direct_ingest_fixture_path(
+        region_code=region_code,
+        file_name=file_name,
+        fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
+    )
+
+
+class DirectIngestFixtureDataFileType(Enum):
+    """Enumerates the different types of fixture files used as input to ingest tests."""
+
+    # Fixture files that contain mocked raw data that is used as inputs to ingest view
+    # tests.
+    RAW = "RAW"
+
+    # Fixture files that contain expected ingest view results for ingest view tests.
+    INGEST_VIEW_RESULTS = "INGEST_VIEW_RESULTS"
+
+    # Fixture files that contain enum raw text values for use in enum mappings tests.
+    ENUM_RAW_TEXT = "ENUM_RAW_TEXT"
+
+    # Fixture files that contain ingest view results in CSV form that are used as inputs
+    # to parser and controller extract and merge integration tests.
+    # TODO(#10301): Move the fixture files used by parser / integration tests to ingest
+    #  view subdir and delete this enum?
+    EXTRACT_AND_MERGE_INPUT = "EXTRACT_AND_MERGE_INPUT"
+
+    def fixture_directory_for_region_code(
+        self, region_code: str, file_tag: Optional[str] = None
+    ) -> str:
+        region_fixtures_directory_path = os.path.join(
+            os.path.dirname(direct_ingest_fixtures.__file__), region_code.lower()
+        )
+
+        if self is DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT:
+            return region_fixtures_directory_path
+
+        if self is DirectIngestFixtureDataFileType.RAW:
+            if file_tag is None:
+                raise ValueError(
+                    f"File tag cannot be none for fixture file type [{self}]"
+                )
+            subdir = os.path.join("raw", file_tag)
+        elif self is DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS:
+            if file_tag is None:
+                raise ValueError(
+                    f"File tag cannot be none for fixture file type [{self}]"
+                )
+            subdir = os.path.join("ingest_view", file_tag)
+        elif self is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:
+            subdir = "enum_raw_text"
+        else:
+            raise ValueError(f"Unexpected fixture file type [{self}]")
+
+        return os.path.join(region_fixtures_directory_path, subdir)
 
 
 def direct_ingest_fixture_path(
     *,
     region_code: str,
-    file_type: Optional[GcsfsDirectIngestFileType] = None,
+    fixture_file_type: DirectIngestFixtureDataFileType,
     file_tag: Optional[str] = None,
     file_name: str,
 ) -> str:
-    region_fixtures_directory_path = os.path.join(
-        os.path.dirname(direct_ingest_fixtures.__file__), region_code.lower()
+    return os.path.join(
+        fixture_file_type.fixture_directory_for_region_code(
+            region_code=region_code, file_tag=file_tag
+        ),
+        file_name,
     )
-
-    if file_type is None:
-        directory_path = region_fixtures_directory_path
-    elif file_type in (
-        GcsfsDirectIngestFileType.RAW_DATA,
-        GcsfsDirectIngestFileType.INGEST_VIEW,
-    ):
-        if file_tag is None:
-            raise ValueError(f"File tag cannot be none for file_type [{file_type}]")
-        directory_path = os.path.join(
-            region_fixtures_directory_path, file_type.value.lower(), file_tag
-        )
-    else:
-        raise ValueError(f"Unexpected file_type [{file_type}]")
-
-    return os.path.join(directory_path, file_name)

@@ -27,7 +27,6 @@ from pandas._testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
 )
@@ -45,7 +44,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 )
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
 from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
-from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestFixtureDataFileType,
+    direct_ingest_fixture_path,
+)
 from recidiviz.utils import csv
 from recidiviz.utils.regions import get_region
 
@@ -98,7 +100,7 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         from the raw data ingest view query are equal. Prints out the dataframes for both expected rows and results."""
         expected_output_fixture_path = direct_ingest_fixture_path(
             region_code=region_code,
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            fixture_file_type=DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
             file_tag=view_builder.ingest_view_name,
             file_name=expected_output_fixture_file_name,
         )
@@ -140,7 +142,7 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         for raw_file_config in ingest_view.raw_table_dependency_configs:
             raw_fixture_path = direct_ingest_fixture_path(
                 region_code=region_code,
-                file_type=GcsfsDirectIngestFileType.RAW_DATA,
+                fixture_file_type=DirectIngestFixtureDataFileType.RAW,
                 file_tag=raw_file_config.file_tag,
                 file_name=raw_fixtures_name,
             )

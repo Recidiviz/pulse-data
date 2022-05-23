@@ -39,7 +39,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
-from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestFixtureDataFileType,
+    direct_ingest_fixture_path,
+)
 from recidiviz.utils.environment import in_ci
 from recidiviz.utils.regions import Region, get_region
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -100,6 +103,7 @@ class StateIngestViewParserTestBase:
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
             file_name=f"{file_tag}.csv",
+            fixture_file_type=DirectIngestFixtureDataFileType.ENUM_RAW_TEXT,
         )
 
         contents_handle = LocalFileContentsHandle(fixture_path, cleanup_file=False)
@@ -119,6 +123,7 @@ class StateIngestViewParserTestBase:
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
             file_name=f"{ingest_view_name}.csv",
+            fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
         )
         parsed_output = parser.parse(
             ingest_view_name=ingest_view_name,
