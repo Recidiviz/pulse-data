@@ -152,12 +152,8 @@ def build_sftp_download_task_id(region: Region) -> str:
 class DirectIngestQueueType(Enum):
     SFTP_QUEUE = "sftp-queue"
     SCHEDULER = "scheduler"
-    # TODO(#11424): Delete PROCESS_JOB_QUEUE once BQ materialization is fully shipped.
-    PROCESS_JOB_QUEUE = "process-job-queue"
     EXTRACT_AND_MERGE = "extract-and-merge"
     RAW_DATA_IMPORT = "raw-data-import"
-    # TODO(#11424): Delete INGEST_VIEW_EXPORT once BQ materialization is fully shipped.
-    INGEST_VIEW_EXPORT = "ingest-view-export"
     MATERIALIZE_INGEST_VIEW = "materialize-ingest-view"
 
     def exists_for_instance(self, ingest_instance: DirectIngestInstance) -> bool:

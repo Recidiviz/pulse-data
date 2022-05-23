@@ -55,24 +55,6 @@ module "raw-data-import-queue-secondary" {
   max_dispatches_per_second = 100
 }
 
-# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
-module "ingest-view-export-queue" {
-  source = "../base-task-queue"
-
-  queue_name                = "${local.direct_ingest_formatted_str}-ingest-view-export"
-  region                    = var.region
-  max_dispatches_per_second = 100
-}
-
-# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
-module "ingest-view-export-queue-secondary" {
-  source = "../base-task-queue"
-
-  queue_name                = "${local.direct_ingest_formatted_str}-ingest-view-export-secondary"
-  region                    = var.region
-  max_dispatches_per_second = 100
-}
-
 module "materialize-ingest-view-queue" {
   source = "../base-task-queue"
 
@@ -88,25 +70,6 @@ module "materialize-ingest-view-queue-secondary" {
   queue_name                = "${local.direct_ingest_formatted_str}-materialize-ingest-view-secondary"
   region                    = var.region
   max_concurrent_dispatches = local.materialize_ingest_view_max_concurrent_dispatches
-  max_dispatches_per_second = 100
-}
-
-
-# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
-module "process-job-queue" {
-  source = "../base-task-queue"
-
-  queue_name                = "${local.direct_ingest_formatted_str}-process-job-queue"
-  region                    = var.region
-  max_dispatches_per_second = 100
-}
-
-# TODO(#11424): Delete this queue once BQ materialization has shipped for all states.
-module "process-job-queue-secondary" {
-  source = "../base-task-queue"
-
-  queue_name                = "${local.direct_ingest_formatted_str}-process-job-queue-secondary"
-  region                    = var.region
   max_dispatches_per_second = 100
 }
 
