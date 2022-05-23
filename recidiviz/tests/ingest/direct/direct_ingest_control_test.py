@@ -76,7 +76,6 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
     GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -354,20 +353,19 @@ class TestDirectIngestControl(unittest.TestCase):
 
         file_path = to_normalized_unprocessed_file_path(
             f"{bucket_name}/ingest_view_name.csv",
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
-        ingest_args = LegacyExtractAndMergeArgs(
-            datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
+        ingest_args = GcsfsRawDataBQImportArgs(
+            raw_data_file_path=GcsfsFilePath.from_absolute_path(file_path)
         )
+        body = {
+            "cloud_task_args": ingest_args.to_serializable(),
+            "args_type": "GcsfsRawDataBQImportArgs",
+        }
         request_args = {
             "region": self.region_code,
             "ingest_view_name": "ingest_view_name",
             "ingest_instance": "primary",
-        }
-        body = {
-            "cloud_task_args": ingest_args.to_serializable(),
-            "args_type": "LegacyExtractAndMergeArgs",
         }
         body_encoded = json.dumps(body).encode()
 

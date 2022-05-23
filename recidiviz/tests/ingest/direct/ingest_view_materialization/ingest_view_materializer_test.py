@@ -43,7 +43,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
-    GcsfsIngestViewExportArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -229,13 +228,6 @@ _OUTPUT_BUCKET_NAME = gcsfs_direct_ingest_bucket_for_state(
     region_code="us_xx",
     ingest_instance=_INGEST_INSTANCE,
 ).bucket_name
-
-_FILE_BASED_ARGS = GcsfsIngestViewExportArgs(
-    ingest_view_name="ingest_view",
-    output_bucket_name=_OUTPUT_BUCKET_NAME,
-    lower_bound_datetime_exclusive=_DATE_1,
-    upper_bound_datetime_inclusive=_DATE_2,
-)
 
 _LEGACY_TEMP_DATASET = "us_xx_ingest_views_20220414_secondary"
 

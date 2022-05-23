@@ -22,10 +22,7 @@ from typing import Any, Dict, Optional, Type
 import attr
 import cattr
 
-from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
-    get_region_code_from_direct_ingest_bucket,
-)
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import serialization
 from recidiviz.common.date import snake_case_datetime
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
@@ -81,42 +78,7 @@ class ExtractAndMergeArgs(CloudTaskArgs):
         """Returns a (short) string tag to identify an ingest run in logs."""
 
 
-# TODO(#11424): Eliminate all usages of this class in favor of a non-file-based
-#  implementation of ExtractAndMergeArgs once BQ-based materialization has shipped
-#  for all states.
-@attr.s(frozen=True)
-class LegacyExtractAndMergeArgs(ExtractAndMergeArgs):
-    """The legacy argument type for the persist step of ingest."""
-
-    file_path: GcsfsFilePath = attr.ib()
-
-    def task_id_tag(self) -> str:
-        parts = filename_parts_from_path(self.file_path)
-        return f"ingest_job_{parts.stripped_file_name}_{parts.date_str}"
-
-    @property
-    def ingest_instance(self) -> DirectIngestInstance:
-        return DirectIngestInstanceFactory.for_ingest_bucket(self.file_path.bucket_path)
-
-    def job_tag(self) -> str:
-        """Returns a (short) string tag to identify an ingest run in logs."""
-        region_code = (
-            get_region_code_from_direct_ingest_bucket(
-                self.file_path.bucket_path.bucket_name
-            )
-            or "unknown_region"
-        )
-        return (
-            f"{region_code.lower()}/{self.file_path.file_name}:" f"{self.ingest_time}"
-        )
-
-    @property
-    def ingest_view_name(self) -> str:
-        return filename_parts_from_path(self.file_path).file_tag
-
-
-# TODO(#11424): Merge this class with base class once LegacyExtractAndMergeArgs
-#  class has been deleted.
+# TODO(#11424): Merge this class with the base class.
 @attr.s(frozen=True)
 class NewExtractAndMergeArgs(ExtractAndMergeArgs):
     # These are private attributes that must be accessed via @property
@@ -183,8 +145,7 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
         pass
 
 
-# TODO(#11424): Merge this class with base class once GcsfsIngestViewExportArgs
-#  class has been deleted.
+# TODO(#11424): Merge this class with base class.
 @attr.s(frozen=True)
 class BQIngestViewMaterializationArgs(IngestViewMaterializationArgs):
     # TODO(#11424): Rename this attribute to ingest_instance when this class is merged
@@ -206,24 +167,3 @@ class BQIngestViewMaterializationArgs(IngestViewMaterializationArgs):
             tag += "-None"
         tag += f"-{snake_case_datetime(self.upper_bound_datetime_inclusive)}"
         return tag
-
-
-@attr.s(frozen=True)
-class GcsfsIngestViewExportArgs(IngestViewMaterializationArgs):
-    # The bucket to output the generated ingest view to.
-    output_bucket_name: str = attr.ib()
-
-    def task_id_tag(self) -> str:
-        tag = f"ingest_view_export_{self.ingest_view_name}-{self.output_bucket_name}"
-        if self.lower_bound_datetime_exclusive:
-            tag += f"-{snake_case_datetime(self.lower_bound_datetime_exclusive)}"
-        else:
-            tag += "-None"
-        tag += f"-{snake_case_datetime(self.upper_bound_datetime_inclusive)}"
-        return tag
-
-    @property
-    def ingest_instance(self) -> DirectIngestInstance:
-        return DirectIngestInstanceFactory.for_ingest_bucket(
-            GcsfsBucketPath(self.output_bucket_name)
-        )

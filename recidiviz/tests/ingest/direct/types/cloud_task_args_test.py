@@ -18,18 +18,8 @@
 import datetime
 from unittest import TestCase
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_name,
-)
-from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_state,
-)
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
-    GcsfsIngestViewExportArgs,
-    LegacyExtractAndMergeArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -37,35 +27,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 
 class TestCloudTaskArgs(TestCase):
     """Tests for cloud_task_args.py."""
-
-    # TODO(#11424): Delete this test once BQ materialization is enabled for all states.
-    def test_gcsfs_ingest_view_export_args(self) -> None:
-        dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
-        dt_upper = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-
-        args = GcsfsIngestViewExportArgs(
-            ingest_view_name="my_file_tag",
-            output_bucket_name="an_ingest_bucket",
-            lower_bound_datetime_exclusive=None,
-            upper_bound_datetime_inclusive=dt_upper,
-        )
-
-        self.assertEqual(
-            "ingest_view_export_my_file_tag-an_ingest_bucket-None-2019_11_22_11_22_33_444444",
-            args.task_id_tag(),
-        )
-
-        args = GcsfsIngestViewExportArgs(
-            ingest_view_name="my_file_tag",
-            output_bucket_name="an_ingest_bucket",
-            lower_bound_datetime_exclusive=dt_lower,
-            upper_bound_datetime_inclusive=dt_upper,
-        )
-
-        self.assertEqual(
-            "ingest_view_export_my_file_tag-an_ingest_bucket-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
-            args.task_id_tag(),
-        )
 
     def test_bq_ingest_view_materialization_args(self) -> None:
         dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
@@ -94,32 +55,6 @@ class TestCloudTaskArgs(TestCase):
         self.assertEqual(args.ingest_instance, DirectIngestInstance.SECONDARY)
         self.assertEqual(
             "ingest_view_materialization_my_ingest_view_name-SECONDARY-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
-            args.task_id_tag(),
-        )
-
-    # TODO(#11424): Delete this test once BQ materialization is enabled for all states.
-    def test_legacy_extract_and_merge_args(self) -> None:
-        dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-        bucket = gcsfs_direct_ingest_bucket_for_state(
-            project_id="recidiviz-456",
-            region_code="us_xx",
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
-        ingest_view_file_path = GcsfsFilePath.from_directory_and_file_name(
-            bucket,
-            to_normalized_unprocessed_file_name(
-                "my_ingest_view_name.csv", GcsfsDirectIngestFileType.INGEST_VIEW, dt=dt
-            ),
-        )
-
-        args = LegacyExtractAndMergeArgs(
-            ingest_time=datetime.datetime.now(), file_path=ingest_view_file_path
-        )
-
-        self.assertEqual(args.ingest_instance, DirectIngestInstance.PRIMARY)
-        self.assertEqual(args.ingest_view_name, "my_ingest_view_name")
-        self.assertEqual(
-            "ingest_job_my_ingest_view_name_2019-11-22",
             args.task_id_tag(),
         )
 

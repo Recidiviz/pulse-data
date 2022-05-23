@@ -47,9 +47,7 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
-    GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
-    LegacyExtractAndMergeArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -176,15 +174,15 @@ class TestIngestViewMaterializationCloudTaskQueueInfo(TestCase):
     """Tests for the IngestViewMaterializationCloudTaskQueueInfo."""
 
     def setUp(self) -> None:
-        self.primary_ingest_view_export_args = GcsfsIngestViewExportArgs(
+        self.primary_ingest_view_export_args = BQIngestViewMaterializationArgs(
             ingest_view_name="my_file_tag",
-            output_bucket_name=_PRIMARY_INGEST_BUCKET.bucket_name,
+            ingest_instance_=DirectIngestInstance.PRIMARY,
             lower_bound_datetime_exclusive=None,
             upper_bound_datetime_inclusive=datetime.datetime.now(),
         )
         self.secondary_ingest_view_export_args = attr.evolve(
             self.primary_ingest_view_export_args,
-            output_bucket_name=_SECONDARY_INGEST_BUCKET.bucket_name,
+            ingest_instance_=DirectIngestInstance.SECONDARY,
         )
 
     def test_info_no_tasks(self) -> None:
@@ -249,25 +247,19 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
     """Tests for the ExtractAndMergeCloudTaskQueueInfo."""
 
     def setUp(self) -> None:
-        bucket = gcsfs_direct_ingest_bucket_for_state(
-            project_id="recidiviz-456",
-            region_code=_REGION.region_code,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
-        self.ingest_view_file_path = GcsfsFilePath.from_directory_and_file_name(
-            bucket,
-            to_normalized_unprocessed_file_name(
-                "file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
-            ),
-        )
+        self.ingest_instance = DirectIngestInstance.PRIMARY
+        self.ingest_view_name = "my_ingest_view"
 
     def test_info_no_tasks(self) -> None:
         # Arrange
         info = ExtractAndMergeCloudTaskQueueInfo(queue_name="queue_name", task_names=[])
 
-        gcsfs_args = LegacyExtractAndMergeArgs(
+        gcsfs_args = NewExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=self.ingest_view_file_path,
+            ingest_instance=self.ingest_instance,
+            ingest_view_name=self.ingest_view_name,
+            upper_bound_datetime_inclusive=datetime.datetime(2022, 1, 1, 1, 1, 1),
+            batch_number=0,
         )
 
         # Act
@@ -284,9 +276,12 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
 
     def test_info_single_task(self) -> None:
         # Arrange
-        gcsfs_args = LegacyExtractAndMergeArgs(
+        gcsfs_args = NewExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=self.ingest_view_file_path,
+            ingest_instance=self.ingest_instance,
+            ingest_view_name=self.ingest_view_name,
+            upper_bound_datetime_inclusive=datetime.datetime(2022, 1, 1, 1, 1, 1),
+            batch_number=0,
         )
 
         full_task_name = _build_task_id(
@@ -299,9 +294,12 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
                 f"projects/path/to/{full_task_name}",
             ],
         )
-        gcsfs_args = LegacyExtractAndMergeArgs(
+        gcsfs_args = NewExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=self.ingest_view_file_path,
+            ingest_instance=self.ingest_instance,
+            ingest_view_name=self.ingest_view_name,
+            upper_bound_datetime_inclusive=datetime.datetime(2022, 1, 1, 1, 1, 1),
+            batch_number=0,
         )
 
         # Act
@@ -322,9 +320,12 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
 
     def test_info_tasks_both_instances(self) -> None:
         # Arrange
-        gcsfs_args = LegacyExtractAndMergeArgs(
+        gcsfs_args = NewExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=self.ingest_view_file_path,
+            ingest_instance=self.ingest_instance,
+            ingest_view_name=self.ingest_view_name,
+            upper_bound_datetime_inclusive=datetime.datetime(2022, 1, 1, 1, 1, 1),
+            batch_number=0,
         )
 
         full_task_names = [
@@ -346,9 +347,12 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
                 for full_task_name in full_task_names
             ],
         )
-        gcsfs_args = LegacyExtractAndMergeArgs(
+        gcsfs_args = NewExtractAndMergeArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=self.ingest_view_file_path,
+            ingest_instance=self.ingest_instance,
+            ingest_view_name=self.ingest_view_name,
+            upper_bound_datetime_inclusive=datetime.datetime(2022, 1, 1, 1, 1, 1),
+            batch_number=0,
         )
 
         # Act
@@ -508,7 +512,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
-            _REGION, args, is_bq_materialization_enabled=True
+            _REGION, args
         )
 
         # Assert
@@ -567,7 +571,8 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
-            _REGION, args, is_bq_materialization_enabled=True
+            _REGION,
+            args,
         )
 
         # Assert
@@ -640,63 +645,6 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             parent=queue_path, task=task
         )
 
-    # TODO(#11424): Delete this test when BQ materialization has fully shipped.
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
-    @patch("google.cloud.tasks_v2.CloudTasksClient")
-    @freeze_time("2019-07-20")
-    def test_create_direct_ingest_view_materialization_task(
-        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
-    ) -> None:
-        # Arrange
-        export_args = GcsfsIngestViewExportArgs(
-            ingest_view_name="my_ingest_view",
-            output_bucket_name=_PRIMARY_INGEST_BUCKET.bucket_name,
-            lower_bound_datetime_exclusive=datetime.datetime(2020, 4, 29),
-            upper_bound_datetime_inclusive=datetime.datetime(2020, 4, 30),
-        )
-        body = {
-            "cloud_task_args": export_args.to_serializable(),
-            "args_type": "GcsfsIngestViewExportArgs",
-        }
-        body_encoded = json.dumps(body).encode()
-        uuid = "random-uuid"
-        mock_uuid.uuid4.return_value = uuid
-        date = "2019-07-20"
-        queue_name = "direct-ingest-state-us-xx-ingest-view-export"
-        queue_path = f"{queue_name}-path"
-
-        task_name = queue_name + f"/{_REGION.region_code}-{date}-{uuid}"
-        url_params = {
-            "region": _REGION.region_code,
-            "output_bucket": _PRIMARY_INGEST_BUCKET.bucket_name,
-        }
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/ingest_view_export?{urlencode(url_params)}",
-                "body": body_encoded,
-            },
-        )
-
-        mock_client.return_value.task_path.return_value = task_name
-        mock_client.return_value.queue_path.return_value = queue_path
-
-        # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_view_materialization_task(
-            _REGION, export_args, is_bq_materialization_enabled=False
-        )
-
-        # Assert
-        mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id,
-            QUEUES_REGION,
-            queue_name,
-        )
-        mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task
-        )
-
     @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
@@ -741,7 +689,8 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_view_materialization_task(
-            _REGION, export_args, is_bq_materialization_enabled=True
+            _REGION,
+            export_args,
         )
 
         # Assert

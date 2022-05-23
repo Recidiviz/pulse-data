@@ -20,7 +20,7 @@ the results can be processed and merged into our Postgres database.
 import abc
 import datetime
 import logging
-from typing import Dict, Generic, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from google.cloud import bigquery
 
@@ -29,15 +29,11 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
-    IngestViewMaterializationArgsT,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
     IngestViewMaterializerDelegate,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
-    IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -62,10 +58,10 @@ SELECT_SUBQUERY = "SELECT * FROM `{project_id}.{dataset_id}.{table_name}`;"
 TABLE_NAME_DATE_FORMAT = "%Y_%m_%d_%H_%M_%S"
 
 
-class IngestViewMaterializer(Generic[IngestViewMaterializationArgsT]):
+class IngestViewMaterializer:
     @abc.abstractmethod
     def materialize_view_for_args(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgsT
+        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
     ) -> bool:
         """Materializes the results of a single ingest view with date bounds specified
         in the provided args. If the provided args contain an upper and lower bound
@@ -85,7 +81,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         *,
         region: Region,
         ingest_instance: DirectIngestInstance,
-        delegate: IngestViewMaterializerDelegate[IngestViewMaterializationArgsT],
+        delegate: IngestViewMaterializerDelegate,
         big_query_client: BigQueryClient,
         view_collector: BigQueryViewCollector[
             DirectIngestPreProcessedIngestViewBuilder
@@ -157,7 +153,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
     @staticmethod
     def _get_upper_bound_intermediate_table_name(
-        ingest_view_materialization_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: BQIngestViewMaterializationArgs,
     ) -> str:
         """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
         upper_bound_datetime_inclusive in the args.
@@ -170,7 +166,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
     @staticmethod
     def _get_lower_bound_intermediate_table_name(
-        ingest_view_materialization_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: BQIngestViewMaterializationArgs,
     ) -> str:
         """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
         lower_bound_datetime_exclusive in the args.
@@ -188,7 +184,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         )
 
     def _get_materialization_query_for_args(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
     ) -> str:
         """Returns a query that will produce the ingest view results for date bounds
         specified in the provided args. This query will only work if the intermediate
@@ -228,7 +224,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         )
 
     def _load_individual_date_queries_into_intermediate_tables(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
     ) -> None:
         """Loads query results from the upper and lower bound queries for this
         materialization job into intermediate tables.
@@ -264,7 +260,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             job.result()
 
     def _delete_intermediate_tables(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
     ) -> None:
         single_date_table_ids = [
             self._get_upper_bound_intermediate_table_name(
@@ -286,7 +282,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             logging.info("Deleted intermediate table [%s]", table_id)
 
     def materialize_view_for_args(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgsT
+        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
     ) -> bool:
         """Materializes the results of a single ingest view with date bounds specified
         in the provided args. If the provided args contain an upper and lower bound
@@ -365,7 +361,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def debug_query_for_args(
         cls,
         ingest_views_by_name: Dict[str, DirectIngestPreProcessedIngestView],
-        ingest_view_materialization_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: BQIngestViewMaterializationArgs,
     ) -> str:
         """Returns a version of the materialization query for the provided args that can
         be run in the BigQuery UI.
@@ -388,7 +384,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def _debug_generate_unified_query(
         cls,
         ingest_view: DirectIngestPreProcessedIngestView,
-        ingest_view_materialization_args: IngestViewMaterializationArgs,
+        ingest_view_materialization_args: BQIngestViewMaterializationArgs,
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
         """Generates a single query that is date bounded such that it represents the data that has changed for this view
         between the specified date bounds in the provided materialization args.

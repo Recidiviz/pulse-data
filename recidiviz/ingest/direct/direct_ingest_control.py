@@ -447,7 +447,7 @@ def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
 
         if not args:
             raise DirectIngestError(
-                msg="materialize_ingest_view was called with no IngestViewMaterializationArgs.",
+                msg="materialize_ingest_view was called with no BQIngestViewMaterializationArgs.",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
@@ -529,7 +529,7 @@ def extract_and_merge() -> Tuple[str, HTTPStatus]:
         ingest_args = _parse_cloud_task_args(json_data)
 
         if not ingest_args:
-            response = "/extract_and_merge was called with no ExtractAndMergeArgs."
+            response = "/extract_and_merge was called with no NewExtractAndMergeArgs."
             logging.error(response)
             return response, HTTPStatus.BAD_REQUEST
 

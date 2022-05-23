@@ -31,7 +31,7 @@ from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHand
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
     IngestViewResultsParser,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
+from recidiviz.ingest.direct.types.cloud_task_args import NewExtractAndMergeArgs
 from recidiviz.persistence import persistence
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -48,7 +48,7 @@ class IngestViewProcessor:
     @abc.abstractmethod
     def parse_and_persist_contents(
         self,
-        args: ExtractAndMergeArgs,
+        args: NewExtractAndMergeArgs,
         contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
@@ -78,7 +78,7 @@ class IngestViewProcessorImpl(IngestViewProcessor):
 
     def parse_and_persist_contents(
         self,
-        args: ExtractAndMergeArgs,
+        args: NewExtractAndMergeArgs,
         contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:

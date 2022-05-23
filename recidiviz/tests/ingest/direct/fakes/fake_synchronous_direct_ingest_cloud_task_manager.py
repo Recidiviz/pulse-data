@@ -34,8 +34,8 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
     GcsfsRawDataBQImportArgs,
-    IngestViewMaterializationArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -64,7 +64,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self.num_finished_raw_data_import_tasks = 0
 
         self.ingest_view_materialization_tasks: List[
-            Tuple[str, IngestViewMaterializationArgs]
+            Tuple[str, BQIngestViewMaterializationArgs]
         ] = []
         self.num_finished_ingest_view_materialization_tasks = 0
 
@@ -74,7 +74,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
-        is_bq_materialization_enabled: bool,
     ) -> ExtractAndMergeCloudTaskQueueInfo:
 
         return ExtractAndMergeCloudTaskQueueInfo(
@@ -101,7 +100,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
-        is_bq_materialization_enabled: bool,
     ) -> IngestViewMaterializationCloudTaskQueueInfo:
         return IngestViewMaterializationCloudTaskQueueInfo(
             queue_name="ingest_view_materialization",
@@ -117,7 +115,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         self,
         region: Region,
         task_args: NewExtractAndMergeArgs,
-        is_bq_materialization_enabled: bool,
     ) -> None:
         """Queues *but does not run* a process job task."""
         if not self.controller:
@@ -177,8 +174,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
-        task_args: IngestViewMaterializationArgs,
-        is_bq_materialization_enabled: bool,
+        task_args: BQIngestViewMaterializationArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")

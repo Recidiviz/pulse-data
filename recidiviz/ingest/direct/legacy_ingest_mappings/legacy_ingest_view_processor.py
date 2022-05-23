@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
 from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
     IngestGatingContext,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
+from recidiviz.ingest.direct.types.cloud_task_args import NewExtractAndMergeArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
@@ -138,7 +138,7 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
 
     def parse_and_persist_contents(
         self,
-        args: ExtractAndMergeArgs,
+        args: NewExtractAndMergeArgs,
         contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
@@ -162,7 +162,7 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
 
     def _parse_ingest_info(
         self,
-        args: ExtractAndMergeArgs,
+        args: NewExtractAndMergeArgs,
         contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> ingest_info.IngestInfo:

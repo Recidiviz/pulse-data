@@ -20,18 +20,20 @@ ingest view materialization tasks for a particular region.
 import datetime
 import logging
 from collections import defaultdict
-from typing import Dict, Generic, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import attr
 
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
     IngestViewMaterializationArgsGeneratorDelegate,
-    IngestViewMaterializationArgsT,
     RegisteredMaterializationJob,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
+)
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
@@ -79,7 +81,7 @@ class _IngestViewExportState:
         return result
 
 
-class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationArgsT]):
+class IngestViewMaterializationArgsGenerator:
     """Class that generates arguments for outstanding ingest view materialization tasks
     for a particular region.
     """
@@ -88,9 +90,7 @@ class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationAr
         self,
         *,
         region: Region,
-        delegate: IngestViewMaterializationArgsGeneratorDelegate[
-            IngestViewMaterializationArgsT
-        ],
+        delegate: IngestViewMaterializationArgsGeneratorDelegate,
         raw_file_metadata_manager: DirectIngestRawFileMetadataManager,
         view_collector: BigQueryViewCollector[
             DirectIngestPreProcessedIngestViewBuilder
@@ -109,7 +109,7 @@ class IngestViewMaterializationArgsGenerator(Generic[IngestViewMaterializationAr
 
     def get_ingest_view_materialization_task_args(
         self,
-    ) -> List[IngestViewMaterializationArgsT]:
+    ) -> List[BQIngestViewMaterializationArgs]:
         """Looks at what files have been exported for a given region and returns args for all the export jobs that
         should be started, given what has updated in the raw data tables since the last time we exported data. Also
         returns any tasks that have not yet completed.

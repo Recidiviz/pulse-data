@@ -42,7 +42,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manage
     DirectIngestInstancePauseStatusManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
-    IngestViewMaterializationArgs,
+    BQIngestViewMaterializationArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -366,7 +366,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         ingest_view_name: str,
         upper_bound_datetime: datetime.datetime,
         lower_bound_datetime: Optional[datetime.datetime],
-    ) -> IngestViewMaterializationArgs:
+    ) -> BQIngestViewMaterializationArgs:
         delegate = controller.ingest_view_materialization_args_generator.delegate
         args = delegate.build_new_args(
             ingest_view_name=ingest_view_name,
