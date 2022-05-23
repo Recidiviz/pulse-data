@@ -107,8 +107,8 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
     GcsfsRawDataBQImportArgs,
-    IngestViewMaterializationArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -358,7 +358,6 @@ class BaseDirectIngestController:
             self.cloud_task_manager.get_extract_and_merge_queue_info(
                 self.region,
                 self.ingest_instance,
-                is_bq_materialization_enabled=True,
             )
         )
         if (
@@ -407,7 +406,6 @@ class BaseDirectIngestController:
         self.cloud_task_manager.create_direct_ingest_extract_and_merge_task(
             region=self.region,
             task_args=next_job_args,
-            is_bq_materialization_enabled=True,
         )
 
     def _schedule_raw_data_import_tasks(self) -> bool:
@@ -462,7 +460,6 @@ class BaseDirectIngestController:
         queue_info = self.cloud_task_manager.get_ingest_view_materialization_queue_info(
             self.region,
             self.ingest_instance,
-            is_bq_materialization_enabled=True,
         )
         if queue_info.has_ingest_view_materialization_jobs_queued(
             self.region_code(), self.ingest_instance
@@ -511,7 +508,6 @@ class BaseDirectIngestController:
                 self.cloud_task_manager.create_direct_ingest_view_materialization_task(
                     self.region,
                     task_args,
-                    is_bq_materialization_enabled=True,
                 )
                 did_schedule = True
 
@@ -891,7 +887,7 @@ class BaseDirectIngestController:
         self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_materialization(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgs
+        self, ingest_view_materialization_args: BQIngestViewMaterializationArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
 

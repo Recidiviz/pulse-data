@@ -38,7 +38,6 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     BQIngestViewMaterializationArgs,
-    GcsfsIngestViewExportArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
@@ -382,7 +381,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         ingest_view_name: str,
         committed_raw_file_metadata: List[_RawFileMetadata],
         committed_ingest_materialization_metadata: List[_IngestFileMetadata],
-    ) -> List[GcsfsIngestViewExportArgs]:
+    ) -> List[BQIngestViewMaterializationArgs]:
         """Runs test to generate ingest view materialization args given provided DB state."""
         region = fake_region(environment="production")
 

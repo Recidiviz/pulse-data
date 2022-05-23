@@ -20,17 +20,17 @@ is specific to the file-based implementation of materialization.
 
 import abc
 import datetime
-from typing import Generic, Optional
+from typing import Optional
 
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
-    IngestViewMaterializationArgsT,
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
 )
 
 
-class IngestViewMaterializerDelegate(Generic[IngestViewMaterializationArgsT]):
+class IngestViewMaterializerDelegate:
     """Delegate object that isolates ingest view materialization logic that
     is specific to the file-based implementation of materialization.
 
@@ -47,7 +47,7 @@ class IngestViewMaterializerDelegate(Generic[IngestViewMaterializationArgsT]):
 
     @abc.abstractmethod
     def get_job_completion_time_for_args(
-        self, args: IngestViewMaterializationArgsT
+        self, args: BQIngestViewMaterializationArgs
     ) -> Optional[datetime.datetime]:
         """Returns the time that the materialization job for the given set of args was
         completed, or None if the job is still outstanding. May throw if these args
@@ -55,7 +55,7 @@ class IngestViewMaterializerDelegate(Generic[IngestViewMaterializationArgsT]):
         """
 
     @abc.abstractmethod
-    def prepare_for_job(self, args: IngestViewMaterializationArgsT) -> None:
+    def prepare_for_job(self, args: BQIngestViewMaterializationArgs) -> None:
         """Does work needed to prepare any databases for the materialization job
         represented by |args|. Note: this will be empty for the BQ-based implementation.
         """
@@ -63,12 +63,12 @@ class IngestViewMaterializerDelegate(Generic[IngestViewMaterializationArgsT]):
     @abc.abstractmethod
     def materialize_query_results(
         self,
-        args: IngestViewMaterializationArgsT,
+        args: BQIngestViewMaterializationArgs,
         ingest_view: DirectIngestPreProcessedIngestView,
         query: str,
     ) -> None:
         """Materialized the results of |query| to the appropriate location."""
 
     @abc.abstractmethod
-    def mark_job_complete(self, args: IngestViewMaterializationArgsT) -> None:
+    def mark_job_complete(self, args: BQIngestViewMaterializationArgs) -> None:
         """Marks a materialization job complete in the appropriate datastore."""

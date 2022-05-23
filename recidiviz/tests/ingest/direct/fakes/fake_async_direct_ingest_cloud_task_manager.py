@@ -33,8 +33,8 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
     GcsfsRawDataBQImportArgs,
-    IngestViewMaterializationArgs,
     NewExtractAndMergeArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -77,7 +77,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self,
         region: Region,
         task_args: NewExtractAndMergeArgs,
-        is_bq_materialization_enabled: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -170,8 +169,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_view_materialization_task(
         self,
         region: Region,
-        task_args: IngestViewMaterializationArgs,
-        is_bq_materialization_enabled: bool,
+        task_args: BQIngestViewMaterializationArgs,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
@@ -200,7 +198,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
-        is_bq_materialization_enabled: bool,
     ) -> ExtractAndMergeCloudTaskQueueInfo:
         with self.extract_and_merge_queue.all_tasks_mutex:
             task_names = self.extract_and_merge_queue.get_unfinished_task_names_unsafe()
@@ -233,7 +230,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self,
         region: Region,
         ingest_instance: DirectIngestInstance,
-        is_bq_materialization_enabled: bool,
     ) -> IngestViewMaterializationCloudTaskQueueInfo:
         with self.ingest_view_materialization_queue.all_tasks_mutex:
             task_names = (

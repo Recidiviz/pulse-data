@@ -20,22 +20,17 @@ merge job should run next given the desired data import ordering.
 import abc
 import logging
 from datetime import datetime
-from typing import Generic, List, Optional, TypeVar
+from typing import List, Optional
 
 import pytz
 
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContents,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
-    NewExtractAndMergeArgs,
-)
-
-ExtractAndMergeArgsT = TypeVar("ExtractAndMergeArgsT", bound=ExtractAndMergeArgs)
+from recidiviz.ingest.direct.types.cloud_task_args import NewExtractAndMergeArgs
 
 
-class ExtractAndMergeJobPrioritizer(Generic[ExtractAndMergeArgsT]):
+class ExtractAndMergeJobPrioritizer:
     """Interface for a class that handles logic for deciding which extract and merge
     job should run next given the desired data import ordering.
     """
@@ -43,13 +38,11 @@ class ExtractAndMergeJobPrioritizer(Generic[ExtractAndMergeArgsT]):
     @abc.abstractmethod
     def get_next_job_args(
         self,
-    ) -> Optional[ExtractAndMergeArgsT]:
+    ) -> Optional[NewExtractAndMergeArgs]:
         """Returns a set of args defining the next chunk of data to process."""
 
 
-class ExtractAndMergeJobPrioritizerImpl(
-    ExtractAndMergeJobPrioritizer[NewExtractAndMergeArgs]
-):
+class ExtractAndMergeJobPrioritizerImpl(ExtractAndMergeJobPrioritizer):
     """Implementation of the ExtractAndMergeJobPrioritizer interface, for use in
     regions where BQ-based ingest view materialization is enabled.
     """

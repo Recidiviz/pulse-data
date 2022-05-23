@@ -19,14 +19,12 @@ is specific to the file-based implementation of materialization.
 """
 import abc
 import datetime
-from typing import Generic, List, Optional, TypeVar
+from typing import List, Optional
 
 import attr
 
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
-
-IngestViewMaterializationArgsT = TypeVar(
-    "IngestViewMaterializationArgsT", bound=IngestViewMaterializationArgs
+from recidiviz.ingest.direct.types.cloud_task_args import (
+    BQIngestViewMaterializationArgs,
 )
 
 
@@ -40,9 +38,7 @@ class RegisteredMaterializationJob:
     lower_bound_datetime_exclusive: Optional[datetime.datetime] = attr.ib()
 
 
-class IngestViewMaterializationArgsGeneratorDelegate(
-    Generic[IngestViewMaterializationArgsT]
-):
+class IngestViewMaterializationArgsGeneratorDelegate:
     """Delegate object that isolates ingest view materialization args generation logic
     that is specific to the file-based implementation of materialization.
 
@@ -54,7 +50,7 @@ class IngestViewMaterializationArgsGeneratorDelegate(
     @abc.abstractmethod
     def get_registered_jobs_pending_completion(
         self,
-    ) -> List[IngestViewMaterializationArgsT]:
+    ) -> List[BQIngestViewMaterializationArgs]:
         """Returns a lists of materialization jobs that have been registered via
         |register_new_job| but have not completed.
         """
@@ -66,13 +62,13 @@ class IngestViewMaterializationArgsGeneratorDelegate(
         ingest_view_name: str,
         upper_bound_datetime_inclusive: datetime.datetime,
         lower_bound_datetime_exclusive: Optional[datetime.datetime],
-    ) -> IngestViewMaterializationArgsT:
+    ) -> BQIngestViewMaterializationArgs:
         """Builds a new set of |IngestViewMaterializationArgs| of the appropriate type,
         given the input information about the materialization job.
         """
 
     @abc.abstractmethod
-    def register_new_job(self, args: IngestViewMaterializationArgsT) -> None:
+    def register_new_job(self, args: BQIngestViewMaterializationArgs) -> None:
         """Register the materialization job represented by these |args| in the
         appropriate datastore.
         """

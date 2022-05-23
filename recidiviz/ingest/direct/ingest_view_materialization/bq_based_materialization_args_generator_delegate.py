@@ -37,7 +37,7 @@ from recidiviz.persistence.entity.operations.entities import (
 
 
 class BQBasedMaterializationArgsGeneratorDelegate(
-    IngestViewMaterializationArgsGeneratorDelegate[BQIngestViewMaterializationArgs]
+    IngestViewMaterializationArgsGeneratorDelegate
 ):
     """Implementation of the IngestViewMaterializationArgsGeneratorDelegate for use on
     states using file-based ingest view materialization.
