@@ -19,7 +19,7 @@ import styled from "styled-components/macro";
 
 import { palette } from "../GlobalStyles/Palette";
 
-export const HeaderRow = styled.header`
+export const HeaderBar = styled.header`
   width: 100%;
   height: 64px;
   display: flex;
@@ -29,12 +29,7 @@ export const HeaderRow = styled.header`
   top: 0;
   z-index: 1;
   background: ${palette.solid.white};
-  padding: 16px 22px;
-`;
-
-export const HeaderCell = styled.div`
-  display: flex;
-  align-items: center;
+  padding: 16px 0;
 `;
 
 export const LogoContainer = styled.div`
@@ -44,9 +39,6 @@ export const LogoContainer = styled.div`
   justify-content: center;
   align-items: center;
   background: ${palette.solid.green};
-  position: absolute;
-  top: 0;
-  left: 0;
   transition: 0.3s ease;
 
   &:hover {

@@ -17,13 +17,43 @@
 import { DropdownMenuItem, DropdownToggle } from "@recidiviz/design-system";
 import styled from "styled-components/macro";
 
-import { palette } from "../GlobalStyles";
+import { palette, typography } from "../GlobalStyles";
+
+export const MenuContainer = styled.nav`
+  font-family: ${typography.family};
+  ${typography.sizeCSS.normal}
+  display: flex;
+  align-items: center;
+  padding: 20px 24px;
+`;
+
+export const MenuItem = styled.div<{ active?: boolean }>`
+  height: 64px;
+  padding-top: 14px;
+  margin-left: 24px;
+  border-top: 6px solid
+    ${({ active }) => (active ? palette.solid.blue : "transparent")};
+  transition: 0.2s ease;
+
+  &:hover {
+    cursor: pointer;
+    color: ${palette.solid.blue};
+  }
+`;
+
+export const WelcomeBack = styled.div`
+  color: ${palette.highlight.grey8};
+  border-right: 1px solid black;
+  padding-right: 24px;
+`;
 
 export const ExtendedDropdownToggle = styled(DropdownToggle)`
+  font-family: ${typography.family};
+  ${typography.sizeCSS.normal}
   padding: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  margin-left: 70px;
+  min-height: unset;
+  line-height: 0;
+  margin-bottom: 22px;
   color: ${palette.solid.darkgrey};
 
   &[aria-expanded="true"] {
@@ -39,16 +69,38 @@ export const ExtendedDropdownToggle = styled(DropdownToggle)`
   }
 `;
 
-export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)`
-  color: ${palette.solid.darkgrey};
+export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)<{
+  logoutColor?: boolean;
+}>`
+  min-width: 264px;
+  display: flex;
+  font-family: ${typography.family};
+  ${typography.sizeCSS.normal}
+  color: ${({ logoutColor }) =>
+    logoutColor ? palette.solid.red : palette.solid.darkgrey};
+  padding: 16px;
+  height: auto;
+
+  &:first-child {
+    padding: 10px 16px 16px 16px;
+  }
+
+  &:last-child {
+    padding: 16px 16px 10px 16px;
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid ${palette.solid.offwhite};
+  }
 
   &:focus {
     background-color: transparent;
-    color: ${palette.solid.darkgrey};
+    color: ${({ logoutColor }) =>
+      logoutColor ? palette.solid.red : palette.solid.darkgrey};
   }
 
   &:hover {
     color: ${palette.solid.blue};
-    background-color: ${palette.highlight.blue};
+    background-color: transparent;
   }
 `;
