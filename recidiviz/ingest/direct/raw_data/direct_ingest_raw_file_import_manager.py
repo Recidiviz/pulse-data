@@ -51,7 +51,6 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
@@ -637,11 +636,6 @@ class DirectIngestRawFileImportManager:
             raise ValueError(
                 f"Attempting to import raw file with tag [{parts.file_tag}] unspecified by [{self.region.region_code}] "
                 f"config."
-            )
-
-        if parts.file_type != GcsfsDirectIngestFileType.RAW_DATA:
-            raise ValueError(
-                f"Unexpected file type [{parts.file_type}] for path [{parts.file_tag}]."
             )
 
         logging.info("Beginning BigQuery upload of raw file [%s]", path.abs_path())

@@ -26,7 +26,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
@@ -127,8 +126,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         self.ingest_database_name = ingest_database_name
 
     def has_raw_file_been_discovered(self, path: GcsfsFilePath) -> bool:
-        self._check_is_raw_file_path(path)
-
         try:
             _ = self.get_raw_file_metadata(path)
         except ValueError:
@@ -137,7 +134,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         return True
 
     def mark_raw_file_as_discovered(self, path: GcsfsFilePath) -> None:
-        self._check_is_raw_file_path(path)
         if not path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX):
             raise ValueError("Expect only unprocessed paths in this function.")
 
@@ -155,7 +151,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             )
 
     def get_raw_file_metadata(self, path: GcsfsFilePath) -> DirectIngestRawFileMetadata:
-        self._check_is_raw_file_path(path)
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -165,7 +160,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             return self._raw_file_schema_metadata_as_entity(metadata)
 
     def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
-        self._check_is_raw_file_path(path)
 
         try:
             metadata = self.get_raw_file_metadata(path)
@@ -177,7 +171,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         return metadata.processed_time is not None
 
     def mark_raw_file_as_processed(self, path: GcsfsFilePath) -> None:
-        self._check_is_raw_file_path(path)
         with SessionFactory.using_database(self.database_key) as session:
             metadata = dao.get_raw_file_metadata_row_for_path(
                 session, self.region_code, path
@@ -217,14 +210,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             )
 
         return entity_metadata
-
-    @staticmethod
-    def _check_is_raw_file_path(path: GcsfsFilePath) -> None:
-        parts = filename_parts_from_path(path)
-        if parts.file_type != GcsfsDirectIngestFileType.RAW_DATA:
-            raise ValueError(
-                f"Unexpected files type [{parts.file_type}] for path [{path.abs_path()}]"
-            )
 
     def get_num_unprocessed_raw_files(self) -> int:
         """Returns the number of unprocessed raw files in the operations table for this region"""

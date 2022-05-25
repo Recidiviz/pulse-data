@@ -59,8 +59,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
     MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewResultsParser,
@@ -749,16 +747,12 @@ class BaseDirectIngestController:
             can_start_ingest=start_ingest,
         )
 
-    def _register_all_new_paths_in_metadata(self, paths: List[GcsfsFilePath]) -> None:
+    def _register_all_new_raw_file_paths_in_metadata(
+        self, paths: List[GcsfsFilePath]
+    ) -> None:
         for path in paths:
-            parts = filename_parts_from_path(path)
-            if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-                if not self.raw_file_metadata_manager.has_raw_file_been_discovered(
-                    path
-                ):
-                    self.raw_file_metadata_manager.mark_raw_file_as_discovered(path)
-            else:
-                raise ValueError(f"Unexpected file type [{parts.file_type}]")
+            if not self.raw_file_metadata_manager.has_raw_file_been_discovered(path):
+                self.raw_file_metadata_manager.mark_raw_file_as_discovered(path)
 
     @trace.span
     def handle_new_files(self, *, current_task_id: str, can_start_ingest: bool) -> None:
@@ -822,7 +816,7 @@ class BaseDirectIngestController:
                 f"uploaded to the primary ingest bucket, if appropriate."
             )
 
-        self._register_all_new_paths_in_metadata(unprocessed_raw_paths)
+        self._register_all_new_raw_file_paths_in_metadata(unprocessed_raw_paths)
 
         # Even if there are no unprocessed paths, we still want to look for the next
         # job because there may be new files to generate.

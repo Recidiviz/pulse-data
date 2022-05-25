@@ -37,7 +37,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     IngestViewContentsSummary,
     InstanceIngestViewContentsImpl,
@@ -200,33 +199,22 @@ class IngestOperationsStore(AdminPanelStore):
             name: bucket_name,
             unprocessedFilesRaw: how many unprocessed raw data files in the bucket,
             processedFilesRaw: how many processed raw data files are in the bucket (should be zero),
-            unprocessedFilesIngestView: how many unprocessed ingest view files in the bucket,
-            processedFilesIngestView: how many processed ingest view files are in the bucket
         }
         """
         bucket_metadata: BucketSummaryType = {
             "name": path.abs_path(),
         }
 
-        for file_type in GcsfsDirectIngestFileType:
-            logging.info("Getting bucket metadata for file type [%s]", file_type)
-            file_type_str = self.get_file_type_api_string(file_type)
-            logging.info("Getting unprocessed file paths [%s]", file_type)
-            unprocessed_files = self.fs.get_unprocessed_raw_file_paths(path)
-            bucket_metadata[f"unprocessedFiles{file_type_str}"] = len(unprocessed_files)
+        logging.info("Getting bucket metadata")
+        logging.info("Getting unprocessed raw file paths")
+        unprocessed_files = self.fs.get_unprocessed_raw_file_paths(path)
+        bucket_metadata["unprocessedFilesRaw"] = len(unprocessed_files)
 
-            logging.info("Getting processed file paths [%s]", file_type)
-            processed_files = self.fs.get_processed_file_paths(path)
-            bucket_metadata[f"processedFiles{file_type_str}"] = len(processed_files)
+        logging.info("Getting processed raw file paths")
+        processed_files = self.fs.get_processed_file_paths(path)
+        bucket_metadata["processedFilesRaw"] = len(processed_files)
 
         return bucket_metadata
-
-    @staticmethod
-    def get_file_type_api_string(file_type: GcsfsDirectIngestFileType) -> str:
-        """Get the string representation of the file type to use in the response."""
-        if file_type == GcsfsDirectIngestFileType.RAW_DATA:
-            return "Raw"
-        raise ValueError(f"Unexpected file_type [{file_type}]")
 
     def get_ingest_instance_summary(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
@@ -240,12 +228,9 @@ class IngestOperationsStore(AdminPanelStore):
                 name: bucket_name,
                 unprocessedFilesRaw: how many unprocessed raw data files in the bucket,
                 processedFilesRaw: how many processed raw data files are in the bucket (should be zero),
-                unprocessedFilesIngestView: how many unprocessed ingest view files in the bucket,
-                processedFilesIngestView: how many processed ingest view files are in the bucket (should be zero),
             },
             operations: {
                 unprocessedFilesRaw: number of unprocessed raw files in the operations database
-                unprocessedFilesIngestView: number of unprocessed ingest view files in the operations database
                 dateOfEarliestUnprocessedIngestView: date of earliest unprocessed ingest file, if it exists
             }
             isBQMaterializationEnabled: If true, BQ ingest view materialization is
@@ -307,8 +292,6 @@ class IngestOperationsStore(AdminPanelStore):
             isPaused: <bool>
             unprocessedFilesRaw: <int>
             processedFilesRaw: <int>
-            unprocessedFilesIngestView: <int>
-            processedFilesIngestView: <int>
             dateOfEarliestUnprocessedIngestView: <datetime>
             ingestViewMaterializationSummaries: [
                 {

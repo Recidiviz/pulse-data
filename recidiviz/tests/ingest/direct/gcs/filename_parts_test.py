@@ -19,7 +19,6 @@ import datetime
 from unittest import TestCase
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.errors import DirectIngestError
 
@@ -43,7 +42,6 @@ class TestFilenamePartsFromPath(TestCase):
 
         self.assertEqual(parts.processed_state, "unprocessed")
         self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
         self.assertEqual(parts.file_tag, "elite_offenders")
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(
@@ -64,7 +62,6 @@ class TestFilenamePartsFromPath(TestCase):
 
         self.assertEqual(parts.processed_state, "unprocessed")
         self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
         self.assertEqual(parts.file_tag, "tak001_offender_identification")
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(
@@ -84,7 +81,6 @@ class TestFilenamePartsFromPath(TestCase):
 
         self.assertEqual(parts.processed_state, "unprocessed")
         self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
         self.assertEqual(parts.file_tag, "CIS_100_CLIENT")
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(
@@ -104,7 +100,6 @@ class TestFilenamePartsFromPath(TestCase):
 
         self.assertEqual(parts.processed_state, "unprocessed")
         self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.RAW_DATA)
         self.assertEqual(parts.file_tag, "ContactNoteType")
         self.assertEqual(parts.filename_suffix, "1")
         self.assertEqual(

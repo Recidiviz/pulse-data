@@ -21,8 +21,6 @@ from typing import List, Optional
 from more_itertools import one
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session import Session
 
@@ -33,11 +31,6 @@ def get_raw_file_metadata_row_for_path(
     path: GcsfsFilePath,
 ) -> schema.DirectIngestRawFileMetadata:
     """Returns metadata information for the provided path, throws if it doesn't exist."""
-
-    parts = filename_parts_from_path(path)
-
-    if parts.file_type != GcsfsDirectIngestFileType.RAW_DATA:
-        raise ValueError(f"Unexpected file type [{parts.file_type}]")
     results = (
         session.query(schema.DirectIngestRawFileMetadata)
         .filter_by(region_code=region_code.upper(), normalized_file_name=path.file_name)
