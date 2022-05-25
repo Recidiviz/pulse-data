@@ -16,16 +16,33 @@
 // =============================================================================
 import { Dropdown, DropdownMenu } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { Permission } from "../../shared/types";
 import { useStore } from "../../stores";
-import { ExtendedDropdownMenuItem, ExtendedDropdownToggle } from ".";
+import {
+  ExtendedDropdownMenuItem,
+  ExtendedDropdownToggle,
+  MenuContainer,
+  MenuItem,
+  WelcomeBack,
+} from ".";
+
+enum MenuItems {
+  Reports = "REPORTS",
+  CreateReport = "CREATE REPORT",
+  LearnMore = "LEARN MORE",
+  Settings = "SETTINGS",
+}
 
 const Menu = () => {
+  const [activeMenuItem, setActiveMenuItem] = useState<MenuItems>(
+    MenuItems.Reports
+  );
   const { authStore, api, userStore } = useStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const logout = async (): Promise<void | string> => {
     try {
@@ -49,33 +66,64 @@ const Menu = () => {
     }
   };
 
-  return (
-    <Dropdown>
-      <ExtendedDropdownToggle kind="borderless" showCaret>
-        {authStore.user && authStore.user.name}
-      </ExtendedDropdownToggle>
+  const updateActiveMenuItem = (menuItem: MenuItems) =>
+    setActiveMenuItem(menuItem);
 
-      <DropdownMenu alignment="right">
-        <>
-          {userStore.permissions.includes(Permission.CREATE_REPORT) && (
-            <ExtendedDropdownMenuItem
-              onClick={() => navigate("/reports/create")}
-            >
-              Create Report
+  useEffect(() => {
+    if (location.pathname === "/") updateActiveMenuItem(MenuItems.Reports);
+    if (location.pathname === "/reports/create")
+      updateActiveMenuItem(MenuItems.CreateReport);
+    if (location.pathname === "/settings")
+      updateActiveMenuItem(MenuItems.Settings);
+  }, [location]);
+
+  return (
+    <MenuContainer>
+      <WelcomeBack>
+        {authStore.user && `Welcome Back, ${authStore.user.name}`}
+      </WelcomeBack>
+
+      {/* Reports */}
+      <MenuItem
+        onClick={() => navigate("/")}
+        active={activeMenuItem === MenuItems.Reports}
+      >
+        Reports
+      </MenuItem>
+
+      {/* Create Reports (Admins Only) */}
+      {userStore.permissions.includes(Permission.CREATE_REPORT) && (
+        <MenuItem
+          onClick={() => navigate("/reports/create")}
+          active={activeMenuItem === MenuItems.CreateReport}
+        >
+          Create Report
+        </MenuItem>
+      )}
+
+      {/* Learn More */}
+      <MenuItem active={activeMenuItem === MenuItems.LearnMore}>
+        Learn More
+      </MenuItem>
+
+      {/* Settings Dropdown */}
+      <MenuItem active={activeMenuItem === MenuItems.Settings}>
+        <Dropdown>
+          <ExtendedDropdownToggle kind="borderless">
+            Settings
+          </ExtendedDropdownToggle>
+
+          <DropdownMenu alignment="right">
+            <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
+              Account Settings
             </ExtendedDropdownMenuItem>
-          )}
-        </>
-        <ExtendedDropdownMenuItem onClick={() => navigate("/")}>
-          Reports
-        </ExtendedDropdownMenuItem>
-        <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
-          Account Settings
-        </ExtendedDropdownMenuItem>
-        <ExtendedDropdownMenuItem onClick={logout}>
-          Logout
-        </ExtendedDropdownMenuItem>
-      </DropdownMenu>
-    </Dropdown>
+            <ExtendedDropdownMenuItem onClick={logout} logoutColor>
+              Log Out
+            </ExtendedDropdownMenuItem>
+          </DropdownMenu>
+        </Dropdown>
+      </MenuItem>
+    </MenuContainer>
   );
 };
 
