@@ -164,11 +164,11 @@ test("expect positive number value to not add field error (formErrors should be 
 
   const input = screen.getAllByLabelText("Total Staff")[0];
 
-  fireEvent.change(input, { target: { value: "1000" } });
+  fireEvent.change(input, { target: { value: "100" } });
 
-  expect(JSON.stringify(rootStore.formStore.formErrors)).toBe(
-    JSON.stringify({})
-  );
+  expect(
+    rootStore.formStore.metricsValues[0].PROSECUTION_STAFF.error
+  ).toBeUndefined();
 });
 
 test("expect negative number value to add field error (formErrors should contain an error property for the field)", () => {
@@ -184,14 +184,10 @@ test("expect negative number value to add field error (formErrors should contain
 
   const input = screen.getAllByLabelText("Total Staff")[0];
 
-  fireEvent.change(input, { target: { value: "-1000" } });
+  fireEvent.change(input, { target: { value: "-100" } });
 
-  expect(JSON.stringify(rootStore.formStore.formErrors[0])).toBe(
-    JSON.stringify({
-      PROSECUTION_STAFF: {
-        PROSECUTION_STAFF: "Please enter a valid number.",
-      },
-    })
+  expect(rootStore.formStore.metricsValues[0].PROSECUTION_STAFF.error).toBe(
+    "Please enter a valid number."
   );
 });
 
@@ -210,12 +206,7 @@ test("expect empty value in required field to add field error (formErrors should
 
   fireEvent.change(input, { target: { value: "" } });
 
-  expect(JSON.stringify(rootStore.formStore.formErrors[0])).toBe(
-    JSON.stringify({
-      PROSECUTION_STAFF: {
-        PROSECUTION_STAFF:
-          "This is a required field. Please enter a valid number.",
-      },
-    })
+  expect(rootStore.formStore.metricsValues[0].PROSECUTION_STAFF.error).toBe(
+    "This is a required field."
   );
 });

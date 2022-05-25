@@ -20,16 +20,11 @@ import { makeAutoObservable } from "mobx";
 import {
   FormStoreContextValues,
   FormStoreDisaggregationValues,
-  FormStoreErrors,
   FormStoreMetricValues,
   Metric,
   UpdatedMetricsValues,
 } from "../shared/types";
-import {
-  combineTwoKeyNames,
-  removeCommaSpaceAndTrim,
-  sanitizeInputValue,
-} from "../utils";
+import { removeCommaSpaceAndTrim, sanitizeInputValue } from "../utils";
 import ReportStore from "./ReportStore";
 
 class FormStore {
@@ -41,8 +36,6 @@ class FormStore {
 
   disaggregations: FormStoreDisaggregationValues;
 
-  formErrors: FormStoreErrors;
-
   constructor(reportStore: ReportStore) {
     makeAutoObservable(this);
 
@@ -50,54 +43,119 @@ class FormStore {
     this.metricsValues = {};
     this.contexts = {};
     this.disaggregations = {};
-    this.formErrors = {};
   }
 
-  fullMetricsFromFormValues(reportID: number): Metric[] {
+  validateAndGetAllMetricFormValues(reportID: number): {
+    metrics: Metric[];
+    isPublishable: boolean;
+  } {
+    /**
+     * Converts value to normalized string
+     * @returns "" empty strings for falsy values or value converted to string type if truthy
+     */
+    let isPublishable = true;
+    const normalizeToString = (
+      value: string | number | boolean | null | undefined
+    ): string => {
+      const stringValue = value?.toString();
+      return !stringValue ? "" : stringValue;
+    };
+
     const updatedMetrics = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
-        const metricValue = this.metricsValues[reportID]?.[metric.key];
+        const metricValues = this.metricsValues[reportID]?.[metric.key];
         const contexts = this.contexts[reportID]?.[metric.key];
         const disaggregationForMetric =
           this.disaggregations[reportID]?.[metric.key];
 
-        if (metricValue || contexts || disaggregationForMetric) {
-          return {
-            ...metric,
-            value: sanitizeInputValue(metricValue, metric.value),
-            contexts: metric.contexts.map((context) => {
-              return {
-                ...context,
-                value: sanitizeInputValue(
-                  contexts?.[context.key],
-                  context.value
-                ),
-              };
-            }),
-            disaggregations: metric.disaggregations.map((disaggregation) => {
-              return {
-                ...disaggregation,
-                dimensions: disaggregation.dimensions?.map((dimension) => {
-                  return {
-                    ...dimension,
-                    value: sanitizeInputValue(
-                      disaggregationForMetric?.[disaggregation.key]?.[
-                        dimension.key
-                      ],
-                      dimension.value
-                    ),
-                  };
-                }),
-              };
-            }),
-          };
+        /** Touch & validate metric field */
+        this.updateMetricsValues(
+          reportID,
+          metric.key,
+          normalizeToString(metricValues?.value) ||
+            normalizeToString(metric.value)
+        );
+
+        const metricError = this.metricsValues[reportID]?.[metric.key]?.error;
+        if (metricError) {
+          isPublishable = false;
         }
 
-        return metric;
+        return {
+          ...metric,
+          value: sanitizeInputValue(metricValues?.value, metric.value),
+          error: metricError,
+          contexts: metric.contexts.map((context) => {
+            /** Touch & validate context field */
+            this.updateContextValue(
+              reportID,
+              metric.key,
+              context.key,
+              normalizeToString(contexts?.[context.key]?.value) ||
+                normalizeToString(context.value),
+              context.required,
+              context.type
+            );
+
+            const contextError =
+              this.contexts[reportID]?.[metric.key]?.[context.key]?.error;
+            if (contextError) {
+              isPublishable = false;
+            }
+
+            return {
+              ...context,
+              value: sanitizeInputValue(
+                contexts?.[context.key]?.value,
+                context.value
+              ),
+              error: contextError,
+            };
+          }),
+          disaggregations: metric.disaggregations.map((disaggregation) => {
+            return {
+              ...disaggregation,
+              dimensions: disaggregation.dimensions?.map((dimension) => {
+                /** Touch & validate disaggregation dimension field */
+                this.updateDisaggregationDimensionValue(
+                  reportID,
+                  metric.key,
+                  disaggregation.key,
+                  dimension.key,
+                  normalizeToString(
+                    disaggregationForMetric?.[disaggregation.key]?.[
+                      dimension.key
+                    ]?.value
+                  ) || normalizeToString(dimension.value),
+                  disaggregation.required
+                );
+
+                const disaggregationError =
+                  this.disaggregations[reportID]?.[metric.key]?.[
+                    disaggregation.key
+                  ]?.[dimension.key]?.error;
+                if (disaggregationError) {
+                  isPublishable = false;
+                }
+
+                return {
+                  ...dimension,
+                  value: sanitizeInputValue(
+                    disaggregationForMetric?.[disaggregation.key]?.[
+                      dimension.key
+                    ]?.value,
+                    dimension.value
+                  ),
+                  error: disaggregationError,
+                };
+              }),
+            };
+          }),
+        };
       }
     );
 
-    return updatedMetrics || [];
+    return { metrics: updatedMetrics || [], isPublishable };
   }
 
   /**
@@ -114,7 +172,7 @@ class FormStore {
       (metric) => {
         /** Note: all empty inputs will be represented by null */
         const metricValue = sanitizeInputValue(
-          this.metricsValues[reportID]?.[metric.key],
+          this.metricsValues[reportID]?.[metric.key]?.value,
           metric.value
         );
 
@@ -127,7 +185,7 @@ class FormStore {
 
         metric.contexts.forEach((context) => {
           const contextValue = sanitizeInputValue(
-            this.contexts[reportID]?.[metric.key]?.[context.key],
+            this.contexts[reportID]?.[metric.key]?.[context.key]?.value,
             context.value
           );
 
@@ -144,7 +202,7 @@ class FormStore {
               const dimensionValue = sanitizeInputValue(
                 this.disaggregations[reportID]?.[metric.key]?.[
                   disaggregation.key
-                ]?.[dimension.key],
+                ]?.[dimension.key]?.value,
                 dimension.value
               );
 
@@ -163,59 +221,79 @@ class FormStore {
     return updatedMetricValues || [];
   }
 
-  validateNumber = (
+  validate = (
+    validationType: string,
     value: string,
+    required: boolean,
     reportID: number,
     metricKey: string,
-    key?: string,
-    required?: boolean
+    key1?: string,
+    key2?: string
   ) => {
-    const fieldKey = key || metricKey;
     const cleanValue = removeCommaSpaceAndTrim(value);
     const isPositiveNumber =
       (cleanValue !== "" && Number(cleanValue) === 0) || Number(cleanValue) > 0;
     const isRequiredButEmpty = required && cleanValue === "";
 
-    /** Raise error if value is not a positive number OR the field is required and the input is empty */
-    if (!isPositiveNumber || isRequiredButEmpty) {
-      if (!this.formErrors[reportID]) {
-        this.formErrors[reportID] = {};
+    /** Need to find a cleaner & clearer way to do this */
+    const updateFieldErrorMessage = (
+      operation: "ADD" | "DELETE",
+      message?: string
+    ) => {
+      /**
+       * Overall metric: !key1 && !key2
+       * Context: key1 && !key2
+       * Disaggregation Dimension: key1 && key2
+       */
+      if (operation === "ADD") {
+        if (key1 && key2) {
+          this.disaggregations[reportID][metricKey][key1][key2].error = message;
+        } else if (key1 && !key2) {
+          this.contexts[reportID][metricKey][key1].error = message;
+        } else {
+          this.metricsValues[reportID][metricKey].error = message;
+        }
       }
-
-      if (!this.formErrors[reportID][metricKey]) {
-        this.formErrors[reportID][metricKey] = {};
+      if (operation === "DELETE") {
+        if (key1 && key2) {
+          delete this.disaggregations[reportID][metricKey][key1][key2].error;
+        } else if (key1 && !key2) {
+          delete this.contexts[reportID][metricKey][key1].error;
+        } else {
+          delete this.metricsValues[reportID][metricKey].error;
+        }
       }
+    };
 
+    /** Raise Error */
+    if (isRequiredButEmpty) {
+      updateFieldErrorMessage("ADD", "This is a required field.");
+      return;
+    }
+
+    if (!required && cleanValue === "") {
+      /** Remove Error */
+      updateFieldErrorMessage("DELETE");
+      return;
+    }
+
+    if (validationType === "NUMBER") {
+      /** Raise Error */
       if (!isPositiveNumber) {
-        this.formErrors[reportID][metricKey][fieldKey] =
-          "Please enter a valid number.";
-      }
-
-      if (isRequiredButEmpty) {
-        this.formErrors[reportID][metricKey][fieldKey] =
-          "This is a required field. Please enter a valid number.";
+        updateFieldErrorMessage("ADD", "Please enter a valid number.");
+        return;
       }
     }
 
-    if (this.formErrors[reportID]?.[metricKey]?.[fieldKey]) {
-      /** Remove error if (value is a positive number AND required input and input is not empty) OR optional input and input is empty) */
-      if (
-        (isPositiveNumber && required && cleanValue !== "") ||
-        (!required && (cleanValue === "" || isPositiveNumber))
-      ) {
-        delete this.formErrors[reportID][metricKey][fieldKey];
-      }
-    }
+    /** Remove Error */
+    updateFieldErrorMessage("DELETE");
   };
 
-  /** Form Handlers */
   updateMetricsValues = (
     reportID: number,
     metricKey: string,
     updatedValue: string
   ): void => {
-    this.validateNumber(updatedValue, reportID, metricKey, undefined, true);
-
     /**
      * Create an empty object within the property if none exist to improve access
      * speed and to help with isolating re-renders for each form component.
@@ -223,8 +301,12 @@ class FormStore {
     if (!this.metricsValues[reportID]) {
       this.metricsValues[reportID] = {};
     }
+    if (!this.metricsValues[reportID][metricKey]) {
+      this.metricsValues[reportID][metricKey] = {};
+    }
 
-    this.metricsValues[reportID][metricKey] = updatedValue;
+    this.validate("NUMBER", updatedValue, true, reportID, metricKey);
+    this.metricsValues[reportID][metricKey].value = updatedValue;
   };
 
   updateDisaggregationDimensionValue = (
@@ -235,18 +317,6 @@ class FormStore {
     updatedValue: string,
     required: boolean
   ): void => {
-    const disaggregationDimensionKey = combineTwoKeyNames(
-      disaggregationKey,
-      dimensionKey
-    );
-    this.validateNumber(
-      updatedValue,
-      reportID,
-      metricKey,
-      disaggregationDimensionKey,
-      required
-    );
-
     /**
      * Create empty objects within the properties if none exist to improve access
      * speed and to help with isolating re-renders for each form component.
@@ -263,8 +333,29 @@ class FormStore {
       this.disaggregations[reportID][metricKey][disaggregationKey] = {};
     }
 
-    this.disaggregations[reportID][metricKey][disaggregationKey][dimensionKey] =
-      updatedValue;
+    if (
+      !this.disaggregations[reportID][metricKey][disaggregationKey][
+        dimensionKey
+      ]
+    ) {
+      this.disaggregations[reportID][metricKey][disaggregationKey][
+        dimensionKey
+      ] = {};
+    }
+
+    this.validate(
+      "NUMBER",
+      updatedValue,
+      required,
+      reportID,
+      metricKey,
+      disaggregationKey,
+      dimensionKey
+    );
+
+    this.disaggregations[reportID][metricKey][disaggregationKey][
+      dimensionKey
+    ].value = updatedValue;
   };
 
   updateContextValue = (
@@ -273,18 +364,8 @@ class FormStore {
     contextKey: string,
     updatedValue: string,
     required: boolean,
-    contextType?: string
+    contextType: string
   ): void => {
-    if (contextType === "NUMBER") {
-      this.validateNumber(
-        updatedValue,
-        reportID,
-        metricKey,
-        contextKey,
-        required
-      );
-    }
-
     /**
      * Create an empty object within the property if none exist to improve access
      * speed and to help with isolating re-renders for each form component.
@@ -297,15 +378,30 @@ class FormStore {
       this.contexts[reportID][metricKey] = {};
     }
 
-    this.contexts[reportID][metricKey][contextKey] = updatedValue;
+    if (!this.contexts[reportID][metricKey][contextKey]) {
+      this.contexts[reportID][metricKey][contextKey] = {};
+    }
+
+    this.validate(
+      contextType,
+      updatedValue,
+      required,
+      reportID,
+      metricKey,
+      contextKey
+    );
+
+    this.contexts[reportID][metricKey][contextKey].value = updatedValue;
   };
 
   resetBinaryInput = (
     reportID: number,
     metricKey: string,
-    contextKey: string
+    contextKey: string,
+    required: boolean
   ): void => {
-    this.contexts[reportID][metricKey][contextKey] = "";
+    this.validate("TEXT", "", required, reportID, metricKey, contextKey);
+    this.contexts[reportID][metricKey][contextKey].value = "";
   };
 }
 

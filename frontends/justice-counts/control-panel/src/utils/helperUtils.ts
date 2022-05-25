@@ -92,7 +92,6 @@ export const sanitizeInputValue = (
   if (value === undefined) {
     return previousValue;
   }
-
   if (cleanValue === "" || (Number(previousValue) !== 0 && !previousValue)) {
     return null;
   }
