@@ -17,38 +17,40 @@
 
 import styled from "styled-components/macro";
 
-import { palette } from "../GlobalStyles";
+import { palette, typography } from "../GlobalStyles";
 
 export const ReportsHeader = styled.div`
   width: 100%;
   background: ${palette.solid.white};
   position: fixed;
   top: 64px;
-  padding: 0px 22px;
 `;
 
 export const ReportsPageTitle = styled.div`
-  font-size: 2.8rem;
+  ${typography.sizeCSS.headline}
   margin-top: 40px;
-`;
-
-export const FilterOptions = styled.div`
-  display: flex;
+  padding: 0px 22px;
 `;
 
 export const FilterBar = styled.div`
-  position: relative;
+  ${typography.sizeCSS.normal}
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  padding: 0px 22px;
   margin-bottom: 10px;
-  border-bottom: 1px solid ${palette.solid.grey};
+  border-bottom: 1px solid ${palette.highlight.grey9};
+`;
+
+export const FilterOptions = styled.div`
+  display: flex;
+  align-items: center;
 `;
 
 export const FilterBy = styled.div<{ selected?: boolean }>`
-  font-size: 0.85rem;
-  padding: 20px 0;
+  padding: 24px 0 16px 0;
   margin-right: 20px;
   color: ${({ selected }) =>
     selected ? palette.solid.darkgrey : palette.highlight.grey9};
@@ -62,13 +64,53 @@ export const FilterBy = styled.div<{ selected?: boolean }>`
   }
 `;
 
-export const SortBy = styled.div`
-  font-size: 0.85rem;
+export const ReportActions = styled.div`
   display: flex;
+  color: ${palette.solid.blue};
+`;
+
+export const ReportActionsItem = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: 16px;
+  transition: 0.2s ease;
+
+  &:hover {
+    cursor: pointer;
+    opacity: 0.8;
+  }
+`;
+
+export const ReportActionsSelectIcon = styled.div`
+  width: 11px;
+  height: 11px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: 4.5px;
+  border: 1px solid ${palette.solid.blue};
+  border-radius: 50%;
+
+  &::after {
+    content: "";
+    height: 1px;
+    width: 6px;
+    background-color: ${palette.solid.blue};
+  }
+`;
+
+export const ReportActionsNewIcon = styled(ReportActionsSelectIcon)`
+  &::before {
+    content: "";
+    position: absolute;
+    height: 6px;
+    width: 1px;
+    background-color: ${palette.solid.blue};
+  }
 `;
 
 export const Table = styled.div`
-  padding: 266px 0 50px 0;
+  padding: 286px 0 50px 0;
 `;
 
 export const Row = styled.div<{
@@ -78,10 +120,13 @@ export const Row = styled.div<{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
   padding: 10px 22px;
-  color: ${palette.solid.darkgrey};
+  color: ${({ noHover }) =>
+    noHover ? palette.highlight.grey9 : palette.solid.darkgrey};
   transition: 0.3s ease;
+  ${({ noHover }) =>
+    noHover ? typography.sizeCSS.normal : typography.sizeCSS.large}
+
   &:hover {
     ${({ noHover }) =>
       noHover
@@ -93,7 +138,9 @@ export const Row = styled.div<{
 `;
 
 export const LabelRow = styled(Row)`
-  padding: 10px 0;
+  ${typography.sizeCSS.normal}
+  color: ${palette.highlight.grey9};
+  padding: 10px 22px;
 
   &:hover {
     cursor: unset;
@@ -185,14 +232,6 @@ export const Badge = styled.div<{ status?: string }>`
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: capitalize;
-`;
-
-export const ArrowDownIcon = styled.div`
-  width: 4px;
-  margin: auto 0 auto 10px;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 4px solid ${palette.solid.darkgrey};
 `;
 
 export const NoReportsDisplay = styled.div`
