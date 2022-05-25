@@ -43,7 +43,19 @@ class JailPopulationType(DimensionBase, enum.Enum):
         return "metric/jails/population/type"
 
 
-class ReleaseType(DimensionBase, enum.Enum):
+class PrisonPopulationType(DimensionBase, enum.Enum):
+    NEW_SENTENCE = "NEW_SENTENCE"
+    TRANSFER_OR_HOLD = "TRANSFER_OR_HOLD"
+    SUPERVISION_VIOLATION_OR_REVOCATION = "SUPERVISION_VIOLATION_OR_REVOCATION"
+    OTHER = "OTHER"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/prison/population/type"
+
+
+class JailReleaseType(DimensionBase, enum.Enum):
     SCENTENCE_COMPLETION = "SCENTENCE_COMPLETION"
     PRETRIAL_RELEASE = "PRETRIAL_RELEASE"
     TRANSFER = "TRANSFER"
@@ -56,7 +68,20 @@ class ReleaseType(DimensionBase, enum.Enum):
         return "metric/jails/release/type"
 
 
-class JailForceType(DimensionBase, enum.Enum):
+class PrisonReleaseTypes(DimensionBase, enum.Enum):
+    SCENTENCE_COMPLETION = "SCENTENCE_COMPLETION"
+    TO_SUPERVISION = "TO_SUPERVISION"
+    TRANSFER = "TRANSFER"
+    UNAPPROVED_ABSENCE = "UNAPPROVED_ABSENCE"
+    COMPASSIONATE = "COMPASSIONATE"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/prisons/release/type"
+
+
+class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
     PHYSICAL = "PHYSICAL"
     RESTRAINT = "RESTRAINT"
     VERBAL = "VERBAL"
@@ -64,10 +89,10 @@ class JailForceType(DimensionBase, enum.Enum):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/jails/force/type"
+        return "metric/correctional_facility/force/type"
 
 
-class JailStaffType(DimensionBase, enum.Enum):
+class CorrectionalFacilityStaffType(DimensionBase, enum.Enum):
     SECURITY = "SECURITY"
     SUPPORT = "SUPPORT"
     OTHER = "OTHER"
@@ -75,4 +100,4 @@ class JailStaffType(DimensionBase, enum.Enum):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/staff/jails/type"
+        return "metric/staff/correctional_facility/type"
