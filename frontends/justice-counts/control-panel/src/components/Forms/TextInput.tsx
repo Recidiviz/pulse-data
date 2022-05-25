@@ -47,7 +47,7 @@ export const Input = styled.input<InputProps>`
       return palette.highlight.red;
     }
     return value || value === 0
-      ? palette.highlight.lightblue
+      ? palette.highlight.lightblue1
       : palette.highlight.grey1;
   }};
 
@@ -58,11 +58,11 @@ export const Input = styled.input<InputProps>`
         return palette.solid.red;
       }
       if (disabled) {
-        return palette.highlight.grey4;
+        return palette.highlight.grey8;
       }
       return value || value === 0
         ? palette.solid.blue
-        : palette.highlight.grey7;
+        : palette.highlight.grey9;
     }};
 
   &:focus ~ label {
@@ -81,7 +81,7 @@ export const Input = styled.input<InputProps>`
   &::placeholder {
     opacity: 0;
     transition: 0.2s;
-    color: ${palette.highlight.grey4};
+    color: ${palette.highlight.grey8};
   }
 
   &:focus::placeholder {
@@ -120,7 +120,7 @@ export const InputLabel = styled.label<InputLabelProps>`
       return palette.solid.red;
     }
     if (isDisabled) {
-      return palette.highlight.grey4;
+      return palette.highlight.grey8;
     }
     return required || inputHasValue ? palette.solid.blue : palette.solid.grey;
   }};
@@ -133,7 +133,7 @@ type InputContextLabelProps = {
 
 export const InputContextLabel = styled.span<InputContextLabelProps>`
   ${({ error }) => error && `color: ${palette.solid.red};`};
-  ${({ isDisabled }) => isDisabled && `color: ${palette.highlight.grey4};`}
+  ${({ isDisabled }) => isDisabled && `color: ${palette.highlight.grey8};`}
   font-size: ${rem("12px")};
   line-height: 16px;
   margin-top: 8px;
@@ -150,7 +150,7 @@ export const NotificationLabel = styled.span<NotificationLabelProps>`
     if (error) {
       return palette.solid.red;
     }
-    return required ? palette.solid.blue : palette.highlight.grey4;
+    return required ? palette.solid.blue : palette.highlight.grey8;
   }};
   display: ${({ valueLabel }) => (valueLabel ? `flex` : `none`)};
   justify-content: center;

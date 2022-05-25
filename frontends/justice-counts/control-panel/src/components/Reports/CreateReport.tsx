@@ -46,7 +46,7 @@ const CreateReportForm = styled.form`
 const formStyles = css`
   height: 71px;
   width: 100%;
-  background: ${palette.highlight.lightblue};
+  background: ${palette.highlight.lightblue1};
   font-size: 1.5rem;
   color: ${palette.solid.blue};
   margin: 10px 0;

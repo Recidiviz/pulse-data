@@ -71,7 +71,7 @@ export const Slider = styled.span`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: ${palette.highlight.grey5};
+  background-color: ${palette.highlight.grey9};
   border-radius: 34px;
   transition: 0.3s;
 

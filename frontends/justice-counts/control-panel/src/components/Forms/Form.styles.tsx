@@ -91,7 +91,7 @@ export const MetricSectionTitle = styled.div`
 
 export const MetricSectionSubTitle = styled.div`
   font-size: ${rem("18px")};
-  color: ${palette.highlight.grey7};
+  color: ${palette.highlight.grey9};
   margin-top: 5px;
   padding-bottom: 19px;
 `;
@@ -121,7 +121,7 @@ export const ReportSummaryProgressIndicator = styled.div<ReportSummaryProgressIn
       return palette.highlight.red;
     }
     return sectionStatus === "completed"
-      ? palette.highlight.lightblue
+      ? palette.highlight.lightblue1
       : undefined;
   }};
 
@@ -151,7 +151,7 @@ export const ReportSummaryProgressIndicator = styled.div<ReportSummaryProgressIn
       }
       return sectionStatus === "completed"
         ? palette.solid.blue
-        : palette.highlight.grey4;
+        : palette.highlight.grey8;
     }};
 
     width: 16px;
@@ -189,7 +189,7 @@ export const PublishButton = styled.button<{ disabled?: boolean }>`
   align-items: center;
   background: ${({ disabled }) => (disabled ? "none" : palette.solid.blue)};
   color: ${({ disabled }) =>
-    disabled ? palette.highlight.grey6 : palette.solid.white};
+    disabled ? palette.highlight.grey8 : palette.solid.white};
   border: 1px solid
     ${({ disabled }) =>
       disabled ? palette.highlight.grey3 : palette.highlight.grey3};
