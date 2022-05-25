@@ -143,7 +143,8 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
                             formStore.resetBinaryInput(
                               reportID,
                               metric.key,
-                              context.key
+                              context.key,
+                              context.required
                             )
                           }
                         >

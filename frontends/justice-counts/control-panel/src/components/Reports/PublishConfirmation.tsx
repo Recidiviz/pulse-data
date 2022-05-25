@@ -19,7 +19,7 @@ import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
 import styled from "styled-components/macro";
 
-import { Metric as MetricType } from "../../shared/types";
+import { MetricWithErrors } from "../../shared/types";
 import { useStore } from "../../stores";
 import { rem } from "../../utils";
 import { Button, PublishButton } from "../Forms";
@@ -148,11 +148,15 @@ const IncompleteChip = styled.div`
   color: ${palette.solid.white};
 `;
 
-const MetricsDisplay: React.FC<{ metric: MetricType }> = ({ metric }) => {
-  const [incomplete, setIncomplete] = useState(false);
-  const flagAsIncomplete = () => setIncomplete(true);
+const MetricsDisplay: React.FC<{
+  metric: MetricWithErrors;
+}> = ({ metric }) => {
+  const [metricHasError, setMetricHasError] = useState(false);
+  const flagMetricHasError = () => setMetricHasError(true);
 
-  if (!metric.value && !incomplete) flagAsIncomplete();
+  if (metric.error && !metricHasError) {
+    flagMetricHasError();
+  }
 
   return (
     <Metric>
@@ -161,7 +165,7 @@ const MetricsDisplay: React.FC<{ metric: MetricType }> = ({ metric }) => {
         <MetricValue>{metric.value?.toLocaleString("en-US")}</MetricValue>
         <MetricValueLabel>
           {metric.label}
-          {incomplete && <IncompleteChip>Incomplete</IncompleteChip>}
+          {metricHasError && <IncompleteChip>Incomplete</IncompleteChip>}
         </MetricValueLabel>
       </MetricSectionWrapper>
 
@@ -172,8 +176,12 @@ const MetricsDisplay: React.FC<{ metric: MetricType }> = ({ metric }) => {
             return (
               disaggregation.dimensions.length > 0 &&
               disaggregation.dimensions.map((dimension) => {
-                if (disaggregation.required && !dimension.value && !incomplete)
-                  flagAsIncomplete();
+                if (
+                  disaggregation.required &&
+                  !dimension.value &&
+                  !metricHasError
+                )
+                  flagMetricHasError();
 
                 return (
                   <Fragment key={dimension.key}>
@@ -194,8 +202,8 @@ const MetricsDisplay: React.FC<{ metric: MetricType }> = ({ metric }) => {
         {/* Contexts */}
         {metric.contexts.length > 0 &&
           metric.contexts.map((context) => {
-            if (context.required && !context.value && !incomplete)
-              flagAsIncomplete();
+            if (context.required && !context.value && !metricHasError)
+              flagMetricHasError();
             return (
               <Fragment key={context.key}>
                 <Breakdown>
@@ -216,14 +224,24 @@ const PublishConfirmation: React.FC<{
   toggleConfirmationDialogue: () => void;
   reportID: number;
 }> = ({ toggleConfirmationDialogue, reportID }) => {
+  const [isPublishable, setIsPublishable] = useState(false);
+  const [metricsPreview, setMetricsPreview] = useState<MetricWithErrors[]>();
   const { formStore, reportStore } = useStore();
-  const metricsPreview = formStore.fullMetricsFromFormValues(reportID);
 
   const publishReport = () => {
-    const finalMetricsToPublish =
-      formStore.reportUpdatedValuesForBackend(reportID);
-    reportStore.updateReport(reportID, finalMetricsToPublish, "PUBLISHED");
+    if (isPublishable) {
+      const finalMetricsToPublish =
+        formStore.reportUpdatedValuesForBackend(reportID);
+      reportStore.updateReport(reportID, finalMetricsToPublish, "PUBLISHED");
+    }
   };
+
+  useEffect(() => {
+    const { metrics, isPublishable: publishable } =
+      formStore.validateAndGetAllMetricFormValues(reportID);
+    setMetricsPreview(metrics);
+    setIsPublishable(publishable);
+  }, [formStore, reportID]);
 
   /** Prevent body from scrolling when this dialog is open */
   useEffect(() => {
@@ -242,19 +260,19 @@ const PublishConfirmation: React.FC<{
             Take a moment to review the numbers that will be published.
           </ConfirmationSubTitle>
 
-          {/* `disabled` should be dependent on the logic that determines whether or not the report is publishable */}
-          <PublishButton onClick={publishReport} disabled>
+          <PublishButton onClick={publishReport} disabled={!isPublishable}>
             Publish Data
           </PublishButton>
         </ButtonWrapper>
 
-        {metricsPreview.map((metric) => {
-          return (
-            <MetricsRow key={metric.key}>
-              <MetricsDisplay metric={metric} />
-            </MetricsRow>
-          );
-        })}
+        {metricsPreview &&
+          metricsPreview.map((metric) => {
+            return (
+              <MetricsRow key={metric.key}>
+                <MetricsDisplay metric={metric} />
+              </MetricsRow>
+            );
+          })}
 
         <Button onClick={toggleConfirmationDialogue}>Cancel</Button>
       </ConfirmationDialogue>

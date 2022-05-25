@@ -88,7 +88,7 @@ beforeEach(() => {
 test("metrics value handler updates the metric value", () => {
   formStore.updateMetricsValues(0, "PROSECUTION_STAFF", "2000");
 
-  expect(formStore.metricsValues[0].PROSECUTION_STAFF).toEqual("2000");
+  expect(formStore.metricsValues[0].PROSECUTION_STAFF.value).toEqual("2000");
 
   expect.hasAssertions();
 });
@@ -105,7 +105,7 @@ test("disaggregation dimension value handler updates the disaggregation dimensio
 
   expect(
     formStore.disaggregations[0].PROSECUTION_STAFF.PROSECUTION_STAFF_TYPE
-      .SUPPORT
+      .SUPPORT.value
   ).toEqual("200");
 
   expect.hasAssertions();
@@ -117,11 +117,12 @@ test("context value handler updates the context value", () => {
     "PROSECUTION_STAFF",
     "PROGRAMMATIC_OR_MEDICAL_STAFF",
     "100",
-    true
+    false,
+    "NUMBER"
   );
 
   expect(
-    formStore.contexts[0].PROSECUTION_STAFF.PROGRAMMATIC_OR_MEDICAL_STAFF
+    formStore.contexts[0].PROSECUTION_STAFF.PROGRAMMATIC_OR_MEDICAL_STAFF.value
   ).toEqual("100");
 
   expect.hasAssertions();

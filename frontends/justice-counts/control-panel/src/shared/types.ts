@@ -37,6 +37,25 @@ export interface Report extends ReportOverview {
   metrics: Metric[];
 }
 
+export type MetricWithErrors = Metric & {
+  error?: string;
+  contexts: MetricContextWithErrors[];
+  disaggregations: MetricDisaggregationsWithErrors[];
+};
+
+export type MetricContextWithErrors = MetricContext & {
+  error?: string;
+};
+
+export type MetricDisaggregationsWithErrors = MetricDisaggregations & {
+  dimensions: MetricDisaggregationDimensionsWithErrors[];
+};
+
+export type MetricDisaggregationDimensionsWithErrors =
+  MetricDisaggregationDimensions & {
+    error?: string;
+  };
+
 export interface Metric {
   key: string;
   display_name: string;
@@ -87,11 +106,11 @@ export interface CreateReportFormValuesType extends Record<string, unknown> {
 }
 
 export interface FormContexts {
-  [contextKey: string]: string;
+  [contextKey: string]: { value?: string; error?: string };
 }
 
 export interface FormDimensions {
-  [dimensionKey: string]: string;
+  [dimensionKey: string]: { value?: string; error?: string };
 }
 
 export interface FormDisaggregations {
@@ -109,7 +128,7 @@ export interface FormReport {
 }
 
 export interface FormStoreMetricValue {
-  [metricKey: string]: string;
+  [metricKey: string]: { value?: string; error?: string };
 }
 export interface FormStoreMetricValues {
   [reportID: string]: FormStoreMetricValue;
@@ -127,13 +146,6 @@ export interface FormStoreDisaggregationValue {
 }
 export interface FormStoreDisaggregationValues {
   [reportID: string]: FormStoreDisaggregationValue;
-}
-
-export interface FormStoreError {
-  [metricKey: string]: { [fieldKey: string]: string };
-}
-export interface FormStoreErrors {
-  [reportID: string]: FormStoreError;
 }
 
 export interface UpdatedMetricsValues {

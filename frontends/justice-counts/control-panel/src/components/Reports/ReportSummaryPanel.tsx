@@ -157,13 +157,9 @@ const ReportSummaryPanel: React.FC<{
               key={metric.key}
               updateActiveMetric={updateActiveMetric}
               activeMetric={activeMetric}
-              metricHasError={
-                formStore.formErrors[reportID]?.[metric.key] &&
-                Boolean(
-                  Object.keys(formStore.formErrors[reportID]?.[metric.key])
-                    .length
-                )
-              }
+              metricHasError={Boolean(
+                formStore.metricsValues[reportID]?.[metric.key]?.value
+              )}
               /**
                * Need to figure out what this component should subscribe to in order to give
                * the default/no data entry styling state.
