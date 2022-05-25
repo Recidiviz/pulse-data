@@ -823,7 +823,13 @@ class BigQueryClientImpl(BigQueryClient):
                     str(dataset_ref),
                 )
                 dataset.default_table_expiration_ms = default_table_expiration_ms
-            return self.client.create_dataset(dataset)
+
+            return self.client.create_dataset(
+                dataset,
+                # Do not fail if another process has already created this dataset
+                # between the get_dataset() call and now.
+                exists_ok=True,
+            )
 
         return dataset
 
