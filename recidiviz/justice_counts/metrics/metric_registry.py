@@ -17,7 +17,7 @@
 """Registry containing all official Justice Counts metrics."""
 
 
-from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics import jails, law_enforcement
 
 # All official Justice Counts metrics (i.e. all instances of MetricDefinition)
 # should be "checked in" here
@@ -32,6 +32,16 @@ METRICS = [
     law_enforcement.reported_crime,
     law_enforcement.total_arrests,
     law_enforcement.officer_use_of_force_incidents,
+    jails.admissions,
+    jails.annual_budget,
+    jails.average_daily_population,
+    jails.average_daily_population_by_gender,
+    jails.average_daily_population_by_race_and_ethnicity,
+    jails.grievances_upheld,
+    jails.readmissions,
+    jails.releases,
+    jails.staff_use_of_force_incidents,
+    jails.total_staff,
 ]
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,59 +14,65 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dimension subclasses used for Law Enforcement system metrics."""
+"""Dimension subclasses used for Jail system metrics."""
+
 
 import enum
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
-class SheriffBudgetType(DimensionBase, enum.Enum):
-    PATROL = "PATROL"
-    DETENTION = "DETENTION"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/law_enforcement/budget/type"
-
-
-class CallType(DimensionBase, enum.Enum):
-    EMERGENCY = "EMERGENCY"
-    NON_EMERGENCY = "NON_EMERGENCY"
+class ReadmissionType(DimensionBase, enum.Enum):
+    NEW_OFFENSE = "NEW_OFFENSE"
+    VIOLATION_OF_CONDITIONS = "VIOLATION_OF_CONDITIONS"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/law_enforcement/calls_for_service/type"
+        return "metric/jails/reported_crime/type"
 
 
-class OffenseType(DimensionBase, enum.Enum):
-    PERSON = "PERSON"
-    PROPERTY = "PROPERTY"
-    DRUG = "DRUG"
+class JailPopulationType(DimensionBase, enum.Enum):
+    PRETRIAL = "PRETRIAL"
+    SENTENCED = "SENTENCED"
+    TRANSFER_OR_HOLD = "TRANSFER_OR_HOLD"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/law_enforcement/reported_crime/type"
+        return "metric/jails/population/type"
 
 
-class ForceType(DimensionBase, enum.Enum):
+class ReleaseType(DimensionBase, enum.Enum):
+    SCENTENCE_COMPLETION = "SCENTENCE_COMPLETION"
+    PRETRIAL_RELEASE = "PRETRIAL_RELEASE"
+    TRANSFER = "TRANSFER"
+    UNAPPROVED_ABSENCE = "UNAPPROVED_ABSENCE"
+    COMPASSIONATE = "COMPASSIONATE"
+    UNKNOWN = "UNKNOWN"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/jails/release/type"
+
+
+class JailForceType(DimensionBase, enum.Enum):
     PHYSICAL = "PHYSICAL"
     RESTRAINT = "RESTRAINT"
     VERBAL = "VERBAL"
-    WEAPON = "WEAPON"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/law_enforcement/officer_use_of_force_incidents/type"
+        return "metric/jails/force/type"
 
 
-class LawEnforcementStaffType(DimensionBase, enum.Enum):
-    POLICE_OFFICERS = "POLICE OFFICERS"
+class JailStaffType(DimensionBase, enum.Enum):
+    SECURITY = "SECURITY"
+    SUPPORT = "SUPPORT"
+    OTHER = "OTHER"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/staff/law_enforcement/type"
+        return "metric/staff/jails/type"

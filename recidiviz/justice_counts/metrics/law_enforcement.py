@@ -21,13 +21,13 @@ from recidiviz.justice_counts.dimensions.corrections import PopulationType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
+    LawEnforcementStaffType,
     OffenseType,
     SheriffBudgetType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
-    StaffType,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -135,7 +135,9 @@ police_officers = MetricDefinition(
     description="Measures the number of police officers in the agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    filtered_dimensions=[FilteredDimension(dimension=StaffType.POLICE_OFFICERS)],
+    filtered_dimensions=[
+        FilteredDimension(dimension=LawEnforcementStaffType.POLICE_OFFICERS)
+    ],
 )
 
 reported_crime = MetricDefinition(
