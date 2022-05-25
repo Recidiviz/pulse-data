@@ -21,10 +21,11 @@ from unittest import TestCase
 import recidiviz.justice_counts.metrics.law_enforcement as law_enforcement_metric_definitions
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.law_enforcement import (
+    LawEnforcementStaffType,
     OffenseType,
     SheriffBudgetType,
 )
-from recidiviz.justice_counts.dimensions.person import GenderRestricted, StaffType
+from recidiviz.justice_counts.dimensions.person import GenderRestricted
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
@@ -429,10 +430,13 @@ class TestJusticeCountsReportMetric(TestCase):
             ],
             "disaggregations": [
                 {
-                    "key": StaffType.dimension_identifier(),
+                    "key": LawEnforcementStaffType.dimension_identifier(),
                     "dimensions": [
-                        {"key": StaffType.POLICE_OFFICERS.value, "value": 100},
-                        {"key": StaffType.UNKNOWN.value, "value": 0},
+                        {
+                            "key": LawEnforcementStaffType.POLICE_OFFICERS.value,
+                            "value": 100,
+                        },
+                        {"key": LawEnforcementStaffType.UNKNOWN.value, "value": 0},
                     ],
                 }
             ],
@@ -451,8 +455,8 @@ class TestJusticeCountsReportMetric(TestCase):
                 aggregated_dimensions=[
                     ReportedAggregatedDimension(
                         dimension_to_value={
-                            StaffType.POLICE_OFFICERS: 100,
-                            StaffType.UNKNOWN: 0,
+                            LawEnforcementStaffType.POLICE_OFFICERS: 100,
+                            LawEnforcementStaffType.UNKNOWN: 0,
                         }
                     )
                 ],
