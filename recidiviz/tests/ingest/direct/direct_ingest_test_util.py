@@ -15,67 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for direct ingest tests."""
-import datetime
-from typing import Optional
-
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_raw_file_path,
-)
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
 )
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-
-
-def path_for_fixture_file(
-    controller: BaseDirectIngestController,
-    filename: str,
-    should_normalize: bool,
-    file_type: Optional[GcsfsDirectIngestFileType],
-    dt: Optional[datetime.datetime] = None,
-) -> GcsfsFilePath:
-    return path_for_fixture_file_in_test_gcs_directory(
-        bucket_path=controller.ingest_bucket_path,
-        filename=filename,
-        should_normalize=should_normalize,
-        file_type=file_type,
-        dt=dt,
-    )
-
-
-def path_for_fixture_file_in_test_gcs_directory(
-    *,
-    bucket_path: GcsfsBucketPath,
-    filename: str,
-    should_normalize: bool,
-    file_type: Optional[GcsfsDirectIngestFileType],
-    dt: Optional[datetime.datetime] = None,
-) -> GcsfsFilePath:
-    file_path_str = filename
-
-    if should_normalize:
-        if not file_type:
-            raise ValueError("Expected file_type for path normalization but got None")
-        file_path_str = to_normalized_unprocessed_raw_file_path(
-            original_file_path=file_path_str, dt=dt
-        )
-
-    file_path = GcsfsFilePath.from_directory_and_file_name(
-        dir_path=bucket_path,
-        file_name=file_path_str,
-    )
-    if not isinstance(file_path, GcsfsFilePath):
-        raise ValueError(
-            f"Expected type GcsfsFilePath, found {type(file_path)} for path: {file_path.abs_path()}"
-        )
-    return file_path
 
 
 def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:

@@ -15,13 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility methods for working with fixture files specific to direct ingest"""
-
+import datetime
 import os
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_raw_file_path,
+)
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
@@ -31,13 +34,50 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 
 
+def _direct_ingest_raw_file_path(
+    *,
+    bucket_path: GcsfsBucketPath,
+    filename: str,
+    should_normalize: bool,
+    dt: Optional[datetime.datetime],
+) -> GcsfsFilePath:
+    file_path_str = filename
+
+    if should_normalize:
+        file_path_str = to_normalized_unprocessed_raw_file_path(
+            original_file_path=file_path_str, dt=dt
+        )
+
+    file_path = GcsfsFilePath.from_directory_and_file_name(
+        dir_path=bucket_path,
+        file_name=file_path_str,
+    )
+    if not isinstance(file_path, GcsfsFilePath):
+        raise ValueError(
+            f"Expected type GcsfsFilePath, found {type(file_path)} for path: {file_path.abs_path()}"
+        )
+    return file_path
+
+
 def add_direct_ingest_path(
+    *,
     fs: GCSFileSystem,
-    path: Union[GcsfsFilePath, GcsfsDirectoryPath],
     region_code: str,
+    bucket_path: GcsfsBucketPath,
+    filename: str,
+    should_normalize: bool,
+    dt: Optional[datetime.datetime] = None,
     has_fixture: bool = True,
     fail_handle_file_call: bool = False,
-) -> None:
+) -> GcsfsFilePath:
+
+    path = _direct_ingest_raw_file_path(
+        bucket_path=bucket_path,
+        filename=filename,
+        should_normalize=should_normalize,
+        dt=dt,
+    )
+
     if not isinstance(fs, FakeGCSFileSystem):
         raise ValueError(
             "add_direct_ingest_path can only be called on FakeGCSFileSystems"
@@ -46,6 +86,7 @@ def add_direct_ingest_path(
     if has_fixture and isinstance(path, GcsfsFilePath):
         local_path = _get_fixture_for_direct_ingest_path(path, region_code=region_code)
     fs.test_add_path(path, local_path, fail_handle_file_call)
+    return path
 
 
 def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath, region_code: str) -> str:
