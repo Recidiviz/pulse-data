@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines all Justice Counts metrics for the Jail system."""
+"""Defines all Justice Counts metrics for the Prison system."""
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
     CorrectionalFacilityStaffType,
-    JailPopulationType,
-    JailReleaseType,
+    PrisonPopulationType,
+    PrisonReleaseTypes,
     ReadmissionType,
 )
 from recidiviz.justice_counts.dimensions.person import (
@@ -42,65 +42,63 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 
 annual_budget = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of the jail system.",
+    description="Measures the total annual budget (in dollars) of the state correctional institutions.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Sheriff offices should report on the detention function.",
+    reporting_note="DOCs should report only correctional institution budget.",
     specified_contexts=[
-        Context(
-            key=ContextKey.PRETRIAL_SUPERVISION_FUNCTION,
-            value_type=ValueType.BOOLEAN,
-            label="Does the annual budget include the pretrial supervision function?",
-            required=True,
-        ),
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
             value_type=ValueType.TEXT,
-            label="Please describe the primary funding source.",
+            label="Please descrbe your primary budget source.",
             required=False,
-        ),
+        )
     ],
 )
+
 total_staff = MetricDefinition(
-    system=System.JAILS,
-    metric_type=MetricType.TOTAL_STAFF,
+    system=System.PRISONS,
+    metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
-    description="Measures the number of full-time staff employed by the jail system.",
+    description="Measures the total annual budget (in dollars) of the state correctional institutions.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    reporting_note="DOCs report only correctional institution staff.",
     specified_contexts=[
         Context(
             key=ContextKey.INCLUDES_PROGRAMATIC_STAFF,
             value_type=ValueType.BOOLEAN,
-            label="Does the staff count includes programatic staff?",
-            required=True,
-        ),
+            label="Do counts include programmatic and/or medical staff?",
+            required=False,
+        )
     ],
     aggregated_dimensions=[
         AggregatedDimension(dimension=CorrectionalFacilityStaffType, required=False)
     ],
 )
 
+
 readmissions = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.READMISSIONS,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Readmissions",
-    description="Measures the number of individuals admitted who had at least one other jail admission within the prior year.",
+    description="Measures the number of individuals admitted who had at least one other prison admission in the prior year.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    reporting_note="Exclude re-entry after a temporary exit (escape, work release, appointment, etc.).",
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
             value_type=ValueType.TEXT,
             label="Please provide the agency's definition of admission",
-            required=True,
-        ),
+            required=False,
+        )
     ],
     aggregated_dimensions=[
         AggregatedDimension(dimension=ReadmissionType, required=False)
@@ -108,12 +106,13 @@ readmissions = MetricDefinition(
 )
 
 admissions = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.ADMISSIONS,
     category=MetricCategory.POPULATIONS,
     display_name="Admissions",
-    description="Measures the number of new admissions to the jail system.",
+    description="Measures the average daily population held in the state corrections system.",
     measurement_type=MeasurementType.DELTA,
+    reporting_note="Report individuals in the most serious category (new sentence > violation > hold).",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[
         Context(
@@ -122,54 +121,50 @@ admissions = MetricDefinition(
             label="Please provide the agency's definition of admission",
             required=True,
         ),
-        Context(
-            key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.BOOLEAN,
-            label="Are the individuals admitted for violation of conditions counted within the total population?",
-            required=False,
-        ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailPopulationType, required=False)
+        AggregatedDimension(dimension=PrisonPopulationType, required=False)
     ],
 )
 
 average_daily_population = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="Average Daily Population",
-    description="Measures the average daily population held in the jail system.",
+    description="Measures the average daily population held in the state corrections system.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Calculate the average against a 30-day month",
-    specified_contexts=[
-        Context(
-            key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.BOOLEAN,
-            label="Individuals admitted for violation of conditions are counted within the total population.",
-            required=False,
-        ),
-    ],
+    reporting_note="Calculate the average against a 30-day month. Report individuals in the most serious category (new sentence > violation > hold).",
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailPopulationType, required=False)
+        AggregatedDimension(dimension=PrisonPopulationType, required=False)
     ],
 )
+
 releases = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.RELEASES,
     category=MetricCategory.POPULATIONS,
     display_name="Releases",
-    description="Measures the number of releases from the jail system",
+    description="Measures the number of releases from the facility",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    reporting_note="Exclude temporary release (work release, appointment, court hearing, etc.).",
+    specified_contexts=[
+        Context(
+            key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
+            value_type=ValueType.TEXT,
+            label="Please provide the agency's definition of supervision",
+            required=True,
+        ),
+    ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailReleaseType, required=False)
+        AggregatedDimension(dimension=PrisonReleaseTypes, required=False)
     ],
 )
 
 staff_use_of_force_incidents = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.USE_OF_FORCE_INCIDENTS,
     category=MetricCategory.PUBLIC_SAFETY,
     display_name="Staff Use of Force Incidents",
@@ -190,7 +185,7 @@ staff_use_of_force_incidents = MetricDefinition(
 )
 
 average_daily_population_by_race_and_ethnicity = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.POPULATION,
     category=MetricCategory.EQUITY,
     display_name="Average Daily Population, by race/ethnicity",
@@ -203,7 +198,7 @@ average_daily_population_by_race_and_ethnicity = MetricDefinition(
     ],
 )
 average_daily_population_by_gender = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.POPULATION,
     category=MetricCategory.EQUITY,
     display_name="Average Daily Population, by gender",
@@ -217,7 +212,7 @@ average_daily_population_by_gender = MetricDefinition(
 )
 
 grievances_upheld = MetricDefinition(
-    system=System.JAILS,
+    system=System.PRISONS,
     metric_type=MetricType.GRIEVANCES_UPHELD,
     category=MetricCategory.FAIRNESS,
     display_name="Grievances upheld",
