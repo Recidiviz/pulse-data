@@ -51,7 +51,7 @@ export const FilterBy = styled.div<{ selected?: boolean }>`
   padding: 20px 0;
   margin-right: 20px;
   color: ${({ selected }) =>
-    selected ? palette.solid.darkgrey : palette.highlight.grey7};
+    selected ? palette.solid.darkgrey : palette.highlight.grey9};
   border-bottom: ${({ selected }) =>
     selected ? `3px solid ${palette.solid.blue}` : `3px solid transparent`};
   transition: color 0.3s ease;

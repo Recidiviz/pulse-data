@@ -51,7 +51,7 @@ const ReportSummarySection = styled.div<{
       return palette.highlight.red;
     }
     if (activeSection) {
-      return palette.highlight.lightblue;
+      return palette.highlight.lightblue1;
     }
   }};
 
@@ -90,7 +90,7 @@ const ReportStatusIcon = styled.div<{
       return palette.highlight.lightblue2;
     }
 
-    return palette.highlight.grey4;
+    return palette.highlight.grey8;
   }};
   color: white;
 `;

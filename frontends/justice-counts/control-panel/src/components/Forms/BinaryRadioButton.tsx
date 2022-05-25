@@ -56,7 +56,7 @@ export const RadioButtonElement = styled.input`
   opacity: 0;
 
   &:focus + label {
-    border: 1px solid ${palette.highlight.grey5};
+    border: 1px solid ${palette.highlight.grey9};
   }
 
   &:checked + label {
