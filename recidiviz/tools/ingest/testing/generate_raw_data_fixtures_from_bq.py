@@ -118,7 +118,7 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     parser.add_argument(
         "--ingest_view_tag",
         dest="ingest_view_tag",
-        help="The ingest view file_tag that this script is generating fixtures for.",
+        help="The ingest view that this script is generating fixtures for.",
         type=str,
         required=True,
     )

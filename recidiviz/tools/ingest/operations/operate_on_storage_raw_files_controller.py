@@ -31,9 +31,6 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     normalize_relative_path,
 )
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    SPLIT_FILE_STORAGE_SUBDIR,
-)
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_cp,
@@ -51,9 +48,9 @@ class IngestFilesOperationType(Enum):
         return self.value.rstrip("E") + "ING"
 
 
-class OperateOnStorageIngestFilesController:
-    """Class with functionality to copy or move ingest files from storage buckets
-    across different paths."""
+class OperateOnStorageRawFilesController:
+    """Class with functionality to copy or move raw files consumed by ingest from
+    storage buckets across different paths."""
 
     def __init__(
         self,
@@ -62,7 +59,6 @@ class OperateOnStorageIngestFilesController:
         operation_type: IngestFilesOperationType,
         source_region_storage_dir_path: GcsfsDirectoryPath,
         destination_region_storage_dir_path: GcsfsDirectoryPath,
-        file_type_to_operate_on: GcsfsDirectIngestFileType,
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         file_tag_filters: List[str],
@@ -82,8 +78,6 @@ class OperateOnStorageIngestFilesController:
             `gs://recidiviz-staging-direct-ingest-state-storage/us_xx/`, or must have
             the same internal structure as the ingest storage buckets, e.g. the
             deprecated/ folder in the ingest buckets.
-        file_type_to_operate_on: The file type to run this script on,
-            e.g. RAW or INGEST_VIEW
         start_date_bound - optional start date in the format 1901-02-28
         end_date_bound - optional end date in the format 1901-02-28
         dry_run - whether or not to run in dry-run mode
@@ -95,11 +89,10 @@ class OperateOnStorageIngestFilesController:
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
         self.file_tag_filters = file_tag_filters
-        self.file_type_to_operate_on = file_type_to_operate_on
 
         self.log_output_path = os.path.join(
             os.path.dirname(__file__),
-            f"{self.operation_type.value.lower()}_storage_ingest_files_result_"
+            f"{self.operation_type.value.lower()}_storage_raw_files_result_"
             f"{region_code}_start_bound_{self.start_date_bound}_end_bound_"
             f"{self.end_date_bound}_dry_run_{dry_run}_"
             f"{datetime.datetime.now().isoformat()}.txt",
@@ -163,7 +156,7 @@ class OperateOnStorageIngestFilesController:
     def _get_subdirs_to_operate_on(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_file_types(
             storage_bucket_path=self.source_region_storage_dir_path.abs_path(),
-            file_type=self.file_type_to_operate_on,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )
@@ -220,13 +213,8 @@ class OperateOnStorageIngestFilesController:
 
         operations = []
         for file_tag in self.file_tag_filters:
-            if SPLIT_FILE_STORAGE_SUBDIR in from_path:
-                # The file tag in split files is followed by a suffix like
-                # _00002_file_split_size2500
-                tag_filter = f"*_{file_tag}_*"
-            else:
-                # In all other files, the split file is followed by the extension.
-                tag_filter = f"*_{file_tag}[.]*"
+            # In all other files, the split file is followed by the extension.
+            tag_filter = f"*_{file_tag}[.]*"
 
             operations.append(
                 (

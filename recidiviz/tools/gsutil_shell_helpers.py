@@ -19,9 +19,6 @@ import os
 from typing import List, Optional
 
 from recidiviz.common.date import is_between_date_strs_inclusive, is_date_str
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    SPLIT_FILE_STORAGE_SUBDIR,
-)
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.tools.utils.script_helpers import run_command
 
@@ -130,12 +127,7 @@ def gsutil_get_storage_subdirs_containing_file_types(
 
     subdirs_containing_files = []
     for subdir in all_subdirs:
-        date_subdir_path = (
-            subdir[: -len(SPLIT_FILE_STORAGE_SUBDIR)]
-            if subdir.endswith(SPLIT_FILE_STORAGE_SUBDIR)
-            else subdir
-        )
-        subdir_date = _date_str_from_date_subdir_path(date_subdir_path)
+        subdir_date = _date_str_from_date_subdir_path(subdir)
 
         if is_date_str(subdir_date) and is_between_date_strs_inclusive(
             upper_bound_date=upper_bound_date,
