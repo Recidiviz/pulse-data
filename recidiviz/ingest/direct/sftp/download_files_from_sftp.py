@@ -38,12 +38,11 @@ from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
-    to_normalized_unprocessed_file_path,
+    to_normalized_unprocessed_raw_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_sftp_download_bucket_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
@@ -200,10 +199,8 @@ class DownloadFilesFromSftpController:
         normalized_upload_path = GcsfsFilePath.from_directory_and_file_name(
             dir_path=self.download_dir,
             file_name=os.path.basename(
-                to_normalized_unprocessed_file_path(
-                    normalized_sftp_path,
-                    file_type=GcsfsDirectIngestFileType.RAW_DATA,
-                    dt=file_timestamp,
+                to_normalized_unprocessed_raw_file_path(
+                    normalized_sftp_path, dt=file_timestamp
                 )
             ),
         )

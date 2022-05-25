@@ -33,12 +33,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
-    to_normalized_unprocessed_file_path,
+    to_normalized_unprocessed_raw_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
     DirectIngestInstancePauseStatusManager,
 )
@@ -111,9 +110,7 @@ class BaseUploadStateFilesToIngestBucketController:
     def _upload_file(self, path_with_timestamp: Tuple[str, datetime.datetime]) -> None:
         path, timestamp = path_with_timestamp
         normalized_file_name = os.path.basename(
-            to_normalized_unprocessed_file_path(
-                path, file_type=GcsfsDirectIngestFileType.RAW_DATA, dt=timestamp
-            )
+            to_normalized_unprocessed_raw_file_path(path, dt=timestamp)
         )
         full_file_upload_path = GcsfsFilePath.from_directory_and_file_name(
             self.destination_ingest_bucket, normalized_file_name

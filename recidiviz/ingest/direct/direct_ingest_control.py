@@ -45,7 +45,6 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
 )
@@ -139,7 +138,7 @@ def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
         logging.info("Path already normalized: [%s]. Returning.", path.abs_path())
         return "", HTTPStatus.OK
 
-    fs.mv_path_to_normalized_path(path, file_type=GcsfsDirectIngestFileType.RAW_DATA)
+    fs.mv_raw_file_to_normalized_path(path)
 
     return "", HTTPStatus.OK
 

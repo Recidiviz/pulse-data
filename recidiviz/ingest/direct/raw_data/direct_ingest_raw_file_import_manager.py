@@ -559,9 +559,7 @@ def get_unprocessed_raw_files_in_bucket(
     """Returns a list of paths to unprocessed raw files in the provided bucket that have
     registered file tags for a given region.
     """
-    unprocessed_paths = fs.get_unprocessed_file_paths(
-        bucket_path, GcsfsDirectIngestFileType.RAW_DATA
-    )
+    unprocessed_paths = fs.get_unprocessed_raw_file_paths(bucket_path)
     unprocessed_raw_files = []
     unrecognized_file_tags = set()
     for path in unprocessed_paths:

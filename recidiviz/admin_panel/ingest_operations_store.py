@@ -212,11 +212,11 @@ class IngestOperationsStore(AdminPanelStore):
             logging.info("Getting bucket metadata for file type [%s]", file_type)
             file_type_str = self.get_file_type_api_string(file_type)
             logging.info("Getting unprocessed file paths [%s]", file_type)
-            unprocessed_files = self.fs.get_unprocessed_file_paths(path, file_type)
+            unprocessed_files = self.fs.get_unprocessed_raw_file_paths(path)
             bucket_metadata[f"unprocessedFiles{file_type_str}"] = len(unprocessed_files)
 
             logging.info("Getting processed file paths [%s]", file_type)
-            processed_files = self.fs.get_processed_file_paths(path, file_type)
+            processed_files = self.fs.get_processed_file_paths(path)
             bucket_metadata[f"processedFiles{file_type_str}"] = len(processed_files)
 
         return bucket_metadata
