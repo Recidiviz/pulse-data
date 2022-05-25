@@ -16,7 +16,6 @@
 // =============================================================================
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { runInAction } from "mobx";
 import React from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -122,30 +121,6 @@ describe("test data entry form", () => {
     expect(displayName).toBeInTheDocument();
     expect(metricDescription).toBeInTheDocument();
     expect(context).toBeInTheDocument();
-
-    expect.hasAssertions();
-  });
-
-  test("toggle switch shows and hides disaggregation dimensions", () => {
-    render(
-      <StoreProvider>
-        <MemoryRouter initialEntries={["/reports/0"]}>
-          <Routes>
-            <Route path="/reports/:id" element={<ReportDataEntry />} />
-          </Routes>
-        </MemoryRouter>
-      </StoreProvider>
-    );
-
-    const disaggregationToggle = screen.getByRole("checkbox");
-    const disaggregationDimensionField =
-      screen.getAllByText("Staff: Support")[0];
-
-    expect(disaggregationDimensionField).toBeInTheDocument();
-
-    userEvent.click(disaggregationToggle);
-
-    expect(disaggregationDimensionField).not.toBeInTheDocument();
 
     expect.hasAssertions();
   });

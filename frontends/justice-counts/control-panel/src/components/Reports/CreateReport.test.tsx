@@ -15,14 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { runInAction } from "mobx";
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 
 import Reports from "../../pages/Reports";
 import { rootStore, StoreProvider } from "../../stores";
-import Menu from "../Menu";
 
 const mockedUsedNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({

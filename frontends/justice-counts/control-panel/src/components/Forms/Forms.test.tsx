@@ -35,8 +35,8 @@ test("Optional input label without value expected to be default position, font-s
   const label = screen.getByText(/Total Staff/i);
 
   expect(window.getComputedStyle(label).top).toBe("26px");
-  expect(window.getComputedStyle(label).fontSize).toBe("1.25rem");
-  expect(window.getComputedStyle(label).color).toBe("rgb(119, 119, 119)");
+  expect(window.getComputedStyle(label).fontSize).toBe("1.5rem");
+  expect(window.getComputedStyle(label).color).toBe("rgba(23, 28, 43, 0.5)");
 
   expect.hasAssertions();
 });
@@ -63,24 +63,22 @@ test("Required input label with value expected to shrink position, font-size and
   expect.hasAssertions();
 });
 
-test("Context description appears in document", () => {
+test("Error description appears in document", () => {
   render(
     <TextInput
+      error="Please enter valid number."
       type="text"
       label="Total Staff"
       valueLabel="People"
-      context="Measures the number of full-time staff employed by the agency."
-      value="100"
+      value="-100"
       readOnly
       required
     />
   );
 
-  const inputContext = screen.getByText(
-    /Measures the number of full-time staff employed by the agency./i
-  );
+  const errorDescription = screen.getByText(/Please enter valid number./i);
 
-  expect(inputContext).toBeInTheDocument();
+  expect(errorDescription).toBeInTheDocument();
 
   expect.hasAssertions();
 });
@@ -88,27 +86,23 @@ test("Context description appears in document", () => {
 test("Error state changes text input colors to red", () => {
   render(
     <TextInput
-      error="Error"
+      error="Please enter valid number."
       type="text"
       name="Total Staff"
       id="Total Staff"
       label="Total Staff"
       valueLabel="People"
       context="Measures the number of full-time staff employed by the agency."
-      value="100"
+      value=""
       readOnly
       required
     />
   );
 
   const input = screen.getByLabelText("Total Staff");
-  const valueLabel = screen.getByText("People");
 
   expect(window.getComputedStyle(input).background).toBe(
     "rgba(221, 18, 18, 0.05)"
-  );
-  expect(window.getComputedStyle(valueLabel).background).toBe(
-    "rgb(221, 18, 18)"
   );
 
   expect.hasAssertions();

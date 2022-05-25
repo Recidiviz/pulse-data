@@ -18,8 +18,9 @@
 import React, { InputHTMLAttributes } from "react";
 import styled from "styled-components/macro";
 
-import { rem } from "../../utils";
-import { palette } from "../GlobalStyles";
+import statusCheckIcon from "../assets/status-check-icon.png";
+import statusErrorIcon from "../assets/status-error-icon.png";
+import { palette, typography } from "../GlobalStyles";
 
 export const InputWrapper = styled.div`
   position: relative;
@@ -30,18 +31,15 @@ export const InputWrapper = styled.div`
 `;
 
 type InputProps = {
-  required?: boolean;
   error?: string;
   additionalContext?: boolean;
 };
 
 export const Input = styled.input<InputProps>`
-  height: ${({ additionalContext }) => (additionalContext ? "46px" : "71px")};
+  ${typography.sizeCSS.large}
+  height: 71px;
   padding: ${({ additionalContext }) =>
     additionalContext ? "16px 11px 10px 16px" : "42px 90px 16px 16px"};
-  font-size: ${rem("24px")};
-  line-height: 24px;
-
   background: ${({ value, error }) => {
     if (error) {
       return palette.highlight.red;
@@ -49,6 +47,12 @@ export const Input = styled.input<InputProps>`
     return value || value === 0
       ? palette.highlight.lightblue1
       : palette.highlight.grey1;
+  }};
+  caret-color: ${({ error }) => {
+    if (error) {
+      return palette.solid.red;
+    }
+    return palette.solid.blue;
   }};
 
   border: none;
@@ -65,33 +69,39 @@ export const Input = styled.input<InputProps>`
         : palette.highlight.grey9;
     }};
 
+  &:hover {
+    border-bottom: 1px solid ${palette.solid.blue};
+  }
+
   &:focus ~ label {
+    ${typography.sizeCSS.small}
     ${({ additionalContext }) => additionalContext && "display: none"};
     top: 12px;
-    font-size: ${rem("12px")};
-    line-height: 16px;
-    color: ${({ required, error }) => {
+    color: ${({ error }) => {
       if (error) {
         return palette.solid.red;
       }
-      return required ? palette.solid.blue : palette.solid.darkgrey;
+      return palette.solid.blue;
     }};
+  }
+
+  &:hover ~ label {
+    color: ${({ error }) => !error && palette.solid.blue};
   }
 
   &::placeholder {
     opacity: 0;
     transition: 0.2s;
-    color: ${palette.highlight.grey8};
   }
 
   &:focus::placeholder {
     opacity: 1;
     transition: 0.2s;
+    color: ${palette.highlight.grey6};
   }
 `;
 
 type InputLabelProps = {
-  required?: boolean;
   inputHasValue?: boolean;
   isDisabled?: boolean;
   additionalContext?: boolean;
@@ -99,77 +109,60 @@ type InputLabelProps = {
 };
 
 export const InputLabel = styled.label<InputLabelProps>`
+  ${({ inputHasValue }) =>
+    inputHasValue ? typography.sizeCSS.small : typography.sizeCSS.large}
+
   /* For Additional Context input: we only need this label visible when the input is not focused and has no input */
   ${({ additionalContext, inputHasValue }) =>
     additionalContext && inputHasValue && "display: none;"}
 
   position: absolute;
   top: ${({ inputHasValue }) => (inputHasValue ? "12px" : "26px")};
-  ${({ additionalContext }) =>
-    additionalContext &&
-    "top: 14px"}; /* Override if this is an Additional Context input */
   left: 16px;
   z-index: -1;
   transition: 0.2s ease;
 
-  font-size: ${({ inputHasValue }) =>
-    inputHasValue ? rem("12px") : rem("20px")};
-  line-height: ${({ inputHasValue }) => (inputHasValue ? "16px" : "20px")};
-  color: ${({ error, isDisabled, required, inputHasValue }) => {
+  color: ${({ error, isDisabled, inputHasValue }) => {
     if (error) {
       return palette.solid.red;
     }
     if (isDisabled) {
-      return palette.highlight.grey8;
+      return palette.highlight.grey6;
     }
-    return required || inputHasValue ? palette.solid.blue : palette.solid.grey;
+    return inputHasValue ? palette.solid.blue : palette.highlight.grey8;
   }};
 `;
 
-type InputContextLabelProps = {
+type ErrorLabelProps = {
   isDisabled?: boolean;
   error?: string;
 };
 
-export const InputContextLabel = styled.span<InputContextLabelProps>`
+export const ErrorLabel = styled.span<ErrorLabelProps>`
+  ${typography.sizeCSS.small}
   ${({ error }) => error && `color: ${palette.solid.red};`};
   ${({ isDisabled }) => isDisabled && `color: ${palette.highlight.grey8};`}
-  font-size: ${rem("12px")};
-  line-height: 16px;
   margin-top: 8px;
 `;
 
-type NotificationLabelProps = {
-  error?: string;
-  required?: boolean;
-  valueLabel?: string;
-};
+export const LabelChipPosition = styled.span`
+  position: absolute;
+  top: 24px;
+  right: 16px;
+`;
 
-export const NotificationLabel = styled.span<NotificationLabelProps>`
-  background-color: ${({ required, error }) => {
-    if (error) {
-      return palette.solid.red;
-    }
-    return required ? palette.solid.blue : palette.highlight.grey8;
-  }};
-  display: ${({ valueLabel }) => (valueLabel ? `flex` : `none`)};
+export const RequiredChip = styled.span`
+  ${typography.sizeCSS.small}
+  background-color: ${palette.solid.blue};
   justify-content: center;
   align-items: center;
-  height: 32px;
-  position: absolute;
-  top: 20px;
-  right: 16px;
+  height: 24px;
   padding: 4px 8px;
-  font-size: ${rem("12px")};
-  line-height: 24px;
-  text-transform: uppercase;
-  border-radius: 2px;
   color: ${palette.solid.white};
 `;
 
 export const AdditionalContextLabel = styled.div`
-  font-size: ${rem("20px")};
-  line-height: 24px;
+  ${typography.sizeCSS.large}
   margin-top: 37px;
 `;
 
@@ -194,13 +187,18 @@ export const TextInput: React.FC<TextInputProps> = ({
   return (
     <InputWrapper>
       {/* Text Input */}
-      <Input {...props} error={error} additionalContext={additionalContext} />
+      <Input
+        {...props}
+        error={error}
+        id={name}
+        additionalContext={additionalContext}
+        placeholder={additionalContext ? "" : "Enter value"}
+      />
 
-      {/* Label (appears inside of text input) */}
+      {/* Text Input Label (appears inside of text input) */}
       <InputLabel
         htmlFor={name}
-        required={required}
-        inputHasValue={value === 0 ? true : Boolean(value)}
+        inputHasValue={Boolean(value)}
         isDisabled={disabled}
         additionalContext={additionalContext}
         error={error}
@@ -208,19 +206,35 @@ export const TextInput: React.FC<TextInputProps> = ({
         {label}
       </InputLabel>
 
-      {/* Context Description (appears below text input) */}
-      <InputContextLabel isDisabled={disabled} error={error}>
-        {error || context}
-      </InputContextLabel>
+      {/* Error Description (appears below text input) */}
+      {error && (
+        <ErrorLabel isDisabled={disabled} error={error}>
+          {error}
+        </ErrorLabel>
+      )}
 
-      {/* Value Label Chip (appears inside of text input) */}
-      <NotificationLabel
-        error={error}
-        valueLabel={valueLabel}
-        required={required}
-      >
-        {valueLabel}
-      </NotificationLabel>
+      {/* Label Chip (appears inside of text input on the right) */}
+
+      {/* Chip: Required */}
+      {required && !error && !value && (
+        <LabelChipPosition>
+          <RequiredChip>Required</RequiredChip>
+        </LabelChipPosition>
+      )}
+
+      {/* Chip: Error Status */}
+      {error && (
+        <LabelChipPosition>
+          <img src={statusErrorIcon} alt="" width="24px" height="24px" />
+        </LabelChipPosition>
+      )}
+
+      {/* Chip: Validated Successfully Status */}
+      {!error && value && (
+        <LabelChipPosition>
+          <img src={statusCheckIcon} alt="" width="24px" height="24px" />
+        </LabelChipPosition>
+      )}
     </InputWrapper>
   );
 };
