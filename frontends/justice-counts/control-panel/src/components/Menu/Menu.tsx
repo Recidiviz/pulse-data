@@ -19,7 +19,6 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Permission } from "../../shared/types";
 import { useStore } from "../../stores";
 import {
   ExtendedDropdownMenuItem,
@@ -40,7 +39,7 @@ const Menu = () => {
   const [activeMenuItem, setActiveMenuItem] = useState<MenuItems>(
     MenuItems.Reports
   );
-  const { authStore, api, userStore } = useStore();
+  const { authStore, api } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -90,16 +89,6 @@ const Menu = () => {
       >
         Reports
       </MenuItem>
-
-      {/* Create Reports (Admins Only) */}
-      {userStore.permissions.includes(Permission.CREATE_REPORT) && (
-        <MenuItem
-          onClick={() => navigate("/reports/create")}
-          active={activeMenuItem === MenuItems.CreateReport}
-        >
-          Create Report
-        </MenuItem>
-      )}
 
       {/* Learn More */}
       <MenuItem active={activeMenuItem === MenuItems.LearnMore}>

@@ -22,7 +22,6 @@ import { useNavigate } from "react-router-dom";
 
 import Loading from "../components/Loading";
 import {
-  ArrowDownIcon,
   Badge,
   Cell,
   FilterBar,
@@ -31,13 +30,16 @@ import {
   Label,
   LabelRow,
   NoReportsDisplay,
+  ReportActions,
+  ReportActionsItem,
+  ReportActionsNewIcon,
+  ReportActionsSelectIcon,
   ReportsHeader,
   ReportsPageTitle,
   Row,
-  SortBy,
   Table,
 } from "../components/Reports";
-import { ReportOverview } from "../shared/types";
+import { Permission, ReportOverview } from "../shared/types";
 import { useStore } from "../stores";
 import {
   normalizeString,
@@ -130,11 +132,17 @@ const Reports: React.FC = () => {
             ))}
           </FilterOptions>
 
-          {/* Sort By */}
-          <SortBy>
-            Sort by Reporting Period
-            <ArrowDownIcon />
-          </SortBy>
+          {/* Admin Only: Manage Reports */}
+          {userStore.permissions.includes(Permission.CREATE_REPORT) && (
+            <ReportActions>
+              <ReportActionsItem>
+                Select <ReportActionsSelectIcon />
+              </ReportActionsItem>
+              <ReportActionsItem onClick={() => navigate("/reports/create")}>
+                New <ReportActionsNewIcon />
+              </ReportActionsItem>
+            </ReportActions>
+          )}
         </FilterBar>
 
         {/* Labels */}

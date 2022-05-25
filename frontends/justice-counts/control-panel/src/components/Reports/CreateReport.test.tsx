@@ -88,51 +88,39 @@ describe("test create report button", () => {
     render(
       <StoreProvider>
         <BrowserRouter>
-          <Menu />
+          <Reports />
         </BrowserRouter>
       </StoreProvider>
-    );
-    const menuButton = screen.getByRole("button");
-
-    fireEvent(
-      menuButton,
-      new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-      })
     );
 
     runInAction(() => {
       rootStore.userStore.permissions = [""];
     });
 
-    const createReportButton = screen.queryByText(/Create Report/i);
-    expect(createReportButton).not.toBeInTheDocument();
+    const selectButton = screen.queryByText(/Select/i);
+    const createNewReportButton = screen.queryByText(/New/i);
+
+    expect(selectButton).not.toBeInTheDocument();
+    expect(createNewReportButton).not.toBeInTheDocument();
   });
 
   test("created reports button should be displayed if user has permission", () => {
     render(
       <StoreProvider>
         <BrowserRouter>
-          <Menu />
+          <Reports />
         </BrowserRouter>
       </StoreProvider>
-    );
-    const menuButton = screen.getByRole("button");
-
-    fireEvent(
-      menuButton,
-      new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-      })
     );
 
     runInAction(() => {
       rootStore.userStore.permissions = ["create:report:all"];
     });
 
-    const createReportButton = screen.queryByText(/Create Report/i);
-    expect(createReportButton).toBeInTheDocument();
+    const selectButton = screen.queryByText(/Select/i);
+    const createNewReportButton = screen.queryByText(/New/i);
+
+    expect(selectButton).toBeInTheDocument();
+    expect(createNewReportButton).toBeInTheDocument();
   });
 });
