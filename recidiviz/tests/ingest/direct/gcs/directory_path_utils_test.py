@@ -25,7 +25,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
     gcsfs_sftp_download_bucket_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
@@ -54,19 +53,6 @@ class TestDirectoryPathUtils(TestCase):
                 ingest_instance=DirectIngestInstance.SECONDARY,
             ).abs_path(),
             "recidiviz-staging-direct-ingest-state-storage-secondary/us_nd",
-        )
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
-    def test_get_state_storage_directory_path_file_type_raw(self) -> None:
-        self.assertEqual(
-            gcsfs_direct_ingest_storage_directory_path_for_state(
-                region_code="us_nd",
-                ingest_instance=DirectIngestInstance.SECONDARY,
-                file_type=GcsfsDirectIngestFileType.RAW_DATA,
-            ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-storage-secondary/us_nd/raw",
         )
 
     @patch(

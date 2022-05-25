@@ -57,10 +57,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.gsutil_shell_helpers import (
-    gsutil_get_storage_subdirs_containing_file_types,
+    gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_ls,
     gsutil_mv,
 )
@@ -187,9 +186,8 @@ class MoveFilesFromStorageController:
                 logging.info("\t%s", self.queue_console_url(queue_name))
 
     def get_date_subdir_paths(self) -> List[str]:
-        return gsutil_get_storage_subdirs_containing_file_types(
+        return gsutil_get_storage_subdirs_containing_raw_files(
             storage_bucket_path=self.storage_bucket.abs_path(),
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )
