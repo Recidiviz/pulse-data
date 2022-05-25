@@ -29,8 +29,11 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
-    IngestViewMaterializerDelegate,
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    InstanceIngestViewContents,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
+    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -79,7 +82,8 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         *,
         region: Region,
         ingest_instance: DirectIngestInstance,
-        delegate: IngestViewMaterializerDelegate,
+        metadata_manager: DirectIngestViewMaterializationMetadataManager,
+        ingest_view_contents: InstanceIngestViewContents,
         big_query_client: BigQueryClient,
         view_collector: BigQueryViewCollector[
             DirectIngestPreProcessedIngestViewBuilder
@@ -88,7 +92,8 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     ):
 
         self.region = region
-        self.delegate = delegate
+        self.metadata_manager = metadata_manager
+        self.ingest_view_contents = ingest_view_contents
         self.ingest_instance = ingest_instance
         self.big_query_client = big_query_client
         self.ingest_views_by_name = {
@@ -110,7 +115,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         query, query_params = self._generate_ingest_view_query_and_params_for_date(
             ingest_view=ingest_view,
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
-            destination_dataset_id=self.delegate.temp_dataset_id(),
+            destination_dataset_id=self.ingest_view_contents.temp_results_dataset,
             destination_table_id=table_name,
             update_timestamp=date_bound,
         )
@@ -123,7 +128,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
         self.big_query_client.create_dataset_if_necessary(
             dataset_ref=self.big_query_client.dataset_ref_for_id(
-                self.delegate.temp_dataset_id()
+                self.ingest_view_contents.temp_results_dataset
             ),
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
@@ -195,7 +200,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         materialization_query = StrictStringFormatter().format(
             SELECT_SUBQUERY,
             project_id=self.big_query_client.project_id,
-            dataset_id=self.delegate.temp_dataset_id(),
+            dataset_id=self.ingest_view_contents.temp_results_dataset,
             table_name=self._get_upper_bound_intermediate_table_name(
                 ingest_view_materialization_args
             ),
@@ -206,7 +211,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             upper_bound_prev_query = StrictStringFormatter().format(
                 SELECT_SUBQUERY,
                 project_id=self.big_query_client.project_id,
-                dataset_id=self.delegate.temp_dataset_id(),
+                dataset_id=self.ingest_view_contents.temp_results_dataset,
                 table_name=self._get_lower_bound_intermediate_table_name(
                     ingest_view_materialization_args
                 ),
@@ -274,7 +279,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
         for table_id in single_date_table_ids:
             self.big_query_client.delete_table(
-                dataset_id=self.delegate.temp_dataset_id(),
+                dataset_id=self.ingest_view_contents.temp_results_dataset,
                 table_id=table_id,
             )
             logging.info("Deleted intermediate table [%s]", table_id)
@@ -300,7 +305,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 f"Ingest not enabled for region [{self.region.region_code}]"
             )
 
-        job_completion_time = self.delegate.get_job_completion_time_for_args(
+        job_completion_time = self.metadata_manager.get_job_completion_time_for_args(
             ingest_view_materialization_args
         )
         if job_completion_time:
@@ -309,8 +314,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 ingest_view_materialization_args,
             )
             return False
-
-        self.delegate.prepare_for_job(ingest_view_materialization_args)
 
         ingest_view = self.ingest_views_by_name[
             ingest_view_materialization_args.ingest_view_name
@@ -343,7 +346,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             "Generated final materialization query [%s]", str(materialization_query)
         )
 
-        self.delegate.materialize_query_results(
+        self._materialize_query_results(
             ingest_view_materialization_args, ingest_view, materialization_query
         )
 
@@ -351,7 +354,9 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         self._delete_intermediate_tables(ingest_view_materialization_args)
         logging.info("Done deleting intermediate tables.")
 
-        self.delegate.mark_job_complete(ingest_view_materialization_args)
+        self.metadata_manager.mark_ingest_view_materialized(
+            ingest_view_materialization_args
+        )
 
         return True
 
@@ -472,6 +477,21 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             )
         )
         return query, query_params
+
+    def _materialize_query_results(
+        self,
+        args: IngestViewMaterializationArgs,
+        ingest_view: DirectIngestPreProcessedIngestView,
+        query: str,
+    ) -> None:
+        """Materialized the results of |query| to the appropriate location."""
+        self.ingest_view_contents.save_query_results(
+            ingest_view_name=args.ingest_view_name,
+            upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
+            lower_bound_datetime_exclusive=args.lower_bound_datetime_exclusive,
+            query_str=query,
+            order_by_cols_str=ingest_view.order_by_cols,
+        )
 
 
 if __name__ == "__main__":
