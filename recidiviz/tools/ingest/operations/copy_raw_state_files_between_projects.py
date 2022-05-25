@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script for copying all files in production storage for a region to state storage for a region. Should be used when we
-want to rerun ingest for a state in staging.
+Script for copying all files in production storage for a region to state storage for a
+region. Should be used when we want to sync raw data between prod and staging. Will
+almost always be followed by `move_raw_state_files_from_storage` to actaully move
+the files to the ingest bucket for processing.
 
 When run in dry-run mode (the default), will only log copies, but will not execute them.
 
@@ -32,11 +34,10 @@ import logging
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.operations.operate_on_storage_ingest_files_controller import (
+from recidiviz.tools.ingest.operations.operate_on_storage_raw_files_controller import (
     IngestFilesOperationType,
-    OperateOnStorageIngestFilesController,
+    OperateOnStorageRawFilesController,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.params import str_to_bool
@@ -99,12 +100,11 @@ def main() -> None:
         ingest_instance=DirectIngestInstance.PRIMARY,
         project_id=args.destination_project_id,
     )
-    OperateOnStorageIngestFilesController(
+    OperateOnStorageRawFilesController(
         region_code=args.region,
         operation_type=IngestFilesOperationType.COPY,
         source_region_storage_dir_path=source_region_storage_dir_path,
         destination_region_storage_dir_path=destination_region_storage_dir_path,
-        file_type_to_operate_on=GcsfsDirectIngestFileType.RAW_DATA,
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         file_tag_filters=[],

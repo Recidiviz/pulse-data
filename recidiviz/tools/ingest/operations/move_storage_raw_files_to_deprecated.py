@@ -27,8 +27,8 @@ When run in dry-run mode (the default), will log the move of each file, but will
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.ingest.operations.move_storage_files_to_deprecated \
-    --file-type raw --region us_nd --start-date-bound  2019-08-12 \
+python -m recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated \
+    --region us_nd --start-date-bound  2019-08-12 \
     --end-date-bound 2019-08-17 --project-id recidiviz-staging \
     --ingest-instance PRIMARY \
     --dry-run True \
@@ -45,14 +45,13 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestRawFileMetadata,
 )
-from recidiviz.tools.ingest.operations.operate_on_storage_ingest_files_controller import (
+from recidiviz.tools.ingest.operations.operate_on_storage_raw_files_controller import (
     IngestFilesOperationType,
-    OperateOnStorageIngestFilesController,
+    OperateOnStorageRawFilesController,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -66,7 +65,6 @@ class MoveFilesToDeprecatedController:
     def __init__(
         self,
         *,
-        file_type: GcsfsDirectIngestFileType,
         region_code: str,
         ingest_instance: DirectIngestInstance,
         start_date_bound: Optional[str],
@@ -75,7 +73,6 @@ class MoveFilesToDeprecatedController:
         project_id: str,
         file_tag_filters: List[str],
     ):
-        self.file_type = file_type
         self.region_code = region_code
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
@@ -83,10 +80,7 @@ class MoveFilesToDeprecatedController:
         self.file_tag_filters = file_tag_filters
         self.project_id = project_id
 
-        if (
-            self.file_type == GcsfsDirectIngestFileType.RAW_DATA
-            and ingest_instance != DirectIngestInstance.PRIMARY
-        ):
+        if ingest_instance != DirectIngestInstance.PRIMARY:
             raise ValueError(
                 f"Raw files are only ever handled in the PRIMARY ingest instance. "
                 f"Instead, found ingest_instance [{ingest_instance}]."
@@ -113,28 +107,24 @@ class MoveFilesToDeprecatedController:
     def run(self) -> None:
         """Main function that will execute the move to deprecated."""
 
-        if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-            prompt_for_confirmation(
-                "You have chosen to deprecate RAW_DATA type files. It is relatively "
-                "rare that this should happen - generally only if we have received bad "
-                "data from the state. \nAre you sure you want to proceed?",
-                dry_run=self.dry_run,
-            )
+        prompt_for_confirmation(
+            "You have chosen to deprecate RAW DATA files. It is relatively "
+            "rare that this should happen - generally only if we have received bad "
+            "data from the state. \nAre you sure you want to proceed?",
+            dry_run=self.dry_run,
+        )
 
-            prompt_for_confirmation(
-                f"All associated rows in the BigQuery dataset "
-                f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
-                f"these files to a deprecated location.\nHave you already done so?",
-                dry_run=self.dry_run,
-            )
+        prompt_for_confirmation(
+            f"All associated rows in the BigQuery dataset "
+            f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
+            f"these files to a deprecated location.\nHave you already done so?",
+            dry_run=self.dry_run,
+        )
 
         # TODO(#3666): Update this script to make updates to our Operations db and
         #  BigQuery (if necessary). For now we print these messages to check if
         #  appropriate data has been deleted from operations db.
-        if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-            operations_table = DirectIngestRawFileMetadata.__tablename__
-        else:
-            raise ValueError(f"Unexpected file type [{self.file_type}].")
+        operations_table = DirectIngestRawFileMetadata.__tablename__
 
         prompt_for_confirmation(
             f"All associated rows from our postgres table `{operations_table}` "
@@ -143,12 +133,11 @@ class MoveFilesToDeprecatedController:
             dry_run=self.dry_run,
         )
 
-        OperateOnStorageIngestFilesController(
+        OperateOnStorageRawFilesController(
             region_code=self.region_code,
             operation_type=IngestFilesOperationType.MOVE,
             source_region_storage_dir_path=self.region_storage_dir_path,
             destination_region_storage_dir_path=self.deprecated_region_storage_dir_path,
-            file_type_to_operate_on=self.file_type,
             start_date_bound=self.start_date_bound,
             end_date_bound=self.end_date_bound,
             file_tag_filters=self.file_tag_filters,
@@ -160,13 +149,6 @@ def parse_arguments() -> argparse.Namespace:
     """Runs the move_state_files_to_deprecated script."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "--file-type",
-        required=True,
-        choices=[file_type.value for file_type in GcsfsDirectIngestFileType],
-        help="Defines whether we should move raw files or generated ingest_view files",
     )
 
     parser.add_argument("--region", required=True, help="E.g. 'us_nd'")
@@ -219,7 +201,6 @@ def main() -> None:
     args = parse_arguments()
 
     MoveFilesToDeprecatedController(
-        file_type=GcsfsDirectIngestFileType(args.file_type),
         region_code=args.region,
         ingest_instance=DirectIngestInstance(args.ingest_instance),
         start_date_bound=args.start_date_bound,
