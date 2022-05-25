@@ -130,7 +130,12 @@ interface AdditionalContextInputsProps extends MetricTextInputProps {
 }
 
 export const BinaryRadioButtonInputs = observer(
-  ({ reportID, metric, context }: AdditionalContextInputsProps) => {
+  ({
+    reportID,
+    metric,
+    context,
+    contextIndex,
+  }: AdditionalContextInputsProps) => {
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
 
@@ -154,7 +159,9 @@ export const BinaryRadioButtonInputs = observer(
           value="YES"
           onChange={handleContextChange}
           checked={
-            contexts?.[reportID]?.[metric.key]?.[context.key].value === "YES"
+            contexts?.[reportID]?.[metric.key]?.[context.key]
+              ? contexts[reportID][metric.key][context.key].value === "YES"
+              : metric.contexts[contextIndex].value === "YES"
           }
         />
         <BinaryRadioButton
@@ -165,7 +172,9 @@ export const BinaryRadioButtonInputs = observer(
           value="NO"
           onChange={handleContextChange}
           checked={
-            contexts?.[reportID]?.[metric.key]?.[context.key].value === "NO"
+            contexts?.[reportID]?.[metric.key]?.[context.key]
+              ? contexts[reportID][metric.key][context.key].value === "NO"
+              : metric.contexts[contextIndex].value === "NO"
           }
         />
       </>

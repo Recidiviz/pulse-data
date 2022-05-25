@@ -400,6 +400,22 @@ class FormStore {
     contextKey: string,
     required: boolean
   ): void => {
+    /**
+     * Create an empty object within the property if none exist to improve access
+     * speed and to help with isolating re-renders for each form component.
+     */
+    if (!this.contexts[reportID]) {
+      this.contexts[reportID] = {};
+    }
+
+    if (!this.contexts[reportID][metricKey]) {
+      this.contexts[reportID][metricKey] = {};
+    }
+
+    if (!this.contexts[reportID][metricKey][contextKey]) {
+      this.contexts[reportID][metricKey][contextKey] = {};
+    }
+
     this.validate("TEXT", "", required, reportID, metricKey, contextKey);
     this.contexts[reportID][metricKey][contextKey].value = "";
   };
