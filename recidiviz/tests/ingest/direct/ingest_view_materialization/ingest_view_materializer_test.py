@@ -29,9 +29,6 @@ from more_itertools import one
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
-    BQBasedMaterializerDelegate,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
 )
@@ -300,17 +297,14 @@ class IngestViewMaterializerTest(unittest.TestCase):
             f"mock_us_xx_{self.ingest_instance.value.lower()}_temp_{date_ts}"
         )
 
-        delegate = BQBasedMaterializerDelegate(
-            metadata_manager=DirectIngestViewMaterializationMetadataManager(
-                region_code=region.region_code, ingest_instance=self.ingest_instance
-            ),
-            ingest_view_contents=self.mock_ingest_view_contents,
-        )
         ingest_view_name = "ingest_view"
         return IngestViewMaterializerImpl(
             region=region,
             ingest_instance=self.ingest_instance,
-            delegate=delegate,
+            metadata_manager=DirectIngestViewMaterializationMetadataManager(
+                region_code=region.region_code, ingest_instance=self.ingest_instance
+            ),
+            ingest_view_contents=self.mock_ingest_view_contents,
             big_query_client=self.mock_client,
             view_collector=FakeSingleIngestViewCollector(  # type: ignore[arg-type]
                 region,
@@ -387,19 +381,15 @@ class IngestViewMaterializerTest(unittest.TestCase):
         with freeze_time(_DATE_3.isoformat()):
             ingest_view_materializer = self.create_materializer(region)
 
-        if not isinstance(
-            ingest_view_materializer.delegate, BQBasedMaterializerDelegate
-        ):
-            raise ValueError(
-                f"Unexpected delegate type: {ingest_view_materializer.delegate}"
+        with freeze_time(_DATE_3.isoformat()):
+            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
+                args
             )
 
-        delegate: BQBasedMaterializerDelegate = ingest_view_materializer.delegate
-        with freeze_time(_DATE_3.isoformat()):
-            delegate.metadata_manager.register_ingest_materialization_job(args)
-
         with freeze_time(_DATE_4.isoformat()):
-            delegate.metadata_manager.mark_ingest_view_materialized(args)
+            ingest_view_materializer.metadata_manager.mark_ingest_view_materialized(
+                args
+            )
 
         # Act
         with freeze_time(_DATE_5.isoformat()):
@@ -446,16 +436,10 @@ class IngestViewMaterializerTest(unittest.TestCase):
         with freeze_time(_DATE_3.isoformat()):
             ingest_view_materializer = self.create_materializer(region)
 
-        if not isinstance(
-            ingest_view_materializer.delegate, BQBasedMaterializerDelegate
-        ):
-            raise ValueError(
-                f"Unexpected delegate type: {ingest_view_materializer.delegate}"
-            )
-
-        delegate: BQBasedMaterializerDelegate = ingest_view_materializer.delegate
         with freeze_time(_DATE_4.isoformat()):
-            delegate.metadata_manager.register_ingest_materialization_job(args)
+            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
+                args
+            )
 
         # Act
         with freeze_time(_DATE_5.isoformat()):
@@ -523,16 +507,10 @@ class IngestViewMaterializerTest(unittest.TestCase):
         with freeze_time(_DATE_3.isoformat()):
             ingest_view_materializer = self.create_materializer(region)
 
-        if not isinstance(
-            ingest_view_materializer.delegate, BQBasedMaterializerDelegate
-        ):
-            raise ValueError(
-                f"Unexpected delegate type: {ingest_view_materializer.delegate}"
-            )
-
-        delegate: BQBasedMaterializerDelegate = ingest_view_materializer.delegate
         with freeze_time(_DATE_4.isoformat()):
-            delegate.metadata_manager.register_ingest_materialization_job(args)
+            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
+                args
+            )
 
         # Act
         with freeze_time(_DATE_5.isoformat()):
@@ -618,16 +596,10 @@ ORDER BY colA, colC;"""
                 region, materialize_raw_data_table_views=True
             )
 
-        if not isinstance(
-            ingest_view_materializer.delegate, BQBasedMaterializerDelegate
-        ):
-            raise ValueError(
-                f"Unexpected delegate type: {ingest_view_materializer.delegate}"
-            )
-
-        delegate: BQBasedMaterializerDelegate = ingest_view_materializer.delegate
         with freeze_time(_DATE_4.isoformat()):
-            delegate.metadata_manager.register_ingest_materialization_job(args)
+            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
+                args
+            )
 
         # Act
         with freeze_time(_DATE_5.isoformat()):
@@ -713,16 +685,10 @@ ORDER BY colA, colC;"""
                 region, is_detect_row_deletion_view=True
             )
 
-        if not isinstance(
-            ingest_view_materializer.delegate, BQBasedMaterializerDelegate
-        ):
-            raise ValueError(
-                f"Unexpected delegate type: {ingest_view_materializer.delegate}"
-            )
-
-        delegate: BQBasedMaterializerDelegate = ingest_view_materializer.delegate
         with freeze_time(_DATE_4.isoformat()):
-            delegate.metadata_manager.register_ingest_materialization_job(args)
+            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
+                args
+            )
 
         # Act
         with freeze_time(_DATE_5.isoformat()):
@@ -749,16 +715,10 @@ ORDER BY colA, colC;"""
                 is_detect_row_deletion_view=True,
             )
 
-        if not isinstance(
-            ingest_view_materializer.delegate, BQBasedMaterializerDelegate
-        ):
-            raise ValueError(
-                f"Unexpected delegate type: {ingest_view_materializer.delegate}"
-            )
-
-        delegate: BQBasedMaterializerDelegate = ingest_view_materializer.delegate
         with freeze_time(_DATE_4.isoformat()):
-            delegate.metadata_manager.register_ingest_materialization_job(args)
+            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
+                args
+            )
 
         # Act
         with freeze_time(_DATE_5.isoformat()):

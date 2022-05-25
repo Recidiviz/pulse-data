@@ -39,14 +39,14 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
-    BQBasedMaterializerDelegate,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializer,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
-    IngestViewMaterializerDelegate,
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    InstanceIngestViewContents,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
+    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -286,7 +286,8 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         *,
         region: Region,
         ingest_instance: DirectIngestInstance,
-        delegate: IngestViewMaterializerDelegate,
+        metadata_manager: DirectIngestViewMaterializationMetadataManager,
+        ingest_view_contents: InstanceIngestViewContents,
         big_query_client: _MockBigQueryClientForControllerTests,
         view_collector: BigQueryViewCollector[
             DirectIngestPreProcessedIngestViewBuilder
@@ -295,7 +296,8 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
     ):
         self.region = region
         self.fs = big_query_client.fs
-        self.delegate = delegate
+        self.metadata_manager = metadata_manager
+        self.ingest_view_contents = ingest_view_contents
         self.processed_args: List[IngestViewMaterializationArgs] = []
 
         self.ingest_instance = ingest_instance
@@ -308,16 +310,13 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         if ingest_view_materialization_args in self.processed_args:
             return False
 
-        self.delegate.prepare_for_job(ingest_view_materialization_args)
-
         data_local_path = direct_ingest_fixture_path(
             region_code=self.region.region_code,
             file_name=f"{ingest_view_materialization_args.ingest_view_name}.csv",
             fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
         )
-        delegate = assert_type(self.delegate, BQBasedMaterializerDelegate)
         ingest_view_contents = assert_type(
-            delegate.ingest_view_contents, FakeInstanceIngestViewContents
+            self.ingest_view_contents, FakeInstanceIngestViewContents
         )
         ingest_view_contents.test_add_batches_for_data(
             ingest_view_name=ingest_view_materialization_args.ingest_view_name,
@@ -325,7 +324,9 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
             data_local_path=data_local_path,
         )
 
-        self.delegate.mark_job_complete(ingest_view_materialization_args)
+        self.metadata_manager.mark_ingest_view_materialized(
+            ingest_view_materialization_args
+        )
         self.processed_args.append(ingest_view_materialization_args)
 
         return True

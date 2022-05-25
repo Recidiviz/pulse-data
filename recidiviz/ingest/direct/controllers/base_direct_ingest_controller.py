@@ -70,9 +70,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
 from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materialization_args_generator_delegate import (
     BQBasedMaterializationArgsGeneratorDelegate,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materializer_delegate import (
-    BQBasedMaterializerDelegate,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
 )
@@ -81,9 +78,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
-)
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer_delegate import (
-    IngestViewMaterializerDelegate,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
@@ -188,7 +182,6 @@ class BaseDirectIngestController:
 
         self.job_prioritizer: ExtractAndMergeJobPrioritizer
         materialization_args_generator_delegate: IngestViewMaterializationArgsGeneratorDelegate
-        materializer_delegate: IngestViewMaterializerDelegate
 
         self.view_materialization_metadata_manager = (
             DirectIngestViewMaterializationMetadataManager(
@@ -205,10 +198,6 @@ class BaseDirectIngestController:
         self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
             ingest_view_contents=self.ingest_view_contents,
             ingest_view_rank_list=self.get_ingest_view_rank_list(),
-        )
-        materializer_delegate = BQBasedMaterializerDelegate(
-            metadata_manager=self.view_materialization_metadata_manager,
-            ingest_view_contents=self.ingest_view_contents,
         )
         materialization_args_generator_delegate = (
             BQBasedMaterializationArgsGeneratorDelegate(
@@ -229,7 +218,8 @@ class BaseDirectIngestController:
         self.ingest_view_materializer = IngestViewMaterializerImpl(
             region=self.region,
             ingest_instance=self.ingest_instance,
-            delegate=materializer_delegate,
+            ingest_view_contents=self.ingest_view_contents,
+            metadata_manager=self.view_materialization_metadata_manager,
             big_query_client=big_query_client,
             view_collector=view_collector,
             launched_ingest_views=self.get_ingest_view_rank_list(),
