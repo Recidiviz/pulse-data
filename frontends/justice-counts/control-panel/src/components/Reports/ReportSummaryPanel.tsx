@@ -23,8 +23,8 @@ import styled from "styled-components/macro";
 import { Metric } from "../../shared/types";
 import { useStore } from "../../stores";
 import { rem } from "../../utils";
-import checkmark from "../assets/checkmark.png";
-import xmark from "../assets/xmark.png";
+import checkmark from "../assets/status-check-icon.png";
+import xmark from "../assets/status-error-icon.png";
 import {
   GoBackLink,
   PreTitle,
