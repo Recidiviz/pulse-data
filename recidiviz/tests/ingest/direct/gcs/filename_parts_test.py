@@ -51,148 +51,6 @@ class TestFilenamePartsFromPath(TestCase):
             datetime.datetime.fromisoformat("2019-08-07T22:09:18:770655"),
         )
         self.assertEqual(parts.date_str, "2019-08-07")
-        self.assertEqual(parts.is_file_split, False)
-        self.assertEqual(parts.file_split_size, None)
-
-    def test_filename_parts_from_path_ingest_view_file_type_no_split_file(self) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-nd/processed_2019-09-07T00:09:18:770655_"
-                "ingest_view_elite_offenders.csv"
-            )
-        )
-        self.assertEqual(parts.processed_state, "processed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "elite_offenders")
-        self.assertEqual(parts.filename_suffix, None)
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-        self.assertEqual(parts.is_file_split, False)
-        self.assertEqual(parts.file_split_size, None)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_filename_suffix(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-nd/processed_2019-09-07T00:09:18:770655_"
-                "ingest_view_elite_offenders_1split.csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "processed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "elite_offenders")
-        self.assertEqual(parts.filename_suffix, "1split")
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-        # Needs the actual file_split suffix to be a file split
-        self.assertEqual(parts.is_file_split, False)
-        self.assertEqual(parts.file_split_size, None)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_file_split_no_size(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-nd/processed_2019-09-07T00:09:18:770655_"
-                "ingest_view_elite_offenders_002_file_split.csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "processed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "elite_offenders")
-        self.assertEqual(parts.filename_suffix, "002_file_split")
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-
-        self.assertEqual(parts.is_file_split, True)
-        self.assertEqual(parts.file_split_size, None)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_file_split_and_size(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-nd/processed_2019-09-07T00:09:18:770655_"
-                "ingest_view_elite_offenders_002_file_split_size300.csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "processed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "elite_offenders")
-        self.assertEqual(parts.filename_suffix, "002_file_split_size300")
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-
-        self.assertEqual(parts.is_file_split, True)
-        self.assertEqual(parts.file_split_size, 300)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_date_filename_suffix(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-nd/processed_2019-09-07T00:09:18:770655_"
-                "ingest_view_BrazosCounty_2019_09_25.csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "processed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "BrazosCounty")
-        self.assertEqual(parts.filename_suffix, "2019_09_25")
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-
-        self.assertEqual(parts.is_file_split, False)
-        self.assertEqual(parts.file_split_size, None)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_date_filename_suffix_and_file_split_size(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-nd/processed_2019-09-07T00:09:18:770655_"
-                "ingest_view_BrazosCounty_2019_09_25_002_file_split_size300.csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "processed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "BrazosCounty")
-        self.assertEqual(parts.filename_suffix, "2019_09_25_002_file_split_size300")
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-
-        self.assertEqual(parts.is_file_split, True)
-        self.assertEqual(parts.file_split_size, 300)
 
     def test_filename_parts_from_path_raw_file_type_with_numbers_in_file_tag(
         self,
@@ -215,79 +73,6 @@ class TestFilenamePartsFromPath(TestCase):
         )
         self.assertEqual(parts.date_str, "2019-09-07")
 
-        self.assertEqual(parts.is_file_split, False)
-        self.assertEqual(parts.file_split_size, None)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_numbers_in_file_tag_and_file_split(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-mo/unprocessed_2019-09-07T00:09:18:770655_"
-                "ingest_view_tak001_offender_identification_002_file_split_size300.csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "unprocessed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "tak001_offender_identification")
-        self.assertEqual(parts.filename_suffix, "002_file_split_size300")
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-
-        self.assertEqual(parts.is_file_split, True)
-        self.assertEqual(parts.file_split_size, 300)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_file_split_parts(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "storage_bucket/raw/2020/04/29/processed_2020-04-29T18:02:41:789323_ingest_view_test_file-(1).csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "processed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "test_file")
-        self.assertEqual(parts.filename_suffix, None)
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2020-04-29T18:02:41:789323"),
-        )
-        self.assertEqual(parts.date_str, "2020-04-29")
-
-        self.assertEqual(parts.is_file_split, False)
-
-    def test_filename_parts_from_path_ingest_view_file_type_with_file_split_parts_and_numbers_in_file_tag(
-        self,
-    ) -> None:
-        parts = filename_parts_from_path(
-            GcsfsFilePath.from_absolute_path(
-                "bucket-us-mo/unprocessed_2019-09-07T00:09:18:770655_"
-                "ingest_view_tak001_offender_identification_002_file_split_size300-(5).csv"
-            )
-        )
-
-        self.assertEqual(parts.processed_state, "unprocessed")
-        self.assertEqual(parts.extension, "csv")
-        self.assertEqual(parts.file_type, GcsfsDirectIngestFileType.INGEST_VIEW)
-        self.assertEqual(parts.file_tag, "tak001_offender_identification")
-        self.assertEqual(parts.filename_suffix, "002_file_split_size300")
-        self.assertEqual(
-            parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
-        )
-        self.assertEqual(parts.date_str, "2019-09-07")
-
-        self.assertEqual(parts.is_file_split, True)
-        self.assertEqual(parts.file_split_size, 300)
-
     def test_filename_parts_from_path_raw_file_type_with_independent_numbers_in_file_tag(
         self,
     ) -> None:
@@ -308,9 +93,6 @@ class TestFilenamePartsFromPath(TestCase):
         )
         self.assertEqual(parts.date_str, "2021-09-21")
 
-        self.assertEqual(parts.is_file_split, False)
-        self.assertEqual(parts.file_split_size, None)
-
     def test_filename_parts_from_path_raw_file_type_suffix(
         self,
     ) -> None:
@@ -330,6 +112,3 @@ class TestFilenamePartsFromPath(TestCase):
             datetime.datetime.fromisoformat("2022-03-24T06:02:28:607028"),
         )
         self.assertEqual(parts.date_str, "2022-03-24")
-
-        self.assertEqual(parts.is_file_split, False)
-        self.assertEqual(parts.file_split_size, None)

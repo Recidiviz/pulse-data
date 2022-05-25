@@ -52,8 +52,6 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 
 DIRECT_INGEST_UNPROCESSED_PREFIX = "unprocessed"
 DIRECT_INGEST_PROCESSED_PREFIX = "processed"
-SPLIT_FILE_SUFFIX = "file_split"
-SPLIT_FILE_STORAGE_SUBDIR = "split_files"
 
 
 def _build_file_name(
@@ -309,10 +307,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         return path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX)
 
     @staticmethod
-    def is_split_file(path: GcsfsFilePath) -> bool:
-        return filename_parts_from_path(path).is_file_split
-
-    @staticmethod
     def is_normalized_file_path(path: GcsfsFilePath) -> bool:
         return DirectIngestGCSFileSystem.is_seen_unprocessed_file(
             path
@@ -351,6 +345,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             directory_path, DIRECT_INGEST_PROCESSED_PREFIX, file_type_filter
         )
 
+    # TODO(#11424): Delete this method.
     def get_processed_file_paths_for_day(
         self,
         directory_path: GcsfsDirectoryPath,
@@ -411,6 +406,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         self.mv(path, processed_path)
         return processed_path
 
+    # TODO(#11424): Delete this method.
     def mv_processed_paths_before_date_to_storage(
         self,
         directory_path: GcsfsDirectoryPath,
@@ -502,11 +498,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
 
         parts = filename_parts_from_path(path)
 
-        if self.is_split_file(path):
-            opt_storage_subdir = SPLIT_FILE_STORAGE_SUBDIR
-        else:
-            opt_storage_subdir = ""
-
         file_type_subdir = parts.file_type.value
         date_subdir = os.path.join(
             f"{parts.utc_upload_datetime.year:04}",
@@ -525,7 +516,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
                 storage_directory_path.relative_path,
                 file_type_subdir,
                 date_subdir,
-                opt_storage_subdir,
                 actual_file_name,
             )
             storage_path = GcsfsFilePath.from_absolute_path(storage_path_str)

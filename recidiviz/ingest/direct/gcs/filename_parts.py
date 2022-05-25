@@ -44,17 +44,9 @@ _RAW_DATA_FILE_NAME_REGEX = re.compile(
     r"(-(?P<filename_suffix>\d+))?"  # Optional filename_suffix
     + _INGEST_FILE_SUFFIX_REGEX_PATTERN
 )
-_INGEST_VIEW_FILE_NAME_REGEX = re.compile(
-    _INGEST_FILE_PREFIX_REGEX_PATTERN
-    + r"(?P<file_tag>[A-Za-z][A-Za-z\d]*(_[A-Za-z][A-Za-z\d]*)*)"  # file_tag
-    r"(_(?P<filename_suffix>\d+([^-]*)))?"  # Optional filename_suffix
-    + _INGEST_FILE_SUFFIX_REGEX_PATTERN
-)
-_FILENAME_SUFFIX_REGEX = re.compile(
-    r".*(_file_split(_size(?P<file_split_size_str>\d+))?)$"
-)
 
 
+# TODO(#11424): Rename this to `DirectIngestRawFilenameParts`
 @attr.s(frozen=True)
 class GcsfsFilenameParts:
     """A convenience struct that contains information about a file parsed from
@@ -62,10 +54,12 @@ class GcsfsFilenameParts:
     cloud_function_utils.py::to_normalized_unprocessed_file_path().
 
     E.g. Consider the following file path
-    "/processed_2019-08-14T23:09:27:047747_elite_offenders_019_historical.csv"
+    "/processed_2019-08-14T23:09:27:047747_raw_elite_offenders_019_historical.csv"
 
     This will be parsed by filename_parts_from_path() to:
     utc_upload_datetime=datetime.fromisoformat(2019-08-14T23:09:27:047747)
+    # TODO(#11424): Remove this arg now that all files are raw files.
+    file_type=GcsfsDirectIngestFileType.RAW
     date_str="2019-08-14"
     file_tag="elite_offenders"
     filename_suffix="019_historical"
@@ -76,17 +70,13 @@ class GcsfsFilenameParts:
     utc_upload_datetime: datetime.datetime = attr.ib()
     utc_upload_datetime_str: str = attr.ib()
     date_str: str = attr.ib()
+    # TODO(#11424): Remove this arg now that all files are raw files.
     file_type: GcsfsDirectIngestFileType = attr.ib()
     # May contain letters, numbers, and the '_' char. If it contains numbers trailing an _, it must be a RAW_DATA file type.
     file_tag: str = attr.ib()
     # Must start a number and be separated from the file_tag by a '_' char.
     filename_suffix: Optional[str] = attr.ib()
     extension: str = attr.ib()
-
-    # TODO(#11424): Remove these fields and associated parts of regex once BQ
-    #   materialization has shipped.
-    is_file_split: bool = attr.ib()
-    file_split_size: Optional[int] = attr.ib()
 
     # File tag followed by file suffix, if there is one
     stripped_file_name: str = attr.ib()
@@ -120,55 +110,7 @@ def _filename_parts_from_raw_data_path(file_path: GcsfsFilePath) -> GcsfsFilenam
         file_type=file_type,
         file_tag=match.group("file_tag"),
         extension=match.group("extension"),
-        is_file_split=False,
-        file_split_size=None,
         filename_suffix=match.group("filename_suffix"),
-    )
-
-
-def _filename_parts_from_ingest_view_path(
-    file_path: GcsfsFilePath,
-) -> GcsfsFilenameParts:
-    """Parses filename for INGEST_VIEW file types"""
-    match = re.match(_INGEST_VIEW_FILE_NAME_REGEX, file_path.file_name)
-
-    if not match:
-        raise DirectIngestError(
-            msg=f"Could not parse upload_ts, file_tag, extension "
-            f"from path [{file_path.abs_path()}]",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
-
-    full_upload_timestamp_str = match.group("timestamp")
-    utc_upload_datetime = datetime.datetime.fromisoformat(full_upload_timestamp_str)
-    file_type = GcsfsDirectIngestFileType.from_string(match.group("file_type"))
-
-    filename_suffix = match.group("filename_suffix")
-    is_file_split = False
-    file_split_size = None
-
-    if filename_suffix:
-        filename_suffix_file_split_match = re.match(
-            _FILENAME_SUFFIX_REGEX, filename_suffix
-        )
-        if filename_suffix_file_split_match is not None:
-            is_file_split = True
-            file_split_size_str = filename_suffix_file_split_match.group(
-                "file_split_size_str"
-            )
-            file_split_size = int(file_split_size_str) if file_split_size_str else None
-
-    return GcsfsFilenameParts(
-        processed_state=match.group("processed_state"),
-        utc_upload_datetime=utc_upload_datetime,
-        utc_upload_datetime_str=full_upload_timestamp_str,
-        date_str=utc_upload_datetime.date().isoformat(),
-        file_type=file_type,
-        file_tag=match.group("file_tag"),
-        extension=match.group("extension"),
-        is_file_split=is_file_split,
-        file_split_size=file_split_size,
-        filename_suffix=filename_suffix,
     )
 
 
@@ -187,11 +129,7 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> GcsfsFilenameParts:
     if file_type is GcsfsDirectIngestFileType.RAW_DATA:
         return _filename_parts_from_raw_data_path(file_path)
 
-    if file_type is GcsfsDirectIngestFileType.INGEST_VIEW:
-        return _filename_parts_from_ingest_view_path(file_path)
-
     raise DirectIngestError(
-        msg=f"Unknown file_type {file_type}, must be one of: {GcsfsDirectIngestFileType.RAW_DATA} "
-        f"or {GcsfsDirectIngestFileType.INGEST_VIEW}",
+        msg=f"Unknown file_type {file_type}",
         error_type=DirectIngestErrorType.INPUT_ERROR,
     )
