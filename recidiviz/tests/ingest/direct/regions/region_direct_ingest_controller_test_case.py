@@ -367,13 +367,14 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         upper_bound_datetime: datetime.datetime,
         lower_bound_datetime: Optional[datetime.datetime],
     ) -> IngestViewMaterializationArgs:
-        delegate = controller.ingest_view_materialization_args_generator.delegate
-        args = delegate.build_new_args(
+        metadata_manager = controller.view_materialization_metadata_manager
+        args = IngestViewMaterializationArgs(
             ingest_view_name=ingest_view_name,
-            upper_bound_datetime_inclusive=upper_bound_datetime,
             lower_bound_datetime_exclusive=lower_bound_datetime,
+            upper_bound_datetime_inclusive=upper_bound_datetime,
+            ingest_instance=metadata_manager.ingest_instance,
         )
-        delegate.register_new_job(args)
+        metadata_manager.register_ingest_materialization_job(args)
         return args
 
     def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:

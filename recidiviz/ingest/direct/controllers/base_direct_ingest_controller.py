@@ -67,14 +67,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     IngestViewResultsParserDelegateImpl,
     yaml_mappings_filepath,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materialization_args_generator_delegate import (
-    BQBasedMaterializationArgsGeneratorDelegate,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
-)
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
-    IngestViewMaterializationArgsGeneratorDelegate,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
@@ -181,7 +175,6 @@ class BaseDirectIngestController:
         )
 
         self.job_prioritizer: ExtractAndMergeJobPrioritizer
-        materialization_args_generator_delegate: IngestViewMaterializationArgsGeneratorDelegate
 
         self.view_materialization_metadata_manager = (
             DirectIngestViewMaterializationMetadataManager(
@@ -199,16 +192,11 @@ class BaseDirectIngestController:
             ingest_view_contents=self.ingest_view_contents,
             ingest_view_rank_list=self.get_ingest_view_rank_list(),
         )
-        materialization_args_generator_delegate = (
-            BQBasedMaterializationArgsGeneratorDelegate(
-                metadata_manager=self.view_materialization_metadata_manager
-            )
-        )
 
         self.ingest_view_materialization_args_generator = (
             IngestViewMaterializationArgsGenerator(
                 region=self.region,
-                delegate=materialization_args_generator_delegate,
+                metadata_manager=self.view_materialization_metadata_manager,
                 raw_file_metadata_manager=self.raw_file_metadata_manager,
                 view_collector=view_collector,
                 launched_ingest_views=self.get_ingest_view_rank_list(),
@@ -882,13 +870,9 @@ class BaseDirectIngestController:
             ingest_view_materialization_args
         )
 
-        args_generator_delegate = (
-            self.ingest_view_materialization_args_generator.delegate
-        )
-
         if (
             not did_materialize
-            or not args_generator_delegate.get_registered_jobs_pending_completion()
+            or not self.ingest_view_materialization_args_generator.get_registered_jobs_pending_completion()
         ):
             logging.info("Creating cloud task to schedule next job.")
             self.cloud_task_manager.create_direct_ingest_handle_new_files_task(

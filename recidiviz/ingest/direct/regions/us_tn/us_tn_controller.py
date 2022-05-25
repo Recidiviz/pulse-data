@@ -49,7 +49,6 @@ class UsTnController(BaseDirectIngestController):
 
         # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
         #  faster than current infra allows.
-        # TODO(#11424): Cannot ungate until BQ materialization is shipped for TN.
         if not environment.in_gcp():
             tags.extend(["SupervisionContacts"])
 
