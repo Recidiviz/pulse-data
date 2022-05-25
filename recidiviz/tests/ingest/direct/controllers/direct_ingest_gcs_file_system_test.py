@@ -26,7 +26,6 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
     to_normalized_unprocessed_raw_file_name,
 )
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -103,14 +102,12 @@ class TestDirectIngestGcsFileSystem(TestCase):
         self.assertEqual(len(end_raw_storage_paths), len(start_raw_storage_paths) + 1)
 
         for sp in end_storage_paths:
-            parts = filename_parts_from_path(sp)
             if sp.abs_path() not in {p.abs_path() for p in start_storage_paths}:
                 self.assertTrue(
                     sp.abs_path().startswith(self.STORAGE_DIR_PATH.abs_path())
                 )
-                dir_path, storage_file_name = os.path.split(sp.abs_path())
+                _dir_path, storage_file_name = os.path.split(sp.abs_path())
 
-                self.assertTrue(parts.file_type.value in dir_path)
                 name, _ = path.file_name.split(".")
                 self.assertTrue(name in storage_file_name)
 
