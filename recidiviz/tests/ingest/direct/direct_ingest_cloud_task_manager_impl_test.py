@@ -598,7 +598,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             _PRIMARY_INGEST_BUCKET,
             to_normalized_unprocessed_file_name(
                 file_name="raw_data_path.csv",
-                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+                file_type=GcsfsDirectIngestFileType.RAW_DATA,
             ),
         )
         import_args = GcsfsRawDataBQImportArgs(raw_data_file_path=raw_data_path)

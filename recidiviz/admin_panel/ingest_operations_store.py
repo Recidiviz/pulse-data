@@ -224,8 +224,6 @@ class IngestOperationsStore(AdminPanelStore):
     @staticmethod
     def get_file_type_api_string(file_type: GcsfsDirectIngestFileType) -> str:
         """Get the string representation of the file type to use in the response."""
-        if file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-            return "IngestView"
         if file_type == GcsfsDirectIngestFileType.RAW_DATA:
             return "Raw"
         raise ValueError(f"Unexpected file_type [{file_type}]")

@@ -71,11 +71,6 @@ class TestDirectIngestGcsFileSystem(TestCase):
             "",
             file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
         )
-        start_ingest_view_storage_paths = self.fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH,
-            "",
-            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
-        )
 
         # File is renamed to normalized path
         self.fs.mv_path_to_normalized_path(path, GcsfsDirectIngestFileType.RAW_DATA, dt)
@@ -93,43 +88,13 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
         processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH, None)
         self.assertEqual(len(processed), 1)
-
-        self.fs.copy(
-            processed_path,
-            GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path_from_normalized_path(
-                    processed_path.abs_path(),
-                    file_type_override=GcsfsDirectIngestFileType.INGEST_VIEW,
-                )
-            ),
-        )
-        self.fs.mv_path_to_storage(processed_path, self.STORAGE_DIR_PATH)
-
-        ingest_unprocessed = self.fs.get_unprocessed_file_paths(
-            self.INGEST_DIR_PATH, file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW
-        )
-        self.assertEqual(len(ingest_unprocessed), 1)
-        self.assertTrue(self.fs.is_seen_unprocessed_file(ingest_unprocessed[0]))
-
-        # ... file is ingested
-
-        # File is moved to processed path
-        self.fs.mv_path_to_processed_path(ingest_unprocessed[0])
-        processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH, None)
-        self.assertEqual(len(processed), 1)
-        self.assertTrue(self.fs.is_processed_file(processed[0]))
-
         unprocessed = self.fs.get_unprocessed_file_paths(self.INGEST_DIR_PATH, None)
         self.assertEqual(len(unprocessed), 0)
 
-        # File is moved to storage
-        self.fs.mv_processed_paths_before_date_to_storage(
-            self.INGEST_DIR_PATH,
-            self.STORAGE_DIR_PATH,
-            date_str_bound=dt.date().isoformat(),
-            include_bound=True,
-            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
-        )
+        self.fs.mv_path_to_storage(processed_path, self.STORAGE_DIR_PATH)
+
+        processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH, None)
+        self.assertEqual(len(processed), 0)
 
         end_ingest_paths = self.fs._ls_with_file_prefix(
             self.INGEST_DIR_PATH, "", file_type_filter=None
@@ -142,33 +107,15 @@ class TestDirectIngestGcsFileSystem(TestCase):
             "",
             file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
         )
-        end_ingest_view_storage_paths = self.fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH,
-            "",
-            file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW,
-        )
 
-        # Each file gets re-exported as ingest view
-        # TODO(#11424): This will can become 0 when BQ materialization is enabled.
-        splitting_factor = 2
-
-        expected_final_total_files = start_num_total_files + splitting_factor - 1
+        expected_final_total_files = start_num_total_files
         self.assertEqual(
             len(self.fs.gcs_file_system.all_paths), expected_final_total_files
         )
         self.assertEqual(len(end_ingest_paths), len(start_ingest_paths) - 1)
-        self.assertEqual(
-            len(end_storage_paths), len(start_storage_paths) + 1 * splitting_factor
-        )
-        self.assertEqual(
-            len(end_raw_storage_paths) + len(end_ingest_view_storage_paths),
-            len(end_storage_paths),
-        )
+        self.assertEqual(len(end_storage_paths), len(start_storage_paths) + 1)
+        self.assertEqual(len(end_raw_storage_paths), len(end_storage_paths))
         self.assertEqual(len(end_raw_storage_paths), len(start_raw_storage_paths) + 1)
-        self.assertEqual(
-            len(end_ingest_view_storage_paths),
-            len(start_ingest_view_storage_paths) + 1,
-        )
 
         for sp in end_storage_paths:
             parts = filename_parts_from_path(sp)
@@ -232,7 +179,7 @@ class TestDirectIngestGcsFileSystem(TestCase):
         storage_paths = self.fs._ls_with_file_prefix(
             self.STORAGE_DIR_PATH, "", file_type_filter=None
         )
-        self.assertEqual(len(storage_paths), 4)
+        self.assertEqual(len(storage_paths), 2)
 
         found_first_file = False
         found_second_file = False
