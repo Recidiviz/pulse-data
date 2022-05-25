@@ -22,11 +22,10 @@ from unittest import TestCase
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
-    to_normalized_processed_file_name,
-    to_normalized_unprocessed_file_name,
+    to_normalized_processed_raw_file_name,
     to_normalized_unprocessed_file_path_from_normalized_path,
+    to_normalized_unprocessed_raw_file_name,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
@@ -60,25 +59,20 @@ class TestDirectIngestGcsFileSystem(TestCase):
         start_num_total_files = len(self.fs.gcs_file_system.all_paths)
         # pylint: disable=protected-access
         start_ingest_paths = self.fs._ls_with_file_prefix(
-            self.INGEST_DIR_PATH, "", None
+            self.INGEST_DIR_PATH, "", filter_type=self.fs._FilterType.NO_FILTER
         )
         start_storage_paths = self.fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH, "", None
+            self.STORAGE_DIR_PATH, "", filter_type=self.fs._FilterType.NO_FILTER
         )
 
         start_raw_storage_paths = self.fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH,
-            "",
-            file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
+            self.STORAGE_DIR_PATH, "", filter_type=self.fs._FilterType.NORMALIZED_ONLY
         )
 
         # File is renamed to normalized path
-        self.fs.mv_path_to_normalized_path(path, GcsfsDirectIngestFileType.RAW_DATA, dt)
+        self.fs.mv_raw_file_to_normalized_path(path, dt)
 
-        raw_unprocessed = self.fs.get_unprocessed_file_paths(
-            self.INGEST_DIR_PATH,
-            file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
-        )
+        raw_unprocessed = self.fs.get_unprocessed_raw_file_paths(self.INGEST_DIR_PATH)
         self.assertEqual(len(raw_unprocessed), 1)
         self.assertTrue(self.fs.is_seen_unprocessed_file(raw_unprocessed[0]))
 
@@ -86,26 +80,24 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
         processed_path = self.fs.mv_path_to_processed_path(raw_unprocessed[0])
 
-        processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH, None)
+        processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH)
         self.assertEqual(len(processed), 1)
-        unprocessed = self.fs.get_unprocessed_file_paths(self.INGEST_DIR_PATH, None)
+        unprocessed = self.fs.get_unprocessed_raw_file_paths(self.INGEST_DIR_PATH)
         self.assertEqual(len(unprocessed), 0)
 
-        self.fs.mv_path_to_storage(processed_path, self.STORAGE_DIR_PATH)
+        self.fs.mv_raw_file_to_storage(processed_path, self.STORAGE_DIR_PATH)
 
-        processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH, None)
+        processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH)
         self.assertEqual(len(processed), 0)
 
         end_ingest_paths = self.fs._ls_with_file_prefix(
-            self.INGEST_DIR_PATH, "", file_type_filter=None
+            self.INGEST_DIR_PATH, "", filter_type=self.fs._FilterType.NO_FILTER
         )
         end_storage_paths = self.fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH, "", file_type_filter=None
+            self.STORAGE_DIR_PATH, "", filter_type=self.fs._FilterType.NO_FILTER
         )
         end_raw_storage_paths = self.fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH,
-            "",
-            file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
+            self.STORAGE_DIR_PATH, "", filter_type=self.fs._FilterType.NORMALIZED_ONLY
         )
 
         expected_final_total_files = start_num_total_files
@@ -177,7 +169,7 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
         # pylint: disable=protected-access
         storage_paths = self.fs._ls_with_file_prefix(
-            self.STORAGE_DIR_PATH, "", file_type_filter=None
+            self.STORAGE_DIR_PATH, "", filter_type=self.fs._FilterType.NO_FILTER
         )
         self.assertEqual(len(storage_paths), 2)
 
@@ -219,9 +211,8 @@ class TestPathNormalization(TestCase):
         )
         self.assertEqual(
             expected_file_name,
-            to_normalized_processed_file_name(
+            to_normalized_processed_raw_file_name(
                 original_file_name,
-                GcsfsDirectIngestFileType.RAW_DATA,
                 datetime.datetime(2019, 8, 12, 0, 0, 0),
             ),
         )
@@ -233,9 +224,8 @@ class TestPathNormalization(TestCase):
         )
         self.assertEqual(
             expected_file_name,
-            to_normalized_unprocessed_file_name(
+            to_normalized_unprocessed_raw_file_name(
                 original_file_name,
-                GcsfsDirectIngestFileType.RAW_DATA,
                 datetime.datetime(2019, 8, 12, 0, 0, 0),
             ),
         )

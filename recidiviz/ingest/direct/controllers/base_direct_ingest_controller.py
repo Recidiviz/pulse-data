@@ -789,9 +789,7 @@ class BaseDirectIngestController:
 
         for path in unnormalized_paths:
             logging.info("File [%s] is not yet seen, normalizing.", path.abs_path())
-            self.fs.mv_path_to_normalized_path(
-                path, file_type=GcsfsDirectIngestFileType.RAW_DATA
-            )
+            self.fs.mv_raw_file_to_normalized_path(path)
 
         if unnormalized_paths:
             logging.info(
@@ -810,9 +808,8 @@ class BaseDirectIngestController:
 
         check_is_region_launched_in_env(self.region)
 
-        unprocessed_raw_paths = self.fs.get_unprocessed_file_paths(
-            self.ingest_bucket_path,
-            file_type_filter=GcsfsDirectIngestFileType.RAW_DATA,
+        unprocessed_raw_paths = self.fs.get_unprocessed_raw_file_paths(
+            self.ingest_bucket_path
         )
         if (
             unprocessed_raw_paths
@@ -883,7 +880,7 @@ class BaseDirectIngestController:
             path=data_import_args.raw_data_file_path
         )
 
-        self.fs.mv_path_to_storage(processed_path, self.storage_directory_path)
+        self.fs.mv_raw_file_to_storage(processed_path, self.storage_directory_path)
         self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_materialization(

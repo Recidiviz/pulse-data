@@ -23,7 +23,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_path,
+    to_normalized_unprocessed_raw_file_path,
 )
 from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
@@ -63,8 +63,8 @@ def path_for_fixture_file_in_test_gcs_directory(
     if should_normalize:
         if not file_type:
             raise ValueError("Expected file_type for path normalization but got None")
-        file_path_str = to_normalized_unprocessed_file_path(
-            original_file_path=file_path_str, file_type=file_type, dt=dt
+        file_path_str = to_normalized_unprocessed_raw_file_path(
+            original_file_path=file_path_str, dt=dt
         )
 
     file_path = GcsfsFilePath.from_directory_and_file_name(

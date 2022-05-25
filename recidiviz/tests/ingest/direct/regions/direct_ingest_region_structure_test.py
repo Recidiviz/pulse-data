@@ -38,12 +38,11 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_name,
+    to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
@@ -244,9 +243,8 @@ class DirectIngestRegionDirStructureBase:
 
                     path = GcsfsFilePath.from_directory_and_file_name(
                         GcsfsBucketPath("fake-bucket"),
-                        to_normalized_unprocessed_file_name(
+                        to_normalized_unprocessed_raw_file_name(
                             f"{config.file_tag}.csv",
-                            GcsfsDirectIngestFileType.RAW_DATA,
                         ),
                     )
                     parts = filename_parts_from_path(path)

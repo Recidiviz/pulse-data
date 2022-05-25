@@ -48,12 +48,11 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
-    to_normalized_unprocessed_file_path,
+    to_normalized_unprocessed_raw_file_path,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
 )
@@ -351,9 +350,8 @@ class TestDirectIngestControl(unittest.TestCase):
             suffix="",
         )
 
-        file_path = to_normalized_unprocessed_file_path(
-            f"{bucket_name}/ingest_view_name.csv",
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        file_path = to_normalized_unprocessed_raw_file_path(
+            f"{bucket_name}/ingest_view_name.csv"
         )
         ingest_args = GcsfsRawDataBQImportArgs(
             raw_data_file_path=GcsfsFilePath.from_absolute_path(file_path)
@@ -594,9 +592,7 @@ class TestDirectIngestControl(unittest.TestCase):
         fs = DirectIngestGCSFileSystem(mock_fs)
 
         mock_fs.test_add_path(path, local_path=None)
-        normalized_path = fs.mv_path_to_normalized_path(
-            path, file_type=GcsfsDirectIngestFileType.RAW_DATA
-        )
+        normalized_path = fs.mv_raw_file_to_normalized_path(path)
 
         request_args = {
             "bucket": normalized_path.bucket_name,
@@ -854,9 +850,8 @@ class TestDirectIngestControl(unittest.TestCase):
             suffix="",
         )
 
-        raw_data_path = to_normalized_unprocessed_file_path(
-            f"{bucket_name}/raw_data_path.csv",
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        raw_data_path = to_normalized_unprocessed_raw_file_path(
+            f"{bucket_name}/raw_data_path.csv"
         )
         import_args = GcsfsRawDataBQImportArgs(
             raw_data_file_path=GcsfsFilePath.from_absolute_path(raw_data_path)
