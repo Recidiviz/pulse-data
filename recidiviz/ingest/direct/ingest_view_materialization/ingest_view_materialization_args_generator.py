@@ -25,19 +25,22 @@ from typing import Dict, List, Optional, Tuple
 import attr
 
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator_delegate import (
-    IngestViewMaterializationArgsGeneratorDelegate,
-    RegisteredMaterializationJob,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
+    DirectIngestViewMaterializationMetadataManager,
+)
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
     DirectIngestPreProcessedIngestViewBuilder,
 )
-from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestRawFileMetadata,
+    DirectIngestViewMaterializationMetadata,
+)
 from recidiviz.utils.regions import Region
 
 
@@ -49,7 +52,7 @@ class _IngestViewExportState:
 
     # Metadata about the last materialization job registered for this view. May be for
     # a job that has not yet completed.
-    last_registered_job: Optional[RegisteredMaterializationJob] = attr.ib()
+    last_registered_job: Optional[DirectIngestViewMaterializationMetadata] = attr.ib()
 
     # A list of metadata rows for raw files that have been added since last_export_metadata was written to the DB.
     raw_table_dependency_updated_metadatas: List[
@@ -88,7 +91,7 @@ class IngestViewMaterializationArgsGenerator:
         self,
         *,
         region: Region,
-        delegate: IngestViewMaterializationArgsGeneratorDelegate,
+        metadata_manager: DirectIngestViewMaterializationMetadataManager,
         raw_file_metadata_manager: DirectIngestRawFileMetadataManager,
         view_collector: BigQueryViewCollector[
             DirectIngestPreProcessedIngestViewBuilder
@@ -97,7 +100,7 @@ class IngestViewMaterializationArgsGenerator:
     ):
 
         self.region = region
-        self.delegate = delegate
+        self.metadata_manager = metadata_manager
         self.raw_file_metadata_manager = raw_file_metadata_manager
         self.ingest_views_by_name = {
             builder.ingest_view_name: builder.build()
@@ -129,7 +132,7 @@ class IngestViewMaterializationArgsGenerator:
         # completed ingest view exports (checked in _get_export_state_for_ingest_view()). We can now generate any new
         # jobs.
 
-        jobs_to_schedule = self.delegate.get_registered_jobs_pending_completion()
+        jobs_to_schedule = self.get_registered_jobs_pending_completion()
 
         logging.info(
             "Found [%s] already pending materialization jobs to schedule.",
@@ -161,10 +164,11 @@ class IngestViewMaterializationArgsGenerator:
                     lower_bound_datetime_exclusive = upper_bound_datetime_inclusive
                     continue
 
-                args = self.delegate.build_new_args(
+                args = IngestViewMaterializationArgs(
                     ingest_view_name=ingest_view_name,
                     lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
                     upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
+                    ingest_instance=self.metadata_manager.ingest_instance,
                 )
                 logging.info(
                     "Generating materialization job args for ingest view [%s]: [%s].",
@@ -172,7 +176,7 @@ class IngestViewMaterializationArgsGenerator:
                     args,
                 )
 
-                self.delegate.register_new_job(args)
+                self.metadata_manager.register_ingest_materialization_job(args)
                 ingest_args_list.append(args)
                 lower_bound_datetime_exclusive = upper_bound_datetime_inclusive
 
@@ -192,7 +196,7 @@ class IngestViewMaterializationArgsGenerator:
         Additionally, validates that there are no files with dates prior to the last ingest view export. We can only
         process new files.
         """
-        last_registered_job = self.delegate.get_most_recent_registered_job(
+        last_registered_job = self.metadata_manager.get_most_recent_registered_job(
             ingest_view.ingest_view_name
         )
         last_job_time = (
@@ -235,3 +239,26 @@ class IngestViewMaterializationArgsGenerator:
             last_registered_job=last_registered_job,
             raw_table_dependency_updated_metadatas=raw_table_dependency_updated_metadatas,
         )
+
+    def get_registered_jobs_pending_completion(
+        self,
+    ) -> List[IngestViewMaterializationArgs]:
+        """Returns a lists of materialization jobs that have been registered via
+        |register_ingest_materialization_job| but have not completed.
+        """
+        metadata_pending_export = self.metadata_manager.get_jobs_pending_completion()
+        return self._materialization_args_from_metadata(metadata_pending_export)
+
+    @staticmethod
+    def _materialization_args_from_metadata(
+        metadata_list: List[DirectIngestViewMaterializationMetadata],
+    ) -> List[IngestViewMaterializationArgs]:
+        return [
+            IngestViewMaterializationArgs(
+                ingest_view_name=metadata.ingest_view_name,
+                lower_bound_datetime_exclusive=metadata.lower_bound_datetime_exclusive,
+                upper_bound_datetime_inclusive=metadata.upper_bound_datetime_inclusive,
+                ingest_instance=DirectIngestInstance(metadata.instance),
+            )
+            for metadata in metadata_list
+        ]

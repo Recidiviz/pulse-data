@@ -24,9 +24,6 @@ import sqlalchemy
 from freezegun import freeze_time
 from mock import Mock, patch
 
-from recidiviz.ingest.direct.ingest_view_materialization.bq_based_materialization_args_generator_delegate import (
-    BQBasedMaterializationArgsGeneratorDelegate,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
 )
@@ -112,10 +109,8 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         return IngestViewMaterializationArgsGenerator(
             region=region,
             raw_file_metadata_manager=raw_file_metadata_manager,
-            delegate=BQBasedMaterializationArgsGeneratorDelegate(
-                metadata_manager=DirectIngestViewMaterializationMetadataManager(
-                    region.region_code, self.ingest_instance
-                ),
+            metadata_manager=DirectIngestViewMaterializationMetadataManager(
+                region.region_code, self.ingest_instance
             ),
             view_collector=FakeSingleIngestViewCollector(  # type: ignore[arg-type]
                 region,
@@ -130,7 +125,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         # Arrange
         region = fake_region(environment="production")
         args_generator = self.create_args_generator(region)
-        args_generator.delegate.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
+        args_generator.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
             return_value=DirectIngestViewMaterializationMetadata(
                 region_code=region.region_code,
                 ingest_view_name="ingest_view",
@@ -176,7 +171,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         # Arrange
         region = fake_region(environment="production")
         args_generator = self.create_args_generator(region)
-        args_generator.delegate.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
+        args_generator.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
             return_value=DirectIngestViewMaterializationMetadata(
                 region_code=region.region_code,
                 ingest_view_name="ingest_view",
@@ -215,7 +210,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         args_generator = self.create_args_generator(
             region, ingest_view_name=CODE_TABLE_TAG
         )
-        args_generator.delegate.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
+        args_generator.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
             return_value=DirectIngestViewMaterializationMetadata(
                 region_code=region.region_code,
                 ingest_view_name="ingest_view_using_code_table",
@@ -254,7 +249,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         args_generator = self.create_args_generator(
             region, is_detect_row_deletion_view=True
         )
-        args_generator.delegate.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
+        args_generator.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
             return_value=None
         )
         args_generator.raw_file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock(  # type: ignore
