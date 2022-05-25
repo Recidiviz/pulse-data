@@ -19,7 +19,6 @@ import os
 from typing import List, Optional
 
 from recidiviz.common.date import is_between_date_strs_inclusive, is_date_str
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.tools.utils.script_helpers import run_command
 
 
@@ -110,9 +109,8 @@ def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
     return f"{parts[-3]}-{parts[-2]}-{parts[-1]}"
 
 
-def gsutil_get_storage_subdirs_containing_file_types(
+def gsutil_get_storage_subdirs_containing_raw_files(
     storage_bucket_path: str,
-    file_type: GcsfsDirectIngestFileType,
     upper_bound_date: Optional[str],
     lower_bound_date: Optional[str],
 ) -> List[str]:
@@ -120,7 +118,7 @@ def gsutil_get_storage_subdirs_containing_file_types(
     region."""
     # We search with a double wildcard and then filter in python becaue it is much
     # faster than doing `gs://{storage_bucket_path}/{file_type.value}/*/*/*/`
-    all_files_wildcard = f"gs://{storage_bucket_path}/{file_type.value}/**"
+    all_files_wildcard = f"gs://{storage_bucket_path}/raw/**"
     paths = gsutil_ls(all_files_wildcard)
 
     all_subdirs = {os.path.dirname(path) for path in paths}

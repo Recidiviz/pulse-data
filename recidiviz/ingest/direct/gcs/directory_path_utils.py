@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers related to building bucket/directory paths for use in ingest."""
-import os
 from typing import Optional
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
@@ -26,7 +25,6 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     build_ingest_storage_bucket_name,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 
@@ -56,9 +54,9 @@ def gcsfs_direct_ingest_storage_directory_path_for_state(
     *,
     region_code: str,
     ingest_instance: DirectIngestInstance,
-    file_type: Optional[GcsfsDirectIngestFileType] = None,
     project_id: Optional[str] = None,
 ) -> GcsfsDirectoryPath:
+    """Returns the raw data storage directory path for the given region."""
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
@@ -71,11 +69,7 @@ def gcsfs_direct_ingest_storage_directory_path_for_state(
     )
     storage_bucket = GcsfsBucketPath(bucket_name)
 
-    if file_type is not None:
-        subdir = os.path.join(region_code.lower(), file_type.value)
-    else:
-        subdir = region_code.lower()
-    return GcsfsDirectoryPath.from_dir_and_subdir(storage_bucket, subdir)
+    return GcsfsDirectoryPath.from_dir_and_subdir(storage_bucket, region_code.lower())
 
 
 def gcsfs_direct_ingest_bucket_for_state(

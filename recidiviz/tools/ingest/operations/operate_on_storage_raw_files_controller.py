@@ -31,10 +31,9 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     normalize_relative_path,
 )
-from recidiviz.ingest.direct.gcs.file_type import GcsfsDirectIngestFileType
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_cp,
-    gsutil_get_storage_subdirs_containing_file_types,
+    gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_mv,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
@@ -154,9 +153,8 @@ class OperateOnStorageRawFilesController:
             )
 
     def _get_subdirs_to_operate_on(self) -> List[str]:
-        return gsutil_get_storage_subdirs_containing_file_types(
+        return gsutil_get_storage_subdirs_containing_raw_files(
             storage_bucket_path=self.source_region_storage_dir_path.abs_path(),
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )
