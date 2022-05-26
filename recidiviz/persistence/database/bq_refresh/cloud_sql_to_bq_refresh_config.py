@@ -52,10 +52,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     STATE_BASE_REGIONAL_DATASET,
 )
-from recidiviz.case_triage.views.dataset_config import (
-    CASE_TRIAGE_FEDERATED_DATASET,
-    CASE_TRIAGE_FEDERATED_REGIONAL_DATASET,
-)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -140,8 +136,6 @@ class CloudSqlToBQConfig:
             dest_dataset = COUNTY_BASE_REGIONAL_DATASET
         elif self.schema_type == SchemaType.JUSTICE_COUNTS:
             dest_dataset = JUSTICE_COUNTS_BASE_REGIONAL_DATASET
-        elif self.schema_type == SchemaType.CASE_TRIAGE:
-            dest_dataset = CASE_TRIAGE_FEDERATED_REGIONAL_DATASET
         else:
             raise ValueError(f"Unexpected schema_type [{self.schema_type}].")
 
@@ -167,8 +161,6 @@ class CloudSqlToBQConfig:
             dest_dataset = COUNTY_BASE_DATASET
         elif self.schema_type == SchemaType.JUSTICE_COUNTS:
             dest_dataset = JUSTICE_COUNTS_BASE_DATASET
-        elif self.schema_type == SchemaType.CASE_TRIAGE:
-            dest_dataset = CASE_TRIAGE_FEDERATED_DATASET
         else:
             raise ValueError(f"Unexpected schema_type [{self.schema_type}].")
 
@@ -363,7 +355,6 @@ class CloudSqlToBQConfig:
             SchemaType.JAILS,
             SchemaType.STATE,
             SchemaType.OPERATIONS,
-            SchemaType.CASE_TRIAGE,
         ):
             return True
         if schema_type in (
@@ -371,6 +362,7 @@ class CloudSqlToBQConfig:
             #  has shipped to prod and support for Justice Counts schema is in place.
             SchemaType.JUSTICE_COUNTS,
             SchemaType.PATHWAYS,
+            SchemaType.CASE_TRIAGE,
         ):
             return False
 
@@ -425,7 +417,5 @@ class CloudSqlToBQConfig:
                 direct_ingest_instance=direct_ingest_instance,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
             )
-        if schema_type == SchemaType.CASE_TRIAGE:
-            return CloudSqlToBQConfig(schema_type=SchemaType.CASE_TRIAGE)
 
         raise ValueError(f"Unexpected schema type value [{schema_type}]")
