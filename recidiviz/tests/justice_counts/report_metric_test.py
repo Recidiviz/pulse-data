@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for Justice Counts ReportMetric class."""
 
+from typing import Any, Dict
 from unittest import TestCase
 
 import recidiviz.justice_counts.metrics.law_enforcement as law_enforcement_metric_definitions
@@ -497,4 +498,16 @@ class TestJusticeCountsReportMetric(TestCase):
                 json=response_json, context_definition=context_definition
             ),
             ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True),
+        )
+
+        cleared_input: Dict[str, Any] = {
+            "key": context_definition.key.value,
+            "value": None,
+        }
+
+        self.assertEqual(
+            ReportedContext.from_json(
+                json=cleared_input, context_definition=context_definition
+            ),
+            ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=None),
         )

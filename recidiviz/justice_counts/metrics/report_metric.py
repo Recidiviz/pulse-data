@@ -54,7 +54,7 @@ class ReportedContext:
 
     def to_json(self, context_definition: Context) -> Dict[str, Any]:
         value = self.value
-        if context_definition.value_type == ValueType.BOOLEAN:
+        if context_definition.value_type == ValueType.BOOLEAN and value is not None:
             value = "YES" if value is True else "NO"
         return {
             "key": self.key.value,
@@ -75,7 +75,7 @@ class ReportedContext:
         value = json["value"]
         if context_definition.value_type != ValueType.BOOLEAN:
             return cls(key=key, value=value)
-        value = value == "YES"
+        value = value if value is None else value == "YES"
         return cls(key=key, value=value)
 
 
