@@ -114,7 +114,7 @@ calls_for_service = MetricDefinition(
         Context(
             key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
             value_type=ValueType.BOOLEAN,
-            label="Whether number includes all calls or just calls responded to.",
+            label="Does the total value represent all calls?",
             required=True,
         ),
         Context(

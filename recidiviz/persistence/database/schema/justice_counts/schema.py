@@ -502,7 +502,7 @@ class Datapoint(JusticeCountsBase):
         if self.context_key is None or self.value_type == ValueType.NUMBER:
             value = int(value)
         elif self.value_type == ValueType.BOOLEAN:
-            value = bool(value)
+            value = value == "True"
         return value
 
 
