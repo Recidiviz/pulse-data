@@ -210,11 +210,11 @@ class TestJusticeCountsReportMetric(TestCase):
                 "contexts": [
                     {
                         "key": "ALL_CALLS_OR_CALLS_RESPONDED",
-                        "display_name": "Whether number includes all calls or just calls responded to.",
+                        "display_name": "Does the total value represent all calls?",
                         "reporting_note": None,
                         "required": True,
                         "type": "BOOLEAN",
-                        "value": True,
+                        "value": "YES",
                     },
                     {
                         "key": "AGENCIES_AVAILABLE_FOR_RESPONSE",
@@ -481,4 +481,20 @@ class TestJusticeCountsReportMetric(TestCase):
                 aggregated_dimensions=[],
             ),
             ReportMetric.from_json(json=response_json),
+        )
+
+    def test_boolean_reported_complaint(self) -> None:
+        context_definition = (
+            law_enforcement_metric_definitions.calls_for_service.contexts[0]
+        )
+        response_json = {
+            "key": context_definition.key.value,
+            "value": "YES",
+        }
+
+        self.assertEqual(
+            ReportedContext.from_json(
+                json=response_json, context_definition=context_definition
+            ),
+            ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True),
         )

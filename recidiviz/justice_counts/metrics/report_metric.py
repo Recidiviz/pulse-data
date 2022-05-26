@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import attr
 
-from recidiviz.common.constants.justice_counts import ContextKey
+from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
@@ -31,7 +31,10 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     Context,
     MetricDefinition,
 )
-from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.metrics.metric_registry import (
+    METRIC_KEY_TO_METRIC,
+    METRICS,
+)
 
 ReportedContextT = TypeVar("ReportedContextT", bound="ReportedContext")
 ReportedAggregatedDimensionT = TypeVar(
@@ -50,20 +53,30 @@ class ReportedContext:
     value: Any
 
     def to_json(self, context_definition: Context) -> Dict[str, Any]:
+        value = self.value
+        if context_definition.value_type == ValueType.BOOLEAN:
+            value = "YES" if value is True else "NO"
         return {
             "key": self.key.value,
             "reporting_note": context_definition.reporting_note,
             "display_name": context_definition.label,
             "type": context_definition.value_type.value,
             "required": context_definition.required,
-            "value": self.value,
+            "value": value,
         }
 
     @classmethod
     def from_json(
-        cls: Type[ReportedContextT], json: Dict[str, Any]
+        cls: Type[ReportedContextT],
+        json: Dict[str, Any],
+        context_definition: Context,
     ) -> ReportedContextT:
-        return cls(key=ContextKey[json["key"]], value=json["value"])
+        key = ContextKey[json["key"]]
+        value = json["value"]
+        if context_definition.value_type != ValueType.BOOLEAN:
+            return cls(key=key, value=value)
+        value = value == "YES"
+        return cls(key=key, value=value)
 
 
 @attr.define()
@@ -287,8 +300,17 @@ class ReportMetric:
 
     @classmethod
     def from_json(cls: Type[ReportMetricT], json: Dict[str, Any]) -> ReportMetricT:
+        context_key_to_context = {}
+        for metric in METRICS:
+            for context in metric.contexts:
+                if context.key.value not in context_key_to_context:
+                    context_key_to_context[context.key.value] = context
+
         reported_contexts = [
-            ReportedContext.from_json(json=context_json)
+            ReportedContext.from_json(
+                json=context_json,
+                context_definition=context_key_to_context[context_json["key"]],
+            )
             for context_json in json.get("contexts", [])
         ]
         disaggregations = []
