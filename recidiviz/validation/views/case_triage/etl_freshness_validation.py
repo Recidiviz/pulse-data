@@ -16,12 +16,11 @@
 # =============================================================================
 """A view that can be used to validate that the Case Triage ETL has been exported within SLA."""
 from recidiviz.case_triage.views.dataset_config import (
-    CASE_TRIAGE_DATASET,
-    CASE_TRIAGE_FEDERATED_DATASET,
+    CASE_TRIAGE_CLOUDSQL_CONNECTION,
+    CASE_TRIAGE_CLOUDSQL_LOCATION,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.validation.views.case_triage.utils import MAX_DAYS_STALE
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidation,
@@ -32,37 +31,53 @@ from recidiviz.validation.views.utils.freshness_validation import (
 # an `exported_at` column.
 ETL_TABLES = ["etl_clients", "etl_officers", "etl_opportunities"]
 
-ETL_EXPORTED_ASSERTIONS = [
+ETL_IMPORTED_ASSERTIONS = [
     FreshnessValidationAssertion(
         region_code="US_ID",
-        assertion_name=f"{etl_table.upper()}_WAS_EXPORTED",
-        description="Checks that we've exported data in the last 24 hours",
-        dataset=CASE_TRIAGE_DATASET,
-        table=f"{etl_table}_materialized",
-        date_column_clause="CAST(exported_at AS DATE)",
-        allowed_days_stale=MAX_DAYS_STALE,
+        assertion_name=f"{etl_table.upper()}_WAS_IMPORTED_TO_CLOUDSQL",
+        description="Checks that we've imported recent data in the last 24 hours",
+        source_data_query=FreshnessValidationAssertion.build_cloudsql_connection_source_data_query(
+            location=CASE_TRIAGE_CLOUDSQL_LOCATION,
+            connection=CASE_TRIAGE_CLOUDSQL_CONNECTION,
+            table=etl_table,
+            date_column_clause="CAST(exported_at AS DATE)",
+        ),
     )
     for etl_table in ETL_TABLES
 ]
 
-ETL_EXPORTED_CLOUDSQL_BIGQUERY_ASSERTIONS = [
+ETL_DATA_ASSERTIONS = [
     FreshnessValidationAssertion(
         region_code="US_ID",
-        assertion_name=f"{etl_table.upper()}_WAS_EXPORTED_FROM_CLOUDSQL_TO_BIGQUERY",
-        description="Checks that we've exported data in the last 24 hours after data was exported from CloudSQL back to BigQuery",
-        dataset=CASE_TRIAGE_FEDERATED_DATASET,
-        table=etl_table,
-        date_column_clause="CAST(exported_at AS DATE)",
-        allowed_days_stale=MAX_DAYS_STALE,
-    )
-    for etl_table in ETL_TABLES
+        assertion_name="CASE_TRIAGE_CLOUDSQL_CONTAINS_FRESH_CONTACTS_AFTER_EXPORT",
+        description="Checks that imported data contained recent contacts",
+        source_data_query=FreshnessValidationAssertion.build_cloudsql_connection_source_data_query(
+            location=CASE_TRIAGE_CLOUDSQL_LOCATION,
+            connection=CASE_TRIAGE_CLOUDSQL_CONNECTION,
+            table="etl_clients",
+            date_column_clause="most_recent_face_to_face_date",
+            filter_clause="state_code = 'US_ID'",
+        ),
+    ),
+    FreshnessValidationAssertion(
+        region_code="US_ID",
+        assertion_name="CASE_TRIAGE_CLOUDSQL_CONTAINS_FRESH_ASSESSMENTS_AFTER_EXPORT",
+        description="Checks that imported data contained recent assessments",
+        source_data_query=FreshnessValidationAssertion.build_cloudsql_connection_source_data_query(
+            location=CASE_TRIAGE_CLOUDSQL_LOCATION,
+            connection=CASE_TRIAGE_CLOUDSQL_CONNECTION,
+            table="etl_clients",
+            date_column_clause="most_recent_assessment_date",
+            filter_clause="state_code = 'US_ID'",
+        ),
+    ),
 ]
 
 ETL_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
     dataset=VIEWS_DATASET,
     view_id="case_triage_etl_freshness",
     description="Builds validation table to ensure Case Triage ETL tables are exported within SLA.",
-    assertions=ETL_EXPORTED_ASSERTIONS + ETL_EXPORTED_CLOUDSQL_BIGQUERY_ASSERTIONS,
+    assertions=ETL_IMPORTED_ASSERTIONS + ETL_DATA_ASSERTIONS,
 ).to_big_query_view_builder()
 
 if __name__ == "__main__":

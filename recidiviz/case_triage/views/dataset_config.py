@@ -25,3 +25,9 @@ CASE_TRIAGE_FEDERATED_REGIONAL_DATASET: str = "case_triage_federated_regional"
 
 # Where data exported from CloudSQL -> BQ federated export lives
 CASE_TRIAGE_FEDERATED_DATASET: str = "case_triage_federated"
+
+# Location the Cloud SQL connection resides in
+CASE_TRIAGE_CLOUDSQL_LOCATION: str = "us-central1"
+
+# CloudSQL connection dataset which allows us to query Case Triage Postgres directly
+CASE_TRIAGE_CLOUDSQL_CONNECTION: str = "case_triage_cloudsql"
