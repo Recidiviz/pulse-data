@@ -17,8 +17,7 @@
 
 import styled from "styled-components/macro";
 
-import { rem } from "../../utils";
-import { palette } from "../GlobalStyles";
+import { palette, typography } from "../GlobalStyles";
 
 export const PageWrapper = styled.div`
   width: 100%;
@@ -32,29 +31,10 @@ export const PageWrapper = styled.div`
 `;
 
 export const Form = styled.form`
-  flex-basis: 644px;
-  flex-shrink: 1;
-  flex-grow: 0;
+  flex: 0 1 644px;
   display: flex;
   flex-direction: column;
   margin: 0 360px 50px 360px;
-`;
-
-export const Button = styled.button`
-  width: 314px;
-  height: 56px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: ${palette.highlight.grey1};
-  border: 1px solid ${palette.highlight.grey3};
-  border-radius: 2px;
-  font-size: 1rem;
-
-  &:hover {
-    cursor: pointer;
-    background: ${palette.highlight.grey2};
-  }
 `;
 
 type TitleWrapperProps = {
@@ -70,157 +50,124 @@ export const TitleWrapper = styled.div<TitleWrapperProps>`
 `;
 
 export const PreTitle = styled.div`
-  font-size: ${rem("15px")};
-  line-height: 24px;
+  ${typography.sizeCSS.normal}
 `;
 
-export const Title = styled.h1`
-  font-size: ${rem("32px")};
-  font-weight: 500;
-  line-height: 48px;
+export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
+  ${({ scrolled }) =>
+    scrolled ? typography.sizeCSS.medium : typography.sizeCSS.title}
+
   margin-top: 4px;
   padding-bottom: 16px;
-  border-bottom: 1px solid ${palette.solid.darkgrey};
+  border-bottom: 1px solid ${palette.highlight.grey9};
+  transition: 0.3s ease;
+
+  ${({ sticky }) =>
+    sticky &&
+    `
+      position: sticky;
+      top: 64px;
+      background: ${palette.solid.white};
+      z-index: 1;
+      margin-right: -1px;
+      margin-left: -1px;
+  `}
+`;
+
+export const Metric = styled.div`
+  margin-bottom: 194px;
 `;
 
 export const MetricSectionTitle = styled.div`
-  font-size: ${rem("24px")};
-  line-height: 24px;
-  margin-top: 28px;
+  ${typography.sizeCSS.large}
+  margin-top: 32px;
 `;
 
 export const MetricSectionSubTitle = styled.div`
-  font-size: ${rem("18px")};
-  color: ${palette.highlight.grey9};
-  margin-top: 5px;
-  padding-bottom: 19px;
+  ${typography.sizeCSS.medium}
+  color: ${palette.highlight.grey8};
+  margin-top: 8px;
+  margin-bottom: 16px;
 `;
 
-export const ReportSummaryWrapper = styled.div`
-  width: 355px;
-  height: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  padding: 96px 24px 0 24px;
-  background: ${palette.solid.white};
-`;
-
-type ReportSummaryProgressIndicatorProps = {
-  sectionStatus?: "completed" | "error";
-};
-
-export const ReportSummaryProgressIndicatorWrapper = styled.div`
-  margin-top: 28px;
-`;
-
-export const ReportSummaryProgressIndicator = styled.div<ReportSummaryProgressIndicatorProps>`
-  background: ${({ sectionStatus }) => {
-    if (sectionStatus === "error") {
-      return palette.highlight.red;
-    }
-    return sectionStatus === "completed"
-      ? palette.highlight.lightblue1
-      : undefined;
-  }};
-
-  height: 40px;
+export const DisaggregationTabsContainer = styled.div`
   display: flex;
-  align-items: center;
-  position: relative;
-  padding-left: 33px;
-  border-radius: 2px;
-  font-size: ${rem("15px")};
-  line-height: 24px;
+  flex-direction: column;
+`;
+
+export const TabsRow = styled.div`
+  width: 100%;
+  display: flex;
+  margin-bottom: 32px;
+  border-bottom: 1px solid ${palette.solid.darkgrey};
+`;
+
+export const TabItem = styled.div<{ active?: boolean }>`
+  ${typography.sizeCSS.normal}
+  display: flex;
+  margin-right: 32px;
+  transition: 0.2s ease;
+  color: ${({ active }) =>
+    active ? palette.solid.blue : palette.highlight.grey7};
+  padding-bottom: 7px;
+  border-bottom: 3px solid
+    ${({ active }) => (active ? palette.solid.blue : `transparent`)};
 
   &:hover {
     cursor: pointer;
-  }
-
-  &:before {
-    content: ${({ sectionStatus }) => {
-      if (sectionStatus === "error") {
-        return `"x"`;
-      }
-      return sectionStatus === "completed" ? `"✓"` : `"•"`;
-    }};
-    background: ${({ sectionStatus }) => {
-      if (sectionStatus === "error") {
-        return palette.solid.red;
-      }
-      return sectionStatus === "completed"
-        ? palette.solid.blue
-        : palette.highlight.grey8;
-    }};
-
-    width: 16px;
-    height: 16px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-    top: 12px;
-    left: 10px;
-    border-radius: 100%;
-    font-size: 8px;
-    font-weight: 600;
-    font-family: sans-serif;
-    color: white;
+    color: ${palette.solid.blue};
   }
 `;
 
-export const PublishDataWrapper = styled.div`
-  width: 360px;
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 1;
-  padding: 112px 24px 0 24px;
-  height: 100%;
-  background: ${palette.solid.white};
+export const DisaggregationHasInputIndicator = styled.div<{
+  active?: boolean;
+  inputHasValue?: boolean;
+}>`
+  height: 16px;
+  width: 16px;
+  background-color: ${({ active, inputHasValue }) => {
+    if (!inputHasValue) {
+      return "transparent";
+    }
+    if (active && inputHasValue) {
+      return palette.solid.blue;
+    }
+    return palette.highlight.grey4;
+  }};
+
+  ${({ inputHasValue }) =>
+    !inputHasValue && `border: 1px solid ${palette.highlight.grey4}`};
+  border-radius: 50%;
+  margin-left: 8px;
+  align-self: center;
 `;
 
-export const PublishButton = styled.button<{ disabled?: boolean }>`
+export const TabDisplay = styled.div`
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+`;
+
+export const DisaggregationInputWrapper = styled.div`
   width: 315px;
+`;
+
+export const Button = styled.button`
+  ${typography.sizeCSS.medium}
+  width: 314px;
   height: 56px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: ${({ disabled }) => (disabled ? "none" : palette.solid.blue)};
-  color: ${({ disabled }) =>
-    disabled ? palette.highlight.grey8 : palette.solid.white};
-  border: 1px solid
-    ${({ disabled }) =>
-      disabled ? palette.highlight.grey3 : palette.highlight.grey3};
+  background: ${palette.highlight.grey1};
+  border: 1px solid ${palette.highlight.grey3};
   border-radius: 2px;
-  font-size: ${rem("18px")};
-  line-height: 24px;
-  transition: 0.2s ease;
 
   &:hover {
     cursor: pointer;
-    background: ${({ disabled }) =>
-      disabled ? "none" : palette.solid.darkblue};
+    background: ${palette.highlight.grey2};
   }
-`;
-
-export const EditDetails = styled.div`
-  margin-top: 28px;
-`;
-
-export const EditDetailsTitle = styled.div`
-  font-size: ${rem("15px")};
-  line-height: 24px;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid ${palette.solid.darkgrey};
-`;
-
-export const EditDetailsContent = styled.div`
-  margin-bottom: 24px;
-  font-size: ${rem("15px")};
-  line-height: 24px;
 `;
 
 export const GoBackLink = styled.a`
@@ -231,4 +178,14 @@ export const GoBackLink = styled.a`
     cursor: pointer;
     opacity: 0.85;
   }
+`;
+
+export const OpacityGradient = styled.div`
+  width: 100%;
+  height: 200px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+  pointer-events: none;
 `;

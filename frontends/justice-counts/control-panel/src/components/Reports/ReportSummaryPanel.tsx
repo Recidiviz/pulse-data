@@ -22,17 +22,90 @@ import styled from "styled-components/macro";
 
 import { Metric } from "../../shared/types";
 import { useStore } from "../../stores";
-import { rem } from "../../utils";
+import {
+  printCommaSeparatedList,
+  printDateRangeFromMonthYear,
+  printElapsedDaysSinceDate,
+  rem,
+} from "../../utils";
 import checkmark from "../assets/status-check-icon.png";
 import xmark from "../assets/status-error-icon.png";
-import {
-  GoBackLink,
-  PreTitle,
-  ReportSummaryProgressIndicatorWrapper,
-  ReportSummaryWrapper,
-  Title,
-} from "../Forms";
-import { palette } from "../GlobalStyles";
+import { GoBackLink, PreTitle, Title } from "../Forms";
+import { palette, typography } from "../GlobalStyles";
+
+export const ReportSummaryWrapper = styled.div`
+  width: 355px;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  padding: 96px 24px 0 24px;
+  background: ${palette.solid.white};
+`;
+
+type ReportSummaryProgressIndicatorProps = {
+  sectionStatus?: "completed" | "error";
+};
+
+export const ReportSummaryProgressIndicatorWrapper = styled.div`
+  margin-top: 28px;
+`;
+
+export const ReportSummaryProgressIndicator = styled.div<ReportSummaryProgressIndicatorProps>`
+  background: ${({ sectionStatus }) => {
+    if (sectionStatus === "error") {
+      return palette.highlight.red;
+    }
+    return sectionStatus === "completed"
+      ? palette.highlight.lightblue1
+      : undefined;
+  }};
+
+  height: 40px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-left: 33px;
+  border-radius: 2px;
+  font-size: ${rem("15px")};
+  line-height: 24px;
+
+  &:hover {
+    cursor: pointer;
+  }
+
+  &:before {
+    content: ${({ sectionStatus }) => {
+      if (sectionStatus === "error") {
+        return `"x"`;
+      }
+      return sectionStatus === "completed" ? `"✓"` : `"•"`;
+    }};
+    background: ${({ sectionStatus }) => {
+      if (sectionStatus === "error") {
+        return palette.solid.red;
+      }
+      return sectionStatus === "completed"
+        ? palette.solid.blue
+        : palette.highlight.grey8;
+    }};
+
+    width: 16px;
+    height: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 12px;
+    left: 10px;
+    border-radius: 100%;
+    font-size: 8px;
+    font-weight: 600;
+    font-family: sans-serif;
+    color: white;
+  }
+`;
 
 const ReportSummarySection = styled.div<{
   activeSection?: boolean;
@@ -95,6 +168,24 @@ const ReportStatusIcon = styled.div<{
   color: white;
 `;
 
+export const EditDetails = styled.div`
+  width: 307px;
+  position: fixed;
+  bottom: 61px;
+`;
+
+export const EditDetailsTitle = styled.div`
+  ${typography.sizeCSS.small}
+  padding-top: 8px;
+  border-top: 1px solid ${palette.solid.darkgrey};
+`;
+
+export const EditDetailsContent = styled.div`
+  ${typography.sizeCSS.normal}
+  color: ${palette.highlight.grey9};
+  margin-bottom: 18px;
+`;
+
 const ReportStatusIconComponent: React.FC<{
   metricHasError: boolean;
   metricHasEntries: boolean;
@@ -141,12 +232,20 @@ const ReportSummaryPanel: React.FC<{
   updateActiveMetric: (metricKey: string) => void;
 }> = ({ reportID, activeMetric, updateActiveMetric }) => {
   const navigate = useNavigate();
-  const { formStore, reportStore } = useStore();
+  const { formStore, reportStore, userStore } = useStore();
+  const {
+    editors,
+    last_modified_at: lastModifiedAt,
+    month,
+    year,
+  } = reportStore.reportOverviews[reportID];
 
   return (
     <ReportSummaryWrapper>
       <PreTitle>
-        <GoBackLink onClick={() => navigate("/")}>← Go to list view</GoBackLink>
+        <GoBackLink onClick={() => navigate("/")}>
+          Back to Reports Overview
+        </GoBackLink>
       </PreTitle>
       <Title>Report Summary</Title>
 
@@ -183,6 +282,33 @@ const ReportSummaryPanel: React.FC<{
           );
         })}
       </ReportSummaryProgressIndicatorWrapper>
+
+      <EditDetails>
+        <EditDetailsTitle>Date Range</EditDetailsTitle>
+        <EditDetailsContent>
+          {printDateRangeFromMonthYear(month, year)}
+        </EditDetailsContent>
+
+        <EditDetailsTitle>Editors</EditDetailsTitle>
+        <EditDetailsContent>
+          {editors.length ? printCommaSeparatedList(editors) : userStore.name}
+        </EditDetailsContent>
+
+        <EditDetailsTitle>Details</EditDetailsTitle>
+        <EditDetailsContent>
+          {editors.length === 1 &&
+            !lastModifiedAt &&
+            `Created today by ${editors[0]}`}
+
+          {editors.length >= 1 &&
+            lastModifiedAt &&
+            `Last modified ${printElapsedDaysSinceDate(lastModifiedAt)} by ${
+              editors[editors.length - 1]
+            }`}
+
+          {!editors.length && ``}
+        </EditDetailsContent>
+      </EditDetails>
     </ReportSummaryWrapper>
   );
 };

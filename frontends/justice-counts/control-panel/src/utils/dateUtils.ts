@@ -72,3 +72,23 @@ export const printElapsedDaysSinceDate = (date: string): string => {
 
   return `${daysLapsed} day${daysLapsed !== 1 ? "s" : ""} ago`;
 };
+
+/**
+ * Prints a human-readable date range of the provided month based on month and year
+ * @returns date range of the month as a string
+ * @example printDateRangeFromMonthYear(12, 2022) returns 'December 1, 2022 - December 31, 2022'
+ */
+export const printDateRangeFromMonthYear = (
+  month: number,
+  year: number
+): string => {
+  /**
+   * Note: backend sends true month number, whereas JavaScript's Date API deals with zero-indexed month numbers
+   * The below method of calculating the last day (number) of a given month relies on getting the 0th day of the following month.
+   * Simply providing the true month number value (from `month` param) does the + 1 (following month) calculation for us.
+   */
+  const lastDayOfMonth = new Date(year, month, 0)?.getDate();
+  const currentMonth = monthsByName[month - 1];
+
+  return `${currentMonth} 1, ${year} - ${currentMonth} ${lastDayOfMonth}, ${year}`;
+};

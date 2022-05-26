@@ -15,8 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { observer } from "mobx-react-lite";
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 
+import { Metric as MetricType } from "../../shared/types";
 import { useStore } from "../../stores";
 import { printReportTitle } from "../../utils";
 import {
@@ -25,14 +26,19 @@ import {
   BinaryRadioGroupContainer,
   BinaryRadioGroupQuestion,
   BinaryRadioGroupWrapper,
-  DisaggregationContentHelperText,
-  DisaggregationToggle,
+  DisaggregationHasInputIndicator,
+  DisaggregationInputWrapper,
+  DisaggregationTabsContainer,
   Form,
+  Metric,
   MetricSectionSubTitle,
   MetricSectionTitle,
+  OpacityGradient,
   PreTitle,
+  TabDisplay,
+  TabItem,
+  TabsRow,
   Title,
-  TitleWrapper,
 } from "../Forms";
 import {
   AdditionalContextInput,
@@ -41,11 +47,211 @@ import {
   MetricTextInput,
 } from "./DataEntryFormComponents";
 
-const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
+/** This definitely needs a lot of clean up, refactor and a ton of optimization - but got the functionality of it working so far */
+const DisaggregationDisplay: React.FC<{
+  metric: MetricType;
+  reportMetrics: MetricType[];
+  reportID: number;
+  currentIndex: number;
+  updateFieldDescription: (title: string, description: string) => void;
+}> = ({
+  metric,
+  reportMetrics,
   reportID,
-  activeMetric,
+  currentIndex,
+  updateFieldDescription,
 }) => {
+  const [activeDisaggregation, setActiveDisaggregation] = useState<{
+    [metricKey: string]: {
+      disaggregationKey: string;
+      disaggregationIndex: number;
+      hasValue?: boolean;
+    };
+  }>({});
+  const [disaggregationHasInput, setDisaggregationHasInput] = useState<{
+    [disaggregationKey: string]: {
+      hasInput?: boolean;
+    };
+  }>({});
+  const { formStore } = useStore();
+
+  useEffect(
+    () => {
+      metric.disaggregations.forEach((disaggregation, index) => {
+        searchDimensionsForInput(disaggregation.key, index);
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const searchDimensionsForInput = (
+    disaggregationKey: string,
+    disaggregationIndex: number
+  ) => {
+    let inputFoundInUpdate = false;
+    let inputFoundFromLastSave = false;
+
+    reportMetrics[currentIndex]?.disaggregations[
+      disaggregationIndex
+    ]?.dimensions?.forEach((dimension) => {
+      const updatedDimensionValue =
+        formStore.disaggregations[reportID]?.[metric.key]?.[
+          disaggregationKey
+        ]?.[dimension.key]?.value;
+
+      if (
+        dimension.value &&
+        !inputFoundFromLastSave &&
+        updatedDimensionValue !== ""
+      )
+        inputFoundFromLastSave = true;
+    });
+
+    if (
+      formStore.disaggregations[reportID]?.[metric.key]?.[disaggregationKey]
+    ) {
+      Object.values(
+        formStore.disaggregations[reportID]?.[metric.key]?.[disaggregationKey]
+      ).forEach((dimension) => {
+        if (dimension.value && !inputFoundInUpdate) inputFoundInUpdate = true;
+      });
+    }
+
+    if (inputFoundInUpdate || inputFoundFromLastSave) {
+      setDisaggregationHasInput((prev) => {
+        return {
+          ...prev,
+          [disaggregationKey]: { hasInput: true },
+        };
+      });
+    } else {
+      setDisaggregationHasInput((prev) => {
+        return {
+          ...prev,
+          [disaggregationKey]: { hasInput: false },
+        };
+      });
+    }
+  };
+
+  const updateActiveDisaggregationTab = (
+    metricKey: string,
+    disaggregationKey: string,
+    disaggregationIndex: number
+  ) => {
+    searchDimensionsForInput(disaggregationKey, disaggregationIndex);
+    setActiveDisaggregation((prev) => ({
+      ...prev,
+      [metricKey]: {
+        disaggregationKey,
+        disaggregationIndex,
+      },
+    }));
+  };
+
+  return (
+    <DisaggregationTabsContainer>
+      <TabsRow>
+        {metric.disaggregations.map((disaggregation, disaggregationIndex) => {
+          return (
+            <TabItem
+              key={disaggregation.key}
+              active={
+                (!activeDisaggregation[metric.key]?.disaggregationKey &&
+                  disaggregationIndex === 0) ||
+                activeDisaggregation[metric.key]?.disaggregationKey ===
+                  disaggregation.key
+              }
+              onClick={() =>
+                updateActiveDisaggregationTab(
+                  metric.key,
+                  disaggregation.key,
+                  disaggregationIndex
+                )
+              }
+            >
+              {disaggregation.display_name}
+              <DisaggregationHasInputIndicator
+                active={
+                  (!activeDisaggregation[metric.key]?.disaggregationKey &&
+                    disaggregationIndex === 0) ||
+                  activeDisaggregation[metric.key]?.disaggregationKey ===
+                    disaggregation.key
+                }
+                inputHasValue={
+                  disaggregationHasInput[disaggregation.key]?.hasInput
+                }
+              />
+            </TabItem>
+          );
+        })}
+      </TabsRow>
+
+      <TabDisplay>
+        {reportMetrics[currentIndex].disaggregations[
+          activeDisaggregation[metric.key]?.disaggregationIndex || 0
+        ]?.dimensions.map((dimension, dimensionIndex) => {
+          return (
+            <DisaggregationInputWrapper
+              key={dimension.key}
+              onChange={() =>
+                searchDimensionsForInput(
+                  metric.disaggregations[
+                    activeDisaggregation[metric.key]?.disaggregationIndex || 0
+                  ].key,
+                  activeDisaggregation[metric.key]?.disaggregationIndex || 0
+                )
+              }
+            >
+              <DisaggregationDimensionTextInput
+                reportID={reportID}
+                key={dimension.key + dimension.reporting_note}
+                metric={metric}
+                dimension={dimension}
+                disaggregation={
+                  metric.disaggregations[
+                    activeDisaggregation[metric.key]?.disaggregationIndex || 0
+                  ]
+                }
+                disaggregationIndex={
+                  activeDisaggregation[metric.key]?.disaggregationIndex || 0
+                }
+                dimensionIndex={dimensionIndex}
+                updateFieldDescription={() =>
+                  updateFieldDescription(
+                    dimension.label,
+                    dimension.reporting_note
+                  )
+                }
+                clearFieldDescription={() => updateFieldDescription("", "")}
+              />
+            </DisaggregationInputWrapper>
+          );
+        })}
+      </TabDisplay>
+    </DisaggregationTabsContainer>
+  );
+};
+
+const DataEntryForm: React.FC<{
+  reportID: number;
+  updateFieldDescription: (title: string, description: string) => void;
+}> = ({ reportID, updateFieldDescription }) => {
+  const [scrolled, setScrolled] = useState(false);
   const { formStore, reportStore } = useStore();
+
+  useEffect(() => {
+    /** Will need to debounce */
+    const updateScrolled = () =>
+      window.scrollY > 64 ? setScrolled(true) : setScrolled(false);
+
+    document.addEventListener("scroll", updateScrolled);
+
+    return () => {
+      document.removeEventListener("scroll", updateScrolled);
+    };
+  }, [scrolled]);
 
   const reportOverview = reportStore.reportOverviews[reportID];
   const reportMetrics = reportStore.reportMetrics[reportID];
@@ -58,7 +264,7 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
     <Form>
       {/* Form Title */}
       <PreTitle>Enter Data</PreTitle>
-      <Title>
+      <Title scrolled={scrolled} sticky>
         {reportOverview &&
           printReportTitle(
             reportOverview.month,
@@ -68,108 +274,103 @@ const DataEntryForm: React.FC<{ reportID: number; activeMetric: string }> = ({
       </Title>
 
       {/* Metrics */}
-      {reportMetrics
-        ?.filter((metric) => metric.key === activeMetric)
-        .map((metric) => {
-          return (
-            <Fragment key={metric.key}>
-              <TitleWrapper underlined>
-                <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
-                <MetricSectionSubTitle>
-                  {metric.description}
-                </MetricSectionSubTitle>
-              </TitleWrapper>
+      {reportMetrics.map((metric, index) => {
+        return (
+          <Metric key={metric.key}>
+            <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
+            <MetricSectionSubTitle>{metric.description}</MetricSectionSubTitle>
 
-              {/* Metric Value */}
-              <MetricTextInput reportID={reportID} metric={metric} />
+            {/* Metric Value */}
+            <MetricTextInput
+              reportID={reportID}
+              metric={metric}
+              autoFocus={index === 0}
+              updateFieldDescription={() =>
+                updateFieldDescription(metric.display_name, metric.description)
+              }
+              clearFieldDescription={() => updateFieldDescription("", "")}
+            />
 
-              {/* Disaggregations */}
-              {metric.disaggregations.length > 0 &&
-                metric.disaggregations.map(
-                  (disaggregation, disaggregationIndex) => {
-                    return (
-                      <DisaggregationToggle
-                        key={disaggregation.key}
-                        description={disaggregation.display_name}
-                      >
-                        {disaggregation.helper_text && (
-                          <DisaggregationContentHelperText>
-                            {disaggregation.helper_text}
-                          </DisaggregationContentHelperText>
-                        )}
+            {/* Disaggregations */}
+            {metric.disaggregations.length > 0 && (
+              <DisaggregationDisplay
+                reportID={reportID}
+                currentIndex={index}
+                reportMetrics={reportMetrics}
+                metric={metric}
+                updateFieldDescription={updateFieldDescription}
+              />
+            )}
 
-                        {/* Dimensions */}
-                        {disaggregation.dimensions.length > 0 &&
-                          disaggregation.dimensions.map(
-                            (dimension, dimensionIndex) => {
-                              return (
-                                <DisaggregationDimensionTextInput
-                                  reportID={reportID}
-                                  key={dimension.key}
-                                  metric={metric}
-                                  dimension={dimension}
-                                  disaggregation={disaggregation}
-                                  disaggregationIndex={disaggregationIndex}
-                                  dimensionIndex={dimensionIndex}
-                                />
-                              );
-                            }
-                          )}
-                      </DisaggregationToggle>
-                    );
-                  }
-                )}
-
-              {/* Contexts */}
-              {metric.contexts.length > 0 &&
-                metric.contexts.map((context, contextIndex) => {
-                  if (context.type === "BOOLEAN") {
-                    return (
-                      <BinaryRadioGroupContainer key={context.key}>
-                        <BinaryRadioGroupQuestion>
-                          {context.display_name}
-                        </BinaryRadioGroupQuestion>
-
-                        <BinaryRadioGroupWrapper>
-                          <BinaryRadioButtonInputs
-                            reportID={reportID}
-                            metric={metric}
-                            context={context}
-                            contextIndex={contextIndex}
-                          />
-                        </BinaryRadioGroupWrapper>
-                        <BinaryRadioGroupClearButton
-                          onClick={() =>
-                            formStore.resetBinaryInput(
-                              reportID,
-                              metric.key,
-                              context.key,
-                              context.required
-                            )
-                          }
-                        >
-                          Clear Input
-                        </BinaryRadioGroupClearButton>
-                      </BinaryRadioGroupContainer>
-                    );
-                  }
+            {/* Contexts */}
+            {metric.contexts.length > 0 &&
+              metric.contexts.map((context, contextIndex) => {
+                if (context.type === "BOOLEAN") {
                   return (
-                    <Fragment key={context.key}>
-                      <AdditionalContextLabel>
+                    <BinaryRadioGroupContainer
+                      key={context.key}
+                      onMouseEnter={() =>
+                        updateFieldDescription(
+                          context.display_name as string,
+                          context.reporting_note as string
+                        )
+                      }
+                      onMouseLeave={() => updateFieldDescription("", "")}
+                    >
+                      <BinaryRadioGroupQuestion>
                         {context.display_name}
-                      </AdditionalContextLabel>
-                      <AdditionalContextInput
-                        reportID={reportID}
-                        metric={metric}
-                        context={context}
-                        contextIndex={contextIndex}
-                      />
-                    </Fragment>
+                      </BinaryRadioGroupQuestion>
+
+                      <BinaryRadioGroupWrapper>
+                        <BinaryRadioButtonInputs
+                          reportID={reportID}
+                          metric={metric}
+                          context={context}
+                          contextIndex={contextIndex}
+                        />
+                      </BinaryRadioGroupWrapper>
+                      <BinaryRadioGroupClearButton
+                        onClick={() =>
+                          formStore.resetBinaryInput(
+                            reportID,
+                            metric.key,
+                            context.key,
+                            context.required
+                          )
+                        }
+                      >
+                        Clear Input
+                      </BinaryRadioGroupClearButton>
+                    </BinaryRadioGroupContainer>
                   );
-                })}
-            </Fragment>
-          );
-        })}
+                }
+                return (
+                  <Fragment key={context.key}>
+                    <AdditionalContextLabel>
+                      {context.display_name}
+                    </AdditionalContextLabel>
+                    <AdditionalContextInput
+                      reportID={reportID}
+                      metric={metric}
+                      context={context}
+                      contextIndex={contextIndex}
+                      updateFieldDescription={() =>
+                        updateFieldDescription(
+                          context.display_name as string,
+                          context.reporting_note as string
+                        )
+                      }
+                      clearFieldDescription={() =>
+                        updateFieldDescription("", "")
+                      }
+                    />
+                  </Fragment>
+                );
+              })}
+          </Metric>
+        );
+      })}
+      <OpacityGradient />
     </Form>
   );
 };

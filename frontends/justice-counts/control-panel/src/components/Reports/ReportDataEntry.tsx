@@ -29,6 +29,13 @@ import ReportSummaryPanel from "./ReportSummaryPanel";
 
 const ReportDataEntry = () => {
   const [activeMetric, setActiveMetric] = useState<string>("");
+  const [fieldDescription, setFieldDescription] = useState<{
+    title: string;
+    description: string;
+  }>({
+    title: "",
+    description: "",
+  });
   const { reportStore, userStore } = useStore();
   const params = useParams();
   const reportID = Number(params.id);
@@ -48,6 +55,8 @@ const ReportDataEntry = () => {
   const reportMetrics = reportStore.reportMetrics[reportID];
 
   const updateActiveMetric = (metricKey: string) => setActiveMetric(metricKey);
+  const updateFieldDescription = (title: string, description: string) =>
+    setFieldDescription({ title, description });
 
   useEffect(() => {
     if (reportMetrics) updateActiveMetric(reportMetrics[0].key); // open to the first metric by default
@@ -64,8 +73,14 @@ const ReportDataEntry = () => {
         updateActiveMetric={updateActiveMetric}
         activeMetric={activeMetric}
       />
-      <DataEntryForm reportID={reportID} activeMetric={activeMetric} />
-      <PublishDataPanel reportID={reportID} />
+      <DataEntryForm
+        reportID={reportID}
+        updateFieldDescription={updateFieldDescription}
+      />
+      <PublishDataPanel
+        reportID={reportID}
+        fieldDescription={fieldDescription}
+      />
     </PageWrapper>
   );
 };
