@@ -16,6 +16,5 @@
 // =============================================================================
 
 export * from "./BinaryRadioButton";
-export * from "./DisaggregationToggle";
 export * from "./Form.styles";
 export * from "./TextInput";

@@ -26,8 +26,7 @@ export const InputWrapper = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
-  margin-top: 20px;
-  margin-bottom: 10px;
+  margin-bottom: 32px;
 `;
 
 type InputProps = {
@@ -143,6 +142,8 @@ export const ErrorLabel = styled.span<ErrorLabelProps>`
   ${({ error }) => error && `color: ${palette.solid.red};`};
   ${({ isDisabled }) => isDisabled && `color: ${palette.highlight.grey8};`}
   margin-top: 8px;
+  position: absolute;
+  top: 71px;
 `;
 
 export const LabelChipPosition = styled.span`
@@ -162,8 +163,9 @@ export const RequiredChip = styled.span`
 `;
 
 export const AdditionalContextLabel = styled.div`
-  ${typography.sizeCSS.large}
-  margin-top: 37px;
+  ${typography.sizeCSS.medium}
+  margin-top: 40px;
+  margin-bottom: 16px;
 `;
 
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {

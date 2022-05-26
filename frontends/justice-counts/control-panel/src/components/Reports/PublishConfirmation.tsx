@@ -22,8 +22,9 @@ import styled from "styled-components/macro";
 import { MetricWithErrors } from "../../shared/types";
 import { useStore } from "../../stores";
 import { rem } from "../../utils";
-import { Button, PublishButton } from "../Forms";
+import { Button } from "../Forms";
 import { palette } from "../GlobalStyles";
+import { PublishButton } from "./PublishDataPanel";
 
 const ConfirmationDialogueWrapper = styled.div`
   width: 100vw;

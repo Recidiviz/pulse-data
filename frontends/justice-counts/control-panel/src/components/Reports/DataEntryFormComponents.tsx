@@ -30,10 +30,19 @@ import { BinaryRadioButton, TextInput } from "../Forms";
 interface MetricTextInputProps {
   reportID: number;
   metric: Metric;
+  autoFocus?: boolean;
+  updateFieldDescription?: () => void;
+  clearFieldDescription?: () => void;
 }
 
 export const MetricTextInput = observer(
-  ({ reportID, metric }: MetricTextInputProps) => {
+  ({
+    reportID,
+    metric,
+    autoFocus,
+    updateFieldDescription,
+    clearFieldDescription,
+  }: MetricTextInputProps) => {
     const { formStore } = useStore();
     const { metricsValues, updateMetricsValues } = formStore;
 
@@ -56,6 +65,9 @@ export const MetricTextInput = observer(
             : metric.value?.toString() || ""
         }
         required
+        autoFocus={autoFocus}
+        onFocus={updateFieldDescription}
+        onBlur={clearFieldDescription}
       />
     );
   }
@@ -76,6 +88,8 @@ export const DisaggregationDimensionTextInput = observer(
     disaggregation,
     disaggregationIndex,
     dimensionIndex,
+    updateFieldDescription,
+    clearFieldDescription,
   }: DisaggregationDimensionTextInputProps) => {
     const { formStore } = useStore();
     const { disaggregations, updateDisaggregationDimensionValue } = formStore;
@@ -119,6 +133,8 @@ export const DisaggregationDimensionTextInput = observer(
               ].value?.toString() || ""
         }
         required={disaggregation.required}
+        onFocus={updateFieldDescription}
+        onBlur={clearFieldDescription}
       />
     );
   }
@@ -188,6 +204,8 @@ export const AdditionalContextInput = observer(
     metric,
     context,
     contextIndex,
+    updateFieldDescription,
+    clearFieldDescription,
   }: AdditionalContextInputsProps) => {
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
@@ -217,6 +235,8 @@ export const AdditionalContextInput = observer(
         }
         additionalContext
         error={contexts?.[reportID]?.[metric.key]?.[context.key]?.error}
+        onFocus={updateFieldDescription}
+        onBlur={clearFieldDescription}
       />
     );
   }

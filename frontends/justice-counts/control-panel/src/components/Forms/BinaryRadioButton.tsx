@@ -18,8 +18,7 @@
 import React, { InputHTMLAttributes } from "react";
 import styled from "styled-components/macro";
 
-import { rem } from "../../utils";
-import { palette } from "../GlobalStyles";
+import { palette, typography } from "../GlobalStyles";
 
 export const BinaryRadioGroupContainer = styled.div`
   display: flex;
@@ -34,9 +33,8 @@ export const BinaryRadioGroupWrapper = styled.div`
 `;
 
 export const BinaryRadioGroupQuestion = styled.div`
+  ${typography.sizeCSS.medium}
   margin-top: 22px;
-  font-size: ${rem("20px")};
-  line-height: 32px;
   color: ${palette.solid.darkgrey};
 `;
 
@@ -71,6 +69,7 @@ export const RadioButtonElement = styled.input`
 `;
 
 export const RadioButtonLabel = styled.label`
+  ${typography.sizeCSS.medium}
   width: 100%;
   height: 56px;
   display: flex;
@@ -80,8 +79,6 @@ export const RadioButtonLabel = styled.label`
   padding: 16px 24px;
   border: 1px solid ${palette.highlight.grey3};
   border-radius: 2px;
-  font-size: ${rem("18px")};
-  line-height: 24px;
   transition: 0.2s ease;
 
   &:hover {
@@ -91,10 +88,9 @@ export const RadioButtonLabel = styled.label`
 `;
 
 export const BinaryRadioGroupClearButton = styled.div`
-  margin-top: 14px;
-  font-size: ${rem("12px")};
-  line-height: 16px;
-  color: ${palette.solid.red};
+  ${typography.sizeCSS.small}
+  margin-top: 8px;
+  color: ${palette.solid.blue};
   text-decoration: underline;
 
   &:hover {
