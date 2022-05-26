@@ -22,7 +22,7 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
-from recidiviz.validation.views.case_triage.utils import DT_CLAUSE, MAX_DAYS_STALE
+from recidiviz.validation.views.case_triage.utils import DT_CLAUSE
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidation,
@@ -40,19 +40,21 @@ EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             region_code="US_ID",
             assertion_name="RAW_DATA_WAS_IMPORTED",
             description="Checks that we've imported raw data in the last 24 hours, but not the received data is timely",
-            dataset=raw_tables_dataset_for_region("us_id"),
-            table="cis_employment",
-            date_column_clause="CAST(update_datetime AS DATE)",
-            allowed_days_stale=MAX_DAYS_STALE,
+            source_data_query=FreshnessValidationAssertion.build_bq_source_data_query(
+                dataset=raw_tables_dataset_for_region("us_id"),
+                table="cis_employment",
+                date_column_clause="CAST(update_datetime AS DATE)",
+            ),
         ),
         FreshnessValidationAssertion(
             region_code="US_ID",
             assertion_name="RAW_DATA_WAS_EDITED_WITHIN_EXPECTED_PERIOD",
             description="Checks that the imported data contains edits from within the freshness threshold",
-            dataset=raw_tables_dataset_for_region("us_id"),
-            table="cis_employment",
-            date_column_clause=UPDDATE_DT_CLAUSE,
-            allowed_days_stale=MAX_DAYS_STALE,
+            source_data_query=FreshnessValidationAssertion.build_bq_source_data_query(
+                dataset=raw_tables_dataset_for_region("us_id"),
+                table="cis_employment",
+                date_column_clause=UPDDATE_DT_CLAUSE,
+            ),
         ),
     ],
 ).to_big_query_view_builder()
