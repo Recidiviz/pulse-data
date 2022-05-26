@@ -18,14 +18,6 @@
 
 CASE_TRIAGE_DATASET: str = "case_triage"
 
-# Transitional dataset in the same region (e.g. us-east1) as the Case Triage CloudSQL
-# instance where Case Triage CloudSQL data is stored before the CloudSQL -> BQ refresh
-# copies it to a dataset in the 'US' multi-region.
-CASE_TRIAGE_FEDERATED_REGIONAL_DATASET: str = "case_triage_federated_regional"
-
-# Where data exported from CloudSQL -> BQ federated export lives
-CASE_TRIAGE_FEDERATED_DATASET: str = "case_triage_federated"
-
 # Location the Cloud SQL connection resides in
 CASE_TRIAGE_CLOUDSQL_LOCATION: str = "us-central1"
 

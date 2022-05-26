@@ -39,7 +39,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -95,7 +94,6 @@ NORMALIZED_DATASETS = set(NORMALIZED_DATASETS_TO_DESCRIPTIONS.keys())
 
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     ANALYST_DATA_SCRATCH_SPACE_DATASET: "Analyst data scratch space. Contains views for scrappy impact",
-    CASE_TRIAGE_FEDERATED_DATASET: "Case Triage data. This dataset is a copy of the case-triage postgres database.",
     CASE_TRIAGE_SEGMENT_DATASET: "Stores metrics about users on case triage",
     COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
     COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",
