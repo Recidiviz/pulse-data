@@ -240,6 +240,15 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: Start Cloud SQL to BigQuery export tasks for case triage tables
+    url: /cloud_sql_to_bq/create_refresh_bq_schema_task/case_triage
+    schedule: every day 11:00
+    timezone: America/Los_Angeles
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
   - description: Move old Dataflow metric output to cold storage
     url: /calculation_data_storage_manager/prune_old_dataflow_data
     schedule: every day 00:00

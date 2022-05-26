@@ -23,24 +23,15 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 
 # We only expect new data for a given day to be processed by ~10 am Pacific so if it is
 # any earlier pretend it is the prior day.
-from recidiviz.validation.views.case_triage.utils import MAX_DAYS_STALE
+CURRENT_DATE_FRAGMENT = 'EXTRACT(DATE FROM TIMESTAMP_SUB(CURRENT_DATETIME("America/Los_Angeles"), INTERVAL 10 HOUR))'
 
 
-def current_date_fragment(*, is_postgres: bool = False) -> str:
-    if is_postgres:
-        return "DATE(CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles' - INTERVAL '10 hours')"
-
-    return "EXTRACT(DATE FROM TIMESTAMP_SUB(CURRENT_DATETIME('America/Los_Angeles'), INTERVAL 10 HOUR))"
+def current_date_sub(*, days: int) -> str:
+    return f"DATE_SUB({CURRENT_DATE_FRAGMENT}, INTERVAL {days} DAY)"
 
 
-def current_date_sub(*, days: int, is_postgres: bool = False) -> str:
-    # Preferring - operator as it is both BQ/Postgres compatible
-    return f"{current_date_fragment(is_postgres=is_postgres)} - {days}"
-
-
-def current_date_add(*, days: int, is_postgres: bool = False) -> str:
-    # Preferring + operator as it is both BQ/Postgres compatible
-    return f"{current_date_fragment(is_postgres=is_postgres)} + {days}"
+def current_date_add(*, days: int) -> str:
+    return f"DATE_ADD({CURRENT_DATE_FRAGMENT}, INTERVAL {days} DAY)"
 
 
 # Farthest in the future that data can be before it is excluded from the validation.
@@ -55,72 +46,34 @@ class FreshnessValidationAssertion:
     region_code: str
     assertion_name: str
     description: str
-    source_data_query: str
-    allowed_days_stale: int = attr.attrib(default=MAX_DAYS_STALE)
+    dataset: str
+    table: str
+    date_column_clause: str
+    allowed_days_stale: int
+
+    # Filters the data that is used when checking the assertions.
+    # E.g. `state_code = 'US_XX'` can be used if we want to check freshness of data for
+    # a single state from a table that contains data for multiple states.
+    filter_clause: str = attr.ib(default="TRUE")
 
     def to_sql_query(self) -> str:
         """This query yields an array of dates that we expected to have data but did not"""
         query = f"""
-            /* {self.description} */
+            /* {self.description} */   
             SELECT
                 '{self.region_code}' as region_code,
                 '{self.assertion_name}' as assertion,
                 GENERATE_DATE_ARRAY(
-                    DATE_ADD(source_data.latest_date, INTERVAL 1 DAY),
+                    DATE_ADD(MAX({self.date_column_clause}), INTERVAL 1 DAY),
                     {current_date_sub(days=self.allowed_days_stale)}
                 ) as failed_dates
-            FROM (
-                {self.source_data_query}
-            ) AS source_data
+            FROM `{{project_id}}.{self.dataset}.{self.table}`
+            WHERE
+                {self.date_column_clause} < {current_date_add(days=MAX_DAYS_IN_FUTURE)}
+                AND {self.filter_clause}
         """
 
         return query
-
-    @classmethod
-    def build_cloudsql_connection_source_data_query(
-        cls,
-        *,
-        location: str,
-        connection: str,
-        table: str,
-        date_column_clause: str,
-        filter_clause: str = "TRUE",
-    ) -> str:
-        """Returns a query that select the maximum value of the `date_column_clause` from a CloudSQL connection"""
-        return f"""
-        SELECT
-            *
-        FROM EXTERNAL_QUERY(
-            "projects/{{project_id}}/locations/{location}/connections/{connection}",
-            '''
-                SELECT
-                   MAX({date_column_clause}) AS latest_date
-               FROM {table}
-               WHERE
-                   {date_column_clause} < {current_date_add(days=MAX_DAYS_IN_FUTURE, is_postgres=True)}
-                   AND {filter_clause}
-           '''
-       )
-       """
-
-    @classmethod
-    def build_bq_source_data_query(
-        cls,
-        *,
-        dataset: str,
-        table: str,
-        date_column_clause: str,
-        filter_clause: str = "TRUE",
-    ) -> str:
-        """Returns a query that select the maximum value of the `date_column_clause` from `dataset.table`"""
-        return f"""
-            SELECT
-                MAX({date_column_clause}) AS latest_date
-            FROM `{{project_id}}.{dataset}.{table}`
-            WHERE
-                {date_column_clause} < {current_date_add(days=MAX_DAYS_IN_FUTURE)}
-                AND {filter_clause}
-        """
 
 
 @attr.s(auto_attribs=True)
