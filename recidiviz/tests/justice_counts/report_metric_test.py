@@ -68,23 +68,6 @@ class TestJusticeCountsReportMetric(TestCase):
                 ],
             )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            "Sums across dimension metric/law_enforcement/budget/type do not equal the total",
-        ):
-            ReportMetric(
-                key=law_enforcement.annual_budget.key,
-                value=100000,
-                aggregated_dimensions=[
-                    ReportedAggregatedDimension(
-                        dimension_to_value={
-                            SheriffBudgetType.DETENTION: 50000,
-                            SheriffBudgetType.PATROL: 10,
-                        }
-                    )
-                ],
-            )
-
     def test_context_validation(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -168,7 +151,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "key": "metric/law_enforcement/budget/type",
                         "display_name": "Sheriff Budget Types",
                         "required": False,
-                        "should_sum_to_total": True,
+                        "should_sum_to_total": False,
                         "helper_text": None,
                         "dimensions": [
                             {
