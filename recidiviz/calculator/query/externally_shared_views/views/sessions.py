@@ -39,8 +39,8 @@ from recidiviz.calculator.query.state.views.sessions.revocation_sessions import 
 from recidiviz.calculator.query.state.views.sessions.supervision_super_sessions import (
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.violations_sessions import (
-    VIOLATIONS_SESSIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.sessions.violation_responses import (
+    VIOLATION_RESPONSES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -52,7 +52,7 @@ SESSIONS_SOURCE_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
     REVOCATION_SESSIONS_VIEW_BUILDER,
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
-    VIOLATIONS_SESSIONS_VIEW_BUILDER,
+    VIOLATION_RESPONSES_VIEW_BUILDER,
 ]
 
 # query template

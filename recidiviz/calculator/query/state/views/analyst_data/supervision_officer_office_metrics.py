@@ -133,7 +133,7 @@ WITH date_array AS (
         most_severe_response_decision AS response_decision,
         date,
     FROM
-        `{project_id}.{sessions_dataset}.violations_sessions_materialized` a
+        `{project_id}.{sessions_dataset}.violation_responses_materialized` a
     INNER JOIN 
         officer_office_sessions_unnested b
     ON 
