@@ -24,6 +24,10 @@ import attr
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+    StateEmploymentPeriodEndReason,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
@@ -55,9 +59,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.schema_utils import (
-    get_non_history_state_database_entities,
-)
+from recidiviz.persistence.database.schema_utils import get_state_database_entities
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
@@ -200,6 +202,9 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
         )
     ],
     schema.StateCourtCase: [schema.StateCourtCase(state_code=StateCode.US_XX.value)],
+    schema.StateEmploymentPeriod: [
+        schema.StateEmploymentPeriod(state_code=StateCode.US_XX.value)
+    ],
     schema.StateEarlyDischarge: [
         schema.StateEarlyDischarge(state_code=StateCode.US_XX.value)
     ],
@@ -306,6 +311,11 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
     ],
     schema.StateCourtCase: [
         schema.StateCourtCase(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateEmploymentPeriod: [
+        schema.StateEmploymentPeriod(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
@@ -469,6 +479,21 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         schema.StateCourtCase(
             state_code=StateCode.US_XX.value, county_code="my county"
         ),
+    ],
+    schema.StateEmploymentPeriod: [
+        schema.StateEmploymentPeriod(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            start_date=datetime.date(2022, 5, 8),
+            end_date=datetime.date(2022, 5, 10),
+            last_verified_date=datetime.date(2022, 5, 1),
+            employment_status=StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME.value,
+            employment_status_raw_text="PT",
+            end_reason=StateEmploymentPeriodEndReason.QUIT.value,
+            end_reason_raw_text="PERSONAL",
+            employer_name="ACME, INC.",
+            job_title=None,
+        )
     ],
     schema.StateEarlyDischarge: [
         schema.StateEarlyDischarge(
@@ -716,7 +741,7 @@ class TestEntityUtils(TestCase):
         )
 
     def test_isStandaloneClass(self) -> None:
-        for cls in schema_utils.get_non_history_state_database_entities():
+        for cls in schema_utils.get_state_database_entities():
             if cls == schema.StateAgent:
                 self.assertTrue(is_standalone_class(cls))
             else:
@@ -830,7 +855,7 @@ class TestEntityUtils(TestCase):
 
     def test_is_placeholder(self) -> None:
         field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_non_history_state_database_entities():
+        for db_entity_cls in get_state_database_entities():
             if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
                 self.fail(
                     f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"
@@ -860,7 +885,7 @@ class TestEntityUtils(TestCase):
 
     def test_is_reference_only_entity(self) -> None:
         field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_non_history_state_database_entities():
+        for db_entity_cls in get_state_database_entities():
             if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
                 self.fail(
                     f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"

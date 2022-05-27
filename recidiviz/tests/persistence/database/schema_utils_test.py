@@ -31,7 +31,7 @@ from recidiviz.persistence.database.schema_utils import (
     _get_all_database_entities_in_module,
     get_all_table_classes,
     get_database_entity_by_table_name,
-    get_non_history_state_database_entities,
+    get_state_database_entities,
     get_state_database_entity_with_name,
     schema_type_to_schema_base,
 )
@@ -82,6 +82,7 @@ def test_get_all_database_entity_classes() -> None:
         "StateAssessment",
         "StateCharge",
         "StateCourtCase",
+        "StateEmploymentPeriod",
         "StateEarlyDischarge",
         "StateIncarcerationIncident",
         "StateIncarcerationIncidentOutcome",
@@ -204,6 +205,7 @@ def test_get_all_table_classes() -> None:
         "state_assessment",
         "state_charge",
         "state_court_case",
+        "state_employment_period",
         "state_early_discharge",
         "state_incarceration_incident",
         "state_incarceration_incident_outcome",
@@ -269,12 +271,13 @@ def test_get_state_table_class_with_name_invalid_name() -> None:
         get_state_database_entity_with_name(class_name)
 
 
-def test_get_non_history_state_database_entities() -> None:
+def test_get_state_database_entities() -> None:
     state_database_entity_names = [
         "StateAgent",
         "StateAssessment",
         "StateCharge",
         "StateCourtCase",
+        "StateEmploymentPeriod",
         "StateEarlyDischarge",
         "StateIncarcerationIncident",
         "StateIncarcerationIncidentOutcome",
@@ -301,7 +304,7 @@ def test_get_non_history_state_database_entities() -> None:
         state_schema.__name__, state_database_entity_names
     )
     found_database_entity_names = _database_entities_to_qualified_names(
-        get_non_history_state_database_entities()
+        get_state_database_entities()
     )
     assert sorted(found_database_entity_names) == sorted(expected_database_entity_names)
 

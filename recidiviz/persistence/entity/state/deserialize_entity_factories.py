@@ -366,3 +366,16 @@ class StateSupervisionViolationTypeEntryFactory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StateEmploymentPeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateEmploymentPeriod:
+        return entity_deserialize(
+            cls=entities.StateEmploymentPeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

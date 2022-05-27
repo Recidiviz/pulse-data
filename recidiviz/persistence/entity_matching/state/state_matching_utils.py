@@ -26,9 +26,7 @@ from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao, schema
-from recidiviz.persistence.database.schema_utils import (
-    get_non_history_state_database_entities,
-)
+from recidiviz.persistence.database.schema_utils import get_state_database_entities
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import EnumEntity
 from recidiviz.persistence.entity.entity_utils import (
@@ -244,7 +242,7 @@ def is_multiple_id_entity(entity: DatabaseEntity) -> bool:
 def get_multiple_id_classes() -> List[Type[DatabaseEntity]]:
     """Returns a list of all classes that have multiple external ids."""
     to_return: List[Type[DatabaseEntity]] = []
-    for cls in get_non_history_state_database_entities():
+    for cls in get_state_database_entities():
         if "external_ids" in cls.get_relationship_property_names():
             if cls != schema.StatePerson:
                 raise ValueError(
@@ -358,6 +356,7 @@ def can_atomically_merge_entity(
             schema.StateAssessment,
             schema.StateCharge,
             schema.StateCourtCase,
+            schema.StateEmploymentPeriod,
             schema.StateIncarcerationIncident,
             schema.StateIncarcerationIncidentOutcome,
             schema.StateIncarcerationPeriod,

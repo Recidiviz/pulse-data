@@ -599,6 +599,35 @@ state_supervision_contact_method = Enum(
     name="state_supervision_contact_method",
 )
 
+
+state_employment_period_employment_status = Enum(
+    state_enum_strings.state_employment_period_employment_status_alternate_income_source,
+    state_enum_strings.state_employment_period_employment_status_employed,
+    state_enum_strings.state_employment_period_employment_status_employed_full_time,
+    state_enum_strings.state_employment_period_employment_status_employed_part_time,
+    state_enum_strings.state_employment_period_employment_status_student,
+    state_enum_strings.state_employment_period_employment_status_unable_to_work,
+    state_enum_strings.state_employment_period_employment_status_unemployed,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_employment_period_employment_status",
+)
+
+state_employment_period_end_reason = Enum(
+    state_enum_strings.state_employment_period_end_reason_employment_status_change,
+    state_enum_strings.state_employment_period_end_reason_fired,
+    state_enum_strings.state_employment_period_end_reason_incarcerated,
+    state_enum_strings.state_employment_period_end_reason_laid_off,
+    state_enum_strings.state_employment_period_end_reason_medical,
+    state_enum_strings.state_employment_period_end_reason_moved,
+    state_enum_strings.state_employment_period_end_reason_new_job,
+    state_enum_strings.state_employment_period_end_reason_quit,
+    state_enum_strings.state_employment_period_end_reason_retired,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_employment_period_end_reason",
+)
+
 # Join tables
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
@@ -964,6 +993,9 @@ class StatePerson(StateBase):
     )
     supervision_contacts = relationship(
         "StateSupervisionContact", backref="person", lazy="selectin"
+    )
+    employment_periods = relationship(
+        "StateEmploymentPeriod", backref="person", lazy="selectin"
     )
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
@@ -2665,3 +2697,98 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
         )
 
     contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")
+
+
+class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateEmploymentPeriod in the SQL schema."""
+
+    __tablename__ = "state_employment_period"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="employment_period_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": (
+                "The StateEmploymentPeriod object represents information about a "
+                "person's employment status during a particular period of time. This "
+                "object can be used to track employer information, or to track periods "
+                "of unemployment if we have positive confirmation from the state that "
+                "a person was unemployed at a given period."
+            )
+        },
+    )
+
+    employment_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="employment period"
+        ),
+    )
+
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateEmploymentPeriod"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+
+    employment_status = Column(
+        state_employment_period_employment_status,
+        comment=(
+            "Indicates the type of the person's employment or unemployment during the "
+            "given period of time."
+        ),
+    )
+    employment_status_raw_text = Column(
+        String(255), comment="The raw text value of the employment status."
+    )
+
+    start_date = Column(
+        Date,
+        nullable=False,
+        comment=(
+            "Date on which a person’s employment with the given employer and job "
+            "title started."
+        ),
+    )
+    end_date = Column(
+        Date,
+        comment=(
+            "Date on which a person’s employment with the given employer and job "
+            "title terminated."
+        ),
+    )
+    last_verified_date = Column(
+        Date,
+        comment=(
+            "Most recent date on which person’s employment with a given employer and "
+            "job title was verified. Note that this field is only meaningful for open "
+            "employment periods."
+        ),
+    )
+
+    employer_name = Column(String(255), comment="The name of the person's employer.")
+    job_title = Column(String(255), comment="The name of the person's job position.")
+
+    end_reason = Column(
+        state_employment_period_end_reason,
+        comment=(
+            "The reason why this period of employment or unemployment was terminated. Should "
+            "only be set if the `end_date` is nonnull."
+        ),
+    )
+    end_reason_raw_text = Column(
+        String(255), comment="The raw text value of the end reason."
+    )

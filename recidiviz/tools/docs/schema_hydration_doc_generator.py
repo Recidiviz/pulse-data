@@ -34,7 +34,7 @@ from pytablewriter import MarkdownTableWriter
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.persistence.database.schema_utils import (
-    get_non_history_state_database_entities,
+    get_state_database_entities,
     get_state_database_entity_with_name,
 )
 from recidiviz.utils.string import StrictStringFormatter
@@ -60,10 +60,7 @@ HAVING COUNT(*) = (SELECT COUNT(*) FROM `{project_id}.state.{table_name}` WHERE 
 
 def _get_all_table_names() -> List[Tuple[str, str]]:
     return sorted(
-        [
-            (e.__name__, e.get_entity_name())
-            for e in get_non_history_state_database_entities()
-        ]
+        [(e.__name__, e.get_entity_name()) for e in get_state_database_entities()]
     )
 
 

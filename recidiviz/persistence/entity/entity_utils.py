@@ -95,6 +95,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateProgramAssignment.__name__,
     state_entities.StateAgent.__name__,
     state_entities.StateEarlyDischarge.__name__,
+    state_entities.StateEmploymentPeriod.__name__,
 ]
 
 _COUNTY_CLASS_HIERARCHY = [

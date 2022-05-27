@@ -427,6 +427,28 @@ state_supervision_contact_location_law_enforcement_agency = "LAW_ENFORCEMENT_AGE
 state_supervision_contact_location_parole_commission = "PAROLE_COMMISSION"
 state_supervision_contact_location_alternative_work_site = "ALTERNATIVE_WORK_SITE"
 
+# state_employment_period.py
+state_employment_period_employment_status_alternate_income_source = (
+    "ALTERNATE_INCOME_SOURCE"
+)
+state_employment_period_employment_status_employed = "EMPLOYED"
+state_employment_period_employment_status_employed_full_time = "EMPLOYED_FULL_TIME"
+state_employment_period_employment_status_employed_part_time = "EMPLOYED_PART_TIME"
+state_employment_period_employment_status_student = "STUDENT"
+state_employment_period_employment_status_unable_to_work = "UNABLE_TO_WORK"
+state_employment_period_employment_status_unemployed = "UNEMPLOYED"
+
+
+state_employment_period_end_reason_employment_status_change = "EMPLOYMENT_STATUS_CHANGE"
+state_employment_period_end_reason_fired = "FIRED"
+state_employment_period_end_reason_incarcerated = "INCARCERATED"
+state_employment_period_end_reason_laid_off = "LAID_OFF"
+state_employment_period_end_reason_medical = "MEDICAL"
+state_employment_period_end_reason_moved = "MOVED"
+state_employment_period_end_reason_new_job = "NEW_JOB"
+state_employment_period_end_reason_quit = "QUIT"
+state_employment_period_end_reason_retired = "RETIRED"
+
 # state_shared_enums.py
 
 state_acting_body_type_court = "COURT"
