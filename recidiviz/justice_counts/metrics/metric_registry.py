@@ -24,6 +24,7 @@ from recidiviz.justice_counts.metrics import (
     law_enforcement,
     prisons,
     prosecution,
+    supervision,
 )
 
 # All official Justice Counts metrics (i.e. all instances of MetricDefinition)
@@ -83,6 +84,14 @@ METRICS = [
     prosecution.cases_rejected_by_demographic,
     prosecution.total_staff,
     prosecution.violations,
+    supervision.annual_budget,
+    supervision.individuals_under_supervision_by_demographic,
+    supervision.individuals_under_supervision_by_type,
+    supervision.new_supervision_cases,
+    supervision.reconviction_while_on_supervision,
+    supervision.supervision_terminations,
+    supervision.supervision_violations,
+    supervision.total_staff,
 ]
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key

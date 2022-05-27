@@ -24,6 +24,7 @@ from recidiviz.justice_counts.dimensions import (
     location,
     person,
     prosecution,
+    supervision,
 )
 
 # All official Justice Counts dimensions should be "checked in" here
@@ -67,6 +68,12 @@ DIMENSIONS = [
     courts.CourtReleaseType,
     courts.CourtStaffType,
     courts.SentenceType,
+    supervision.NewOffenseType,
+    supervision.SupervisionCaseType,
+    supervision.SupervisionIndividualType,
+    supervision.SupervisionStaffType,
+    supervision.SupervisionTerminationType,
+    supervision.SupervisionViolationType,
 ]
 
 
