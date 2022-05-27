@@ -62,9 +62,7 @@ annual_budget = MetricDefinition(
         )
     ],
     aggregated_dimensions=[
-        AggregatedDimension(
-            dimension=SheriffBudgetType, required=False, should_sum_to_total=True
-        )
+        AggregatedDimension(dimension=SheriffBudgetType, required=False)
     ],
 )
 
