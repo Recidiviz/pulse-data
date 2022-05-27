@@ -47,6 +47,10 @@ from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
 )
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+    StateEmploymentPeriodEndReason,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
@@ -126,7 +130,7 @@ PeriodType = TypeVar(
 #   - What
 #   - Who
 
-# Primary key - Only optional when hydrated in the data converter, before
+# Primary key - Only optional when hydrated in the parsing layer, before
 # we have written this entity to the persistence layer
 
 # Cross-entity relationships
@@ -146,7 +150,7 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     #   - What
     id_type: str = attr.ib(validator=attr_validators.is_str)
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     person_external_id_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -174,7 +178,7 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     person_alias_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -199,7 +203,7 @@ class StatePersonRace(EnumEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     person_race_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -224,7 +228,7 @@ class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     person_ethnicity_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -272,7 +276,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     person_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -368,7 +372,7 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |judge| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     court_case_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -460,7 +464,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     charge_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -525,7 +529,7 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |conducting_agent| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     assessment_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -533,7 +537,7 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
 
-    # Only optional when hydrated in the data converter, before we have written this
+    # Only optional when hydrated in the parsing layer, before we have written this
     # entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
     conducting_agent: Optional["StateAgent"] = attr.ib(default=None)
@@ -608,7 +612,7 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
 
     #   - Who
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_sentence_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -720,7 +724,7 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     incarceration_sentence_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -816,7 +820,7 @@ class StateIncarcerationPeriod(
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     incarceration_period_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -928,7 +932,7 @@ class StateSupervisionPeriod(
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_period_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -980,7 +984,7 @@ class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_case_type_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1032,7 +1036,7 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
     #   - Who
     # See |responding_officer| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     incarceration_incident_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1088,7 +1092,7 @@ class StateIncarcerationIncidentOutcome(
     #   - Who
     # See |person| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     incarceration_incident_outcome_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1117,7 +1121,7 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_violation_type_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1141,7 +1145,7 @@ class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableA
     # A string code corresponding to the condition - region specific.
     condition: str = attr.ib(validator=attr_validators.is_str)  # non-nullable
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_violated_condition_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1185,7 +1189,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_violation_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1223,7 +1227,7 @@ class StateSupervisionViolationResponseDecisionEntry(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_violation_response_decision_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1286,7 +1290,7 @@ class StateSupervisionViolationResponse(
     )
     # See also |decision_agents| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_violation_response_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1324,7 +1328,7 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     agent_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1372,7 +1376,7 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     program_assignment_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1434,7 +1438,7 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     early_discharge_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1511,7 +1515,7 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_contact_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
@@ -1520,3 +1524,60 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     contacted_agent: Optional["StateAgent"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateEmploymentPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models information about a person's employment status during a certain period of
+    time.
+    """
+
+    # State Code
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Status
+    employment_status: Optional[StateEmploymentPeriodEmploymentStatus] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateEmploymentPeriodEmploymentStatus),
+    )
+    employment_status_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Attributes
+    #   - When
+    start_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_date
+    )
+    end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    last_verified_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    #   - What
+    employer_name: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    job_title: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    end_reason: Optional[StateEmploymentPeriodEndReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateEmploymentPeriodEndReason)
+    )
+    end_reason_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    #   - Who
+    # See |person| in entity relationships below.
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    employment_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)

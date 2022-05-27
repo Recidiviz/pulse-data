@@ -46,6 +46,10 @@ from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
 )
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+    StateEmploymentPeriodEndReason,
+)
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
@@ -102,6 +106,8 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_custodial_authority": state_shared_enums.StateCustodialAuthority,
             "state_early_discharge_decision": StateEarlyDischargeDecision,
             "state_early_discharge_decision_status": StateEarlyDischargeDecisionStatus,
+            "state_employment_period_employment_status": StateEmploymentPeriodEmploymentStatus,
+            "state_employment_period_end_reason": StateEmploymentPeriodEndReason,
             "state_incarceration_type": state_incarceration.StateIncarcerationType,
             "state_court_case_status": state_court_case.StateCourtCaseStatus,
             "state_court_type": state_court_case.StateCourtType,

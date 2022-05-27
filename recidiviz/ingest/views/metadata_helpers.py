@@ -21,9 +21,7 @@ from typing import List, Tuple, Type
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema_utils import (
-    get_non_history_state_database_entities,
-)
+from recidiviz.persistence.database.schema_utils import get_state_database_entities
 
 METADATA_EXCLUDED_PROPERTIES = [
     "external_id",
@@ -46,4 +44,4 @@ def get_non_enum_property_names(entity: DeclarativeMeta) -> List[str]:
 
 
 def get_state_tables() -> List[Tuple[Type[DatabaseEntity], str]]:
-    return [(e, e.get_entity_name()) for e in get_non_history_state_database_entities()]
+    return [(e, e.get_entity_name()) for e in get_state_database_entities()]

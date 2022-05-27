@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for deserialize_entity_factories.py."""
+import datetime
 import unittest
 from datetime import date
 from typing import Set, Type, Union
@@ -44,6 +45,10 @@ from recidiviz.common.constants.state.state_court_case import (
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
+)
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+    StateEmploymentPeriodEndReason,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
@@ -840,6 +845,38 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             alias_type=StatePersonAliasType.GIVEN_NAME,
             alias_type_raw_text="G",
             full_name='{"full_name": "FULL NAME"}',
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateEmploymentPeriod(self) -> None:
+        result = deserialize_entity_factories.StateEmploymentPeriodFactory.deserialize(
+            state_code="us_xx",
+            external_id="12356",
+            start_date="2022-05-08",
+            end_date="2022-05-10",
+            last_verified_date="2022-05-01",
+            employment_status=StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME,
+            employment_status_raw_text="PT",
+            end_reason=StateEmploymentPeriodEndReason.QUIT,
+            end_reason_raw_text="Personal",
+            employer_name="Acme, Inc.",
+            job_title=None,
+        )
+
+        # Assert
+        expected_result = entities.StateEmploymentPeriod(
+            state_code="US_XX",
+            external_id="12356",
+            start_date=datetime.date(2022, 5, 8),
+            end_date=datetime.date(2022, 5, 10),
+            last_verified_date=datetime.date(2022, 5, 1),
+            employment_status=StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME,
+            employment_status_raw_text="PT",
+            end_reason=StateEmploymentPeriodEndReason.QUIT,
+            end_reason_raw_text="PERSONAL",
+            employer_name="ACME, INC.",
+            job_title=None,
         )
 
         self.assertEqual(expected_result, result)

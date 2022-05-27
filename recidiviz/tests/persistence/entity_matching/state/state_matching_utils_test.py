@@ -30,9 +30,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateSchemaToEntityConverter,
 )
-from recidiviz.persistence.database.schema_utils import (
-    get_non_history_state_database_entities,
-)
+from recidiviz.persistence.database.schema_utils import get_state_database_entities
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -321,7 +319,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_mergeFlatFields_DoNotOverwriteWithPlaceholder(self) -> None:
         field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_non_history_state_database_entities():
+        for db_entity_cls in get_state_database_entities():
             for old in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
                 for new in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
                     if old.get_external_id() != new.get_external_id():
@@ -337,7 +335,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_mergeFlatFields_DoNotOverwriteWithReferenceItems(self) -> None:
         field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_non_history_state_database_entities():
+        for db_entity_cls in get_state_database_entities():
             for old in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
                 for new in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
                     if old.get_external_id() != new.get_external_id():
@@ -667,7 +665,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_isAtomicallyMergedEntity(self) -> None:
         field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_non_history_state_database_entities():
+        for db_entity_cls in get_state_database_entities():
             for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
                 self.assertFalse(can_atomically_merge_entity(entity, field_index))
             for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
