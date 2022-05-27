@@ -69,11 +69,11 @@ from recidiviz.calculator.query.state.views.sessions.dataflow_sessions import (
 from recidiviz.calculator.query.state.views.sessions.district_sessions import (
     DISTRICT_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.employment_periods_preprocessed import (
-    EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.drug_screens_preprocessed import (
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.employment_periods_preprocessed import (
+    EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.incarceration_super_sessions import (
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
@@ -132,11 +132,11 @@ from recidiviz.calculator.query.state.views.sessions.supervision_tool_access_ses
 from recidiviz.calculator.query.state.views.sessions.system_sessions import (
     SYSTEM_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_id.us_id_employment_periods_preprocessed import (
-    US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_id.us_id_drug_screens_preprocessed import (
     US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_id.us_id_employment_periods_preprocessed import (
+    US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_id.us_id_incarceration_population_metrics_preprocessed import (
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
@@ -177,8 +177,8 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_prepr
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_supervision_population_metrics_preprocessed import (
     US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.violations_sessions import (
-    VIOLATIONS_SESSIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.sessions.violation_responses import (
+    VIOLATION_RESPONSES_VIEW_BUILDER,
 )
 
 SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
@@ -232,7 +232,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
     US_TN_SENTENCE_RELATIONSHIP_VIEW_BUILDER,
     US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-    VIOLATIONS_SESSIONS_VIEW_BUILDER,
+    VIOLATION_RESPONSES_VIEW_BUILDER,
     SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
     US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
