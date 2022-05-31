@@ -58,7 +58,7 @@ export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
     scrolled ? typography.sizeCSS.medium : typography.sizeCSS.title}
 
   margin-top: 4px;
-  padding-bottom: 16px;
+  padding-bottom: 14px;
   border-bottom: 1px solid ${palette.highlight.grey9};
   transition: 0.3s ease;
 
@@ -75,6 +75,8 @@ export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
 `;
 
 export const Metric = styled.div`
+  margin-top: -6.5em;
+  padding-top: 6.5em;
   margin-bottom: 194px;
 `;
 

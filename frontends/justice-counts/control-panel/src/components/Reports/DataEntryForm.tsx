@@ -15,9 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { observer } from "mobx-react-lite";
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 
-import { Metric as MetricType } from "../../shared/types";
 import { useStore } from "../../stores";
 import { printReportTitle } from "../../utils";
 import {
@@ -26,219 +25,28 @@ import {
   BinaryRadioGroupContainer,
   BinaryRadioGroupQuestion,
   BinaryRadioGroupWrapper,
-  DisaggregationHasInputIndicator,
-  DisaggregationInputWrapper,
-  DisaggregationTabsContainer,
   Form,
   Metric,
   MetricSectionSubTitle,
   MetricSectionTitle,
   OpacityGradient,
   PreTitle,
-  TabDisplay,
-  TabItem,
-  TabsRow,
+  TabbedDisaggregations,
   Title,
 } from "../Forms";
 import {
   AdditionalContextInput,
   BinaryRadioButtonInputs,
-  DisaggregationDimensionTextInput,
   MetricTextInput,
 } from "./DataEntryFormComponents";
-
-/** This definitely needs a lot of clean up, refactor and a ton of optimization - but got the functionality of it working so far */
-const DisaggregationDisplay: React.FC<{
-  metric: MetricType;
-  reportMetrics: MetricType[];
-  reportID: number;
-  currentIndex: number;
-  updateFieldDescription: (title: string, description: string) => void;
-}> = ({
-  metric,
-  reportMetrics,
-  reportID,
-  currentIndex,
-  updateFieldDescription,
-}) => {
-  const [activeDisaggregation, setActiveDisaggregation] = useState<{
-    [metricKey: string]: {
-      disaggregationKey: string;
-      disaggregationIndex: number;
-      hasValue?: boolean;
-    };
-  }>({});
-  const [disaggregationHasInput, setDisaggregationHasInput] = useState<{
-    [disaggregationKey: string]: {
-      hasInput?: boolean;
-    };
-  }>({});
-  const { formStore } = useStore();
-
-  useEffect(
-    () => {
-      metric.disaggregations.forEach((disaggregation, index) => {
-        searchDimensionsForInput(disaggregation.key, index);
-      });
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-
-  const searchDimensionsForInput = (
-    disaggregationKey: string,
-    disaggregationIndex: number
-  ) => {
-    let inputFoundInUpdate = false;
-    let inputFoundFromLastSave = false;
-
-    reportMetrics[currentIndex]?.disaggregations[
-      disaggregationIndex
-    ]?.dimensions?.forEach((dimension) => {
-      const updatedDimensionValue =
-        formStore.disaggregations[reportID]?.[metric.key]?.[
-          disaggregationKey
-        ]?.[dimension.key]?.value;
-
-      if (
-        dimension.value &&
-        !inputFoundFromLastSave &&
-        updatedDimensionValue !== ""
-      )
-        inputFoundFromLastSave = true;
-    });
-
-    if (
-      formStore.disaggregations[reportID]?.[metric.key]?.[disaggregationKey]
-    ) {
-      Object.values(
-        formStore.disaggregations[reportID]?.[metric.key]?.[disaggregationKey]
-      ).forEach((dimension) => {
-        if (dimension.value && !inputFoundInUpdate) inputFoundInUpdate = true;
-      });
-    }
-
-    if (inputFoundInUpdate || inputFoundFromLastSave) {
-      setDisaggregationHasInput((prev) => {
-        return {
-          ...prev,
-          [disaggregationKey]: { hasInput: true },
-        };
-      });
-    } else {
-      setDisaggregationHasInput((prev) => {
-        return {
-          ...prev,
-          [disaggregationKey]: { hasInput: false },
-        };
-      });
-    }
-  };
-
-  const updateActiveDisaggregationTab = (
-    metricKey: string,
-    disaggregationKey: string,
-    disaggregationIndex: number
-  ) => {
-    searchDimensionsForInput(disaggregationKey, disaggregationIndex);
-    setActiveDisaggregation((prev) => ({
-      ...prev,
-      [metricKey]: {
-        disaggregationKey,
-        disaggregationIndex,
-      },
-    }));
-  };
-
-  return (
-    <DisaggregationTabsContainer>
-      <TabsRow>
-        {metric.disaggregations.map((disaggregation, disaggregationIndex) => {
-          return (
-            <TabItem
-              key={disaggregation.key}
-              active={
-                (!activeDisaggregation[metric.key]?.disaggregationKey &&
-                  disaggregationIndex === 0) ||
-                activeDisaggregation[metric.key]?.disaggregationKey ===
-                  disaggregation.key
-              }
-              onClick={() =>
-                updateActiveDisaggregationTab(
-                  metric.key,
-                  disaggregation.key,
-                  disaggregationIndex
-                )
-              }
-            >
-              {disaggregation.display_name}
-              <DisaggregationHasInputIndicator
-                active={
-                  (!activeDisaggregation[metric.key]?.disaggregationKey &&
-                    disaggregationIndex === 0) ||
-                  activeDisaggregation[metric.key]?.disaggregationKey ===
-                    disaggregation.key
-                }
-                inputHasValue={
-                  disaggregationHasInput[disaggregation.key]?.hasInput
-                }
-              />
-            </TabItem>
-          );
-        })}
-      </TabsRow>
-
-      <TabDisplay>
-        {reportMetrics[currentIndex].disaggregations[
-          activeDisaggregation[metric.key]?.disaggregationIndex || 0
-        ]?.dimensions.map((dimension, dimensionIndex) => {
-          return (
-            <DisaggregationInputWrapper
-              key={dimension.key}
-              onChange={() =>
-                searchDimensionsForInput(
-                  metric.disaggregations[
-                    activeDisaggregation[metric.key]?.disaggregationIndex || 0
-                  ].key,
-                  activeDisaggregation[metric.key]?.disaggregationIndex || 0
-                )
-              }
-            >
-              <DisaggregationDimensionTextInput
-                reportID={reportID}
-                key={dimension.key + dimension.reporting_note}
-                metric={metric}
-                dimension={dimension}
-                disaggregation={
-                  metric.disaggregations[
-                    activeDisaggregation[metric.key]?.disaggregationIndex || 0
-                  ]
-                }
-                disaggregationIndex={
-                  activeDisaggregation[metric.key]?.disaggregationIndex || 0
-                }
-                dimensionIndex={dimensionIndex}
-                updateFieldDescription={() =>
-                  updateFieldDescription(
-                    dimension.label,
-                    dimension.reporting_note
-                  )
-                }
-                clearFieldDescription={() => updateFieldDescription("", "")}
-              />
-            </DisaggregationInputWrapper>
-          );
-        })}
-      </TabDisplay>
-    </DisaggregationTabsContainer>
-  );
-};
 
 const DataEntryForm: React.FC<{
   reportID: number;
   updateFieldDescription: (title: string, description: string) => void;
-}> = ({ reportID, updateFieldDescription }) => {
+  updateActiveMetric: (metricKey: string) => void;
+}> = ({ reportID, updateFieldDescription, updateActiveMetric }) => {
   const [scrolled, setScrolled] = useState(false);
+  const metricsRef = useRef<HTMLDivElement[]>([]);
   const { formStore, reportStore } = useStore();
 
   useEffect(() => {
@@ -252,6 +60,42 @@ const DataEntryForm: React.FC<{
       document.removeEventListener("scroll", updateScrolled);
     };
   }, [scrolled]);
+
+  useEffect(
+    () => {
+      const metricRefsToCleanUp = metricsRef.current;
+
+      const observerOptions: IntersectionObserverInit = {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.5,
+      };
+
+      const observerCallback = (entries: IntersectionObserverEntry[]) => {
+        entries.forEach((entry: IntersectionObserverEntry) => {
+          if (entry.isIntersecting) {
+            updateActiveMetric(entry.target.id);
+          }
+        });
+      };
+
+      const intersectionObserver = new IntersectionObserver(
+        observerCallback,
+        observerOptions
+      );
+
+      metricsRef.current.forEach((metricElement) =>
+        intersectionObserver.observe(metricElement)
+      );
+
+      return () =>
+        metricRefsToCleanUp.forEach((metricElement) =>
+          intersectionObserver.unobserve(metricElement)
+        );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   const reportOverview = reportStore.reportOverviews[reportID];
   const reportMetrics = reportStore.reportMetrics[reportID];
@@ -276,7 +120,11 @@ const DataEntryForm: React.FC<{
       {/* Metrics */}
       {reportMetrics.map((metric, index) => {
         return (
-          <Metric key={metric.key}>
+          <Metric
+            key={metric.key}
+            id={metric.key}
+            ref={(e: HTMLDivElement) => metricsRef.current?.push(e)}
+          >
             <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
             <MetricSectionSubTitle>{metric.description}</MetricSectionSubTitle>
 
@@ -293,7 +141,7 @@ const DataEntryForm: React.FC<{
 
             {/* Disaggregations */}
             {metric.disaggregations.length > 0 && (
-              <DisaggregationDisplay
+              <TabbedDisaggregations
                 reportID={reportID}
                 currentIndex={index}
                 reportMetrics={reportMetrics}

@@ -17,4 +17,5 @@
 
 export * from "./BinaryRadioButton";
 export * from "./Form.styles";
+export * from "./TabbedDisaggregations";
 export * from "./TextInput";

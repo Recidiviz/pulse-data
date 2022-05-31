@@ -23,6 +23,16 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { rootStore, StoreProvider } from "../../stores";
 import ReportDataEntry from "./ReportDataEntry";
 
+beforeEach(() => {
+  const mockIntersectionObserver = jest.fn();
+  mockIntersectionObserver.mockReturnValue({
+    observe: () => null,
+    unobserve: () => null,
+    disconnect: () => null,
+  });
+  window.IntersectionObserver = mockIntersectionObserver;
+});
+
 test("display loading when no reports are loaded", () => {
   render(
     <StoreProvider>
