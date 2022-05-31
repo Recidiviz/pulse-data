@@ -35,7 +35,7 @@ resource "google_project_iam_custom_role" "gcs-object-and-bucket-viewer" {
 }
 
 resource "google_project_iam_custom_role" "sql-importer" {
-  role_id     = "sqlImporter"
+  role_id     = "sqlImporterRole"
   title       = "Recidiviz SQL Importer"
   description = "Role that lets service accounts import data into a SQL database, without needing to have Cloud SQL Admin"
   permissions = [
