@@ -21,7 +21,6 @@ from typing import List, Optional
 from more_itertools import one
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session import Session
 
@@ -30,17 +29,11 @@ def get_raw_file_metadata_row_for_path(
     session: Session,
     region_code: str,
     path: GcsfsFilePath,
-    raw_data_instance: DirectIngestInstance,
 ) -> schema.DirectIngestRawFileMetadata:
     """Returns metadata information for the provided path, throws if it doesn't exist."""
     results = (
         session.query(schema.DirectIngestRawFileMetadata)
-        .filter_by(
-            region_code=region_code.upper(),
-            normalized_file_name=path.file_name,
-            is_invalidated=False,
-            raw_data_instance=raw_data_instance.value,
-        )
+        .filter_by(region_code=region_code.upper(), normalized_file_name=path.file_name)
         .all()
     )
 
@@ -75,15 +68,11 @@ def get_metadata_for_raw_files_discovered_after_datetime(
     region_code: str,
     raw_file_tag: str,
     discovery_time_lower_bound_exclusive: Optional[datetime.datetime],
-    raw_data_instance: DirectIngestInstance,
 ) -> List[schema.DirectIngestRawFileMetadata]:
     """Returns metadata for all raw files with a given tag that have been updated after the provided date."""
 
     query = session.query(schema.DirectIngestRawFileMetadata).filter_by(
-        region_code=region_code.upper(),
-        file_tag=raw_file_tag,
-        is_invalidated=False,
-        raw_data_instance=raw_data_instance.value,
+        region_code=region_code.upper(), file_tag=raw_file_tag
     )
     if discovery_time_lower_bound_exclusive:
         query = query.filter(

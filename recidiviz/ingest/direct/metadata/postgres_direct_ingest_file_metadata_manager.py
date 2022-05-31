@@ -31,7 +31,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import
     DirectIngestRawFileMetadataManager,
     DirectIngestSftpFileMetadataManager,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import dao, schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -121,14 +120,10 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
     direct ingest file to the operations Postgres table.
     """
 
-    def __init__(
-        self,
-        region_code: str,
-        raw_data_instance: DirectIngestInstance,
-    ) -> None:
+    def __init__(self, region_code: str, ingest_database_name: str) -> None:
         self.region_code = region_code.upper()
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        self.raw_data_instance = raw_data_instance
+        self.ingest_database_name = ingest_database_name
 
     def has_raw_file_been_discovered(self, path: GcsfsFilePath) -> bool:
         try:
@@ -152,8 +147,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                     discovery_time=datetime.datetime.now(tz=pytz.UTC),
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
-                    raw_data_instance=self.raw_data_instance.value,
-                    is_invalidated=False,
                 )
             )
 
@@ -162,7 +155,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             self.database_key, autocommit=False
         ) as session:
             metadata = dao.get_raw_file_metadata_row_for_path(
-                session, self.region_code, path, self.raw_data_instance
+                session, self.region_code, path
             )
             return self._raw_file_schema_metadata_as_entity(metadata)
 
@@ -180,7 +173,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
     def mark_raw_file_as_processed(self, path: GcsfsFilePath) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             metadata = dao.get_raw_file_metadata_row_for_path(
-                session, self.region_code, path, self.raw_data_instance
+                session, self.region_code, path
             )
 
             metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
@@ -198,7 +191,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 region_code=self.region_code,
                 raw_file_tag=raw_file_tag,
                 discovery_time_lower_bound_exclusive=discovery_time_lower_bound_exclusive,
-                raw_data_instance=self.raw_data_instance,
             )
 
             return [
@@ -221,9 +213,9 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
 
     def get_num_unprocessed_raw_files(self) -> int:
         """Returns the number of unprocessed raw files in the operations table for this region"""
-        if self.raw_data_instance == DirectIngestInstance.SECONDARY:
+        if "secondary" in self.ingest_database_name:
             raise DirectIngestInstanceError(
-                f"Invalid ingest instance [{self.raw_data_instance}] provided."
+                f"Invalid ingest database name [{self.ingest_database_name}] provided."
                 f"Raw files should only be processed in a primary ingest instance,"
                 f"not the secondary instance. "
             )
@@ -237,9 +229,9 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
 
     def get_num_processed_raw_files(self) -> int:
         """Returns the number of processed raw files in the operations table for this region"""
-        if self.raw_data_instance == DirectIngestInstance.SECONDARY:
+        if "secondary" in self.ingest_database_name:
             raise DirectIngestInstanceError(
-                f"Invalid ingest instance [{self.raw_data_instance}] provided."
+                f"Invalid ingest database name [{self.ingest_database_name}] provided."
                 f"Raw files should only be processed in a primary ingest instance,"
                 f"not the secondary instance. "
             )
