@@ -26,10 +26,9 @@ import {
   printCommaSeparatedList,
   printDateRangeFromMonthYear,
   printElapsedDaysSinceDate,
-  rem,
 } from "../../utils";
-import checkmark from "../assets/status-check-icon.png";
-import xmark from "../assets/status-error-icon.png";
+// import successIcon from "../assets/status-check-icon.png";
+import errorIcon from "../assets/status-error-icon.png";
 import { GoBackLink, PreTitle, Title } from "../Forms";
 import { palette, typography } from "../GlobalStyles";
 
@@ -44,98 +43,40 @@ export const ReportSummaryWrapper = styled.div`
   background: ${palette.solid.white};
 `;
 
-type ReportSummaryProgressIndicatorProps = {
-  sectionStatus?: "completed" | "error";
-};
-
 export const ReportSummaryProgressIndicatorWrapper = styled.div`
   margin-top: 28px;
 `;
 
-export const ReportSummaryProgressIndicator = styled.div<ReportSummaryProgressIndicatorProps>`
-  background: ${({ sectionStatus }) => {
-    if (sectionStatus === "error") {
-      return palette.highlight.red;
-    }
-    return sectionStatus === "completed"
-      ? palette.highlight.lightblue1
-      : undefined;
-  }};
-
-  height: 40px;
+const ReportSummarySection = styled.a`
+  ${typography.sizeCSS.normal}
+  height: 24px;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   position: relative;
-  padding-left: 33px;
+  text-decoration: none;
+  margin-bottom: 2px;
   border-radius: 2px;
-  font-size: ${rem("15px")};
-  line-height: 24px;
+  color: ${palette.highlight.grey8};
+  transition: 0.2s ease;
 
   &:hover {
     cursor: pointer;
-  }
-
-  &:before {
-    content: ${({ sectionStatus }) => {
-      if (sectionStatus === "error") {
-        return `"x"`;
-      }
-      return sectionStatus === "completed" ? `"✓"` : `"•"`;
-    }};
-    background: ${({ sectionStatus }) => {
-      if (sectionStatus === "error") {
-        return palette.solid.red;
-      }
-      return sectionStatus === "completed"
-        ? palette.solid.blue
-        : palette.highlight.grey8;
-    }};
-
-    width: 16px;
-    height: 16px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-    top: 12px;
-    left: 10px;
-    border-radius: 100%;
-    font-size: 8px;
-    font-weight: 600;
-    font-family: sans-serif;
-    color: white;
+    color: ${palette.solid.darkgrey};
   }
 `;
 
-const ReportSummarySection = styled.div<{
+const MetricDisplayName = styled.div<{
   activeSection?: boolean;
-  metricHasError?: boolean;
 }>`
-  height: 40px;
-  display: flex;
-  align-items: center;
-  position: relative;
-  padding-left: 33px;
-  border-radius: 2px;
-  font-size: ${rem("15px")};
-  line-height: 24px;
-  background: ${({ activeSection, metricHasError }) => {
-    if (activeSection && metricHasError) {
-      return palette.highlight.red;
-    }
-    if (activeSection) {
-      return palette.highlight.lightblue1;
-    }
-  }};
-
-  &:hover {
-    cursor: pointer;
-    background: ${palette.highlight.grey1};
-  }
+  ${({ activeSection }) =>
+    activeSection && `color: ${palette.solid.darkgrey};`};
+  border-bottom: 2px solid
+    ${({ activeSection }) =>
+      activeSection ? palette.solid.blue : `transparent`};
 `;
 
 const ReportStatusIcon = styled.div<{
-  activeSection?: boolean;
   metricHasError?: boolean;
   metricHasEntries?: boolean;
 }>`
@@ -144,28 +85,18 @@ const ReportStatusIcon = styled.div<{
   display: flex;
   justify-content: center;
   align-items: center;
-  position: absolute;
-  top: 12px;
-  left: 10px;
   border-radius: 100%;
-  font-size: 8px;
-  font-weight: 600;
-  font-family: sans-serif;
-  background: ${({ activeSection, metricHasError, metricHasEntries }) => {
+  margin-right: 8px;
+
+  background: ${({ metricHasError }) => {
     if (metricHasError) {
       return palette.solid.red;
     }
-    if (!metricHasError && metricHasEntries) {
-      return palette.solid.blue;
-    }
 
-    if (!metricHasEntries && activeSection) {
-      return palette.highlight.lightblue2;
-    }
-
-    return palette.highlight.grey8;
+    return `transparent`;
   }};
   color: white;
+  border: 1px solid ${palette.highlight.grey4};
 `;
 
 export const EditDetails = styled.div`
@@ -188,40 +119,31 @@ export const EditDetailsContent = styled.div`
 
 const ReportStatusIconComponent: React.FC<{
   metricHasError: boolean;
-  metricHasEntries: boolean;
   activeMetric: string;
   metric: Metric;
-  updateActiveMetric: (metricKey: string) => void;
-}> = ({
-  metricHasEntries,
-  metricHasError,
-  metric,
-  activeMetric,
-  updateActiveMetric,
-}) => {
+}> = ({ metricHasError, metric, activeMetric }) => {
   return (
     <ReportSummarySection
-      onClick={() => updateActiveMetric(metric.key)}
-      activeSection={metric.key === activeMetric}
-      metricHasError={metricHasError}
+      onClick={() => {
+        document
+          .getElementById(metric.key)
+          ?.scrollIntoView({ behavior: "smooth" });
+      }}
     >
-      <ReportStatusIcon
-        metricHasError={metricHasError}
-        activeSection={metric.key === activeMetric}
-        metricHasEntries={metricHasEntries}
-      >
+      <ReportStatusIcon metricHasError={metricHasError}>
         {/* Error State */}
-        {metricHasError && <img src={xmark} alt="" width="6px" height="6px" />}
-
-        {/* Validated State */}
-        {!metricHasError && metricHasEntries && (
-          <img src={checkmark} alt="" width="6px" height="5px" />
+        {metricHasError && (
+          <img src={errorIcon} alt="" width="16px" height="16px" />
         )}
 
-        {/* Default State (no entries) */}
-        {!metricHasError && !metricHasEntries && "•"}
+        {/* Validated State [Placeholder] */}
+        {/* {!metricHasError && (
+          <img src={successIcon} alt="" width="16px" height="16px" />
+        )} */}
       </ReportStatusIcon>
-      {metric.display_name}
+      <MetricDisplayName activeSection={metric.key === activeMetric}>
+        {metric.display_name}
+      </MetricDisplayName>
     </ReportSummarySection>
   );
 };
@@ -229,8 +151,7 @@ const ReportStatusIconComponent: React.FC<{
 const ReportSummaryPanel: React.FC<{
   reportID: number;
   activeMetric: string;
-  updateActiveMetric: (metricKey: string) => void;
-}> = ({ reportID, activeMetric, updateActiveMetric }) => {
+}> = ({ reportID, activeMetric }) => {
   const navigate = useNavigate();
   const { formStore, reportStore, userStore } = useStore();
   const {
@@ -239,6 +160,38 @@ const ReportSummaryPanel: React.FC<{
     month,
     year,
   } = reportStore.reportOverviews[reportID];
+
+  const checkMetricForErrorsInUpdatedValues = (metricKey: string) => {
+    let foundErrors = false;
+
+    if (formStore.metricsValues[reportID]?.[metricKey]?.error) {
+      foundErrors = true;
+    }
+
+    if (formStore.disaggregations[reportID]?.[metricKey]) {
+      Object.values(formStore.disaggregations[reportID][metricKey]).forEach(
+        (disaggregation) => {
+          Object.values(disaggregation).forEach((dimension) => {
+            if (dimension.error) {
+              foundErrors = true;
+            }
+          });
+        }
+      );
+    }
+
+    if (formStore.contexts[reportID]?.[metricKey]) {
+      Object.values(formStore.contexts[reportID][metricKey]).forEach(
+        (context) => {
+          if (context.error) {
+            foundErrors = true;
+          }
+        }
+      );
+    }
+
+    return foundErrors;
+  };
 
   return (
     <ReportSummaryWrapper>
@@ -250,33 +203,14 @@ const ReportSummaryPanel: React.FC<{
       <Title>Report Summary</Title>
 
       <ReportSummaryProgressIndicatorWrapper>
-        {reportStore.reportMetrics[reportID].map((metric, metricIndex) => {
+        {reportStore.reportMetrics[reportID].map((metric) => {
+          const foundErrors = checkMetricForErrorsInUpdatedValues(metric.key);
+
           return (
             <ReportStatusIconComponent
               key={metric.key}
-              updateActiveMetric={updateActiveMetric}
               activeMetric={activeMetric}
-              metricHasError={Boolean(
-                formStore.metricsValues[reportID]?.[metric.key]?.value
-              )}
-              /**
-               * Need to figure out what this component should subscribe to in order to give
-               * the default/no data entry styling state.
-               *
-               * We can't subscribe to the formStore metric/disaggregation/context objects as
-               * those are newly created when values are entered during the session.
-               *
-               * Do we map through the reportStore metric to see if no data has been entered?
-               *
-               * Right now, it's subscribed to the top-level metric value (either in the temp
-               * formStore object [that is populated from the current session]
-               * or reportStore metric from the DB).
-               */
-              metricHasEntries={
-                Boolean(
-                  reportStore.reportMetrics[reportID][metricIndex].value
-                ) || Boolean(formStore.metricsValues[reportID]?.[metric.key])
-              }
+              metricHasError={foundErrors}
               metric={metric}
             />
           );

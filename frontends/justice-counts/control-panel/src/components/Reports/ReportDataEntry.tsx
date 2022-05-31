@@ -68,13 +68,10 @@ const ReportDataEntry = () => {
 
   return (
     <PageWrapper>
-      <ReportSummaryPanel
-        reportID={reportID}
-        updateActiveMetric={updateActiveMetric}
-        activeMetric={activeMetric}
-      />
+      <ReportSummaryPanel reportID={reportID} activeMetric={activeMetric} />
       <DataEntryForm
         reportID={reportID}
+        updateActiveMetric={updateActiveMetric}
         updateFieldDescription={updateFieldDescription}
       />
       <PublishDataPanel

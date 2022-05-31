@@ -192,14 +192,14 @@ export const TextInput: React.FC<TextInputProps> = ({
       <Input
         {...props}
         error={error}
-        id={name}
+        id={`input-${name}`}
         additionalContext={additionalContext}
         placeholder={additionalContext ? "" : "Enter value"}
       />
 
       {/* Text Input Label (appears inside of text input) */}
       <InputLabel
-        htmlFor={name}
+        htmlFor={`input-${name}`}
         inputHasValue={Boolean(value)}
         isDisabled={disabled}
         additionalContext={additionalContext}

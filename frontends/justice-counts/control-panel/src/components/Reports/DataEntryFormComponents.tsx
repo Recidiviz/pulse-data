@@ -55,7 +55,6 @@ export const MetricTextInput = observer(
         error={metricsValues[reportID]?.[metric.key]?.error}
         type="text"
         name={metric.key}
-        id={metric.key}
         valueLabel={metric.unit}
         context={metric.reporting_note}
         onChange={handleMetricChange}
