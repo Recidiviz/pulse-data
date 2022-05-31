@@ -157,7 +157,9 @@ class BaseDirectIngestController:
 
         self.raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
-            ingest_database_name=self.ingest_database_key.db_name,
+            # TODO(#12794): Change to be based on the instance the raw file is processed in once we can ingest in
+            # multiple instances.
+            raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
         big_query_client = BigQueryClientImpl()
