@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.exceptions import JusticeCountsDataError
 from recidiviz.justice_counts.utils.persistence_utils import update_existing_or_create
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -51,6 +52,20 @@ class DatapointInterface:
         All datapoints associated with a metric are saved, even if no value was reported.
         An empty form field is represented by a None value.
         """
+
+        # Don't save invalid datapoint values when publishing
+        if (
+            report.status == schema.ReportStatus.PUBLISHED
+            and value is not None
+            and (value_type is None or value_type == ValueType.NUMBER)
+        ):
+            try:
+                int(value)
+            except ValueError as e:
+                raise JusticeCountsDataError(
+                    code="invalid_datapoint_value",
+                    description=f"Datapoint represents a int value, but is a string. Datapoint ID: {report.id}, value: {value}",
+                ) from e
 
         datapoint, existing_datapoint = update_existing_or_create(
             schema.Datapoint(
