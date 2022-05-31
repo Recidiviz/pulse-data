@@ -99,3 +99,7 @@ script_prompt "Have you completed all Post-Deploy tasks listed at http://go/depl
 
 duration=$SECONDS
 echo "Production deploy completed in $(($duration / 60)) minutes. Add to go/deploy-duration-tracker."
+
+echo "Generating release notes."
+GITHUB_DEPLOY_BOT_TOKEN=$(echo $(gcloud secrets versions access latest --secret=github_deploy_script_pat --project recidiviz-123))
+run_cmd pipenv run  python -m recidiviz.tools.deploy.generate_release_notes --previous_tag $LAST_DEPLOYED_GIT_VERSION_TAG --new_tag $GIT_VERSION_TAG --github_token $GITHUB_DEPLOY_BOT_TOKEN
