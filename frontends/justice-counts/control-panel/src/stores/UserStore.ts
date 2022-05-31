@@ -45,6 +45,8 @@ class UserStore {
 
   permissions: string[];
 
+  currentAgencyId: number | undefined;
+
   constructor(authStore: AuthStore, api: API) {
     makeAutoObservable(this);
 
@@ -58,6 +60,7 @@ class UserStore {
     this.userInfoLoaded = false;
     this.hasSeenOnboarding = true;
     this.permissions = [];
+    this.currentAgencyId = undefined;
 
     when(
       () => api.isSessionInitialized,
@@ -65,13 +68,25 @@ class UserStore {
     );
   }
 
-  get userAgency(): UserAgency | undefined {
+  getInitialAgencyId(): number | undefined {
     if (this.userAgencies && this.userAgencies.length > 0) {
       // attempting to access 0 index in the empty array leads to the mobx warning "[mobx] Out of bounds read: 0"
       // so check the length of the array before accessing
-      return this.userAgencies[0];
+      return this.userAgencies[0].id;
     }
     return undefined;
+  }
+
+  get currentAgency(): UserAgency | undefined {
+    return this.userAgencies?.find(
+      (agency) => agency.id === this.currentAgencyId
+    );
+  }
+
+  setCurrentAgencyId(agencyId: number | undefined) {
+    runInAction(() => {
+      this.currentAgencyId = agencyId;
+    });
   }
 
   async updateAndRetrieveUserInfo() {
@@ -108,6 +123,7 @@ class UserStore {
         this.userAgencies = userAgencies;
         this.permissions = permissions;
         this.hasSeenOnboarding = hasSeenOnboarding; // will be used in future
+        this.currentAgencyId = this.getInitialAgencyId();
 
         if (this.userID && this.userAgencies) {
           this.userInfoLoaded = true;

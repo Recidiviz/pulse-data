@@ -58,12 +58,10 @@ class ReportStore {
 
   async getReportOverviews(): Promise<void | Error> {
     try {
-      const { userAgency } = this.userStore;
-
-      if (userAgency !== undefined) {
+      const { currentAgency } = this.userStore;
+      if (currentAgency !== undefined) {
         const response = (await this.api.request({
-          // TODO(#12262): Will need to revisit and update request path to handle multiple agencies
-          path: `/api/reports?agency_id=${userAgency.id}`,
+          path: `/api/reports?agency_id=${currentAgency.id}`,
           method: "GET",
         })) as Response;
         const allReports = await response.json();
@@ -113,13 +111,13 @@ class ReportStore {
     body: Record<string, unknown>
   ): Promise<Response | Error | undefined> {
     try {
-      const { userAgency } = this.userStore;
+      const { currentAgency } = this.userStore;
 
-      if (userAgency !== undefined) {
+      if (currentAgency !== undefined) {
         const response = (await this.api.request({
           path: "/api/reports",
           method: "POST",
-          body: { agency_id: userAgency.id, ...body },
+          body: { agency_id: currentAgency.id, ...body },
         })) as Response;
 
         return response;
@@ -153,6 +151,15 @@ class ReportStore {
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }
+  }
+
+  resetState() {
+    // reset the state when switching agencies
+    runInAction(() => {
+      this.reportOverviews = {};
+      this.reportMetrics = {};
+      this.loadingOverview = true;
+    });
   }
 }
 

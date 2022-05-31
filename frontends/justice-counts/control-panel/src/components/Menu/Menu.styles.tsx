@@ -70,14 +70,14 @@ export const ExtendedDropdownToggle = styled(DropdownToggle)`
 `;
 
 export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)<{
-  logoutColor?: boolean;
+  highlight?: boolean;
 }>`
   min-width: 264px;
   display: flex;
   font-family: ${typography.family};
   ${typography.sizeCSS.normal}
-  color: ${({ logoutColor }) =>
-    logoutColor ? palette.solid.red : palette.solid.darkgrey};
+  color: ${({ highlight }) =>
+    highlight ? palette.solid.red : palette.solid.darkgrey};
   padding: 16px;
   height: auto;
 
@@ -95,8 +95,8 @@ export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)<{
 
   &:focus {
     background-color: transparent;
-    color: ${({ logoutColor }) =>
-      logoutColor ? palette.solid.red : palette.solid.darkgrey};
+    color: ${({ highlight }) =>
+      highlight ? palette.solid.red : palette.solid.darkgrey};
   }
 
   &:hover {
