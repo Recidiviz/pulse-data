@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the Agency model."""
 
+import logging
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -45,14 +46,17 @@ class AgencyInterface:
         return session.query(Agency).filter(Agency.id == agency_id).one()
 
     @staticmethod
-    def get_agencies_by_id(session: Session, agency_ids: List[int]) -> List[Agency]:
+    def get_agencies_by_id(
+        session: Session, agency_ids: List[int], raise_on_missing: bool = False
+    ) -> List[Agency]:
         agencies = session.query(Agency).filter(Agency.id.in_(agency_ids)).all()
         found_agency_ids = {a.id for a in agencies}
         if len(agency_ids) != len(found_agency_ids):
             missing_agency_ids = set(agency_ids).difference(found_agency_ids)
-            raise ValueError(
-                f"Could not find the following agencies: {missing_agency_ids}"
-            )
+            msg = f"Could not find the following agencies: {missing_agency_ids}"
+            if raise_on_missing:
+                raise ValueError(msg)
+            logging.warning(msg)
 
         return agencies
 

@@ -44,14 +44,22 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
     # Next add a group of Agencies
     # Use the id that the Agency has on staging, so that users have access
     # on both staging environment and local development
-    agency_tuples = [(147, "Agency Alpha")]
+    agency_tuples = [
+        (147, schema.System.LAW_ENFORCEMENT, "Law Enforcement"),
+        (148, schema.System.DEFENSE, "Defense"),
+        (149, schema.System.PROSECUTION, "Prosecution"),
+        (150, schema.System.COURTS_AND_PRETRIAL, "Courts"),
+        (151, schema.System.JAILS, "Jails"),
+        (152, schema.System.PRISONS, "Prisons"),
+        (153, schema.System.SUPERVISION, "Supervision"),
+    ]
     agencies = []
-    for agency_id, agency_name in agency_tuples:
+    for agency_id, agency_system, agency_name in agency_tuples:
         agencies.append(
             schema.Agency(
                 id=agency_id,
                 name=agency_name,
-                system=schema.System.LAW_ENFORCEMENT,
+                system=agency_system,
                 state_code="US_NY",
                 fips_county_code="us_ny_new_york",
             )
@@ -60,7 +68,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
 
     # Finally add a group of reports (which depend on agencies already being in the DB)
     reports = []
-    for agency_id, agency_name in agency_tuples:
+    for agency_id, _, agency_name in agency_tuples:
         # For each agency, create two reports, one monthly and one annual.
         monthly_report = ReportInterface.create_report_object(
             agency_id=agency_id,
