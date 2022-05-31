@@ -39,7 +39,7 @@ resource "google_bigquery_job" "load" {
   # into the table. Until this issue is resolved we are required to update the `vX`
   # fragment below on a 6-month cadence.
   # Issue: https://github.com/hashicorp/terraform-provider-google/issues/9768)
-  job_id = "${var.table_name}_load_v2_${md5(google_storage_bucket_object.table_data.crc32c)}"
+  job_id = "${var.table_name}_load_v3_${md5(google_storage_bucket_object.table_data.crc32c)}"
 
   load {
     source_uris = [
