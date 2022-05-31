@@ -497,10 +497,17 @@ class Datapoint(JusticeCountsBase):
 
     def get_value(self) -> Any:
         value = self.value
+        status = self.report.status
         if value is None:
             return value
         if self.context_key is None or self.value_type == ValueType.NUMBER:
-            value = int(value)
+            try:
+                value = int(value)
+            except ValueError as e:
+                if status == ReportStatus.PUBLISHED:
+                    raise ValueError(
+                        f"Datapoint represents a int value, but is a string. Datapoint ID: {self.id}, value: {value}",
+                    ) from e
         elif self.value_type == ValueType.BOOLEAN:
             value = value == "True"
         return value
