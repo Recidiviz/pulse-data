@@ -19,8 +19,9 @@ import abc
 import os
 import re
 import unittest
+from datetime import datetime
 from types import ModuleType
-from typing import Callable, List
+from typing import Callable, List, Optional, Tuple
 
 import yaml
 from mock import patch
@@ -49,6 +50,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
+    DeleteFromRawTableMigration,
     UpdateRawTableMigration,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
@@ -330,6 +332,34 @@ class DirectIngestRegionDirStructureBase:
                             self.assertColumnIsDocumented(
                                 migration.file_tag, col_name, raw_file_config
                             )
+
+                # Check that update_datetime_filters, filters and optional updates are unique
+                for migration in migrations:
+                    if isinstance(migration, UpdateRawTableMigration):
+                        distinct_update_values: List[
+                            Tuple[
+                                Optional[List[datetime]],
+                                List[Tuple[str, str]],
+                                List[Tuple[str, Optional[str]]],
+                            ]
+                        ] = []
+                        update_values = (
+                            migration.update_datetime_filters,
+                            list(migration.filters.items()),
+                            list(migration.updates.items()),
+                        )
+                        self.test.failIf(update_values in distinct_update_values)
+                        distinct_update_values.append(update_values)
+                    if isinstance(migration, DeleteFromRawTableMigration):
+                        distinct_deletion_values: List[
+                            Tuple[Optional[List[datetime]], List[Tuple[str, str]]]
+                        ] = []
+                        deletion_values = (
+                            migration.update_datetime_filters,
+                            list(migration.filters.items()),
+                        )
+                        self.test.failIf(deletion_values in distinct_deletion_values)
+                        distinct_deletion_values.append(deletion_values)
 
     def assertColumnIsDocumented(
         self, file_tag: str, col_name: str, raw_file_config: DirectIngestRawFileConfig
