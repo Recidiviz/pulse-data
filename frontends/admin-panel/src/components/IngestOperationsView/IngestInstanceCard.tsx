@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Card, Col, Descriptions, Row, Statistic } from "antd";
+import { Button, Card, Descriptions } from "antd";
 import * as React from "react";
 import NewTabLink from "../NewTabLink";
 import {
@@ -23,6 +23,7 @@ import {
   IngestActions,
   IngestInstanceSummary,
 } from "./constants";
+import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
 
 interface IngestInstanceCardProps {
@@ -91,54 +92,12 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       </Descriptions>
       <br />
       <h1>Raw data</h1>
-      <p>
-        The counts from each section below should be the same. Reasons why they
-        may differ:
-        <ul>
-          <li>
-            There are raw files in the ingest bucket for which a corresponding
-            raw file YAML has not been deployed.
-          </li>
-          <li>
-            Some sort of cleanup was botched in the GCS bucket or operations DB
-            and we should investigate the differences.
-          </li>
-        </ul>
-      </p>
-      <Descriptions bordered>
-        <Descriptions.Item label="GCS file metadata" span={3}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Statistic
-                title="Unprocessed"
-                value={data.ingest.unprocessedFilesRaw}
-              />
-            </Col>
-            <Col span={12}>
-              <Statistic
-                title="Processed"
-                value={data.ingest.processedFilesRaw}
-              />
-            </Col>
-          </Row>
-        </Descriptions.Item>
-        <Descriptions.Item label="Operations DB file metadata" span={3}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Statistic
-                title="Unprocessed"
-                value={data.operations.unprocessedFilesRaw}
-              />
-            </Col>
-            <Col span={12}>
-              <Statistic
-                title="Processed"
-                value={data.operations.processedFilesRaw}
-              />
-            </Col>
-          </Row>
-        </Descriptions.Item>
-      </Descriptions>
+      <InstanceRawFileMetadata
+        stateCode={stateCode}
+        instance={data.instance}
+        operationsInfo={data.operations}
+        numFilesIngestBucket={data.ingestBucketNumFiles}
+      />
       <br />
       <h1>Ingest views</h1>
       <InstanceIngestViewMetadata stateCode={stateCode} data={data} />
@@ -146,13 +105,13 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       <h1>Resources</h1>
       <Descriptions bordered>
         <Descriptions.Item label="Ingest Bucket" span={3}>
-          <NewTabLink href={baseBucketUrl.concat(data.ingest.name)}>
-            {data.ingest.name}
+          <NewTabLink href={baseBucketUrl.concat(data.ingestBucketPath)}>
+            {data.ingestBucketPath}
           </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Storage Bucket" span={3}>
-          <NewTabLink href={baseBucketUrl.concat(data.storage)}>
-            {data.storage}
+          <NewTabLink href={baseBucketUrl.concat(data.storageDirectoryPath)}>
+            {data.storageDirectoryPath}
           </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Postgres database" span={3}>
