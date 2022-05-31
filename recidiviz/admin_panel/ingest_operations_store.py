@@ -24,7 +24,7 @@ from google.cloud import tasks_v2
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
@@ -193,29 +193,6 @@ class IngestOperationsStore(AdminPanelStore):
 
         return ingest_queue_states
 
-    def _get_bucket_metadata(self, path: GcsfsBucketPath) -> BucketSummaryType:
-        """Returns a dictionary containing the following info for a given bucket:
-        i.e. {
-            name: bucket_name,
-            unprocessedFilesRaw: how many unprocessed raw data files in the bucket,
-            processedFilesRaw: how many processed raw data files are in the bucket (should be zero),
-        }
-        """
-        bucket_metadata: BucketSummaryType = {
-            "name": path.abs_path(),
-        }
-
-        logging.info("Getting bucket metadata")
-        logging.info("Getting unprocessed raw file paths")
-        unprocessed_files = self.fs.get_unprocessed_raw_file_paths(path)
-        bucket_metadata["unprocessedFilesRaw"] = len(unprocessed_files)
-
-        logging.info("Getting processed raw file paths")
-        processed_files = self.fs.get_processed_file_paths(path)
-        bucket_metadata["processedFilesRaw"] = len(processed_files)
-
-        return bucket_metadata
-
     def get_ingest_instance_summary(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
     ) -> Dict[str, Any]:
@@ -223,18 +200,10 @@ class IngestOperationsStore(AdminPanelStore):
         i.e. {
             instance: the direct ingest instance,
             dbName: database name for this instance,
-            storage: storage bucket absolute path,
-            ingest: {
-                name: bucket_name,
-                unprocessedFilesRaw: how many unprocessed raw data files in the bucket,
-                processedFilesRaw: how many processed raw data files are in the bucket (should be zero),
-            },
-            operations: {
-                unprocessedFilesRaw: number of unprocessed raw files in the operations database
-                dateOfEarliestUnprocessedIngestView: date of earliest unprocessed ingest file, if it exists
-            }
-            isBQMaterializationEnabled: If true, BQ ingest view materialization is
-                enabled for this state for this ingest instance.
+            storageDirectoryPath: storage directory absolute path,
+            ingestBucketPath: ingest bucket path,
+            ingestBucketNumFiles: number of files of any kind in the ingest bucket,
+            operations: dictionary with metadata from the operations DB
         }
         """
         formatted_state_code = state_code.value.lower()
@@ -245,8 +214,15 @@ class IngestOperationsStore(AdminPanelStore):
             ingest_instance=ingest_instance,
             project_id=metadata.project_id(),
         )
-        # Get an object containing information about the ingest bucket
-        ingest_bucket_metadata = self._get_bucket_metadata(ingest_bucket_path)
+
+        files_in_bucket = [
+            p
+            for p in self.fs.ls_with_blob_prefix(
+                bucket_name=ingest_bucket_path.bucket_name, blob_prefix=""
+            )
+            if isinstance(p, GcsfsFilePath)
+        ]
+        num_files_in_bucket = len(files_in_bucket)
 
         # Get the storage bucket for this instance
         storage_bucket_path = gcsfs_direct_ingest_storage_directory_path_for_state(
@@ -263,15 +239,12 @@ class IngestOperationsStore(AdminPanelStore):
             state_code, ingest_instance
         )
 
-        logging.info(
-            "Getting ingest view materialization gating context for [%s]",
-            ingest_instance.value,
-        )
         logging.info("Done getting instance summary for [%s]", ingest_instance.value)
         return {
             "instance": ingest_instance.value,
-            "storage": storage_bucket_path.abs_path(),
-            "ingest": ingest_bucket_metadata,
+            "storageDirectoryPath": storage_bucket_path.abs_path(),
+            "ingestBucketPath": ingest_bucket_path.abs_path(),
+            "ingestBucketNumFiles": num_files_in_bucket,
             "dbName": ingest_db_name,
             "operations": operations_db_metadata,
         }
