@@ -87,7 +87,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 5
     override_reason: TODO(#9735) - needs investigation
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 800
+    hard_num_allowed_rows_override: 1000
     override_reason:
       TODO(#6253) - Likely a rare edge case related to ordering movements
       in the PA supervision_period ingest view. Rerun on 02/15/2022 did not improve these.
