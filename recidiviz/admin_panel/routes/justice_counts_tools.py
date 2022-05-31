@@ -240,7 +240,9 @@ def _merge_auth0_and_db_users(
     }
     for _, user in all_users_by_email.items():
         user.agencies = [
-            agencies_by_id[agency_id].to_json() for agency_id in user.agency_ids
+            agencies_by_id[agency_id].to_json()
+            for agency_id in user.agency_ids
+            if agency_id in agencies_by_id
         ]
 
     return list(all_users_by_email.values())
