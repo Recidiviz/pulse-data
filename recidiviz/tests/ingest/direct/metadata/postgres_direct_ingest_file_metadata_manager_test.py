@@ -32,7 +32,6 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
     PostgresDirectIngestRawFileMetadataManager,
     PostgresDirectIngestSftpFileMetadataManager,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -75,20 +74,18 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         fakes.use_in_memory_sqlite_database(self.database_key)
 
         self.raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
-            region_code="us_xx",
-            raw_data_instance=DirectIngestInstance.PRIMARY,
+            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
         )
         self.raw_metadata_manager_secondary = (
             PostgresDirectIngestRawFileMetadataManager(
                 region_code="us_xx",
-                raw_data_instance=DirectIngestInstance.SECONDARY,
+                ingest_database_name="us_xx_ingest_database_name_secondary",
             )
         )
 
         self.raw_metadata_manager_other_region = (
             PostgresDirectIngestRawFileMetadataManager(
-                region_code="us_yy",
-                raw_data_instance=DirectIngestInstance.PRIMARY,
+                region_code="us_yy", ingest_database_name="us_yy_ingest_database_name"
             )
         )
 
@@ -124,6 +121,9 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # Act
         self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
         metadata = self.raw_metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
+        metadata_secondary = self.raw_metadata_manager_secondary.get_raw_file_metadata(
+            raw_unprocessed_path
+        )
 
         # Assert
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
@@ -140,6 +140,12 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self.assertIsInstance(metadata, DirectIngestRawFileMetadata)
         self.assertIsNotNone(metadata.file_id)
         self.assertEqual(expected_metadata, metadata)
+
+        # Raw file metadata is not impacted by which ingest database the metadata
+        # manager is associated with.
+        self.assertIsInstance(metadata_secondary, DirectIngestRawFileMetadata)
+        self.assertIsNotNone(metadata_secondary.file_id)
+        self.assertEqual(expected_metadata, metadata_secondary)
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_file_metadata_unique_to_state(self) -> None:
@@ -185,8 +191,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self.assertTrue(
             self.raw_metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
         )
-        # The file was only discovered in PRIMARY so assert that it was not discovered in SECONDARY.
-        self.assertFalse(
+        self.assertTrue(
             self.raw_metadata_manager_secondary.has_raw_file_been_discovered(
                 raw_unprocessed_path
             )
@@ -221,8 +226,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self.assertTrue(
             self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
         )
-        # The raw file was only processed in PRIMARY, so assert that it was not processed in SECONDARY.
-        self.assertFalse(
+        self.assertTrue(
             self.raw_metadata_manager_secondary.has_raw_file_been_processed(
                 raw_unprocessed_path
             )

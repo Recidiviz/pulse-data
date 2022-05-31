@@ -160,12 +160,6 @@ class DirectIngestRawFileMetadata(OperationsBase):
     # for this raw data file.
     datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
 
-    # The instance that this raw data was imported to.
-    raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
-
-    # Whether or not this row is still valid.
-    is_invalidated = Column(Boolean, nullable=False)
-
 
 class DirectIngestViewMaterializationMetadata(OperationsBase):
     """Represents the metadata known about a job to materialize the results of an ingest

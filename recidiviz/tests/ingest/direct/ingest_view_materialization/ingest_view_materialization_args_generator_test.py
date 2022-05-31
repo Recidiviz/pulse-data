@@ -103,7 +103,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         ingest_view_name: Optional[str] = None,
     ) -> IngestViewMaterializationArgsGenerator:
         raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
-            region.region_code, DirectIngestInstance.PRIMARY
+            region.region_code, self.ingest_database_name
         )
         ingest_view_name = ingest_view_name or "ingest_view"
         return IngestViewMaterializationArgsGenerator(
@@ -405,8 +405,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     datetimes_contained_upper_bound_inclusive=raw_file_datetimes_item.datetimes_contained_upper_bound_inclusive,
                     discovery_time=raw_file_datetimes_item.discovery_time,
                     processed_time=raw_file_datetimes_item.processed_time,
-                    raw_data_instance=DirectIngestInstance.PRIMARY.value,
-                    is_invalidated=False,
                 )
                 session.add(raw_file_metadata)
 
