@@ -83,7 +83,8 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
                 ValueError, "Could not find the following agencies: {'Agency Beta'}"
             ):
                 AgencyInterface.get_agencies_by_name(
-                    session=session, names=["Agency Alpha", "Agency Beta"]
+                    session=session,
+                    names=["Agency Alpha", "Agency Beta"],
                 )
 
     def test_create_agency(self) -> None:
