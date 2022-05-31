@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { when } from "mobx";
+import { reaction, when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -92,12 +92,30 @@ const Reports: React.FC = () => {
     }
   };
 
+  // load report overviews after the /api/users request returns successfully
   useEffect(
     () =>
       // return when's disposer so it is cleaned up if it never runs
       when(
         () => userStore.userInfoLoaded,
         () => reportStore.getReportOverviews()
+      ),
+    [reportStore, userStore]
+  );
+
+  // reload report overviews when the current agency ID changes
+  useEffect(
+    () =>
+      // return disposer so it is cleaned up if it never runs
+      reaction(
+        () => userStore.currentAgencyId,
+        (currentAgencyId, previousAgencyId) => {
+          // prevents us from calling getReportOverviews twice on initial load
+          if (previousAgencyId !== undefined) {
+            reportStore.resetState();
+            reportStore.getReportOverviews();
+          }
+        }
       ),
     [reportStore, userStore]
   );

@@ -19,6 +19,7 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { Permission } from "../../shared/types";
 import { useStore } from "../../stores";
 import {
   ExtendedDropdownMenuItem,
@@ -33,13 +34,14 @@ enum MenuItems {
   CreateReport = "CREATE REPORT",
   LearnMore = "LEARN MORE",
   Settings = "SETTINGS",
+  Agencies = "AGENCIES",
 }
 
 const Menu = () => {
   const [activeMenuItem, setActiveMenuItem] = useState<MenuItems>(
     MenuItems.Reports
   );
-  const { authStore, api } = useStore();
+  const { authStore, api, reportStore, userStore } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -95,6 +97,32 @@ const Menu = () => {
         Learn More
       </MenuItem>
 
+      {/* Agencies Dropdown */}
+      {userStore.permissions.includes(Permission.SWITCH_AGENCY) &&
+        location.pathname === "/" && (
+          <MenuItem active={activeMenuItem === MenuItems.Agencies}>
+            <Dropdown>
+              <ExtendedDropdownToggle kind="borderless">
+                Agencies
+              </ExtendedDropdownToggle>
+              <DropdownMenu alignment="right">
+                {userStore.userAgencies?.map((agency) => {
+                  return (
+                    <ExtendedDropdownMenuItem
+                      onClick={() => {
+                        userStore.setCurrentAgencyId(agency.id);
+                      }}
+                      highlight={userStore.currentAgency?.id === agency.id}
+                    >
+                      {agency.name}
+                    </ExtendedDropdownMenuItem>
+                  );
+                })}
+              </DropdownMenu>
+            </Dropdown>
+          </MenuItem>
+        )}
+
       {/* Settings Dropdown */}
       <MenuItem active={activeMenuItem === MenuItems.Settings}>
         <Dropdown>
@@ -106,7 +134,7 @@ const Menu = () => {
             <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
               Account Settings
             </ExtendedDropdownMenuItem>
-            <ExtendedDropdownMenuItem onClick={logout} logoutColor>
+            <ExtendedDropdownMenuItem onClick={logout} highlight>
               Log Out
             </ExtendedDropdownMenuItem>
           </DropdownMenu>

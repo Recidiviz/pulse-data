@@ -17,6 +17,7 @@
 
 export enum Permission {
   CREATE_REPORT = "create:report:all",
+  SWITCH_AGENCY = "switch:agency",
 }
 
 export type ReportFrequency = "MONTHLY" | "ANNUAL";
