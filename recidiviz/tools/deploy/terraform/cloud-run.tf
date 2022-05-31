@@ -88,6 +88,16 @@ resource "google_project_iam_member" "application_data_import_iam" {
   member   = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
 }
 
+resource "google_service_account_iam_member" "application_data_import_iam" {
+  service_account_id = google_service_account.application_data_import_cloud_run.name
+  # Grant serviceAccountUser on itself. Without this, trying to create an OIDC token to give to
+  # Cloud Tasks fails with the error "The principal (user or service account) lacks IAM permission
+  # "iam.serviceAccounts.actAs" for the resource "application-data-import-cr@recidiviz-staging.iam.gserviceaccount.com"
+  # (or the resource may not exist)."
+  role   = "roles/iam.serviceAccountUser"
+  member = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
+}
+
 
 # Use existing Justice Counts service account for Justice Counts Cloud Run
 data "google_service_account" "justice_counts_cloud_run" {
@@ -298,17 +308,6 @@ resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
   location = google_cloud_run_service.justice-counts[count.index].location
   project  = google_cloud_run_service.justice-counts[count.index].project
   service  = google_cloud_run_service.justice-counts[count.index].name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-# TODO(#12449): Make this private after we've had the opportunity to test it
-resource "google_cloud_run_service_iam_member" "application-data-import-public-access" {
-  count = var.project_id == "recidiviz-123" ? 0 : 1
-
-  location = google_cloud_run_service.application-data-import[count.index].location
-  project  = google_cloud_run_service.application-data-import[count.index].project
-  service  = google_cloud_run_service.application-data-import[count.index].name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
