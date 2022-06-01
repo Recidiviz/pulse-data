@@ -31,15 +31,34 @@ VIOLATION_RESPONSES_VIEW_DESCRIPTION = """
 
 ## Overview
 
-The table `violation_responses_materialized` joins to sessions based on `person_id` and `session_id` and is used to associate a supervision violation with a given stay within a compartment. 
+The table `violation_responses_materialized` joins to sessions based on `person_id` and 
+`session_id` and is used to associate a supervision violation with a given stay within a
+ compartment. 
 
-Each row in `violation_responses_materialized` is a single violation on a given day. In the raw data, a single `violation_id` can have multiple violation types. A `violation_id` may also have multiple `violation_response_ids`, and each `response_id` may have multiple decisions made by the PO. We de-duplicate this by selecting the most serious violation type given a state-specific logic, and within the most serious violation type we prioritize keeping the most restrictive response_decision (such as REVOCATION over WARNING). We do keep a count of distinct `violation_id` per day in the `distinct_violations_per_day` field.
+Each row in `violation_responses_materialized` is a single violation on a given day. 
+In the raw data, a single `violation_id` can have multiple violation types. A 
+`violation_id` may also have multiple `violation_response_ids`, and each 
+`response_id` may have multiple decisions made by the PO. We de-duplicate this by 
+selecting the most serious violation type given a state-specific logic, and within 
+the most serious violation type we prioritize keeping the most restrictive 
+response_decision (such as REVOCATION over WARNING). We do keep a count of distinct 
+`violation_id` per day in the `distinct_violations_per_day` field.
 
-Each violation is associated with a `session_id` based on the `response_date` of the violation. Each violation is also associated with a supervision super-session - these group together continuous stays on supervision, in cases where an individual may go on `PAROLE_BOARD_HOLD`, `SHOCK_INCARCERATION`, or other temporary stays and back to supervision before being revoked. 
+Each violation is associated with a `session_id` based on the `response_date` of the 
+violation. Each violation is also associated with a supervision super-session - these 
+group together continuous stays on supervision, in cases where an individual may go on 
+`PAROLE_BOARD_HOLD`, `SHOCK_INCARCERATION`, or other temporary stays and back to 
+supervision before being revoked. 
 
-Finally, `revocation_sessions` are associated with violations by associating a revocation_session with the most severe violation type in a look-back window of 12 months. 
+Finally, `revocation_sessions` are associated with violations by associating a 
+revocation_session with the most severe violation type in a look-back window of 12 
+months. 
 
-**Note: several revocation_sessions are not mapped onto violation_sessions and therefore `violation_sessions_materialized` should NOT be used to calculate total revocations**. Rather, revocation_session_id in the `violation_sessions_materialized` table can be useful for answering questions such as “What percentage of felony violations resulted in a revocation?”
+**Note: several revocation_sessions are not mapped onto violation_sessions and therefore
+ `violation_sessions_materialized` should NOT be used to calculate total revocations**. 
+ Rather, revocation_session_id in the `violation_sessions_materialized` table can be 
+ useful for answering questions such as “What percentage of felony violations resulted 
+ in a revocation?”
 
 ## Field Definitions
 
@@ -64,11 +83,16 @@ Finally, `revocation_sessions` are associated with violations by associating a r
 
 ## Methodology
 
-Takes the output of the dataflow violations pipeline and integrates it with other sessions views including `compartment_sessions` and `supervision_super_sessions`. This view also deduplicates to one violation per person per day by doing the following:
+Takes the output of the dataflow violations pipeline and integrates it with other 
+sessions views including `compartment_sessions` and `supervision_super_sessions`. 
+This view also deduplicates to one violation per person per day by doing the following:
 
 1. keeping the most severe violation type for a given `person_id`, `violation_id`
-2. keeping the most severe violation type across all `violation_id`s for a given `person_id` and `response_date`
-3. keeping the most severe response decision across all `violation_id`s for a given `person_id` and `response_date` if they have the same `most_severe_violation_type` and `most_severe_violation_type_subtype`
+2. keeping the most severe violation type across all `violation_id`s for a given 
+`person_id` and `response_date`
+3. keeping the most severe response decision across all `violation_id`s for a given 
+`person_id` and `response_date` if they have the same `most_severe_violation_type` and 
+`most_severe_violation_type_subtype`
 """
 
 VIOLATION_RESPONSES_QUERY_TEMPLATE = """

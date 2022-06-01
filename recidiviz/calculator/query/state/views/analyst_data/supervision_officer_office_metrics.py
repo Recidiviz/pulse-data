@@ -139,7 +139,7 @@ WITH date_array AS (
     ON 
         a.state_code = b.state_code 
         AND a.person_id = b.person_id 
-        AND a.earliest_available_date = b.date
+        AND a.response_date = b.date
 )
 # Absconsion or bench warrant periods
 , absconsions_bench_warrants AS (
@@ -640,6 +640,7 @@ LEFT JOIN (
             supervision_level_changes.person_id, NULL)) AS supervision_downgrades_to_limited,
 
         # violations (max one per person per day per type)
+        # TODO(#13180): Rename violation metrics to violation _response_ metrics 
         COUNT(DISTINCT violations.person_id) AS violations,
         COUNT(DISTINCT IF(violations.most_serious_violation_type IN ("ESCAPED", 
             "ABSCONDED"), violations.person_id, NULL)) AS violations_absconded,
