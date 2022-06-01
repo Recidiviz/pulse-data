@@ -22,6 +22,7 @@ import unittest
 from more_itertools import one
 from sqlalchemy.exc import IntegrityError
 
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -51,6 +52,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 11
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
             session.add(raw_metadata)
             session.commit()
@@ -73,6 +76,8 @@ class OperationsSchemaTest(unittest.TestCase):
                     2019, 10, 11
                 ),
                 processed_time=datetime.datetime.now(),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
             session.add(raw_metadata)
             session.commit()
@@ -94,6 +99,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
             raw_metadata_2 = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
@@ -103,6 +110,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 11, 11
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
 
             session.add(raw_metadata_1)
@@ -129,6 +138,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
 
             session.add(raw_metadata)
@@ -154,6 +165,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
 
             session.add(raw_metadata)
@@ -178,6 +191,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
 
             session.add(raw_metadata_1)
@@ -193,6 +208,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 11, 11
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
             )
             session.add(raw_metadata_2)
 

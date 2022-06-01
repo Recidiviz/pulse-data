@@ -29,7 +29,6 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     GcsfsFilePath,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -243,13 +242,11 @@ class UploadStateFilesToIngestBucketController(
             ],
             destination_bucket_override=gcs_destination_path,
         )
-        self.postgres_direct_ingest_file_metadata_manager = (
-            PostgresDirectIngestRawFileMetadataManager(
-                region_code,
-                DirectIngestInstance.PRIMARY.database_key_for_state(
-                    StateCode(region_code.upper())
-                ).db_name,
-            )
+        self.postgres_direct_ingest_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code,
+            # TODO(#12794): Change to be based on the instance the raw file is processed in once we can ingest in
+            # multiple instances.
+            DirectIngestInstance.PRIMARY,
         )
 
     def _copy_to_ingest_bucket(
