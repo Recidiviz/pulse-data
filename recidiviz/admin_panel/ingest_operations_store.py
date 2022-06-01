@@ -310,9 +310,9 @@ class IngestOperationsStore(AdminPanelStore):
         )
         raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=state_code.value,
-            ingest_database_name=ingest_instance.database_key_for_state(
-                state_code
-            ).db_name,
+            # TODO(#12794): Change to be based on the instance the raw file is processed in once we can ingest in
+            # multiple instances.
+            raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
         if ingest_instance == DirectIngestInstance.PRIMARY:
