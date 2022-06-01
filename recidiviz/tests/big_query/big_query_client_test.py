@@ -58,6 +58,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.mock_project_id, self.mock_dataset_id
         )
         self.mock_table = self.mock_dataset_ref.table(self.mock_table_id)
+        self.mock_schema = [
+            {"mode": "NULLABLE", "name": "fake_column", "type": "STRING"}
+        ]
 
         self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
@@ -264,6 +267,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             source=io.StringIO("data"),
+            schema=self.mock_schema,
         )
 
         self.mock_client.create_dataset.assert_called()
@@ -277,6 +281,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             source=io.StringIO("data"),
+            schema=self.mock_schema,
         )
 
         self.mock_client.create_dataset.assert_not_called()

@@ -28,9 +28,15 @@ from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_r
 # To modify this file, use Excel or download https://docs.google.com/spreadsheets/d/1W3RWWWxlHP4GB-LUegjw63DdbGEN-mUoIa7y7D2XhQc/edit?usp=sharing
 # as an excel file. Don't use Numbers on a Mac because it doesn't let you have a column that's just a time
 # (https://support.apple.com/guide/numbers/format-dates-currency-and-more-tan23393f3a/mac)
-fixture_path = os.path.join(
+good_file_fixture_path = os.path.join(
     os.path.dirname(__file__),
     "fixtures/file_upload.xlsx",
+)
+
+# Same as ^ but with https://docs.google.com/spreadsheets/d/1VbWAM4rgbgZPtNf6JwOLXP9LGZsjI073brBjhndUh8k/edit?usp=sharing
+out_of_order_columns_fixture_path = os.path.join(
+    os.path.dirname(__file__),
+    "fixtures/file_upload_wrong_columns.xlsx",
 )
 
 
@@ -118,8 +124,8 @@ class FileUploadEndpointTests(TestCase):
             response.data,
         )
 
-    def test_upload_raw_files(self) -> None:
-        with open(fixture_path, "rb") as f:
+    def test_upload_raw_files_wrong_columns(self) -> None:
+        with open(out_of_order_columns_fixture_path, "rb") as f:
             response = self.client.post(
                 "/api/line_staff_tools/US_TN/upload_raw_files",
                 data={
@@ -129,6 +135,21 @@ class FileUploadEndpointTests(TestCase):
                 },
             )
 
+        self.assertIn(b"Uploaded columns do not match expected columns", response.data)
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    def test_upload_raw_files(self) -> None:
+        with open(good_file_fixture_path, "rb") as f:
+            response = self.client.post(
+                "/api/line_staff_tools/US_TN/upload_raw_files",
+                data={
+                    "dateOfStandards": "2022-03-10",
+                    "uploadType": "STANDARDS_DUE",
+                    "file": f,
+                },
+            )
+
+        self.assertEqual(response.data, b"")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.mock_bq_client.load_into_table_from_file_async.assert_called_once()

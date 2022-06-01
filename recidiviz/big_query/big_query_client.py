@@ -285,11 +285,11 @@ class BigQueryClient:
         source: IO,
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
+        schema: List[bigquery.SchemaField],
     ) -> bigquery.job.LoadJob:
         """Loads a table from a file to BigQuery.
 
-        Given a desired table name and source file handle, loads the table into BigQuery.
-        Schema will be automatically inferred.
+        Given a desired table name, source file handle, and schema, loads the table into BigQuery.
 
         This starts the job, but does not wait until it completes.
 
@@ -300,6 +300,8 @@ class BigQueryClient:
             destination_dataset_ref: The BigQuery dataset to load the table into. Gets created
                 if it does not already exist.
             destination_table_id: String name of the table to import.
+            schema: The BigQuery schema of the destination table. Additional columns can be added
+                to the schema in this manner, but not removed.
         Returns:
             The LoadJob object containing job details.
         """
@@ -988,6 +990,7 @@ class BigQueryClientImpl(BigQueryClient):
         source: IO,
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
+        schema: List[bigquery.SchemaField],
     ) -> bigquery.job.LoadJob:
         self.create_dataset_if_necessary(destination_dataset_ref)
 
@@ -996,6 +999,10 @@ class BigQueryClientImpl(BigQueryClient):
         job_config = bigquery.LoadJobConfig()
         job_config.allow_quoted_newlines = True
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_APPEND
+        job_config.schema_update_options = [
+            bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
+        ]
+        job_config.schema = schema
 
         load_job = self.client.load_table_from_file(
             source,

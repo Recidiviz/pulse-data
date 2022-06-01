@@ -15,6 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants for line staff tools admin"""
+from recidiviz.admin_panel.line_staff_tools.raw_data import (
+    US_TN_STANDARDS_ADMIN_SCHEMA,
+    US_TN_STANDARDS_DUE_SCHEMA,
+    RawDataConfig,
+)
 from recidiviz.case_triage.util import CASE_TRIAGE_STATES
 from recidiviz.common.constants.states import StateCode
 
@@ -26,8 +31,16 @@ ROSTER_STATE_CODES = {
     *EMAIL_STATE_CODES,
     *PRACTICES_STATE_CODES,
 }
-RAW_FILES_STATE_CODES = [StateCode.US_TN]
-RAW_FILES_UPLOAD_TYPES_TABLES = {
-    "STANDARDS_DUE": "us_tn_standards_due",
-    "STANDARDS_ADMIN": "us_tn_standards_admin",
+
+RAW_FILES_CONFIG = {
+    StateCode.US_TN: {
+        "STANDARDS_DUE": RawDataConfig(
+            table_name="us_tn_standards_due",
+            schema=US_TN_STANDARDS_DUE_SCHEMA,
+        ),
+        "STANDARDS_ADMIN": RawDataConfig(
+            table_name="us_tn_standards_due",
+            schema=US_TN_STANDARDS_ADMIN_SCHEMA,
+        ),
+    }
 }
