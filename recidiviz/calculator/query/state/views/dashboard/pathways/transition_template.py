@@ -49,7 +49,7 @@ def transition_monthly_aggregate_template(
     dimensions: List[str],
     dimension_combination_view: str,
 ) -> str:
-    """Constructs the boilerplate parts of the metric view (building date arrays, missing rows, computing averages).
+    """Constructs the boilerplate parts of the metric view (building date arrays, missing rows).
     `aggregate_query` should have a field for each provided dimension as well as "state_code", "year", and "month"
     and compute a "event_count" field."""
 
@@ -59,20 +59,10 @@ def transition_monthly_aggregate_template(
     ), 
     blanks_filled AS (
         {_get_zero_imputation_query(dimensions, dimension_combination_view)}
-    ),
-    averaged_event_count AS (
-      SELECT
-        *,
-        ROUND(AVG(event_count) OVER (
-          PARTITION BY state_code, {', '.join([*dimensions, ])}
-          ORDER BY year, month
-          ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
-        )) as avg_90day,
-      FROM blanks_filled
     )
 
     SELECT *
-    FROM averaged_event_count
+    FROM blanks_filled
     WHERE DATE(year, month, 1) BETWEEN
       DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH) AND CURRENT_DATE('US/Eastern')
     ORDER BY state_code, year, month, {', '.join([*dimensions])}
