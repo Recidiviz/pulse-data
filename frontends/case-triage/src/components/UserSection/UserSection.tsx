@@ -77,7 +77,7 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
           </>
         )}
       </DropdownToggle>
-      <DropdownMenu>
+      <DropdownMenu alignment="right">
         <DropdownMenuItem
           onClick={() =>
             window.open(
