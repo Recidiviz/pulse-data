@@ -101,6 +101,29 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         FROM
             `{project_id}.{static_reference_dataset_id}.us_me_leadership_users` leadership
     ),
+    mi_restricted_access AS (
+        SELECT
+            'US_MI' AS state_code,
+            LOWER(leadership.email_address) AS restricted_user_email,
+            '' AS allowed_supervision_location_ids,
+            CAST(NULL AS STRING) as allowed_supervision_location_level,
+            internal_role,
+            TRUE AS can_access_leadership_dashboard,
+            FALSE AS can_access_case_triage,
+            FALSE AS should_see_beta_charts,
+            TO_JSON_STRING(STRUCT(
+                system_libertyToPrison,
+                system_prison,
+                system_prisonToSupervision,
+                system_supervision,
+                system_supervisionToLiberty,
+                system_supervisionToPrison,
+                operations,
+                FALSE AS workflows
+            )) AS routes
+        FROM
+            `{project_id}.{static_reference_dataset_id}.us_mi_leadership_users` leadership
+    ),
     mo_restricted_access AS (
         SELECT
             'US_MO' AS state_code,
@@ -199,6 +222,8 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         SELECT * FROM id_restricted_access
         UNION ALL
         SELECT * FROM me_restricted_access
+        UNION ALL
+        SELECT * FROM mi_restricted_access
         UNION ALL
         SELECT * FROM mo_restricted_access
         UNION ALL
