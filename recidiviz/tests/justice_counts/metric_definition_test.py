@@ -39,11 +39,11 @@ class TestJusticeCountsMetricDefinition(TestCase):
     def test_law_enforcement_metrics(self) -> None:
         self.assertEqual(
             law_enforcement.annual_budget.key,
-            "LAW_ENFORCEMENT_BUDGET__metric/law_enforcement/budget/type",
+            "LAW_ENFORCEMENT_BUDGET_metric/law_enforcement/budget/type",
         )
         self.assertEqual(
             law_enforcement.residents.key,
-            "LAW_ENFORCEMENT_POPULATION_metric/population/type:RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
+            "LAW_ENFORCEMENT_RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
         )
 
     def test_additional_context(self) -> None:

@@ -104,7 +104,7 @@ class MetricDefinition:
 
     # Agencies in this system are responsible for reporting this metric
     system: System
-    # Metrics are unique by <system, metric_type, filtered_dimensions, aggregated_dimensions>
+    # Metrics are unique by <system, metric_type, aggregated_dimensions>
     metric_type: MetricType
     # Each metric belongs to a particular category
     category: MetricCategory
@@ -123,26 +123,14 @@ class MetricDefinition:
     specified_contexts: Optional[List[Context]] = None
     # Definitions provided to the agency to help them report this metric
     definitions: Optional[List[Definition]] = None
-
-    # Dimensions where the data to be reported should only account for a certain dimension value
-    filtered_dimensions: Optional[List[FilteredDimension]] = None
-
     # Dimensions that this metric should be disaggregated by in the reporting
     aggregated_dimensions: Optional[List[AggregatedDimension]] = None
 
     @property
     def key(self) -> str:
         """Returns a unique identifier across all Justice Counts metrics.
-        Metrics are unique by <system, metric_type, filtered_dimensions, aggregated_dimensions>
+        Metrics are unique by <system, metric_type, aggregated_dimensions>
         """
-        filtered_dimension_key = ",".join(
-            sorted(
-                filter.dimension.dimension_identifier()
-                + ":"
-                + filter.dimension.dimension_value
-                for filter in self.filtered_dimensions or []
-            )
-        )
         aggregated_dimension_key = ",".join(
             sorted(
                 aggregation.dimension.dimension_identifier()
@@ -153,7 +141,6 @@ class MetricDefinition:
             [
                 self.system.value,
                 self.metric_type.value,
-                filtered_dimension_key,
                 aggregated_dimension_key,
             ],
         )
