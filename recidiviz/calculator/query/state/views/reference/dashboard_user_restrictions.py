@@ -37,28 +37,6 @@ DASHBOARD_USER_RESTRICTIONS_DESCRIPTION = (
 DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
-    mo_restricted_access AS (
-        SELECT
-            'US_MO' AS state_code,
-            EMAIL AS restricted_user_email,
-            CASE
-                WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
-                THEN STRING_AGG(DISTINCT DISTRICT, ',')
-                ELSE ''
-            END AS allowed_supervision_location_ids,
-            IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_supervision_location', NULL) AS allowed_supervision_location_level,
-            IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_access_role', 'leadership_role') as internal_role,
-            -- All users can access leadership dashboard
-            TRUE AS can_access_leadership_dashboard,
-            -- US_MO is not currently using Case Triage
-            FALSE AS can_access_case_triage,
-            FALSE AS should_see_beta_charts,
-            -- US_MO has not yet launched any user restricted pages
-            TO_JSON_STRING(NULL) as routes
-        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
-        WHERE EMAIL IS NOT NULL
-        GROUP BY EMAIL
-    ),
     id_restricted_access AS (
         SELECT
             'US_ID' AS state_code,
@@ -101,6 +79,50 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             `{project_id}.{static_reference_dataset_id}.us_id_roster` id_roster
         USING (email_address)
     ),
+    me_restricted_access AS (
+        SELECT
+            'US_ME' AS state_code,
+            LOWER(leadership.email_address) AS restricted_user_email,
+            '' AS allowed_supervision_location_ids,
+            CAST(NULL AS STRING) as allowed_supervision_location_level,
+            internal_role,
+            TRUE AS can_access_leadership_dashboard,
+            FALSE AS can_access_case_triage,
+            FALSE AS should_see_beta_charts,
+            TO_JSON_STRING(STRUCT(
+                system_libertyToPrison,
+                system_prison,
+                system_prisonToSupervision,
+                system_supervision,
+                system_supervisionToLiberty,
+                system_supervisionToPrison,
+                operations
+            )) AS routes
+        FROM
+            `{project_id}.{static_reference_dataset_id}.us_me_leadership_users` leadership
+    ),
+    mo_restricted_access AS (
+        SELECT
+            'US_MO' AS state_code,
+            EMAIL AS restricted_user_email,
+            CASE
+                WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
+                THEN STRING_AGG(DISTINCT DISTRICT, ',')
+                ELSE ''
+            END AS allowed_supervision_location_ids,
+            IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_supervision_location', NULL) AS allowed_supervision_location_level,
+            IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_access_role', 'leadership_role') as internal_role,
+            -- All users can access leadership dashboard
+            TRUE AS can_access_leadership_dashboard,
+            -- US_MO is not currently using Case Triage
+            FALSE AS can_access_case_triage,
+            FALSE AS should_see_beta_charts,
+            -- US_MO has not yet launched any user restricted pages
+            TO_JSON_STRING(NULL) as routes
+        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
+        WHERE EMAIL IS NOT NULL
+        GROUP BY EMAIL
+    ),
     nd_restricted_access AS (
         SELECT
             'US_ND' AS state_code,
@@ -125,28 +147,6 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             )) AS routes
         FROM
             `{project_id}.{static_reference_dataset_id}.us_nd_leadership_users` leadership
-    ),
-    me_restricted_access AS (
-        SELECT
-            'US_ME' AS state_code,
-            LOWER(leadership.email_address) AS restricted_user_email,
-            '' AS allowed_supervision_location_ids,
-            CAST(NULL AS STRING) as allowed_supervision_location_level,
-            internal_role,
-            TRUE AS can_access_leadership_dashboard,
-            FALSE AS can_access_case_triage,
-            FALSE AS should_see_beta_charts,
-            TO_JSON_STRING(STRUCT(
-                system_libertyToPrison,
-                system_prison,
-                system_prisonToSupervision,
-                system_supervision,
-                system_supervisionToLiberty,
-                system_supervisionToPrison,
-                operations
-            )) AS routes
-        FROM
-            `{project_id}.{static_reference_dataset_id}.us_me_leadership_users` leadership
     ),
     tn_restricted_access AS (
         SELECT
@@ -196,13 +196,13 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         FROM `{project_id}.{static_reference_dataset_id}.recidiviz_unified_product_test_users`
     )
     , all_users AS (
-        SELECT * FROM mo_restricted_access
-        UNION ALL
         SELECT * FROM id_restricted_access
         UNION ALL
-        SELECT * FROM nd_restricted_access
-        UNION ALL
         SELECT * FROM me_restricted_access
+        UNION ALL
+        SELECT * FROM mo_restricted_access
+        UNION ALL
+        SELECT * FROM nd_restricted_access
         UNION ALL
         SELECT * FROM tn_restricted_access
         UNION ALL
