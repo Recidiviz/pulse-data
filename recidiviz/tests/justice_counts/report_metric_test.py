@@ -417,8 +417,12 @@ class TestJusticeCountsReportMetric(TestCase):
                     "key": LawEnforcementStaffType.dimension_identifier(),
                     "dimensions": [
                         {
-                            "key": LawEnforcementStaffType.POLICE_OFFICERS.value,
+                            "key": LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS.value,
                             "value": 100,
+                        },
+                        {
+                            "key": LawEnforcementStaffType.CIVILIAN_STAFF.value,
+                            "value": 50,
                         },
                         {"key": LawEnforcementStaffType.UNKNOWN.value, "value": 0},
                     ],
@@ -439,7 +443,8 @@ class TestJusticeCountsReportMetric(TestCase):
                 aggregated_dimensions=[
                     ReportedAggregatedDimension(
                         dimension_to_value={
-                            LawEnforcementStaffType.POLICE_OFFICERS: 100,
+                            LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: 100,
+                            LawEnforcementStaffType.CIVILIAN_STAFF: 50,
                             LawEnforcementStaffType.UNKNOWN: 0,
                         }
                     )

@@ -17,7 +17,6 @@
 """Defines all Justice Counts metrics for the Law Enforcement system."""
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
-from recidiviz.justice_counts.dimensions.corrections import PopulationType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
@@ -33,7 +32,6 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     Definition,
-    FilteredDimension,
     MetricCategory,
     MetricDefinition,
     ReportingFrequency,
@@ -68,7 +66,7 @@ annual_budget = MetricDefinition(
 
 residents = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
-    metric_type=MetricType.POPULATION,
+    metric_type=MetricType.RESIDENTS,
     category=MetricCategory.POPULATIONS,
     display_name="Jurisdiction residents",
     description="Measures the number of residents in the agency's jurisdiction.",
@@ -82,7 +80,6 @@ residents = MetricDefinition(
             required=False,
         )
     ],
-    filtered_dimensions=[FilteredDimension(dimension=PopulationType.RESIDENTS)],
     aggregated_dimensions=[
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
         AggregatedDimension(dimension=GenderRestricted, required=True),
@@ -133,8 +130,8 @@ police_officers = MetricDefinition(
     description="Measures the number of police officers in the agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    filtered_dimensions=[
-        FilteredDimension(dimension=LawEnforcementStaffType.POLICE_OFFICERS)
+    aggregated_dimensions=[
+        AggregatedDimension(dimension=LawEnforcementStaffType, required=True)
     ],
 )
 
