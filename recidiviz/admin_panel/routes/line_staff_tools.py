@@ -23,8 +23,11 @@ from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Tuple, Union
 
+import dateutil.parser
 import pandas as pd
 from flask import Blueprint, Response, g, jsonify, request
+from google.api_core import exceptions
+from numpy import datetime64
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
@@ -33,8 +36,7 @@ from recidiviz.admin_panel.case_triage_helpers import (
 )
 from recidiviz.admin_panel.line_staff_tools.constants import (
     EMAIL_STATE_CODES,
-    RAW_FILES_STATE_CODES,
-    RAW_FILES_UPLOAD_TYPES_TABLES,
+    RAW_FILES_CONFIG,
     ROSTER_STATE_CODES,
 )
 from recidiviz.admin_panel.line_staff_tools.rosters import RosterManager
@@ -241,7 +243,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @bp.route("/api/line_staff_tools/fetch_raw_files_state_codes", methods=["POST"])
     @requires_gae_auth
     def _fetch_raw_files_state_codes() -> Tuple[Response, HTTPStatus]:
-        state_code_info = fetch_state_codes(RAW_FILES_STATE_CODES)
+        state_code_info = fetch_state_codes(RAW_FILES_CONFIG.keys())
         return jsonify(state_code_info), HTTPStatus.OK
 
     @bp.route("/api/line_staff_tools/fetch_report_types", methods=["POST"])
@@ -509,7 +511,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
         try:
             state_code = StateCode(state_code_str)
-            if state_code not in RAW_FILES_STATE_CODES:
+            if state_code not in RAW_FILES_CONFIG:
                 raise ValueError(
                     f"Raw file uploads are not supported for {state_code.value}"
                 )
@@ -521,18 +523,45 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                 )
             upload_type = str(data.get("uploadType"))
             try:
-                table_name = RAW_FILES_UPLOAD_TYPES_TABLES[upload_type]
+                table_name = RAW_FILES_CONFIG[state_code][upload_type].table_name
             except KeyError as e:
                 raise ValueError(
-                    f"Standards upload type must be one of {list(RAW_FILES_UPLOAD_TYPES_TABLES.keys())}, received {upload_type}"
+                    f"Standards upload type must be one of {list(RAW_FILES_CONFIG[state_code].keys())}, received {upload_type}"
                 ) from e
 
         except ValueError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
 
-        df = pd.read_excel(request.files["file"], engine="openpyxl")
+        # Some columns that we expect to only have dates actually have non-date text in them, so
+        # convert those to None. Some rows also have dates that are higher than the max date
+        # Pandas can handle, so convert all dates to strings.
+        def date_converter(val: Union[str, datetime64]) -> Union[str, None]:
+            if val in ["LIFE", "CSL"]:
+                return None
+            return dateutil.parser.parse(str(val)).strftime("%Y-%m-%d")
+
+        df = pd.read_excel(
+            request.files["file"],
+            engine="openpyxl",
+            converters={
+                key: date_converter
+                for (key, value) in RAW_FILES_CONFIG[state_code][
+                    upload_type
+                ].schema.items()
+                if value["type"] == "DATE" and key != "date_of_standards"
+            },
+        )
         df["date_of_standards"] = date_of_standards
+
+        # Check that we have all expected columns in the correct order
+        uploaded_columns = list(df.columns)
+        expected_columns = list(RAW_FILES_CONFIG[state_code][upload_type].schema)
+        if uploaded_columns != expected_columns:
+            return (
+                f"Uploaded columns do not match expected columns.\nUploaded: {uploaded_columns}\nExpected: {expected_columns}",
+                HTTPStatus.BAD_REQUEST,
+            )
 
         df.rename(columns=normalize_column_name_for_bq, inplace=True)
         # Convert to types that support pd.NA. This ensures that ints (which don't support pd.NA)
@@ -546,8 +575,15 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             df.to_csv(fp, index=False, header=False)
             bq = BigQueryClientImpl()
             insert_job = bq.load_into_table_from_file_async(
-                fp, bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET), table_name
+                fp,
+                bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET),
+                table_name,
+                schema=list(RAW_FILES_CONFIG[state_code][upload_type].schema.values()),
             )
-
-            insert_job.result()
+            try:
+                insert_job.result()
+            except exceptions.GoogleAPICallError as error:
+                if error.code:
+                    return error.message, HTTPStatus(error.code)
+                return error.message, HTTPStatus.INTERNAL_SERVER_ERROR
         return "", HTTPStatus.OK

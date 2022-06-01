@@ -185,6 +185,7 @@ class FakeBigQueryClient(BigQueryClient):
         source: IO,
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
+        schema: List[bigquery.SchemaField],
     ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 
