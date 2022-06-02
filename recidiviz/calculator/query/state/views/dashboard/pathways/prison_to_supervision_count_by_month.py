@@ -15,10 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Prison to supervision count by month"""
-from recidiviz.calculator.query.state import (
-    dataset_config,
-    state_specific_query_strings,
-)
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -39,25 +36,6 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_DESCRIPTION = (
 )
 
 aggregate_query = """
-    WITH all_rows AS (
-        SELECT
-            transitions.state_code,
-            EXTRACT(YEAR FROM transition_date) as year,
-            EXTRACT(MONTH FROM transition_date) as month,
-            gender,
-            age_group,
-            IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
-        FROM
-            `{project_id}.{shared_metric_views_dataset}.prison_to_supervision_transitions` transitions
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
-            ON transitions.state_code = location.state_code 
-            AND level_1_location_external_id = location_id
-    ),
-    filtered_rows AS (
-        SELECT *
-        FROM all_rows
-        WHERE {facility_filter}
-    )
     SELECT 
         state_code,
         year,
@@ -66,7 +44,7 @@ aggregate_query = """
         age_group,
         facility,
         COUNT(1) as event_count,
-    FROM filtered_rows,
+    FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions,
         UNNEST ([gender, 'ALL']) AS gender,
         UNNEST ([age_group, 'ALL']) AS age_group,
         UNNEST ([facility, "ALL"]) AS facility
@@ -95,8 +73,6 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBu
     dimensions=("state_code", "year", "month", *dimensions),
     metric_stats=("event_count",),
     dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
-    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
-    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":

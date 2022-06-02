@@ -54,14 +54,11 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
             age,
             age_group,
             {transition_time_period} AS time_period,
-            IFNULL(aggregating_location_id, location_id) AS facility,
-        FROM `{project_id}.{shared_metric_views_dataset}.prison_to_supervision_transitions` transitions
+            facility,
+        FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions
         LEFT JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
             ON transitions.person_id = pei.person_id
             AND {state_id_type} = pei.id_type
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
-            ON transitions.state_code = name_map.state_code
-            AND transitions.level_1_location_external_id = name_map.location_id
     )
 
     SELECT
@@ -103,7 +100,6 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMe
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     formatted_name=get_person_full_name("person.full_name"),
     last_updated_query=get_pathways_incarceration_last_updated_date(),
-    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     state_id_type=state_specific_external_id_type("transitions"),
     transition_time_period=get_binned_time_period_months("transition_date"),
