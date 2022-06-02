@@ -95,11 +95,11 @@ run_cmd gcloud -q app deploy prod-scrapers.yaml --project=recidiviz-123 --versio
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123' $CALC_CHANGES_SINCE_LAST_DEPLOY
 
-script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist/ ?"
-
 duration=$SECONDS
 echo "Production deploy completed in $(($duration / 60)) minutes. Add to go/deploy-duration-tracker."
 
 echo "Generating release notes."
 GITHUB_DEPLOY_BOT_TOKEN=$(echo $(gcloud secrets versions access latest --secret=github_deploy_script_pat --project recidiviz-123))
 run_cmd pipenv run  python -m recidiviz.tools.deploy.generate_release_notes --previous_tag $LAST_DEPLOYED_GIT_VERSION_TAG --new_tag $GIT_VERSION_TAG --github_token $GITHUB_DEPLOY_BOT_TOKEN
+
+script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist/ ?"
