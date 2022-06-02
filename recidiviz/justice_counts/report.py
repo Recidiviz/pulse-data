@@ -143,6 +143,7 @@ class ReportInterface:
                 )
                 for aggregated_dimension in metric_definition.aggregated_dimensions
                 or []
+                if not aggregated_dimension.disabled
             ]
 
     @staticmethod

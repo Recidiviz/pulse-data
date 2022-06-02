@@ -27,12 +27,10 @@ from recidiviz.justice_counts.dimensions.dimension_registry import (
 )
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
+    OffenseType,
     SheriffBudgetType,
 )
-from recidiviz.justice_counts.dimensions.person import (
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
@@ -703,38 +701,21 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
-            arrests_by_gender = metrics[0]
-            arrests_by_race_and_ethnicity = metrics[1]
+            total_arrests = metrics[0]
 
-            # Population metric should be blank
-            self.assertEqual(arrests_by_race_and_ethnicity.value, None)
+            # Arrests metric should be blank
+            self.assertEqual(total_arrests.value, None)
             self.assertEqual(
-                assert_type(arrests_by_race_and_ethnicity.aggregated_dimensions, list)[
+                assert_type(total_arrests.aggregated_dimensions, list)[
                     0
                 ].dimension_to_value,
-                {d: None for d in RaceAndEthnicity},
+                {d: None for d in OffenseType},
             )
             self.assertEqual(
-                arrests_by_race_and_ethnicity.contexts,
+                total_arrests.contexts,
                 [
                     ReportedContext(key=context.key, value=None)
-                    for context in law_enforcement.arrests_by_race_and_ethnicity.contexts
-                ],
-            )
-
-            # Calls for service metric should be blank
-            self.assertEqual(arrests_by_gender.value, None)
-            self.assertEqual(
-                assert_type(arrests_by_gender.aggregated_dimensions, list)[
-                    0
-                ].dimension_to_value,
-                {d: None for d in GenderRestricted},
-            )
-            self.assertEqual(
-                arrests_by_gender.contexts,
-                [
-                    ReportedContext(key=context.key, value=None)
-                    for context in law_enforcement.arrests_by_gender.contexts
+                    for context in law_enforcement.total_arrests.contexts
                 ],
             )
 
@@ -761,7 +742,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             metrics = ReportInterface.get_metrics_by_report_id(
                 session=session, report_id=report_id
             )
-            self.assertEqual(len(metrics), 6)
+            self.assertEqual(len(metrics), 4)
             calls_for_service = [
                 metric
                 for metric in metrics

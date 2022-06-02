@@ -121,7 +121,7 @@ class TestJusticeCountsReportMetric(TestCase):
             {
                 "key": reported_metric.key,
                 "display_name": "Annual Budget",
-                "reporting_note": "Sheriff offices report on budget for patrol and detention separately",
+                "reporting_note": None,
                 "description": "Measures the total annual budget (in dollars) of the agency.",
                 "definitions": [],
                 "category": "CAPACITY AND COST",
@@ -131,7 +131,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "contexts": [
                     {
                         "key": "PRIMARY_FUNDING_SOURCE",
-                        "display_name": "Primary funding source.",
+                        "display_name": "Please describe your primary funding source.",
                         "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
@@ -194,7 +194,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "contexts": [
                     {
                         "key": "ALL_CALLS_OR_CALLS_RESPONDED",
-                        "display_name": "Does the total value represent all calls?",
+                        "display_name": "Does the total value include all calls (answer yes) or just those responded to (answer no)?",
                         "reporting_note": None,
                         "required": True,
                         "type": "BOOLEAN",
@@ -202,7 +202,7 @@ class TestJusticeCountsReportMetric(TestCase):
                     },
                     {
                         "key": "AGENCIES_AVAILABLE_FOR_RESPONSE",
-                        "display_name": "All agencies available for response.",
+                        "display_name": "Please list the names of all agencies available for response.",
                         "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
@@ -263,7 +263,16 @@ class TestJusticeCountsReportMetric(TestCase):
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
-                "definitions": [],
+                "definitions": [
+                    {
+                        "term": "Complaint",
+                        "definition": "One case that represents one or more acts committed by the same officer, or group of officers at the same time and place. Count all complaints, regardless of whether an underlying incident was filed.",
+                    },
+                    {
+                        "term": "Sustained",
+                        "definition": "Found to be supported by the evidence, and may or may not result in disciplinary action.",
+                    },
+                ],
                 "category": metric_definition.category.value,
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
@@ -300,7 +309,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "contexts": [
                     {
                         "key": "JURISDICTION_DEFINITION_OF_ARREST",
-                        "display_name": "The jurisdiction definition of arrest",
+                        "display_name": "Please provide your jurisdiction's definition of arrest.",
                         "reporting_note": None,
                         "required": True,
                         "type": "TEXT",
