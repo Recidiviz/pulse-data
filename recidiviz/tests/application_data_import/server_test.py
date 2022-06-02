@@ -63,6 +63,7 @@ class TestApplicationDataImportRoutes(TestCase):
             mock_task_manager.return_value.create_task.assert_called_with(
                 absolute_uri="http://localhost:5000/import/pathways/US_XX/test-file.csv",
                 service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
+                task_id="import/pathways/US_XX/test-file.csv",
             )
 
     def test_import_trigger_pathways_bad_message(self) -> None:
@@ -90,6 +91,26 @@ class TestApplicationDataImportRoutes(TestCase):
             )
             self.assertEqual(
                 b"/trigger_pathways is only configured for the dashboard-event-level-data bucket, saw invalid-bucket",
+                response.data,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_import_trigger_pathways_invalid_object(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_pathways",
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": "staging/US_XX/test-file.csv",
+                        },
+                    },
+                    "subscription": "test-subscription",
+                },
+            )
+            self.assertEqual(
+                b"Invalid object ID staging/US_XX/test-file.csv, must be of format <state_code>/<filename>",
                 response.data,
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)

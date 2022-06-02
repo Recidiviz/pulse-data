@@ -10,6 +10,11 @@ variable "service_account_email" {
   type = string
 }
 
+variable "filter" {
+  type    = string
+  default = ""
+}
+
 resource "google_storage_notification" "notification" {
   bucket         = var.bucket_name
   payload_format = "JSON_API_V1"
@@ -34,8 +39,9 @@ resource "google_pubsub_topic" "topic" {
 }
 
 resource "google_pubsub_subscription" "subscription" {
-  name  = "storage-notification-${var.bucket_name}"
-  topic = google_pubsub_topic.topic.name
+  name   = "storage-notification-${var.bucket_name}"
+  topic  = google_pubsub_topic.topic.name
+  filter = var.filter
 
   push_config {
     push_endpoint = var.push_endpoint

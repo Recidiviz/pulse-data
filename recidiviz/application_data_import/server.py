@@ -21,6 +21,7 @@ from http import HTTPStatus
 from typing import Tuple
 
 from flask import Flask, request
+from google.api_core.exceptions import AlreadyExists
 from google.cloud import pubsub
 from google.protobuf import json_format
 from google.protobuf.json_format import ParseError
@@ -136,14 +137,30 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
             HTTPStatus.BAD_REQUEST,
         )
 
+    obj_id_parts = object_id.split("/")
+    if len(obj_id_parts) != 2:
+        return (
+            f"Invalid object ID {object_id}, must be of format <state_code>/<filename>",
+            HTTPStatus.BAD_REQUEST,
+        )
+
     cloud_task_manager = CloudTaskQueueManager(
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
     )
-    cloud_task_manager.create_task(
-        absolute_uri=f"{cloud_run_metadata.url}/import/pathways/{object_id}",
-        service_account_email=cloud_run_metadata.service_account_email,
-    )
-    logging.info("Enqueued gcs_import task to %s", CASE_TRIAGE_DB_OPERATIONS_QUEUE)
+
+    pathways_task_id = f"import/pathways/{object_id}"
+    try:
+        cloud_task_manager.create_task(
+            absolute_uri=f"{cloud_run_metadata.url}/{pathways_task_id}",
+            service_account_email=cloud_run_metadata.service_account_email,
+            task_id=pathways_task_id,  # deduplicate import requests for the same file
+        )
+        logging.info("Enqueued gcs_import task to %s", CASE_TRIAGE_DB_OPERATIONS_QUEUE)
+    except AlreadyExists:
+        logging.info(
+            "Skipping enqueueing of %s because it is already being imported",
+            pathways_task_id,
+        )
     return "", HTTPStatus.OK
 
 

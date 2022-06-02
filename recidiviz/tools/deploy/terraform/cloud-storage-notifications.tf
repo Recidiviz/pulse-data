@@ -6,4 +6,5 @@ module "dashboard_data" {
   bucket_name           = module.dashboard-event-level-data.name
   push_endpoint         = "${google_cloud_run_service.application-data-import[count.index].status.0.url}/import/trigger_pathways"
   service_account_email = google_service_account.application_data_import_cloud_run.email
+  filter                = "NOT hasPrefix(attributes.objectId, \"staging/\")"
 }
