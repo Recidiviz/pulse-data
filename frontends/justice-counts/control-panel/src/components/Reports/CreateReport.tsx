@@ -21,91 +21,61 @@ import styled, { css } from "styled-components/macro";
 
 import { CreateReportFormValuesType } from "../../shared/types";
 import { useStore } from "../../stores";
-import { monthsByName } from "../../utils";
+import { monthsByName, printDateRangeFromMonthYear, rem } from "../../utils";
 import {
   BinaryRadioButton,
-  BinaryRadioGroupContainer,
   BinaryRadioGroupWrapper,
+  Form,
+  GoBackToReportsOverviewLink,
+  MetricSectionSubTitle,
+  MetricSectionTitle,
+  PageWrapper,
+  PreTitle,
+  Title,
+  TitleWrapper,
 } from "../Forms";
-import { palette } from "../GlobalStyles";
+import { Dropdown } from "../Forms/Dropdown";
+import { palette, typography } from "../GlobalStyles";
+import { PublishButton, PublishDataWrapper } from "./PublishDataPanel";
+import { ReportSummaryWrapper } from "./ReportSummaryPanel";
 
-// Temporary Placeholder Styles
+function createIntegerRange(start: number, end: number) {
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
 
-const CreateReportWrapper = styled.div`
-  height: calc(100% - 50px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+const Heading = styled.div`
+  font-size: ${typography.sizeCSS.medium};
+  margin-top: 24px;
 `;
 
-const CreateReportForm = styled.form`
-  width: 600px;
-`;
-
-const formStyles = css`
-  height: 71px;
-  width: 100%;
+const CreateReportInfoContainer = styled.div`
+  border-radius: 5px;
+  padding: 20px 30px 20px 30px;
+  border: 2px solid ${palette.highlight.lightblue2};
   background: ${palette.highlight.lightblue1};
-  font-size: 1.5rem;
+  margin-top: 38px;
   color: ${palette.solid.blue};
-  margin: 10px 0;
-  padding: 20px 0 0 16px;
-  border: none;
-  border-bottom: 1px solid ${palette.solid.blue};
+  ${typography.sizeCSS.medium}
 `;
 
-const DropdownSelection = styled.select`
-  ${formStyles}
-  padding-left: 12px;
-
-  &:hover {
-    cursor: pointer;
-  }
-`;
-
-export const Input = styled.input`
-  ${formStyles}
-`;
-
-export const Button = styled.button`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 56px;
-
-  background: ${palette.highlight.grey1};
-  padding: 10px 20px;
-  font-size: 16px;
-  border: 1px solid ${palette.highlight.grey3};
-  border-radius: 2px;
-  transition: 0.2s ease;
-
-  margin: 10px 0;
-
-  &:hover {
-    cursor: pointer;
-    background: ${palette.highlight.grey2};
-  }
+const BoldFont = styled.span`
+  font-weight: 700;
 `;
 
 const initialCreateReportFormValues: CreateReportFormValuesType = {
   month: 1,
   year: new Date(Date.now()).getFullYear(),
   frequency: "MONTHLY",
+  annualStartMonth: 1,
+  isRecurring: false,
 };
 
 const CreateReport = () => {
   const { reportStore } = useStore();
   const navigate = useNavigate();
-
   const [createReportFormValues, setCreateReportFormValues] = useState(
     initialCreateReportFormValues
   );
-  const [errorSuccessMessage, setErrorSuccessMessage] = useState<
-    string | undefined
-  >();
 
   const updateMonth = (e: React.ChangeEvent<HTMLSelectElement>) =>
     setCreateReportFormValues((prev) => ({
@@ -113,7 +83,14 @@ const CreateReport = () => {
       month: +e.target.value as CreateReportFormValuesType["month"],
     }));
 
-  const updateYear = (e: React.ChangeEvent<HTMLInputElement>) =>
+  const updateYearStandard = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setCreateReportFormValues((prev) => ({
+      ...prev,
+      annualStartMonth: +e.target
+        .value as CreateReportFormValuesType["annualStartMonth"],
+    }));
+
+  const updateYear = (e: React.ChangeEvent<HTMLSelectElement>) =>
     setCreateReportFormValues((prev) => ({ ...prev, year: +e.target.value }));
 
   const updateFrequency = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -122,80 +99,175 @@ const CreateReport = () => {
       frequency: e.target.value as CreateReportFormValuesType["frequency"],
     }));
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // const updateIsRecurring = (recurring: boolean) =>
+  //   setCreateReportFormValues((prev) => ({
+  //     ...prev,
+  //     isRecurring: recurring,
+  //   }));
 
-    const response = (await reportStore.createReport(
-      createReportFormValues
-    )) as Response;
-
-    // Placeholder Error/Success Handling & Redirecting
-    if (response.status === 200) {
-      setErrorSuccessMessage("Successfully created a report!");
-      setTimeout(() => navigate("/"), 1500);
-    } else {
-      setErrorSuccessMessage(
-        "There was an issue creating a report. Please try again."
-      );
-      setTimeout(() => setErrorSuccessMessage(undefined), 3000);
+  const createNewReport = async () => {
+    const { frequency, month, year, annualStartMonth, isRecurring } =
+      createReportFormValues;
+    const response = await reportStore.createReport({
+      frequency,
+      month: frequency === "ANNUAL" ? annualStartMonth : month,
+      is_recurring: isRecurring,
+      year: isRecurring ? new Date(Date.now()).getFullYear() : year,
+    });
+    if (response && response instanceof Response && response.status === 200) {
+      navigate("/");
     }
   };
 
+  const { frequency, month, year, annualStartMonth, isRecurring } =
+    createReportFormValues;
+
   return (
-    <CreateReportWrapper>
-      {/* Placeholder Error */}
-      {errorSuccessMessage && (
-        <div style={{ position: "absolute", top: "30%" }}>
-          {errorSuccessMessage}
-        </div>
-      )}
+    <PageWrapper>
+      {/* Create Report Details Panel */}
+      <ReportSummaryWrapper>
+        <PreTitle>
+          {/* TODO(#13228): Add Toast to display Create Report result */}
+          <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
+        </PreTitle>
+        {/* <Title>Report Details</Title> */}
+      </ReportSummaryWrapper>
 
       {/* Create Report Form */}
-      <CreateReportForm onSubmit={onSubmit}>
-        <DropdownSelection onChange={updateMonth}>
-          {monthsByName.map((month, i) => {
-            return (
-              <option key={month} value={i + 1}>
-                {month}
-              </option>
-            );
-          })}
-        </DropdownSelection>
-
-        <Input
-          type="number"
-          min="1900"
-          max="2099"
-          step="1"
-          defaultValue={initialCreateReportFormValues.year}
-          onChange={updateYear}
-        />
-
+      <Form>
+        {/* Form Title */}
+        <PreTitle>Create Report</PreTitle>
+        <Title>New Report</Title>
+        <TitleWrapper underlined>
+          <MetricSectionTitle>Report Parameters</MetricSectionTitle>
+          <MetricSectionSubTitle />
+        </TitleWrapper>
+        <Heading>What reporting frequency is this report?</Heading>
+        <BinaryRadioGroupWrapper>
+          <BinaryRadioButton
+            type="radio"
+            id="monthly"
+            name="frequency"
+            label="Monthly"
+            value="MONTHLY"
+            onChange={updateFrequency}
+            defaultChecked={frequency === "MONTHLY"}
+          />
+          <BinaryRadioButton
+            type="radio"
+            id="annual"
+            name="frequency"
+            label="Annual"
+            value="ANNUAL"
+            onChange={updateFrequency}
+            defaultChecked={frequency === "ANNUAL"}
+          />
+        </BinaryRadioGroupWrapper>
+        {createReportFormValues.frequency === "ANNUAL" && (
+          <>
+            <Heading>What year standard do you use for annual reports?</Heading>
+            <BinaryRadioGroupWrapper>
+              <BinaryRadioButton
+                type="radio"
+                id="calendar"
+                name="yearStandard"
+                label="Calendar Year (Jan - Dec)"
+                value={1}
+                onChange={updateYearStandard}
+                defaultChecked={annualStartMonth === 1}
+              />
+              <BinaryRadioButton
+                type="radio"
+                id="fiscal"
+                name="yearStandard"
+                label="Fiscal Year (Jul - Jun)"
+                value={7}
+                onChange={updateYearStandard}
+                defaultChecked={annualStartMonth === 7}
+              />
+            </BinaryRadioGroupWrapper>
+          </>
+        )}
+        {/* Disable recurring report toggle for now */}
+        {/* TODO(#13229): Create recurring report flow */}
+        {/* <Heading>Is this a recurring report?</Heading>
         <BinaryRadioGroupContainer>
-          <BinaryRadioGroupWrapper>
-            <BinaryRadioButton
-              type="radio"
-              id="monthly"
-              name="frequency"
-              label="Monthly"
-              value="MONTHLY"
-              onChange={updateFrequency}
-              defaultChecked
-            />
-            <BinaryRadioButton
-              type="radio"
-              id="annual"
-              name="frequency"
-              label="Annual"
-              value="ANNUAL"
-              onChange={updateFrequency}
-            />
-          </BinaryRadioGroupWrapper>
-        </BinaryRadioGroupContainer>
+          <BinaryRadioButton
+            type="radio"
+            id="no"
+            name="recurring"
+            label="No"
+            value="NO"
+            onChange={() => updateIsRecurring(false)}
+            defaultChecked
+          />
+          <BinaryRadioButton
+            type="radio"
+            id="yes"
+            name="recurring"
+            label="Yes"
+            value="YES"
+            onChange={() => updateIsRecurring(true)}
+          />
+        </BinaryRadioGroupContainer> */}
+        {createReportFormValues.isRecurring === false && (
+          <>
+            <Heading>When should this report start?</Heading>
+            <BinaryRadioGroupWrapper>
+              {createReportFormValues.frequency === "MONTHLY" && (
+                <Dropdown onChange={updateMonth} value={month}>
+                  {monthsByName.map((m, i) => {
+                    return (
+                      <option key={m} value={i + 1}>
+                        {m}
+                      </option>
+                    );
+                  })}
+                </Dropdown>
+              )}
 
-        <Button onClick={onSubmit}>Create Report</Button>
-      </CreateReportForm>
-    </CreateReportWrapper>
+              <Dropdown onChange={updateYear} value={year}>
+                {createIntegerRange(1970, new Date().getFullYear() + 1).map(
+                  (yr) => {
+                    return (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    );
+                  }
+                )}
+              </Dropdown>
+            </BinaryRadioGroupWrapper>
+          </>
+        )}
+        <CreateReportInfoContainer>
+          The <BoldFont>{isRecurring ? `recurring` : ``}</BoldFont> report will
+          be created for{` `}
+          <BoldFont>
+            {printDateRangeFromMonthYear(
+              frequency === "ANNUAL" ? annualStartMonth : month,
+              isRecurring ? new Date(Date.now()).getFullYear() : year,
+              frequency
+            )}
+          </BoldFont>
+          .
+        </CreateReportInfoContainer>
+      </Form>
+
+      {/* Create Report Review Panel */}
+      <PublishDataWrapper>
+        <Title>
+          <PublishButton
+            onClick={() => {
+              /** Should trigger a confirmation dialogue before submitting */
+              createNewReport();
+            }}
+          >
+            Create Report
+          </PublishButton>
+        </Title>
+      </PublishDataWrapper>
+    </PageWrapper>
   );
 };
 

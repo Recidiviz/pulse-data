@@ -80,15 +80,26 @@ export const printElapsedDaysSinceDate = (date: string): string => {
  */
 export const printDateRangeFromMonthYear = (
   month: number,
-  year: number
+  year: number,
+  frequency: ReportFrequency = "MONTHLY"
 ): string => {
   /**
    * Note: backend sends true month number, whereas JavaScript's Date API deals with zero-indexed month numbers
    * The below method of calculating the last day (number) of a given month relies on getting the 0th day of the following month.
    * Simply providing the true month number value (from `month` param) does the + 1 (following month) calculation for us.
    */
-  const lastDayOfMonth = new Date(year, month, 0)?.getDate();
-  const currentMonth = monthsByName[month - 1];
 
-  return `${currentMonth} 1, ${year} - ${currentMonth} ${lastDayOfMonth}, ${year}`;
+  if (frequency === "MONTHLY") {
+    const lastDayOfMonth = new Date(year, month, 0)?.getDate();
+    const currentMonth = monthsByName[month - 1];
+    return `${currentMonth} 1, ${year} - ${currentMonth} ${lastDayOfMonth}, ${year}`;
+  }
+
+  const currentMonth = monthsByName[month - 1];
+  const prevMonthNumber = month === 1 ? 12 : month - 1;
+  const prevMonth = monthsByName[prevMonthNumber - 1];
+  const lastDayOfPrevMonth = new Date(year, prevMonthNumber, 0)?.getDate();
+  return `${currentMonth} 1, ${year} - ${prevMonth} ${lastDayOfPrevMonth}, ${
+    month === 1 ? year : year + 1
+  }`;
 };
