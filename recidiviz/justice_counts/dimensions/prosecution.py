@@ -48,13 +48,13 @@ class CaseSeverityType(DimensionBase, enum.Enum):
 class DispositionType(DimensionBase, enum.Enum):
     REJECTION = "REJECTION"
     DISMISSAL = "DISMISSAL"
-    DEFERRAL_OR_DIVERION = "DEFERRAL_OR_DIVERSION"
-    AQUITAL = "AQUITAL"
+    DEFERRAL_OR_DIVERSION = "DEFERRAL_OR_DIVERSION"
+    ACQUITTAL = "ACQUITTAL"
     CONVICTION_PLEA = "CONVICTION_PLEA"
     CONVICTION_TRIAL = "CONVICTION_TRIAL"
     TRANSFER = "TRANSFER"
     OTHER = "OTHER"
-    UNKNOWN = "UNKOWN"
+    UNKNOWN = "UNKNOWN"
 
     @classmethod
     def dimension_identifier(cls) -> str:

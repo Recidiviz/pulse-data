@@ -392,7 +392,8 @@ class Report(JusticeCountsBase):
     def get_reporting_frequency(self) -> ReportingFrequency:
         if (
             self.date_range_end.year == self.date_range_start.year
-            and self.date_range_end.month - self.date_range_start.month == 1
+            # Jan - Dec will be -11
+            and self.date_range_end.month - self.date_range_start.month in (1, -11)
         ):
             inferred_frequency = ReportingFrequency.MONTHLY
         else:
