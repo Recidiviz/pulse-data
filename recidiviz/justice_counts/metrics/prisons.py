@@ -187,7 +187,7 @@ releases = MetricDefinition(
     reporting_note="Exclude temporary release (work release, appointment, court hearing, etc.).",
     specified_contexts=[
         Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
+            key=ContextKey.JURISDICTION_DEFINITION_OF_SUPERVISION,
             value_type=ValueType.TEXT,
             label="Please provide the agency's definition of supervision (i.e. probation, parole, or both).",
             required=True,

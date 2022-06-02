@@ -32,6 +32,7 @@ from recidiviz.justice_counts.dimensions.supervision import (
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
+    Definition,
     MetricCategory,
     MetricDefinition,
 )
@@ -66,11 +67,17 @@ annual_budget = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     specified_contexts=[
         Context(
-            key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            value_type=ValueType.TEXT,
-            label="Is community supervision included in another agency’s budget? Please specify supervision structure (unified, etc.).",
+            key=ContextKey.SUPERVISION_IN_ANOTHER_AGENCY_BUDGET,
+            value_type=ValueType.BOOLEAN,
+            label="Is community supervision included in another agency's budget?",
             required=True,
-        )
+        ),
+        Context(
+            key=ContextKey.SUPERVISION_STRUCTURE,
+            value_type=ValueType.TEXT,
+            label="Please specify supervision structure type (unified, etc.).",
+            required=True,
+        ),
     ],
 )
 
@@ -80,6 +87,12 @@ total_staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
     description="Measures the number of full-time staff employed by the agency.",
+    definitions=[
+        Definition(
+            term="Full time staff",
+            definition="Number of people employed in a full-time (0.9+) capacity.",
+        )
+    ],
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -92,11 +105,18 @@ supervision_violations = MetricDefinition(
     metric_type=MetricType.SUPERVISION_VIOLATIONS,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Supervision Violations",
-    description="Measures the number of individuals with at least one violation during the reporting period, by violation type.",
+    description="Measures the number of individuals with at least one violation during the reporting period.",
+    reporting_note="Report the most serious violation type incurred during the reporting period.",
+    definitions=[
+        Definition(
+            term="Violation",
+            definition="An event in which an individual under supervision ignores, errs, or otherwise breaks a condition of their supervision as defined by the agency. Violations may involve the commission of a new offense or failing to meet agreed upon parameters (appearance in court, a positive drug test, attendance in programming). Record violations whether or not a resulting action may be revocation.",
+        )
+    ],
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SupervisionViolationType, required=False)
+        AggregatedDimension(dimension=SupervisionViolationType, required=True)
     ],
 )
 
@@ -105,7 +125,13 @@ new_supervision_cases = MetricDefinition(
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="New Supervision Cases",
-    description="Measures the number of individuals referred to the agency for supervision.",
+    description="Measures the number of new cases referred to the agency for supervision.",
+    definitions=[
+        Definition(
+            term="Active supervision",
+            definition="A case in which the individual under supervision is required to  regularly report to a supervision officer or court in person or phone.",
+        )
+    ],
     measurement_type=MeasurementType.DELTA,
     reporting_note="Record only individuals entering for a new supervision term, not for an extension or reinstatement of a prior case.",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
@@ -114,7 +140,7 @@ new_supervision_cases = MetricDefinition(
     ],
 )
 
-individuals_under_supervision_by_type = MetricDefinition(
+individuals_under_supervision = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
@@ -124,6 +150,8 @@ individuals_under_supervision_by_type = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
         AggregatedDimension(dimension=SupervisionIndividualType, required=False),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=GenderRestricted, required=True),
     ],
 )
 
@@ -132,11 +160,11 @@ supervision_terminations = MetricDefinition(
     metric_type=MetricType.SUPERVISION_TERMINATIONS,
     category=MetricCategory.POPULATIONS,
     display_name="Supervision Terminations",
-    description="Measures the number of individuals exiting from supervision, by termination type.",
+    description="Measures the number of individuals exiting from supervision.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SupervisionTerminationType, required=False)
+        AggregatedDimension(dimension=SupervisionTerminationType, required=True)
     ],
 )
 
@@ -150,20 +178,5 @@ reconviction_while_on_supervision = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
         AggregatedDimension(dimension=NewOffenseType, required=False)
-    ],
-)
-
-individuals_under_supervision_by_demographic = MetricDefinition(
-    system=System.SUPERVISION,
-    metric_type=MetricType.POPULATION,
-    category=MetricCategory.EQUITY,
-    display_name="Individuals under Supervision",
-    description="Measures the number of individuals under supervision",
-    measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Together, these numbers should total the Population metric.",
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
-        AggregatedDimension(dimension=GenderRestricted, required=False),
     ],
 )
