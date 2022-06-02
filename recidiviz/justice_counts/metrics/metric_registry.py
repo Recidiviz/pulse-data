@@ -72,8 +72,6 @@ METRICS = [
     prisons.admissions,
     prisons.annual_budget,
     prisons.average_daily_population,
-    prisons.average_daily_population_by_gender,
-    prisons.average_daily_population_by_race_and_ethnicity,
     prisons.grievances_upheld,
     prisons.readmissions,
     prisons.releases,

@@ -23,7 +23,7 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class ReadmissionType(DimensionBase, enum.Enum):
-    NEW_OFFENSE = "NEW_OFFENSE"
+    NEW_ADMISSION = "NEW_ADMISSION"
     VIOLATION_OF_CONDITIONS = "VIOLATION_OF_CONDITIONS"
     UNKNOWN = "UNKNOWN"
 
@@ -61,6 +61,7 @@ class JailReleaseType(DimensionBase, enum.Enum):
     TRANSFER = "TRANSFER"
     UNAPPROVED_ABSENCE = "UNAPPROVED_ABSENCE"
     COMPASSIONATE = "COMPASSIONATE"
+    OTHER = "OTHER"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
@@ -69,11 +70,12 @@ class JailReleaseType(DimensionBase, enum.Enum):
 
 
 class PrisonReleaseTypes(DimensionBase, enum.Enum):
-    SCENTENCE_COMPLETION = "SCENTENCE_COMPLETION"
+    SENTENCE_COMPLETION = "SENTENCE_COMPLETION"
     TO_SUPERVISION = "TO_SUPERVISION"
     TRANSFER = "TRANSFER"
     UNAPPROVED_ABSENCE = "UNAPPROVED_ABSENCE"
     COMPASSIONATE = "COMPASSIONATE"
+    OTHER = "OTHER"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
