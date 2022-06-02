@@ -62,7 +62,7 @@ PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryView
     view_id=PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_NAME,
     view_query_template=PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_QUERY_TEMPLATE,
     description=PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_DESCRIPTION,
-    dimensions=("state_code",),
+    dimensions=("state_code", "location_id", "location_name"),
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     enabled_states=ENABLED_STATE_CODES,
 )

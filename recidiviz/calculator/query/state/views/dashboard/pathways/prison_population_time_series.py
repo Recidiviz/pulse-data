@@ -125,6 +125,7 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
         "facility",
         "age_group",
     ),
+    metric_stats=("last_updated", "person_count"),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     add_age_groups=add_age_groups(),

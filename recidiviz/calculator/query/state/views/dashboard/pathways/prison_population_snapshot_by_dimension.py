@@ -119,6 +119,10 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryVie
         "age_group",
         "length_of_stay",
     ),
+    metric_stats=(
+        "last_updated",
+        "person_count",
+    ),
     dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     sessions_dataset=SESSIONS_DATASET,

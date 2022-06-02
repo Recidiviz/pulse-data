@@ -61,6 +61,7 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryVi
     view_query_template=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE,
     description=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION,
     dimensions=("state_code", "location_id", "location_name"),
+    metric_metadata=("aggregating_location_id",),
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     enabled_states=ENABLED_STATE_CODES,
     pathways_level_2_incarceration_state_codes=PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS,
