@@ -95,6 +95,11 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMe
         "time_period",
         "state_id",
     ),
+    metric_stats=("last_updated",),
+    metric_metadata=(
+        "age",
+        "full_name",
+    ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     formatted_name=get_person_full_name("person.full_name"),
     last_updated_query=get_pathways_incarceration_last_updated_date(),

@@ -95,6 +95,10 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
         "age_group",
         "facility",
     ),
+    metric_stats=(
+        "last_updated",
+        "event_count",
+    ),
     description=PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     last_updated_query=get_pathways_incarceration_last_updated_date(),

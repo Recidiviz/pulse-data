@@ -88,6 +88,10 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetric
         "judicial_district",
         "prior_length_of_incarceration",
     ),
+    metric_stats=(
+        "last_updated",
+        "event_count",
+    ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
 )

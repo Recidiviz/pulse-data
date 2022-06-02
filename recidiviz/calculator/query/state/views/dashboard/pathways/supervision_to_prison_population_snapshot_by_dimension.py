@@ -136,6 +136,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
         "most_severe_violation",
         "number_of_violations",
     ),
+    metric_stats=("last_updated", "event_count"),
     description=SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,

@@ -110,6 +110,10 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
         "district",
         "supervision_level",
     ),
+    metric_stats=(
+        "last_updated",
+        "person_count",
+    ),
     dashboards_dataset=DASHBOARD_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),

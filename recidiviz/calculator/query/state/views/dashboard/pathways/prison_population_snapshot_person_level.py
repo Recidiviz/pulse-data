@@ -94,6 +94,8 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryVie
         "age_group",
         "state_id",
     ),
+    metric_stats=("last_updated",),
+    metric_metadata=("age", "full_name"),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_dataset=dataset_config.NORMALIZED_STATE_DATASET,

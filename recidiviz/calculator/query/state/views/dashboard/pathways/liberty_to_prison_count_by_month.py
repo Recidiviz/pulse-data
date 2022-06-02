@@ -72,6 +72,7 @@ LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilde
     view_id=LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_NAME,
     view_query_template=LIBERTY_TO_PRISON_COUNT_BY_MONTH_QUERY_TEMPLATE,
     dimensions=("state_code", "year", "month", *dimensions),
+    metric_stats=("event_count",),
     description=LIBERTY_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
 )
