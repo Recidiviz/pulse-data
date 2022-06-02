@@ -39,6 +39,7 @@ METRICS = [
     courts.sentences_imposed,
     courts.sentences_imposed_by_demographic,
     courts.total_staff,
+    courts.residents,
     defense.annual_budget,
     defense.cases_appointed_counsel,
     defense.caseloads,
@@ -46,6 +47,7 @@ METRICS = [
     defense.cases_disposed_by_demographic,
     defense.complaints,
     defense.total_staff,
+    defense.residents,
     jails.admissions,
     jails.annual_budget,
     jails.average_daily_population,
@@ -56,6 +58,7 @@ METRICS = [
     jails.releases,
     jails.staff_use_of_force_incidents,
     jails.total_staff,
+    jails.residents,
     law_enforcement.annual_budget,
     law_enforcement.residents,
     law_enforcement.calls_for_service,
@@ -76,6 +79,7 @@ METRICS = [
     prisons.releases,
     prisons.staff_use_of_force_incidents,
     prisons.total_staff,
+    prisons.residents,
     prosecution.annual_budget,
     prosecution.caseloads,
     prosecution.cases_disposed,
@@ -84,6 +88,7 @@ METRICS = [
     prosecution.cases_rejected_by_demographic,
     prosecution.total_staff,
     prosecution.violations,
+    prosecution.residents,
     supervision.annual_budget,
     supervision.individuals_under_supervision_by_demographic,
     supervision.individuals_under_supervision_by_type,
@@ -92,6 +97,7 @@ METRICS = [
     supervision.supervision_terminations,
     supervision.supervision_violations,
     supervision.total_staff,
+    supervision.residents,
 ]
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key

@@ -42,6 +42,28 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     System,
 )
 
+residents = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.RESIDENTS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Jurisdiction Residents",
+    description="Measures the number of residents in the agency's jurisdiction.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
+    specified_contexts=[
+        Context(
+            key=ContextKey.JURISDICTION_AREA,
+            value_type=ValueType.NUMBER,
+            label="The land size (area) of the jurisdiction",
+            required=False,
+        )
+    ],
+    aggregated_dimensions=[
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=GenderRestricted, required=True),
+    ],
+)
+
 annual_budget = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.BUDGET,
@@ -63,29 +85,6 @@ annual_budget = MetricDefinition(
         AggregatedDimension(dimension=SheriffBudgetType, required=False)
     ],
 )
-
-residents = MetricDefinition(
-    system=System.LAW_ENFORCEMENT,
-    metric_type=MetricType.RESIDENTS,
-    category=MetricCategory.POPULATIONS,
-    display_name="Jurisdiction residents",
-    description="Measures the number of residents in the agency's jurisdiction.",
-    measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_AREA,
-            value_type=ValueType.NUMBER,
-            label="The land size (area) of the jurisdiction",
-            required=False,
-        )
-    ],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
-    ],
-)
-
 
 calls_for_service = MetricDefinition(
     system=System.LAW_ENFORCEMENT,

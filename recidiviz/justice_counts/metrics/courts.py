@@ -42,6 +42,20 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     System,
 )
 
+residents = MetricDefinition(
+    system=System.COURTS_AND_PRETRIAL,
+    metric_type=MetricType.RESIDENTS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Jurisdiction Residents",
+    description="Measures the number of residents in the agency's jurisdiction.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
+    aggregated_dimensions=[
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=GenderRestricted, required=True),
+    ],
+)
+
 annual_budget = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
     metric_type=MetricType.BUDGET,

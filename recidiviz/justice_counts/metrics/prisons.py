@@ -41,6 +41,20 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     System,
 )
 
+residents = MetricDefinition(
+    system=System.PRISONS,
+    metric_type=MetricType.RESIDENTS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Jurisdiction Residents",
+    description="Measures the number of residents in the agency's jurisdiction.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
+    aggregated_dimensions=[
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=GenderRestricted, required=True),
+    ],
+)
+
 annual_budget = MetricDefinition(
     system=System.PRISONS,
     metric_type=MetricType.BUDGET,
@@ -49,12 +63,12 @@ annual_budget = MetricDefinition(
     description="Measures the total annual budget (in dollars) of the state correctional institutions.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="DOCs should report only correctional institution budget.",
+    reporting_note="DOCs should only report on their correctional institution budget.",
     specified_contexts=[
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
             value_type=ValueType.TEXT,
-            label="Please descrbe your primary budget source.",
+            label="Please describe your primary budget source.",
             required=False,
         )
     ],
