@@ -21,7 +21,7 @@ import styled from "styled-components/macro";
 
 import {
   Button,
-  GoBackLink,
+  GoBackToReportsOverviewLink,
   TextInput,
   Title,
   TitleWrapper,
@@ -53,12 +53,10 @@ const AccountSettings = () => {
 
   return (
     <AccountSettingsPage>
-      <GoBackLink
+      <GoBackToReportsOverviewLink
         style={{ position: "absolute", top: 100, left: 20 }}
         onClick={() => navigate("/")}
-      >
-        ← Go back to reports
-      </GoBackLink>
+      />
       <SettingsFormPanel>
         <TitleWrapper underlined>
           <Title>Settings</Title>

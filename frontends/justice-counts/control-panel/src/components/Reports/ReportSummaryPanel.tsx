@@ -29,7 +29,7 @@ import {
 } from "../../utils";
 // import successIcon from "../assets/status-check-icon.png";
 import errorIcon from "../assets/status-error-icon.png";
-import { GoBackLink, PreTitle, Title } from "../Forms";
+import { GoBackToReportsOverviewLink, PreTitle, Title } from "../Forms";
 import { palette, typography } from "../GlobalStyles";
 
 export const ReportSummaryWrapper = styled.div`
@@ -159,6 +159,7 @@ const ReportSummaryPanel: React.FC<{
     last_modified_at: lastModifiedAt,
     month,
     year,
+    frequency,
   } = reportStore.reportOverviews[reportID];
 
   const checkMetricForErrorsInUpdatedValues = (metricKey: string) => {
@@ -196,9 +197,7 @@ const ReportSummaryPanel: React.FC<{
   return (
     <ReportSummaryWrapper>
       <PreTitle>
-        <GoBackLink onClick={() => navigate("/")}>
-          Back to Reports Overview
-        </GoBackLink>
+        <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
       </PreTitle>
       <Title>Report Summary</Title>
 
@@ -220,7 +219,7 @@ const ReportSummaryPanel: React.FC<{
       <EditDetails>
         <EditDetailsTitle>Date Range</EditDetailsTitle>
         <EditDetailsContent>
-          {printDateRangeFromMonthYear(month, year)}
+          {printDateRangeFromMonthYear(month, year, frequency)}
         </EditDetailsContent>
 
         <EditDetailsTitle>Editors</EditDetailsTitle>

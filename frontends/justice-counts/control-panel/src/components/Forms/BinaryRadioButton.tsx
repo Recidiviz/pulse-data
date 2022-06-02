@@ -40,7 +40,7 @@ export const BinaryRadioGroupQuestion = styled.div`
 
 export const RadioButtonWrapper = styled.div`
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   margin: 15px 0 0 0;
 
   &:first-child {

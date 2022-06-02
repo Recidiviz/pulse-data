@@ -103,7 +103,9 @@ export interface MetricDisaggregationDimensions {
 export interface CreateReportFormValuesType extends Record<string, unknown> {
   month: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
   year: number;
-  frequency: "MONTHLY" | "ANNUAL";
+  frequency: ReportFrequency;
+  annualStartMonth: number;
+  isRecurring: boolean;
 }
 
 export interface FormContexts {

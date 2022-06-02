@@ -172,13 +172,17 @@ export const Button = styled.button`
   }
 `;
 
-export const GoBackLink = styled.a`
+export const GoBackToReportsOverviewLink = styled.a`
   color: ${palette.solid.blue};
   transition: 0.2s ease;
 
   &:hover {
     cursor: pointer;
     opacity: 0.85;
+  }
+
+  &::after {
+    content: "← Back to Reports Overview";
   }
 `;
 
