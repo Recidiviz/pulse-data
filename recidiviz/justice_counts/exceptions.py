@@ -36,7 +36,14 @@ class JusticeCountsPermissionError(FlaskException):
 
 
 class JusticeCountsDataError(FlaskException):
-    """Exception for when the a user submits invalid data for a metric"""
+    """Exception for when the a user submits invalid data for a metric."""
 
     def __init__(self, code: str, description: str) -> None:
         super().__init__(code, description, HTTPStatus.NOT_ACCEPTABLE)
+
+
+class JusticeCountsServerError(FlaskException):
+    """Exception for when an uncaught error occurs in an API request."""
+
+    def __init__(self, code: str, description: str) -> None:
+        super().__init__(code, description, HTTPStatus.INTERNAL_SERVER_ERROR)
