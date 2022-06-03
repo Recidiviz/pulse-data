@@ -153,6 +153,13 @@ export const TabDisplay = styled.div`
 
 export const DisaggregationInputWrapper = styled.div`
   width: 315px;
+
+  label {
+    width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 export const Button = styled.button`

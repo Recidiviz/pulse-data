@@ -74,6 +74,10 @@ const MetricDisplayName = styled.div<{
   border-bottom: 2px solid
     ${({ activeSection }) =>
       activeSection ? palette.solid.blue : `transparent`};
+  max-width: 238px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const ReportStatusIcon = styled.div<{
