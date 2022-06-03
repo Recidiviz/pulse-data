@@ -46,6 +46,15 @@ from recidiviz.validation.views.external_data.population_projection_monthly_popu
 from recidiviz.validation.views.external_data.recidivism_person_level import (
     RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_mi.cb_971_report_unified import (
+    CB_971_REPORT_UNIFIED_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_mi.incarceration_population_by_facility import (
+    US_MI_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_mi.oor_report_unified import (
+    OOR_REPORT_UNIFIED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.supervision_early_discharge_person_level import (
     SUPERVISION_EARLY_DISCHARGE_PERSON_LEVEL_VIEW_BUILDER,
 )
@@ -148,6 +157,9 @@ EXTERNAL_VALIDATION_DATA_VIEW_BUILDERS = [
     SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
     SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER,
     SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
+    CB_971_REPORT_UNIFIED_VIEW_BUILDER,
+    OOR_REPORT_UNIFIED_VIEW_BUILDER,
+    US_MI_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
 ]
 
 

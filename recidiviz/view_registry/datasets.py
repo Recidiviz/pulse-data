@@ -46,7 +46,10 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
-from recidiviz.validation.views.dataset_config import validation_dataset_for_state
+from recidiviz.validation.views.dataset_config import (
+    validation_dataset_for_state,
+    validation_oneoff_dataset_for_state,
+)
 
 RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
     raw_tables_dataset_for_region(
@@ -74,8 +77,17 @@ VALIDATION_DATASETS_TO_DESCRIPTIONS = {
         state_code
     ): f"Contains one-off validation data provided directly by {StateCode.get_state(state_code)}."
     for state_code in StateCode
+    if state_code != StateCode.US_MI
 }
-VALIDATION_DATASETS = set(VALIDATION_DATASETS_TO_DESCRIPTIONS.keys())
+VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
+    validation_oneoff_dataset_for_state(
+        state_code
+    ): f"Contains one-off validation data provided directed by {StateCode.get_state(state_code)}."
+    for state_code in StateCode
+}
+VALIDATION_DATASETS = set(VALIDATION_DATASETS_TO_DESCRIPTIONS.keys()).union(
+    set(VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS.keys())
+)
 
 
 NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
@@ -124,6 +136,7 @@ VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     **RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS,
     **SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS,
     **VALIDATION_DATASETS_TO_DESCRIPTIONS,
+    **VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS,
     **OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
     **NORMALIZED_DATASETS_TO_DESCRIPTIONS,
 }
