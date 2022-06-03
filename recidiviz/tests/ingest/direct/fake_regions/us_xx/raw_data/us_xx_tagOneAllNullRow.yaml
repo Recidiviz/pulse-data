@@ -1,0 +1,11 @@
+file_tag: tagOneAllNullRow
+file_description: |-
+  tagOneAllNullRow file description
+data_classification: source
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+  - name: COL2
+  - name: COL3
+  - name: COL4

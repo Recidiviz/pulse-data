@@ -905,6 +905,19 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
         # Stripping white space from all fields
         df = df.applymap(lambda x: x.strip())
 
+        num_rows_before_filter = df.shape[0]
+
+        # Filter out rows where ALL values are null / empty string. Solution largely
+        # copied from https://stackoverflow.com/a/41401892.
+        df = df[~pd.isnull(df.applymap(lambda x: None if x == "" else x)).all(axis=1)]
+
+        num_rows_after_filter = df.shape[0]
+        if num_rows_before_filter > num_rows_after_filter:
+            logging.error(
+                "Filtered out [%s] rows that contained only empty/null values",
+                num_rows_before_filter - num_rows_after_filter,
+            )
+
         augmented_df = self._augment_raw_data_with_metadata_columns(
             path=self.path, file_metadata=self.file_metadata, raw_data_df=df
         )
