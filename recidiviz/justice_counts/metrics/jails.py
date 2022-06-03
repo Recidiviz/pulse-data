@@ -31,6 +31,7 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
+    Definition,
     MetricCategory,
     MetricDefinition,
 )
@@ -60,10 +61,9 @@ annual_budget = MetricDefinition(
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of the jail system.",
+    description="Measures the annual budget (in dollars) of the jail system.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Sheriff offices should report on the detention function.",
     specified_contexts=[
         Context(
             key=ContextKey.PRETRIAL_SUPERVISION_FUNCTION,
@@ -88,11 +88,17 @@ total_staff = MetricDefinition(
     description="Measures the number of full-time staff employed by the jail system.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    definitions=[
+        Definition(
+            term="Full time staff",
+            definition="Number of people employed in a full-time (0.9+) capacity.",
+        )
+    ],
     specified_contexts=[
         Context(
-            key=ContextKey.INCLUDES_PROGRAMATIC_STAFF,
+            key=ContextKey.INCLUDES_PROGRAMMATIC_STAFF,
             value_type=ValueType.BOOLEAN,
-            label="Does the staff count includes programatic staff?",
+            label="Does the staff count includes programmatic staff?",
             required=True,
         ),
     ],
@@ -106,14 +112,15 @@ readmissions = MetricDefinition(
     metric_type=MetricType.READMISSIONS,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Readmissions",
-    description="Measures the number of individuals admitted who had at least one other jail admission within the prior year.",
+    description="Measures the number of individuals admitted who had at least one other jail admission within the prior 12 months.",
+    reporting_note="You may only be able to identify if an individual was admitted to your same facility within the last year.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
             value_type=ValueType.TEXT,
-            label="Please provide the agency's definition of admission",
+            label="Please provide your agency's definition of admission.",
             required=True,
         ),
     ],
@@ -128,13 +135,14 @@ admissions = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Admissions",
     description="Measures the number of new admissions to the jail system.",
+    reporting_note="Report individuals in the most serious category (new sentence > violation > hold).",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
             value_type=ValueType.TEXT,
-            label="Please provide the agency's definition of admission",
+            label="Please provide the agency's definition of admission.",
             required=True,
         ),
         Context(
@@ -154,15 +162,14 @@ average_daily_population = MetricDefinition(
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="Average Daily Population",
-    description="Measures the average daily population held in the jail system.",
+    description="Measures the average daily population of individuals held in jail custody.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Calculate the average against a 30-day month",
     specified_contexts=[
         Context(
             key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
             value_type=ValueType.BOOLEAN,
-            label="Individuals admitted for violation of conditions are counted within the total population.",
+            label="Does the average daily population include individuals admitted for violation of conditions?",
             required=False,
         ),
     ],
@@ -170,16 +177,19 @@ average_daily_population = MetricDefinition(
         AggregatedDimension(dimension=JailPopulationType, required=False)
     ],
 )
+
 releases = MetricDefinition(
     system=System.JAILS,
     metric_type=MetricType.RELEASES,
     category=MetricCategory.POPULATIONS,
     display_name="Releases",
-    description="Measures the number of releases from the jail system.",
+    description="Measures the number of new releases from the jail system.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailReleaseType, required=False)
+        AggregatedDimension(dimension=JailReleaseType, required=False),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=GenderRestricted, required=True),
     ],
 )
 
@@ -189,8 +199,15 @@ staff_use_of_force_incidents = MetricDefinition(
     category=MetricCategory.PUBLIC_SAFETY,
     display_name="Staff Use of Force Incidents",
     description="Measures the number of staff use of force incidents.",
+    definitions=[
+        Definition(
+            term="Use of force incident",
+            definition="An event in which an officer uses force towards or in the vicinity of an individual incarcerated. The AJA focuses on uses of force resulting in injury or a discharge of a weapon. Count all uses of force occurring during the same event as 1 incident.",
+        ),
+    ],
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    reporting_note="Select the most serious type of force used per incident.",
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
@@ -204,38 +221,17 @@ staff_use_of_force_incidents = MetricDefinition(
     ],
 )
 
-average_daily_population_by_race_and_ethnicity = MetricDefinition(
-    system=System.JAILS,
-    metric_type=MetricType.POPULATION,
-    category=MetricCategory.EQUITY,
-    display_name="Average Daily Population, by race/ethnicity",
-    description="Measures the average daily jail population of each race/ethnic group.",
-    measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="This is the average daily population for each group. Calculate the average against a 30-day month",
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True)
-    ],
-)
-average_daily_population_by_gender = MetricDefinition(
-    system=System.JAILS,
-    metric_type=MetricType.POPULATION,
-    category=MetricCategory.EQUITY,
-    display_name="Average Daily Population, by gender",
-    description="Measures the average daily jail population of gender.",
-    measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="This is the average daily population for each group. Calculate the average against a 30-day month",
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=GenderRestricted, required=True)
-    ],
-)
-
 grievances_upheld = MetricDefinition(
     system=System.JAILS,
     metric_type=MetricType.GRIEVANCES_UPHELD,
     category=MetricCategory.FAIRNESS,
     display_name="Grievances upheld",
+    definitions=[
+        Definition(
+            term="Grievance",
+            definition="A complaint or question filed with the institution by an individual incarcerated regarding their experience, with procedures, treatment, or interaction with officers.",
+        )
+    ],
     description="Measures the number of grievances filed with the institution that were upheld.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
