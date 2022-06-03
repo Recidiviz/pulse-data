@@ -317,19 +317,6 @@ class IngestViewMaterializationCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo
     materialization task queue.
     """
 
-    def is_ingest_view_materialization_task_already_queued(
-        self,
-        region_code: str,
-        task_args: IngestViewMaterializationArgs,
-    ) -> bool:
-        return any(
-            task_args.task_id_tag() in task_name
-            for task_name in self._task_names_for_instance(
-                region_code,
-                task_args.ingest_instance,
-            )
-        )
-
     def has_ingest_view_materialization_jobs_queued(
         self, region_code: str, ingest_instance: DirectIngestInstance
     ) -> bool:

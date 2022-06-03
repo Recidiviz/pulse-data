@@ -194,11 +194,6 @@ class TestIngestViewMaterializationCloudTaskQueueInfo(TestCase):
                     _REGION.region_code, instance
                 )
             )
-        self.assertFalse(
-            info.is_ingest_view_materialization_task_already_queued(
-                _REGION.region_code, self.primary_ingest_view_export_args
-            )
-        )
 
     def test_single_ingest_view_task(self) -> None:
         full_task_name = _build_task_id(
@@ -225,17 +220,6 @@ class TestIngestViewMaterializationCloudTaskQueueInfo(TestCase):
                 instance == DirectIngestInstance.SECONDARY,
                 info.has_any_tasks_for_instance(_REGION.region_code, instance),
             )
-
-        self.assertFalse(
-            info.is_ingest_view_materialization_task_already_queued(
-                _REGION.region_code, self.primary_ingest_view_export_args
-            )
-        )
-        self.assertTrue(
-            info.is_ingest_view_materialization_task_already_queued(
-                _REGION.region_code, self.secondary_ingest_view_export_args
-            )
-        )
 
 
 class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
