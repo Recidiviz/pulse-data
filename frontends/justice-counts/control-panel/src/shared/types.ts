@@ -81,7 +81,7 @@ export interface MetricContext {
   display_name: string | null | undefined;
   reporting_note: string | null | undefined;
   required: boolean;
-  type: string;
+  type: "TEXT" | "NUMBER" | "BOOLEAN";
   value: string | number | boolean | null | undefined;
 }
 
