@@ -20,7 +20,7 @@ from flask import Flask, Response, jsonify
 from recidiviz.utils.flask_exception import FlaskException
 
 
-def handle_auth_error(ex: FlaskException) -> Response:
+def handle_error(ex: FlaskException) -> Response:
     response = jsonify(
         {
             "code": ex.code,
@@ -33,4 +33,4 @@ def handle_auth_error(ex: FlaskException) -> Response:
 
 def register_error_handlers(app: Flask) -> None:
     """Registers error handlers"""
-    app.errorhandler(FlaskException)(handle_auth_error)
+    app.errorhandler(FlaskException)(handle_error)
