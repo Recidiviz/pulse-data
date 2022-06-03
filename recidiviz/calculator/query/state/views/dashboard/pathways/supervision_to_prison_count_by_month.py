@@ -40,29 +40,26 @@ SUPERVISION_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION = (
 
 # TODO(#10742): implement violation fields
 aggregate_query = """
-    WITH transitions AS (
+    WITH base_data AS (
         SELECT
             transitions.state_code,
-            EXTRACT(YEAR FROM transition_date) as year,
-            EXTRACT(MONTH FROM transition_date) as month,
-            gender,
-            supervision_type,
-            age_group,
-            prioritized_race_or_ethnicity AS race,
-            IFNULL(location_name, level_1_location_external_id) AS district,
+            EXTRACT(YEAR FROM transitions.transition_date) as year,
+            EXTRACT(MONTH FROM transitions.transition_date) as month,
+            transitions.gender,
+            transitions.supervision_type,
+            transitions.age_group,
+            transitions.race,
+            transitions.district,
             # TODO(#11020) Re-enable supervision_level once BE has been updated to handle larger metric files
             "ALL" AS supervision_level,
-            # IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
+            # transitions.supervision_level,
             "ALL" AS most_severe_violation,
             "ALL" AS number_of_violations,
 
-        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
-            ON transitions.state_code = location.state_code 
-            AND transitions.level_1_location_external_id = location.location_id
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions` transitions
     ),
     filtered_rows AS (
-        SELECT * FROM transitions
+        SELECT * FROM base_data
         WHERE {state_specific_district_filter}
     )
     SELECT 
@@ -115,7 +112,6 @@ SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBu
     metric_stats=("event_count",),
     description=SUPERVISION_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 

@@ -16,7 +16,6 @@
 # =============================================================================
 """Admissions from supervision to prison aggregated over different time periods and grouped by supervising officer."""
 
-from recidiviz.calculator.query.bq_utils import get_binned_time_period_months
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
@@ -45,19 +44,15 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
     transitions AS (
         SELECT
             transitions.state_code,
-            {transition_time_period} AS time_period,
-            gender,
-            supervision_type,
-            age_group,
-            prioritized_race_or_ethnicity AS race,
-            IFNULL(location_name, level_1_location_external_id) AS district,
-            IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
-            supervising_officer
-        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_prison_transitions` transitions
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
-            ON transitions.state_code = location.state_code 
-            AND transitions.level_1_location_external_id = location.location_id
-
+            transitions.time_period,
+            transitions.gender,
+            transitions.supervision_type,
+            transitions.age_group,
+            transitions.race,
+            transitions.district,
+            transitions.supervision_level,
+            transitions.supervising_officer
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions` transitions
     )
     ,
     filtered_rows AS (
@@ -135,7 +130,6 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetr
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
-    transition_time_period=get_binned_time_period_months("transition_date"),
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 
