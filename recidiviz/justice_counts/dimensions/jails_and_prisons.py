@@ -23,9 +23,9 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class ReadmissionType(DimensionBase, enum.Enum):
-    NEW_ADMISSION = "NEW_ADMISSION"
-    VIOLATION_OF_CONDITIONS = "VIOLATION_OF_CONDITIONS"
-    UNKNOWN = "UNKNOWN"
+    NEW_ADMISSION = "New admission"
+    VIOLATION_OF_CONDITIONS = "Violation of conditions"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -33,10 +33,10 @@ class ReadmissionType(DimensionBase, enum.Enum):
 
 
 class JailPopulationType(DimensionBase, enum.Enum):
-    PRETRIAL = "PRETRIAL"
-    SENTENCED = "SENTENCED"
-    TRANSFER_OR_HOLD = "TRANSFER_OR_HOLD"
-    UNKNOWN = "UNKNOWN"
+    PRETRIAL = "Pretrial"
+    SENTENCED = "Sentenced"
+    TRANSFER_OR_HOLD = "Transfer or Hold"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -44,11 +44,11 @@ class JailPopulationType(DimensionBase, enum.Enum):
 
 
 class PrisonPopulationType(DimensionBase, enum.Enum):
-    NEW_SENTENCE = "NEW_SENTENCE"
-    TRANSFER_OR_HOLD = "TRANSFER_OR_HOLD"
-    SUPERVISION_VIOLATION_OR_REVOCATION = "SUPERVISION_VIOLATION_OR_REVOCATION"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    NEW_SENTENCE = "New sentence"
+    TRANSFER_OR_HOLD = "Transfer/Hold"
+    SUPERVISION_VIOLATION_OR_REVOCATION = "Supervision violation or Revocation"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -56,13 +56,12 @@ class PrisonPopulationType(DimensionBase, enum.Enum):
 
 
 class JailReleaseType(DimensionBase, enum.Enum):
-    SENTENCE_COMPLETION = "SENTENCE_COMPLETION"
-    PRETRIAL_RELEASE = "PRETRIAL_RELEASE"
-    TRANSFER = "TRANSFER"
-    UNAPPROVED_ABSENCE = "UNAPPROVED_ABSENCE"
-    COMPASSIONATE = "COMPASSIONATE"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    SENTENCE_COMPLETION = "Sentence completion"
+    PRETRIAL_RELEASE = "Pretrial release"
+    TRANSFER = "Transfer"
+    UNAPPROVED_ABSENCE = "Unapproved absence"
+    COMPASSIONATE = "Compassionate"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -70,13 +69,13 @@ class JailReleaseType(DimensionBase, enum.Enum):
 
 
 class PrisonReleaseTypes(DimensionBase, enum.Enum):
-    SENTENCE_COMPLETION = "SENTENCE_COMPLETION"
-    TO_SUPERVISION = "TO_SUPERVISION"
-    TRANSFER = "TRANSFER"
-    UNAPPROVED_ABSENCE = "UNAPPROVED_ABSENCE"
-    COMPASSIONATE = "COMPASSIONATE"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    SENTENCE_COMPLETION = "Sentence completion"
+    TO_SUPERVISION = "To supervision"
+    TRANSFER = "Transfer"
+    UNAPPROVED_ABSENCE = "Unapproved absence"
+    COMPASSIONATE_RELEASE = "Compassionate release"
+    UNKNOWN = "Unknown"
+    OTHER = "Other"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -84,10 +83,10 @@ class PrisonReleaseTypes(DimensionBase, enum.Enum):
 
 
 class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
-    PHYSICAL = "PHYSICAL"
-    RESTRAINT = "RESTRAINT"
-    VERBAL = "VERBAL"
-    UNKNOWN = "UNKNOWN"
+    PHYSICAL = "Physical force"
+    RESTRAINT = "Restraint force"
+    WEAPON_INVOLVED = "Weapon involved"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -95,10 +94,10 @@ class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
 
 
 class CorrectionalFacilityStaffType(DimensionBase, enum.Enum):
-    SECURITY = "SECURITY"
-    SUPPORT = "SUPPORT"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    SECURITY = "Security"
+    SUPPORT = "Support"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:

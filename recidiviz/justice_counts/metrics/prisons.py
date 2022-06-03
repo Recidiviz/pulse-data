@@ -92,7 +92,7 @@ total_staff = MetricDefinition(
     reporting_note="DOCs should only report on their correctional institution staff.",
     specified_contexts=[
         Context(
-            key=ContextKey.INCLUDES_PROGRAMATIC_STAFF,
+            key=ContextKey.INCLUDES_PROGRAMMATIC_STAFF,
             value_type=ValueType.BOOLEAN,
             label="Does your count include programmatic staff?",
             required=True,

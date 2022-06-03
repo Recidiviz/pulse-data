@@ -51,8 +51,6 @@ METRICS = [
     jails.admissions,
     jails.annual_budget,
     jails.average_daily_population,
-    jails.average_daily_population_by_gender,
-    jails.average_daily_population_by_race_and_ethnicity,
     jails.grievances_upheld,
     jails.readmissions,
     jails.releases,

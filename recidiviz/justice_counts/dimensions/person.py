@@ -22,7 +22,6 @@ from typing import Dict, List, Optional, Type
 
 import attr
 
-import recidiviz.common.constants.county.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.county import person_characteristics
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.justice_counts.dimensions.base import Dimension, DimensionBase
@@ -125,14 +124,14 @@ class Ethnicity(Dimension):
 
 
 class RaceAndEthnicity(DimensionBase, enum.Enum):
-    AMERICAN_INDIAN_ALASKAN_NATIVE = enum_strings.race_american_indian
-    ASIAN = enum_strings.race_asian
-    BLACK = enum_strings.race_black
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    HISPANIC = enum_strings.ethnicity_hispanic
-    NATIVE_HAWAIIAN_PACIFIC_ISLANDER = enum_strings.race_hawaiian
-    OTHER = enum_strings.race_other
-    WHITE = enum_strings.race_white
+    AMERICAN_INDIAN_ALASKAN_NATIVE = "American Indian / Alaskan Native"
+    ASIAN = "Asian"
+    BLACK = "Black"
+    EXTERNAL_UNKNOWN = "External / Unknown"
+    HISPANIC = "Hispanic"
+    NATIVE_HAWAIIAN_PACIFIC_ISLANDER = "Native Hawaiian / Pacific Islander"
+    OTHER = "Other"
+    WHITE = "White"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -148,11 +147,11 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
 
 
 class GenderRestricted(DimensionBase, enum.Enum):
-    MALE = enum_strings.gender_male
-    FEMALE = enum_strings.gender_female
-    OTHER = enum_strings.gender_other
-    NON_BINARY = "NON_BINARY"
-    UNKNOWN = "UNKNOWN"
+    MALE = "Male"
+    FEMALE = "Female"
+    OTHER = "Other"
+    NON_BINARY = "Non-Binary"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
