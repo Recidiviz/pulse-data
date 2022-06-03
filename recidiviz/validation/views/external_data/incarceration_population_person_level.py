@@ -82,6 +82,13 @@ FROM (
   UNION ALL
   SELECT control_number as person_external_id, LAST_DAY(DATE '2022-01-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2022_01_incarceration_population`
 )
+UNION ALL
+SELECT
+  'US_MI' as region_code,
+  person_external_id,
+  date_of_stay,
+  facility
+FROM `{project_id}.{us_mi_validation_dataset}.oor_report_unified_materialized`
 """
 
 INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -96,6 +103,9 @@ INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_me_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_ME
+    ),
+    us_mi_validation_dataset=dataset_config.validation_dataset_for_state(
+        StateCode.US_MI
     ),
     us_nd_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_ND

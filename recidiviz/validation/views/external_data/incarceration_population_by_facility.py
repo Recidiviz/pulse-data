@@ -27,6 +27,8 @@ SELECT * FROM `{project_id}.{us_id_validation_dataset}.incarceration_population_
 UNION ALL
 SELECT * FROM `{project_id}.{us_me_validation_dataset}.incarceration_population_by_facility_view`
 UNION ALL
+SELECT * FROM `{project_id}.{us_mi_validation_dataset}.incarceration_population_by_facility_view`
+UNION ALL
 SELECT * FROM `{project_id}.{us_mo_validation_dataset}.incarceration_population_by_facility_raw`
 UNION ALL
 SELECT * FROM `{project_id}.{us_nd_validation_dataset}.incarceration_population_by_facility_raw`
@@ -46,6 +48,9 @@ INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_me_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_ME
+    ),
+    us_mi_validation_dataset=dataset_config.validation_dataset_for_state(
+        StateCode.US_MI
     ),
     us_mo_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_MO
