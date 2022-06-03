@@ -18,7 +18,7 @@
 import { reaction, when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import Loading from "../components/Loading";
 import {
@@ -40,6 +40,7 @@ import {
   Row,
   Table,
 } from "../components/Reports";
+import { showToast } from "../components/Toast";
 import { Permission, ReportOverview } from "../shared/types";
 import { useStore } from "../stores";
 import {
@@ -49,6 +50,10 @@ import {
   printReportTitle,
   removeSnakeCase,
 } from "../utils";
+
+interface LocationState {
+  toastMessage: string;
+}
 
 enum ReportStatusFilterOption {
   AllReports = "All Reports",
@@ -71,6 +76,8 @@ const Reports: React.FC = () => {
   const [showAdditionalEditorsTooltip, setShowAdditionalEditorsTooltip] =
     useState<number>();
   const [reportsFilter, setReportsFilter] = useState<string>("allreports");
+
+  const location = useLocation();
 
   const filterReportsBy = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -105,6 +112,17 @@ const Reports: React.FC = () => {
       ),
     [reportStore, userStore]
   );
+
+  useEffect(() => {
+    const toastMsg = (location.state as LocationState | undefined)
+      ?.toastMessage;
+    if (toastMsg) {
+      showToast(toastMsg, true);
+
+      // clear the location state
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location]);
 
   // reload report overviews when the current agency ID changes
   useEffect(

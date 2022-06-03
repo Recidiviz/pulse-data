@@ -23,10 +23,12 @@ import { BrowserRouter } from "react-router-dom";
 import Reports from "../../pages/Reports";
 import { rootStore, StoreProvider } from "../../stores";
 
-const mockedUsedNavigate = jest.fn();
+const mockedUseNavigate = jest.fn();
+const mockedUseLocation = jest.fn();
 jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),
-  useNavigate: () => mockedUsedNavigate,
+  useNavigate: () => mockedUseNavigate,
+  useLocation: () => mockedUseLocation,
 }));
 
 beforeEach(() => {
