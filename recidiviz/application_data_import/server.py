@@ -17,6 +17,7 @@
 """Entry point for Application Data Import service."""
 import logging
 import os
+import re
 from http import HTTPStatus
 from typing import Tuple
 
@@ -148,10 +149,11 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
     )
 
-    pathways_task_id = f"import/pathways/{object_id}"
+    pathways_task_id = re.sub(r"[^a-zA-Z0-9_-]", "-", f"import-pathways-{object_id}")
+
     try:
         cloud_task_manager.create_task(
-            absolute_uri=f"{cloud_run_metadata.url}/{pathways_task_id}",
+            absolute_uri=f"{cloud_run_metadata.url}/import/pathways/{object_id}",
             service_account_email=cloud_run_metadata.service_account_email,
             task_id=pathways_task_id,  # deduplicate import requests for the same file
         )
