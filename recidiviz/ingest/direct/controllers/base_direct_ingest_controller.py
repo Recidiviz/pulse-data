@@ -25,6 +25,9 @@ from types import ModuleType
 from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_results_contents_handle import (
+    BigQueryResultsContentsHandle,
+)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -545,31 +548,30 @@ class BaseDirectIngestController:
 
         contents_handle = self._get_contents_handle(args)
 
-        if contents_handle is None:
-            logging.warning(
-                "Failed to get contents handle for ingest run [%s] - returning.",
-                args.job_tag(),
-            )
-            # If the file no-longer exists, we do want to kick the scheduler
-            # again to pick up the next file to run. We expect this to happen
-            # occasionally as a race when the scheduler picks up a file before
-            # it has been properly moved.
-            return True
-
         logging.info("Successfully read contents for ingest run [%s]", args.job_tag())
 
         contents_are_empty = self._are_contents_empty(contents_handle)
 
-        if not contents_are_empty:
-            self._parse_and_persist_contents(args, contents_handle)
-        else:
+        if contents_are_empty:
+            # This may happen occasionally if this task gets re-executed after the
+            # rows have already been processed.
             logging.warning(
-                "Contents are empty for ingest run [%s] - skipping parse and "
-                "persist steps.",
+                "Contents are empty for ingest run [%s] - returning.",
                 args.job_tag(),
             )
 
-        self._do_cleanup(args)
+            # In this case, we do want to kick the scheduler again to pick up the next
+            # batch to run.
+            return True
+
+        self._parse_and_persist_contents(args, contents_handle)
+
+        logging.info("Marking rows processed for ingest run [%s]", args.job_tag())
+        self.ingest_view_contents.mark_rows_as_processed(
+            ingest_view_name=args.ingest_view_name,
+            upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
+            batch_number=args.batch_number,
+        )
 
         duration_sec = (datetime.datetime.now() - start_time).total_seconds()
         logging.info(
@@ -672,7 +674,7 @@ class BaseDirectIngestController:
 
     def _get_contents_handle(
         self, args: ExtractAndMergeArgs
-    ) -> Optional[ContentsHandle]:
+    ) -> BigQueryResultsContentsHandle:
         """Returns a handle to the ingest view contents allows us to iterate over the
         contents and also manages cleanup of resources once we are done with the
         contents.
@@ -693,17 +695,6 @@ class BaseDirectIngestController:
         for _ in contents_handle.get_contents_iterator():
             return False
         return True
-
-    def _do_cleanup(self, args: ExtractAndMergeArgs) -> None:
-        """Does necessary cleanup once ingest view contents have been successfully
-        persisted to Postgres.
-        """
-        logging.info("Marking rows processed for ingest run [%s]", args.job_tag())
-        self.ingest_view_contents.mark_rows_as_processed(
-            ingest_view_name=args.ingest_view_name,
-            upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
-            batch_number=args.batch_number,
-        )
 
     # ================= #
     # NEW FILE HANDLING #
