@@ -16,7 +16,6 @@
 # =============================================================================
 """Base class for the reported value(s) for a Justice Counts metric."""
 
-import re
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import attr
@@ -117,9 +116,7 @@ class ReportedAggregatedDimension:
             {
                 "key": dimension.to_enum().value,
                 "value": val,
-                "label": re.sub(
-                    "_", "-", dimension.dimension_value.title()
-                ),  # replace underscore with dashes. Non_Emergency -> Non-Emergency
+                "label": dimension.dimension_value,
                 "reporting_note": dimension.reporting_note,
             }
             for dimension, val in self.dimension_to_value.items()

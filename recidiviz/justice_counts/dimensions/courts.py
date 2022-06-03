@@ -21,12 +21,12 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class CourtStaffType(DimensionBase, enum.Enum):
-    CLERK = "CLERK"
-    JUDICIAL = "JUDICIAL"
-    ADMINISTRATIVE = "ADMINISTRATIVE"
-    SUPPORT = "SUPPORT"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    CLERK = "Clerk"
+    JUDICIAL = "Judicial"
+    ADMINISTRATIVE = "Administrative"
+    SUPPORT = "Support"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -34,11 +34,11 @@ class CourtStaffType(DimensionBase, enum.Enum):
 
 
 class CourtReleaseType(DimensionBase, enum.Enum):
-    ROR = "ROR"
-    MONETARY_BAIL = "MONETARY_BAIL"
-    SUPERVISION_OR_EM = "SUPERVISION_OR_EM"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    ROR = "ROR release"
+    MONETARY_BAIL = "Monetary bail release"
+    SUPERVISION_OR_EM = "Supervision or EM"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -46,13 +46,13 @@ class CourtReleaseType(DimensionBase, enum.Enum):
 
 
 class SentenceType(DimensionBase, enum.Enum):
-    DEATH = "DEATH"
-    LIFE = "LIFE"
-    INCARCERATION = "INCARCERATION"
-    SUPERVISION = "SUPERVISION"
-    FINANCIAL_OBLIGATIONS = "FINANCIAL_OBLIGATIONS"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    DEATH = "Death"
+    LIFE = "Life"
+    INCARCERATION = "Incarceration"
+    SUPERVISION = "Supervision"
+    FINANCIAL_OBLIGATIONS = "Financial Obligations"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -60,11 +60,10 @@ class SentenceType(DimensionBase, enum.Enum):
 
 
 class CourtsCaseSeverityType(DimensionBase, enum.Enum):
-    FELONY = "FELONY"
-    MISDEMEANOR = "MISDEMEANOR"
-    INFRACTION = "INFRACTION"
-    APPEAL = "APPEAL"
-    UNKNOWN = "UNKNOWN"
+    FELONY = "Felony"
+    MISDEMEANOR = "Misdemeanor"
+    INFRACTION = "Infraction"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -72,9 +71,9 @@ class CourtsCaseSeverityType(DimensionBase, enum.Enum):
 
 
 class CourtCaseType(DimensionBase, enum.Enum):
-    VIOLENT = "VIOLENT"
-    NON_VIOLENT = "NON_VIOLENT"
-    UNKNOWN = "UNKNOWN"
+    VIOLENT = "Violent"
+    NON_VIOLENT = "Non-violent"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:

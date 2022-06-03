@@ -102,10 +102,7 @@ class DimensionBase:
             class_name[0 : type_index - 1] if type_index > 0 else class_name
         )  # Remove 'Type' from reporting class name Staff Budget Type -> Staff Budget
 
-        value = re.sub(
-            "_", "-", self.dimension_value.title()
-        )  # replace underscores with dashes, if they exist. Non_Emergency -> Non-Emergency
-        return f"{class_name}: {value}"
+        return f"{class_name}: {self.dimension_value}"
 
 
 class Dimension(DimensionBase):

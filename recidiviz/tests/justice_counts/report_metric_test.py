@@ -45,6 +45,7 @@ class TestJusticeCountsReportMetric(TestCase):
         self.reported_calls_for_service = (
             self.test_schema_objects.reported_calls_for_service_metric
         )
+        self.maxDiff = None
 
     def test_init(self) -> None:
         self.assertEqual(
@@ -155,13 +156,13 @@ class TestJusticeCountsReportMetric(TestCase):
                         "helper_text": None,
                         "dimensions": [
                             {
-                                "key": "DETENTION",
+                                "key": "Detention",
                                 "label": "Detention",
                                 "value": 66666,
                                 "reporting_note": "Sheriff Budget: Detention",
                             },
                             {
-                                "key": "PATROL",
+                                "key": "Patrol",
                                 "label": "Patrol",
                                 "value": 33334,
                                 "reporting_note": "Sheriff Budget: Patrol",
@@ -226,19 +227,19 @@ class TestJusticeCountsReportMetric(TestCase):
                         "helper_text": None,
                         "dimensions": [
                             {
-                                "key": "EMERGENCY",
+                                "key": "Emergency",
                                 "label": "Emergency",
                                 "value": 20,
                                 "reporting_note": "Call: Emergency",
                             },
                             {
-                                "key": "NON_EMERGENCY",
-                                "label": "Non-Emergency",
+                                "key": "Non-emergency",
+                                "label": "Non-emergency",
                                 "value": 60,
-                                "reporting_note": "Call: Non-Emergency",
+                                "reporting_note": "Call: Non-emergency",
                             },
                             {
-                                "key": "UNKNOWN",
+                                "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 20,
                                 "reporting_note": "Call: Unknown",
@@ -333,25 +334,25 @@ class TestJusticeCountsReportMetric(TestCase):
                         "helper_text": None,
                         "dimensions": [
                             {
-                                "key": "DRUG",
+                                "key": "Drug",
                                 "label": "Drug",
                                 "value": 60,
                                 "reporting_note": "Offense: Drug",
                             },
                             {
-                                "key": "PERSON",
+                                "key": "Person",
                                 "label": "Person",
                                 "value": 10,
                                 "reporting_note": "Offense: Person",
                             },
                             {
-                                "key": "PROPERTY",
+                                "key": "Property",
                                 "label": "Property",
                                 "value": 40,
                                 "reporting_note": "Offense: Property",
                             },
                             {
-                                "key": "UNKNOWN",
+                                "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 10,
                                 "reporting_note": "Offense: Unknown",
