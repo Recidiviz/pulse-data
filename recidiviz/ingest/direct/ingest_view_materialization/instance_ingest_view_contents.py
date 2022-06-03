@@ -238,7 +238,6 @@ class InstanceIngestViewContents:
         lower_bound_datetime_exclusive: Optional[datetime.datetime],
         query_str: str,
         order_by_cols_str: str,
-        batch_size: int = _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
     ) -> None:
         """Runs the provided ingest view query and saves the results to the appropriate
         BigQuery table, augmenting with relevant metadata. Will create the ingest view
@@ -368,7 +367,6 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         lower_bound_datetime_exclusive: Optional[datetime.datetime],
         query_str: str,
         order_by_cols_str: str,
-        batch_size: int = _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
     ) -> None:
         # First, load results into a temporary table
         intermediate_table_address = BigQueryAddress(
@@ -412,7 +410,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
                 if lower_bound_datetime_exclusive
                 else "CAST(NULL AS DATETIME)"
             ),
-            batch_size=batch_size,
+            batch_size=_EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
             order_by_cols=order_by_cols_str,
         )
 
@@ -491,7 +489,9 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         )
 
         return BigQueryResultsContentsHandle(
-            query_job, value_converter=to_string_value_converter
+            query_job,
+            value_converter=to_string_value_converter,
+            max_expected_rows=_EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
         )
 
     def get_next_unprocessed_batch_info_by_view(
