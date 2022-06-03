@@ -120,7 +120,7 @@ class ReportInterface:
                 )  # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: None, GenderRestricted.NON_BINARY: None...}
 
                 curr_dimension_to_values[
-                    dimension_class[dimension_value]
+                    dimension_class(dimension_value)  # type: ignore[abstract]
                 ] = dimension_datapoint.get_value()
                 # update curr_dimension_to_values to add new dimension datapoint.
                 # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}

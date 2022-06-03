@@ -32,6 +32,7 @@ from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
+    Definition,
     MetricCategory,
     MetricDefinition,
     ReportingFrequency,
@@ -61,14 +62,14 @@ annual_budget = MetricDefinition(
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of the criminal courts.",
+    description="Measures the annual budget (in dollars) of the criminal courts.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     specified_contexts=[
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
             value_type=ValueType.TEXT,
-            label="Please descrbe your primary budget source.",
+            label="Please describe your primary budget source.",
             required=False,
         )
     ],
@@ -79,6 +80,13 @@ total_staff = MetricDefinition(
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
+    definitions=[
+        Definition(
+            term="Full time staff",
+            definition="Number of people employed in a full-time (0.9+) capacity.",
+        )
+    ],
+    reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full time staff position filled.",
     description="Measures the number of full-time staff employed by the criminal courts.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
@@ -91,10 +99,17 @@ pretrial_releases = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
     metric_type=MetricType.PRETRIAL_RELEASES,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
+    definitions=[
+        Definition(
+            term="Pretrial release",
+            definition="The initial decision that an individual does not need to remain in custody while awaiting trial. This may involve nonmonetary release or monetary bail, or release with conditions (including electronic monitoring).",
+        )
+    ],
     display_name="Pretrial Releases",
     description="Measures the number of cases in which an individual is released while awaiting trial.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    reporting_note="As much as possible, report the initial decision made by the court or on a bail schedule. Many jurisdictions may overwrite this decision if bail is modified at any point. This should be noted.",
     aggregated_dimensions=[
         AggregatedDimension(dimension=CourtReleaseType, required=False)
     ],
@@ -109,6 +124,7 @@ sentences_imposed = MetricDefinition(
     description="Measures the number of cases with a sentence imposed.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    reporting_note="Report cases under the most restrictive sentence (from death to financial obligations only).",
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_METHOD_FOR_TIME_SERVED,
@@ -117,15 +133,19 @@ sentences_imposed = MetricDefinition(
             required=True,
         )
     ],
-    aggregated_dimensions=[AggregatedDimension(dimension=SentenceType, required=False)],
+    aggregated_dimensions=[
+        AggregatedDimension(dimension=SentenceType, required=False),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
+        AggregatedDimension(dimension=GenderRestricted, required=False),
+    ],
 )
 
 criminal_case_filings = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
     metric_type=MetricType.CASES_FILED,
     category=MetricCategory.POPULATIONS,
-    display_name="Sentences Imposed",
-    description="Measures the number of new criminal cases filed with the court, by case severity.",
+    display_name="Criminal Case Filings",
+    description="Measures the number of new criminal cases filed with the court.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[
@@ -146,7 +166,13 @@ cases_disposed = MetricDefinition(
     metric_type=MetricType.CASES_DISPOSED,
     category=MetricCategory.POPULATIONS,
     display_name="Cases Disposed",
-    description="Measures the number of cases disposed of in the court, by disposition type.",
+    definitions=[
+        Definition(
+            term="Disposition",
+            definition="The initial decision made in the adjudication of the criminal case. Report the disposition for the case as a whole, such that if two charges are dismissed and one is plead, the case disposition is a conviction by plea.",
+        )
+    ],
+    description="Measures the number of cases disposed of in the court.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
@@ -162,22 +188,9 @@ new_offenses_while_on_pretrial_release = MetricDefinition(
     description="Measures the number of cases in which an individual was released pending trial in the previous calendar year and was arrested for a new offense.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    reporting_note="Choose all cases in previous year and identify if they were released, and whether they had any new offense between release and reporting date.",
     aggregated_dimensions=[
         AggregatedDimension(dimension=CourtCaseType, required=False)
-    ],
-)
-
-sentences_imposed_by_demographic = MetricDefinition(
-    system=System.COURTS_AND_PRETRIAL,
-    metric_type=MetricType.SENTENCES,
-    category=MetricCategory.EQUITY,
-    display_name="Sentences Imposed, by demographic",
-    description="Measures the number of cases by demographic.",
-    measurement_type=MeasurementType.DELTA,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
-        AggregatedDimension(dimension=GenderRestricted, required=False),
     ],
 )
 

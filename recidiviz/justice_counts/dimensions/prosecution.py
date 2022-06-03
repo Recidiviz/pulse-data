@@ -22,12 +22,12 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class ProsecutionAndDefenseStaffType(DimensionBase, enum.Enum):
-    ATTORNEY = "ATTORNEY"
-    SUPERVISOR = "SUPERVISOR"
-    ADMINISTRATIVE = "ADMINISTRATIVE"
-    SUPPORT_OR_EXPERT = "SUPPORT_OR_EXPERT"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    ATTORNEY = "Attorney"
+    SUPERVISOR = "Supervisor"
+    ADMINISTRATIVE = "Administrative"
+    SUPPORT_OR_EXPERT = "Support or expert"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -35,10 +35,10 @@ class ProsecutionAndDefenseStaffType(DimensionBase, enum.Enum):
 
 
 class CaseSeverityType(DimensionBase, enum.Enum):
-    FELONY = "FELONY"
-    MISDEMEANOR = "MISDEMEANOR"
-    INFRACTION = "INFRACTION"
-    UNKNOWN = "UNKNOWN"
+    FELONY = "Felony"
+    MISDEMEANOR = "Misdemeanor"
+    INFRACTION = "Infraction"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -46,15 +46,14 @@ class CaseSeverityType(DimensionBase, enum.Enum):
 
 
 class DispositionType(DimensionBase, enum.Enum):
-    REJECTION = "REJECTION"
-    DISMISSAL = "DISMISSAL"
-    DEFERRAL_OR_DIVERSION = "DEFERRAL_OR_DIVERSION"
-    ACQUITTAL = "ACQUITTAL"
-    CONVICTION_PLEA = "CONVICTION_PLEA"
-    CONVICTION_TRIAL = "CONVICTION_TRIAL"
-    TRANSFER = "TRANSFER"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    DISMISSAL = "Dismissal"
+    DIVERTED_OR_DEFERRED = "Diverted or Deferred"
+    ACQUITTAL = "Acquittal"
+    CONVICTION_PLEA = "Conviction - plea"
+    CONVICTION_TRIAL = "Conviction - trial"
+    TRANSFER = "Transfer"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:

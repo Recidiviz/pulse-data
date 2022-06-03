@@ -37,7 +37,6 @@ METRICS = [
     courts.new_offenses_while_on_pretrial_release,
     courts.pretrial_releases,
     courts.sentences_imposed,
-    courts.sentences_imposed_by_demographic,
     courts.total_staff,
     courts.residents,
     defense.annual_budget,

@@ -22,8 +22,8 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class SheriffBudgetType(DimensionBase, enum.Enum):
-    PATROL = "PATROL"
-    DETENTION = "DETENTION"
+    PATROL = "Patrol"
+    DETENTION = "Detention"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -31,9 +31,9 @@ class SheriffBudgetType(DimensionBase, enum.Enum):
 
 
 class CallType(DimensionBase, enum.Enum):
-    EMERGENCY = "EMERGENCY"
-    NON_EMERGENCY = "NON_EMERGENCY"
-    UNKNOWN = "UNKNOWN"
+    EMERGENCY = "Emergency"
+    NON_EMERGENCY = "Non-emergency"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -41,10 +41,10 @@ class CallType(DimensionBase, enum.Enum):
 
 
 class OffenseType(DimensionBase, enum.Enum):
-    PERSON = "PERSON"
-    PROPERTY = "PROPERTY"
-    DRUG = "DRUG"
-    UNKNOWN = "UNKNOWN"
+    PERSON = "Person"
+    PROPERTY = "Property"
+    DRUG = "Drug"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -52,11 +52,11 @@ class OffenseType(DimensionBase, enum.Enum):
 
 
 class ForceType(DimensionBase, enum.Enum):
-    PHYSICAL = "PHYSICAL"
-    RESTRAINT = "RESTRAINT"
-    VERBAL = "VERBAL"
-    WEAPON = "WEAPON"
-    UNKNOWN = "UNKNOWN"
+    PHYSICAL = "Physical"
+    RESTRAINT = "Restraint"
+    VERBAL = "Verbal"
+    WEAPON = "Weapon"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -64,9 +64,9 @@ class ForceType(DimensionBase, enum.Enum):
 
 
 class LawEnforcementStaffType(DimensionBase, enum.Enum):
-    LAW_ENFORCEMENT_OFFICERS = "LAW_ENFORCEMENT_OFFICERS"
-    CIVILIAN_STAFF = "CIVILIAN_STAFF"
-    UNKNOWN = "UNKNOWN"
+    LAW_ENFORCEMENT_OFFICERS = "Law enforcement officers"
+    CIVILIAN_STAFF = "Civilian staff"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
