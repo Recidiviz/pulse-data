@@ -49,13 +49,17 @@ products:
     exports:
       - DASHBOARD_USER_RESTRICTIONS
     states:
-      - state_code: US_MO
+      - state_code: US_CO
         environment: production
       - state_code: US_ID
         environment: production
-      - state_code: US_ND
-        environment: production
       - state_code: US_ME
+        environment: production
+      - state_code: US_MI
+        environment: production
+      - state_code: US_MO
+        environment: production
+      - state_code: US_ND
         environment: production
       - state_code: US_TN
         environment: production
