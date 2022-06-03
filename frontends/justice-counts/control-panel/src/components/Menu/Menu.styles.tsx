@@ -35,7 +35,15 @@ export const MenuItem = styled.div<{ active?: boolean }>`
     ${({ active }) => (active ? palette.solid.blue : "transparent")};
   transition: 0.2s ease;
 
-  &:hover {
+  a,
+  a:visited {
+    color: ${palette.solid.darkgrey};
+    text-decoration: none;
+    transition: 0.2s ease;
+  }
+
+  &:hover,
+  a:hover {
     cursor: pointer;
     color: ${palette.solid.blue};
   }

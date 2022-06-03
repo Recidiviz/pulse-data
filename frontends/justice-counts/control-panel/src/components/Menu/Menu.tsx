@@ -94,7 +94,13 @@ const Menu = () => {
 
       {/* Learn More */}
       <MenuItem active={activeMenuItem === MenuItems.LearnMore}>
-        Learn More
+        <a
+          href="https://justicecounts.csgjusticecenter.org/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Learn More
+        </a>
       </MenuItem>
 
       {/* Agencies Dropdown */}
