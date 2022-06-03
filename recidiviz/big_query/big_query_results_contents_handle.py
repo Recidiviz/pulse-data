@@ -16,7 +16,7 @@
 # =============================================================================
 """Class that provides access to the results of the provided BigQuery query."""
 
-from typing import Any, Callable, Dict, Iterator
+from typing import Any, Callable, Dict, Iterator, Optional
 
 from google.cloud.bigquery.job.query import QueryJob
 from google.cloud.bigquery.table import Row
@@ -46,15 +46,26 @@ class BigQueryResultsContentsHandle(ContentsHandle[Dict[FieldName, T]]):
         self,
         query_job: QueryJob,
         value_converter: Callable[[FieldName, FieldValue], T] = no_op_value_converter,
+        max_expected_rows: Optional[int] = None,
     ):
         self.value_converter = value_converter
         self.query_job = query_job
+        self.max_expected_rows = max_expected_rows
 
     def get_contents_iterator(self) -> Iterator[Dict[str, T]]:
         """Returns an iterator over the results of this query, formatted as dictionaries
         of key-value pairs.
         """
+        row_count = 0
         for row in self.query_job:
             if not isinstance(row, Row):
                 raise ValueError(f"Found unexpected type for row: [{type(row)}].")
+            row_count += 1
+            if (
+                self.max_expected_rows is not None
+                and row_count > self.max_expected_rows
+            ):
+                raise ValueError(
+                    f"Found more than [{self.max_expected_rows}] rows in result."
+                )
             yield {key: self.value_converter(key, row.get(key)) for key in row.keys()}
