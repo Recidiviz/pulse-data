@@ -182,6 +182,7 @@ export const Cell = styled.div<{ capitalize?: boolean }>`
   display: flex;
   justify-content: flex-start;
   align-items: center;
+  position: relative;
   font-size: 1.2rem;
   text-transform: ${({ capitalize }) => capitalize && "capitalize"};
 
@@ -195,6 +196,14 @@ export const Cell = styled.div<{ capitalize?: boolean }>`
 
   &:nth-child(3) {
     width: 500px;
+
+    span {
+      max-width: 400px;
+      padding-right: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
   &:nth-child(4) {
@@ -208,6 +217,19 @@ export const Cell = styled.div<{ capitalize?: boolean }>`
       display: none;
     }
   }
+`;
+
+export const AdditionalEditorsTooltip = styled.div`
+  ${typography.sizeCSS.normal}
+  padding: 10px 20px;
+  background: ${palette.solid.blue};
+  color: ${palette.solid.white};
+  position: absolute;
+  z-index: 1;
+  top: 32px;
+  border-radius: 2px;
+  text-align: center;
+  box-shadow: 2px 2px 8px ${palette.highlight.grey5};
 `;
 
 export const Badge = styled.div<{ status?: string }>`

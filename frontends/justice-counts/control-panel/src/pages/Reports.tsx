@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 
 import Loading from "../components/Loading";
 import {
+  AdditionalEditorsTooltip,
   Badge,
   Cell,
   FilterBar,
@@ -67,6 +68,8 @@ const Reports: React.FC = () => {
   const { reportStore, userStore } = useStore();
   const navigate = useNavigate();
 
+  const [showAdditionalEditorsTooltip, setShowAdditionalEditorsTooltip] =
+    useState<number>();
   const [reportsFilter, setReportsFilter] = useState<string>("allreports");
 
   const filterReportsBy = (
@@ -202,10 +205,36 @@ const Reports: React.FC = () => {
                       <Cell capitalize>{report.frequency.toLowerCase()}</Cell>
 
                       {/* Editors */}
-                      <Cell>
-                        {report.editors.length === 0
-                          ? "-"
-                          : printCommaSeparatedList(report.editors)}
+                      <Cell
+                        onMouseEnter={() => {
+                          if (report.editors.length > 1) {
+                            setShowAdditionalEditorsTooltip(report.id);
+                          }
+                        }}
+                        onMouseLeave={() =>
+                          setShowAdditionalEditorsTooltip(undefined)
+                        }
+                      >
+                        {report.editors.length === 0 ? (
+                          "-"
+                        ) : (
+                          <>
+                            <span>{report.editors[0]}</span>
+                            {report.editors.length > 1
+                              ? `& ${report.editors.length - 1} other${
+                                  report.editors.length > 2 ? "s" : ""
+                                }`
+                              : ``}
+
+                            {showAdditionalEditorsTooltip === report.id && (
+                              <AdditionalEditorsTooltip>
+                                {printCommaSeparatedList(
+                                  report.editors.slice(1)
+                                )}
+                              </AdditionalEditorsTooltip>
+                            )}
+                          </>
+                        )}
                       </Cell>
 
                       {/* Last Modified */}
