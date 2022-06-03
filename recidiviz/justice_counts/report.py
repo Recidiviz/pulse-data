@@ -273,9 +273,7 @@ class ReportInterface:
         return {
             "id": report.id,
             "year": report.date_range_start.year,
-            "month": report.date_range_start.month
-            if reporting_frequency == ReportingFrequency.MONTHLY
-            else None,
+            "month": report.date_range_start.month,
             "frequency": reporting_frequency.value,
             "last_modified_at": report.last_modified_at,
             "editors": editor_names,
