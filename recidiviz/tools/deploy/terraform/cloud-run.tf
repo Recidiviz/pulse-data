@@ -101,10 +101,7 @@ resource "google_service_account_iam_member" "application_data_import_iam" {
 
 # Use existing Justice Counts service account for Justice Counts Cloud Run
 data "google_service_account" "justice_counts_cloud_run" {
-  account_id = "jstc-counts-spotlights-staging"
-
-  # TODO(#11710): Remove staging-only check when we create production environment
-  count = var.project_id == "recidiviz-123" ? 0 : 1
+  account_id = var.project_id == "recidiviz-123" ? "justice-counts-spotlights-prod" : "jstc-counts-spotlights-staging"
 }
 
 # Env vars from secrets
@@ -192,13 +189,9 @@ resource "google_cloud_run_service" "case-triage" {
 }
 
 # Initializes Justice Counts Cloud Run service
-# TODO(#11710): Remove staging-only check when we create production environment
 resource "google_cloud_run_service" "justice-counts" {
   name     = "justice-counts-web"
   location = var.region
-
-  # TODO(#11710): Remove staging-only check when we create production environment
-  count = var.project_id == "recidiviz-123" ? 0 : 1
 
   template {
     spec {
@@ -213,8 +206,7 @@ resource "google_cloud_run_service" "justice-counts" {
         }
       }
 
-
-      service_account_name = data.google_service_account.justice_counts_cloud_run[count.index].email
+      service_account_name = data.google_service_account.justice_counts_cloud_run.email
     }
 
     metadata {
@@ -302,12 +294,9 @@ resource "google_cloud_run_service_iam_member" "public-access" {
 }
 
 resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
-  # TODO(#11710): Remove staging-only check when we create production environment
-  count = var.project_id == "recidiviz-123" ? 0 : 1
-
-  location = google_cloud_run_service.justice-counts[count.index].location
-  project  = google_cloud_run_service.justice-counts[count.index].project
-  service  = google_cloud_run_service.justice-counts[count.index].name
+  location = google_cloud_run_service.justice-counts.location
+  project  = google_cloud_run_service.justice-counts.project
+  service  = google_cloud_run_service.justice-counts.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
