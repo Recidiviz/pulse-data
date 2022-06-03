@@ -58,3 +58,30 @@ class LibertyToPrisonTransitions(PathwaysBase):
     prior_length_of_incarceration = Column(String, nullable=False)
     # State code for the transition
     state_code = Column(String, nullable=False)
+
+
+class PrisonToSupervisionTransitions(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_to_supervision_transitions`
+    """
+
+    __tablename__ = "prison_to_supervision_transitions"
+
+    # Date that the transition occurred
+    transition_date = Column(Date, primary_key=True, nullable=False)
+    # Denormalized transition year
+    year = Column(Integer, nullable=False)
+    # Denormalized transition month
+    month = Column(Integer, nullable=False)
+    # Person ID for the transition
+    person_id = Column(String, primary_key=True, nullable=False)
+    # Age group of the person when the transition occurred (see recidiviz.calculator.query.bq_utils.add_age_groups)
+    age_group = Column(String, nullable=True)
+    # Age of the person
+    age = Column(Integer, nullable=True)
+    # Gender of the person
+    gender = Column(String, nullable=True)
+    # Facility the transition occurred from
+    facility = Column(String, nullable=True)
+    # State code for the transition
+    state_code = Column(String, nullable=False)

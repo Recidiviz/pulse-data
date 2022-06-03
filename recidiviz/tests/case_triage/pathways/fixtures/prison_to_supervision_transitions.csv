@@ -1,0 +1,6 @@
+transition_date,year,month,person_id,age_group,age,gender,facility,state_code
+2022-01-01,2022,1,1,20-25,22,MALE,ABC,US_XX
+2022-02-01,2022,2,2,60+,61,MALE,DEF,US_XX
+2022-03-01,2022,3,3,60+,62,FEMALE,ABC,US_XX
+2022-03-01,2022,3,4,60+,63,MALE,DEF,US_XX
+2022-03-01,2022,3,5,60+,64,MALE,ABC,US_XX
