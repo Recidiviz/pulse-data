@@ -458,18 +458,13 @@ class BaseDirectIngestController:
             ingest_view_name: i for i, ingest_view_name in enumerate(rank_list)
         }
 
-        # Filter out views that aren't in ingest view tags.
-        filtered_tasks_to_schedule = []
         for args in tasks_to_schedule:
             if args.ingest_view_name not in ingest_view_name_rank:
-                logging.warning(
-                    "Skipping ingest view materialization for [%s] - not in controller ingest view list.",
-                    args.ingest_view_name,
+                raise ValueError(
+                    f"Found args for ingest_view_name={args.ingest_view_name} which is "
+                    f"not in controller ingest_view_name_rank={ingest_view_name_rank}."
+                    f"Args: {args}."
                 )
-                continue
-            filtered_tasks_to_schedule.append(args)
-
-        tasks_to_schedule = filtered_tasks_to_schedule
 
         # Sort by tag order and file datetime
         tasks_to_schedule.sort(
@@ -480,15 +475,11 @@ class BaseDirectIngestController:
         )
 
         for task_args in tasks_to_schedule:
-            if not queue_info.is_ingest_view_materialization_task_already_queued(
-                self.region_code(),
+            self.cloud_task_manager.create_direct_ingest_view_materialization_task(
+                self.region,
                 task_args,
-            ):
-                self.cloud_task_manager.create_direct_ingest_view_materialization_task(
-                    self.region,
-                    task_args,
-                )
-                did_schedule = True
+            )
+            did_schedule = True
 
         return did_schedule
 

@@ -17,6 +17,7 @@
 """Tests for ingest_view_materializer.py."""
 import datetime
 import unittest
+import uuid
 from unittest.mock import create_autospec
 
 import mock
@@ -68,8 +69,8 @@ _DATE_4 = datetime.datetime(year=2022, month=4, day=14)
 _DATE_5 = datetime.datetime(year=2022, month=4, day=15)
 
 
-_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound`;
-CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound`
+_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`;
+CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -204,8 +205,8 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
-DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound`;
-CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound`
+DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`;
+CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -267,9 +268,15 @@ class IngestViewMaterializerTest(unittest.TestCase):
             fake_get_temp_dataset
         )
 
+        mock_uuid_value = uuid.UUID("abcd1234f8674b04adfb9b595b277dc3")
+        self.uuid_patcher = patch("uuid.uuid4")
+        mock_uuid = self.uuid_patcher.start()
+        mock_uuid.return_value = mock_uuid_value
+
     def tearDown(self) -> None:
         self.client_patcher.stop()
         self.metadata_patcher.stop()
+        self.uuid_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
     def to_entity(self, schema_obj: DatabaseEntity) -> Entity:
@@ -464,7 +471,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound`\n"
+            "SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`\n"
             "ORDER BY colA, colC;"
         )
         self.assert_materialized_with_query(args, expected_query)
@@ -472,7 +479,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             [
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
+                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
                 )
             ]
         )
@@ -544,9 +551,9 @@ class IngestViewMaterializerTest(unittest.TestCase):
             ]
         )
         expected_query = """(
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
 ) EXCEPT DISTINCT (
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234`
 )
 ORDER BY colA, colC;"""
         self.assert_materialized_with_query(args, expected_query)
@@ -554,11 +561,11 @@ ORDER BY colA, colC;"""
             [
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
+                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
                 ),
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
+                    table_id="ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234",
                 ),
             ]
         )
@@ -627,9 +634,9 @@ ORDER BY colA, colC;"""
             ]
         )
         expected_query = """(
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
 ) EXCEPT DISTINCT (
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234`
 )
 ORDER BY colA, colC;"""
 
@@ -638,11 +645,11 @@ ORDER BY colA, colC;"""
             [
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
+                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
                 ),
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
+                    table_id="ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234",
                 ),
             ]
         )
@@ -747,9 +754,9 @@ ORDER BY colA, colC;"""
         )
         # Lower bound is the first part of the subquery, not upper bound.
         expected_query = """(
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234`
 ) EXCEPT DISTINCT (
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
 )
 ORDER BY colA, colC;"""
         self.assert_materialized_with_query(args, expected_query)
@@ -757,11 +764,11 @@ ORDER BY colA, colC;"""
             [
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
+                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
                 ),
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
+                    table_id="ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234",
                 ),
             ]
         )
@@ -801,7 +808,7 @@ ORDER BY colA, colC;"""
                 ingest_view_materializer.ingest_views_by_name, export_args
             )
 
-        expected_debug_query = """CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound AS (
+        expected_debug_query = """CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234 AS (
 
 WITH
 file_tag_first_generated_view AS (
@@ -869,7 +876,7 @@ select * from file_tag_first_generated_view JOIN tagFullHistoricalExport_generat
 ORDER BY colA, colC
 
 );
-CREATE TEMP TABLE ingest_view_2019_07_20_00_00_00_lower_bound AS (
+CREATE TEMP TABLE ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234 AS (
 
 WITH
 file_tag_first_generated_view AS (
@@ -938,9 +945,9 @@ ORDER BY colA, colC
 
 );
 (
-SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound
+SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234
 ) EXCEPT DISTINCT (
-SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound
+SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234
 )
 ORDER BY colA, colC;"""
 
@@ -1023,7 +1030,7 @@ CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
-CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound AS (
+CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234 AS (
 
 select * from upper_file_tag_first_generated_view JOIN upper_tagFullHistoricalExport_generated_view USING (COL_1)
 ORDER BY colA, colC
@@ -1090,16 +1097,16 @@ CREATE TEMP TABLE lower_tagFullHistoricalExport_generated_view AS (
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
-CREATE TEMP TABLE ingest_view_2019_07_20_00_00_00_lower_bound AS (
+CREATE TEMP TABLE ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234 AS (
 
 select * from lower_file_tag_first_generated_view JOIN lower_tagFullHistoricalExport_generated_view USING (COL_1)
 ORDER BY colA, colC
 
 );
 (
-SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound
+SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234
 ) EXCEPT DISTINCT (
-SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound
+SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234
 )
 ORDER BY colA, colC;"""
 
