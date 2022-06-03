@@ -18,7 +18,12 @@
 import checkIconWhite from "../assets/status-check-white-icon.png";
 import { palette, typography } from "../GlobalStyles";
 
-export const showToast = (message: string, check: boolean, timeout = 2500) => {
+export const showToast = (
+  message: string,
+  check = false,
+  warning = false,
+  timeout = 2500
+) => {
   const animationTransform = [{ maxWidth: "0px" }, { maxWidth: "100%" }];
   const animationTransformReverse = [
     { maxWidth: "700px" },
@@ -54,7 +59,7 @@ export const showToast = (message: string, check: boolean, timeout = 2500) => {
       height: 64px;
       display: flex;
       align-items: center;
-      background: ${palette.solid.blue};
+      background: ${warning ? palette.solid.red : palette.solid.blue};
       color: ${palette.solid.white};
       padding: 20px 24px;
       border-radius: 2px;

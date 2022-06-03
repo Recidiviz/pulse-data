@@ -17,11 +17,11 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import styled, { css } from "styled-components/macro";
+import styled from "styled-components/macro";
 
 import { CreateReportFormValuesType } from "../../shared/types";
 import { useStore } from "../../stores";
-import { monthsByName, printDateRangeFromMonthYear, rem } from "../../utils";
+import { monthsByName, printDateRangeFromMonthYear } from "../../utils";
 import {
   BinaryRadioButton,
   BinaryRadioGroupWrapper,
@@ -36,6 +36,7 @@ import {
 } from "../Forms";
 import { Dropdown } from "../Forms/Dropdown";
 import { palette, typography } from "../GlobalStyles";
+import { showToast } from "../Toast";
 import { PublishButton, PublishDataWrapper } from "./PublishDataPanel";
 import { ReportSummaryWrapper } from "./ReportSummaryPanel";
 
@@ -114,9 +115,22 @@ const CreateReport = () => {
       is_recurring: isRecurring,
       year: isRecurring ? new Date(Date.now()).getFullYear() : year,
     });
-    if (response && response instanceof Response && response.status === 200) {
-      navigate("/");
+    if (response && response instanceof Response) {
+      if (response.status === 200) {
+        navigate("/", {
+          state: {
+            toastMessage: "The report was successfully created",
+          },
+        });
+        return;
+      }
+      if (response.status === 400) {
+        const responseJson = await response.json();
+        showToast(responseJson.description, false, true);
+        return;
+      }
     }
+    showToast("Error creating report", false, true);
   };
 
   const { frequency, month, year, annualStartMonth, isRecurring } =
@@ -127,7 +141,6 @@ const CreateReport = () => {
       {/* Create Report Details Panel */}
       <ReportSummaryWrapper>
         <PreTitle>
-          {/* TODO(#13228): Add Toast to display Create Report result */}
           <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
         </PreTitle>
         {/* <Title>Report Details</Title> */}

@@ -22,6 +22,8 @@ from typing import Callable, Optional
 from flask import Blueprint, Response, g, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
+from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
+from sqlalchemy.exc import IntegrityError
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
@@ -30,6 +32,7 @@ from recidiviz.justice_counts.control_panel.utils import (
     raise_if_user_is_unauthorized,
 )
 from recidiviz.justice_counts.exceptions import (
+    JusticeCountsBadRequestError,
     JusticeCountsPermissionError,
     JusticeCountsServerError,
 )
@@ -184,14 +187,22 @@ def get_api_blueprint(
                     description=f"User (user_id: {user_id}) does not have permission to create reports for current agency (agency_id: {agency_id}).",
                 )
 
-            report = ReportInterface.create_report(
-                session=current_session,
-                agency_id=agency_id,
-                user_account_id=user_id,
-                month=month,
-                year=year,
-                frequency=frequency,
-            )
+            try:
+                report = ReportInterface.create_report(
+                    session=current_session,
+                    agency_id=agency_id,
+                    user_account_id=user_id,
+                    month=month,
+                    year=year,
+                    frequency=frequency,
+                )
+            except IntegrityError as e:
+                if isinstance(e.orig, UniqueViolation):
+                    raise JusticeCountsBadRequestError(
+                        code="justice_counts_create_report_uniqueness",
+                        description="A report of that date range has already been created.",
+                    ) from e
+                raise e
             report_response = ReportInterface.to_json_response(
                 session=current_session, report=report
             )

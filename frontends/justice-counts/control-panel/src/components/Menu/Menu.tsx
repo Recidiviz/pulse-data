@@ -41,7 +41,7 @@ const Menu = () => {
   const [activeMenuItem, setActiveMenuItem] = useState<MenuItems>(
     MenuItems.Reports
   );
-  const { authStore, api, reportStore, userStore } = useStore();
+  const { authStore, api, userStore } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -115,6 +115,7 @@ const Menu = () => {
                 {userStore.userAgencies?.map((agency) => {
                   return (
                     <ExtendedDropdownMenuItem
+                      key={agency.id}
                       onClick={() => {
                         userStore.setCurrentAgencyId(agency.id);
                       }}

@@ -29,10 +29,12 @@ const mockUnorderedReportsMap: { [reportID: string]: ReportOverview } = {};
   mockUnorderedReportsMap[report.id] = report;
 });
 
-const mockedUsedNavigate = jest.fn();
+const mockedUseNavigate = jest.fn();
+const mockedUseLocation = jest.fn();
 jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),
-  useNavigate: () => mockedUsedNavigate,
+  useNavigate: () => mockedUseNavigate,
+  useLocation: () => mockedUseLocation,
 }));
 
 beforeEach(() => {
