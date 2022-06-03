@@ -24,6 +24,17 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH
+latest_booking_profiles AS (
+  -- MAX is being used to pick nonnull values if there are any or if hispanic_flag
+  -- was ever set to 1.
+  SELECT 
+    offender_booking_id,
+    MAX(cultural_affiliation_id) AS cultural_affiliation_id,
+    MAX(hispanic_flag) AS hispanic_flag
+  FROM {ADH_OFFENDER_BOOKING_PROFILE}
+  GROUP BY offender_booking_id
+)
 SELECT DISTINCT
   ids.offender_number,
   p.last_name,
@@ -42,7 +53,7 @@ LEFT JOIN
 ON 
   ids.offender_id = p.offender_id AND
   ids.offender_number = p.offender_number
-LEFT JOIN {ADH_OFFENDER_BOOKING_PROFILE} bp
+LEFT JOIN latest_booking_profiles bp
 ON
   bp.offender_booking_id = p.offender_booking_id
 """
