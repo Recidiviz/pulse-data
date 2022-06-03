@@ -31,7 +31,11 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -39,6 +43,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
+    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.regions import get_region
@@ -90,6 +95,34 @@ class SandboxRawFileImportResult:
         return cattr.Converter().unstructure(self)
 
 
+def get_unprocessed_raw_files_in_bucket(
+    fs: DirectIngestGCSFileSystem,
+    bucket_path: GcsfsBucketPath,
+    region_raw_file_config: DirectIngestRegionRawFileConfig,
+) -> List[GcsfsFilePath]:
+    """Returns a list of paths to unprocessed raw files in the provided bucket that have
+    registered file tags for a given region.
+    """
+    unprocessed_paths = fs.get_unprocessed_raw_file_paths(bucket_path)
+    unprocessed_raw_files = []
+    unrecognized_file_tags = set()
+    for path in unprocessed_paths:
+        parts = filename_parts_from_path(path)
+        if parts.file_tag in region_raw_file_config.raw_file_tags:
+            unprocessed_raw_files.append(path)
+        else:
+            unrecognized_file_tags.add(parts.file_tag)
+
+    for file_tag in sorted(unrecognized_file_tags):
+        logging.warning(
+            "Unrecognized raw file tag [%s] for region [%s].",
+            file_tag,
+            region_raw_file_config.region_code,
+        )
+
+    return unprocessed_raw_files
+
+
 def import_raw_files_to_bq_sandbox(
     state_code: StateCode,
     sandbox_dataset_prefix: str,
@@ -109,7 +142,6 @@ def import_raw_files_to_bq_sandbox(
         import_manager = DirectIngestRawFileImportManager(
             region=get_region(region_code, is_direct_ingest=True),
             fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
-            ingest_bucket_path=source_bucket,
             temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
                 source_bucket, "temp_raw_data"
             ),
@@ -126,7 +158,11 @@ def import_raw_files_to_bq_sandbox(
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
 
-        raw_files_to_import = import_manager.get_unprocessed_raw_files_to_import()
+        raw_files_to_import = get_unprocessed_raw_files_in_bucket(
+            fs=import_manager.fs,
+            bucket_path=source_bucket,
+            region_raw_file_config=import_manager.region_raw_file_config,
+        )
 
     except ValueError as error:
         raise ValueError(

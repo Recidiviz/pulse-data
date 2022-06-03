@@ -41,11 +41,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
     ReadOneGcsfsCsvReaderDelegate,
     SplittingGcsfsCsvReaderDelegate,
 )
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
-    GcsfsDirectoryPath,
-    GcsfsFilePath,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -550,34 +546,6 @@ class DirectIngestRegionRawFileConfig:
         return set(self.raw_file_configs.keys())
 
 
-def get_unprocessed_raw_files_in_bucket(
-    fs: DirectIngestGCSFileSystem,
-    bucket_path: GcsfsBucketPath,
-    region_raw_file_config: DirectIngestRegionRawFileConfig,
-) -> List[GcsfsFilePath]:
-    """Returns a list of paths to unprocessed raw files in the provided bucket that have
-    registered file tags for a given region.
-    """
-    unprocessed_paths = fs.get_unprocessed_raw_file_paths(bucket_path)
-    unprocessed_raw_files = []
-    unrecognized_file_tags = set()
-    for path in unprocessed_paths:
-        parts = filename_parts_from_path(path)
-        if parts.file_tag in region_raw_file_config.raw_file_tags:
-            unprocessed_raw_files.append(path)
-        else:
-            unrecognized_file_tags.add(parts.file_tag)
-
-    for file_tag in sorted(unrecognized_file_tags):
-        logging.warning(
-            "Unrecognized raw file tag [%s] for region [%s].",
-            file_tag,
-            region_raw_file_config.region_code,
-        )
-
-    return unprocessed_raw_files
-
-
 class DirectIngestRawFileImportManager:
     """Class that stores raw data import configs for a region, with functionality for
     executing an import of a specific file.
@@ -588,7 +556,6 @@ class DirectIngestRawFileImportManager:
         *,
         region: Region,
         fs: DirectIngestGCSFileSystem,
-        ingest_bucket_path: GcsfsBucketPath,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
@@ -598,7 +565,6 @@ class DirectIngestRawFileImportManager:
 
         self.region = region
         self.fs = fs
-        self.ingest_bucket_path = ingest_bucket_path
         self.temp_output_directory_path = temp_output_directory_path
         self.big_query_client = big_query_client
         self.region_raw_file_config = (
@@ -618,13 +584,6 @@ class DirectIngestRawFileImportManager:
         self.raw_tables_dataset = raw_tables_dataset_for_region(
             region_code=self.region.region_code,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
-        )
-
-    def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
-        return get_unprocessed_raw_files_in_bucket(
-            fs=self.fs,
-            bucket_path=self.ingest_bucket_path,
-            region_raw_file_config=self.region_raw_file_config,
         )
 
     def import_raw_file_to_big_query(
