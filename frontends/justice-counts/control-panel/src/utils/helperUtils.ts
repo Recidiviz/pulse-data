@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { MetricContext } from "../shared/types";
+
 /**
  * Separate multiple people on a list by comma - no comma for the last person on the list
  * @example ['Editor 1', 'Editor 2', 'Editor 3'] would print: `Editor 1, Editor 2, Editor 3`
@@ -77,23 +79,27 @@ export const removeCommaSpaceAndTrim = (
  * @param previousValue previously saved value retrieved from the backend
  * @returns
  * * `previousValue` from the backend if `value` is undefined
- * * `null` for empty string or no previous value
+ * * `null` for empty string
  * * number `0` for true zeros ("0", "0.000", etc.)
  * * `value` converted to number
- * * `value` itself (if it is not a number)
+ * * `value` itself (if it is not a number) or if the type is "TEXT"
  */
 
 export const sanitizeInputValue = (
   value: string | undefined,
-  previousValue: string | number | boolean | null | undefined
+  previousValue: string | number | boolean | null | undefined,
+  type?: MetricContext["type"]
 ): string | number | boolean | null | undefined => {
   const cleanValue = removeCommaSpaceAndTrim(value);
 
   if (value === undefined) {
     return previousValue;
   }
-  if (cleanValue === "" || (Number(previousValue) !== 0 && !previousValue)) {
+  if (cleanValue === "") {
     return null;
+  }
+  if (type === "TEXT") {
+    return value;
   }
   if (Number(cleanValue) === 0) {
     return 0;

@@ -107,7 +107,8 @@ class FormStore {
               ...context,
               value: sanitizeInputValue(
                 contexts?.[context.key]?.value,
-                context.value
+                context.value,
+                context.type
               ),
               error: contextError,
             };
@@ -186,7 +187,8 @@ class FormStore {
         metric.contexts.forEach((context) => {
           const contextValue = sanitizeInputValue(
             this.contexts[reportID]?.[metric.key]?.[context.key]?.value,
-            context.value
+            context.value,
+            context.type
           );
 
           combinedMetricValues.contexts.push({
