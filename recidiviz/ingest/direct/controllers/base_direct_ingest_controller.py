@@ -803,6 +803,24 @@ class BaseDirectIngestController:
             )
 
         if not self.fs.exists(data_import_args.raw_data_file_path):
+            try:
+                metadata = self.raw_file_metadata_manager.get_raw_file_metadata(
+                    data_import_args.raw_data_file_path
+                )
+                if metadata.processed_time is None:
+                    raise ValueError(
+                        f"Attempting to run raw data import for raw data path "
+                        f"[{data_import_args.raw_data_file_path}] which does not exist "
+                        f"but still has an unprocessed row in the operations DB. This "
+                        f"likely happened because some raw data files were deprecated "
+                        f"but the corresponding rows were not cleaned out of the "
+                        f"operations DB."
+                    )
+            except ValueError:
+                # If there is no operations DB row and the file doesn't exist, then
+                # this file was likely deprecated fully.
+                pass
+
             logging.warning(
                 "File path [%s] no longer exists - might have already been "
                 "processed or deleted",
@@ -827,11 +845,11 @@ class BaseDirectIngestController:
             data_import_args.raw_data_file_path, file_metadata
         )
 
-        processed_path = self.fs.mv_path_to_processed_path(
-            data_import_args.raw_data_file_path
-        )
         self.raw_file_metadata_manager.mark_raw_file_as_processed(
             path=data_import_args.raw_data_file_path
+        )
+        processed_path = self.fs.mv_path_to_processed_path(
+            data_import_args.raw_data_file_path
         )
 
         self.fs.mv_raw_file_to_storage(processed_path, self.storage_directory_path)
