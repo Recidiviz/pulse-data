@@ -105,11 +105,16 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
 
         transformed_df = self.transform_dataframe(df)
 
+        num_rows = transformed_df.shape[0]
         logging.info(
-            "Transformed DataFrame chunk [%d] has [%d] rows",
-            chunk_num,
-            transformed_df.shape[0],
+            "Transformed DataFrame chunk [%d] has [%d] rows", chunk_num, num_rows
         )
+        if num_rows == 0:
+            logging.info(
+                "Skipping output for chunk [%s] - no data in chunk.", chunk_num
+            )
+            return True
+
         output_path = self.get_output_path(chunk_num=chunk_num)
 
         logging.info(
