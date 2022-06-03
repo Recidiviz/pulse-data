@@ -167,7 +167,6 @@ class BaseDirectIngestController:
         self.raw_file_import_manager = DirectIngestRawFileImportManager(
             region=self.region,
             fs=self.fs,
-            ingest_bucket_path=self.ingest_bucket_path,
             temp_output_directory_path=self.temp_output_directory_path,
             big_query_client=big_query_client,
         )
@@ -394,39 +393,38 @@ class BaseDirectIngestController:
         """
         queue_info = self.cloud_task_manager.get_raw_data_import_queue_info(self.region)
 
+        raw_files_pending_import = (
+            self.raw_file_metadata_manager.get_unprocessed_raw_files()
+        )
+
         did_schedule = False
-        tasks_to_schedule = [
-            GcsfsRawDataBQImportArgs(path)
-            for path in self.raw_file_import_manager.get_unprocessed_raw_files_to_import()
-        ]
-        for task_args in tasks_to_schedule:
-            # If the file path has not actually been discovered by the metadata manager yet, it likely was just added
-            # and a subsequent call to handle_files will register it and trigger another call to this function so we can
-            # schedule the appropriate job.
-            discovered = self.raw_file_metadata_manager.has_raw_file_been_discovered(
-                task_args.raw_data_file_path
+        unrecognized_file_tags = set()
+
+        for raw_file_metadata in raw_files_pending_import:
+            raw_data_file_path = GcsfsFilePath.from_directory_and_file_name(
+                self.ingest_bucket_path, raw_file_metadata.normalized_file_name
             )
-            # If the file path has been processed, but still in the GCS bucket, it's likely due
-            # to either a manual move or an accidental duplicate uploading. In either case, we
-            # trust the database to have the source of truth.
-            processed = self.raw_file_metadata_manager.has_raw_file_been_processed(
-                task_args.raw_data_file_path
+            is_unrecognized_tag = (
+                raw_file_metadata.file_tag
+                not in self.raw_file_import_manager.region_raw_file_config.raw_file_tags
             )
-            if processed:
-                logging.warning(
-                    "File [%s] is already marked as processed. Skipping file processing.",
-                    task_args.raw_data_file_path,
-                )
-            if (
-                discovered
-                and not processed
-                and not queue_info.is_raw_data_import_task_already_queued(task_args)
-            ):
+            if is_unrecognized_tag:
+                unrecognized_file_tags.add(raw_file_metadata.file_tag)
+                continue
+
+            task_args = GcsfsRawDataBQImportArgs(raw_data_file_path)
+            if not queue_info.is_raw_data_import_task_already_queued(task_args):
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(
                     self.region, task_args
                 )
                 did_schedule = True
 
+        for file_tag in sorted(unrecognized_file_tags):
+            logging.warning(
+                "Unrecognized raw file tag [%s] for region [%s] - skipped import.",
+                file_tag,
+                self.region_code(),
+            )
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
 
     def _schedule_ingest_view_materialization_tasks(self) -> bool:

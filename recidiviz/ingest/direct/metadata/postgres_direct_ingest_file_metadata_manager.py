@@ -219,6 +219,38 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
 
         return entity_metadata
 
+    def get_unprocessed_raw_files(self) -> List[DirectIngestRawFileMetadata]:
+        """Returns metadata for the unprocessed raw files in the operations table for
+        this region.
+        """
+        if self.raw_data_instance == DirectIngestInstance.SECONDARY:
+            raise DirectIngestInstanceError(
+                f"Invalid ingest instance [{self.raw_data_instance}] provided."
+                f"Raw files should only be processed in a primary ingest instance,"
+                f"not the secondary instance. "
+            )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = (
+                session.query(schema.DirectIngestRawFileMetadata)
+                .filter_by(
+                    region_code=self.region_code,
+                    is_invalidated=False,
+                    raw_data_instance=self.raw_data_instance.value,
+                )
+                .filter(
+                    schema.DirectIngestRawFileMetadata.processed_time.is_(None),
+                )
+            )
+            results = query.all()
+
+            return [
+                self._raw_file_schema_metadata_as_entity(metadata)
+                for metadata in results
+            ]
+
     def get_num_unprocessed_raw_files(self) -> int:
         """Returns the number of unprocessed raw files in the operations table for this region"""
         if self.raw_data_instance == DirectIngestInstance.SECONDARY:
@@ -232,7 +264,10 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             self.database_key, autocommit=False
         ) as session:
             return dao.get_raw_file_rows_count_for_region(
-                session, self.region_code, is_processed=False
+                session,
+                self.region_code,
+                is_processed=False,
+                raw_data_instance=self.raw_data_instance,
             )
 
     def get_num_processed_raw_files(self) -> int:
@@ -248,5 +283,8 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             self.database_key, autocommit=False
         ) as session:
             return dao.get_raw_file_rows_count_for_region(
-                session, self.region_code, is_processed=True
+                session,
+                self.region_code,
+                is_processed=True,
+                raw_data_instance=self.raw_data_instance,
             )

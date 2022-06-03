@@ -73,6 +73,12 @@ class DirectIngestRawFileMetadataManager:
         metadata row for this path with the appropriate file discovery time."""
 
     @abc.abstractmethod
+    def get_unprocessed_raw_files(self) -> List[DirectIngestRawFileMetadata]:
+        """Returns metadata for the unprocessed raw files in the operations table for
+        this region.
+        """
+
+    @abc.abstractmethod
     def get_raw_file_metadata(self, path: GcsfsFilePath) -> DirectIngestRawFileMetadata:
         """Returns metadata information for the provided path. If the file has not yet been registered in the
         appropriate metadata table, this function will generate a file_id to return with the metadata.

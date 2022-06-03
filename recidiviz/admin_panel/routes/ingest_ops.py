@@ -28,6 +28,7 @@ from recidiviz.admin_panel.admin_stores import (
 )
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     check_is_valid_sandbox_bucket,
+    get_unprocessed_raw_files_in_bucket,
     import_raw_files_to_bq_sandbox,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -54,7 +55,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
-    get_unprocessed_raw_files_in_bucket,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (

@@ -25,11 +25,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
-    GcsfsDirectoryPath,
-    GcsfsFilePath,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -220,14 +216,12 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         *,
         region: Region,
         fs: DirectIngestGCSFileSystem,
-        ingest_bucket_path: GcsfsBucketPath,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
     ):
         super().__init__(
             region=region,
             fs=fs,
-            ingest_bucket_path=ingest_bucket_path,
             temp_output_directory_path=temp_output_directory_path,
             big_query_client=big_query_client,
             region_raw_file_config=FakeDirectIngestRegionRawFileConfig(
