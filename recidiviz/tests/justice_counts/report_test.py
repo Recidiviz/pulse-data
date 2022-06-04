@@ -140,6 +140,59 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 new_annual_report.date_range_end, datetime.date(2023, 3, 1)
             )
 
+    def test_report_dates(self) -> None:
+        # November, Monthly
+        report = ReportInterface.create_report_object(
+            agency_id=0,
+            user_account_id=0,
+            year=2022,
+            month=11,
+            frequency=schema.ReportingFrequency.MONTHLY.value,
+        )
+        self.assertEqual(report.date_range_end, datetime.date(2022, 12, 1))
+        self.assertEqual(
+            report.get_reporting_frequency(), schema.ReportingFrequency.MONTHLY
+        )
+
+        # December, Monthly
+        report = ReportInterface.create_report_object(
+            agency_id=0,
+            user_account_id=0,
+            year=2022,
+            month=12,
+            frequency=schema.ReportingFrequency.MONTHLY.value,
+        )
+        self.assertEqual(report.date_range_end, datetime.date(2023, 1, 1))
+        self.assertEqual(
+            report.get_reporting_frequency(), schema.ReportingFrequency.MONTHLY
+        )
+
+        # January, Annually
+        report = ReportInterface.create_report_object(
+            agency_id=0,
+            user_account_id=0,
+            year=2022,
+            month=1,
+            frequency=schema.ReportingFrequency.ANNUAL.value,
+        )
+        self.assertEqual(report.date_range_end, datetime.date(2023, 1, 1))
+        self.assertEqual(
+            report.get_reporting_frequency(), schema.ReportingFrequency.ANNUAL
+        )
+
+        # July, Annually
+        report = ReportInterface.create_report_object(
+            agency_id=0,
+            user_account_id=0,
+            year=2022,
+            month=7,
+            frequency=schema.ReportingFrequency.ANNUAL.value,
+        )
+        self.assertEqual(report.date_range_end, datetime.date(2023, 7, 1))
+        self.assertEqual(
+            report.get_reporting_frequency(), schema.ReportingFrequency.ANNUAL
+        )
+
     def test_create_recurring_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add_all(
