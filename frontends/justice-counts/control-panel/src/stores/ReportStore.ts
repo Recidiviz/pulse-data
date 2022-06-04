@@ -50,9 +50,19 @@ class ReportStore {
 
   get reportOverviewList(): ReportOverview[] {
     return Object.values(this.reportOverviews).sort((a, b) => {
-      const dateA = new Date(a.year, a.month - 1);
-      const dateB = new Date(b.year, b.month - 1);
-      return dateB.getTime() - dateA.getTime();
+      const dateA = new Date(a.year, a.month - 1).getTime();
+      const dateB = new Date(b.year, b.month - 1).getTime();
+      if (a.year === b.year) {
+        // Annual reports should always be sorted before Monthly reports,
+        // regardless of their month
+        if (a.frequency === "ANNUAL") {
+          return -1;
+        }
+        if (b.frequency === "ANNUAL") {
+          return 1;
+        }
+      }
+      return dateB - dateA;
     });
   }
 

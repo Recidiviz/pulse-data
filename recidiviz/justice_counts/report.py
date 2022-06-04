@@ -238,7 +238,11 @@ class ReportInterface:
         )
         date_range_start = datetime.date(year, month, 1)
         date_range_end = (
-            datetime.date(year, (month + 1) % 12, 1)
+            datetime.date(
+                year if month != 12 else (year + 1),
+                ((month + 1) if month != 12 else 1),
+                1,
+            )
             if frequency == ReportingFrequency.MONTHLY.value
             else datetime.date(year + 1, month, 1)
         )

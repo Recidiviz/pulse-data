@@ -382,13 +382,26 @@ class Report(JusticeCountsBase):
 
     def get_reporting_frequency(self) -> ReportingFrequency:
         if (
+            # this case handles Jan - Nov
             self.date_range_end.year == self.date_range_start.year
-            # Jan - Dec will be -11
-            and self.date_range_end.month - self.date_range_start.month in (1, -11)
+            and self.date_range_end.month - self.date_range_start.month == 1
         ):
             inferred_frequency = ReportingFrequency.MONTHLY
-        else:
+        elif (
+            # This case handles Dec (whose end date is Jan 1 of next year)
+            self.date_range_end.year == self.date_range_start.year + 1
+            and self.date_range_end.month - self.date_range_start.month == -11
+        ):
+            inferred_frequency = ReportingFrequency.MONTHLY
+        elif (
+            self.date_range_end.year == self.date_range_start.year + 1
+            and self.date_range_end.month == self.date_range_start.month
+        ):
             inferred_frequency = ReportingFrequency.ANNUAL
+        else:
+            raise ValueError(
+                f"Invalid report start and end: {self.date_range_start}, {self.date_range_end}"
+            )
         report_type_string = str(self.type)
         if report_type_string.strip() != str(inferred_frequency.value):
             raise ValueError(
