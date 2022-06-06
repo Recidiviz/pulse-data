@@ -168,6 +168,12 @@ class ReportStore {
     }
   }
 
+  updateReportStatusManually(reportID: number, status: ReportStatus) {
+    runInAction(() => {
+      this.reportOverviews[reportID].status = status;
+    });
+  }
+
   resetState() {
     // reset the state when switching agencies
     runInAction(() => {
