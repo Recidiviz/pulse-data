@@ -74,14 +74,19 @@ class ReportStore {
           path: `/api/reports?agency_id=${currentAgency.id}`,
           method: "GET",
         })) as Response;
-        const allReports = await response.json();
+        if (response.status === 200) {
+          const allReports = await response.json();
 
-        runInAction(() => {
-          allReports.forEach((report: ReportOverview) => {
-            this.reportOverviews[report.id] = report;
+          runInAction(() => {
+            allReports.forEach((report: ReportOverview) => {
+              this.reportOverviews[report.id] = report;
+            });
+            this.loadingOverview = false;
           });
-          this.loadingOverview = false;
-        });
+        } else {
+          const error = await response.json();
+          throw new Error(error.description);
+        }
       } else {
         throw new Error("No user or agency information initialized.");
       }

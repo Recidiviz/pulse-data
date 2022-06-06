@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { Loading } from "@recidiviz/design-system";
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
@@ -28,6 +29,10 @@ import PublishDataPanel from "./PublishDataPanel";
 import ReportSummaryPanel from "./ReportSummaryPanel";
 
 const ReportDataEntry = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadingError, setLoadingError] = useState<string | undefined>(
+    undefined
+  );
   const [activeMetric, setActiveMetric] = useState<string>("");
   const [fieldDescription, setFieldDescription] = useState<{
     title: string;
@@ -45,7 +50,13 @@ const ReportDataEntry = () => {
       // return when's disposer so it is cleaned up if it never runs
       when(
         () => userStore.userInfoLoaded,
-        () => reportStore.getReport(reportID)
+        async () => {
+          const result = await reportStore.getReport(reportID);
+          if (result instanceof Error) {
+            setLoadingError(result.message);
+          }
+          setIsLoading(false);
+        }
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
@@ -62,8 +73,16 @@ const ReportDataEntry = () => {
     if (reportMetrics) updateActiveMetric(reportMetrics[0].key); // open to the first metric by default
   }, [reportMetrics, reportID]);
 
+  if (isLoading) {
+    return (
+      <PageWrapper>
+        <Loading />
+      </PageWrapper>
+    );
+  }
+
   if (!reportMetrics || !reportOverview) {
-    return <PageWrapper>Loading...</PageWrapper>;
+    return <PageWrapper>Error: {loadingError}</PageWrapper>;
   }
 
   return (

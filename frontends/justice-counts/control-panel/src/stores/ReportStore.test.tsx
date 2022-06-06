@@ -51,7 +51,7 @@ test("sort in reportOverviewList", () => {
   );
 });
 
-test("no reports to display", () => {
+test("loading reports", () => {
   render(
     <StoreProvider>
       <Reports />
@@ -59,6 +59,25 @@ test("no reports to display", () => {
   );
 
   const noReportsLoaded = screen.getByText(/Loading data.../i);
+  expect(noReportsLoaded).toBeInTheDocument();
+
+  expect.hasAssertions();
+});
+
+test("no reports to display", () => {
+  render(
+    <StoreProvider>
+      <Reports />
+    </StoreProvider>
+  );
+
+  runInAction(() => {
+    rootStore.userStore.userInfoLoaded = true;
+    rootStore.reportStore.loadingOverview = false;
+    rootStore.reportStore.reportOverviews = {};
+  });
+
+  const noReportsLoaded = screen.getByText(/No reports to display./i);
   expect(noReportsLoaded).toBeInTheDocument();
 
   expect.hasAssertions();
