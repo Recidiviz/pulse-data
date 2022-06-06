@@ -22,9 +22,20 @@ from recidiviz.case_triage.pathways.metric_mappers import (
 )
 from recidiviz.common.constants.states import StateCode
 
+ALL_METRICS = [
+    LibertyToPrisonTransitionsCount,
+    PrisonToSupervisionTransitionsCount,
+]
+
 ENABLED_METRICS_BY_STATE = {
-    StateCode.US_TN: {
-        "LibertyToPrisonTransitionsCount": LibertyToPrisonTransitionsCount,
-        "PrisonToSupervisionTransitionsCount": PrisonToSupervisionTransitionsCount,
-    }
+    StateCode.US_ID: ALL_METRICS,
+    StateCode.US_ME: ALL_METRICS,
+    StateCode.US_ND: ALL_METRICS,
+    StateCode.US_MO: ALL_METRICS,
+    StateCode.US_TN: ALL_METRICS,
+}
+
+ENABLED_METRICS_BY_STATE_BY_NAME = {
+    state_code: {metric.name: metric for metric in metrics}
+    for state_code, metrics in ENABLED_METRICS_BY_STATE.items()
 }
