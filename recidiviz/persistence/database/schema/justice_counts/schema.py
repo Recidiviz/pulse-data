@@ -160,16 +160,23 @@ class ReportingFrequency(enum.Enum):
 class System(enum.Enum):
     """Part of the overall criminal justice system that this pertains to, as defined by the Justice Counts Framework."""
 
-    DEFENSE = "DEFENSE"
-    JAILS = "JAILS"
+    # Used by control panel
     LAW_ENFORCEMENT = "LAW_ENFORCEMENT"
-    COURT_PROCESSES = "COURT_PROCESSES"
-    COURTS_AND_PRETRIAL = "COURTS_AND_PRETRIAL"
-    COMMUNITY_SUPERVISION_AND_REENTRY = "COMMUNITY_SUPERVISION_AND_REENTRY"
-    CORRECTIONS = "CORRECTIONS"
-    PRISONS = "PRISONS"
     PROSECUTION = "PROSECUTION"
+    DEFENSE = "DEFENSE"
+    COURTS_AND_PRETRIAL = "COURTS_AND_PRETRIAL"
+    JAILS = "JAILS"
+    PRISONS = "PRISONS"
     SUPERVISION = "SUPERVISION"
+    PAROLE = "PAROLE"
+    PROBATION = "PROBATION"
+
+    # Used by state scan
+    CORRECTIONS = "CORRECTIONS"
+
+    # Unused
+    COURT_PROCESSES = "COURT_PROCESSES"
+    COMMUNITY_SUPERVISION_AND_REENTRY = "COMMUNITY_SUPERVISION_AND_REENTRY"
 
 
 class Project(enum.Enum):
@@ -224,7 +231,10 @@ class Agency(Source):
     All Agencies are Sources, but not all Sources are Agencies.
     """
 
+    # TODO(#13216): Get rid of this column after migrating over to `systems`
     system = Column(Enum(System))
+    # BigQuery doesn't like arrays of Enums, so we just use strings
+    systems = Column(ARRAY(String(255)))
     state_code = Column(String(255))
     fips_county_code = Column(String(255))
 
