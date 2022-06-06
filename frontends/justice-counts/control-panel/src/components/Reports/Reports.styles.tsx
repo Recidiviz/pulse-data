@@ -24,6 +24,7 @@ export const ReportsHeader = styled.div`
   background: ${palette.solid.white};
   position: fixed;
   top: 64px;
+  z-index: 1;
 `;
 
 export const ReportsPageTitle = styled.div`
