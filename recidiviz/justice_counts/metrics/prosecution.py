@@ -29,6 +29,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
+    Definition,
     MetricCategory,
     MetricDefinition,
 )
@@ -58,9 +59,10 @@ annual_budget = MetricDefinition(
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of the office.",
+    description="Measures the total annual budget (in dollars) of your office.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    reporting_note="Agencies should report their budget for the criminal services they provide, if it is possible to delineate.",
     specified_contexts=[
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
@@ -76,9 +78,16 @@ total_staff = MetricDefinition(
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
-    description="Measures the number of full-time staff employed by the office.",
+    description="Measures the number of full-time staff employed by your office.",
+    definitions=[
+        Definition(
+            term="Full time staff",
+            definition="Number of people employed in a full-time (0.9+) capacity.",
+        )
+    ],
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full time staff position filled.",
     aggregated_dimensions=[
         AggregatedDimension(dimension=ProsecutionAndDefenseStaffType, required=False)
     ],
@@ -89,7 +98,13 @@ cases_rejected = MetricDefinition(
     metric_type=MetricType.CASES_DECLINED,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Cases Rejected",
-    description="Measures the number of cases referred to the prosecutor that were rejected for prosecution, by case severity.",
+    description="Measures the number of cases referred to the prosecutor that were rejected for prosecution.",
+    definitions=[
+        Definition(
+            term="Rejected",
+            definition="A case for which a prosecutor has declined to bring referred charges against an individual. Rejected cases are those in which the prosecutor has refused to bring/file any  of the referred charges.",
+        )
+    ],
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[
@@ -99,9 +114,17 @@ cases_rejected = MetricDefinition(
             label="Does another agency in the jurisdiction have the authority to file charges/cases directly with the court?",
             required=True,
         ),
+        Context(
+            key=ContextKey.ADDITIONAL_PROSECUTION_OUTCOMES,
+            value_type=ValueType.TEXT,
+            label="Please describe any additional outcomes of case review available to attorneys in your agency, other than rejected or filed.",
+            required=False,
+        ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CaseSeverityType, required=False)
+        AggregatedDimension(dimension=CaseSeverityType, required=False),
+        AggregatedDimension(dimension=GenderRestricted, required=False),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
     ],
 )
 
@@ -110,7 +133,13 @@ cases_referred = MetricDefinition(
     metric_type=MetricType.CASES_REFERRED,
     category=MetricCategory.POPULATIONS,
     display_name="Cases Referred (Intake)",
-    description="Measures the number of cases referred to the office for prosecution (intake), by case severity.",
+    definitions=[
+        Definition(
+            term="Referral",
+            definition="A case involving one or more charges brought to the prosecutor for review before being filed against an individual. This may include cases brought by law enforcement or other means for prosecutorial review.",
+        )
+    ],
+    description="Measures the number of cases referred to your office for prosecution (intake).",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
@@ -123,14 +152,15 @@ caseloads = MetricDefinition(
     metric_type=MetricType.CASELOADS,
     category=MetricCategory.POPULATIONS,
     display_name="Caseloads",
-    description="Measures the average caseload per attorney in the office.",
+    description="Measures the average caseload per attorney in your office.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    reporting_note="These elements may not be necessary if the office already calculates their average caseloads by type on a monthly basis. Accept the office's calculation with required context.",
     specified_contexts=[
         Context(
             key=ContextKey.METHOD_OF_CALCULATING_CASELOAD,
             value_type=ValueType.TEXT,
-            label="What is the office's method of calculating caseload?",
+            label="Please describe your office's method of calculating caseload.",
             required=True,
         ),
     ],
@@ -144,25 +174,18 @@ cases_disposed = MetricDefinition(
     metric_type=MetricType.CASES_DISPOSED,
     category=MetricCategory.POPULATIONS,
     display_name="Caseloads",
-    description="Measures the number of cases disposed by the office.",
+    definitions=[
+        Definition(
+            term="Disposition",
+            definition="The initial decision made in the adjudication of the criminal case. Report the disposition for the case as a whole, such that if two charges are dismissed and one is plead, the case disposition is a conviction by plea.",
+        )
+    ],
+    description="Measures the number of cases disposed by your office.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    reporting_note="To the extent possible, report the initial disposition on the case and not any post-conviction decisions. If your case management system requires that post-conviction decisions overwrite the initial disposition, note this as additional context.",
     aggregated_dimensions=[
         AggregatedDimension(dimension=DispositionType, required=False)
-    ],
-)
-
-cases_rejected_by_demographic = MetricDefinition(
-    system=System.PROSECUTION,
-    metric_type=MetricType.CASES_DECLINED,
-    category=MetricCategory.EQUITY,
-    display_name="Cases rejected, by demographic",
-    description="Measures the percent of cases that were rejected for prosecution, by demographic.",
-    measurement_type=MeasurementType.DELTA,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=GenderRestricted, required=False),
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
     ],
 )
 
@@ -170,7 +193,13 @@ violations = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.VIOLATIONS_WITH_DISCIPLINARY_ACTION,
     category=MetricCategory.FAIRNESS,
-    display_name="Violations filed against attorneys in the office resulting in disciplinary action",
+    display_name="Violations filed against attorneys in your office resulting in disciplinary action",
+    definitions=[
+        Definition(
+            term="Violation",
+            definition="A complaint filed against an attorney pertaining to an error in judgment or other prosecutorial misconduct.",
+        )
+    ],
     description="Measures the percent of violations filed against attorneys in the office that result in disciplinary actions.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],

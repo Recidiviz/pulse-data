@@ -46,11 +46,12 @@ class CaseSeverityType(DimensionBase, enum.Enum):
 
 
 class DispositionType(DimensionBase, enum.Enum):
-    DISMISSAL = "Dismissal"
-    DIVERTED_OR_DEFERRED = "Diverted or Deferred"
     ACQUITTAL = "Acquittal"
     CONVICTION_PLEA = "Conviction - plea"
     CONVICTION_TRIAL = "Conviction - trial"
+    DISMISSAL = "Dismissal"
+    DIVERTED_OR_DEFERRED = "Diverted or Deferred"
+    REJECTED = "Rejected"
     TRANSFER = "Transfer"
     OTHER = "Other"
     UNKNOWN = "Unknown"
