@@ -29,6 +29,11 @@ module "state-specific-validation-dataset" {
   description = "State-specific validation dataset for state-specific validation views."
 }
 
+moved {
+  from = module.state-specific-validation-dataset
+  to   = module.state-specific-validation-dataset[0]
+}
+
 module "state-specific-validation-oneoff-dataset" {
   source      = "../big_query_dataset"
   dataset_id  = "${lower(var.state_code)}_validation_oneoffs"
