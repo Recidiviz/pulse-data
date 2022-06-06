@@ -25,7 +25,9 @@ from flask import Blueprint, Response, jsonify, make_response, request
 from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas import load_api_schema
-from recidiviz.case_triage.pathways.metrics import FetchMetricParams, MetricFactory
+from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.pathways.metric_queries import FetchMetricParams
+from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
@@ -33,6 +35,7 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
     build_authorization_handler,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.flask_exception import FlaskException
 
 PATHWAYS_ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -107,8 +110,15 @@ def create_pathways_api_blueprint() -> Blueprint:
     @api.get("/<state>/<metric_name>")
     def metrics(state: str, metric_name: str) -> Response:
         state_code = StateCode(state)
-        metric_factory = MetricFactory(state_code)
-        metric = metric_factory.build_metric(metric_name)
+
+        try:
+            metric_mapper = ENABLED_METRICS_BY_STATE[state_code][metric_name]
+        except KeyError as e:
+            raise FlaskException(
+                code="metric_not_enabled",
+                description=f"{metric_name} is not enabled for {state_code.value}",
+                status_code=HTTPStatus.BAD_REQUEST,
+            ) from e
 
         fetch_metric_params_schema = load_api_schema(
             FETCH_METRIC_SCHEMAS_BY_NAME[metric_name],
@@ -120,6 +130,8 @@ def create_pathways_api_blueprint() -> Blueprint:
         )
         fetch_metric_params = FetchMetricParams(**fetch_metric_params_schema)
 
-        return jsonify(metric.fetch(fetch_metric_params))
+        return jsonify(
+            PathwaysMetricFetcher(state_code).fetch(metric_mapper, fetch_metric_params)
+        )
 
     return api

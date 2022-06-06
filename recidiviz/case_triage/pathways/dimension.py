@@ -14,15 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-""" Contains the configuration for which Pathways metrics are enabled """
+""" Dimension enumeration for Pathways metrics"""
+import enum
 
-from recidiviz.case_triage.pathways.metric_mappers import (
-    LibertyToPrisonTransitionsCount,
-)
-from recidiviz.common.constants.states import StateCode
 
-ENABLED_METRICS_BY_STATE = {
-    StateCode.US_TN: {
-        "LibertyToPrisonTransitionsCount": LibertyToPrisonTransitionsCount,
-    }
-}
+class Dimension(enum.Enum):
+    LENGTH_OF_STAY = "length_of_stay"
+    SUPERVISION_START_DATE = "supervision_start_date"
+    SUPERVISING_OFFICER = "supervising_officer"
+    SUPERVISION_LEVEL = "supervision_level"
+    SUPERVISION_TYPE = "supervision_type"
+    YEAR_MONTH = "year_month"
+    TIME_PERIOD = "time_period"
+    GENDER = "gender"
+    AGE_GROUP = "age_group"
+    RACE = "race"
+    JUDICIAL_DISTRICT = "judicial_district"
+    PRIOR_LENGTH_OF_INCARCERATION = "prior_length_of_incarceration"

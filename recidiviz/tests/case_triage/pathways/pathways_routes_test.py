@@ -27,7 +27,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.pathways.metrics import Dimension
+from recidiviz.case_triage.pathways.dimension import Dimension
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
