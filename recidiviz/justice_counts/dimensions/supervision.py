@@ -22,10 +22,10 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class SupervisionStaffType(DimensionBase, enum.Enum):
-    SUPERVISION_OFFICERS = "SUPERVISION_OFFICERS"
-    SUPPORT = "SUPPORT"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    SUPERVISION_OFFICERS = "Supervision Officers"
+    SUPPORT = "Support"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -33,9 +33,9 @@ class SupervisionStaffType(DimensionBase, enum.Enum):
 
 
 class SupervisionViolationType(DimensionBase, enum.Enum):
-    TECHNICAL = "TECHNICAL"
-    NEW_OFFENSE = "NEW_OFFENSE"
-    UNKNOWN = "UNKNOWN"
+    TECHNICAL = "Technical"
+    NEW_OFFENSE = "New Offense"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -43,9 +43,9 @@ class SupervisionViolationType(DimensionBase, enum.Enum):
 
 
 class SupervisionCaseType(DimensionBase, enum.Enum):
-    ACTIVE = "ACTIVE"
-    PASSIVE = "PASSIVE"
-    UNKNOWN = "UNKNOWN"
+    ACTIVE = "Active"
+    PASSIVE = "Passive"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -53,10 +53,10 @@ class SupervisionCaseType(DimensionBase, enum.Enum):
 
 
 class SupervisionIndividualType(DimensionBase, enum.Enum):
-    ACTIVE = "ACTIVE"
-    PASSIVE = "PASSIVE"
-    ABSCONDER_STATUS = "ABSCONDER_STATUS"
-    UNKNOWN = "UNKNOWN"
+    ACTIVE = "Active"
+    PASSIVE = "Passive"
+    ABSCONDER_STATUS = "Absconder Status"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -64,10 +64,10 @@ class SupervisionIndividualType(DimensionBase, enum.Enum):
 
 
 class SupervisionTerminationType(DimensionBase, enum.Enum):
-    SUCCESSFUL = "SUCCESSFUL"
-    UNSUCCESSFUL_OR_REVOKED = "UNSUCCESSFUL_OR_REVOKED"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    SUCCESSFUL = "Successful"
+    UNSUCCESSFUL_OR_REVOKED = "Unsuccessful or revoked"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -75,11 +75,11 @@ class SupervisionTerminationType(DimensionBase, enum.Enum):
 
 
 class NewOffenseType(DimensionBase, enum.Enum):
-    VIOLENT = "VIOLENT"
-    PROPERTY = "PROPERTY"
-    DRUG = "DRUG"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
+    VIOLENT = "Violent"
+    PROPERTY = "Property"
+    DRUG = "Drug"
+    OTHER = "Other"
+    UNKNOWN = "Unknown"
 
     @classmethod
     def dimension_identifier(cls) -> str:
