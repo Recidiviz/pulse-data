@@ -31,6 +31,27 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 
 
+class YesNoContext(enum.Enum):
+    """Multiple choice options for contexts that are answered with Yes/No."""
+
+    YES = "Yes"
+    NO = "No"
+
+
+class PopulationCountContextOptions(enum.Enum):
+    """Multiple choice options for population count in prisons and jails."""
+
+    WITHIN_TOTAL_POPULATION = "As a part of the total population"
+    SEPARATE_FROM_POPULATION = "Separate from the total population"
+
+
+class CallsRespondedOptions(enum.Enum):
+    """Multiple choice options for calls for service context."""
+
+    ALL_CALLS = "All calls"
+    CALLS_RESPONDED = "Only calls responded"
+
+
 class MetricCategory(enum.Enum):
     CAPACITY_AND_COST = "CAPACITY AND COST"
     OPERATIONS_AND_DYNAMICS = "OPERATIONS_AND_DYNAMICS"
@@ -53,6 +74,7 @@ class Context:
     required: bool
     label: str
     reporting_note: Optional[str] = None
+    multiple_choice_options: Optional[Type[enum.Enum]] = None
 
 
 @attr.define()

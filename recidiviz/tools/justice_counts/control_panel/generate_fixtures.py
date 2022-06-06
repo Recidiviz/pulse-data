@@ -83,7 +83,7 @@ def _create_context_datapoint(
     value: Any
     if context.value_type == ValueType.NUMBER:
         value = random.randint(10000, 100000)
-    elif context.value_type == ValueType.BOOLEAN:
+    elif context.value_type == ValueType.MULTIPLE_CHOICE:
         value = random.choice(["True", "False"])
     elif context.value_type == ValueType.TEXT:
         value = FAKE.text(max_nb_chars=50)

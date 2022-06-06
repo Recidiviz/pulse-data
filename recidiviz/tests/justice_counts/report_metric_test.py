@@ -28,6 +28,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 )
 from recidiviz.justice_counts.dimensions.person import GenderRestricted
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
     ReportedContext,
@@ -45,7 +46,6 @@ class TestJusticeCountsReportMetric(TestCase):
         self.reported_calls_for_service = (
             self.test_schema_objects.reported_calls_for_service_metric
         )
-        self.maxDiff = None
 
     def test_init(self) -> None:
         self.assertEqual(
@@ -84,14 +84,15 @@ class TestJusticeCountsReportMetric(TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"The context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is reported as a <class 'str'> but typed as a \(<class 'bool'>,\).",
+            r"The context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is reported as a <enum 'CallsRespondedOptions'> but typed as a \(<class 'str'>,\).",
         ):
             ReportMetric(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[
                     ReportedContext(
-                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value="all calls"
+                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
+                        value=CallsRespondedOptions.ALL_CALLS,
                     )
                 ],
                 aggregated_dimensions=[],
@@ -107,7 +108,8 @@ class TestJusticeCountsReportMetric(TestCase):
                 value=100000,
                 contexts=[
                     ReportedContext(
-                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True
+                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
+                        value=CallsRespondedOptions.ALL_CALLS.value,
                     )
                 ],
                 aggregated_dimensions=[],
@@ -137,6 +139,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": False,
                         "type": "TEXT",
                         "value": "government",
+                        "multiple_choice_options": [],
                     },
                     {
                         "key": "ADDITIONAL_CONTEXT",
@@ -145,6 +148,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": False,
                         "type": "TEXT",
                         "value": None,
+                        "multiple_choice_options": [],
                     },
                 ],
                 "disaggregations": [
@@ -195,11 +199,15 @@ class TestJusticeCountsReportMetric(TestCase):
                 "contexts": [
                     {
                         "key": "ALL_CALLS_OR_CALLS_RESPONDED",
-                        "display_name": "Does the total value include all calls (answer yes) or just those responded to (answer no)?",
+                        "display_name": "Does the total value include all calls or just those responded to?",
                         "reporting_note": None,
                         "required": True,
-                        "type": "BOOLEAN",
-                        "value": "YES",
+                        "type": "MULTIPLE_CHOICE",
+                        "value": CallsRespondedOptions.ALL_CALLS.value,
+                        "multiple_choice_options": [
+                            CallsRespondedOptions.ALL_CALLS.value,
+                            CallsRespondedOptions.CALLS_RESPONDED.value,
+                        ],
                     },
                     {
                         "key": "AGENCIES_AVAILABLE_FOR_RESPONSE",
@@ -208,6 +216,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": False,
                         "type": "TEXT",
                         "value": None,
+                        "multiple_choice_options": [],
                     },
                     {
                         "key": "ADDITIONAL_CONTEXT",
@@ -216,6 +225,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": False,
                         "type": "TEXT",
                         "value": None,
+                        "multiple_choice_options": [],
                     },
                 ],
                 "disaggregations": [
@@ -286,6 +296,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": False,
                         "type": "TEXT",
                         "value": None,
+                        "multiple_choice_options": [],
                     },
                 ],
                 "disaggregations": [],
@@ -315,6 +326,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": True,
                         "type": "TEXT",
                         "value": "it is an arrest",
+                        "multiple_choice_options": [],
                     },
                     {
                         "key": "ADDITIONAL_CONTEXT",
@@ -323,6 +335,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": False,
                         "type": "TEXT",
                         "value": "this is a test for additional context",
+                        "multiple_choice_options": [],
                     },
                 ],
                 "disaggregations": [
@@ -372,6 +385,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 {
                     "key": metric_definition.contexts[0].key.value,
                     "value": "definition of arrest",
+                    "multiple_choice_options": [],
                 }
             ],
             "disaggregations": [
@@ -420,6 +434,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 {
                     "key": metric_definition.contexts[0].key.value,
                     "value": "additional context",
+                    "multiple_choice_options": [],
                 }
             ],
             "disaggregations": [
@@ -488,24 +503,28 @@ class TestJusticeCountsReportMetric(TestCase):
         )
         response_json = {
             "key": context_definition.key.value,
-            "value": "YES",
+            "value": CallsRespondedOptions.ALL_CALLS.value,
+            "multiple_choice_options": [
+                CallsRespondedOptions.ALL_CALLS.value,
+                CallsRespondedOptions.CALLS_RESPONDED.value,
+            ],
         }
 
         self.assertEqual(
-            ReportedContext.from_json(
-                json=response_json, context_definition=context_definition
+            ReportedContext.from_json(json=response_json),
+            ReportedContext(
+                key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
+                value=CallsRespondedOptions.ALL_CALLS.value,
             ),
-            ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True),
         )
 
         cleared_input: Dict[str, Any] = {
             "key": context_definition.key.value,
             "value": None,
+            "multiple_choice_options": ["Yes", "No"],
         }
 
         self.assertEqual(
-            ReportedContext.from_json(
-                json=cleared_input, context_definition=context_definition
-            ),
+            ReportedContext.from_json(json=cleared_input),
             ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=None),
         )

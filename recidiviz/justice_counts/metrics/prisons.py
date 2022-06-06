@@ -34,6 +34,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     Definition,
     MetricCategory,
     MetricDefinition,
+    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -93,15 +94,17 @@ total_staff = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.INCLUDES_PROGRAMMATIC_STAFF,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Does your count include programmatic staff?",
             required=True,
+            multiple_choice_options=YesNoContext,
         ),
         Context(
             key=ContextKey.INCLUDES_MEDICAL_STAFF,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Does your count include medical staff?",
             required=True,
+            multiple_choice_options=YesNoContext,
         ),
     ],
     aggregated_dimensions=[
@@ -150,7 +153,7 @@ admissions = MetricDefinition(
         ),
         Context(
             key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Does your count include individuals admitted for violation of conditions?",
             required=False,
         ),

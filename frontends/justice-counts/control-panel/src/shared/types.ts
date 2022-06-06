@@ -81,8 +81,9 @@ export interface MetricContext {
   display_name: string | null | undefined;
   reporting_note: string | null | undefined;
   required: boolean;
-  type: "TEXT" | "NUMBER" | "BOOLEAN";
+  type: "TEXT" | "NUMBER" | "MULTIPLE_CHOICE";
   value: string | number | boolean | null | undefined;
+  multiple_choice_options: string[];
 }
 
 export interface MetricDisaggregations {

@@ -532,8 +532,6 @@ class Datapoint(JusticeCountsBase):
                     raise ValueError(
                         f"Datapoint represents a int value, but is a string. Datapoint ID: {self.id}, value: {value}",
                     ) from e
-        elif self.value_type == ValueType.BOOLEAN:
-            value = value == "True"
         return value
 
 

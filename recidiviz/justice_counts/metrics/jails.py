@@ -34,6 +34,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     Definition,
     MetricCategory,
     MetricDefinition,
+    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -67,9 +68,10 @@ annual_budget = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.PRETRIAL_SUPERVISION_FUNCTION,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Does the annual budget include the pretrial supervision function?",
             required=True,
+            multiple_choice_options=YesNoContext,
         ),
         Context(
             key=ContextKey.PRIMARY_FUNDING_SOURCE,
@@ -97,9 +99,10 @@ total_staff = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.INCLUDES_PROGRAMMATIC_STAFF,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Does the staff count includes programmatic staff?",
             required=True,
+            multiple_choice_options=YesNoContext,
         ),
     ],
     aggregated_dimensions=[
@@ -147,9 +150,10 @@ admissions = MetricDefinition(
         ),
         Context(
             key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Are the individuals admitted for violation of conditions counted within the total population?",
             required=False,
+            multiple_choice_options=YesNoContext,
         ),
     ],
     aggregated_dimensions=[
@@ -168,9 +172,10 @@ average_daily_population = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.BOOLEAN,
-            label="Does the average daily population include individuals admitted for violation of conditions?",
+            value_type=ValueType.MULTIPLE_CHOICE,
+            label="Are the individuals admitted for violation of conditions counted within the total population?",
             required=False,
+            multiple_choice_options=YesNoContext,
         ),
     ],
     aggregated_dimensions=[

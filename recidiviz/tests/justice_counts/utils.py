@@ -31,6 +31,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
     ReportedContext,
@@ -223,7 +224,8 @@ class JusticeCountsSchemaTestObjects:
             value=100,
             contexts=[
                 ReportedContext(
-                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=True
+                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
+                    value=CallsRespondedOptions.ALL_CALLS.value,
                 ),
                 ReportedContext(
                     key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,

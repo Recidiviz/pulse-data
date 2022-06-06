@@ -35,6 +35,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     Definition,
     MetricCategory,
     MetricDefinition,
+    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -68,9 +69,10 @@ annual_budget = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.SUPERVISION_IN_ANOTHER_AGENCY_BUDGET,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Is community supervision included in another agency's budget?",
             required=True,
+            multiple_choice_options=YesNoContext,
         ),
         Context(
             key=ContextKey.SUPERVISION_STRUCTURE,
