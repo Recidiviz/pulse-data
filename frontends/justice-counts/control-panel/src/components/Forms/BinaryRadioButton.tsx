@@ -23,6 +23,7 @@ import { palette, typography } from "../GlobalStyles";
 export const BinaryRadioGroupContainer = styled.div`
   display: flex;
   flex-direction: column;
+  position: relative;
 `;
 
 export const BinaryRadioGroupWrapper = styled.div`

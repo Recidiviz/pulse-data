@@ -17,13 +17,15 @@
 
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components/macro";
 
 import { MetricWithErrors } from "../../shared/types";
 import { useStore } from "../../stores";
-import { rem } from "../../utils";
+import { printReportTitle, rem } from "../../utils";
 import { Button } from "../Forms";
 import { palette } from "../GlobalStyles";
+import { showToast } from "../Toast";
 import { PublishButton } from "./PublishDataPanel";
 
 const ConfirmationDialogueWrapper = styled.div`
@@ -228,12 +230,42 @@ const PublishConfirmation: React.FC<{
   const [isPublishable, setIsPublishable] = useState(false);
   const [metricsPreview, setMetricsPreview] = useState<MetricWithErrors[]>();
   const { formStore, reportStore } = useStore();
+  const navigate = useNavigate();
 
-  const publishReport = () => {
+  const publishReport = async () => {
     if (isPublishable) {
+      setIsPublishable(false);
+
       const finalMetricsToPublish =
         formStore.reportUpdatedValuesForBackend(reportID);
-      reportStore.updateReport(reportID, finalMetricsToPublish, "PUBLISHED");
+
+      const response = (await reportStore.updateReport(
+        reportID,
+        finalMetricsToPublish,
+        "PUBLISHED"
+      )) as Response;
+
+      if (response.status === 200) {
+        navigate("/");
+        showToast(
+          `Congratulations! You published the ${printReportTitle(
+            reportStore.reportOverviews[reportID].month,
+            reportStore.reportOverviews[reportID].year,
+            reportStore.reportOverviews[reportID].frequency
+          )} report!`,
+          true
+        );
+      } else {
+        showToast(
+          `Something went wrong publishing the ${printReportTitle(
+            reportStore.reportOverviews[reportID].month,
+            reportStore.reportOverviews[reportID].year,
+            reportStore.reportOverviews[reportID].frequency
+          )} report!`,
+          false
+        );
+        setIsPublishable(true);
+      }
     }
   };
 

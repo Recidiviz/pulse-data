@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+
+import debounce from "lodash.debounce";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useRef, useState } from "react";
 
@@ -25,6 +27,7 @@ import {
   BinaryRadioGroupContainer,
   BinaryRadioGroupQuestion,
   BinaryRadioGroupWrapper,
+  ErrorLabel,
   Form,
   Metric,
   MetricSectionSubTitle,
@@ -34,6 +37,7 @@ import {
   TabbedDisaggregations,
   Title,
 } from "../Forms";
+import { showToast } from "../Toast";
 import {
   AdditionalContextInput,
   BinaryRadioButtonInputs,
@@ -84,14 +88,54 @@ const DataEntryForm: React.FC<{
         observerOptions
       );
 
-      metricsRef.current.forEach((metricElement) =>
-        intersectionObserver.observe(metricElement)
+      metricsRef.current.forEach(
+        (metricElement) =>
+          metricElement && intersectionObserver.observe(metricElement)
       );
 
       return () =>
-        metricRefsToCleanUp.forEach((metricElement) =>
-          intersectionObserver.unobserve(metricElement)
+        metricRefsToCleanUp.forEach(
+          (metricElement) =>
+            metricElement && intersectionObserver.unobserve(metricElement)
         );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const saveUpdatedMetrics = async () => {
+    const updatedMetrics = formStore.reportUpdatedValuesForBackend(reportID);
+    const status =
+      reportStore.reportOverviews[reportID].status === "PUBLISHED"
+        ? "PUBLISHED"
+        : "DRAFT";
+
+    const response = (await reportStore.updateReport(
+      reportID,
+      updatedMetrics,
+      status
+    )) as Response;
+
+    if (response.status === 200) {
+      showToast("Saved", true);
+    } else {
+      showToast("Failed to save", false, true);
+    }
+  };
+
+  const debouncedSave = useRef(debounce(saveUpdatedMetrics, 1500)).current;
+
+  /** Saves metrics before tab/window close or page refreshes */
+  useEffect(
+    () => {
+      const saveBeforeExiting = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        saveUpdatedMetrics();
+      };
+
+      window.addEventListener("beforeunload", saveBeforeExiting);
+      return () =>
+        window.removeEventListener("beforeunload", saveBeforeExiting);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
@@ -105,7 +149,12 @@ const DataEntryForm: React.FC<{
   }
 
   return (
-    <Form>
+    <Form
+      onChange={() => {
+        showToast("Saving...", false, false, undefined, true);
+        debouncedSave();
+      }}
+    >
       {/* Form Title */}
       <PreTitle>Enter Data</PreTitle>
       <Title scrolled={scrolled} sticky>
@@ -180,17 +229,52 @@ const DataEntryForm: React.FC<{
                         />
                       </BinaryRadioGroupWrapper>
                       <BinaryRadioGroupClearButton
-                        onClick={() =>
-                          formStore.resetBinaryInput(
-                            reportID,
-                            metric.key,
-                            context.key,
-                            context.required
-                          )
-                        }
+                        onClick={() => {
+                          if (
+                            formStore.contexts?.[reportID]?.[metric.key]?.[
+                              context.key
+                            ]?.value ||
+                            context.value
+                          ) {
+                            formStore.resetBinaryInput(
+                              reportID,
+                              metric.key,
+                              context.key,
+                              context.required
+                            );
+                            showToast(
+                              "Saving...",
+                              false,
+                              false,
+                              undefined,
+                              true
+                            );
+                            debouncedSave();
+                          }
+                        }}
                       >
                         Clear Input
                       </BinaryRadioGroupClearButton>
+
+                      {/* Error */}
+                      {formStore.contexts?.[reportID]?.[metric.key]?.[
+                        context.key
+                      ]?.error && (
+                        <ErrorLabel
+                          error={
+                            formStore.contexts?.[reportID]?.[metric.key]?.[
+                              context.key
+                            ]?.error
+                          }
+                          binaryContext
+                        >
+                          {
+                            formStore.contexts?.[reportID]?.[metric.key]?.[
+                              context.key
+                            ]?.error
+                          }
+                        </ErrorLabel>
+                      )}
                     </BinaryRadioGroupContainer>
                   );
                 }

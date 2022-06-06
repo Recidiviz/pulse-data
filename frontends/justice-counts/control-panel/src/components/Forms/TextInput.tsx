@@ -135,6 +135,7 @@ export const InputLabel = styled.label<InputLabelProps>`
 type ErrorLabelProps = {
   isDisabled?: boolean;
   error?: string;
+  binaryContext?: boolean;
 };
 
 export const ErrorLabel = styled.span<ErrorLabelProps>`
@@ -143,7 +144,7 @@ export const ErrorLabel = styled.span<ErrorLabelProps>`
   ${({ isDisabled }) => isDisabled && `color: ${palette.highlight.grey8};`}
   margin-top: 8px;
   position: absolute;
-  top: 71px;
+  top: ${({ binaryContext }) => (binaryContext ? `161px` : `71px`)};
 `;
 
 export const LabelChipPosition = styled.span`

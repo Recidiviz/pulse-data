@@ -22,7 +22,8 @@ export const showToast = (
   message: string,
   check = false,
   warning = false,
-  timeout = 2500
+  timeout = 2500,
+  preventOverride?: boolean
 ) => {
   const animationTransform = [{ maxWidth: "0px" }, { maxWidth: "100%" }];
   const animationTransformReverse = [
@@ -31,6 +32,8 @@ export const showToast = (
   ];
 
   const activeToast = document.querySelector("#toast");
+
+  if (preventOverride && activeToast?.textContent === message) return;
 
   if (activeToast) {
     activeToast.animate(animationTransformReverse, {
