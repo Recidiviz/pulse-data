@@ -1,0 +1,255 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_number
+  - offender_lock_id
+  - offender_external_movement_id
+  - movement_date
+  - unit_lock_id
+  - location_code
+  - location_type_id
+  - county
+  - movement_reason_id
+  - next_movement_date
+  - next_movement_reason_id
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_number
+          id_type: $literal("US_MI_DOC")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - offender_number
+                - offender_lock_id
+                - offender_external_movement_id
+              $include_nulls: True
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: location_type_id
+              $mappings:
+                StateIncarcerationType.STATE_PRISON:
+                  - "225" # Prison
+                  - "226" # SAI - Special Alternative Incarceration
+                  - "14294" # Residential Reentry Program
+          county_code: county
+          facility: location_code
+          housing_unit: unit_lock_id
+          admission_date: movement_date
+          admission_reason:
+            $conditional:
+              - $if:
+                  $not_null: movement_reason_id
+                $then:
+                  $enum_mapping:
+                    $raw_text: movement_reason_id
+                    $mappings:
+                      StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION:
+                        - "18" # Returned While on Parole Sentenced In Michigan
+                      StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
+                        - "3" # Other Movement
+                      StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                        - "13" # New Commitment (Reception Center Only)
+                        - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
+                        - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
+                        - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
+                        - "10" # New Commitment - While Under Sentence (Rec Ctr Only)
+                        - "159" # New Commitment - HYTA Prisoner
+                        - "16" # New Commitment, (SAI Only)
+                        - "158" # New Commitment - HYTA Probationer
+                        - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
+                        - "2" # Intake
+                        - "131" # Sentenced to Prison
+                      StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                        - "80" # Escaper Returned to the Institution
+                      StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                        - "81" # Returned from Temporary Release
+                      StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
+                        - "17" # Returned as Parole Technical Rule Violator
+                      # Movement reasons that are for releases are often followed by actual releases
+                      # therefore, we indicate this as a status change
+                      StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                        - "86" # First Parole
+                        - "87" # Reinstated on Parole from the Institution
+                        - "89" # Reinstated on Parole While at Large
+                        - "36" # Discharged on the Maximum without Parole
+                        - "95" # Temporary Release - Outside Hospital/Funerals Only
+                        - "146" # Discharge From Prison Under HYTA Without Probation
+                        - "90" # Reparoled While on Same Term
+                        - "121" # Discharged from Probation
+                        - "119" # Absconder from Probation
+                        - "37" # Released to Court on Writ
+                        - "142" # Discharged from Probation Without Improvement
+                        - "40" # Death on Temporary Release
+                        - "41" # Discharged on Maximum after Parole and Return
+                        - "28" # Released from SAI - Complete
+                        - "38" # Death in Institution
+                        - "123" # Discharged Sentenced to Jail Only
+                        - "22" # Court Discharged with Time Served
+                        - "145" # Discharge From Prison Under HYTA & Continued on Probation
+                        - "79" # Returned to Court from Bond
+                        - "27" # Released from SAI - Incomplete
+                        - "122" # Administrative Discharge from Probation
+                        - "7" # Released for Additional Sentencing Processing
+                        - "32" # Discharged from Parole
+                        - "25" # Conviction Reversed by Court
+                        - "127" # Reinstated on Probation
+                        - "96" # Escape from the Institution
+                        - "94" # Temporarily Housed at County Jail
+                        - "93" # Court Released on Bond
+                        - "88" # Paroled in Custody
+                        - "84" # Returned from Limited Furlough
+                        - "77" # Court Resentenced to Probation
+                        - "42" # Discharged by Transfer to Foreign Country
+                        - "4" # Transfer Out State
+                        - "152" # Reinstated on Parole from a County Jail
+                        - "139" # Sentence Suspended by the Court
+                        - "134" # Discharged Due to Commitment to FIA Only
+                        - "129" # Discharged from Probation - Probation Revoked
+                        - "126" # Death on Probation
+                        - "120" # Placed on Probation
+                        - "118" # Client Number Reassignment
+                        - "116" # Terminated, Continued on Additional Prefix
+                        - "111" # Out of State Case Transfered Out of Michigan
+                        - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
+                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                        - "106" # Held Under Custody
+                      StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                        - "117" # Transfer In ... Institutional or Caseload
+                        - "6" # Visitor In
+                        - "107" # Transferred Out ... Institutional or Caseload
+                        - "20" # Visitor Out
+                        - "5" # Transfer Between Offices in Michigan
+                      StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                        - "26" # Returned from Court
+                        - "82" # Returned from County Jail
+                        - "109" # Returned From Mntl Hlth Hospital/ Othr Crimnl Justce Agncies
+                # Movements that don't have reason ids usually mean internal unit or facility
+                # movements. By default, will use STATUS_CHANGE to denote these movements.
+              - $else: $literal_enum(StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE)
+          release_date: next_movement_date
+          release_reason:
+            $conditional:
+              - $if:
+                  $or:
+                    - $not_null: next_movement_reason_id
+                    - $not_null: next_movement_date
+                $then:
+                  $conditional:
+                    - $if:
+                        $not_null: next_movement_reason_id
+                      $then:
+                        $enum_mapping:
+                          $raw_text: next_movement_reason_id
+                          $mappings:
+                            StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                              - "86" # First Parole
+                              - "141" # Disch. Prison MAX - Transfer for Probation
+                              - "120" # Placed on Probation
+                            StateIncarcerationPeriodReleaseReason.COURT_ORDER:
+                              - "37" # Released to Court on Writ
+                              - "79" # Returned to Court from Bond
+                              - "1" # Report to Office
+                            StateIncarcerationPeriodReleaseReason.DEATH:
+                              - "40" # Death on Temporary Release
+                              - "38" # Death in Institution
+                              - "39" # Death on Limited Furlough
+                              - "126" # Death on Probation
+                              - "31" # Death on Parole
+                            StateIncarcerationPeriodReleaseReason.ESCAPE:
+                              - "100" # Escape Walkaways
+                              - "101" # Escape after Release to Court
+                            StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
+                              - "3" # Other Movement
+                            StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION:
+                              - "143" # Discharged After Special Investigation Only
+                              - "136" # Jurisdiction Activated in Error
+                            StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                              - "89" # Reinstated on Parole While at Large
+                              - "87" # Reinstated on Parole from the Institution
+                              - "90" # Reparoled While on Same Term
+                              - "88" # Paroled in Custody
+                              - "145" # Discharge From Prison Under HYTA & Continued on Probation
+                              - "77" # Court Resentenced to Probation
+                              - "127" # Reinstated on Probation
+                              - "150" # Reinstated on Parole from TRV
+                            StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                              - "36" # Discharged on the Maximum without Parole
+                              - "28" # Released from SAI - Complete
+                              - "41" # Discharged on Maximum after Parole and Return
+                              - "146" # Discharge From Prison Under HYTA Without Probation
+                              - "27" # Released from SAI - Incomplete
+                              - "32" # Discharged from Parole
+                              - "22" # Court Discharged with Time Served
+                              - "116" # Terminated, Continued on Additional Prefix
+                            StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                              - "17" # Returned as Parole Technical Rule Violator
+                              - "106" # Held Under Custody
+                              - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
+                              - "112" # Absconder from Parole
+                              - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
+                              - "13" # New Commitment (Reception Center Only)
+                              - "81" # Returned from Temporary Release
+                              - "2" # Intake
+                              - "18" # Returned While on Parole Sentenced In Michigan
+                              - "121" # Discharged from Probation
+                              - "119" # Absconder from Probation
+                              - "26" # Returned from Court
+                              - "80" # Escaper Returned to the Institution
+                              - "159" # New Commitment - HYTA Prisoner
+                              - "142" # Discharged from Probation Without Improvement
+                              - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
+                              - "10" # New Commitment - While Under Sentence (Rec Ctr Only)
+                              - "129" # Discharged from Probation - Probation Revoked
+                              - "30" # Early Discharge from Parole
+                              - "131" # Sentenced to Prison
+                              - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
+                              - "128" # Held Under Custody - Probation Violation Processing
+                              - "118" # Client Number Reassignment
+                              - "82" # Returned from County Jail
+                              - "16" # New Commitment, (SAI Only)
+                              - "158" # New Commitment - HYTA Probationer
+                              - "156" # Probationer Held Under Custody
+                            StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                              - "95" # Temporary Release - Outside Hospital/Funerals Only
+                              - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
+                              - "91" # Limited Furlough
+                            StateIncarcerationPeriodReleaseReason.TRANSFER:
+                              - "117" # Transfer In ... Institutional or Caseload
+                              - "107" # Transferred Out ... Institutional or Caseload
+                              - "20" # Visitor Out
+                              - "5" # Transfer Between Offices in Michigan
+                              - "6" # Visitor In
+                            StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                              - "4" # Transfer Out State
+                              - "94" # Temporarily Housed at County Jail
+                              - "111" # Out of State Case Transfered Out of Michigan
+                              - "123" # Discharged Sentenced to Jail Only
+                              - "42" # Discharged by Transfer to Foreign Country
+                              - "7" # Released for Additional Sentencing Processing
+                            StateIncarcerationPeriodReleaseReason.VACATED:
+                              - "93" # Court Released on Bond
+                              - "25" # Conviction Reversed by Court
+                              - "139" # Sentence Suspended by the Court
+                              - "148" # Charge(s) Dismissed by Court
+                              - "23" # Discharged by Court - Nolle Prosequi
+                              - "24" # Sentence Reduced to Misdemeanor
+                    # Movements that don't have reason ids usually mean internal unit or facility
+                    # movements or a release that doesn't have a corresponding movement yet.
+                    # By default, will use STATUS_CHANGE to denote these movements.
+                    - $else: $literal_enum(StateIncarcerationPeriodReleaseReason.STATUS_CHANGE)
+          specialized_purpose_for_incarceration:
+            $conditional:
+              - $if:
+                  $equal:
+                    - movement_reason_id
+                    - $literal("106")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY)
+              - $else: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
+          custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
