@@ -170,6 +170,7 @@ def add_incarceration_period_to_person(
     release_date: Optional[datetime.date],
     facility: str,
     housing_unit: Optional[str] = None,
+    county_code: Optional[str] = None,
     custodial_authority: Optional[StateCustodialAuthority] = None,
     custodial_authority_raw_text: Optional[str] = None,
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = None,
@@ -179,6 +180,7 @@ def add_incarceration_period_to_person(
     specialized_purpose_for_incarceration: Optional[
         StateSpecializedPurposeForIncarceration
     ] = None,
+    incarceration_type: Optional[StateIncarcerationType] = None,
     incarceration_type_raw_text: Optional[str] = None,
     specialized_purpose_for_incarceration_raw_text: Optional[str] = None,
 ) -> None:
@@ -187,10 +189,9 @@ def add_incarceration_period_to_person(
     incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
         external_id=external_id,
         state_code=state_code,
-        incarceration_type=StateIncarcerationType.STATE_PRISON,
         admission_date=admission_date,
         release_date=release_date,
-        county_code=None,
+        county_code=county_code,
         facility=facility,
         housing_unit=housing_unit,
         custodial_authority=custodial_authority,
@@ -200,6 +201,7 @@ def add_incarceration_period_to_person(
         release_reason=release_reason,
         release_reason_raw_text=release_reason_raw_text,
         person=person,
+        incarceration_type=incarceration_type or StateIncarcerationType.STATE_PRISON,
         incarceration_type_raw_text=incarceration_type_raw_text,
         specialized_purpose_for_incarceration=specialized_purpose_for_incarceration,
         specialized_purpose_for_incarceration_raw_text=specialized_purpose_for_incarceration_raw_text,
