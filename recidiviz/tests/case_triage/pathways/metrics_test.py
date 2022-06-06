@@ -22,11 +22,10 @@ from unittest.case import TestCase
 
 import pytest
 
-from recidiviz.case_triage.pathways.metrics import (
-    Dimension,
-    FetchMetricParams,
-    LibertyToPrisonTransitionsCount,
-)
+from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.pathways.metric_queries import FetchMetricParams
+from recidiviz.case_triage.pathways.metrics import LibertyToPrisonTransitionsCount
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
@@ -80,10 +79,12 @@ class TestPathwaysMetrics(TestCase):
 
     def test_metrics_base(self) -> None:
         results = {}
-        for dimension in LibertyToPrisonTransitionsCount.dimensions:
-            results[dimension] = LibertyToPrisonTransitionsCount(
-                state_code=StateCode("US_TN")
-            ).fetch(FetchMetricParams(group=dimension))
+        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
+        for dimension_mapping in LibertyToPrisonTransitionsCount.dimension_mappings:
+            results[dimension_mapping.dimension] = metric_fetcher.fetch(
+                LibertyToPrisonTransitionsCount,
+                FetchMetricParams(group=dimension_mapping.dimension),
+            )
 
         self.assertEqual(
             {
@@ -124,7 +125,8 @@ class TestPathwaysMetrics(TestCase):
         )
 
     def test_metrics_filter(self) -> None:
-        results = LibertyToPrisonTransitionsCount(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+            LibertyToPrisonTransitionsCount,
             FetchMetricParams(
                 group=Dimension.GENDER,
                 filters={
@@ -136,7 +138,8 @@ class TestPathwaysMetrics(TestCase):
         self.assertEqual([{"gender": "MALE", "count": 2}], results)
 
     def test_filter_since(self) -> None:
-        results = LibertyToPrisonTransitionsCount(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+            LibertyToPrisonTransitionsCount,
             FetchMetricParams(group=Dimension.GENDER, since="2022-03-01"),
         )
 

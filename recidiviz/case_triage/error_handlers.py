@@ -22,6 +22,7 @@ from jwt import MissingRequiredClaimError
 from marshmallow import ValidationError
 
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
+from recidiviz.case_triage.pathways.metric_mappers import MetricMappingError
 from recidiviz.case_triage.querier.querier import NoCaseloadException
 from recidiviz.utils.flask_exception import FlaskException
 
@@ -71,6 +72,15 @@ def handle_missing_required_claim_error(error: MissingRequiredClaimError) -> Res
     )
 
 
+def handle_metric_mapping_error(error: MetricMappingError) -> Response:
+    return handle_auth_error(
+        CaseTriageBadRequestException(
+            "metric_mapping_error",
+            error.message,
+        )
+    )
+
+
 def register_error_handlers(app: Flask) -> None:
     """Registers error handlers"""
     app.errorhandler(CSRFError)(handle_csrf_error)
@@ -78,3 +88,4 @@ def register_error_handlers(app: Flask) -> None:
     app.errorhandler(NoCaseloadException)(handle_no_caseload_error)
     app.errorhandler(MissingRequiredClaimError)(handle_missing_required_claim_error)
     app.errorhandler(FlaskException)(handle_auth_error)
+    app.errorhandler(MetricMappingError)(handle_metric_mapping_error)

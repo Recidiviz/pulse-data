@@ -20,11 +20,8 @@ import datetime
 from marshmallow import Schema, ValidationError, fields, validate
 from marshmallow_enum import EnumField
 
-from recidiviz.case_triage.pathways.metrics import (
-    COMPOSITE_DIMENSIONS,
-    ENABLED_METRICS_BY_STATE,
-    Dimension,
-)
+from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE
 
 FETCH_METRIC_SCHEMAS_BY_NAME = {}
 
@@ -45,24 +42,13 @@ for enabled_metrics in ENABLED_METRICS_BY_STATE.values():
                     Dimension,
                     by_value=True,
                     required=True,
-                    validate=validate.OneOf(metric_class.dimensions),
+                    validate=validate.OneOf(metric_class.grouping_dimensions.keys()),
                 ),
                 "filters": fields.Dict(
                     EnumField(
                         Dimension,
                         by_value=True,
-                        validate=[
-                            validate.NoneOf(
-                                COMPOSITE_DIMENSIONS,
-                                error="Cannot filter on composite fields",
-                            ),
-                            validate.OneOf(
-                                list(
-                                    set(metric_class.dimensions)
-                                    - set(COMPOSITE_DIMENSIONS)
-                                )
-                            ),
-                        ],
+                        validate=validate.OneOf(metric_class.filter_dimensions.keys()),
                     ),
                     fields.List(fields.Str),
                 ),
