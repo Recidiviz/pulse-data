@@ -57,6 +57,7 @@ class DimensionMapping:
 class CountByDimensionMetricMapper:
     """Contains mappings for count by dimension metrics"""
 
+    name: str
     model: PathwaysBase
     timestamp_column: Column
     dimension_mappings: List[DimensionMapping]
@@ -100,6 +101,7 @@ class CountByDimensionMetricMapper:
 
 
 LibertyToPrisonTransitionsCount = CountByDimensionMetricMapper(
+    name="LibertyToPrisonTransitionsCount",
     model=LibertyToPrisonTransitions,
     timestamp_column=LibertyToPrisonTransitions.transition_date,
     dimension_mappings=[
@@ -137,6 +139,7 @@ LibertyToPrisonTransitionsCount = CountByDimensionMetricMapper(
 )
 
 PrisonToSupervisionTransitionsCount = CountByDimensionMetricMapper(
+    name="PrisonToSupervisionTransitionsCount",
     model=PrisonToSupervisionTransitions,
     timestamp_column=PrisonToSupervisionTransitions.transition_date,
     dimension_mappings=[

@@ -27,7 +27,7 @@ from werkzeug.http import parse_set_header
 from recidiviz.case_triage.api_schemas import load_api_schema
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metric_queries import FetchMetricParams
-from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE
+from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE_BY_NAME
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
@@ -112,7 +112,7 @@ def create_pathways_api_blueprint() -> Blueprint:
         state_code = StateCode(state)
 
         try:
-            metric_mapper = ENABLED_METRICS_BY_STATE[state_code][metric_name]
+            metric_mapper = ENABLED_METRICS_BY_STATE_BY_NAME[state_code][metric_name]
         except KeyError as e:
             raise FlaskException(
                 code="metric_not_enabled",

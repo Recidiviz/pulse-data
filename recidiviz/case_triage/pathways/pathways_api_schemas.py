@@ -34,8 +34,8 @@ def is_date_string(value: str) -> None:
 
 
 for enabled_metrics in ENABLED_METRICS_BY_STATE.values():
-    for metric_name, metric_class in enabled_metrics.items():
-        FETCH_METRIC_SCHEMAS_BY_NAME[metric_name] = Schema.from_dict(
+    for metric_class in enabled_metrics:
+        FETCH_METRIC_SCHEMAS_BY_NAME[metric_class.name] = Schema.from_dict(
             {
                 "since": fields.String(allow_none=True, validate=is_date_string),
                 "group": EnumField(
