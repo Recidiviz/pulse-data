@@ -25,6 +25,7 @@ from recidiviz.case_triage.pathways.dimension import Dimension
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
+    PrisonToSupervisionTransitions,
 )
 
 
@@ -131,6 +132,36 @@ LibertyToPrisonTransitionsCount = CountByDimensionMetricMapper(
             dimension=Dimension.RACE,
             operations=DimensionOperation.ALL,
             columns=[LibertyToPrisonTransitions.race],
+        ),
+    ],
+)
+
+PrisonToSupervisionTransitionsCount = CountByDimensionMetricMapper(
+    model=PrisonToSupervisionTransitions,
+    timestamp_column=PrisonToSupervisionTransitions.transition_date,
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.YEAR_MONTH,
+            operations=DimensionOperation.GROUP,
+            columns=[
+                PrisonToSupervisionTransitions.year,
+                PrisonToSupervisionTransitions.month,
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.AGE_GROUP,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonToSupervisionTransitions.age_group],
+        ),
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonToSupervisionTransitions.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.FACILITY,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonToSupervisionTransitions.facility],
         ),
     ],
 )

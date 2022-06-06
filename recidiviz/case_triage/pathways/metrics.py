@@ -18,11 +18,13 @@
 
 from recidiviz.case_triage.pathways.metric_mappers import (
     LibertyToPrisonTransitionsCount,
+    PrisonToSupervisionTransitionsCount,
 )
 from recidiviz.common.constants.states import StateCode
 
 ENABLED_METRICS_BY_STATE = {
     StateCode.US_TN: {
         "LibertyToPrisonTransitionsCount": LibertyToPrisonTransitionsCount,
+        "PrisonToSupervisionTransitionsCount": PrisonToSupervisionTransitionsCount,
     }
 }
