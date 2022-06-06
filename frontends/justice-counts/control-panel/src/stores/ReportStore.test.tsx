@@ -39,6 +39,7 @@ jest.mock("react-router-dom", () => ({
 
 beforeEach(() => {
   rootStore.reportStore.reportOverviews = {};
+  rootStore.reportStore.getReportOverviews = () => Promise.resolve();
 });
 
 test("sort in reportOverviewList", () => {
@@ -51,20 +52,20 @@ test("sort in reportOverviewList", () => {
   );
 });
 
-test("loading reports", () => {
+test("loading reports", async () => {
   render(
     <StoreProvider>
       <Reports />
     </StoreProvider>
   );
 
-  const noReportsLoaded = screen.getByText(/Loading data.../i);
+  const noReportsLoaded = await screen.findByText(/Loading data.../i);
   expect(noReportsLoaded).toBeInTheDocument();
 
   expect.hasAssertions();
 });
 
-test("no reports to display", () => {
+test("no reports to display", async () => {
   render(
     <StoreProvider>
       <Reports />
@@ -77,13 +78,12 @@ test("no reports to display", () => {
     rootStore.reportStore.reportOverviews = {};
   });
 
-  const noReportsLoaded = screen.getByText(/No reports to display./i);
+  const noReportsLoaded = await screen.findByText(/No reports to display./i);
   expect(noReportsLoaded).toBeInTheDocument();
-
   expect.hasAssertions();
 });
 
-test("displayed reports", () => {
+test("displayed reports", async () => {
   render(
     <StoreProvider>
       <Reports />
@@ -96,10 +96,9 @@ test("displayed reports", () => {
   });
 
   // Arbitrary report dates included in mockJSON
-  const april2022 = screen.getByText(/April 2022/i);
-  const december2020 = screen.getByText(/December 2020/i);
-  const annualReport2019 = screen.getByText(/Annual Report 2019/i);
-
+  const april2022 = await screen.findByText(/April 2022/i);
+  const december2020 = await screen.findByText(/December 2020/i);
+  const annualReport2019 = await screen.findByText(/Annual Report 2019/i);
   expect(april2022).toBeInTheDocument();
   expect(december2020).toBeInTheDocument();
   expect(annualReport2019).toBeInTheDocument();
