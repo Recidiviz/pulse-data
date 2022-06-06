@@ -199,7 +199,7 @@ export const mockMetrics = [
         reporting_note:
           "Whether individual admitted for violation of conditions are counted within or separate from the above population categories.",
         required: false,
-        type: "BOOLEAN",
+        type: "MULTIPLE_CHOICE",
         value: null,
       },
       {

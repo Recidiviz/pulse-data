@@ -53,14 +53,14 @@ class ValueType(enum.Enum):
 
     TEXT = "TEXT"
     NUMBER = "NUMBER"
-    BOOLEAN = "BOOLEAN"
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE"
 
     @classmethod
     def value_type_to_python_type(cls) -> Dict[str, Tuple[Type[Any], ...]]:
         return {
             "TEXT": (str,),
             "NUMBER": (int, float),
-            "BOOLEAN": (bool,),
+            "MULTIPLE_CHOICE": (str,),
         }
 
     def python_type(self) -> Tuple[Type[Any], ...]:

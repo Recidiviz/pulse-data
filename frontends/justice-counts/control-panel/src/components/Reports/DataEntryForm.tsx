@@ -151,9 +151,10 @@ const DataEntryForm: React.FC<{
             )}
 
             {/* Contexts */}
+            {/* TODO(#13314): display multiple choice options as drop down if there are >2 options */}
             {metric.contexts.length > 0 &&
               metric.contexts.map((context, contextIndex) => {
-                if (context.type === "BOOLEAN") {
+                if (context.type === "MULTIPLE_CHOICE") {
                   return (
                     <BinaryRadioGroupContainer
                       key={context.key}
@@ -175,6 +176,7 @@ const DataEntryForm: React.FC<{
                           metric={metric}
                           context={context}
                           contextIndex={contextIndex}
+                          options={context.multiple_choice_options}
                         />
                       </BinaryRadioGroupWrapper>
                       <BinaryRadioGroupClearButton

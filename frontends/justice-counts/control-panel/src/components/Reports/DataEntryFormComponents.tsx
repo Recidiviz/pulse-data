@@ -144,13 +144,18 @@ interface AdditionalContextInputsProps extends MetricTextInputProps {
   contextIndex: number;
 }
 
+interface BinaryContextProps extends AdditionalContextInputsProps {
+  options: string[];
+}
+
 export const BinaryRadioButtonInputs = observer(
   ({
     reportID,
     metric,
     context,
     contextIndex,
-  }: AdditionalContextInputsProps) => {
+    options,
+  }: BinaryContextProps) => {
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
 
@@ -166,32 +171,22 @@ export const BinaryRadioButtonInputs = observer(
 
     return (
       <>
-        <BinaryRadioButton
-          type="radio"
-          id={`${context.key}-yes`}
-          name={context.key}
-          label="Yes"
-          value="YES"
-          onChange={handleContextChange}
-          checked={
-            contexts?.[reportID]?.[metric.key]?.[context.key]
-              ? contexts[reportID][metric.key][context.key].value === "YES"
-              : metric.contexts[contextIndex].value === "YES"
-          }
-        />
-        <BinaryRadioButton
-          type="radio"
-          id={`${context.key}-no`}
-          name={context.key}
-          label="No"
-          value="NO"
-          onChange={handleContextChange}
-          checked={
-            contexts?.[reportID]?.[metric.key]?.[context.key]
-              ? contexts[reportID][metric.key][context.key].value === "NO"
-              : metric.contexts[contextIndex].value === "NO"
-          }
-        />
+        {options.map((option: string) => (
+          <BinaryRadioButton
+            type="radio"
+            key={option}
+            id={`${context.key}-${option}`}
+            name={context.key}
+            label={option}
+            value={option}
+            onChange={handleContextChange}
+            checked={
+              contexts?.[reportID]?.[metric.key]?.[context.key]
+                ? contexts[reportID][metric.key][context.key].value === option
+                : metric.contexts[contextIndex].value === option
+            }
+          />
+        ))}
       </>
     );
   }

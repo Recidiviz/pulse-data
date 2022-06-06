@@ -30,6 +30,7 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
+    CallsRespondedOptions,
     Context,
     Definition,
     MetricCategory,
@@ -104,9 +105,10 @@ calls_for_service = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
-            value_type=ValueType.BOOLEAN,
-            label="Does the total value include all calls (answer yes) or just those responded to (answer no)?",
+            value_type=ValueType.MULTIPLE_CHOICE,
+            label="Does the total value include all calls or just those responded to?",
             required=True,
+            multiple_choice_options=CallsRespondedOptions,
         ),
         Context(
             key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,

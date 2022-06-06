@@ -30,10 +30,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     Context,
     MetricDefinition,
 )
-from recidiviz.justice_counts.metrics.metric_registry import (
-    METRIC_KEY_TO_METRIC,
-    METRICS,
-)
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 
 ReportedContextT = TypeVar("ReportedContextT", bound="ReportedContext")
 ReportedAggregatedDimensionT = TypeVar(
@@ -53,8 +50,11 @@ class ReportedContext:
 
     def to_json(self, context_definition: Context) -> Dict[str, Any]:
         value = self.value
-        if context_definition.value_type == ValueType.BOOLEAN and value is not None:
-            value = "YES" if value is True else "NO"
+        multiple_choice_options = []
+        if context_definition.value_type == ValueType.MULTIPLE_CHOICE:
+            for elem in context_definition.multiple_choice_options or []:
+                multiple_choice_options.append(elem.value)
+
         return {
             "key": self.key.value,
             "reporting_note": context_definition.reporting_note,
@@ -62,19 +62,16 @@ class ReportedContext:
             "type": context_definition.value_type.value,
             "required": context_definition.required,
             "value": value,
+            "multiple_choice_options": multiple_choice_options,
         }
 
     @classmethod
     def from_json(
         cls: Type[ReportedContextT],
         json: Dict[str, Any],
-        context_definition: Context,
     ) -> ReportedContextT:
         key = ContextKey[json["key"]]
         value = json["value"]
-        if context_definition.value_type != ValueType.BOOLEAN:
-            return cls(key=key, value=value)
-        value = value if value is None else value == "YES"
         return cls(key=key, value=value)
 
 
@@ -297,16 +294,9 @@ class ReportMetric:
 
     @classmethod
     def from_json(cls: Type[ReportMetricT], json: Dict[str, Any]) -> ReportMetricT:
-        context_key_to_context = {}
-        for metric in METRICS:
-            for context in metric.contexts:
-                if context.key.value not in context_key_to_context:
-                    context_key_to_context[context.key.value] = context
-
         reported_contexts = [
             ReportedContext.from_json(
                 json=context_json,
-                context_definition=context_key_to_context[context_json["key"]],
             )
             for context_json in json.get("contexts", [])
         ]

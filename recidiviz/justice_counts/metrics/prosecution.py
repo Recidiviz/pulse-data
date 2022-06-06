@@ -32,6 +32,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     Definition,
     MetricCategory,
     MetricDefinition,
+    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -110,9 +111,10 @@ cases_rejected = MetricDefinition(
     specified_contexts=[
         Context(
             key=ContextKey.ANOTHER_AGENCY_CAN_FILE_CHARGES,
-            value_type=ValueType.BOOLEAN,
+            value_type=ValueType.MULTIPLE_CHOICE,
             label="Does another agency in the jurisdiction have the authority to file charges/cases directly with the court?",
             required=True,
+            multiple_choice_options=YesNoContext,
         ),
         Context(
             key=ContextKey.ADDITIONAL_PROSECUTION_OUTCOMES,

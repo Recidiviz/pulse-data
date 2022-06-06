@@ -734,7 +734,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             contexts = [d for d in queried_datapoints if d.context_key is not None]
             self.assertEqual(len(contexts), 2)
-            self.assertEqual(contexts[0].get_value(), True)
+            self.assertEqual(contexts[0].get_value(), "All calls")
             self.assertEqual(contexts[1].get_value(), "agency0, agency1")
 
     def test_get_metrics_for_empty_report(self) -> None:
