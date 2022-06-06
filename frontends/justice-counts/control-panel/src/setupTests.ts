@@ -13,3 +13,12 @@ window.AUTH0_CONFIG = {
   client_id: "",
   audience: "",
 };
+
+// polyfill for when running jest tests
+/* eslint-disable no-extend-native */
+if (typeof String.prototype.replaceAll === "undefined") {
+  String.prototype.replaceAll = function (match, replace) {
+    return this.replace(new RegExp(match, "g"), () => replace as string);
+  };
+}
+/* eslint-enable no-extend-native */

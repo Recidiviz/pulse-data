@@ -117,11 +117,8 @@ const CreateReport = () => {
     });
     if (response && response instanceof Response) {
       if (response.status === 200) {
-        navigate("/", {
-          state: {
-            toastMessage: "The report was successfully created",
-          },
-        });
+        navigate("/");
+        showToast("The report was successfully created", true);
         return;
       }
       if (response.status === 400) {

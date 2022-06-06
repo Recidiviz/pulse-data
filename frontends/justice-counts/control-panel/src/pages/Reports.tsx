@@ -18,7 +18,7 @@
 import { reaction, when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import Loading from "../components/Loading";
 import {
@@ -40,7 +40,6 @@ import {
   Row,
   Table,
 } from "../components/Reports";
-import { showToast } from "../components/Toast";
 import { Permission, ReportOverview } from "../shared/types";
 import { useStore } from "../stores";
 import {
@@ -50,10 +49,6 @@ import {
   printReportTitle,
   removeSnakeCase,
 } from "../utils";
-
-interface LocationState {
-  toastMessage: string;
-}
 
 enum ReportStatusFilterOption {
   AllReports = "All Reports",
@@ -73,11 +68,12 @@ const Reports: React.FC = () => {
   const { reportStore, userStore } = useStore();
   const navigate = useNavigate();
 
+  const [loadingError, setLoadingError] = useState<string | undefined>(
+    undefined
+  );
   const [showAdditionalEditorsTooltip, setShowAdditionalEditorsTooltip] =
     useState<number>();
   const [reportsFilter, setReportsFilter] = useState<string>("allreports");
-
-  const location = useLocation();
 
   const filterReportsBy = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -108,21 +104,15 @@ const Reports: React.FC = () => {
       // return when's disposer so it is cleaned up if it never runs
       when(
         () => userStore.userInfoLoaded,
-        () => reportStore.getReportOverviews()
+        async () => {
+          const result = await reportStore.getReportOverviews();
+          if (result instanceof Error) {
+            setLoadingError(result.message);
+          }
+        }
       ),
     [reportStore, userStore]
   );
-
-  useEffect(() => {
-    const toastMsg = (location.state as LocationState | undefined)
-      ?.toastMessage;
-    if (toastMsg) {
-      showToast(toastMsg, true);
-
-      // clear the location state
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location]);
 
   // reload report overviews when the current agency ID changes
   useEffect(
@@ -130,11 +120,14 @@ const Reports: React.FC = () => {
       // return disposer so it is cleaned up if it never runs
       reaction(
         () => userStore.currentAgencyId,
-        (currentAgencyId, previousAgencyId) => {
+        async (currentAgencyId, previousAgencyId) => {
           // prevents us from calling getReportOverviews twice on initial load
           if (previousAgencyId !== undefined) {
             reportStore.resetState();
-            reportStore.getReportOverviews();
+            const result = await reportStore.getReportOverviews();
+            if (result instanceof Error) {
+              setLoadingError(result.message);
+            }
           }
         }
       ),
@@ -150,6 +143,94 @@ const Reports: React.FC = () => {
           ),
     [reportStore.reportOverviewList, reportsFilter]
   );
+
+  const renderReports = () => {
+    if (reportStore.loadingOverview) {
+      return <Loading />;
+    }
+    if (loadingError) {
+      return <Row>{`Error: ${loadingError}`}</Row>;
+    }
+    return (
+      <>
+        {filteredReportsMemoized.length > 0 ? (
+          filteredReportsMemoized.map(
+            (report: ReportOverview, index: number) => (
+              <Fragment key={report.id}>
+                <Row
+                  onClick={() => {
+                    navigate(`/reports/${report.id}`);
+                  }}
+                >
+                  {/* Report Period */}
+                  <Cell id="report_period">
+                    {printReportTitle(
+                      report.month,
+                      report.year,
+                      report.frequency
+                    )}
+                    <Badge status={report.status}>
+                      {removeSnakeCase(report.status).toLowerCase()}
+                    </Badge>
+                  </Cell>
+
+                  {/* Status */}
+                  <Cell capitalize>{report.frequency.toLowerCase()}</Cell>
+
+                  {/* Editors */}
+                  <Cell
+                    onMouseEnter={() => {
+                      if (report.editors.length > 1) {
+                        setShowAdditionalEditorsTooltip(report.id);
+                      }
+                    }}
+                    onMouseLeave={() =>
+                      setShowAdditionalEditorsTooltip(undefined)
+                    }
+                  >
+                    {report.editors.length === 0 ? (
+                      "-"
+                    ) : (
+                      <>
+                        <span>{report.editors[0]}</span>
+                        {report.editors.length > 1
+                          ? `& ${report.editors.length - 1} other${
+                              report.editors.length > 2 ? "s" : ""
+                            }`
+                          : ``}
+
+                        {showAdditionalEditorsTooltip === report.id && (
+                          <AdditionalEditorsTooltip>
+                            {printCommaSeparatedList(report.editors.slice(1))}
+                          </AdditionalEditorsTooltip>
+                        )}
+                      </>
+                    )}
+                  </Cell>
+
+                  {/* Last Modified */}
+                  <Cell>
+                    {!report.last_modified_at
+                      ? "-"
+                      : printElapsedDaysSinceDate(report.last_modified_at)}
+                  </Cell>
+                </Row>
+
+                {/* Report Year Marker */}
+                {renderReportYearRow(
+                  filteredReportsMemoized,
+                  index,
+                  report.year
+                )}
+              </Fragment>
+            )
+          )
+        ) : (
+          <NoReportsDisplay>No reports to display.</NoReportsDisplay>
+        )}
+      </>
+    );
+  };
 
   return (
     <>
@@ -194,90 +275,7 @@ const Reports: React.FC = () => {
 
       {/* Reports List Table */}
       <Table>
-        {reportStore.loadingOverview ? (
-          <Loading />
-        ) : (
-          <>
-            {filteredReportsMemoized.length > 0 ? (
-              filteredReportsMemoized.map(
-                (report: ReportOverview, index: number) => (
-                  <Fragment key={report.id}>
-                    <Row
-                      onClick={() => {
-                        navigate(`/reports/${report.id}`);
-                      }}
-                    >
-                      {/* Report Period */}
-                      <Cell id="report_period">
-                        {printReportTitle(
-                          report.month,
-                          report.year,
-                          report.frequency
-                        )}
-                        <Badge status={report.status}>
-                          {removeSnakeCase(report.status).toLowerCase()}
-                        </Badge>
-                      </Cell>
-
-                      {/* Status */}
-                      <Cell capitalize>{report.frequency.toLowerCase()}</Cell>
-
-                      {/* Editors */}
-                      <Cell
-                        onMouseEnter={() => {
-                          if (report.editors.length > 1) {
-                            setShowAdditionalEditorsTooltip(report.id);
-                          }
-                        }}
-                        onMouseLeave={() =>
-                          setShowAdditionalEditorsTooltip(undefined)
-                        }
-                      >
-                        {report.editors.length === 0 ? (
-                          "-"
-                        ) : (
-                          <>
-                            <span>{report.editors[0]}</span>
-                            {report.editors.length > 1
-                              ? `& ${report.editors.length - 1} other${
-                                  report.editors.length > 2 ? "s" : ""
-                                }`
-                              : ``}
-
-                            {showAdditionalEditorsTooltip === report.id && (
-                              <AdditionalEditorsTooltip>
-                                {printCommaSeparatedList(
-                                  report.editors.slice(1)
-                                )}
-                              </AdditionalEditorsTooltip>
-                            )}
-                          </>
-                        )}
-                      </Cell>
-
-                      {/* Last Modified */}
-                      <Cell>
-                        {!report.last_modified_at
-                          ? "-"
-                          : printElapsedDaysSinceDate(report.last_modified_at)}
-                      </Cell>
-                    </Row>
-
-                    {/* Report Year Marker */}
-                    {renderReportYearRow(
-                      filteredReportsMemoized,
-                      index,
-                      report.year
-                    )}
-                  </Fragment>
-                )
-              )
-            ) : (
-              <NoReportsDisplay>No reports to display.</NoReportsDisplay>
-            )}
-          </>
-        )}
-
+        {renderReports()}
         {userStore.userAgencies?.length === 0 && (
           <NoReportsDisplay>
             It looks like no agency is tied to this account. Please reach out to

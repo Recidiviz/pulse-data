@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { runInAction } from "mobx";
 import React from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -33,19 +33,41 @@ beforeEach(() => {
   window.IntersectionObserver = mockIntersectionObserver;
 });
 
-test("display loading when no reports are loaded", () => {
+test("display loading when no reports are loaded", async () => {
   render(
     <StoreProvider>
       <ReportDataEntry />
     </StoreProvider>
   );
-  const loadingText = screen.getByText(/Loading.../i);
-  expect(loadingText).toBeInTheDocument();
+  await waitFor(async () => {
+    const loadingText = await screen.findByText(/Loading data.../i);
+    expect(loadingText).toBeInTheDocument();
+  });
+  expect.hasAssertions();
+});
+
+test("display error when report fails to load", async () => {
+  render(
+    <StoreProvider>
+      <ReportDataEntry />
+    </StoreProvider>
+  );
+
+  runInAction(() => {
+    rootStore.userStore.userInfoLoaded = true;
+  });
+
+  const errorText = await screen.findByText(
+    /Error: There was an issue getting this report./i
+  );
+  expect(errorText).toBeInTheDocument();
   expect.hasAssertions();
 });
 
 describe("test data entry form", () => {
   runInAction(() => {
+    rootStore.userStore.userInfoLoaded = true;
+
     rootStore.reportStore.reportOverviews = {
       0: {
         id: 0,
@@ -108,7 +130,7 @@ describe("test data entry form", () => {
     };
   });
 
-  test("displays data entry form based on reports", () => {
+  test("displays data entry form based on reports", async () => {
     render(
       <StoreProvider>
         <MemoryRouter initialEntries={["/reports/0"]}>
@@ -119,7 +141,10 @@ describe("test data entry form", () => {
       </StoreProvider>
     );
 
-    const reportDate = screen.getByText("April 2022");
+    const reportDate = await screen.findByText("April 2022");
+
+    expect(reportDate).toBeInTheDocument();
+
     const displayName = screen.getAllByText("Staff")[0];
     const metricDescription = screen.getAllByText(
       "Measures the number of full-time staff employed by the agency."
@@ -127,8 +152,6 @@ describe("test data entry form", () => {
     const context = screen.getAllByText(
       "Does this include programmatic or medical staff?"
     )[0];
-
-    expect(reportDate).toBeInTheDocument();
     expect(displayName).toBeInTheDocument();
     expect(metricDescription).toBeInTheDocument();
     expect(context).toBeInTheDocument();
@@ -137,7 +160,7 @@ describe("test data entry form", () => {
   });
 });
 
-test("expect positive number value to not add field error (formErrors should be an empty object)", () => {
+test("expect positive number value to not add field error (formErrors should be an empty object)", async () => {
   render(
     <StoreProvider>
       <MemoryRouter initialEntries={["/reports/0"]}>
@@ -148,16 +171,14 @@ test("expect positive number value to not add field error (formErrors should be 
     </StoreProvider>
   );
 
-  const input = screen.getAllByLabelText("Total Staff")[0];
-
-  fireEvent.change(input, { target: { value: "100" } });
-
+  const labels = await screen.findAllByLabelText("Total Staff");
+  fireEvent.change(labels[0], { target: { value: "100" } });
   expect(
     rootStore.formStore.metricsValues[0].PROSECUTION_STAFF.error
   ).toBeUndefined();
 });
 
-test("expect negative number value to add field error (formErrors should contain an error property for the field)", () => {
+test("expect negative number value to add field error (formErrors should contain an error property for the field)", async () => {
   render(
     <StoreProvider>
       <MemoryRouter initialEntries={["/reports/0"]}>
@@ -168,16 +189,14 @@ test("expect negative number value to add field error (formErrors should contain
     </StoreProvider>
   );
 
-  const input = screen.getAllByLabelText("Total Staff")[0];
-
-  fireEvent.change(input, { target: { value: "-100" } });
-
+  const labels = await screen.findAllByLabelText("Total Staff");
+  fireEvent.change(labels[0], { target: { value: "-100" } });
   expect(rootStore.formStore.metricsValues[0].PROSECUTION_STAFF.error).toBe(
     "Please enter a valid number."
   );
 });
 
-test("expect empty value in required field to add field error (formErrors should contain an error property for the field)", () => {
+test("expect empty value in required field to add field error (formErrors should contain an error property for the field)", async () => {
   render(
     <StoreProvider>
       <MemoryRouter initialEntries={["/reports/0"]}>
@@ -188,10 +207,8 @@ test("expect empty value in required field to add field error (formErrors should
     </StoreProvider>
   );
 
-  const input = screen.getAllByLabelText("Total Staff")[0];
-
-  fireEvent.change(input, { target: { value: "" } });
-
+  const labels = await screen.findAllByLabelText("Total Staff");
+  fireEvent.change(labels[0], { target: { value: "" } });
   expect(rootStore.formStore.metricsValues[0].PROSECUTION_STAFF.error).toBe(
     "This is a required field."
   );
