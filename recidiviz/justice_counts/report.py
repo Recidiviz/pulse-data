@@ -230,6 +230,7 @@ class ReportInterface:
         frequency: str,
         is_recurring: bool = False,
         recurring_report: Optional[schema.Report] = None,
+        last_modified_at: Optional[datetime.datetime] = None,
     ) -> schema.Report:
         report_type = (
             ReportingFrequency.MONTHLY.value
@@ -258,7 +259,7 @@ class ReportInterface:
             status=schema.ReportStatus.NOT_STARTED,
             date_range_start=date_range_start,
             date_range_end=date_range_end,
-            last_modified_at=datetime.datetime.utcnow(),
+            last_modified_at=last_modified_at or datetime.datetime.utcnow(),
             modified_by=[user_account_id],
             is_recurring=is_recurring,
             recurring_report=recurring_report,
@@ -302,7 +303,6 @@ class ReportInterface:
         particular field, a new datapoint will be added to the datapoint table
         with a value of None.
         """
-
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.utcnow()
         metric_definition = METRIC_KEY_TO_METRIC[report_metric.key]
@@ -379,7 +379,7 @@ class ReportInterface:
         # We determine which metrics to include on this report based on:
         #   - Agency system (e.g. only law enforcement)
         #   - Report frequency (e.g. only annual metrics)
-        metric_definitions = ReportInterface._get_metric_definitions_by_report_type(
+        metric_definitions = ReportInterface.get_metric_definitions_by_report_type(
             report_type=report.type, system=report.source.system
         )
         # If data has already been reported for some metrics on this report,
@@ -448,7 +448,7 @@ class ReportInterface:
         return metric_key_to_data_points
 
     @staticmethod
-    def _get_metric_definitions_by_report_type(
+    def get_metric_definitions_by_report_type(
         report_type: schema.ReportingFrequency,
         system: schema.System,
     ) -> List[MetricDefinition]:
