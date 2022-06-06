@@ -45,7 +45,7 @@ class JailPopulationType(DimensionBase, enum.Enum):
 
 class PrisonPopulationType(DimensionBase, enum.Enum):
     NEW_SENTENCE = "New sentence"
-    TRANSFER_OR_HOLD = "Transfer/Hold"
+    TRANSFER_OR_HOLD = "Transfer or Hold"
     SUPERVISION_VIOLATION_OR_REVOCATION = "Supervision violation or Revocation"
     OTHER = "Other"
     UNKNOWN = "Unknown"
