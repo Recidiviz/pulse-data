@@ -35,7 +35,10 @@ from recidiviz.calculator.pipeline.pipeline_type import (
     RECIDIVISM_METRICS_PIPELINE_NAME,
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.identifier_models import (
+    Event,
+    IdentifierResult,
+)
 from recidiviz.common.constants.state.external_id_types import (
     US_ID_DOC,
     US_ME_DOC,
@@ -278,13 +281,13 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
 def produce_standard_metrics(
     pipeline: str,
     person: StatePerson,
-    identifier_events: List[IdentifierEvent],
+    identifier_events: List[Event],
     metric_inclusions: Dict[RecidivizMetricTypeT, bool],
     calculation_end_month: Optional[str],
     calculation_month_count: int,
     person_metadata: PersonMetadata,
     event_to_metric_classes: Dict[
-        Type[IdentifierEvent],
+        Type[Event],
         List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
     ],
     pipeline_job_id: str,
@@ -323,7 +326,7 @@ def produce_standard_metrics(
             if metric_inclusions.get(metric_type):
                 metric = build_metric(
                     pipeline=pipeline,
-                    event=event,
+                    result=event,
                     metric_class=metric_class,
                     person=person,
                     event_date=event_date,
@@ -339,7 +342,7 @@ def produce_standard_metrics(
 
 def build_metric(
     pipeline: str,
-    event: IdentifierEvent,
+    result: IdentifierResult,
     metric_class: Type[RecidivizMetric],
     person: StatePerson,
     event_date: datetime.date,
@@ -377,8 +380,8 @@ def build_metric(
 
     # Add attributes from the event that are relevant to the metric_class
     for metric_attribute in metric_attributes:
-        if hasattr(event, metric_attribute):
-            attribute_value = getattr(event, metric_attribute)
+        if hasattr(result, metric_attribute):
+            attribute_value = getattr(result, metric_attribute)
             setattr(metric_cls_builder, metric_attribute, attribute_value)
 
     # Add any additional attributes not on the event

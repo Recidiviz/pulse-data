@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for events that are a product of each pipeline's identifier step."""
+"""Models for the events or spans that are a product of each pipeline's identifier step."""
 import datetime
 from typing import Optional
 
@@ -34,15 +34,38 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 
 
 @attr.s
-class IdentifierEvent(BuildableAttr):
-    """Base class for events created by the identifier step of each pipeline. The event should have an event_date,
-    although other dates may be present."""
+class IdentifierResult(BuildableAttr):
+    """Base class for results created by the identifier step of each pipeline."""
 
     # The state where the event took place
     state_code: str = attr.ib()
 
+
+@attr.s
+class Event(IdentifierResult):
+    """Base class for events created by the identifier step of each pipeline.
+
+    Events have additional attributes that describe what was true on the given day. The
+    event has an event_date, although other dates may be present.
+    """
+
     # Date of the event
     event_date: datetime.date = attr.ib()
+
+
+@attr.s(frozen=True)
+class Span(IdentifierResult):
+    """Base class for spans created by the identifier step of each pipeline.
+
+    Spans have additional attributes that describe what was true during the period of
+    time covered by the span.
+    """
+
+    # Date the span began, inclusive (attributes are valid on this day)
+    start_date_inclusive: datetime.date = attr.ib()
+
+    # Date the span ended, exclusive (attributes are valid through the prior day)
+    end_date_exclusive: Optional[datetime.date] = attr.ib()
 
 
 @attr.s(frozen=True)
@@ -139,6 +162,14 @@ class InPopulationMixin:
 
     # Whether or not the person was counted in the supervised population on this date
     in_supervision_population_on_date: bool = attr.ib(default=False)
+
+
+@attr.s
+class IncludedInStateMixin:
+    """Mixin with an attribute to marking whether a person is counted towards the state's population"""
+
+    # Whether the identified period is counted as part of the state's population
+    included_in_state_population: bool = attr.ib(default=True)
 
 
 @attr.s

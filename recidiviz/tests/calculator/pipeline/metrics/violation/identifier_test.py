@@ -87,7 +87,7 @@ class TestFindViolationEvents(unittest.TestCase):
             required_delegates = STATE_DELEGATES_FOR_TESTS
         else:
             self.person.person_id = (
-                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+                StateCode(state_code_override).get_state_fips_mask() + 123
             )
 
             required_delegates = get_required_state_specific_delegates(
@@ -98,7 +98,7 @@ class TestFindViolationEvents(unittest.TestCase):
 
         all_kwargs: Dict[str, Any] = {**required_delegates, **entity_kwargs}
 
-        return self.identifier.find_events(self.person, all_kwargs)
+        return self.identifier.identify(self.person, all_kwargs)
 
     def test_find_violation_events(self) -> None:
         violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(

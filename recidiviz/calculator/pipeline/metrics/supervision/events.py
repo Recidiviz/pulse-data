@@ -23,9 +23,9 @@ import attr
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import (
+from recidiviz.calculator.pipeline.utils.identifier_models import (
     AssessmentEventMixin,
-    IdentifierEvent,
+    Event,
     InPopulationMixin,
     SupervisionLocationMixin,
     ViolationHistoryMixin,
@@ -44,7 +44,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 
 
 @attr.s(frozen=True)
-class SupervisionEvent(IdentifierEvent, SupervisionLocationMixin, AssessmentEventMixin):
+class SupervisionEvent(Event, SupervisionLocationMixin, AssessmentEventMixin):
     """Models details of an event related to being on supervision.
 
     This includes the information pertaining to time on supervision that we

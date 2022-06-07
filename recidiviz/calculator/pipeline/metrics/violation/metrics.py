@@ -25,7 +25,7 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import ViolationResponseMixin
+from recidiviz.calculator.pipeline.utils.identifier_models import ViolationResponseMixin
 
 
 class ViolationMetricType(RecidivizMetricType):

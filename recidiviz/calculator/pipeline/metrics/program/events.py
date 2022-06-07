@@ -20,9 +20,9 @@ from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import (
+from recidiviz.calculator.pipeline.utils.identifier_models import (
     AssessmentEventMixin,
-    IdentifierEvent,
+    Event,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -33,7 +33,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 
 
 @attr.s(frozen=True)
-class ProgramEvent(IdentifierEvent):
+class ProgramEvent(Event):
     """Models details related to an event related to a program.
 
     Describes a date on which a person interacted with a

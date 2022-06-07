@@ -20,21 +20,21 @@ from typing import Any, Dict, Generic, Type, TypeVar
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.identifier_models import IdentifierResult
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-IdentifierEventResultT = TypeVar("IdentifierEventResultT")
-IdentifierContextT = TypeVar("IdentifierContextT", bound=Dict[str, Any])
+IdentifierResultT = TypeVar("IdentifierResultT")
+IdentifierContext = Dict[str, Any]
 
 
 @attr.s
-class BaseIdentifier(abc.ABC, Generic[IdentifierEventResultT]):
-    """A base class for identifying various instances of events for a metric calculation pipeline."""
+class BaseIdentifier(abc.ABC, Generic[IdentifierResultT]):
+    """A base class for identifying various events or spans for a metric calculation pipeline."""
 
-    identifier_event_class: Type[IdentifierEvent] = attr.ib()
+    identifier_result_class: Type[IdentifierResult] = attr.ib()
 
     @abc.abstractmethod
-    def find_events(
-        self, person: StatePerson, identifier_context: IdentifierContextT
-    ) -> IdentifierEventResultT:
-        """Define the function to identify the events."""
+    def identify(
+        self, person: StatePerson, identifier_context: IdentifierContext
+    ) -> IdentifierResultT:
+        """Define the function to identify the events or spans needed by the pipeline."""

@@ -332,9 +332,7 @@ class FederatedSchemaTableRegionFilteredQueryBuilder(
                 "No support yet for doing primary/foreign key translation on non-state "
                 "regions."
             )
-        # The FIPS code is always a two-digit code for states
-        fips = int(StateCode(self.region_code).get_state().fips)
-        return fips * pow(10, 12)
+        return StateCode(self.region_code).get_state_fips_mask()
 
     def _translate_key_colunm_clause(
         self, column_name: str, qualified_column_name: str

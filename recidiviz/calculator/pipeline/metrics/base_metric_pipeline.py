@@ -71,7 +71,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     TableRow,
     calculation_end_month_arg,
@@ -79,6 +78,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     get_job_id,
     person_and_kwargs_for_identifier,
 )
+from recidiviz.calculator.pipeline.utils.identifier_models import IdentifierResult
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
 )
@@ -318,7 +318,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         events relevant to the type of pipeline running. Then, converts those events
         into metrics. Returns thee metrics to be written to BigQuery."""
         person_events = pipeline_data | "Get Events" >> beam.ParDo(
-            ClassifyEvents(),
+            ClassifyResults(),
             state_code=self.pipeline_job_args.state_code,
             identifier=self.identifier(),
             pipeline_config=self.pipeline_config(),
@@ -410,7 +410,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
 @with_input_types(
     beam.typehints.Tuple[
         entities.StatePerson,
-        Union[Dict[int, IdentifierEvent], List[IdentifierEvent]],
+        Union[Dict[int, IdentifierResult], List[IdentifierResult]],
         PersonMetadata,
     ],
     beam.typehints.Optional[MetricPipelineJobArgs],
@@ -426,7 +426,7 @@ class ProduceMetrics(beam.DoFn):
         self,
         element: Tuple[
             entities.StatePerson,
-            Union[Dict[int, IdentifierEvent], List[IdentifierEvent]],
+            Union[Dict[int, IdentifierResult], List[IdentifierResult]],
             PersonMetadata,
         ],
         pipeline_job_args: MetricPipelineJobArgs,
@@ -475,7 +475,7 @@ class ProduceMetrics(beam.DoFn):
 @with_input_types(
     beam.typehints.Tuple[
         entities.StatePerson,
-        Union[Dict[int, IdentifierEvent], List[IdentifierEvent]],
+        Union[Dict[int, IdentifierResult], List[IdentifierResult]],
         PersonMetadata,
     ],
 )
@@ -515,11 +515,11 @@ class GetMetrics(beam.PTransform):
 @with_output_types(
     beam.typehints.Tuple[
         int,
-        beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent]],
+        beam.typehints.Tuple[entities.StatePerson, List[IdentifierResult]],
     ]
 )
-class ClassifyEvents(beam.DoFn):
-    """Classifies an event according to multiple types of measurement."""
+class ClassifyResults(beam.DoFn):
+    """Classifies a result according to multiple types of measurement."""
 
     # pylint: disable=arguments-differ
     def process(
@@ -529,11 +529,11 @@ class ClassifyEvents(beam.DoFn):
         identifier: BaseIdentifier,
         pipeline_config: PipelineConfig,
     ) -> Generator[
-        Tuple[int, Tuple[entities.StatePerson, List[IdentifierEvent]]],
+        Tuple[int, Tuple[entities.StatePerson, List[IdentifierResult]]],
         None,
         None,
     ]:
-        """Identifies various events relevant to calculations."""
+        """Identifies various events or spans relevant to calculations."""
         _, person_entities = element
 
         person, entity_kwargs = person_and_kwargs_for_identifier(person_entities)
@@ -551,13 +551,13 @@ class ClassifyEvents(beam.DoFn):
             **required_delegates,
         }
 
-        events = identifier.find_events(person, all_kwargs)
+        results = identifier.identify(person, all_kwargs)
 
-        if events:
+        if results:
             person_id = person.person_id
             if person_id is None:
                 raise ValueError("Found unexpected null person_id.")
-            yield person_id, (person, events)
+            yield person_id, (person, results)
 
     def to_runner_api_parameter(
         self, _unused_context: PipelineContext

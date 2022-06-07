@@ -19,14 +19,14 @@ import datetime
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import (
-    IdentifierEvent,
+from recidiviz.calculator.pipeline.utils.identifier_models import (
+    Event,
     ViolationResponseMixin,
 )
 
 
 @attr.s(frozen=True)
-class ViolationEvent(IdentifierEvent):
+class ViolationEvent(Event):
     """Models details of an event related to a violation while on supervision."""
 
     # Violation Id

@@ -23,7 +23,7 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
-    IdentifierContextT,
+    IdentifierContext,
 )
 from recidiviz.calculator.pipeline.metrics.program.events import (
     ProgramEvent,
@@ -71,11 +71,11 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
     """Identifier class for interaction with a program."""
 
     def __init__(self) -> None:
-        self.identifier_event_class = ProgramEvent
+        self.identifier_result_class = ProgramEvent
         self.field_index = CoreEntityFieldIndex()
 
-    def find_events(
-        self, _person: StatePerson, identifier_context: IdentifierContextT
+    def identify(
+        self, _person: StatePerson, identifier_context: IdentifierContext
     ) -> List[ProgramEvent]:
 
         return self._find_program_events(

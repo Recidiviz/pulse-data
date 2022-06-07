@@ -46,6 +46,10 @@ class _SharedStateCode(enum.Enum):
     def get_state(self) -> us.states.State:
         return self._state_info_map()[self.value]
 
+    def get_state_fips_mask(self) -> int:
+        # The FIPS code is always a two-digit code for states
+        return int(self.get_state().fips) * pow(10, 12)
+
     @classmethod
     @abstractmethod
     def _inner_get_state(cls, state_code: str) -> Optional[us.states.State]:

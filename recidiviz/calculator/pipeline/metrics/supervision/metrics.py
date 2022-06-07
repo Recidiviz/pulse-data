@@ -27,7 +27,7 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import (
+from recidiviz.calculator.pipeline.utils.identifier_models import (
     InPopulationMixin,
     SupervisionLocationMixin,
     ViolationHistoryMixin,

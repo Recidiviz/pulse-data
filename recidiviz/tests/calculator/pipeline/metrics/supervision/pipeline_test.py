@@ -28,7 +28,7 @@ from freezegun import freeze_time
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    ClassifyEvents,
+    ClassifyResults,
     MetricPipelineJobArgs,
     ProduceMetrics,
 )
@@ -1239,7 +1239,7 @@ class TestClassifyEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),

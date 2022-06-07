@@ -27,7 +27,9 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import SupervisionLocationMixin
+from recidiviz.calculator.pipeline.utils.identifier_models import (
+    SupervisionLocationMixin,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )

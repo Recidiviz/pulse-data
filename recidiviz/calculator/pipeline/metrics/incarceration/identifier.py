@@ -23,7 +23,7 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
-    IdentifierContextT,
+    IdentifierContext,
 )
 from recidiviz.calculator.pipeline.metrics.incarceration.events import (
     IncarcerationAdmissionEvent,
@@ -106,11 +106,11 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     """Identifier class for events related to incarceration."""
 
     def __init__(self) -> None:
-        self.identifier_event_class = IncarcerationEvent
+        self.identifier_result_class = IncarcerationEvent
         self.field_index = CoreEntityFieldIndex()
 
-    def find_events(
-        self, _person: StatePerson, identifier_context: IdentifierContextT
+    def identify(
+        self, _person: StatePerson, identifier_context: IdentifierContext
     ) -> List[IncarcerationEvent]:
 
         return self._find_incarceration_events(
@@ -180,7 +180,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         # Convert the list of dictionaries into one dictionary where the keys are the
         # incarceration_period_id values
         incarceration_period_to_judicial_district: Dict[
-            Any, Dict[str, Any]
+            int, Dict[str, Any]
         ] = list_of_dicts_to_dict_with_keys(
             incarceration_period_judicial_district_association,
             key=NormalizedStateIncarcerationPeriod.get_class_id_name(),
@@ -304,7 +304,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     def _find_all_stay_events(
         self,
         ip_index: NormalizedIncarcerationPeriodIndex,
-        incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
+        incarceration_period_to_judicial_district: Dict[int, Dict[str, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         commitments_from_supervision: Dict[
             date, IncarcerationCommitmentFromSupervisionAdmissionEvent
@@ -338,7 +338,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         self,
         incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
+        incarceration_period_to_judicial_district: Dict[int, Dict[str, Any]],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         commitments_from_supervision: Dict[
             date, IncarcerationCommitmentFromSupervisionAdmissionEvent
@@ -421,7 +421,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     def _get_judicial_district_code(
         self,
         incarceration_period: NormalizedStateIncarcerationPeriod,
-        incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
+        incarceration_period_to_judicial_district: Dict[int, Dict[str, Any]],
     ) -> Optional[str]:
         """Retrieves the judicial_district_code corresponding to the incarceration period, if one exists."""
         incarceration_period_id: Optional[
