@@ -2,6 +2,7 @@ file_tag: TDPOP
 file_description: |-
   This table contains incarceration population validation data sent by TN DOC and TN STS to Recidiviz via data-updates emails.
 data_classification: validation
+always_historical_export: False
 primary_key_cols:
   - OffenderID
   - Site
