@@ -114,6 +114,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuil
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_POPULATION_TIME_SERIES_VIEW_NAME,
     view_query_template=SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE,
+    # year must come before month to export correctly
     dimensions=("state_code", "year", "month", "district", "supervision_level"),
     metric_stats=("person_count",),
     description=SUPERVISION_POPULATION_TIME_SERIES_VIEW_DESCRIPTION,

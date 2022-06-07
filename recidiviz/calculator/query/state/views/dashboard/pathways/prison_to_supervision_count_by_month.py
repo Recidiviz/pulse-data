@@ -70,6 +70,7 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBu
     view_id=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_NAME,
     view_query_template=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_QUERY_TEMPLATE,
     description=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_DESCRIPTION,
+    # year must come before month to export correctly
     dimensions=("state_code", "year", "month", *dimensions),
     metric_stats=("event_count",),
     dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
