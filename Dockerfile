@@ -4,6 +4,9 @@ WORKDIR /usr/admin-panel
 COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock /usr/admin-panel/
 COPY ./frontends/admin-panel/tsconfig.json ./frontends/admin-panel/.eslintrc.json /usr/admin-panel/
 
+# Set a 5 minute timeout instead of the default 30s. For some reason, when building with the
+# --platform argument, it takes longer to download packages from yarn.
+RUN yarn config set network-timeout 300000
 RUN yarn
 
 COPY ./frontends/admin-panel/src /usr/admin-panel/src
@@ -18,6 +21,7 @@ COPY ./frontends/case-triage/package.json ./frontends/case-triage/yarn.lock /usr
 COPY ./frontends/case-triage/tsconfig.json ./frontends/case-triage/.eslintrc.json /usr/case-triage/
 COPY ./frontends/case-triage/craco.config.js /usr/case-triage/
 
+RUN yarn config set network-timeout 300000
 RUN yarn
 
 COPY ./frontends/case-triage/src /usr/case-triage/src
@@ -32,6 +36,7 @@ COPY ./frontends/justice-counts/control-panel/package.json /usr/justice-counts/c
 COPY ./frontends/justice-counts/control-panel/yarn.lock /usr/justice-counts/control-panel
 COPY ./frontends/justice-counts/control-panel/tsconfig.json /usr/justice-counts/control-panel
 
+RUN yarn config set network-timeout 300000
 RUN yarn
 
 COPY ./frontends/justice-counts/control-panel/src /usr/justice-counts/control-panel/src
