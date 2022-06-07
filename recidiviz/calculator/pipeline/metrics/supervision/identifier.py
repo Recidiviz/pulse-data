@@ -26,7 +26,7 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
-    IdentifierContextT,
+    IdentifierContext,
 )
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
@@ -117,11 +117,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     """Identifier class for events related to supervision."""
 
     def __init__(self) -> None:
-        self.identifier_event_class = SupervisionEvent
+        self.identifier_result_class = SupervisionEvent
         self.field_index = CoreEntityFieldIndex()
 
-    def find_events(
-        self, person: StatePerson, identifier_context: IdentifierContextT
+    def identify(
+        self, person: StatePerson, identifier_context: IdentifierContext
     ) -> List[SupervisionEvent]:
         return self._find_supervision_events(
             incarceration_delegate=identifier_context[

@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
-    IdentifierContextT,
+    IdentifierContext,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism.events import (
     NonRecidivismReleaseEvent,
@@ -72,11 +72,11 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
     """Identifier class for instances of recidivism and non-recidivism."""
 
     def __init__(self) -> None:
-        self.identifier_event_class = ReleaseEvent
+        self.identifier_result_class = ReleaseEvent
         self.field_index = CoreEntityFieldIndex()
 
-    def find_events(
-        self, person: StatePerson, identifier_context: IdentifierContextT
+    def identify(
+        self, person: StatePerson, identifier_context: IdentifierContext
     ) -> Dict[int, List[ReleaseEvent]]:
         if not person.person_id:
             raise ValueError(f"Found StatePerson with unset person_id value: {person}.")

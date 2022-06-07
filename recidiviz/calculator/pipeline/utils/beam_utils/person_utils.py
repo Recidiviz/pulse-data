@@ -23,7 +23,7 @@ import attr
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.identifier_models import IdentifierResult
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -115,7 +115,7 @@ class ExtractPersonEventsMetadata(beam.DoFn):
     ) -> Iterable[
         Tuple[
             StatePerson,
-            Union[List[IdentifierEvent], Dict[int, IdentifierEvent]],
+            Union[List[IdentifierResult], Dict[int, IdentifierResult]],
             PersonMetadata,
         ]
     ]:

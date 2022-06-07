@@ -216,13 +216,13 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 entity_kwargs=entity_kwargs,
             )
             self.person.person_id = (
-                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+                StateCode(state_code_override).get_state_fips_mask() + 123
             )
 
         all_kwargs: Dict[
             str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
         ] = {**required_delegates, **entity_kwargs}
-        return self.identifier.find_events(self.person, all_kwargs)
+        return self.identifier.identify(self.person, all_kwargs)
 
     def test_find_incarceration_events(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(

@@ -33,7 +33,7 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    ClassifyEvents,
+    ClassifyResults,
     MetricPipelineJobArgs,
     ProduceMetrics,
     RecidivizMetricWritableDict,
@@ -583,7 +583,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -664,7 +664,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -711,7 +711,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),

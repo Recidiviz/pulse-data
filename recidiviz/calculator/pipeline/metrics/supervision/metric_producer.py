@@ -179,7 +179,7 @@ class SupervisionMetricProducer(
                 if self.include_event_in_metric(event, metric_type):
                     metric = build_metric(
                         pipeline=pipeline_name,
-                        event=event,
+                        result=event,
                         metric_class=metric_class,
                         person=person,
                         event_date=event_date,

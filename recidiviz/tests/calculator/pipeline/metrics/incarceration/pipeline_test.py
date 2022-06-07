@@ -27,7 +27,7 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    ClassifyEvents,
+    ClassifyResults,
     MetricPipelineJobArgs,
     ProduceMetrics,
 )
@@ -701,7 +701,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Incarceration Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -735,7 +735,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | beam.Create([(fake_person.person_id, person_entities)])
             | "Identify Incarceration Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),

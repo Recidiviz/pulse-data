@@ -221,7 +221,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             required_delegates = STATE_DELEGATES_FOR_TESTS
         else:
             self.person.person_id = (
-                int(StateCode(state_code_override).get_state().fips) * 1000 + 123
+                StateCode(state_code_override).get_state_fips_mask() + 123
             )
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
@@ -236,7 +236,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             **entity_kwargs,
         }
 
-        return self.identifier.find_events(self.person, all_kwargs)
+        return self.identifier.identify(self.person, all_kwargs)
 
     def _set_expected_sp_fields(
         self, supervision_periods: List[NormalizedStateSupervisionPeriod]

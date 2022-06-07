@@ -29,7 +29,7 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    ClassifyEvents,
+    ClassifyResults,
     MetricPipelineJobArgs,
     ProduceMetrics,
 )
@@ -547,7 +547,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 self.state_code,
                 self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -653,7 +653,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code,
                 self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -719,7 +719,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 self.state_code,
                 self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -803,7 +803,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 self.state_code,
                 self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -874,7 +874,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | beam.Create([(fake_person_id, person_periods)])
             | "Identify Program Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 self.state_code,
                 self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),

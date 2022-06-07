@@ -96,7 +96,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             **entity_kwargs,
         }
 
-        return self.identifier.find_events(self.person, all_kwargs)
+        return self.identifier.identify(self.person, all_kwargs)
 
     def testFindReleaseEvents_ignoreTemporaryCustody(self) -> None:
         """Tests the find_release_events function where a person has

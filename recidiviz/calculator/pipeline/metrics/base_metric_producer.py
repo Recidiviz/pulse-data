@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.identifier_models import IdentifierResult
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 IdentifierEventResultT = TypeVar("IdentifierEventResultT")
@@ -45,7 +45,7 @@ class BaseMetricProducer(
 
     metric_class: Type[RecidivizMetricT] = attr.ib()
     event_to_metric_classes: Dict[
-        Type[IdentifierEvent], List[Type[RecidivizMetricT]]
+        Type[IdentifierResult], List[Type[RecidivizMetricT]]
     ] = attr.ib()
 
     def produce_metrics(

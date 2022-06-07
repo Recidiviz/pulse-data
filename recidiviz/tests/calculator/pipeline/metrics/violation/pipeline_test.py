@@ -26,7 +26,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    ClassifyEvents,
+    ClassifyResults,
     MetricPipelineJobArgs,
     ProduceMetrics,
 )
@@ -384,7 +384,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | beam.Create([(self.fake_person_id, person_violations)])
             | "Identify Violation Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -411,7 +411,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | beam.Create([(self.fake_person_id, person_violations)])
             | "Identify Violation Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),
@@ -452,7 +452,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | beam.Create([(self.fake_person_id, person_violations)])
             | "Identify Violation Events"
             >> beam.ParDo(
-                ClassifyEvents(),
+                ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
                 pipeline_config=self.run_delegate_class.pipeline_config(),

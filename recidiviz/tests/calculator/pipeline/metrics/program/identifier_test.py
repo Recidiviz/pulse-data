@@ -114,7 +114,7 @@ class TestFindProgramEvents(unittest.TestCase):
             **entity_kwargs,
         }
 
-        return self.identifier.find_events(self.person, all_kwargs)
+        return self.identifier.identify(self.person, all_kwargs)
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:

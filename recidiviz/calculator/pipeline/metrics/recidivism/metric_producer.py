@@ -112,7 +112,7 @@ class RecidivismMetricProducer(
 
                 metric = build_metric(
                     pipeline=pipeline_name,
-                    event=reincarceration_event,
+                    result=reincarceration_event,
                     metric_class=ReincarcerationRecidivismCountMetric,
                     person=person,
                     event_date=event_date,
@@ -319,7 +319,7 @@ class RecidivismMetricProducer(
                 additional_attributes["did_recidivate"] = False
                 metric = build_metric(
                     pipeline=pipeline_name,
-                    event=release_event,
+                    result=release_event,
                     metric_class=ReincarcerationRecidivismRateMetric,
                     person=person,
                     event_date=event_date,
@@ -347,7 +347,7 @@ class RecidivismMetricProducer(
 
                     metric = build_metric(
                         pipeline=pipeline_name,
-                        event=release_event,
+                        result=release_event,
                         metric_class=ReincarcerationRecidivismRateMetric,
                         person=person,
                         event_date=event_date,

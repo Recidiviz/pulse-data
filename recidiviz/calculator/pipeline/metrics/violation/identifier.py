@@ -23,7 +23,7 @@ import attr
 
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
-    IdentifierContextT,
+    IdentifierContext,
 )
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
@@ -61,11 +61,11 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
     """Identifier class for violations and their responses with appropriate decisions."""
 
     def __init__(self) -> None:
-        self.identifier_event_class = ViolationEvent
+        self.identifier_result_class = ViolationEvent
         self.field_index = CoreEntityFieldIndex()
 
-    def find_events(
-        self, _person: StatePerson, identifier_context: IdentifierContextT
+    def identify(
+        self, _person: StatePerson, identifier_context: IdentifierContext
     ) -> List[ViolationEvent]:
         return self._find_violation_events(
             violation_delegate=identifier_context[

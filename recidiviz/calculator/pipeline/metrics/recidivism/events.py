@@ -23,11 +23,11 @@ from typing import Optional
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.identifier_models import Event
 
 
 @attr.s
-class ReleaseEvent(IdentifierEvent):
+class ReleaseEvent(Event):
     """Models details related to a release from incarceration.
 
     This includes the information pertaining to a release from incarceration
