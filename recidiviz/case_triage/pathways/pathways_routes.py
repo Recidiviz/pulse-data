@@ -35,6 +35,7 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
     build_authorization_handler,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.utils.flask_exception import FlaskException
 
 PATHWAYS_ALLOWED_ORIGINS = [
@@ -131,7 +132,12 @@ def create_pathways_api_blueprint() -> Blueprint:
         fetch_metric_params = FetchMetricParams(**fetch_metric_params_schema)
 
         return jsonify(
-            PathwaysMetricFetcher(state_code).fetch(metric_mapper, fetch_metric_params)
+            [
+                {snake_to_camel(k): v for (k, v) in val.items()}
+                for val in PathwaysMetricFetcher(state_code).fetch(
+                    metric_mapper, fetch_metric_params
+                )
+            ]
         )
 
     return api

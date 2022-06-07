@@ -163,15 +163,14 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         response = self.test_client.get(
             self.metric_path,
             headers={"Origin": "http://localhost:3000"},
-            query_string={"group": Dimension.RACE.value},
+            query_string={"group": Dimension.AGE_GROUP.value},
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             response.get_json(),
             [
-                {"count": 1, "race": "ASIAN"},
-                {"count": 2, "race": "BLACK"},
-                {"count": 2, "race": "WHITE"},
+                {"count": 1, "ageGroup": "20-25"},
+                {"count": 4, "ageGroup": "60+"},
             ],
         )
 
