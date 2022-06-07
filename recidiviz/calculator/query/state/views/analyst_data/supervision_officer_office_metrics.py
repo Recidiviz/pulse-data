@@ -611,13 +611,9 @@ WITH date_array AS (
 # Combined metrics
 ##################
 
-# Null metrics replaced with zeros
-# I split this into two sets of joins to avoid a massive GROUP BY clause
-SELECT
-    *
-FROM
-    caseload_attributes
-LEFT JOIN (
+# Aggregate all event metrics. All aggregation functions should account for duplicated rows (i.e., using COUNT DISTINCT).
+,
+event_metrics_agg AS (
     SELECT
         # index columns
         {join_columns},
@@ -682,6 +678,27 @@ LEFT JOIN (
         COUNT(DISTINCT IF(NOT is_employed, employment_changes.person_id, 
             NULL)) AS lost_employment,
 
+    FROM caseload_attributes
+    LEFT JOIN successful_completions USING({join_columns})
+    LEFT JOIN earned_discharge_requests USING({join_columns})
+    LEFT JOIN supervision_level_changes USING({join_columns})
+    LEFT JOIN violations USING({join_columns})
+    LEFT JOIN absconsions_bench_warrants USING({join_columns})
+    LEFT JOIN incarcerations USING({join_columns})
+    LEFT JOIN employment_changes USING({join_columns})
+    LEFT JOIN drug_screens USING({join_columns})
+    LEFT JOIN lsir_assessments USING({join_columns})
+    LEFT JOIN contacts USING({join_columns})
+    GROUP BY 1, 2, 3, 4, 5
+)
+
+# Aggregate all window metrics
+,
+window_metrics_agg AS
+(
+    SELECT
+        # index columns
+        {join_columns},
         # assignments to officer-office within year
         COUNT(DISTINCT window_metrics.person_id) AS new_clients_assigned,
 
@@ -698,19 +715,19 @@ LEFT JOIN (
             ), date, DAY) AS days_since_assignment_1yr,
 
     FROM caseload_attributes
-    LEFT JOIN successful_completions USING({join_columns})
-    LEFT JOIN earned_discharge_requests USING({join_columns})
-    LEFT JOIN supervision_level_changes USING({join_columns})
-    LEFT JOIN violations USING({join_columns})
-    LEFT JOIN absconsions_bench_warrants USING({join_columns})
-    LEFT JOIN incarcerations USING({join_columns})
-    LEFT JOIN employment_changes USING({join_columns})
-    LEFT JOIN drug_screens USING({join_columns})
-    LEFT JOIN lsir_assessments USING({join_columns})
-    LEFT JOIN contacts USING({join_columns})
     LEFT JOIN window_metrics USING({join_columns})
     GROUP BY 1, 2, 3, 4, 5
-) 
+)
+
+
+# Join caseload attributes, event metrics, and window metrics
+SELECT
+    *
+FROM
+    caseload_attributes
+LEFT JOIN event_metrics_agg
+USING ({join_columns})
+LEFT JOIN window_metrics_agg
 USING ({join_columns})
 # no ORDER BY because table too large, too computationally expensive
 """
