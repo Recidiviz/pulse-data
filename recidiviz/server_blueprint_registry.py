@@ -27,10 +27,6 @@ from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
-from recidiviz.ingest.aggregate.parse import aggregate_parse_blueprint
-from recidiviz.ingest.aggregate.scrape_aggregate_reports import (
-    scrape_aggregate_reports_blueprint,
-)
 from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.ingest.justice_counts.control import justice_counts_control
@@ -48,12 +44,10 @@ from recidiviz.validation.validation_manager import validation_manager_blueprint
 
 scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (batch_blueprint, "/batch"),
-    (aggregate_parse_blueprint, "/aggregate"),
     (infer_release_blueprint, "/infer_release"),
     (scraper_control, "/scraper"),
     (scraper_status, "/scraper"),
     (worker, "/scraper"),
-    (scrape_aggregate_reports_blueprint, "/scrape_aggregate_reports"),
     (store_single_count_blueprint, "/single_count"),
 ]
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
