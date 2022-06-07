@@ -27,13 +27,15 @@ export const MenuContainer = styled.nav`
   padding: 20px 24px;
 `;
 
-export const MenuItem = styled.div<{ active?: boolean }>`
+export const MenuItem = styled.div<{ active?: boolean; highlight?: boolean }>`
   height: 64px;
   padding-top: 14px;
   margin-left: 24px;
   border-top: 6px solid
     ${({ active }) => (active ? palette.solid.blue : "transparent")};
   transition: 0.2s ease;
+  color: ${({ highlight }) =>
+    highlight ? palette.solid.red : palette.solid.darkgrey};
 
   a,
   a:visited {
@@ -49,7 +51,7 @@ export const MenuItem = styled.div<{ active?: boolean }>`
   }
 `;
 
-export const WelcomeBack = styled.div`
+export const WelcomeUser = styled.div`
   color: ${palette.highlight.grey8};
   border-right: 1px solid black;
   padding-right: 24px;

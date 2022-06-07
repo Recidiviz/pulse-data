@@ -26,7 +26,7 @@ import {
   ExtendedDropdownToggle,
   MenuContainer,
   MenuItem,
-  WelcomeBack,
+  WelcomeUser,
 } from ".";
 
 enum MenuItems {
@@ -80,9 +80,9 @@ const Menu = () => {
 
   return (
     <MenuContainer>
-      <WelcomeBack>
-        {authStore.user && `Welcome Back, ${authStore.user.name}`}
-      </WelcomeBack>
+      <WelcomeUser>
+        {authStore.user && `Welcome, ${authStore.user.name}`}
+      </WelcomeUser>
 
       {/* Reports */}
       <MenuItem
@@ -130,23 +130,30 @@ const Menu = () => {
           </MenuItem>
         )}
 
+      <MenuItem onClick={logout} highlight>
+        Log Out
+      </MenuItem>
+
       {/* Settings Dropdown */}
-      <MenuItem active={activeMenuItem === MenuItems.Settings}>
+      {/* TODO(#13341) Commenting out until we finalize the settings page implementation */}
+      {/* <MenuItem active={activeMenuItem === MenuItems.Settings}>
         <Dropdown>
           <ExtendedDropdownToggle kind="borderless">
             Settings
           </ExtendedDropdownToggle>
 
           <DropdownMenu alignment="right">
-            <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
-              Account Settings
-            </ExtendedDropdownMenuItem>
+            {userStore.permissions.includes(Permission.SWITCH_AGENCY) && (
+              <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
+                Account Settings
+              </ExtendedDropdownMenuItem>
+            )}
             <ExtendedDropdownMenuItem onClick={logout} highlight>
               Log Out
             </ExtendedDropdownMenuItem>
           </DropdownMenu>
         </Dropdown>
-      </MenuItem>
+      </MenuItem> */}
     </MenuContainer>
   );
 };
