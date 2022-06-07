@@ -116,6 +116,7 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
     view_id=PRISON_POPULATION_TIME_SERIES_VIEW_NAME,
     view_query_template=PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE,
     description=PRISON_POPULATION_TIME_SERIES_DESCRIPTION,
+    # year must come before month to export correctly
     dimensions=(
         "state_code",
         "year",

@@ -39,6 +39,8 @@ METRIC_STAT_AGGS: Mapping[MetricStat, str] = {
 }
 
 
+DIMENSIONS_WITHOUT_UNKNOWNS = {"state_code", "year", "month"}
+
 MetricMetadata = Literal["age", "aggregating_location_id", "caseload", "full_name"]
 # Metadata values are assumed to be one-to-one with a given aggregate row. i.e. for a person level view, a person's age
 # does not change as the aggregate only contains one row.
@@ -98,6 +100,7 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
                 END
             AS {dimension}"""
             for dimension in dimensions
+            if dimension not in DIMENSIONS_WITHOUT_UNKNOWNS
         ]
         return ",\n".join(clauses)
 
@@ -137,4 +140,5 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
                 {stats_clause}
             FROM coalesced_dimensions
             GROUP BY {dimensions_clause}
+            ORDER BY {dimensions_clause}
         """
