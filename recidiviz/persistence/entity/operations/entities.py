@@ -26,6 +26,9 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import entity_graph_eq
 
@@ -126,8 +129,25 @@ class DirectIngestViewMaterializationMetadata(
 
 @attr.s(eq=False)
 class DirectIngestInstancePauseStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
-    """Status of a direct instance ingest process."""
+    """Status of whether an ingest instance is paused."""
 
     region_code: str = attr.ib()
     instance: DirectIngestInstance = attr.ib()
     is_paused: bool = attr.ib()
+
+
+@attr.s(eq=False)
+class DirectIngestInstanceStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
+    """Status of a direct instance ingest process."""
+
+    # The region code of a particular instance doing ingest.
+    region_code: str = attr.ib()
+
+    # The timestamp of when the status of a particular instance changes.
+    timestamp: datetime.datetime = attr.ib()
+
+    # The particular instance doing ingest.
+    instance: DirectIngestInstance = attr.ib()
+
+    # The status of a particular instance doing ingest.
+    status: DirectIngestStatus = attr.ib()

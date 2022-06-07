@@ -44,7 +44,6 @@ direct_ingest_instance = Enum(
 direct_ingest_status = Enum(
     enum_canonical_strings.direct_ingest_status_rerun_with_raw_data_import_started,
     enum_canonical_strings.direct_ingest_status_standard_rerun_started,
-    enum_canonical_strings.direct_ingest_status_secondary_rerun_results_flashed,
     enum_canonical_strings.direct_ingest_status_raw_data_import_in_progress,
     enum_canonical_strings.direct_ingest_status_ingest_view_materialization_in_progress,
     enum_canonical_strings.direct_ingest_status_extract_and_merge_in_progress,

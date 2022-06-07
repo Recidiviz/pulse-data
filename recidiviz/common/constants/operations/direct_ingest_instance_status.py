@@ -33,9 +33,6 @@ class DirectIngestStatus(OperationsEnum):
     STANDARD_RERUN_STARTED = (
         operations_enum_strings.direct_ingest_status_standard_rerun_started
     )
-    SECONDARY_RERUN_RESULTS_FLASHED = (
-        operations_enum_strings.direct_ingest_status_secondary_rerun_results_flashed
-    )
     RAW_DATA_IMPORT_IN_PROGRESS = (
         operations_enum_strings.direct_ingest_status_raw_data_import_in_progress
     )
@@ -69,8 +66,6 @@ _DIRECT_INGEST_INSTANCE_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
     DirectIngestStatus.STANDARD_RERUN_STARTED: "Rows are added with this status when the `/direct/start_rerun` "
     "endpoint is triggered from the Admin Panel to kick off a rerun that involves just regenerating ingest view "
     "results and committing that data to Postgres.",
-    DirectIngestStatus.SECONDARY_RERUN_RESULTS_FLASHED: "Rows are added with this status in PRIMARY only when the "
-    "results of a rerun in SECONDARY are flashed to PRIMARY.",
     DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: "Rows are added with this status when raw data import to BQ is in "
     "progress.",
     DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: "Rows are added with this status when ingest views are "
