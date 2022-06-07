@@ -461,16 +461,17 @@ def parse_supervision_sentence_status(
 def parse_supervision_type(
     raw_text: str,
 ) -> StateSupervisionPeriodSupervisionType:
-    """Parses the supervision type from the current status and jurisdiction location type."""
+    """Parses the supervision type from the current status and jurisdiction location
+    type."""
     (
         current_jurisdiction_location_type,
         current_status,
         _officer_status,
     ) = raw_text.upper().split("@@")
-    # TODO(#11875): Add Absconsion Type or Status depending on schema change request
     if current_status == WARRANT_ABSCONDED_STATUS:
         return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
-
+    if current_status == ESCAPE:
+        return StateSupervisionPeriodSupervisionType.ABSCONSION
     if current_status == PAROLE_STATUS:
         return StateSupervisionPeriodSupervisionType.PAROLE
     if (
