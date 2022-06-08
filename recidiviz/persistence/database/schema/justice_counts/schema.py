@@ -245,7 +245,12 @@ class Agency(Source):
         return state_code
 
     @validates("fips_county_code")
-    def validate_fips_county_code(self, _: Any, fips_county_code: str) -> str:
+    def validate_fips_county_code(
+        self, _: Any, fips_county_code: Optional[str]
+    ) -> Optional[str]:
+        if fips_county_code is None:
+            return None
+
         # fips.validate_country_code raises a Value Error if the county_code is invalid.
         fips.validate_county_code(fips_county_code)
         return fips_county_code

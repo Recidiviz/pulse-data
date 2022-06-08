@@ -17,7 +17,7 @@
 """Interface for working with the Agency model."""
 
 import logging
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -33,7 +33,7 @@ class AgencyInterface:
         name: str,
         systems: List[schema.System],
         state_code: str,
-        fips_county_code: str,
+        fips_county_code: Optional[str],
     ) -> schema.Agency:
         agency = schema.Agency(
             name=name,

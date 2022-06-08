@@ -27,7 +27,7 @@ export const createAgency = async (
   name: string,
   systems: string[],
   stateCode: string,
-  fipsCountyCode: string
+  fipsCountyCode?: string
 ): Promise<Response> => {
   return postWithURLAndBody(`/api/justice_counts_tools/agencies`, {
     name,

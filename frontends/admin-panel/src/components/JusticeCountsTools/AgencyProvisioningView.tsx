@@ -58,7 +58,10 @@ const AgencyProvisioningView = (): JSX.Element => {
     const nameTrimmed = name.trim();
     const systemsTrimmed = systems.map((system) => system.trim());
     const stateCodeTrimmed = stateCode.trim().toLocaleLowerCase();
-    const fipsCountyCodeTrimmed = fipsCountyCode.trim().toLocaleLowerCase();
+    const fipsCountyCodeTrimmed =
+      fipsCountyCode !== undefined
+        ? fipsCountyCode.trim().toLocaleLowerCase()
+        : undefined;
     setShowSpinner(true);
     try {
       const response = await createAgency(
@@ -92,7 +95,7 @@ const AgencyProvisioningView = (): JSX.Element => {
     name: string;
     systems: string;
     state: string;
-    county: string;
+    county?: string;
   };
 
   const getColumnSearchProps = (dataIndex: keyof AgencyRecord) => ({
@@ -240,7 +243,7 @@ const AgencyProvisioningView = (): JSX.Element => {
         <Form.Item
           label="County"
           name="fipsCountyCode"
-          rules={[{ required: true }]}
+          rules={[{ required: false }]}
         >
           <Select
             showSearch
