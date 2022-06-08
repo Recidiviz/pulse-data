@@ -76,6 +76,6 @@ class Config:
         if not auth0_configuration:
             raise JusticeCountsAuthorizationError(
                 code="no_justice_counts_access",
-                description="You are not authorized to access this application",
+                description="You are not authorized to access this application.",
             )
         return Auth0Config.from_config_json(json.loads(auth0_configuration))

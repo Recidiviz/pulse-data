@@ -107,7 +107,10 @@ def raise_if_user_is_unauthorized(route: Callable) -> Callable:
 
         permission_error = JusticeCountsPermissionError(
             code="justice_counts_agency_permission",
-            description=f"User {user_id} does not have access to reports from agency {agency_id}.",
+            description=(
+                f"User {user_id} does not have permission to access "
+                f"reports from agency {agency_id}."
+            ),
         )
 
         if agency_id is None:
