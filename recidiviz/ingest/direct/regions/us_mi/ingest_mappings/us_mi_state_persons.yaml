@@ -46,6 +46,10 @@ output:
                 StateRace.BLACK: "371"
                 StateRace.ASIAN: "372"
                 StateRace.EXTERNAL_UNKNOWN: "7404"
+                StateRace.INTERNAL_UNKNOWN:
+                  - "20096" # Latino
+                  - "20095" # Middle Eastern/North African
+
     ethnicities:
       - $conditional:
           - $if:
