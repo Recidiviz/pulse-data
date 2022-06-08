@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Dataset references."""
+from recidiviz.big_query.rematerialization_success_persister import (
+    VIEW_UPDATE_METADATA_DATASET,
+)
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
 )
@@ -128,6 +131,7 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     " May need to be updated manually for new states.",
     SUPPLEMENTAL_DATA_DATASET: "Stores datasets generated not by traditional ingest or calc pipelines in BigQuery.",
     VERA_DATASET: "Stores data calculated outside of our codebase by Vera. Used only by Vera.",
+    VIEW_UPDATE_METADATA_DATASET: "Stores metadata about our view update operations.",
 }
 OTHER_SOURCE_TABLE_DATASETS = set(OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS.keys())
 

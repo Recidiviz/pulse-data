@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
+from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
@@ -209,7 +210,7 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
         "can_start_ingest", request.values, default=False
     )
     bucket = get_str_param_value("bucket", request.values)
-    current_task_id = _get_current_task_id()
+    current_task_id = get_current_cloud_task_id()
 
     if not region_code or can_start_ingest is None or not bucket:
         response = f"Bad parameters [{request.values}]"
@@ -581,15 +582,6 @@ def extract_and_merge() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-def _get_current_task_id() -> str:
-    current_task_id = request.headers.get("X-AppEngine-TaskName")
-    if not current_task_id:
-        raise ValueError(
-            f"Expected 'X-AppEngine-TaskName' in headers: {list(request.headers.keys())}"
-        )
-    return current_task_id
-
-
 @direct_ingest_control.route("/scheduler", methods=["GET", "POST"])
 @requires_gae_auth
 def scheduler() -> Tuple[str, HTTPStatus]:
@@ -599,7 +591,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
     just_finished_job = get_bool_param_value(
         "just_finished_job", request.values, default=False
     )
-    current_task_id = _get_current_task_id()
+    current_task_id = get_current_cloud_task_id()
 
     # The bucket name for ingest instance to schedule work out of
     bucket = get_str_param_value("bucket", request.args)

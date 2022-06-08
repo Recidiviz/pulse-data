@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance."""
+import datetime
 import logging
+import random
+import time
 from concurrent import futures
 from enum import Enum
 from http import HTTPStatus
@@ -31,6 +34,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.rematerialization_success_persister import (
+    RematerializationSuccessPersister,
+)
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
@@ -38,6 +44,7 @@ from recidiviz.big_query.view_update_manager_utils import (
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.utils import metadata, monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
@@ -89,6 +96,71 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     )
 
     logging.info("All managed views successfully updated and materialized.")
+
+    return "", HTTPStatus.OK
+
+
+@view_update_manager_blueprint.route(
+    "/rematerialize_all_deployed_views", methods=["POST"]
+)
+@requires_gae_auth
+def rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
+    """API endpoint to rematerialize all deployed views."""
+
+    start = datetime.datetime.now()
+    view_builders = deployed_view_builders(metadata.project_id())
+    rematerialize_views_for_view_builders(
+        views_to_update_builders=view_builders,
+        all_view_builders=view_builders,
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+    )
+    end = datetime.datetime.now()
+
+    runtime_sec = int((end - start).total_seconds())
+
+    success_persister = RematerializationSuccessPersister(
+        bq_client=BigQueryClientImpl()
+    )
+    success_persister.record_success_in_bq(
+        deployed_view_builders=view_builders,
+        rematerialization_runtime_sec=runtime_sec,
+        cloud_task_id=get_current_cloud_task_id(),
+    )
+    logging.info("All deployed views successfully rematerialized.")
+
+    return "", HTTPStatus.OK
+
+
+@view_update_manager_blueprint.route(
+    "/test_rematerialize_all_deployed_views", methods=["POST"]
+)
+@requires_gae_auth
+def test_rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
+    """TEST ONLY ENDPOINT THAT CAN BE USED TO TEST AIRFLOW ORCHESTRATION AROUND
+    TRIGGERING /rematerialize_all_deployed_views.
+
+    TODO(#13307): Delete this endpoint once Airflow orchestration is complete.
+    """
+
+    start = datetime.datetime.now()
+    view_builders = deployed_view_builders(metadata.project_id())
+
+    # Mock waiting for rematerialization by sleeping here
+    time.sleep(random.randint(1, 10))
+
+    end = datetime.datetime.now()
+
+    runtime_sec = int((end - start).total_seconds())
+
+    success_persister = RematerializationSuccessPersister(
+        bq_client=BigQueryClientImpl()
+    )
+    success_persister.record_success_in_bq(
+        deployed_view_builders=view_builders,
+        rematerialization_runtime_sec=runtime_sec,
+        cloud_task_id=get_current_cloud_task_id(),
+    )
+    logging.info("All deployed views successfully rematerialized.")
 
     return "", HTTPStatus.OK
 
