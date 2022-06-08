@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Justice Counts Control Panel backend API."""
-import traceback
 from http import HTTPStatus
 from typing import Callable, Optional
 
@@ -184,7 +183,10 @@ def get_api_blueprint(
             ):
                 raise JusticeCountsPermissionError(
                     code="justice_counts_create_report_permission",
-                    description=f"User (user_id: {user_id}) does not have permission to create reports for current agency (agency_id: {agency_id}).",
+                    description=(
+                        f"User {user_id} does not have permission to "
+                        "create reports for agency {agency_id}."
+                    ),
                 )
 
             try:
@@ -221,5 +223,5 @@ def _get_error(error: Exception) -> FlaskException:
     # Else, wrap any unexpected errors in FlaskException
     return JusticeCountsServerError(
         code="server_error",
-        description=traceback.format_exc(limit=3),
+        description="A server error occurred. See the logs for more information.",
     )

@@ -64,7 +64,10 @@ class DatapointInterface:
             except ValueError as e:
                 raise JusticeCountsDataError(
                     code="invalid_datapoint_value",
-                    description=f"Datapoint represents a int value, but is a string. Datapoint ID: {report.id}, value: {value}",
+                    description=(
+                        "Datapoint represents a int value, but is a string. "
+                        f"Datapoint ID: {report.id}, value: {value}"
+                    ),
                 ) from e
 
         datapoint, existing_datapoint = update_existing_or_create(

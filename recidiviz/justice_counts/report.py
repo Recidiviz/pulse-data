@@ -99,7 +99,10 @@ class ReportInterface:
                 if len(dimension_datapoint.dimension_identifier_to_member) > 1:
                     raise JusticeCountsDataError(
                         code="invalid_datapoint",
-                        description=f"Datapoint represents multiple dimensions. Datapoint ID: {dimension_datapoint.id}.",
+                        description=(
+                            "Datapoint represents multiple dimensions. "
+                            f"Datapoint ID: {dimension_datapoint.id}."
+                        ),
                     )
                 # example: dimension_identifier = "global/gender/restricted"
                 dimension_identifier = list(
@@ -446,7 +449,10 @@ class ReportInterface:
             else:
                 raise JusticeCountsDataError(
                     code="invalid_datapoint",
-                    description="Datapoint does not represent a dimension, aggregate value, or context.",
+                    description=(
+                        "Datapoint does not represent a dimension, "
+                        "aggregate value, or context.",
+                    ),
                 )
         return metric_key_to_data_points
 
