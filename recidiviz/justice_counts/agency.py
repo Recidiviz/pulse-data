@@ -21,7 +21,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from recidiviz.persistence.database.schema.justice_counts.schema import Agency
+from recidiviz.persistence.database.schema.justice_counts import schema
 
 
 class AgencyInterface:
@@ -29,11 +29,15 @@ class AgencyInterface:
 
     @staticmethod
     def create_agency(
-        session: Session, name: str, system: str, state_code: str, fips_county_code: str
-    ) -> Agency:
-        agency = Agency(
+        session: Session,
+        name: str,
+        systems: List[schema.System],
+        state_code: str,
+        fips_county_code: str,
+    ) -> schema.Agency:
+        agency = schema.Agency(
             name=name,
-            system=system,
+            systems=[system.value for system in systems],
             state_code=state_code,
             fips_county_code=fips_county_code,
         )
@@ -42,14 +46,16 @@ class AgencyInterface:
         return agency
 
     @staticmethod
-    def get_agency_by_id(session: Session, agency_id: int) -> Agency:
-        return session.query(Agency).filter(Agency.id == agency_id).one()
+    def get_agency_by_id(session: Session, agency_id: int) -> schema.Agency:
+        return session.query(schema.Agency).filter(schema.Agency.id == agency_id).one()
 
     @staticmethod
     def get_agencies_by_id(
         session: Session, agency_ids: List[int], raise_on_missing: bool = False
-    ) -> List[Agency]:
-        agencies = session.query(Agency).filter(Agency.id.in_(agency_ids)).all()
+    ) -> List[schema.Agency]:
+        agencies = (
+            session.query(schema.Agency).filter(schema.Agency.id.in_(agency_ids)).all()
+        )
         found_agency_ids = {a.id for a in agencies}
         if len(agency_ids) != len(found_agency_ids):
             missing_agency_ids = set(agency_ids).difference(found_agency_ids)
@@ -61,12 +67,14 @@ class AgencyInterface:
         return agencies
 
     @staticmethod
-    def get_agency_by_name(session: Session, name: str) -> Agency:
-        return session.query(Agency).filter(Agency.name == name).one()
+    def get_agency_by_name(session: Session, name: str) -> schema.Agency:
+        return session.query(schema.Agency).filter(schema.Agency.name == name).one()
 
     @staticmethod
-    def get_agencies_by_name(session: Session, names: List[str]) -> List[Agency]:
-        agencies = session.query(Agency).filter(Agency.name.in_(names)).all()
+    def get_agencies_by_name(session: Session, names: List[str]) -> List[schema.Agency]:
+        agencies = (
+            session.query(schema.Agency).filter(schema.Agency.name.in_(names)).all()
+        )
         found_agency_names = {a.name for a in agencies}
         if len(names) != len(found_agency_names):
             missing_agency_names = set(names).difference(found_agency_names)
@@ -77,5 +85,5 @@ class AgencyInterface:
         return agencies
 
     @staticmethod
-    def get_agencies(session: Session) -> List[Agency]:
-        return session.query(Agency).all()
+    def get_agencies(session: Session) -> List[schema.Agency]:
+        return session.query(schema.Agency).all()

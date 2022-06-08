@@ -28,17 +28,14 @@ from sqlalchemy.exc import IntegrityError
 from recidiviz.auth.auth0_client import Auth0Client, Auth0User
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.persistence.database.schema.justice_counts.schema import (
-    System,
-    UserAccount,
-)
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.types import assert_type
+from recidiviz.utils.types import assert_type, non_optional
 
 
 @attr.define()
@@ -84,7 +81,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                             agency.to_json()
                             for agency in AgencyInterface.get_agencies(session=session)
                         ],
-                        "systems": [enum.value for enum in System],
+                        "systems": [enum.value for enum in schema.System],
                     }
                 ),
                 HTTPStatus.OK,
@@ -102,7 +99,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             ) as session:
                 request_json = assert_type(request.json, dict)
                 name = assert_type(request_json.get("name"), str)
-                system = assert_type(request_json.get("system"), str)
+                systems: List[str] = non_optional(request_json.get("systems"))
                 state_code = assert_type(request_json.get("state_code"), str)
                 fips_county_code = assert_type(
                     request_json.get("fips_county_code"), str
@@ -110,7 +107,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 agency = AgencyInterface.create_agency(
                     session=session,
                     name=name,
-                    system=system,
+                    systems=[schema.System[system] for system in systems],
                     state_code=state_code,
                     fips_county_code=fips_county_code,
                 )
@@ -185,7 +182,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
 
 
 def _merge_auth0_and_db_users(
-    session: Session, auth0_users: List[Auth0User], db_users: List[UserAccount]
+    session: Session, auth0_users: List[Auth0User], db_users: List[schema.UserAccount]
 ) -> List[JusticeCountsUser]:
     """Given a list of users who have signed up via Auth0, and a list of
     users whom we have registered in our DB, perform a union and merge based on

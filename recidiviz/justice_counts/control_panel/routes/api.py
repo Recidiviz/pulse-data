@@ -221,5 +221,5 @@ def _get_error(error: Exception) -> FlaskException:
     # Else, wrap any unexpected errors in FlaskException
     return JusticeCountsServerError(
         code="server_error",
-        description=traceback.format_exc(limit=1),
+        description=traceback.format_exc(limit=3),
     )

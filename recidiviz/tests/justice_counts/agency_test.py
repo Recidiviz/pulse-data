@@ -19,6 +19,7 @@
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 
@@ -29,27 +30,20 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            for agency in [
-                {
-                    "name": "Agency Alpha",
-                    "system": "LAW_ENFORCEMENT",
-                    "state_code": "us_ca",
-                    "fips_county_code": "us_ca_sacramento",
-                },
-                {
-                    "name": "Beta Initiative",
-                    "system": "LAW_ENFORCEMENT",
-                    "state_code": "us_ak",
-                    "fips_county_code": "us_ak_anchorage",
-                },
-            ]:
-                AgencyInterface.create_agency(
-                    session=session,
-                    name=agency["name"],
-                    system=agency["system"],
-                    state_code=agency["state_code"],
-                    fips_county_code=agency["fips_county_code"],
-                )
+            AgencyInterface.create_agency(
+                session=session,
+                name="Agency Alpha",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ca",
+                fips_county_code="us_ca_sacramento",
+            )
+            AgencyInterface.create_agency(
+                session=session,
+                name="Beta Initiative",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ak",
+                fips_county_code="us_ak_anchorage",
+            )
 
     def test_get_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -89,27 +83,20 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
 
     def test_create_agency(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            for agency in [
-                {
-                    "name": "Agency Gamma",
-                    "system": "LAW_ENFORCEMENT",
-                    "state_code": "us_ca",
-                    "fips_county_code": "us_ca_sacramento",
-                },
-                {
-                    "name": "Agency Delta",
-                    "system": "LAW_ENFORCEMENT",
-                    "state_code": "us_ak",
-                    "fips_county_code": "us_ak_anchorage",
-                },
-            ]:
-                AgencyInterface.create_agency(
-                    session=session,
-                    name=agency["name"],
-                    system=agency["system"],
-                    state_code=agency["state_code"],
-                    fips_county_code=agency["fips_county_code"],
-                )
+            AgencyInterface.create_agency(
+                session=session,
+                name="Agency Gamma",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ca",
+                fips_county_code="us_ca_sacramento",
+            )
+            AgencyInterface.create_agency(
+                session=session,
+                name="Agency Delta",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ak",
+                fips_county_code="us_ak_anchorage",
+            )
 
         agencies = AgencyInterface.get_agencies(session=session)
         self.assertEqual(
@@ -125,7 +112,7 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
             AgencyInterface.create_agency(
                 session=session,
                 name="Agency Alpha",
-                system="LAW_ENFORCEMENT",
+                systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
             )

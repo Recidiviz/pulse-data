@@ -51,19 +51,19 @@ const AgencyProvisioningView = (): JSX.Element => {
 
   const onFinish = async ({
     name,
-    system,
+    systems,
     stateCode,
     fipsCountyCode,
   }: CreateAgencyRequest) => {
     const nameTrimmed = name.trim();
-    const systemTrimmed = system.trim();
+    const systemsTrimmed = systems.map((system) => system.trim());
     const stateCodeTrimmed = stateCode.trim().toLocaleLowerCase();
     const fipsCountyCodeTrimmed = fipsCountyCode.trim().toLocaleLowerCase();
     setShowSpinner(true);
     try {
       const response = await createAgency(
         nameTrimmed,
-        systemTrimmed,
+        systemsTrimmed,
         stateCodeTrimmed,
         fipsCountyCodeTrimmed
       );
@@ -90,7 +90,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   type AgencyRecord = {
     id: number;
     name: string;
-    system: string;
+    systems: string;
     state: string;
     county: string;
   };
@@ -156,10 +156,10 @@ const AgencyProvisioningView = (): JSX.Element => {
       ...getColumnSearchProps("name"),
     },
     {
-      title: "System",
-      dataIndex: "system",
-      key: "system",
-      ...getColumnSearchProps("system"),
+      title: "Systems",
+      dataIndex: "systems",
+      key: "systems",
+      ...getColumnSearchProps("systems"),
     },
     {
       title: "State",
@@ -182,7 +182,7 @@ const AgencyProvisioningView = (): JSX.Element => {
         columns={columns}
         dataSource={data?.agencies.map((agency) => ({
           ...agency,
-          system: agency.system,
+          systems: agency.systems.join(", "),
           state:
             StateCode[agency.state_code?.toLocaleLowerCase() as StateCodeKey],
           county: FipsCountyCode[agency.fips_county_code as FipsCountyCodeKey],
@@ -209,8 +209,8 @@ const AgencyProvisioningView = (): JSX.Element => {
         <Form.Item label="Name" name="name" rules={[{ required: true }]}>
           <Input disabled={showSpinner} />
         </Form.Item>
-        <Form.Item label="System" name="system" rules={[{ required: true }]}>
-          <Select disabled={showSpinner || !data?.systems}>
+        <Form.Item label="Systems" name="systems" rules={[{ required: true }]}>
+          <Select mode="multiple" disabled={showSpinner || !data?.systems}>
             {data?.systems?.map((system) => (
               <Select.Option key={system} value={system}>
                 {system}

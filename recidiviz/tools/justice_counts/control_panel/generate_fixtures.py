@@ -106,7 +106,7 @@ def _get_datapoints_for_report(
 ) -> List[schema.Datapoint]:
     metric_definitions = ReportInterface.get_metric_definitions_by_report_type(
         report_type=report.type,
-        system=system,
+        systems={system.value},
     )
     return list(
         itertools.chain(

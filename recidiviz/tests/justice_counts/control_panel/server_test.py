@@ -244,6 +244,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "id": 1,
                     "name": agency_name,
                     "system": system,
+                    "systems": [],
                     "state_code": state_code,
                 }
             ],
@@ -293,6 +294,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "id": 1,
                     "name": agency_name,
                     "system": system,
+                    "systems": [],
                     "state_code": state_code,
                 }
             ],
