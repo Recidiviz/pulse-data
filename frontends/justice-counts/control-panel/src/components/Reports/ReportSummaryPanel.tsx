@@ -228,7 +228,9 @@ const ReportSummaryPanel: React.FC<{
 
         <EditDetailsTitle>Editors</EditDetailsTitle>
         <EditDetailsContent>
-          {editors.length ? printCommaSeparatedList(editors) : userStore.name}
+          {editors.length
+            ? printCommaSeparatedList(editors)
+            : userStore.nameOrEmail}
         </EditDetailsContent>
 
         <EditDetailsTitle>Details</EditDetailsTitle>

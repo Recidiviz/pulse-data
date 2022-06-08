@@ -33,6 +33,8 @@ class UserStore {
 
   email: string | undefined;
 
+  nameOrEmail: string | undefined;
+
   userID: string | undefined;
 
   auth0UserID: string | undefined;
@@ -95,7 +97,7 @@ class UserStore {
         Promise.reject(new Error("No user information exists."));
       }
 
-      const { email, sub: auth0ID, name } = this.authStore.user as User;
+      const { email, sub: auth0ID } = this.authStore.user as User;
 
       const response = (await this.api.request({
         path: "/api/users",
@@ -107,6 +109,7 @@ class UserStore {
       })) as Response;
 
       const {
+        name,
         email_address: emailAddress,
         id: userID,
         auth0_user_id: auth0UserID,
@@ -118,6 +121,7 @@ class UserStore {
       runInAction(() => {
         this.name = name;
         this.email = emailAddress;
+        this.nameOrEmail = name || emailAddress;
         this.userID = userID;
         this.auth0UserID = auth0UserID;
         this.userAgencies = userAgencies;
