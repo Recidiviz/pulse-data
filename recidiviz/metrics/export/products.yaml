@@ -116,7 +116,7 @@ products:
       - state_code: US_ND
         environment: production
       - state_code: US_TN
-        environment: staging
+        environment: production
       - state_code: US_ME
         environment: production
       - state_code: US_MO
