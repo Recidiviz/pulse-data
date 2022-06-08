@@ -101,9 +101,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 name = assert_type(request_json.get("name"), str)
                 systems: List[str] = non_optional(request_json.get("systems"))
                 state_code = assert_type(request_json.get("state_code"), str)
-                fips_county_code = assert_type(
-                    request_json.get("fips_county_code"), str
-                )
+                fips_county_code = request_json.get("fips_county_code")
                 agency = AgencyInterface.create_agency(
                     session=session,
                     name=name,

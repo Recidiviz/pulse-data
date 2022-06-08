@@ -4,7 +4,7 @@ export type Agency = {
   name: string;
   systems: string[];
   state_code: string;
-  fips_county_code: string;
+  fips_county_code?: string;
 };
 /* eslint-enable camelcase */
 
@@ -12,7 +12,7 @@ export type CreateAgencyRequest = {
   name: string;
   systems: string[];
   stateCode: string;
-  fipsCountyCode: string;
+  fipsCountyCode?: string;
 };
 
 export type AgenciesResponse = {
