@@ -37,7 +37,7 @@ import {
 import { Dropdown } from "../Forms/Dropdown";
 import { palette, typography } from "../GlobalStyles";
 import { showToast } from "../Toast";
-import { PublishButton, PublishDataWrapper } from "./PublishDataPanel";
+import { PublishButton, PublishDataWrapper } from "./ReportDataEntry.styles";
 import { ReportSummaryWrapper } from "./ReportSummaryPanel";
 
 function createIntegerRange(start: number, end: number) {
@@ -123,11 +123,11 @@ const CreateReport = () => {
       }
       if (response.status === 400) {
         const responseJson = await response.json();
-        showToast(responseJson.description, false, true);
+        showToast(responseJson.description, false, "red");
         return;
       }
     }
-    showToast("Error creating report", false, true);
+    showToast("Error creating report", false, "red");
   };
 
   const { frequency, month, year, annualStartMonth, isRecurring } =

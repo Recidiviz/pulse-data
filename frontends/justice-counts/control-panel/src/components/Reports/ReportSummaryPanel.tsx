@@ -31,16 +31,30 @@ import {
 import errorIcon from "../assets/status-error-icon.png";
 import { GoBackToReportsOverviewLink, PreTitle, Title } from "../Forms";
 import { palette, typography } from "../GlobalStyles";
+import {
+  FieldDescription,
+  FieldDescriptionProps,
+  ONE_PANEL_MAX_WIDTH,
+  PublishButton,
+  SIDE_PANEL_HORIZONTAL_PADDING,
+  SIDE_PANEL_WIDTH,
+  TWO_PANEL_MAX_WIDTH,
+} from "./ReportDataEntry.styles";
 
 export const ReportSummaryWrapper = styled.div`
-  width: 355px;
+  width: ${SIDE_PANEL_WIDTH}px;
   height: 100%;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1;
-  padding: 96px 24px 0 24px;
+  padding: 96px ${SIDE_PANEL_HORIZONTAL_PADDING}px 0
+    ${SIDE_PANEL_HORIZONTAL_PADDING}px;
   background: ${palette.solid.white};
+
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    display: none;
+  }
 `;
 
 export const ReportSummaryProgressIndicatorWrapper = styled.div`
@@ -107,6 +121,10 @@ export const EditDetails = styled.div`
   width: 307px;
   position: fixed;
   bottom: 61px;
+
+  @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
+    display: none;
+  }
 `;
 
 export const EditDetailsTitle = styled.div`
@@ -119,6 +137,24 @@ export const EditDetailsContent = styled.div`
   ${typography.sizeCSS.normal}
   color: ${palette.highlight.grey9};
   margin-bottom: 18px;
+`;
+
+const PublishContainer = styled.div`
+  display: none;
+
+  @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
+    display: block;
+    position: absolute;
+    border-top: 1px solid ${palette.highlight.grey9};
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: 24px;
+  }
+`;
+
+const LeftPublishButton = styled(PublishButton)`
+  margin-top: 24px;
 `;
 
 const ReportStatusIconComponent: React.FC<{
@@ -155,7 +191,14 @@ const ReportStatusIconComponent: React.FC<{
 const ReportSummaryPanel: React.FC<{
   reportID: number;
   activeMetric: string;
-}> = ({ reportID, activeMetric }) => {
+  fieldDescription?: FieldDescriptionProps;
+  toggleConfirmationDialogue: () => void;
+}> = ({
+  reportID,
+  activeMetric,
+  fieldDescription,
+  toggleConfirmationDialogue,
+}) => {
   const navigate = useNavigate();
   const { formStore, reportStore, userStore } = useStore();
   const {
@@ -248,6 +291,21 @@ const ReportSummaryPanel: React.FC<{
           {!editors.length && ``}
         </EditDetailsContent>
       </EditDetails>
+
+      <PublishContainer>
+        {/* Displays the description of the field currently hovered */}
+        {fieldDescription && (
+          <FieldDescription fieldDescription={fieldDescription} />
+        )}
+        <LeftPublishButton
+          onClick={() => {
+            /** Should trigger a confirmation dialogue before submitting */
+            toggleConfirmationDialogue();
+          }}
+        >
+          Publish Data (Review)
+        </LeftPublishButton>
+      </PublishContainer>
     </ReportSummaryWrapper>
   );
 };

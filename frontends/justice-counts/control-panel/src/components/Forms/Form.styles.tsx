@@ -18,6 +18,12 @@
 import styled from "styled-components/macro";
 
 import { palette, typography } from "../GlobalStyles";
+import {
+  DATA_ENTRY_WIDTH,
+  ONE_PANEL_MAX_WIDTH,
+  SINGLE_COLUMN_MAX_WIDTH,
+  TWO_PANEL_MAX_WIDTH,
+} from "../Reports/ReportDataEntry.styles";
 
 export const PageWrapper = styled.div`
   width: 100%;
@@ -31,10 +37,18 @@ export const PageWrapper = styled.div`
 `;
 
 export const Form = styled.form`
-  flex: 0 1 644px;
+  flex: 0 1 ${DATA_ENTRY_WIDTH}px;
   display: flex;
   flex-direction: column;
   margin: 0 360px 50px 360px;
+
+  @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
+    margin: 0 24px 50px 360px;
+  }
+
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    margin: 0 24px 50px 24px;
+  }
 `;
 
 type TitleWrapperProps = {
@@ -56,6 +70,8 @@ export const PreTitle = styled.div`
 export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
   ${({ scrolled }) =>
     scrolled ? typography.sizeCSS.medium : typography.sizeCSS.title}
+
+  ${({ scrolled }) => scrolled && `padding-top: 16px;`}
 
   margin-top: 4px;
   padding-bottom: 14px;
@@ -160,6 +176,10 @@ export const DisaggregationInputWrapper = styled.div`
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  @media only screen and (max-width: ${SINGLE_COLUMN_MAX_WIDTH}px) {
+    width: 100%;
+  }
 `;
 
 export const Button = styled.button`
@@ -201,4 +221,8 @@ export const OpacityGradient = styled.div`
   left: 0;
   background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
   pointer-events: none;
+
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    display: none;
+  }
 `;
