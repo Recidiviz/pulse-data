@@ -45,7 +45,7 @@ residents = MetricDefinition(
     metric_type=MetricType.RESIDENTS,
     category=MetricCategory.POPULATIONS,
     display_name="Jurisdiction Residents",
-    description="Measures the number of residents in the agency's jurisdiction.",
+    description="Measures the number of residents in your agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -124,7 +124,7 @@ caseloads = MetricDefinition(
         Context(
             key=ContextKey.METHOD_OF_CALCULATING_CASELOAD,
             value_type=ValueType.TEXT,
-            label="Please describe your office's method of calculating caseload",
+            label="Please describe your office's method of calculating caseload.",
             required=True,
         ),
     ],

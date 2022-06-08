@@ -126,7 +126,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "system": "LAW_ENFORCEMENT",
                 "display_name": "Annual Budget",
                 "reporting_note": None,
-                "description": "Measures the total annual budget (in dollars) of the agency.",
+                "description": "Measures the total annual budget (in dollars) of your agency.",
                 "definitions": [],
                 "category": "CAPACITY AND COST",
                 "value": 100000,
@@ -144,8 +144,8 @@ class TestJusticeCountsReportMetric(TestCase):
                     },
                     {
                         "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Additional context",
-                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "display_name": "Please provide additional context.",
+                        "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
                         "value": None,
@@ -222,8 +222,8 @@ class TestJusticeCountsReportMetric(TestCase):
                     },
                     {
                         "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Additional context",
-                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "display_name": "Please provide additional context.",
+                        "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
                         "value": None,
@@ -294,8 +294,8 @@ class TestJusticeCountsReportMetric(TestCase):
                 "contexts": [
                     {
                         "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Additional context",
-                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "display_name": "Please provide additional context.",
+                        "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
                         "value": None,
@@ -334,8 +334,8 @@ class TestJusticeCountsReportMetric(TestCase):
                     },
                     {
                         "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Additional context",
-                        "reporting_note": "Add any additional context that you would like to provide here.",
+                        "display_name": "Please provide additional context.",
+                        "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
                         "value": "this is a test for additional context",

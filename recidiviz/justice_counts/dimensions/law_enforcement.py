@@ -64,8 +64,8 @@ class ForceType(DimensionBase, enum.Enum):
 
 
 class LawEnforcementStaffType(DimensionBase, enum.Enum):
-    LAW_ENFORCEMENT_OFFICERS = "Law enforcement officers"
-    CIVILIAN_STAFF = "Civilian staff"
+    LAW_ENFORCEMENT_OFFICERS = "Law Enforcement Officers"
+    CIVILIAN_STAFF = "Civilian Staff"
     UNKNOWN = "Unknown"
 
     @classmethod

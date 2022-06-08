@@ -78,7 +78,7 @@ class DatapointInterface:
                 end_date=report.date_range_end,
                 report=report,
                 dimension_identifier_to_member={
-                    dimension.dimension_identifier(): dimension.dimension_value
+                    dimension.dimension_identifier(): dimension.dimension_name
                 }
                 if dimension
                 else None,

@@ -84,9 +84,17 @@ class DimensionBase:
     def dimension_value(self) -> str:
         """The value of this dimension instance.
 
-        E.g. 'FEMALE' is a potential value for an instance of the 'global/raw/gender' dimension.
+        E.g. 'Female' is a potential value for an instance of the 'global/raw/gender' dimension.
         """
         return self.to_enum().value
+
+    @property
+    def dimension_name(self) -> str:
+        """The value of this dimension instance.
+
+        E.g. 'FEMALE' is a potential name for an instance of the 'global/raw/gender' dimension.
+        """
+        return self.to_enum().name
 
     @property
     def reporting_note(self) -> str:

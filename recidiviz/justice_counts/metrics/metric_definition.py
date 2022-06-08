@@ -180,8 +180,7 @@ class MetricDefinition:
             Context(
                 key=ContextKey.ADDITIONAL_CONTEXT,
                 value_type=ValueType.TEXT,
-                label="Additional context",
-                reporting_note="Add any additional context that you would like to provide here.",
+                label="Please provide additional context.",
                 required=False,
             )
         ]

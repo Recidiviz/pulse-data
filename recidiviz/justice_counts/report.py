@@ -105,8 +105,8 @@ class ReportInterface:
                 dimension_identifier = list(
                     dimension_datapoint.dimension_identifier_to_member.keys()
                 ).pop()
-                # example: dimension_value = "MALE"
-                dimension_value = list(
+                # example: dimension_name = "MALE"
+                dimension_name = list(
                     dimension_datapoint.dimension_identifier_to_member.values()
                 ).pop()
 
@@ -120,7 +120,7 @@ class ReportInterface:
                 )  # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: None, GenderRestricted.NON_BINARY: None...}
 
                 curr_dimension_to_values[
-                    dimension_class(dimension_value)  # type: ignore[abstract]
+                    dimension_class[dimension_name]
                 ] = dimension_datapoint.get_value()
                 # update curr_dimension_to_values to add new dimension datapoint.
                 # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}

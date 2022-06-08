@@ -34,8 +34,8 @@ class CourtStaffType(DimensionBase, enum.Enum):
 
 
 class CourtReleaseType(DimensionBase, enum.Enum):
-    ROR = "ROR release"
-    MONETARY_BAIL = "Monetary bail release"
+    ROR = "ROR Release"
+    MONETARY_BAIL = "Monetary Bail Release"
     SUPERVISION_OR_EM = "Supervision or EM"
     OTHER = "Other"
     UNKNOWN = "Unknown"

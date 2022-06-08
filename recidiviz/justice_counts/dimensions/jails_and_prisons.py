@@ -23,8 +23,8 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class ReadmissionType(DimensionBase, enum.Enum):
-    NEW_ADMISSION = "New admission"
-    VIOLATION_OF_CONDITIONS = "Violation of conditions"
+    NEW_ADMISSION = "New Admission"
+    VIOLATION_OF_CONDITIONS = "Violation of Conditions"
     UNKNOWN = "Unknown"
 
     @classmethod
@@ -46,7 +46,7 @@ class JailPopulationType(DimensionBase, enum.Enum):
 class PrisonPopulationType(DimensionBase, enum.Enum):
     NEW_SENTENCE = "New sentence"
     TRANSFER_OR_HOLD = "Transfer or Hold"
-    SUPERVISION_VIOLATION_OR_REVOCATION = "Supervision violation or Revocation"
+    SUPERVISION_VIOLATION_OR_REVOCATION = "Supervision Violation or Revocation"
     OTHER = "Other"
     UNKNOWN = "Unknown"
 
@@ -56,10 +56,10 @@ class PrisonPopulationType(DimensionBase, enum.Enum):
 
 
 class JailReleaseType(DimensionBase, enum.Enum):
-    SENTENCE_COMPLETION = "Sentence completion"
-    PRETRIAL_RELEASE = "Pretrial release"
+    SENTENCE_COMPLETION = "Sentence Completion"
+    PRETRIAL_RELEASE = "Pretrial Release"
     TRANSFER = "Transfer"
-    UNAPPROVED_ABSENCE = "Unapproved absence"
+    UNAPPROVED_ABSENCE = "Unapproved Absence"
     COMPASSIONATE = "Compassionate"
     UNKNOWN = "Unknown"
 
@@ -69,11 +69,11 @@ class JailReleaseType(DimensionBase, enum.Enum):
 
 
 class PrisonReleaseTypes(DimensionBase, enum.Enum):
-    SENTENCE_COMPLETION = "Sentence completion"
-    TO_SUPERVISION = "To supervision"
+    SENTENCE_COMPLETION = "Sentence Completion"
+    TO_SUPERVISION = "To Supervision"
     TRANSFER = "Transfer"
-    UNAPPROVED_ABSENCE = "Unapproved absence"
-    COMPASSIONATE_RELEASE = "Compassionate release"
+    UNAPPROVED_ABSENCE = "Unapproved Absence"
+    COMPASSIONATE_RELEASE = "Compassionate Release"
     UNKNOWN = "Unknown"
     OTHER = "Other"
 
@@ -83,9 +83,9 @@ class PrisonReleaseTypes(DimensionBase, enum.Enum):
 
 
 class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
-    PHYSICAL = "Physical force"
-    RESTRAINT = "Restraint force"
-    WEAPON_INVOLVED = "Weapon involved"
+    PHYSICAL = "Physical Force"
+    RESTRAINT = "Restraint Force"
+    WEAPON_INVOLVED = "Weapon Involved"
     UNKNOWN = "Unknown"
 
     @classmethod
