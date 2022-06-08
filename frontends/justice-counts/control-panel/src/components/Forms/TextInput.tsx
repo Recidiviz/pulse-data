@@ -38,7 +38,7 @@ export const Input = styled.input<InputProps>`
   ${typography.sizeCSS.large}
   height: 71px;
   padding: ${({ additionalContext }) =>
-    additionalContext ? "16px 11px 10px 16px" : "42px 90px 16px 16px"};
+    additionalContext ? "16px 55px 10px 16px" : "42px 90px 16px 16px"};
   background: ${({ value, error }) => {
     if (error) {
       return palette.highlight.red;
