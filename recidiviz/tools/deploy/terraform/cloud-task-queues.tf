@@ -66,6 +66,15 @@ module "cloud-sql-to-bq-refresh-queue" {
   max_retry_attempts = 1
 }
 
+# Queue used to process tasks that update views in BQ.
+module "bq-view-update-queue" {
+  source = "./modules/base-task-queue"
+
+  queue_name         = "bq-view-update"
+  region             = var.app_engine_region
+  max_retry_attempts = 1
+}
+
 # Queue used to process tasks that export the results of metric view queries to GCS.
 module "metric-view-export-queue" {
   source = "./modules/base-task-queue"

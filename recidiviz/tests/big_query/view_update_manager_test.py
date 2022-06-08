@@ -501,7 +501,7 @@ class ViewManagerTest(unittest.TestCase):
             any_order=True,
         )
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [mock.call(dataset, None), mock.call(dataset_2, None)]
+            [mock.call(dataset, None), mock.call(dataset_2, None)], any_order=True
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
@@ -1091,39 +1091,39 @@ class ViewManagerTest(unittest.TestCase):
 
 
 @mock.patch(
-    "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
-)
-@mock.patch(
     "recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789")
 )
 @mock.patch(
     "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
     MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
 )
-class TestUpdateAllManagedViews(unittest.TestCase):
+class TestViewUpdateEndpoints(unittest.TestCase):
     """Tests the /view_update/update_all_managed_views endpoint."""
 
     def setUp(self) -> None:
         self.app = Flask(__name__)
         self.app.register_blueprint(view_update_manager_blueprint)
         self.app.config["TESTING"] = True
-        self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
+        self.base_headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
         self.client = self.app.test_client()
 
-        with self.app.test_request_context():
-            self.update_all_managed_views_url = flask.url_for(
-                "view_update.update_all_managed_views"
-            )
-
-        self.mock_project_id = "recidiviz-staging"
+        self.mock_project_id = "recidiviz-456"
         self.metadata_patcher = mock.patch(
             "recidiviz.big_query.view_update_manager.metadata.project_id"
         )
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
+        self.success_persister_patcher = patch(
+            "recidiviz.big_query.view_update_manager.RematerializationSuccessPersister"
+        )
+
+        self.success_persister_constructor = self.success_persister_patcher.start()
+        self.mock_success_persister = self.success_persister_constructor.return_value
+
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
+        self.success_persister_patcher.stop()
 
     @mock.patch(
         "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
@@ -1132,10 +1132,46 @@ class TestUpdateAllManagedViews(unittest.TestCase):
         """Tests the /view_update/update_all_managed_views endpoint."""
 
         with self.app.test_request_context():
-            response = self.client.post(
-                self.update_all_managed_views_url,
-                headers=self.headers,
+            update_all_managed_views_url = flask.url_for(
+                "view_update.update_all_managed_views"
             )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
+            response = self.client.post(
+                update_all_managed_views_url,
+                headers=self.base_headers,
+            )
 
-            mock_create.assert_called()
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        mock_create.assert_called()
+
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
+    def test_rematerialize_all_deployed_views(
+        self, mock_rematerialize: MagicMock, _mock_bq_client: MagicMock
+    ) -> None:
+        """Tests the /view_update/rematerialize_all_deployed_views endpoint."""
+
+        current_cloud_task_id = "my_cloud_task_id_abcd"
+        headers: Dict[str, Any] = {
+            **self.base_headers,
+            "X-AppEngine-TaskName": current_cloud_task_id,
+        }
+        with self.app.test_request_context():
+            rematerialize_all_deployed_views_url = flask.url_for(
+                "view_update.rematerialize_all_deployed_views"
+            )
+            response = self.client.post(
+                rematerialize_all_deployed_views_url,
+                headers=headers,
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        mock_rematerialize.assert_called()
+        self.mock_success_persister.record_success_in_bq.assert_called_with(
+            deployed_view_builders=mock.ANY,
+            rematerialization_runtime_sec=mock.ANY,
+            cloud_task_id=current_cloud_task_id,
+        )
