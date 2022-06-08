@@ -163,18 +163,6 @@ run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging.yaml \
        --image-url ${IMAGE_URL} \
        --verbosity=debug
 
-if [[ -z ${DEBUG_BUILD_NAME} ]]; then
-    echo "Deploying application - scrapers"
-    verify_hash $COMMIT_HASH
-    run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging-scrapers.yaml \
-        --project $PROJECT_ID \
-        --version ${GAE_VERSION} \
-        --image-url ${IMAGE_URL} \
-        --verbosity=debug
-else
-    echo "Skipping deploy of scrapers for a debug build."
-fi
-
 if [[ ! -z ${PROMOTE} ]]; then
     echo "App deployed to \`${GAE_VERSION}\`.$PROJECT_ID.appspot.com"
 else

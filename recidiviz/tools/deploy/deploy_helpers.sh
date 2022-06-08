@@ -246,16 +246,15 @@ function check_for_too_many_serving_versions {
     # Each of the serving versions is 1 backend service. We also have a backend
     # service (most likely the load balancer for Case Triage that was added in #8829)
     # that is always always running, but isn't listed as one of the serving app
-    # versions. We have a backend services quota of 9, and we need to be at least 2
-    # under the quota in order to successfully complete a deploy of both the default
-    # and scrapers services. So, if there are 7 or more serving versions then we need
-    # to stop at least one to proceed.
-    MAX_ALLOWED_SERVING_VERSIONS=6
+    # versions. We have a backend services quota of 9, and we need to be at least 1
+    # under the quota in order to successfully complete a deploy of the default service.
+    # So, if there are 8 or more serving versions then we need to stop at least one to
+    # proceed.
+    MAX_ALLOWED_SERVING_VERSIONS=7
     if [[ "$SERVING_VERSIONS" -gt "$MAX_ALLOWED_SERVING_VERSIONS" ]]; then
         echo_error "Found [$SERVING_VERSIONS] already serving versions. You must stop at least one version to proceed"
         echo_error "in order to avoid maxing out the number of allowed database connections."
         echo_error "Stop versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
-        echo_error "          and here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=scrapers"
         exit 1
     fi
     echo "Found [$SERVING_VERSIONS] already serving versions - proceeding"
