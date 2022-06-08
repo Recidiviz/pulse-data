@@ -48,7 +48,7 @@ residents = MetricDefinition(
     metric_type=MetricType.RESIDENTS,
     category=MetricCategory.POPULATIONS,
     display_name="Jurisdiction Residents",
-    description="Measures the number of residents in the agency's jurisdiction.",
+    description="Measures the number of residents in your agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -152,7 +152,7 @@ criminal_case_filings = MetricDefinition(
         Context(
             key=ContextKey.AGENCIES_AUTHORIZED_TO_FILE_CASES,
             value_type=ValueType.TEXT,
-            label="Please provide the agencies authorized to file cases directly with the court.",
+            label="Please provide the names of the agencies authorized to file cases directly with the court.",
             required=True,
         )
     ],

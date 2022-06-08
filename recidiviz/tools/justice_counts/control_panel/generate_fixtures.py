@@ -67,7 +67,7 @@ def _create_dimension_datapoints(
             start_date=report.date_range_start,
             end_date=report.date_range_end,
             dimension_identifier_to_member={
-                dimension.dimension_identifier(): d.dimension_value
+                dimension.dimension_identifier(): d.dimension_name
             },
             report=report,
         )

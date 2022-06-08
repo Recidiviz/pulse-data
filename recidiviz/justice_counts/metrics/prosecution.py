@@ -46,7 +46,7 @@ residents = MetricDefinition(
     metric_type=MetricType.RESIDENTS,
     category=MetricCategory.POPULATIONS,
     display_name="Jurisdiction Residents",
-    description="Measures the number of residents in the agency's jurisdiction.",
+    description="Measures the number of residents in your agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -157,7 +157,7 @@ caseloads = MetricDefinition(
     description="Measures the average caseload per attorney in your office.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="These elements may not be necessary if the office already calculates their average caseloads by type on a monthly basis. Accept the office's calculation with required context.",
+    reporting_note="These elements may not be necessary if your office already calculates their average caseloads by type on a monthly basis. Accept your office's calculation with required context.",
     specified_contexts=[
         Context(
             key=ContextKey.METHOD_OF_CALCULATING_CASELOAD,
@@ -175,7 +175,7 @@ cases_disposed = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.CASES_DISPOSED,
     category=MetricCategory.POPULATIONS,
-    display_name="Caseloads",
+    display_name="Cases Disposed",
     definitions=[
         Definition(
             term="Disposition",
@@ -195,14 +195,14 @@ violations = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.VIOLATIONS_WITH_DISCIPLINARY_ACTION,
     category=MetricCategory.FAIRNESS,
-    display_name="Violations filed against attorneys in your office resulting in disciplinary action",
+    display_name="Violations",
     definitions=[
         Definition(
             term="Violation",
             definition="A complaint filed against an attorney pertaining to an error in judgment or other prosecutorial misconduct.",
         )
     ],
-    description="Measures the percent of violations filed against attorneys in the office that result in disciplinary actions.",
+    description="Measures the percent of violations filed against attorneys in your office that result in disciplinary actions.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
 )

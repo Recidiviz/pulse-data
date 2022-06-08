@@ -25,7 +25,7 @@ class ProsecutionAndDefenseStaffType(DimensionBase, enum.Enum):
     ATTORNEY = "Attorney"
     SUPERVISOR = "Supervisor"
     ADMINISTRATIVE = "Administrative"
-    SUPPORT_OR_EXPERT = "Support or expert"
+    SUPPORT_OR_EXPERT = "Support or Expert"
     OTHER = "Other"
     UNKNOWN = "Unknown"
 
@@ -47,8 +47,8 @@ class CaseSeverityType(DimensionBase, enum.Enum):
 
 class DispositionType(DimensionBase, enum.Enum):
     ACQUITTAL = "Acquittal"
-    CONVICTION_PLEA = "Conviction - plea"
-    CONVICTION_TRIAL = "Conviction - trial"
+    CONVICTION_PLEA = "Conviction - Plea"
+    CONVICTION_TRIAL = "Conviction - Trial"
     DISMISSAL = "Dismissal"
     DIVERTED_OR_DEFERRED = "Diverted or Deferred"
     REJECTED = "Rejected"

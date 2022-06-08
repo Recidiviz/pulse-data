@@ -49,7 +49,7 @@ residents = MetricDefinition(
     metric_type=MetricType.RESIDENTS,
     category=MetricCategory.POPULATIONS,
     display_name="Jurisdiction Residents",
-    description="Measures the number of residents in the agency's jurisdiction.",
+    description="Measures the number of residents in your agency's jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -63,7 +63,7 @@ annual_budget = MetricDefinition(
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of the agency.",
+    description="Measures the total annual budget (in dollars) of your agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     specified_contexts=[
@@ -88,7 +88,7 @@ total_staff = MetricDefinition(
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
-    description="Measures the number of full-time staff employed by the agency.",
+    description="Measures the number of full-time staff employed by your agency.",
     definitions=[
         Definition(
             term="Full time staff",
@@ -112,7 +112,7 @@ supervision_violations = MetricDefinition(
     definitions=[
         Definition(
             term="Violation",
-            definition="An event in which an individual under supervision ignores, errs, or otherwise breaks a condition of their supervision as defined by the agency. Violations may involve the commission of a new offense or failing to meet agreed upon parameters (appearance in court, a positive drug test, attendance in programming). Record violations whether or not a resulting action may be revocation.",
+            definition="An event in which an individual under supervision ignores, errs, or otherwise breaks a condition of their supervision as defined by your agency. Violations may involve the commission of a new offense or failing to meet agreed upon parameters (appearance in court, a positive drug test, attendance in programming). Record violations whether or not a resulting action may be revocation.",
         )
     ],
     measurement_type=MeasurementType.DELTA,
@@ -127,7 +127,7 @@ new_supervision_cases = MetricDefinition(
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="New Supervision Cases",
-    description="Measures the number of new cases referred to the agency for supervision.",
+    description="Measures the number of new cases referred to your agency for supervision.",
     definitions=[
         Definition(
             term="Active supervision",
@@ -147,7 +147,7 @@ individuals_under_supervision = MetricDefinition(
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="Individuals under Supervision",
-    description="Measures the number individuals currently under the supervision of the agency.",
+    description="Measures the number individuals currently under the supervision of your agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[

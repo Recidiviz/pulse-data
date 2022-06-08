@@ -65,7 +65,7 @@ class SupervisionIndividualType(DimensionBase, enum.Enum):
 
 class SupervisionTerminationType(DimensionBase, enum.Enum):
     SUCCESSFUL = "Successful"
-    UNSUCCESSFUL_OR_REVOKED = "Unsuccessful or revoked"
+    UNSUCCESSFUL_OR_REVOKED = "Unsuccessful or Revoked"
     OTHER = "Other"
     UNKNOWN = "Unknown"
 
