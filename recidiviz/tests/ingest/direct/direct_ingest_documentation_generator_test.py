@@ -87,6 +87,7 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         mock_referencing_views.return_value = {
             "multiLineDescription": ["view_one", "view_two"],
             "tagColumnsMissing": ["view_one"],
+            "tagNotHistorical": [],
             "tagPrimaryKeyColsMissing": [],
         }
 
@@ -107,6 +108,7 @@ found in `us_ww_raw_data_up_to_date_views`.
 |----------------------------------------------------------------|-----------------------|----------------|--------------|
 |[multiLineDescription](raw_data/multiLineDescription.md)        |view_one,<br />view_two|2021-02-10      |Julia Dressel |
 |[tagColumnsMissing](raw_data/tagColumnsMissing.md)              |view_one               |2021-02-10      |Julia Dressel |
+|[tagNotHistorical](raw_data/tagNotHistorical.md)                |                       |2021-02-10      |Julia Dressel |
 |[tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md)|                       |2021-02-10      |Julia Dressel |
 """
 
@@ -129,6 +131,15 @@ tagColumnsMissing file description
 |------|------------------|--------------------|---------------|-------|
 """
 
+        expected_tag_not_historical = """## tagNotHistorical
+
+tagNotHistorical file description
+
+| Column |Column Description|Part of Primary Key?|Distinct Values|Is PII?|
+|--------|------------------|--------------------|---------------|-------|
+|column_1|<No documentation>|YES                 |N/A            |False  |
+"""
+
         expected_tag_primary_key_cols_missing = """## tagPrimaryKeyColsMissing
 
 tagPrimaryKeyColsMissing file description
@@ -142,6 +153,7 @@ tagPrimaryKeyColsMissing file description
             "multiLineDescription.md": expected_multi_line,
             "raw_data.md": expected_raw_data,
             "tagColumnsMissing.md": expected_tag_columns_missing,
+            "tagNotHistorical.md": expected_tag_not_historical,
             "tagPrimaryKeyColsMissing.md": expected_tag_primary_key_cols_missing,
         }
 

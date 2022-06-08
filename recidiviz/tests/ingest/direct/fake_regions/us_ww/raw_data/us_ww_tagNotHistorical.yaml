@@ -1,0 +1,9 @@
+file_tag: tagNotHistorical
+file_description: |-
+  tagNotHistorical file description
+data_classification: source
+always_historical_export: False
+primary_key_cols:
+  - column_1
+columns:
+  - name: column_1
