@@ -61,16 +61,44 @@ export const printReportTitle = (
 
 /**
  * @returns elapsed number of days since a provided date as a string
- * @example '1 day ago', '0 days ago', '365 days ago'
+ * @example 'today', 'yesterday', '2 days ago', '3 months ago', '5 years ago'
  */
-export const printElapsedDaysSinceDate = (date: string): string => {
+export const printElapsedDaysMonthsYearsSinceDate = (date: string): string => {
   const now = +new Date(Date.now());
   const stringDateToNumber = +new Date(date);
   const daysLapsed = Math.floor(
     (now - stringDateToNumber) / (1000 * 60 * 60 * 24)
   );
 
-  return `${daysLapsed} day${daysLapsed !== 1 ? "s" : ""} ago`;
+  if (daysLapsed === 0) {
+    return `today`;
+  }
+
+  if (daysLapsed === 1) {
+    return `yesterday`;
+  }
+
+  if (daysLapsed < 31) {
+    return `${daysLapsed !== 1 ? daysLapsed : "a"} day${
+      daysLapsed !== 1 ? "s" : ""
+    } ago`;
+  }
+
+  if (daysLapsed > 30 && daysLapsed < 365) {
+    const monthsLapsed = Math.floor(daysLapsed / 30);
+    return `${monthsLapsed !== 1 ? monthsLapsed : "a"} month${
+      monthsLapsed !== 1 ? "s" : ""
+    } ago`;
+  }
+
+  if (daysLapsed >= 365) {
+    const yearsLapsed = Math.floor(daysLapsed / 365);
+    return `${yearsLapsed !== 1 ? yearsLapsed : "a"} year${
+      yearsLapsed !== 1 ? "s" : ""
+    } ago`;
+  }
+
+  return "";
 };
 
 /**

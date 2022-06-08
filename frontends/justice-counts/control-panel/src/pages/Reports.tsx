@@ -45,7 +45,7 @@ import { useStore } from "../stores";
 import {
   normalizeString,
   printCommaSeparatedList,
-  printElapsedDaysSinceDate,
+  printElapsedDaysMonthsYearsSinceDate,
   printReportTitle,
   removeSnakeCase,
 } from "../utils";
@@ -212,7 +212,9 @@ const Reports: React.FC = () => {
                   <Cell>
                     {!report.last_modified_at
                       ? "-"
-                      : printElapsedDaysSinceDate(report.last_modified_at)}
+                      : printElapsedDaysMonthsYearsSinceDate(
+                          report.last_modified_at
+                        )}
                   </Cell>
                 </Row>
 

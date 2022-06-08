@@ -15,7 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { printDateRangeFromMonthYear } from "./dateUtils";
+import {
+  printDateRangeFromMonthYear,
+  printElapsedDaysMonthsYearsSinceDate,
+} from "./dateUtils";
 
 describe("printDateRangeFromMonthYear", () => {
   test("monthly", () => {
@@ -54,5 +57,78 @@ describe("printDateRangeFromMonthYear", () => {
     const result2 = printDateRangeFromMonthYear(7, 2022, "ANNUAL");
     expect(result1).toEqual("January 1, 2022 - December 31, 2022");
     expect(result2).toEqual("July 1, 2022 - June 30, 2023");
+  });
+});
+
+describe("printElapsedDaysMonthsYearsSinceDate", () => {
+  const dayAsMilliseconds = 86400000;
+  const zeroDaysLapsed = new Date(
+    Date.now() - dayAsMilliseconds * 0
+  ).toString();
+  const oneDayLapsed = new Date(Date.now() - dayAsMilliseconds * 1).toString();
+  const twoDaysLapsed = new Date(Date.now() - dayAsMilliseconds * 2).toString();
+  const fifteenDaysLapsed = new Date(
+    Date.now() - dayAsMilliseconds * 15
+  ).toString();
+  const fourtyDaysLapsed = new Date(
+    Date.now() - dayAsMilliseconds * 40
+  ).toString();
+  const sixtyDaysLapsed = new Date(
+    Date.now() - dayAsMilliseconds * 60
+  ).toString();
+  const hundredDaysLapsed = new Date(
+    Date.now() - dayAsMilliseconds * 100
+  ).toString();
+  const fiveHundredDaysLapsed = new Date(
+    Date.now() - dayAsMilliseconds * 500
+  ).toString();
+  const nineHundredDaysLapsed = new Date(
+    Date.now() - dayAsMilliseconds * 900
+  ).toString();
+
+  test("0 days ago prints today", () => {
+    const zeroDaysLapsedText =
+      printElapsedDaysMonthsYearsSinceDate(zeroDaysLapsed);
+    const nonZeroDaysLapsedText =
+      printElapsedDaysMonthsYearsSinceDate(fifteenDaysLapsed);
+    expect(zeroDaysLapsedText).toEqual("today");
+    expect(nonZeroDaysLapsedText).not.toEqual("today");
+  });
+
+  test("1 day ago prints yesterday", () => {
+    const oneDayLapsedText = printElapsedDaysMonthsYearsSinceDate(oneDayLapsed);
+    expect(oneDayLapsedText).toEqual("yesterday");
+  });
+
+  test("less than 31 days ago prints number of days lapsed", () => {
+    const twoDaysLapsedText =
+      printElapsedDaysMonthsYearsSinceDate(twoDaysLapsed);
+    const fifteenDaysLapsedText =
+      printElapsedDaysMonthsYearsSinceDate(fifteenDaysLapsed);
+    expect(twoDaysLapsedText).toEqual("2 days ago");
+    expect(fifteenDaysLapsedText).toEqual("15 days ago");
+  });
+
+  test("more than 30 days prints number of months lapsed", () => {
+    const fourtyDaysLapsedText =
+      printElapsedDaysMonthsYearsSinceDate(fourtyDaysLapsed);
+    const sixtyDaysLapsedText =
+      printElapsedDaysMonthsYearsSinceDate(sixtyDaysLapsed);
+    const hundredDaysLapsedText =
+      printElapsedDaysMonthsYearsSinceDate(hundredDaysLapsed);
+    expect(fourtyDaysLapsedText).toEqual("a month ago");
+    expect(sixtyDaysLapsedText).toEqual("2 months ago");
+    expect(hundredDaysLapsedText).toEqual("3 months ago");
+  });
+
+  test("more than 365 days prints number of years lapsed", () => {
+    const fiveHundredDaysLapsedText = printElapsedDaysMonthsYearsSinceDate(
+      fiveHundredDaysLapsed
+    );
+    const nineHundredDaysLapsedText = printElapsedDaysMonthsYearsSinceDate(
+      nineHundredDaysLapsed
+    );
+    expect(fiveHundredDaysLapsedText).toEqual("a year ago");
+    expect(nineHundredDaysLapsedText).toEqual("2 years ago");
   });
 });
