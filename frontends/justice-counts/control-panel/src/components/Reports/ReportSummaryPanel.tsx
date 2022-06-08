@@ -25,7 +25,7 @@ import { useStore } from "../../stores";
 import {
   printCommaSeparatedList,
   printDateRangeFromMonthYear,
-  printElapsedDaysSinceDate,
+  printElapsedDaysMonthsYearsSinceDate,
 } from "../../utils";
 // import successIcon from "../assets/status-check-icon.png";
 import errorIcon from "../assets/status-error-icon.png";
@@ -241,9 +241,9 @@ const ReportSummaryPanel: React.FC<{
 
           {editors.length >= 1 &&
             lastModifiedAt &&
-            `Last modified ${printElapsedDaysSinceDate(lastModifiedAt)} by ${
-              editors[editors.length - 1]
-            }`}
+            `Last modified ${printElapsedDaysMonthsYearsSinceDate(
+              lastModifiedAt
+            )} by ${editors[editors.length - 1]}`}
 
           {!editors.length && ``}
         </EditDetailsContent>
