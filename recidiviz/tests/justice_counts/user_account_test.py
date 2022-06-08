@@ -20,6 +20,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 
@@ -30,33 +31,27 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            for agency in [
-                {
-                    "name": "Agency Alpha",
-                    "system": "LAW_ENFORCEMENT",
-                    "state_code": "us_ca",
-                    "fips_county_code": "us_ca_sacramento",
-                },
-                {
-                    "name": "Agency Beta",
-                    "system": "LAW_ENFORCEMENT",
-                    "state_code": "us_ak",
-                    "fips_county_code": "us_ak_anchorage",
-                },
-                {
-                    "name": "Agency Gamma",
-                    "system": "LAW_ENFORCEMENT",
-                    "state_code": "us_ar",
-                    "fips_county_code": "us_ar_lee",
-                },
-            ]:
-                AgencyInterface.create_agency(
-                    session=session,
-                    name=agency["name"],
-                    system=agency["system"],
-                    state_code=agency["state_code"],
-                    fips_county_code=agency["fips_county_code"],
-                )
+            AgencyInterface.create_agency(
+                session=session,
+                name="Agency Alpha",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ca",
+                fips_county_code="us_ca_sacramento",
+            )
+            AgencyInterface.create_agency(
+                session=session,
+                name="Agency Beta",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ak",
+                fips_county_code="us_ak_anchorage",
+            )
+            AgencyInterface.create_agency(
+                session=session,
+                name="Agency Gamma",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ar",
+                fips_county_code="us_ar_lee",
+            )
 
             UserAccountInterface.create_or_update_user(
                 session=session,

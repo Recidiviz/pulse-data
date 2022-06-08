@@ -2,7 +2,7 @@
 export type Agency = {
   id: number;
   name: string;
-  system: string;
+  systems: string[];
   state_code: string;
   fips_county_code: string;
 };
@@ -10,7 +10,7 @@ export type Agency = {
 
 export type CreateAgencyRequest = {
   name: string;
-  system: string;
+  systems: string[];
   stateCode: string;
   fipsCountyCode: string;
 };

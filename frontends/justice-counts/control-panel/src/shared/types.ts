@@ -59,6 +59,7 @@ export type MetricDisaggregationDimensionsWithErrors =
 
 export interface Metric {
   key: string;
+  system?: string;
   display_name: string;
   description: string;
   reporting_note: string;

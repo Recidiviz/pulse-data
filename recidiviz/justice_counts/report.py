@@ -16,7 +16,7 @@
 # =============================================================================
 """Interface for working with the Reports model."""
 import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import attr
 from sqlalchemy.orm import Session
@@ -380,7 +380,10 @@ class ReportInterface:
         #   - Agency system (e.g. only law enforcement)
         #   - Report frequency (e.g. only annual metrics)
         metric_definitions = ReportInterface.get_metric_definitions_by_report_type(
-            report_type=report.type, system=report.source.system
+            report_type=report.type,
+            systems=set(report.source.systems) if report.source.systems is not None
+            # TODO(#13216): Get rid of this `source.system` after migrating over to `systems`
+            else {report.source.system.value},
         )
         # If data has already been reported for some metrics on this report,
         # then `report.datapoints` will be non-empty.
@@ -450,11 +453,11 @@ class ReportInterface:
     @staticmethod
     def get_metric_definitions_by_report_type(
         report_type: schema.ReportingFrequency,
-        system: schema.System,
+        systems: Set[str],
     ) -> List[MetricDefinition]:
         return [
             metric
             for metric in METRICS
-            if metric.system == system
+            if metric.system.value in systems
             and report_type in {freq.value for freq in metric.reporting_frequencies}
         ]

@@ -258,7 +258,9 @@ class Agency(Source):
         return {
             "id": self.id,
             "name": self.name,
+            # TODO(#13216): Get rid of `system` after migrating over to `systems`
             "system": self.system.value if self.system else None,
+            "systems": self.systems or [],
             "state_code": self.state_code,
             "fips_county_code": self.fips_county_code,
         }
