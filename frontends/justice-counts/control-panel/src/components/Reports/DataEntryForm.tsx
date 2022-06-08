@@ -18,6 +18,8 @@
 import debounce from "lodash.debounce";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components/macro";
 
 import { useStore } from "../../stores";
 import { printReportTitle } from "../../utils";
@@ -29,6 +31,7 @@ import {
   BinaryRadioGroupWrapper,
   ErrorLabel,
   Form,
+  GoBackToReportsOverviewLink,
   Metric,
   MetricSectionSubTitle,
   MetricSectionTitle,
@@ -37,21 +40,80 @@ import {
   TabbedDisaggregations,
   Title,
 } from "../Forms";
+import { palette } from "../GlobalStyles";
 import { showToast } from "../Toast";
 import {
   AdditionalContextInput,
   BinaryRadioButtonInputs,
   MetricTextInput,
 } from "./DataEntryFormComponents";
+import {
+  DATA_ENTRY_WIDTH,
+  ONE_PANEL_MAX_WIDTH,
+  PublishButton,
+  SIDE_PANEL_HORIZONTAL_PADDING,
+} from "./ReportDataEntry.styles";
+
+const DataEntryFormBackLinkContainer = styled(PreTitle)`
+  display: none;
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    display: block;
+    position: fixed;
+    top: 0;
+    padding-top: 96px;
+    width: 100%;
+    margin-right: -1px;
+    margin-left: -1px;
+    background-color: ${palette.solid.white};
+    z-index: 1;
+  }
+`;
+
+const DataEntryFormPreTitle = styled(PreTitle)`
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    margin-top: 48px;
+  }
+`;
+
+const DataEntryFormTitle = styled(Title)`
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    top: 118px;
+  }
+`;
+
+const DataEntryFormPublishButtonContainer = styled.div`
+  position: fixed;
+  display: flex;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 ${SIDE_PANEL_HORIZONTAL_PADDING}px;
+  justify-content: center;
+`;
+
+const DataEntryFormPublishButton = styled(PublishButton)`
+  display: none;
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    display: block;
+    flex: 0 1 ${DATA_ENTRY_WIDTH}px;
+  }
+`;
 
 const DataEntryForm: React.FC<{
   reportID: number;
-  updateFieldDescription: (title: string, description: string) => void;
+  updateFieldDescription: (title?: string, description?: string) => void;
   updateActiveMetric: (metricKey: string) => void;
-}> = ({ reportID, updateFieldDescription, updateActiveMetric }) => {
+  toggleConfirmationDialogue: () => void;
+}> = ({
+  reportID,
+  updateFieldDescription,
+  updateActiveMetric,
+  toggleConfirmationDialogue,
+}) => {
   const [scrolled, setScrolled] = useState(false);
   const metricsRef = useRef<HTMLDivElement[]>([]);
   const { formStore, reportStore } = useStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     /** Will need to debounce */
@@ -117,9 +179,9 @@ const DataEntryForm: React.FC<{
     )) as Response;
 
     if (response.status === 200) {
-      showToast("Saved", true);
+      showToast("Saved", false, "grey");
     } else {
-      showToast("Failed to save", false, true);
+      showToast("Failed to save", false, "red");
     }
   };
 
@@ -151,20 +213,23 @@ const DataEntryForm: React.FC<{
   return (
     <Form
       onChange={() => {
-        showToast("Saving...", false, false, undefined, true);
+        showToast("Saving...", false, "grey", undefined, true);
         debouncedSave();
       }}
     >
       {/* Form Title */}
-      <PreTitle>Enter Data</PreTitle>
-      <Title scrolled={scrolled} sticky>
+      <DataEntryFormBackLinkContainer>
+        <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
+      </DataEntryFormBackLinkContainer>
+      <DataEntryFormPreTitle>Enter Data</DataEntryFormPreTitle>
+      <DataEntryFormTitle scrolled={scrolled} sticky>
         {reportOverview &&
           printReportTitle(
             reportOverview.month,
             reportOverview.year,
             reportOverview.frequency
           )}
-      </Title>
+      </DataEntryFormTitle>
 
       {/* Metrics */}
       {reportMetrics.map((metric, index) => {
@@ -185,7 +250,7 @@ const DataEntryForm: React.FC<{
               updateFieldDescription={() =>
                 updateFieldDescription(metric.display_name, metric.description)
               }
-              clearFieldDescription={() => updateFieldDescription("", "")}
+              clearFieldDescription={() => updateFieldDescription(undefined)}
             />
 
             {/* Disaggregations */}
@@ -213,7 +278,7 @@ const DataEntryForm: React.FC<{
                           context.reporting_note as string
                         )
                       }
-                      onMouseLeave={() => updateFieldDescription("", "")}
+                      onMouseLeave={() => updateFieldDescription(undefined)}
                     >
                       <BinaryRadioGroupQuestion>
                         {context.display_name}
@@ -245,7 +310,7 @@ const DataEntryForm: React.FC<{
                             showToast(
                               "Saving...",
                               false,
-                              false,
+                              "grey",
                               undefined,
                               true
                             );
@@ -295,7 +360,7 @@ const DataEntryForm: React.FC<{
                         )
                       }
                       clearFieldDescription={() =>
-                        updateFieldDescription("", "")
+                        updateFieldDescription(undefined)
                       }
                     />
                   </Fragment>
@@ -304,6 +369,17 @@ const DataEntryForm: React.FC<{
           </Metric>
         );
       })}
+      <DataEntryFormPublishButtonContainer>
+        <DataEntryFormPublishButton
+          onClick={(e) => {
+            /** Should trigger a confirmation dialogue before submitting */
+            e.preventDefault();
+            toggleConfirmationDialogue();
+          }}
+        >
+          Publish Data (Review)
+        </DataEntryFormPublishButton>
+      </DataEntryFormPublishButtonContainer>
       <OpacityGradient />
     </Form>
   );

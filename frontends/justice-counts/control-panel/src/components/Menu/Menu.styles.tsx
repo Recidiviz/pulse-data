@@ -18,6 +18,7 @@ import { DropdownMenuItem, DropdownToggle } from "@recidiviz/design-system";
 import styled from "styled-components/macro";
 
 import { palette, typography } from "../GlobalStyles";
+import { ONE_PANEL_MAX_WIDTH } from "../Reports/ReportDataEntry.styles";
 
 export const MenuContainer = styled.nav`
   font-family: ${typography.family};
@@ -55,6 +56,10 @@ export const WelcomeUser = styled.div`
   color: ${palette.highlight.grey8};
   border-right: 1px solid black;
   padding-right: 24px;
+
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    display: none;
+  }
 `;
 
 export const ExtendedDropdownToggle = styled(DropdownToggle)`

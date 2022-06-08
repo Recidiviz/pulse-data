@@ -26,7 +26,7 @@ import { printReportTitle, rem } from "../../utils";
 import { Button } from "../Forms";
 import { palette } from "../GlobalStyles";
 import { showToast } from "../Toast";
-import { PublishButton } from "./PublishDataPanel";
+import { PublishButton } from "./ReportDataEntry.styles";
 
 const ConfirmationDialogueWrapper = styled.div`
   width: 100vw;

@@ -18,10 +18,12 @@
 import checkIconWhite from "../assets/status-check-white-icon.png";
 import { palette, typography } from "../GlobalStyles";
 
+type ToastColor = "blue" | "red" | "grey";
+
 export const showToast = (
   message: string,
   check = false,
-  warning = false,
+  color: ToastColor = "blue",
   timeout = 2500,
   preventOverride?: boolean
 ) => {
@@ -57,13 +59,25 @@ export const showToast = (
       overflow: hidden;
     `;
   toastElementWrapper.appendChild(toastElement);
+
+  let toastBackgroundColor = palette.solid.blue;
+  switch (color) {
+    case "red":
+      toastBackgroundColor = palette.solid.red;
+      break;
+    case "grey":
+      toastBackgroundColor = palette.solid.white;
+      break;
+    default:
+      break;
+  }
   toastElement.style.cssText = `
       width: auto;
       height: 64px;
       display: flex;
       align-items: center;
-      background: ${warning ? palette.solid.red : palette.solid.blue};
-      color: ${palette.solid.white};
+      background: ${toastBackgroundColor};
+      color: ${color === "grey" ? palette.solid.grey : palette.solid.white};
       padding: 20px 24px;
       border-radius: 2px;
       white-space: nowrap;

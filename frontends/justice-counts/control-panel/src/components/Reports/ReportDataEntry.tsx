@@ -25,7 +25,9 @@ import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import { PageWrapper } from "../Forms";
 import DataEntryForm from "./DataEntryForm";
+import PublishConfirmation from "./PublishConfirmation";
 import PublishDataPanel from "./PublishDataPanel";
+import { FieldDescriptionProps } from "./ReportDataEntry.styles";
 import ReportSummaryPanel from "./ReportSummaryPanel";
 
 const ReportDataEntry = () => {
@@ -34,16 +36,15 @@ const ReportDataEntry = () => {
     undefined
   );
   const [activeMetric, setActiveMetric] = useState<string>("");
-  const [fieldDescription, setFieldDescription] = useState<{
-    title: string;
-    description: string;
-  }>({
-    title: "",
-    description: "",
-  });
+  const [fieldDescription, setFieldDescription] = useState<
+    FieldDescriptionProps | undefined
+  >(undefined);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const { reportStore, userStore } = useStore();
   const params = useParams();
   const reportID = Number(params.id);
+  const toggleConfirmationDialogue = () =>
+    setShowConfirmation(!showConfirmation);
 
   useEffect(
     () =>
@@ -66,8 +67,13 @@ const ReportDataEntry = () => {
   const reportMetrics = reportStore.reportMetrics[reportID];
 
   const updateActiveMetric = (metricKey: string) => setActiveMetric(metricKey);
-  const updateFieldDescription = (title: string, description: string) =>
-    setFieldDescription({ title, description });
+  const updateFieldDescription = (title?: string, description?: string) => {
+    if (title && description) {
+      setFieldDescription({ title, description });
+    } else {
+      setFieldDescription(undefined);
+    }
+  };
 
   useEffect(() => {
     if (reportMetrics) updateActiveMetric(reportMetrics[0].key); // open to the first metric by default
@@ -87,16 +93,29 @@ const ReportDataEntry = () => {
 
   return (
     <PageWrapper>
-      <ReportSummaryPanel reportID={reportID} activeMetric={activeMetric} />
+      <ReportSummaryPanel
+        reportID={reportID}
+        activeMetric={activeMetric}
+        fieldDescription={fieldDescription}
+        toggleConfirmationDialogue={toggleConfirmationDialogue}
+      />
       <DataEntryForm
         reportID={reportID}
         updateActiveMetric={updateActiveMetric}
         updateFieldDescription={updateFieldDescription}
+        toggleConfirmationDialogue={toggleConfirmationDialogue}
       />
       <PublishDataPanel
         reportID={reportID}
         fieldDescription={fieldDescription}
+        toggleConfirmationDialogue={toggleConfirmationDialogue}
       />
+      {showConfirmation && (
+        <PublishConfirmation
+          toggleConfirmationDialogue={toggleConfirmationDialogue}
+          reportID={reportID}
+        />
+      )}
     </PageWrapper>
   );
 };

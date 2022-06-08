@@ -34,7 +34,7 @@ export const TabbedDisaggregations: React.FC<{
   reportMetrics: MetricType[];
   reportID: number;
   currentIndex: number;
-  updateFieldDescription: (title: string, description: string) => void;
+  updateFieldDescription: (title?: string, description?: string) => void;
 }> = ({
   metric,
   reportMetrics,
@@ -205,7 +205,7 @@ export const TabbedDisaggregations: React.FC<{
                     dimension.reporting_note
                   )
                 }
-                clearFieldDescription={() => updateFieldDescription("", "")}
+                clearFieldDescription={() => updateFieldDescription(undefined)}
               />
             </DisaggregationInputWrapper>
           );
