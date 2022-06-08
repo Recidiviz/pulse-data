@@ -89,9 +89,6 @@ run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --projec
 GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
 run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
 
-echo "Starting deploy of main app - scrapers"
-run_cmd gcloud -q app deploy prod-scrapers.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
-
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123' $CALC_CHANGES_SINCE_LAST_DEPLOY
 
