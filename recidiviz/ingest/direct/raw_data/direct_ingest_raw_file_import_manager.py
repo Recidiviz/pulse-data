@@ -384,24 +384,27 @@ class DirectIngestRawFileConfig:
                 for column in columns
             ],
             supplemental_order_by_clause=supplemental_order_by_clause
-            if supplemental_order_by_clause
+            if supplemental_order_by_clause is not None
             else "",
-            encoding=encoding if encoding else default_encoding,
-            separator=separator if separator else default_separator,
+            encoding=encoding if encoding is not None else default_encoding,
+            separator=separator if separator is not None else default_separator,
             custom_line_terminator=custom_line_terminator
-            if custom_line_terminator
+            if custom_line_terminator is not None
             else default_line_terminator,
-            ignore_quotes=ignore_quotes if ignore_quotes else default_ignore_quotes,
+            ignore_quotes=ignore_quotes
+            if ignore_quotes is not None
+            else default_ignore_quotes,
             always_historical_export=always_historical_export
-            if always_historical_export
+            if always_historical_export is not None
             else default_always_historical_export,
             import_chunk_size_rows=import_chunk_size_rows
-            or _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
+            if import_chunk_size_rows is not None
+            else _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
             infer_columns_from_config=infer_columns_from_config
-            if infer_columns_from_config
+            if infer_columns_from_config is not None
             else (
                 default_infer_columns_from_config
-                if default_infer_columns_from_config
+                if default_infer_columns_from_config is not None
                 else False
             ),
         )
