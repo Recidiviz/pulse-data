@@ -164,13 +164,11 @@ class TestJusticeCountsReportMetric(TestCase):
                                 "key": "Detention",
                                 "label": "Detention",
                                 "value": 66666,
-                                "reporting_note": "Sheriff Budget: Detention",
                             },
                             {
                                 "key": "Patrol",
                                 "label": "Patrol",
                                 "value": 33334,
-                                "reporting_note": "Sheriff Budget: Patrol",
                             },
                         ],
                     }
@@ -242,19 +240,16 @@ class TestJusticeCountsReportMetric(TestCase):
                                 "key": "Emergency",
                                 "label": "Emergency",
                                 "value": 20,
-                                "reporting_note": "Call: Emergency",
                             },
                             {
                                 "key": "Non-emergency",
                                 "label": "Non-emergency",
                                 "value": 60,
-                                "reporting_note": "Call: Non-emergency",
                             },
                             {
                                 "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 20,
-                                "reporting_note": "Call: Unknown",
                             },
                         ],
                     }
@@ -354,25 +349,21 @@ class TestJusticeCountsReportMetric(TestCase):
                                 "key": "Drug",
                                 "label": "Drug",
                                 "value": 60,
-                                "reporting_note": "Offense: Drug",
                             },
                             {
                                 "key": "Person",
                                 "label": "Person",
                                 "value": 10,
-                                "reporting_note": "Offense: Person",
                             },
                             {
                                 "key": "Property",
                                 "label": "Property",
                                 "value": 40,
-                                "reporting_note": "Offense: Property",
                             },
                             {
                                 "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 10,
-                                "reporting_note": "Offense: Unknown",
                             },
                         ],
                     }

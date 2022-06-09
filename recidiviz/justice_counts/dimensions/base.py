@@ -96,22 +96,6 @@ class DimensionBase:
         """
         return self.to_enum().name
 
-    @property
-    def reporting_note(self) -> str:
-        """Reporting note below dimension field in control panel.
-
-        E.g. "PATROL" value of'SheriffBudgetType' should have a reporting_note of "Sheriff Budget: Patrol".
-        """
-        # Get first half of reporting note from class. GenderRestricted -> Gender, OffenseType -> Offense
-        class_name = self.__class__.human_readable_name()
-        type_index = class_name.find("Type")
-
-        class_name = (
-            class_name[0 : type_index - 1] if type_index > 0 else class_name
-        )  # Remove 'Type' from reporting class name Staff Budget Type -> Staff Budget
-
-        return f"{class_name}: {self.dimension_value}"
-
 
 class Dimension(DimensionBase):
     """Each dimension is represented as a class that is used to hold the values for that dimension and perform any

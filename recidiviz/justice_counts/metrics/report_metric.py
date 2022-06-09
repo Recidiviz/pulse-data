@@ -114,7 +114,6 @@ class ReportedAggregatedDimension:
                 "key": dimension.to_enum().value,
                 "value": val,
                 "label": dimension.dimension_value,
-                "reporting_note": dimension.reporting_note,
             }
             for dimension, val in self.dimension_to_value.items()
         ]
