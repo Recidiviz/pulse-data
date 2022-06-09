@@ -17,12 +17,10 @@
 
 import { observer } from "mobx-react-lite";
 import React from "react";
-import styled from "styled-components/macro";
 
 import PreviewDataObject from "../../mocks/PreviewDataObject";
 import { useStore } from "../../stores";
 import { Title } from "../Forms";
-import { palette } from "../GlobalStyles";
 import {
   FieldDescription,
   FieldDescriptionProps,
@@ -30,44 +28,17 @@ import {
   PublishDataWrapper,
 } from "./ReportDataEntry.styles";
 
-const TempSaveButton = styled.button`
-  position: absolute;
-  top: 195px;
-  right: 26px;
-  background: none;
-  border: none;
-  color: ${palette.solid.blue};
-  font-size: 1rem;
-  transition: 0.2s ease;
-  border-bottom: 1px solid transparent;
-
-  &:hover {
-    cursor: pointer;
-    border-bottom: 1px solid ${palette.solid.blue};
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
-`;
-
 const PublishDataPanel: React.FC<{
   reportID: number;
   fieldDescription?: FieldDescriptionProps;
   toggleConfirmationDialogue: () => void;
 }> = ({ reportID, fieldDescription, toggleConfirmationDialogue }) => {
-  const { formStore, reportStore } = useStore();
-
-  const saveUpdatedMetrics = () => {
-    const updatedMetrics = formStore.reportUpdatedValuesForBackend(reportID);
-    reportStore.updateReport(reportID, updatedMetrics, "DRAFT");
-  };
+  const { formStore } = useStore();
 
   return (
     <>
       <PublishDataWrapper>
         {/* Replace with autosave */}
-        <TempSaveButton onClick={saveUpdatedMetrics}>Save</TempSaveButton>
         <Title>
           <PublishButton
             onClick={() => {
