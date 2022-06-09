@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the Reports model."""
 import datetime
+import itertools
 from typing import Any, Dict, List, Optional, Set
 
 import attr
@@ -33,7 +34,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
 )
 from recidiviz.justice_counts.metrics.metric_registry import (
     METRIC_KEY_TO_METRIC,
-    METRICS,
+    METRICS_BY_SYSTEM,
 )
 from recidiviz.justice_counts.metrics.report_metric import (
     ReportedAggregatedDimension,
@@ -385,10 +386,17 @@ class ReportInterface:
         #   - Report frequency (e.g. only annual metrics)
         metric_definitions = ReportInterface.get_metric_definitions_by_report_type(
             report_type=report.type,
-            systems=set(report.source.systems) if report.source.systems is not None
+            systems={schema.System[system] for system in report.source.systems}
+            if report.source.systems is not None
             # TODO(#13216): Get rid of this `source.system` after migrating over to `systems`
-            else {report.source.system.value},
+            else {report.source.system},
         )
+
+        if len(metric_definitions) == 0:
+            raise JusticeCountsDataError(
+                code="invalid_data", description="No metrics found for this report."
+            )
+
         # If data has already been reported for some metrics on this report,
         # then `report.datapoints` will be non-empty.
         metric_key_to_data_points = ReportInterface._build_metric_key_to_data_points(
@@ -460,11 +468,13 @@ class ReportInterface:
     @staticmethod
     def get_metric_definitions_by_report_type(
         report_type: schema.ReportingFrequency,
-        systems: Set[str],
+        systems: Set[schema.System],
     ) -> List[MetricDefinition]:
+        metrics = list(
+            itertools.chain(*[METRICS_BY_SYSTEM[system.value] for system in systems])
+        )
         return [
             metric
-            for metric in METRICS
-            if metric.system.value in systems
-            and report_type in {freq.value for freq in metric.reporting_frequencies}
+            for metric in metrics
+            if report_type in {freq.value for freq in metric.reporting_frequencies}
         ]
