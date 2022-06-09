@@ -24,6 +24,7 @@ import {
   ReportStatus,
   UpdatedMetricsValues,
 } from "../shared/types";
+import { groupBy } from "../utils/helperUtils";
 import API from "./API";
 import UserStore from "./UserStore";
 
@@ -36,6 +37,8 @@ class ReportStore {
 
   reportMetrics: { [reportID: string]: Metric[] }; // key by report ID
 
+  reportMetricsBySystem: { [reportID: string]: { [system: string]: Metric[] } }; // key by report ID, then by system
+
   loadingOverview: boolean;
 
   constructor(userStore: UserStore, api: API) {
@@ -45,6 +48,7 @@ class ReportStore {
     this.userStore = userStore;
     this.reportOverviews = {};
     this.reportMetrics = {};
+    this.reportMetricsBySystem = {};
     this.loadingOverview = true;
   }
 
@@ -114,8 +118,11 @@ class ReportStore {
 
       runInAction(() => {
         this.reportOverviews[reportID] = overview;
-        this.reportMetrics[reportID] = metrics;
-        // this.reportMetrics[reportID] = mockReport.metrics;
+        const metricsBySystem = groupBy(metrics, (metric) => metric.system);
+        this.reportMetricsBySystem[reportID] = metricsBySystem;
+        // ensure that the order of the metrics in reportMetricsBySystem
+        // matches the order of the metrics in reportMetrics
+        this.reportMetrics[reportID] = Object.values(metricsBySystem).flat();
       });
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
@@ -179,6 +186,7 @@ class ReportStore {
     runInAction(() => {
       this.reportOverviews = {};
       this.reportMetrics = {};
+      this.reportMetricsBySystem = {};
       this.loadingOverview = true;
     });
   }

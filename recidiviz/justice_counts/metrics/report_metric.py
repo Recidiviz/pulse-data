@@ -267,7 +267,9 @@ class ReportMetric:
         }
         return {
             "key": self.key,
-            "system": self.metric_definition.system.value,
+            "system": self.metric_definition.system.value.replace("_", " ")
+            .title()
+            .replace("And", "and"),
             "display_name": self.metric_definition.display_name,
             "description": self.metric_definition.description,
             "reporting_note": self.metric_definition.reporting_note,

@@ -81,53 +81,61 @@ describe("test data entry form", () => {
       },
     };
 
+    rootStore.reportStore.reportMetricsBySystem = {
+      0: {
+        "Law Enforcement": [
+          {
+            key: "PROSECUTION_STAFF",
+            system: "Law Enforcement",
+            display_name: "Staff",
+            description:
+              "Measures the number of full-time staff employed by the agency.",
+            reporting_note: "DOCs report only correctional institution staff.",
+            value: 1000,
+            unit: "people",
+            category: "CAPACITY_AND_COST",
+            label: "Total Staff",
+            definitions: [
+              {
+                term: "full-time staff",
+                definition: "definition of full-time staff",
+              },
+            ],
+            contexts: [
+              {
+                key: "PROGRAMMATIC_OR_MEDICAL_STAFF",
+                display_name:
+                  "Does this include programmatic or medical staff?",
+                reporting_note: null,
+                required: false,
+                type: "MULTIPLE_CHOICE",
+                multiple_choice_options: ["YES", "NO"],
+                value: null,
+              },
+            ],
+            disaggregations: [
+              {
+                key: "PROSECUTION_STAFF_TYPE",
+                display_name: "Staff Types",
+                dimensions: [
+                  {
+                    key: "SUPPORT",
+                    label: "Support",
+                    value: null,
+                    reporting_note: "Staff: Support",
+                  },
+                ],
+                required: false,
+                helper_text: "Break down the metric by NIBRS offense types.",
+              },
+            ],
+          },
+        ],
+      },
+    };
+
     rootStore.reportStore.reportMetrics = {
-      0: [
-        {
-          key: "PROSECUTION_STAFF",
-          display_name: "Staff",
-          description:
-            "Measures the number of full-time staff employed by the agency.",
-          reporting_note: "DOCs report only correctional institution staff.",
-          value: 1000,
-          unit: "people",
-          category: "CAPACITY_AND_COST",
-          label: "Total Staff",
-          definitions: [
-            {
-              term: "full-time staff",
-              definition: "definition of full-time staff",
-            },
-          ],
-          contexts: [
-            {
-              key: "PROGRAMMATIC_OR_MEDICAL_STAFF",
-              display_name: "Does this include programmatic or medical staff?",
-              reporting_note: null,
-              required: false,
-              type: "MULTIPLE_CHOICE",
-              multiple_choice_options: ["YES", "NO"],
-              value: null,
-            },
-          ],
-          disaggregations: [
-            {
-              key: "PROSECUTION_STAFF_TYPE",
-              display_name: "Staff Types",
-              dimensions: [
-                {
-                  key: "SUPPORT",
-                  label: "Support",
-                  value: null,
-                  reporting_note: "Staff: Support",
-                },
-              ],
-              required: false,
-              helper_text: "Break down the metric by NIBRS offense types.",
-            },
-          ],
-        },
-      ],
+      0: Object.values(rootStore.reportStore.reportMetricsBySystem[0]).flat(),
     };
   });
 

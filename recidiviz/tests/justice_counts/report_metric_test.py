@@ -123,7 +123,7 @@ class TestJusticeCountsReportMetric(TestCase):
             reported_metric.to_json(),
             {
                 "key": reported_metric.key,
-                "system": "LAW_ENFORCEMENT",
+                "system": "Law Enforcement",
                 "display_name": "Annual Budget",
                 "reporting_note": None,
                 "description": "Measures the total annual budget (in dollars) of your agency.",
@@ -185,7 +185,7 @@ class TestJusticeCountsReportMetric(TestCase):
             reported_metric.to_json(),
             {
                 "key": reported_metric.key,
-                "system": "LAW_ENFORCEMENT",
+                "system": "Law Enforcement",
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
@@ -268,7 +268,7 @@ class TestJusticeCountsReportMetric(TestCase):
             reported_metric.to_json(),
             {
                 "key": reported_metric.key,
-                "system": "LAW_ENFORCEMENT",
+                "system": "Law Enforcement",
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
@@ -308,7 +308,7 @@ class TestJusticeCountsReportMetric(TestCase):
             reported_metric.to_json(),
             {
                 "key": reported_metric.key,
-                "system": "LAW_ENFORCEMENT",
+                "system": "Law Enforcement",
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
