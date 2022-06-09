@@ -75,22 +75,6 @@ class TestJusticeCountsMetricDefinition(TestCase):
             "USE OF FORCE INCIDENTS",
         )
 
-    def test_reporting_note(self) -> None:
-        self.assertEqual(
-            SheriffBudgetType.PATROL.reporting_note,
-            "Sheriff Budget: Patrol",
-        )
-
-        self.assertEqual(
-            GenderRestricted.FEMALE.reporting_note,
-            "Gender: Female",
-        )
-
-        self.assertEqual(
-            RaceAndEthnicity.BLACK.reporting_note,
-            "Race / Ethnicity: Black",
-        )
-
     def test_display_name(self) -> None:
         self.assertEqual(
             SheriffBudgetType.display_name(),
