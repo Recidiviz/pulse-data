@@ -981,3 +981,46 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
             self.assertEqual(len(datapoints_with_value), 0)
+
+    def test_get_metrics_for_supervision_report(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add_all(
+                [
+                    self.test_schema_objects.test_report_supervision,
+                    self.test_schema_objects.test_report_parole,
+                    self.test_schema_objects.test_user_A,
+                ]
+            )
+            session.flush()
+            supervision_report_id = self.test_schema_objects.test_report_supervision.id
+            parole_report_id = self.test_schema_objects.test_report_parole.id
+
+            supervision_metrics = sorted(
+                ReportInterface.get_metrics_by_report_id(
+                    session=session,
+                    report_id=supervision_report_id,
+                ),
+                key=lambda x: x.key,
+            )
+            parole_metrics = sorted(
+                ReportInterface.get_metrics_by_report_id(
+                    session=session,
+                    report_id=parole_report_id,
+                ),
+                key=lambda x: x.key,
+            )
+
+            # Supervision report should have metrics for Parole and Probation
+            supervision_metric_systems = {
+                metric.metric_definition.system.value for metric in supervision_metrics
+            }
+            self.assertEqual(
+                supervision_metric_systems,
+                {schema.System.PAROLE.value, schema.System.PROBATION.value},
+            )
+
+            # Parole report should just have metrics for Parole
+            parole_metric_systems = {
+                metric.metric_definition.system.value for metric in parole_metrics
+            }
+            self.assertEqual(parole_metric_systems, {schema.System.PAROLE.value})
