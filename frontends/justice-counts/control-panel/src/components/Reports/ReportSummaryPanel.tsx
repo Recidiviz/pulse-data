@@ -29,7 +29,12 @@ import {
 } from "../../utils";
 // import successIcon from "../assets/status-check-icon.png";
 import errorIcon from "../assets/status-error-icon.png";
-import { GoBackToReportsOverviewLink, PreTitle, Title } from "../Forms";
+import {
+  GoBackToReportsOverviewLink,
+  MetricsSectionTitle,
+  PreTitle,
+  Title,
+} from "../Forms";
 import { palette, typography } from "../GlobalStyles";
 import {
   FieldDescription,
@@ -241,6 +246,9 @@ const ReportSummaryPanel: React.FC<{
     return foundErrors;
   };
 
+  const metricsBySystem = reportStore.reportMetricsBySystem[reportID];
+  const showMetricSectionTitles = Object.keys(metricsBySystem).length > 1;
+
   return (
     <ReportSummaryWrapper>
       <PreTitle>
@@ -249,16 +257,27 @@ const ReportSummaryPanel: React.FC<{
       <Title>Report Summary</Title>
 
       <ReportSummaryProgressIndicatorWrapper>
-        {reportStore.reportMetrics[reportID].map((metric) => {
-          const foundErrors = checkMetricForErrorsInUpdatedValues(metric.key);
-
+        {Object.entries(metricsBySystem).map(([system, metrics]) => {
           return (
-            <ReportStatusIconComponent
-              key={metric.key}
-              activeMetric={activeMetric}
-              metricHasError={foundErrors}
-              metric={metric}
-            />
+            <>
+              {showMetricSectionTitles ? (
+                <MetricsSectionTitle>{system}</MetricsSectionTitle>
+              ) : null}
+              {metrics.map((metric) => {
+                const foundErrors = checkMetricForErrorsInUpdatedValues(
+                  metric.key
+                );
+
+                return (
+                  <ReportStatusIconComponent
+                    key={metric.key}
+                    activeMetric={activeMetric}
+                    metricHasError={foundErrors}
+                    metric={metric}
+                  />
+                );
+              })}
+            </>
           );
         })}
       </ReportSummaryProgressIndicatorWrapper>

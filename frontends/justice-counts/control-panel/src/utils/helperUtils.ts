@@ -106,3 +106,20 @@ export const sanitizeInputValue = (
   }
   return Number(cleanValue) || value;
 };
+
+/**
+ * Group a list of objects based on property value
+ * @param arr list of objects
+ * @param key name of the property on which to perform the grouping
+ * @returns dictionary of property value to list of objects with that value
+ */
+export const groupBy = <T, K extends keyof any>(arr: T[], key: (i: T) => K) => {
+  const result = {} as Record<K, T[]>;
+  arr.forEach((item) => {
+    if (!result[key(item)]) {
+      result[key(item)] = [];
+    }
+    result[key(item)].push(item);
+  });
+  return result;
+};

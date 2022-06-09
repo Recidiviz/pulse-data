@@ -67,6 +67,11 @@ export const PreTitle = styled.div`
   ${typography.sizeCSS.normal}
 `;
 
+export const MetricsSectionTitle = styled.div`
+  ${typography.sizeCSS.normal}
+  margin-top: 6px;
+`;
+
 export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
   ${({ scrolled }) =>
     scrolled ? typography.sizeCSS.medium : typography.sizeCSS.title}

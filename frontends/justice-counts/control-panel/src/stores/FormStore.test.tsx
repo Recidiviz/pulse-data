@@ -40,6 +40,7 @@ beforeEach(() => {
       0: [
         {
           key: "PROSECUTION_STAFF",
+          system: "LAW_ENFORCEMENT",
           display_name: "Staff",
           description:
             "Measures the number of full-time staff employed by the agency.",
