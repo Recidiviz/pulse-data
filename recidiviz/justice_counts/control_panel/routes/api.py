@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Justice Counts Control Panel backend API."""
+import logging
 from http import HTTPStatus
 from typing import Callable, Optional
 
@@ -220,7 +221,9 @@ def _get_error(error: Exception) -> FlaskException:
     if isinstance(error, FlaskException):
         return error
 
-    # Else, wrap any unexpected errors in FlaskException
+    # Else, if error is unexpected, first log the error, then wrap
+    # in FlaskException and return to frontend
+    logging.exception(error)
     return JusticeCountsServerError(
         code="server_error",
         description="A server error occurred. See the logs for more information.",
