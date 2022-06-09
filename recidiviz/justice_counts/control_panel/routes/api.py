@@ -153,7 +153,20 @@ def get_api_blueprint(
     def get_reports_by_agency_id() -> Response:
         try:
             request_dict = assert_type(request.args.to_dict(), dict)
-            agency_id = int(assert_type(request_dict.get("agency_id"), str))
+            agency_id = request_dict.get("agency_id")
+
+            if agency_id is None:
+                # If no agency_id is specified, pick one of the agencies
+                # that the user belongs to as a default for the home page
+                if len(g.user_context.agency_ids) == 0:
+                    raise JusticeCountsPermissionError(
+                        code="justice_counts_agency_permission",
+                        description="User does not belong to any agencies.",
+                    )
+                agency_id = g.user_context.agency_ids[0]
+
+            agency_id = int(agency_id)
+
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
             )

@@ -280,6 +280,7 @@ class ReportInterface:
         reporting_frequency = report.get_reporting_frequency()
         return {
             "id": report.id,
+            "agency_id": report.source_id,
             "year": report.date_range_start.year,
             "month": report.date_range_start.month,
             "frequency": reporting_frequency.value,

@@ -81,7 +81,8 @@ const Menu = () => {
   return (
     <MenuContainer>
       <WelcomeUser>
-        {authStore.user && `Welcome, ${userStore.nameOrEmail}`}
+        {authStore.user &&
+          `Welcome, ${userStore.nameOrEmail} at ${userStore.currentAgency?.name}`}
       </WelcomeUser>
 
       {/* Reports */}
