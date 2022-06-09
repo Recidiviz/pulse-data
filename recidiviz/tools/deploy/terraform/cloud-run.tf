@@ -204,6 +204,13 @@ resource "google_cloud_run_service" "justice-counts" {
           name  = "RECIDIVIZ_ENV"
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
         }
+
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "1024Mi"
+          }
+        }
       }
 
       service_account_name = data.google_service_account.justice_counts_cloud_run.email
