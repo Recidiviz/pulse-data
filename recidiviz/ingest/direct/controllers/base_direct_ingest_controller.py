@@ -802,24 +802,25 @@ class BaseDirectIngestController:
                 f"scheduled."
             )
 
+        try:
+            file_metadata = self.raw_file_metadata_manager.get_raw_file_metadata(
+                data_import_args.raw_data_file_path
+            )
+        except ValueError:
+            # If there is no operations DB row and the file doesn't exist, then
+            # this file was likely deprecated fully.
+            file_metadata = None
+
         if not self.fs.exists(data_import_args.raw_data_file_path):
-            try:
-                metadata = self.raw_file_metadata_manager.get_raw_file_metadata(
-                    data_import_args.raw_data_file_path
+            if file_metadata is not None and file_metadata.processed_time is None:
+                raise ValueError(
+                    f"Attempting to run raw data import for raw data path "
+                    f"[{data_import_args.raw_data_file_path}] which does not exist "
+                    f"but still has an unprocessed row in the operations DB. This "
+                    f"likely happened because some raw data files were deprecated "
+                    f"but the corresponding rows were not cleaned out of the "
+                    f"operations DB."
                 )
-                if metadata.processed_time is None:
-                    raise ValueError(
-                        f"Attempting to run raw data import for raw data path "
-                        f"[{data_import_args.raw_data_file_path}] which does not exist "
-                        f"but still has an unprocessed row in the operations DB. This "
-                        f"likely happened because some raw data files were deprecated "
-                        f"but the corresponding rows were not cleaned out of the "
-                        f"operations DB."
-                    )
-            except ValueError:
-                # If there is no operations DB row and the file doesn't exist, then
-                # this file was likely deprecated fully.
-                pass
 
             logging.warning(
                 "File path [%s] no longer exists - might have already been "
@@ -829,9 +830,10 @@ class BaseDirectIngestController:
             self.kick_scheduler(just_finished_job=True)
             return
 
-        file_metadata = self.raw_file_metadata_manager.get_raw_file_metadata(
-            data_import_args.raw_data_file_path
-        )
+        if file_metadata is None:
+            raise ValueError(
+                f"No metadata row for file [{data_import_args.raw_data_file_path}]."
+            )
 
         if file_metadata.processed_time:
             logging.warning(
