@@ -105,21 +105,16 @@ def raise_if_user_is_unauthorized(route: Callable) -> Callable:
             )
             agency_id = report.source_id
 
-        permission_error = JusticeCountsPermissionError(
-            code="justice_counts_agency_permission",
-            description=(
-                f"User {user_id} does not have permission to access "
-                f"reports from agency {agency_id}."
-            ),
-        )
-
-        if agency_id is None:
-            raise permission_error
-
         # List of agency ids in user's app_metadata will have been copied over
         # to the `g.user_context` object on successful authorization
-        if int(agency_id) not in g.user_context.agency_ids:
-            raise permission_error
+        if agency_id is not None and int(agency_id) not in g.user_context.agency_ids:
+            raise JusticeCountsPermissionError(
+                code="justice_counts_agency_permission",
+                description=(
+                    f"User {user_id} does not have permission to access "
+                    f"reports from agency {agency_id}."
+                ),
+            )
 
         return route(*args, **kwargs)
 

@@ -197,11 +197,28 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.add_all([report, user_B])
         self.session.commit()
 
+        # user belongs to the wrong agency
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user_B.auth0_user_id, agency_ids=[report.source_id + 1]
             )
             response = self.client.get(f"/api/reports?agency_id={report.source_id}")
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+        # user makes a request with no agencies, but belongs to an agency
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user_B.auth0_user_id, agency_ids=[report.source_id]
+            )
+            response = self.client.get("/api/reports")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # user makes a request with no agencies, but does not belong to an agency
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_B.auth0_user_id)
+            response = self.client.get("/api/reports")
 
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 

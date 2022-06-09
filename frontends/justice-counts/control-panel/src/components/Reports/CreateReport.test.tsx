@@ -47,6 +47,7 @@ test("displayed created reports", async () => {
     rootStore.reportStore.reportOverviews = {
       0: {
         id: 0,
+        agency_id: 0,
         month: 11,
         year: 2022,
         frequency: "MONTHLY",
@@ -66,6 +67,7 @@ test("displayed created reports", async () => {
   await runInAction(() => {
     rootStore.reportStore.reportOverviews[1] = {
       id: 1,
+      agency_id: 0,
       month: 11,
       year: 2020,
       frequency: "ANNUAL",

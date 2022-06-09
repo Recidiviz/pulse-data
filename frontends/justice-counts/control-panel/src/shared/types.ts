@@ -26,6 +26,7 @@ export type ReportStatus = "NOT_STARTED" | "DRAFT" | "PUBLISHED";
 
 export interface ReportOverview {
   id: number;
+  agency_id: number;
   month: number;
   year: number;
   frequency: ReportFrequency;

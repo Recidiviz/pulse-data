@@ -26,6 +26,7 @@ beforeEach(() => {
     reportStore.reportOverviews = {
       0: {
         id: 0,
+        agency_id: 0,
         year: 2022,
         month: 4,
         frequency: "MONTHLY",

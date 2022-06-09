@@ -56,6 +56,9 @@ const ReportDataEntry = () => {
           if (result instanceof Error) {
             setLoadingError(result.message);
           }
+          userStore.setCurrentAgencyId(
+            reportStore.reportOverviews[reportID]?.agency_id
+          );
           setIsLoading(false);
         }
       ),
