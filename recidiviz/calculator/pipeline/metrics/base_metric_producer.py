@@ -30,6 +30,9 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetricType,
 )
 from recidiviz.calculator.pipeline.utils.identifier_models import IdentifierResult
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
+    StateSpecificMetricsProducerDelegate,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 IdentifierEventResultT = TypeVar("IdentifierEventResultT")
@@ -47,6 +50,9 @@ class BaseMetricProducer(
     event_to_metric_classes: Dict[
         Type[IdentifierResult], List[Type[RecidivizMetricT]]
     ] = attr.ib()
+    metrics_producer_delegate_class: Optional[
+        Type[StateSpecificMetricsProducerDelegate]
+    ] = attr.ib(default=None)
 
     def produce_metrics(
         self,
@@ -54,10 +60,12 @@ class BaseMetricProducer(
         identifier_events: IdentifierEventResultT,
         metric_inclusions: Dict[RecidivizMetricTypeT, bool],
         person_metadata: PersonMetadata,
-        pipeline_name: str,
         pipeline_job_id: str,
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
+        metrics_producer_delegate: Optional[
+            StateSpecificMetricsProducerDelegate
+        ] = None,
     ) -> List[RecidivizMetricT]:
         """Transforms the events and a StatePerson into RecidivizMetrics.
         Args:
@@ -76,7 +84,6 @@ class BaseMetricProducer(
             A list of RecidivizMetrics
         """
         metrics = produce_standard_metrics(
-            pipeline=pipeline_name,
             person=person,
             identifier_events=identifier_events,  # type: ignore
             metric_inclusions=metric_inclusions,
@@ -85,6 +92,7 @@ class BaseMetricProducer(
             person_metadata=person_metadata,
             event_to_metric_classes=self.event_to_metric_classes,  # type: ignore
             pipeline_job_id=pipeline_job_id,
+            metrics_producer_delegate=metrics_producer_delegate,
         )
 
         metrics_of_class: List[RecidivizMetricT] = []

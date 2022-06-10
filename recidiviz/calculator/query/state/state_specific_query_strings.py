@@ -21,7 +21,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_metrics_delegate,
+    get_required_state_specific_metrics_producer_delegate,
     get_supported_states,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
@@ -539,7 +539,7 @@ def get_all_primary_supervision_external_id_types() -> tuple:
     """Returns a tuple of strings that indicate all of the state external id types for queries."""
     supervision_id_types = []
     for state in get_supported_states():
-        delegate = get_required_state_specific_metrics_delegate(
+        delegate = get_required_state_specific_metrics_producer_delegate(
             state_code=state.value,
             required_delegate=StateSpecificSupervisionMetricsProducerDelegate,
         )

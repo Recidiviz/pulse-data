@@ -45,3 +45,4 @@ class ViolationMetricProducer(
         self.event_to_metric_classes = {
             ViolationWithResponseEvent: [ViolationWithResponseMetric]
         }
+        self.metrics_producer_delegate_class = None

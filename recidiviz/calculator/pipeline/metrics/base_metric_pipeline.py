@@ -81,6 +81,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 from recidiviz.calculator.pipeline.utils.identifier_models import IdentifierResult
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
+    get_required_state_specific_metrics_producer_delegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -357,7 +358,6 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         return person_events_with_metadata | "Get Metrics" >> GetMetrics(
             pipeline_job_args=self.pipeline_job_args,
             metric_producer=self.metric_producer(),
-            pipeline_name=self.pipeline_config().pipeline_name,
         )
 
     def write_output(self, pipeline: beam.Pipeline) -> None:
@@ -415,7 +415,6 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
     ],
     beam.typehints.Optional[MetricPipelineJobArgs],
     beam.typehints.Optional[BaseMetricProducer],
-    beam.typehints.Optional[str],
 )
 @with_output_types(RecidivizMetric)
 class ProduceMetrics(beam.DoFn):
@@ -431,7 +430,6 @@ class ProduceMetrics(beam.DoFn):
         ],
         pipeline_job_args: MetricPipelineJobArgs,
         metric_producer: BaseMetricProducer,
-        pipeline_name: str,
     ) -> Generator[RecidivizMetric, None, None]:
         """Produces various metrics.
         Sends the metric_producer the StatePerson entity and their corresponding events for mapping all metrics.
@@ -452,15 +450,22 @@ class ProduceMetrics(beam.DoFn):
             job_name=pipeline_job_args.job_name,
         )
 
+        metrics_producer_delegate = (
+            get_required_state_specific_metrics_producer_delegate(
+                pipeline_job_args.state_code,
+                metric_producer.metrics_producer_delegate_class,
+            )
+        )
+
         metrics = metric_producer.produce_metrics(
             person=person,
             identifier_events=events,
             metric_inclusions=pipeline_job_args.metric_inclusions,
             person_metadata=person_metadata,
-            pipeline_name=pipeline_name,
             pipeline_job_id=pipeline_job_id,
             calculation_end_month=pipeline_job_args.calculation_end_month,
             calculation_month_count=pipeline_job_args.calculation_month_count,
+            metrics_producer_delegate=metrics_producer_delegate,
         )
 
         for metric in metrics:
@@ -488,19 +493,16 @@ class GetMetrics(beam.PTransform):
         self,
         pipeline_job_args: MetricPipelineJobArgs,
         metric_producer: BaseMetricProducer,
-        pipeline_name: str,
     ) -> None:
         super().__init__()
         self._pipeline_job_args = pipeline_job_args
         self._metric_producer = metric_producer
-        self._pipeline_name = pipeline_name
 
     def expand(self, input_or_inputs: List[Any]) -> List[RecidivizMetric]:
         metrics = input_or_inputs | "Produce Metrics" >> beam.ParDo(
             ProduceMetrics(),
             self._pipeline_job_args,
             self._metric_producer,
-            self._pipeline_name,
         )
 
         return metrics

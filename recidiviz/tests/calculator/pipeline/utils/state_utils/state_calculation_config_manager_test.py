@@ -37,7 +37,7 @@ from recidiviz.calculator.pipeline.utils.state_utils import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
-    get_required_state_specific_metrics_delegate,
+    get_required_state_specific_metrics_producer_delegate,
     get_state_specific_case_compliance_manager,
     get_state_specific_supervision_delegate,
 )
@@ -127,7 +127,7 @@ def test_get_required_state_specific_delegates() -> None:
         get_state_specific_supervision_delegate(state.value)
 
         for subclass in StateSpecificMetricsProducerDelegate.__subclasses__():
-            get_required_state_specific_metrics_delegate(state.value, subclass)
+            get_required_state_specific_metrics_producer_delegate(state.value, subclass)
 
 
 class TestGetRequiredStateSpecificDelegates(unittest.TestCase):

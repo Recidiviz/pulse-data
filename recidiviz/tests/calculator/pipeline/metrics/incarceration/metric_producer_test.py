@@ -46,6 +46,9 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
 from recidiviz.calculator.pipeline.pipeline_type import (
     INCARCERATION_METRICS_PIPELINE_NAME,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
+    UsXxIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
@@ -132,7 +135,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -208,7 +210,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -260,7 +261,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -308,7 +308,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -374,7 +373,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -431,7 +429,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -487,7 +484,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -546,7 +542,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -605,7 +600,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -664,7 +658,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -709,7 +702,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -759,7 +751,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(0, len(metrics))
@@ -814,7 +805,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count([incarceration_event_include])
@@ -864,7 +854,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=37,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -874,34 +863,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         for metric in metrics:
             assert metric.year == 2007
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
-        ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
-        {
-            INCARCERATION_METRICS_PIPELINE_NAME: {
-                StateCode.US_XX: "US_XX_DOC",
-                StateCode.US_WW: "US_WW_DOC",
-            },
-            "OTHER_PIPELINE": {
-                StateCode.US_XX: "US_XX_SID",
-                StateCode.US_WW: "US_WW_SID",
-            },
-        },
-    )
-    @mock.patch(
-        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
-        ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
-        {
-            INCARCERATION_METRICS_PIPELINE_NAME: {
-                StateCode.US_XX: "US_XX_SID",
-                StateCode.US_WW: "US_WW_SID",
-            },
-            "OTHER_PIPELINE": {
-                StateCode.US_XX: "US_XX_DOC",
-                StateCode.US_WW: "US_WW_DOC",
-            },
-        },
-    )
     def test_produce_incarceration_metrics_secondary_person_external_id(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -949,7 +910,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
+            metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegate(),
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)

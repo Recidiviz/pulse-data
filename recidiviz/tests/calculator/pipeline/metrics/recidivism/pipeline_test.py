@@ -67,6 +67,9 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_recidivism_metrics_producer_delegate import (
+    UsXxRecidivismMetricsProducerDelegate,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -122,10 +125,18 @@ class TestRecidivismPipeline(unittest.TestCase):
         self.mock_get_required_state_delegates = (
             self.state_specific_delegate_patcher.start()
         )
+        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegate",
+            return_value=UsXxRecidivismMetricsProducerDelegate(),
+        )
+        self.mock_get_required_state_metrics_producer_delegate = (
+            self.state_specific_metrics_producer_delegate_patcher.start()
+        )
         self.run_delegate_class = pipeline.RecidivismMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
         self.state_specific_delegate_patcher.stop()
+        self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def build_data_dict(self, fake_person_id: int) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
@@ -736,9 +747,17 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         )
         self.mock_job_id = self.job_id_patcher.start()
         self.mock_job_id.return_value = "job_id"
+        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegate",
+        )
+        self.mock_state_specific_metrics_producer_delegate = (
+            self.state_specific_metrics_producer_delegate_patcher.start()
+        )
+        self.mock_state_specific_metrics_producer_delegate.return_value = (
+            UsXxRecidivismMetricsProducerDelegate()
+        )
 
         self.metric_producer = pipeline.metric_producer.RecidivismMetricProducer()
-        self.pipeline_type = "recidivism_metrics"
 
         default_beam_args: List[str] = [
             "--project",
@@ -770,6 +789,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.job_id_patcher.stop()
+        self.state_specific_metrics_producer_delegate_patcher.stop()
 
     # TODO(#4813): This fails on dates after 2020-12-03 - is this a bug in the pipeline or in the test code?
     @freeze_time("2020-12-03")
@@ -860,7 +880,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
             )
         )
 
@@ -907,7 +926,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
             )
         )
 
@@ -928,7 +946,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_type,
             )
         )
 

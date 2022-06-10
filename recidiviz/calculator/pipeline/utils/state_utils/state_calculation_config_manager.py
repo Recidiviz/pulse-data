@@ -378,17 +378,17 @@ def get_required_state_specific_delegates(
     return required_state_specific_delegates
 
 
-def get_required_state_specific_metrics_delegate(
+def get_required_state_specific_metrics_producer_delegate(
     state_code: str,
     required_delegate: Optional[Type[StateSpecificMetricsProducerDelegate]],
 ) -> Optional[StateSpecificMetricsProducerDelegate]:
     """Returns the state-specific metrics delegate given the type requested for a given state."""
     if required_delegate is StateSpecificIncarcerationMetricsProducerDelegate:
-        return _get_state_specific_incarceration_metrics_delegate(state_code)
+        return _get_state_specific_incarceration_metrics_producer_delegate(state_code)
     if required_delegate is StateSpecificRecidivismMetricsProducerDelegate:
-        return _get_state_specific_recidivism_metrics_delegate(state_code)
+        return _get_state_specific_recidivism_metrics_producer_delegate(state_code)
     if required_delegate is StateSpecificSupervisionMetricsProducerDelegate:
-        return _get_state_specific_supervision_metrics_delegate(state_code)
+        return _get_state_specific_supervision_metrics_producer_delegate(state_code)
 
     return None
 
@@ -651,7 +651,7 @@ def get_state_specific_supervision_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_incarceration_metrics_delegate(
+def _get_state_specific_incarceration_metrics_producer_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationMetricsProducerDelegate:
     """Returns the type of StateSpecificIncarcerationMetricsProducerDelegate that should be used
@@ -674,7 +674,7 @@ def _get_state_specific_incarceration_metrics_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_supervision_metrics_delegate(
+def _get_state_specific_supervision_metrics_producer_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionMetricsProducerDelegate:
     """Returns the type of StateSpecificSupervisionMetricsProducerDelegate that should be used
@@ -697,7 +697,7 @@ def _get_state_specific_supervision_metrics_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_recidivism_metrics_delegate(
+def _get_state_specific_recidivism_metrics_producer_delegate(
     state_code: str,
 ) -> StateSpecificRecidivismMetricsProducerDelegate:
     """Returns the type of StateSpecificRecidivismMetricsProducerDelegate that should be used

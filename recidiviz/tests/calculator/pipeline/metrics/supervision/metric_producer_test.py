@@ -157,7 +157,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -220,7 +219,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -284,7 +282,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -350,7 +347,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -424,7 +420,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -498,7 +493,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -582,7 +576,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -669,7 +662,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -749,7 +741,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -813,7 +804,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -885,7 +875,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(
@@ -975,7 +964,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(
@@ -1024,7 +1012,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1077,7 +1064,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1133,7 +1119,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count([termination_event])
@@ -1204,7 +1189,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1294,7 +1278,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(
@@ -1386,7 +1369,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(
@@ -1468,7 +1450,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(
@@ -1546,7 +1527,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1603,7 +1583,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(
@@ -1669,7 +1648,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(
@@ -1735,7 +1713,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = 0
@@ -1792,7 +1769,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = 0
@@ -1856,7 +1832,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(supervision_events)

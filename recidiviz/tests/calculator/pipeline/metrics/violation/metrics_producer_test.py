@@ -110,7 +110,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(1, len(metrics))
@@ -151,7 +150,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(1, len(metrics))
@@ -196,7 +194,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         self.assertEqual(1, len(metrics))

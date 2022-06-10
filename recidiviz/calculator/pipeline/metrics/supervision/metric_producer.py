@@ -53,6 +53,12 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetad
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_supervision_delegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
+    StateSpecificMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     supervision_period_is_out_of_state,
 )
@@ -94,6 +100,9 @@ class SupervisionMetricProducer(
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
         }
+        self.metrics_producer_delegate_class = (
+            StateSpecificSupervisionMetricsProducerDelegate
+        )
 
     def produce_metrics(
         self,
@@ -101,10 +110,12 @@ class SupervisionMetricProducer(
         identifier_events: List[SupervisionEvent],
         metric_inclusions: Dict[SupervisionMetricType, bool],
         person_metadata: PersonMetadata,
-        pipeline_name: str,
         pipeline_job_id: str,
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
+        metrics_producer_delegate: Optional[
+            StateSpecificMetricsProducerDelegate
+        ] = None,
     ) -> List[SupervisionMetric]:
         """Transforms SupervisionEvents and a StatePerson into SuperviisonMetrics.
 
@@ -178,13 +189,13 @@ class SupervisionMetricProducer(
 
                 if self.include_event_in_metric(event, metric_type):
                     metric = build_metric(
-                        pipeline=pipeline_name,
                         result=event,
                         metric_class=metric_class,
                         person=person,
                         event_date=event_date,
                         person_metadata=person_metadata,
                         pipeline_job_id=pipeline_job_id,
+                        metrics_producer_delegate=metrics_producer_delegate,
                     )
 
                     if not isinstance(metric, SupervisionMetric):
