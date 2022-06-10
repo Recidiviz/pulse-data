@@ -24,7 +24,7 @@ class ScrapeKey:
     def __init__(self, region_code, scrape_type):
         if not region_code or not scrape_type:
             raise ValueError(
-                "A scrape key must include both a region code " "and a scrape type"
+                "A scrape key must include both a region code and a scrape type"
             )
         self.region_code = region_code
         self.scrape_type = scrape_type

@@ -207,7 +207,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
         if entity_cls is None or schema_cls is None:
             raise DatabaseConversionError(
-                "Both |entity_cls| and |schema_cls| " "should be not None"
+                "Both |entity_cls| and |schema_cls| should be not None"
             )
 
         if isinstance(src, Entity):

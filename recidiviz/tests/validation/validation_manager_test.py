@@ -476,7 +476,7 @@ class TestFetchValidations(TestCase):
         all_regions = all_region_configs.keys()
 
         num_exclusions = sum(
-            [len(config.exclusions) for config in all_region_configs.values()]
+            len(config.exclusions) for config in all_region_configs.values()
         ) + len(global_config.disabled) * len(all_regions)
 
         expected_length = len(all_validations) * len(all_regions) - num_exclusions
@@ -509,7 +509,7 @@ class TestFetchValidations(TestCase):
         )
 
         num_exclusions = sum(
-            [len(config.exclusions) for config in region_configs_to_validate.values()]
+            len(config.exclusions) for config in region_configs_to_validate.values()
         ) + len(global_config.disabled) * len(state_codes_to_validate)
 
         expected_length = (

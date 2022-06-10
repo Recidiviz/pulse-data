@@ -371,5 +371,5 @@ def _emit_opencensus_failure_events(
 
 
 def _readable_response(failed_validations: List[DataValidationJobResult]) -> str:
-    readable_output = "\n".join([f.__str__() for f in failed_validations])
+    readable_output = "\n".join([str(f) for f in failed_validations])
     return f"Failed validations:\n{readable_output}"

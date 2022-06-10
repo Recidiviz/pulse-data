@@ -692,7 +692,7 @@ state_supervision_violation_response_decision_agent_association_table = Table(
         "supervision_violation_response_id",
         Integer,
         ForeignKey(
-            "state_supervision_violation_response." "supervision_violation_response_id"
+            "state_supervision_violation_response.supervision_violation_response_id"
         ),
         index=True,
         comment=StrictStringFormatter().format(
@@ -2060,7 +2060,7 @@ class StateSupervisionViolationTypeEntry(
     def supervision_violation_id(self) -> Column:
         return Column(
             Integer,
-            ForeignKey("state_supervision_violation." "supervision_violation_id"),
+            ForeignKey("state_supervision_violation.supervision_violation_id"),
             index=True,
             nullable=True,
             comment=StrictStringFormatter().format(
@@ -2109,7 +2109,7 @@ class StateSupervisionViolatedConditionEntry(
     def supervision_violation_id(self) -> Column:
         return Column(
             Integer,
-            ForeignKey("state_supervision_violation." "supervision_violation_id"),
+            ForeignKey("state_supervision_violation.supervision_violation_id"),
             index=True,
             nullable=True,
             comment=StrictStringFormatter().format(

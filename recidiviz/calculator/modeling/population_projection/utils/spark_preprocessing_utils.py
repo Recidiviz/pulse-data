@@ -544,8 +544,8 @@ def transitions_interpolation(
     # uniform transition probabilities within year
     if uniform:
         pdf_output = []
-        for i, _ in enumerate(pdf_list):
-            pdf_output += [pdf_list[i]] * 12
+        for i, pdf_list_item in enumerate(pdf_list):
+            pdf_output += [pdf_list_item] * 12
 
     # allow for slopes between years, keep yearly probability constant
     else:

@@ -490,7 +490,7 @@ def write_scraped_record(*args, **kwds):
         retry_grpc(NUM_GRPC_RETRIES, ds().put, new_record.to_entity())
     except Exception as e:
         logging.warning(
-            "Couldn't persist ScrapedRecord entry, " "record_id: %s\n%s",
+            "Couldn't persist ScrapedRecord entry, record_id: %s\n%s",
             new_record["record_id"],
             e,
         )

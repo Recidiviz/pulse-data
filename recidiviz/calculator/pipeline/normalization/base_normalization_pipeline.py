@@ -152,7 +152,7 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
                 entity_class_name
             ).__tablename__
 
-            _ = writable_metrics.__getattr__(entity_class_name) | (
+            _ = getattr(writable_metrics, entity_class_name) | (
                 f"Write Normalized{entity_class_name} to BQ table: "
                 f"{self.pipeline_job_args.output_dataset}.{table_id}"
             ) >> WriteToBigQuery(

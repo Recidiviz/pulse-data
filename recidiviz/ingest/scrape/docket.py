@@ -270,7 +270,7 @@ def get_new_docket_item(
         logging.info("Leased docket item from subscription: [%s]", subscription_path)
     else:
         logging.info(
-            "No matching docket item found in the docket queue for " "scraper: %s",
+            "No matching docket item found in the docket queue for scraper: %s",
             scrape_key,
         )
 

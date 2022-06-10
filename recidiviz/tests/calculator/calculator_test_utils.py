@@ -70,6 +70,6 @@ def remove_relationship_properties(database_base: StateBase) -> StateBase:
             hasattr(database_base, relationship_property)
             and getattr(database_base, relationship_property) is not None
         ):
-            database_base.__delattr__(relationship_property)
+            delattr(database_base, relationship_property)
 
     return database_base

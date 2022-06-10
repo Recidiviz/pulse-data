@@ -55,7 +55,7 @@ class Names:
             (self.given_names, self.middle_names, self.surname, self.name_suffix)
         ):
             raise ValueError(
-                "Cannot have full_name and surname/middle/" "given_names/name_suffix"
+                "Cannot have full_name and surname/middle/given_names/name_suffix"
             )
 
         if any((self.middle_names, self.name_suffix)) and not any(

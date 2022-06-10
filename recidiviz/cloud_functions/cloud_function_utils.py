@@ -40,10 +40,10 @@ from google.auth.transport.requests import (  # type: ignore[attr-defined]
 
 IAP_CLIENT_ID = {
     "recidiviz-staging": (
-        "984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps." "googleusercontent.com"
+        "984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.googleusercontent.com"
     ),
     "recidiviz-123": (
-        "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps." "googleusercontent.com"
+        "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com"
     ),
 }
 
@@ -75,7 +75,7 @@ def make_iap_request(
     # information about the service account.
     bootstrap_credentials, _ = google.auth.default(scopes=[_IAM_SCOPE])
     if isinstance(bootstrap_credentials, google.oauth2.credentials.Credentials):
-        raise Exception("make_iap_request is only supported for service " "accounts.")
+        raise Exception("make_iap_request is only supported for service accounts.")
 
     # For service accounts using the Compute Engine metadata service,
     # service_account_email isn't available until refresh is called.

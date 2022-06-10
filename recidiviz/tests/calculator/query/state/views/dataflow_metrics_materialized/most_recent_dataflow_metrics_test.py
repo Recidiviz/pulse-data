@@ -53,7 +53,7 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
                 using_clause = make_using_clause(
                     METRIC_TABLES_JOIN_OVERRIDES[metric_name]
                 )
-                self.assertIn(using_clause, query.__repr__())
+                self.assertIn(using_clause, repr(query))
 
     def test_default_join_clause(self) -> None:
         """Test that non-special-cased tables use the default JOIN indices"""
@@ -66,4 +66,4 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
             builders = make_most_recent_metric_view_builders(metric_name)
             for builder in builders:
                 query = builder.build()
-                self.assertIn(using_clause, query.__repr__())
+                self.assertIn(using_clause, repr(query))

@@ -138,7 +138,7 @@ def gen_label_single_external_id_hook(external_id_type: str) -> RowPosthookCalla
                         "Already found object of type StatePersonExternalId"
                     )
 
-                extracted_object.__setattr__("id_type", external_id_type)
+                extracted_object.id_type = external_id_type
                 found = True
 
     return _label_external_id
@@ -200,7 +200,7 @@ def gen_normalize_county_codes_posthook(
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, ingest_type):
-                extracted_object.__setattr__("county_code", normalized_code)
+                extracted_object.county_code = normalized_code
 
     return _normalize_county_codes
 
@@ -242,7 +242,7 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, ingest_type):
-                extracted_object.__setattr__("max_length", length_str)
+                extracted_object.max_length = length_str
 
     return _normalize_ymd_codes
 
@@ -300,7 +300,7 @@ def gen_set_is_life_sentence_hook(
 
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateIncarcerationSentence):
-                extracted_object.__setattr__("is_life", str(is_life_sentence))
+                extracted_object.is_life = str(is_life_sentence)
 
     return _set_is_life_sentence
 
@@ -372,6 +372,7 @@ def gen_set_field_as_concatenated_values_hook(
         field_value = _concatenate_col_values(row, cols_to_concatenate)
         for obj in extracted_objects:
             if isinstance(obj, obj_cls):
+                # pylint: disable=unnecessary-dunder-call
                 obj.__setattr__(field_name, field_value)
 
     return set_field_as_concatenated_values_hook

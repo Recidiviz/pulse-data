@@ -38,7 +38,7 @@ class TestTracker:
     """Tests for the methods in the module."""
 
     @patch("recidiviz.ingest.scrape.docket.get_new_docket_item")
-    @patch("recidiviz.ingest.scrape.sessions" ".add_docket_item_to_current_session")
+    @patch("recidiviz.ingest.scrape.sessions.add_docket_item_to_current_session")
     def test_iterate_docket_item(self, mock_session: Mock, mock_docket: Mock) -> None:
         mock_session.return_value = True
         mock_docket.return_value = create_pubsub_message(get_payload())
@@ -49,7 +49,7 @@ class TestTracker:
         assert payload == get_payload()
 
     @patch("recidiviz.ingest.scrape.docket.get_new_docket_item")
-    @patch("recidiviz.ingest.scrape.sessions" ".add_docket_item_to_current_session")
+    @patch("recidiviz.ingest.scrape.sessions.add_docket_item_to_current_session")
     def test_iterate_docket_item_no_open_session_to_update(
         self, mock_session: Mock, mock_docket: Mock
     ) -> None:
@@ -101,7 +101,7 @@ class TestTracker:
 
     @patch("recidiviz.ingest.scrape.docket.purge_query_docket")
     @patch("recidiviz.ingest.scrape.sessions.remove_docket_item_from_session")
-    @patch("recidiviz.ingest.scrape.sessions" ".get_sessions_with_leased_docket_items")
+    @patch("recidiviz.ingest.scrape.sessions.get_sessions_with_leased_docket_items")
     def test_purge_docket_and_session(
         self, mock_sessions: Mock, mock_remove: Mock, mock_purge: Mock
     ) -> None:

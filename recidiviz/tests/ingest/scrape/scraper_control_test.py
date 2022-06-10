@@ -406,13 +406,13 @@ class TestScraperStop(unittest.TestCase):
             mock_scraper.stop_scrape.mock_calls,
             [
                 call(constants.ScrapeType.BACKGROUND, "false"),
-                call().__bool__(),
+                call().__bool__(),  # pylint: disable=unnecessary-dunder-call
                 call(constants.ScrapeType.SNAPSHOT, "false"),
-                call().__bool__(),
+                call().__bool__(),  # pylint: disable=unnecessary-dunder-call
                 call(constants.ScrapeType.BACKGROUND, "false"),
-                call().__bool__(),
+                call().__bool__(),  # pylint: disable=unnecessary-dunder-call
                 call(constants.ScrapeType.SNAPSHOT, "false"),
-                call().__bool__(),
+                call().__bool__(),  # pylint: disable=unnecessary-dunder-call
             ],
         )
         mock_supported.assert_called_with(stripes=[], timezone=None)
@@ -584,13 +584,13 @@ class TestScraperStop(unittest.TestCase):
         )
         assert mock_scraper.stop_scrape.mock_calls == [
             call(constants.ScrapeType.BACKGROUND, None),
-            call().__bool__(),
+            call().__bool__(),  # pylint: disable=unnecessary-dunder-call
             call(constants.ScrapeType.SNAPSHOT, None),
-            call().__bool__(),
+            call().__bool__(),  # pylint: disable=unnecessary-dunder-call
             call(constants.ScrapeType.BACKGROUND, None),
-            call().__bool__(),
+            call().__bool__(),  # pylint: disable=unnecessary-dunder-call
             call(constants.ScrapeType.SNAPSHOT, None),
-            call().__bool__(),
+            call().__bool__(),  # pylint: disable=unnecessary-dunder-call
         ]
 
         mock_supported.assert_called_with(stripes=[], timezone=None)
