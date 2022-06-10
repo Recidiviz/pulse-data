@@ -17,8 +17,7 @@
 """Tests for calculator_utils.py."""
 import unittest
 from datetime import date, datetime
-
-import mock
+from typing import Optional
 
 from recidiviz.calculator.pipeline.metrics.utils import calculator_utils
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
@@ -29,8 +28,22 @@ from recidiviz.calculator.pipeline.pipeline_type import (
     INCARCERATION_METRICS_PIPELINE_NAME,
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_required_state_specific_metrics_producer_delegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
+    StateSpecificIncarcerationMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
+    StateSpecificMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
+    UsXxIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.common.constants.state.state_person import StateGender
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
@@ -39,59 +52,56 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-def test_age_at_date_earlier_month() -> None:
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 4, 15)
-    person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
+class TestAgeAtDate(unittest.TestCase):
+    """Tests the age_at_date function."""
 
-    assert calculator_utils.age_at_date(person, check_date) == 24
+    def test_age_at_date_earlier_month(self) -> None:
+        birthdate = date(1989, 6, 17)
+        check_date = date(2014, 4, 15)
+        person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
 
+        self.assertEqual(calculator_utils.age_at_date(person, check_date), 24)
 
-def test_age_at_date_same_month_earlier_date() -> None:
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 6, 16)
-    person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
+    def test_age_at_date_same_month_earlier_date(self) -> None:
+        birthdate = date(1989, 6, 17)
+        check_date = date(2014, 6, 16)
+        person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
 
-    assert calculator_utils.age_at_date(person, check_date) == 24
+        self.assertEqual(calculator_utils.age_at_date(person, check_date), 24)
 
+    def test_age_at_date_same_month_same_date(self) -> None:
+        birthdate = date(1989, 6, 17)
+        check_date = date(2014, 6, 17)
+        person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
 
-def test_age_at_date_same_month_same_date() -> None:
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 6, 17)
-    person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
+        self.assertEqual(calculator_utils.age_at_date(person, check_date), 25)
 
-    assert calculator_utils.age_at_date(person, check_date) == 25
+    def test_age_at_date_same_month_later_date(self) -> None:
+        birthdate = date(1989, 6, 17)
+        check_date = date(2014, 6, 18)
+        person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
 
+        self.assertEqual(calculator_utils.age_at_date(person, check_date), 25)
 
-def test_age_at_date_same_month_later_date() -> None:
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 6, 18)
-    person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
+    def test_age_at_date_later_month(self) -> None:
+        birthdate = date(1989, 6, 17)
+        check_date = date(2014, 7, 11)
+        person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
 
-    assert calculator_utils.age_at_date(person, check_date) == 25
+        self.assertEqual(calculator_utils.age_at_date(person, check_date), 25)
 
-
-def test_age_at_date_later_month() -> None:
-    birthdate = date(1989, 6, 17)
-    check_date = date(2014, 7, 11)
-    person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
-
-    assert calculator_utils.age_at_date(person, check_date) == 25
-
-
-def test_age_at_date_birthdate_unknown() -> None:
-    assert (
-        calculator_utils.age_at_date(
-            StatePerson.new_with_defaults(state_code="US_XX"), datetime.today()
+    def test_age_at_date_birthdate_unknown(self) -> None:
+        self.assertIsNone(
+            calculator_utils.age_at_date(
+                StatePerson.new_with_defaults(state_code="US_XX"), datetime.today()
+            )
         )
-        is None
-    )
 
 
-INCLUDED_PIPELINES = [
-    INCARCERATION_METRICS_PIPELINE_NAME,
-    SUPERVISION_METRICS_PIPELINE_NAME,
-]
+INCLUDED_PIPELINES = {
+    INCARCERATION_METRICS_PIPELINE_NAME: StateSpecificIncarcerationMetricsProducerDelegate,
+    SUPERVISION_METRICS_PIPELINE_NAME: StateSpecificSupervisionMetricsProducerDelegate,
+}
 
 
 class TestPersonExternalIdToInclude(unittest.TestCase):
@@ -113,9 +123,13 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        for pipeline_type in INCLUDED_PIPELINES:
+        for _, metrics_producer_delegate_class in INCLUDED_PIPELINES.items():
             external_id = calculator_utils.person_external_id_to_include(
-                pipeline_type, person_external_id.state_code, person
+                person_external_id.state_code,
+                person,
+                metrics_producer_delegate=get_required_state_specific_metrics_producer_delegate(
+                    "US_MO", metrics_producer_delegate_class
+                ),
             )
 
             self.assertEqual(external_id, person_external_id.external_id)
@@ -134,9 +148,10 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        for pipeline_type in INCLUDED_PIPELINES:
+        for _, _ in INCLUDED_PIPELINES.items():
             external_id = calculator_utils.person_external_id_to_include(
-                pipeline_type, person_external_id.state_code, person
+                person_external_id.state_code,
+                person,
             )
             self.assertIsNone(external_id)
 
@@ -160,7 +175,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             _ = calculator_utils.person_external_id_to_include(
-                INCLUDED_PIPELINES[0], person_external_id_2.state_code, person
+                person_external_id_2.state_code,
+                person,
+                metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegate(),
             )
 
     def test_person_has_multiple_external_ids_of_the_same_type(self) -> None:
@@ -193,7 +210,11 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
         ]
 
         external_id = calculator_utils.person_external_id_to_include(
-            INCLUDED_PIPELINES[0], person_external_id_include.state_code, person
+            person_external_id_include.state_code,
+            person,
+            metrics_producer_delegate=get_required_state_specific_metrics_producer_delegate(
+                "US_PA", INCLUDED_PIPELINES[INCARCERATION_METRICS_PIPELINE_NAME]
+            ),
         )
 
         self.assertEqual(external_id, person_external_id_include.external_id)
@@ -215,7 +236,9 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         person_metadata = PersonMetadata(prioritized_race_or_ethnicity="ASIAN")
 
         updated_characteristics = person_characteristics(
-            person, event_date, person_metadata, "pipeline"
+            person,
+            event_date,
+            person_metadata,
         )
 
         expected_output = {
@@ -240,7 +263,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         person_metadata = PersonMetadata()
 
         updated_characteristics = person_characteristics(
-            person, event_date, person_metadata, "pipeline"
+            person, event_date, person_metadata
         )
 
         expected_output = {
@@ -259,99 +282,18 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         person_metadata = PersonMetadata()
 
         updated_characteristics = person_characteristics(
-            person, event_date, person_metadata, "pipeline"
+            person, event_date, person_metadata
         )
 
         expected_output = {"person_id": person.person_id}
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
-        ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
-        {
-            "test_pipeline": {
-                StateCode.US_XX: "US_XX_DOC",
-                StateCode.US_WW: "US_WW_DOC",
-            },
-            "other_pipeline": {
-                StateCode.US_XX: "US_XX_SID",
-                StateCode.US_WW: "US_WW_SID",
-            },
-        },
-    )
-    def test_add_person_characteristics_IncludeExternalId(self) -> None:
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-            races=[
-                StatePersonRace.new_with_defaults(
-                    state_code="US_XX",
-                )
-            ],
-            ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code="US_XX",
-                )
-            ],
-            external_ids=[
-                StatePersonExternalId.new_with_defaults(
-                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
-                ),
-                StatePersonExternalId.new_with_defaults(
-                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
-                ),
-            ],
-        )
+    class TestUsXxMetricsProducerDelegate(StateSpecificMetricsProducerDelegate):
+        def primary_person_external_id_to_include(self) -> Optional[str]:
+            return "US_XX_DOC"
 
-        event_date = date(2010, 9, 1)
-
-        person_metadata = PersonMetadata()
-
-        updated_characteristics = person_characteristics(
-            person, event_date, person_metadata, "test_pipeline"
-        )
-
-        expected_output = {
-            "age": 26,
-            "gender": StateGender.FEMALE,
-            "person_id": person.person_id,
-            "person_external_id": "DOC1341",
-        }
-
-        self.assertEqual(updated_characteristics, expected_output)
-
-    @mock.patch(
-        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
-        ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
-        {
-            "test_pipeline": {
-                StateCode.US_XX: "US_XX_DOC",
-                StateCode.US_WW: "US_WW_DOC",
-            },
-            "other_pipeline": {
-                StateCode.US_XX: "US_XX_SID",
-                StateCode.US_WW: "US_WW_SID",
-            },
-        },
-    )
-    @mock.patch(
-        "recidiviz.calculator.pipeline.metrics.utils.calculator_utils"
-        ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
-        {
-            "test_pipeline": {
-                StateCode.US_XX: "US_XX_SID",
-                StateCode.US_WW: "US_WW_SID",
-            },
-            "other_pipeline": {
-                StateCode.US_XX: "US_XX_DOC",
-                StateCode.US_WW: "US_WW_DOC",
-            },
-        },
-    )
-    def test_add_person_characteristics_IncludeSecondaryExternalId(self) -> None:
+    def test_add_person_characteristics_include_external_id(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -385,7 +327,53 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             person,
             event_date,
             person_metadata,
-            "test_pipeline",
+            metrics_producer_delegate=self.TestUsXxMetricsProducerDelegate(),
+        )
+
+        expected_output = {
+            "age": 26,
+            "gender": StateGender.FEMALE,
+            "person_id": person.person_id,
+            "person_external_id": "DOC1341",
+        }
+
+        self.assertEqual(updated_characteristics, expected_output)
+
+    def test_add_person_characteristics_include_secondary_external_id(self) -> None:
+        person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=StateGender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                    state_code="US_XX",
+                )
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                    state_code="US_XX",
+                )
+            ],
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                ),
+                StatePersonExternalId.new_with_defaults(
+                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                ),
+            ],
+        )
+
+        event_date = date(2010, 9, 1)
+
+        person_metadata = PersonMetadata()
+
+        updated_characteristics = person_characteristics(
+            person,
+            event_date,
+            person_metadata,
+            metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegate(),
         )
 
         expected_output = {

@@ -31,4 +31,4 @@ class UsXxIncarcerationMetricsProducerDelegate(
         return "US_XX_DOC"
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_XX_DOC"
+        return "US_XX_SID"

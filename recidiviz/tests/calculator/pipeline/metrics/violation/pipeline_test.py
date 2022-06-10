@@ -478,9 +478,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
         self.mock_job_id.return_value = "job_id"
 
         self.metric_producer = ViolationMetricProducer()
-        self.pipeline_name = (
-            pipeline.ViolationMetricsPipelineRunDelegate.pipeline_config().pipeline_name
-        )
 
         default_beam_args: List[str] = [
             "--project",
@@ -556,7 +553,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 
@@ -582,7 +578,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 

@@ -61,6 +61,9 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
+    UsXxIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -142,6 +145,13 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.mock_get_required_state_delegates = (
             self.state_specific_delegate_patcher.start()
         )
+        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegate",
+            return_value=UsXxIncarcerationMetricsProducerDelegate(),
+        )
+        self.mock_get_required_state_metrics_producer_delegate = (
+            self.state_specific_metrics_producer_delegate_patcher.start()
+        )
         self.run_delegate_class = pipeline.IncarcerationMetricsPipelineRunDelegate
 
     def tearDown(self) -> None:
@@ -149,6 +159,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.state_specific_delegate_patcher.stop()
+        self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def build_incarceration_pipeline_data_dict(
         self, fake_person_id: int, state_code: str = "US_XX"
@@ -760,11 +771,17 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
         self.mock_job_id = self.job_id_patcher.start()
         self.mock_job_id.return_value = "job_id"
+        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegate",
+        )
+        self.mock_state_specific_metrics_producer_delegate = (
+            self.state_specific_metrics_producer_delegate_patcher.start()
+        )
+        self.mock_state_specific_metrics_producer_delegate.return_value = (
+            UsXxIncarcerationMetricsProducerDelegate()
+        )
 
         self.metric_producer = pipeline.metric_producer.IncarcerationMetricProducer()
-        self.pipeline_name = (
-            pipeline.IncarcerationMetricsPipelineRunDelegate.pipeline_config().pipeline_name
-        )
 
         default_beam_args: List[str] = [
             "--project",
@@ -796,6 +813,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.job_id_patcher.stop()
+        self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def testProduceIncarcerationMetrics(self) -> None:
         """Tests the ProduceIncarcerationMetrics DoFn."""
@@ -852,7 +870,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 
@@ -897,7 +914,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 
@@ -919,7 +935,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 

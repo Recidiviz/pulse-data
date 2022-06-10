@@ -39,6 +39,9 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
+    StateSpecificIncarcerationMetricsProducerDelegate,
+)
 
 
 class IncarcerationMetricProducer(
@@ -60,3 +63,6 @@ class IncarcerationMetricProducer(
             IncarcerationStayEvent: [IncarcerationPopulationMetric],
             IncarcerationReleaseEvent: [IncarcerationReleaseMetric],
         }
+        self.metrics_producer_delegate_class = (
+            StateSpecificIncarcerationMetricsProducerDelegate
+        )

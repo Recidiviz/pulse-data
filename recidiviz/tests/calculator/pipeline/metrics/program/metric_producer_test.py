@@ -102,7 +102,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -159,7 +158,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -216,7 +214,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -290,7 +287,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -339,7 +335,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count([included_event])
@@ -385,7 +380,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
-            pipeline_name=self.pipeline_config.pipeline_name,
         )
 
         expected_count = expected_metrics_count([included_event])

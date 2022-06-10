@@ -900,9 +900,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.mock_job_id.return_value = "job_id"
 
         self.metric_producer = pipeline.metric_producer.ProgramMetricProducer()
-        self.pipeline_name = (
-            pipeline.ProgramMetricsPipelineRunDelegate.pipeline_config().pipeline_name
-        )
 
         default_beam_args: List[str] = [
             "--project",
@@ -987,7 +984,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 
@@ -1032,7 +1028,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 
@@ -1055,7 +1050,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 ProduceMetrics(),
                 self.pipeline_job_args,
                 self.metric_producer,
-                self.pipeline_name,
             )
         )
 

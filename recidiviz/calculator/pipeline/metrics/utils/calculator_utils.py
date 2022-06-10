@@ -30,26 +30,13 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricTypeT,
 )
-from recidiviz.calculator.pipeline.pipeline_type import (
-    INCARCERATION_METRICS_PIPELINE_NAME,
-    RECIDIVISM_METRICS_PIPELINE_NAME,
-    SUPERVISION_METRICS_PIPELINE_NAME,
-)
 from recidiviz.calculator.pipeline.utils.identifier_models import (
     Event,
     IdentifierResult,
 )
-from recidiviz.common.constants.state.external_id_types import (
-    US_ID_DOC,
-    US_ME_DOC,
-    US_MO_DOC,
-    US_ND_ELITE,
-    US_ND_SID,
-    US_PA_CONTROL,
-    US_PA_PBPP,
-    US_TN_DOC,
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
+    StateSpecificMetricsProducerDelegate,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
     first_day_of_month,
     last_day_of_month,
@@ -57,46 +44,12 @@ from recidiviz.common.date import (
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
-    INCARCERATION_METRICS_PIPELINE_NAME: {
-        StateCode.US_ID: US_ID_DOC,
-        StateCode.US_ME: US_ME_DOC,
-        StateCode.US_MO: US_MO_DOC,
-        StateCode.US_ND: US_ND_ELITE,
-        StateCode.US_PA: US_PA_CONTROL,
-        StateCode.US_TN: US_TN_DOC,
-    },
-    RECIDIVISM_METRICS_PIPELINE_NAME: {StateCode.US_ND: US_ND_ELITE},
-    SUPERVISION_METRICS_PIPELINE_NAME: {
-        StateCode.US_ID: US_ID_DOC,
-        StateCode.US_ME: US_ME_DOC,
-        StateCode.US_MO: US_MO_DOC,
-        StateCode.US_ND: US_ND_SID,
-        StateCode.US_PA: US_PA_PBPP,
-        StateCode.US_TN: US_TN_DOC,
-    },
-}
-
-# For certain metrics we may record multiple kinds of external IDs for a person. If
-# there's only one ID type for a state, this will be the same as what is in the
-# PRIMARY map for the corresponding pipeline.
-SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
-    INCARCERATION_METRICS_PIPELINE_NAME: {
-        StateCode.US_ID: US_ID_DOC,
-        StateCode.US_ME: US_ME_DOC,
-        StateCode.US_MO: US_MO_DOC,
-        StateCode.US_ND: US_ND_SID,
-        StateCode.US_PA: US_PA_PBPP,
-        StateCode.US_TN: US_TN_DOC,
-    }
-}
-
 
 def person_characteristics(
     person: StatePerson,
     event_date: datetime.date,
     person_metadata: PersonMetadata,
-    pipeline: str,
+    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> Dict[str, Any]:
     """Adds the person's demographic characteristics to the given |characteristics|
     dictionary. Adds the person's person_id and, if applicable,
@@ -117,14 +70,20 @@ def person_characteristics(
     characteristics["person_id"] = person.person_id
 
     primary_person_external_id = person_external_id_to_include(
-        pipeline, person.state_code, person, secondary=False
+        person.state_code,
+        person,
+        secondary=False,
+        metrics_producer_delegate=metrics_producer_delegate,
     )
 
     if primary_person_external_id is not None:
         characteristics["person_external_id"] = primary_person_external_id
 
     secondary_person_external_id = person_external_id_to_include(
-        pipeline, person.state_code, person, secondary=True
+        person.state_code,
+        person,
+        secondary=True,
+        metrics_producer_delegate=metrics_producer_delegate,
     )
 
     if secondary_person_external_id is not None:
@@ -155,7 +114,10 @@ def age_at_date(person: StatePerson, check_date: datetime.date) -> Optional[int]
 
 
 def person_external_id_to_include(
-    pipeline: str, state_code: str, person: StatePerson, secondary: bool = False
+    state_code: str,
+    person: StatePerson,
+    secondary: bool = False,
+    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> Optional[str]:
     """Finds an external_id on the person that should be included in calculations for
     person-level metrics in the given pipeline.
@@ -169,21 +131,14 @@ def person_external_id_to_include(
     if not external_ids:
         return None
 
-    id_types_to_include_for_pipeline = (
-        SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
-        if secondary
-        else PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
-    )
-
-    state_code_enum = StateCode(state_code)
-
-    if (
-        not id_types_to_include_for_pipeline
-        or state_code_enum not in id_types_to_include_for_pipeline
-    ):
+    if not metrics_producer_delegate:
         return None
 
-    id_type_to_include = id_types_to_include_for_pipeline.get(state_code_enum)
+    id_type_to_include = (
+        metrics_producer_delegate.secondary_person_external_id_to_include()
+        if secondary
+        else metrics_producer_delegate.primary_person_external_id_to_include()
+    )
 
     if not id_type_to_include:
         return None
@@ -279,7 +234,6 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
 
 
 def produce_standard_metrics(
-    pipeline: str,
     person: StatePerson,
     identifier_events: List[Event],
     metric_inclusions: Dict[RecidivizMetricTypeT, bool],
@@ -292,6 +246,7 @@ def produce_standard_metrics(
     ],
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
+    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> List[RecidivizMetric]:
     """Produces metrics for pipelines with a standard mapping of event to metric
     type."""
@@ -325,7 +280,6 @@ def produce_standard_metrics(
 
             if metric_inclusions.get(metric_type):
                 metric = build_metric(
-                    pipeline=pipeline,
                     result=event,
                     metric_class=metric_class,
                     person=person,
@@ -333,6 +287,7 @@ def produce_standard_metrics(
                     person_metadata=person_metadata,
                     pipeline_job_id=pipeline_job_id,
                     additional_attributes=additional_attributes,
+                    metrics_producer_delegate=metrics_producer_delegate,
                 )
 
                 metrics.append(metric)
@@ -341,7 +296,6 @@ def produce_standard_metrics(
 
 
 def build_metric(
-    pipeline: str,
     result: IdentifierResult,
     metric_class: Type[RecidivizMetric],
     person: StatePerson,
@@ -349,6 +303,7 @@ def build_metric(
     person_metadata: PersonMetadata,
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
+    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> RecidivizMetric:
     """Builds a RecidivizMetric of the defined metric_class using the provided
     information.
@@ -356,10 +311,7 @@ def build_metric(
     metric_attributes = attr.fields_dict(metric_class).keys()
 
     person_attributes = person_characteristics(
-        person,
-        event_date,
-        person_metadata,
-        pipeline,
+        person, event_date, person_metadata, metrics_producer_delegate
     )
 
     metric_cls_builder = metric_class.builder()
