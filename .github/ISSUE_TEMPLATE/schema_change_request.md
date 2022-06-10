@@ -3,7 +3,7 @@ name: Schema Change Request
 about: Request an update to the Recidiviz Schema
 title: "[Schema Change Request] More Info Here"
 labels: 'Subject: Schema Change Request, Team: Data Platform, Analytics: Infrastructure'
-assignees: 'ageiduschek, colincadams, jjdressel11, agaidus, hobuobi, kirtanac, elchao'
+assignees: 'ageiduschek, colincadams, agaidus, hobuobi, kirtanac, elchao'
 
 ---
 _Use this issue to add to or update the schemas of core platform tables. Response to the requestor from Doppler can be expected within 3 business days of filing issue. Feel free to ping #platform-team with a reminder after 2 days if you have not gotten any response._
