@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
+import os
 from datetime import date
-from typing import Dict, List, Optional, Sequence, Type, Union
+from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
@@ -50,8 +51,20 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate imp
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
+    StateSpecificIncarcerationMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
+    StateSpecificMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
+    StateSpecificRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -62,14 +75,23 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_incarceration_delegate import (
     UsCoIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_incarceration_metrics_producer_delegate import (
+    UsCoIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_incarceration_period_normalization_delegate import (
     UsCoIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_program_assignment_normalization_delegate import (
     UsCoProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_recidivism_metrics_producer_delegate import (
+    UsCoRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_supervision_delegate import (
     UsCoSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_supervision_metrics_producer_delegate import (
+    UsCoSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_supervision_period_normalization_delegate import (
     UsCoSupervisionNormalizationDelegate,
@@ -86,17 +108,26 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_delegate import (
     UsIdIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_metrics_producer_delegate import (
+    UsIdIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_normalization_delegate import (
     UsIdIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignment_normalization_delegate import (
     UsIdProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_recidivism_metrics_producer_delegate import (
+    UsIdRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_metrics_producer_delegate import (
+    UsIdSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_period_normalization_delegate import (
     UsIdSupervisionNormalizationDelegate,
@@ -113,14 +144,23 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_delegate import (
     UsMeIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_metrics_producer_delegate import (
+    UsMeIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_period_normalization_delegate import (
     UsMeIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_program_assignment_normalization_delegate import (
     UsMeProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_recidivism_metrics_producer_delegate import (
+    UsMeRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_delegate import (
     UsMeSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_metrics_producer_delegate import (
+    UsMeSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_period_normalization_delegate import (
     UsMeSupervisionNormalizationDelegate,
@@ -137,14 +177,23 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_delegate import (
     UsMoIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_metrics_producer_delegate import (
+    UsMoIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_normalization_delegate import (
     UsMoIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_program_assignment_normalization_delegate import (
     UsMoProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_recidivism_metrics_producer_delegate import (
+    UsMoRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_metrics_producer_delegate import (
+    UsMoSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_period_normalization_delegate import (
     UsMoSupervisionNormalizationDelegate,
@@ -161,17 +210,26 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_delegate import (
     UsNdIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_metrics_producer_delegate import (
+    UsNdIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_normalization_delegate import (
     UsNdIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_program_assignment_normalization_delegate import (
     UsNdProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_recidivism_metrics_producer_delegate import (
+    UsNdRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     UsNdSupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_metrics_producer_delegate import (
+    UsNdSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_period_normalization_delegate import (
     UsNdSupervisionNormalizationDelegate,
@@ -188,17 +246,26 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_metrics_producer_delegate import (
+    UsPaIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_normalization_delegate import (
     UsPaIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_program_assignment_normalization_delegate import (
     UsPaProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_recidivism_metrics_producer_delegate import (
+    UsPaRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_metrics_producer_delegate import (
+    UsPaSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_period_normalization_delegate import (
     UsPaSupervisionNormalizationDelegate,
@@ -215,14 +282,23 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_delegate import (
     UsTnIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_metrics_producer_delegate import (
+    UsTnIncarcerationMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_incarceration_period_normalization_delegate import (
     UsTnIncarcerationNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_program_assignment_normalization_delegate import (
     UsTnProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_recidivism_metrics_producer_delegate import (
+    UsTnRecidivismMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_delegate import (
     UsTnSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_metrics_producer_delegate import (
+    UsTnSupervisionMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_period_normalization_delegate import (
     UsTnSupervisionNormalizationDelegate,
@@ -300,6 +376,21 @@ def get_required_state_specific_delegates(
                 f"Unexpected required delegate {required_delegate} for pipeline."
             )
     return required_state_specific_delegates
+
+
+def get_required_state_specific_metrics_delegate(
+    state_code: str,
+    required_delegate: Optional[Type[StateSpecificMetricsProducerDelegate]],
+) -> Optional[StateSpecificMetricsProducerDelegate]:
+    """Returns the state-specific metrics delegate given the type requested for a given state."""
+    if required_delegate is StateSpecificIncarcerationMetricsProducerDelegate:
+        return _get_state_specific_incarceration_metrics_delegate(state_code)
+    if required_delegate is StateSpecificRecidivismMetricsProducerDelegate:
+        return _get_state_specific_recidivism_metrics_delegate(state_code)
+    if required_delegate is StateSpecificSupervisionMetricsProducerDelegate:
+        return _get_state_specific_supervision_metrics_delegate(state_code)
+
+    return None
 
 
 def get_state_specific_case_compliance_manager(
@@ -558,3 +649,101 @@ def get_state_specific_supervision_delegate(
         return UsTnSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def _get_state_specific_incarceration_metrics_delegate(
+    state_code: str,
+) -> StateSpecificIncarcerationMetricsProducerDelegate:
+    """Returns the type of StateSpecificIncarcerationMetricsProducerDelegate that should be used
+    for incarceration metrics in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnIncarcerationMetricsProducerDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def _get_state_specific_supervision_metrics_delegate(
+    state_code: str,
+) -> StateSpecificSupervisionMetricsProducerDelegate:
+    """Returns the type of StateSpecificSupervisionMetricsProducerDelegate that should be used
+    for incarceration metrics in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnSupervisionMetricsProducerDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def _get_state_specific_recidivism_metrics_delegate(
+    state_code: str,
+) -> StateSpecificRecidivismMetricsProducerDelegate:
+    """Returns the type of StateSpecificRecidivismMetricsProducerDelegate that should be used
+    for incarceration metrics in a given |state_code|."""
+    if state_code == StateCode.US_CO.value:
+        return UsCoRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnRecidivismMetricsProducerDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_supported_states() -> Set[StateCode]:
+    """Determines which states have directories containing state-specific delegates in
+    the state_utils directory."""
+    state_utils_path = os.path.dirname(__file__)
+    directories = [
+        dir_item
+        for dir_item in os.listdir(state_utils_path)
+        if os.path.isdir(os.path.join(state_utils_path, dir_item))
+    ]
+    supported_states: Set[StateCode] = set()
+
+    for directory in directories:
+        try:
+            state_code = StateCode(directory.upper())
+            supported_states.add(state_code)
+        except ValueError:
+            continue
+
+    if not supported_states:
+        raise ValueError(
+            "Found zero supported states, which should never happen. If "
+            "the location of the state-specific state utils directories "
+            "have moved to a new location please update the "
+            "state_utils_path."
+        )
+
+    return supported_states

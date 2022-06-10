@@ -21,20 +21,13 @@ python -m recidiviz.calculator.query.state.views.reference.overdue_discharge_out
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
-    PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
-)
-from recidiviz.calculator.pipeline.pipeline_type import (
-    SUPERVISION_METRICS_PIPELINE_NAME,
-)
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    get_all_primary_supervision_external_id_types,
+)
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_supervision_id_types = PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE[
-    SUPERVISION_METRICS_PIPELINE_NAME
-].values()
 
 OVERDUE_DISCHARGE_OUTCOMES_VIEW_NAME = "overdue_discharge_outcomes"
 
@@ -57,7 +50,7 @@ FROM `{{project_id}}.{{static_reference_dataset}}.day_zero_reports` day_zero_rep
 INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
     ON day_zero_reports.state_code = pei.state_code
     AND day_zero_reports.person_external_id = pei.external_id
-    AND pei.id_type IN {tuple(_supervision_id_types)}
+    AND pei.id_type IN {get_all_primary_supervision_external_id_types()}
 LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` compartment_sessions
     ON day_zero_reports.state_code = compartment_sessions.state_code
     AND pei.person_id = compartment_sessions.person_id
