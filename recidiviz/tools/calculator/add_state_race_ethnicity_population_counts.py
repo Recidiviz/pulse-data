@@ -119,11 +119,7 @@ def main(
     max_category_raw_percentage = race_eth_counts[max_category] / total_pop * 100
 
     non_max_category_sum = sum(
-        [
-            value
-            for category, value in race_eth_counts.items()
-            if category != max_category
-        ]
+        value for category, value in race_eth_counts.items() if category != max_category
     )
 
     max_category_count = total_pop - non_max_category_sum
