@@ -20,6 +20,13 @@
 from enum import Enum
 from typing import Dict, List, Optional
 
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_required_state_specific_metrics_delegate,
+    get_supported_states,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
+)
 from recidiviz.common.constants.states import StateCode
 
 # The states in the vitals reports that will be grouping by level 1 supervision locations.
@@ -526,3 +533,18 @@ def pathways_state_specific_supervision_level(
             ELSE IFNULL({supervision_level_query}, "EXTERNAL_UNKNOWN")
         END
     """
+
+
+def get_all_primary_supervision_external_id_types() -> tuple:
+    """Returns a tuple of strings that indicate all of the state external id types for queries."""
+    supervision_id_types = []
+    for state in get_supported_states():
+        delegate = get_required_state_specific_metrics_delegate(
+            state_code=state.value,
+            required_delegate=StateSpecificSupervisionMetricsProducerDelegate,
+        )
+        if delegate and delegate.primary_person_external_id_to_include():
+            supervision_id_types.append(
+                delegate.primary_person_external_id_to_include()
+            )
+    return tuple(supervision_id_types)

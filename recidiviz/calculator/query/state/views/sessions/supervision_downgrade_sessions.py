@@ -23,18 +23,15 @@ python -m recidiviz.calculator.query.state.views.sessions.supervision_downgrade_
 from operator import itemgetter
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
-    PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE,
-)
-from recidiviz.calculator.pipeline.pipeline_type import (
-    SUPERVISION_METRICS_PIPELINE_NAME,
-)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     PO_REPORT_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
+)
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    get_all_primary_supervision_external_id_types,
 )
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -58,10 +55,6 @@ A mismatch is considered "corrected" if the person's supervision level was reduc
 the recommendation without a reassessment.
 """
 
-_supervision_id_types = PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE[
-    SUPERVISION_METRICS_PIPELINE_NAME
-].values()
-
 SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     WITH 
@@ -73,7 +66,7 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
         INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
             ON day_zero_reports.state_code = pei.state_code
             AND day_zero_reports.person_external_id = pei.external_id
-            AND pei.id_type IN {tuple(_supervision_id_types)}
+            AND pei.id_type IN {get_all_primary_supervision_external_id_types()}
         WHERE opportunity_type = "{OpportunityType.OVERDUE_DOWNGRADE.value}"
     ),
     po_monthly_reports AS (
