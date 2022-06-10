@@ -18,11 +18,12 @@
 CheckConstraint."""
 
 from sqlite3 import IntegrityError
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import event
 
 from recidiviz.persistence.database.schema.operations.schema import (
+    DirectIngestInstanceStatus,
     DirectIngestViewMaterializationMetadata,
 )
 from recidiviz.persistence.database.session import Session
@@ -58,4 +59,27 @@ def session_listener(session: Session) -> None:
                     f"ingest_view_name={instance.ingest_view_name}",
                     f"lower_bound_datetime_exclusive={instance.lower_bound_datetime_exclusive}, "
                     f"upper_bound_datetime_inclusive={instance.upper_bound_datetime_inclusive}",
+                )
+
+        if isinstance(instance, DirectIngestInstanceStatus):
+            # Confirm that the timestamp of the row that is attempting to be committed is strictly after
+            # the most recent row's timestamp.
+            most_recent_row: Optional[DirectIngestInstanceStatus] = (
+                session.query(DirectIngestInstanceStatus)
+                .filter_by(
+                    region_code=instance.region_code,
+                    instance=instance.instance,
+                )
+                .order_by(DirectIngestInstanceStatus.timestamp.desc())
+                .limit(1)
+                .one_or_none()
+            )
+
+            if most_recent_row and most_recent_row.timestamp > instance.timestamp:
+                raise IntegrityError(
+                    "Attempting to commit a DirectIngestInstanceStatus row for "
+                    f"region_code={instance.region_code} and instance={instance.instance} whose timestamp is less "
+                    f"than the timestamp of the most recent row. The timestamp of the most recent row is "
+                    f"{most_recent_row.timestamp} and the timestamp of the attempted committed row is "
+                    f"{instance.timestamp}."
                 )

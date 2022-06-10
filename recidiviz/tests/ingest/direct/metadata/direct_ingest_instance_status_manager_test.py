@@ -54,13 +54,11 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
 
-        # Set initial status for PRIMARY US_XX instance to UP_TO_DATE.
         self.us_xx_primary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
 
-        # Set initial status for SECONDARY US_XX instance to STANDARD_RERUN_STARTED.
         self.us_xx_secondary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
@@ -99,8 +97,8 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
     def test_get_raw_data_source_instance_primary_standard_rerun_raw_data_source_instance(
         self,
     ) -> None:
-        """`ux_xx_primary_manager` is instantiated with `UP_TO_DATE` status. Assert that regardless of whether
-        a rerun has been kicked off in PRIMARY, the raw data source is always PRIMARY."""
+        """Assert that regardless of whether a rerun has been kicked off in PRIMARY, the raw data source is always
+        PRIMARY."""
 
         # Arrange
         self.us_xx_primary_manager.add_instance_status(
