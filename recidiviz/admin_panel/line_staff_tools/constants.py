@@ -39,7 +39,7 @@ RAW_FILES_CONFIG = {
             schema=US_TN_STANDARDS_DUE_SCHEMA,
         ),
         "STANDARDS_ADMIN": RawDataConfig(
-            table_name="us_tn_standards_due",
+            table_name="us_tn_standards_admin",
             schema=US_TN_STANDARDS_ADMIN_SCHEMA,
         ),
     }
