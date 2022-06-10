@@ -22,6 +22,10 @@ import unittest
 from more_itertools import one
 from sqlalchemy.exc import IntegrityError
 
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -368,3 +372,58 @@ class OperationsSchemaTest(unittest.TestCase):
             )
             session.add(metadata_different_instance)
             session.commit()
+
+    def test_direct_ingest_instance_status_uniqueness_constraint(self) -> None:
+        shared_datetime = datetime.datetime.now()
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestInstanceStatus(
+                region_code=StateCode.US_XX.value,
+                instance=DirectIngestInstance.PRIMARY.value,
+                timestamp=shared_datetime,
+                status=DirectIngestStatus.STANDARD_RERUN_STARTED.value,
+            )
+            session.add(metadata)
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            duplicate_timestamp = schema.DirectIngestInstanceStatus(
+                region_code=StateCode.US_XX.value,
+                instance=DirectIngestInstance.PRIMARY.value,
+                # Different status, but same timestamp
+                timestamp=shared_datetime,
+                status=DirectIngestStatus.UP_TO_DATE.value,
+            )
+
+            session.add(duplicate_timestamp)
+            with self.assertRaises(IntegrityError):
+                session.commit()
+
+    def test_direct_ingest_instance_status_timestamp_ordering(self) -> None:
+        shared_datetime = datetime.datetime.now()
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestInstanceStatus(
+                region_code=StateCode.US_XX.value,
+                instance=DirectIngestInstance.PRIMARY.value,
+                timestamp=shared_datetime,
+                status=DirectIngestStatus.STANDARD_RERUN_STARTED.value,
+            )
+            session.add(metadata)
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            earlier_timestamp = schema.DirectIngestInstanceStatus(
+                region_code=StateCode.US_XX.value,
+                instance=DirectIngestInstance.PRIMARY.value,
+                # Add new row whose datetime is earlier than previous row
+                timestamp=shared_datetime - datetime.timedelta(days=1),
+                status=DirectIngestStatus.UP_TO_DATE.value,
+            )
+
+            session.add(earlier_timestamp)
+            with self.assertRaisesRegex(
+                sqlite3.IntegrityError,
+                "Attempting to commit a DirectIngestInstanceStatus",
+            ):
+                session.commit()
