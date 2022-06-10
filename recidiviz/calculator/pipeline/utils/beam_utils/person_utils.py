@@ -34,6 +34,7 @@ PERSON_METADATA_KEY = "PERSON_METADATA"
 # Race and ethnicity values that we do not track in the
 # state_race_ethnicity_population_counts table
 _NON_PRIORITIZED_RACES_OR_ETHNICITIES: List[Union[StateRace, StateEthnicity]] = [
+    StateRace.INTERNAL_UNKNOWN,
     StateRace.EXTERNAL_UNKNOWN,
     StateEthnicity.EXTERNAL_UNKNOWN,
     StateEthnicity.NOT_HISPANIC,

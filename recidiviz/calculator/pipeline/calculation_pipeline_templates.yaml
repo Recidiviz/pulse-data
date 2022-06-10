@@ -34,6 +34,11 @@ normalization_pipelines:
     job_name: us-tn-normalization
     state_code: US_TN
     region: us-east1
+  - pipeline: comprehensive_normalization
+    job_name: us-mi-normalization
+    state_code: US_MI
+    region: us-central1
+    staging_only: True
 
 incremental_metric_pipelines:
   # Full US_ND calculations with no time limit
@@ -157,6 +162,15 @@ incremental_metric_pipelines:
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west3
 
+  # Daily US_MI calculations
+  - pipeline: incarceration_metrics
+    job_name: us-mi-incarceration-metrics-36
+    state_code: US_MI
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    calculation_month_count: 36
+    region: us-central1
+    staging_only: True
+
 historical_metric_pipelines:
   - pipeline: incarceration_metrics
     job_name: us-id-historical-incarceration-metrics-240
@@ -260,6 +274,13 @@ historical_metric_pipelines:
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west3
+  - pipeline: incarceration_metrics
+    job_name: us-mi-historical-incarceration-metrics-240
+    state_code: US_MI
+    calculation_month_count: 240
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    region: us-central1
+    staging_only: True
 
 supplemental_dataset_pipelines:
   - pipeline: us_id_case_note_extracted_entities_supplemental
