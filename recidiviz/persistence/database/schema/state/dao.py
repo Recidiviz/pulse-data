@@ -68,7 +68,7 @@ def read_people_by_cls_external_ids(
     )
     person_ids = [res[0] for res in person_ids_result]
     logging.info(
-        "[DAO] Finished read of external ids of class [%s]. " "Found [%s] person ids.",
+        "[DAO] Finished read of external ids of class [%s]. Found [%s] person ids.",
         schema_cls.__name__,
         len(person_ids),
     )
@@ -97,7 +97,7 @@ def read_placeholder_persons(
     )
     person_ids = [res[0] for res in person_ids_result]
     logging.info(
-        "[DAO] Finished read of placeholder person ids. " "Found [%s] person ids.",
+        "[DAO] Finished read of placeholder person ids. Found [%s] person ids.",
         len(person_ids),
     )
     query = session.query(schema.StatePerson).filter(

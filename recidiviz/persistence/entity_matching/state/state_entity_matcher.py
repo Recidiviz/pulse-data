@@ -141,14 +141,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
     def set_session(self, session: Session) -> None:
         if self.session:
             raise ValueError(
-                "Attempting to set self.session, " "but self.session is already set"
+                "Attempting to set self.session, but self.session is already set"
             )
         self.session = session
 
     def get_session(self) -> Session:
         if self.session is None:
             raise ValueError(
-                "Attempting to get self.session, " "but self.session is not set"
+                "Attempting to get self.session, but self.session is not set"
             )
         return self.session
 
@@ -416,7 +416,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 ingested_persons=ingested_persons, db_persons=db_persons
             )
             logging.info(
-                "[Entity matching] Matching persons returned [%s] " "matched persons",
+                "[Entity matching] Matching persons returned [%s] matched persons",
                 len(matched_entities_builder.people),
             )
 

@@ -159,7 +159,7 @@ class EmailGenerationTests(TestCase):
             self.assertEqual(self.gcs_file_system.all_paths, [])
 
 
-# pylint: disable=no-init
+#
 class POMonthlyReportGenerationTest(EmailGenerationTests):
     """Tests specific to the PO Monthly report"""
 

@@ -954,7 +954,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     StateSentenceStatus.COMPLETED.value,
                     StateSentenceStatus.REVOKED.value,
                 ):
-                    obj.__setattr__("completion_date", completion_date)
+                    obj.completion_date = completion_date
 
     def _set_sentence_status(
         self,
@@ -967,7 +967,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         status_enum_str = self._sentence_status_enum_str_from_row(row)
         for obj in extracted_objects:
             if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
-                obj.__setattr__("status", status_enum_str)
+                obj.status = status_enum_str
 
     def _sentence_status_enum_str_from_row(self, row: Dict[str, str]) -> str:
         """Derives an accurate sentence status from the data in the given row."""
@@ -1065,6 +1065,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ) -> None:
             for obj in extracted_objects:
                 if isinstance(obj, sentence_type):
+                    # pylint: disable=unnecessary-dunder-call
                     if obj.__getattribute__(field_name) in magical_dates:
                         obj.__setattr__(field_name, None)
 

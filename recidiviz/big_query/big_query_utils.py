@@ -176,7 +176,7 @@ def _remove_non_printable_characters(column_name: str) -> str:
         logging.info(
             "Found non-printable characters in column [%s]. Original: [%s]",
             fixed_column,
-            column_name.__repr__(),
+            repr(column_name),
         )
     return fixed_column
 

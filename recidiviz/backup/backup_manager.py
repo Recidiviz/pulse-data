@@ -117,7 +117,7 @@ def update_long_term_backups_for_cloudsql_instance(
         backup_id = backup_run["id"]
 
         logging.info(
-            "Creating request for backup delete operation for backup " "[%s] of [%s]",
+            "Creating request for backup delete operation for backup [%s] of [%s]",
             backup_id,
             instance_id,
         )

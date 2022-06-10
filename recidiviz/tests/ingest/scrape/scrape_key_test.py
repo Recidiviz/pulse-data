@@ -56,13 +56,13 @@ def test_eq_different_objects() -> None:
     left = ScrapeKey("us_ny", constants.ScrapeType.BACKGROUND)
     right = "We don't read the papers, we don't read the news"
 
-    assert not left.__eq__(right)
+    assert left != right
 
 
 def test_repr() -> None:
     scrape_key = ScrapeKey("us_ut", constants.ScrapeType.SNAPSHOT)
 
-    representation = scrape_key.__repr__()
+    representation = repr(scrape_key)
 
     assert (
         representation == "<ScrapeKey region_code: us_ut, "

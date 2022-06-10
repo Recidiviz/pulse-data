@@ -309,7 +309,7 @@ def _get_ingest_info_entities_for_region(
     region: str, session_start_time: datetime = None
 ) -> List[datastore.Entity]:
     logging.info(
-        "Getting ingest info entities for region: [%s] and " "session_start_time: [%s]",
+        "Getting ingest info entities for region: [%s] and session_start_time: [%s]",
         region,
         session_start_time,
     )

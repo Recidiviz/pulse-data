@@ -124,7 +124,7 @@ def _create_scraper_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
 
     regions_dir = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
     if not os.path.exists(regions_dir):
-        raise OSError("Couldn't find directory " "recidiviz/ingest/scrape/regions.")
+        raise OSError("Couldn't find directory recidiviz/ingest/scrape/regions.")
     template_dir = os.path.join(os.path.dirname(__file__), "scraper_template")
     target_dir = os.path.join(regions_dir, subs["region"])
     if os.path.exists(target_dir):
@@ -158,9 +158,7 @@ def _create_test_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
     ingest_dir = os.path.dirname(recidiviz.ingest.scrape.regions.__file__)
     test_dir = os.path.dirname(recidiviz.tests.ingest.scrape.regions.__file__)
     if not os.path.exists(ingest_dir):
-        raise OSError(
-            "Couldn't find directory " "recidiviz/tests/ingest/scrape/regions."
-        )
+        raise OSError("Couldn't find directory recidiviz/tests/ingest/scrape/regions.")
     target_test_dir = os.path.join(test_dir, subs["region"])
     if os.path.exists(target_test_dir):
         raise OSError(f"directory {target_test_dir} already exists")

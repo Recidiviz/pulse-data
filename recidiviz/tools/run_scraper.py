@@ -39,14 +39,14 @@ from datetime import datetime
 from functools import partial
 from typing import Set, cast
 
-from recidiviz.ingest.scrape import constants, scraper as scraper_module
+from recidiviz.ingest.scrape import constants
+from recidiviz.ingest.scrape import scraper as scraper_module
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.ingest.scrape.scraper import Scraper
 from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils.fakes import use_in_memory_sqlite_database
 from recidiviz.utils import regions
-
 
 # This function acts as a bound method to the scraper instance.
 
@@ -105,7 +105,7 @@ def run_scraper(args: argparse.Namespace) -> None:
     if failed_regions:
         logging.info("***")
         logging.info(
-            "The following regions raised errors during scraping: " "[%s]",
+            "The following regions raised errors during scraping: [%s]",
             failed_regions,
         )
 

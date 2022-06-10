@@ -379,8 +379,8 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         for metric_subclass in self._metric_subclasses:
             table_id = DATAFLOW_METRICS_TO_TABLES[metric_subclass]
             metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[table_id]
-            _ = writable_metrics.__getattr__(
-                metric_type.value
+            _ = getattr(
+                writable_metrics, metric_type.value
             ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteToBigQuery(
                 output_table=table_id,
                 output_dataset=self.pipeline_job_args.output_dataset,

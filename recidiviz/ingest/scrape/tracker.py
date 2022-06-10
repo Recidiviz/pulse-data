@@ -21,7 +21,7 @@
 import json
 import logging
 
-from recidiviz.ingest.scrape import sessions, docket
+from recidiviz.ingest.scrape import docket, sessions
 
 
 def iterate_docket_item(scrape_key, return_immediately=False):
@@ -58,7 +58,7 @@ def iterate_docket_item(scrape_key, return_immediately=False):
     )
     if not item_added:
         logging.error(
-            "Failed to update session for scraper [%s] " "with docket item [%s].",
+            "Failed to update session for scraper [%s] with docket item [%s].",
             scrape_key,
             str(item_content),
         )

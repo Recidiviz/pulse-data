@@ -314,6 +314,7 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         id_field_name = f"{obj.class_name()}_id"
         id_value = getattr(obj, id_field_name)
         if id_value and id_value.startswith(_DUMMY_KEY_PREFIX):
+            # pylint: disable=unnecessary-dunder-call
             obj.__setattr__(id_field_name, None)
 
     def _run_file_post_hooks(self, ingest_info: IngestInfo) -> None:

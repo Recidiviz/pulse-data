@@ -21,6 +21,7 @@ from typing import List, Literal, Mapping, Optional, Tuple
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.utils.string import StrictStringFormatter
 
 MetricStat = Literal[
     "aggregating_location_id",
@@ -44,9 +45,7 @@ DIMENSIONS_WITHOUT_UNKNOWNS = {"state_code", "year", "month"}
 MetricMetadata = Literal["age", "aggregating_location_id", "caseload", "full_name"]
 # Metadata values are assumed to be one-to-one with a given aggregate row. i.e. for a person level view, a person's age
 # does not change as the aggregate only contains one row.
-METADATA_TEMPLATE = (
-    lambda *, metadata_column: f"ANY_VALUE({metadata_column}) AS {metadata_column},"
-)
+METADATA_TEMPLATE = "ANY_VALUE({metadata_column}) AS {metadata_column},"
 
 
 class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
@@ -121,7 +120,9 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
             METRIC_STAT_AGGS[stat] for stat in tuple(metric_stats or ())
         )
         metadata_clause = "\n".join(
-            METADATA_TEMPLATE(metadata_column=metadata_column)
+            StrictStringFormatter().format(
+                METADATA_TEMPLATE, metadata_column=metadata_column
+            )
             for metadata_column in tuple(metric_metadata or ())
         )
 

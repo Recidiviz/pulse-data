@@ -174,7 +174,7 @@ def scraper_start():
                     future.result()
                 except Exception:
                     logging.exception(
-                        "An exception occured when starting region [%s] for " "[%s]",
+                        "An exception occured when starting region [%s] for [%s]",
                         region_code,
                         scrape_type,
                     )
@@ -292,7 +292,7 @@ def scraper_stop():
                     future.result()
                 except Exception:
                     logging.exception(
-                        "An exception occured when stopping region [%s] for " "[%s]",
+                        "An exception occured when stopping region [%s] for [%s]",
                         region_code,
                         scrape_types,
                     )

@@ -371,7 +371,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePersonExternalId):
                 id_type = f"US_ND_{extracted_object.id_type}"
-                extracted_object.__setattr__("id_type", id_type)
+                extracted_object.id_type = id_type
 
     @staticmethod
     def _add_person_external_id(
@@ -673,7 +673,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 normalized_code = normalized_judicial_district_code(
                     extracted_object.judicial_district_code
                 )
-                extracted_object.__setattr__("judicial_district_code", normalized_code)
+                extracted_object.judicial_district_code = normalized_code
 
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides

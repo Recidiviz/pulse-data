@@ -16,13 +16,13 @@
 # =============================================================================
 """Tests the trace various utilities"""
 
-from typing import List
 import unittest
+from typing import List
 
+import pytest
 from mock import ANY, Mock, call, patch
 from opencensus.trace import span_context
 from parameterized import parameterized
-import pytest
 
 from recidiviz.utils import trace
 
@@ -103,7 +103,7 @@ class TestSpan(unittest.TestCase):
                         "recursion_depth": 0,
                     }
                 ),
-                call().__enter__(),
+                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
                 call(
                     {
                         "module": "recidiviz.tests.utils.trace_test",
@@ -111,7 +111,7 @@ class TestSpan(unittest.TestCase):
                         "recursion_depth": 1,
                     }
                 ),
-                call().__enter__(),
+                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
                 call(
                     {
                         "module": "recidiviz.tests.utils.trace_test",
@@ -119,7 +119,7 @@ class TestSpan(unittest.TestCase):
                         "recursion_depth": 2,
                     }
                 ),
-                call().__enter__(),
+                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
                 call(
                     {
                         "module": "recidiviz.tests.utils.trace_test",
@@ -127,7 +127,7 @@ class TestSpan(unittest.TestCase):
                         "recursion_depth": 3,
                     }
                 ),
-                call().__enter__(),
+                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
             ]
         )
 

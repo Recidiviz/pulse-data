@@ -222,11 +222,11 @@ class UsMoSupervisionNormalizationDelegate(
 
         # Next, generate all time spans relevant to all critical dates
         time_spans: List[Tuple[date, Optional[date]]] = []
-        for index, _ in enumerate(critical_dates):
+        for index, critical_date in enumerate(critical_dates):
             if index == len(critical_dates) - 1 and has_null_end_date:
-                time_spans.append((critical_dates[index], None))
+                time_spans.append((critical_date, None))
             elif index < len(critical_dates) - 1:
-                time_spans.append((critical_dates[index], critical_dates[index + 1]))
+                time_spans.append((critical_date, critical_dates[index + 1]))
 
         return time_spans
 

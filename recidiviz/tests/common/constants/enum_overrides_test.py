@@ -58,7 +58,12 @@ class EnumOverridesTest(unittest.TestCase):
         self.assertIsNone(overrides.parse("LATINO", Ethnicity))
 
     def test_add_mapper_fn(self) -> None:
-        is_pending = lambda s: BondStatus.PENDING if s.startswith("PENDING") else None
+        is_pending = (
+            # pylint: disable=unnecessary-lambda-assignment
+            lambda s: BondStatus.PENDING
+            if s.startswith("PENDING")
+            else None
+        )
 
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add_mapper_fn(is_pending, BondStatus)

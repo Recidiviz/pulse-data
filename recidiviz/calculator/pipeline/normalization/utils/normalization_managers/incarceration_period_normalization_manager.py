@@ -737,8 +737,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         It's possible that a person also changed facilities when one of their statuses
         changed, but the STATUS_CHANGE edge takes precedence in these cases.
         """
-        for index, _ in enumerate(incarceration_periods):
-            ip = incarceration_periods[index]
+        for index, ip in enumerate(incarceration_periods):
             next_ip = (
                 incarceration_periods[index + 1]
                 if index < len(incarceration_periods) - 1

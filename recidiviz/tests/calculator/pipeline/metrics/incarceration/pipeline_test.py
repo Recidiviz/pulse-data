@@ -941,7 +941,7 @@ class AssertMatchers:
             for metric in output:
                 if not isinstance(metric, IncarcerationMetric):
                     raise BeamAssertException(
-                        "Failed assert. Output is not of type" "IncarcerationMetric."
+                        "Failed assert. Output is not of type IncarcerationMetric."
                     )
 
         return _validate_metric_type
@@ -973,7 +973,7 @@ class AssertMatchers:
                 if expected_metric_counts[key] != actual_combination_counts[key]:
 
                     raise BeamAssertException(
-                        "Failed assert. Count does not" "match expected value."
+                        "Failed assert. Count does not match expected value."
                     )
 
         return _count_metrics

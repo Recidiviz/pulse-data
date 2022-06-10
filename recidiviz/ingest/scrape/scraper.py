@@ -248,7 +248,7 @@ class Scraper(metaclass=abc.ABCMeta):
                 content = last_scraped.split(", ")
             else:
                 logging.error(
-                    "No earlier session with last_scraped found; " "cannot resume."
+                    "No earlier session with last_scraped found; cannot resume."
                 )
                 return
 

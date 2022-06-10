@@ -1033,7 +1033,7 @@ class Report:
         ] = {}
         for table in tables:
             table_sum = decimal.Decimal(
-                sum([data_point[1] for data_point in table.data_points])
+                sum(data_point[1] for data_point in table.data_points)
             )
             for dimension in table.dimensions:
                 table_filters_hashable = [
