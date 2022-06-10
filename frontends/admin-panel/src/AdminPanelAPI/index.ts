@@ -101,7 +101,7 @@ export {
   moveIngestViewResultsToBackup,
   pauseDirectIngestInstance,
   releaseBQExportLock,
-  startIngestRun,
+  triggerTaskScheduler,
   transferIngestViewMetadataToNewInstance,
   unpauseDirectIngestInstance,
   updateIngestQueuesState,

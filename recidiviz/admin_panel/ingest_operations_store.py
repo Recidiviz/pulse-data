@@ -90,9 +90,8 @@ class IngestOperationsStore(AdminPanelStore):
         """Returns the list of formatted direct ingest queues for given state"""
         return sorted(get_direct_ingest_queues_for_state(state_code))
 
-    def start_ingest_run(self, state_code: StateCode, instance_str: str) -> None:
-        """This function is called through the Ingest Operations UI in the admin panel.
-        It calls to start a direct ingest run for the given region_code in the given instance
+    def trigger_task_scheduler(self, state_code: StateCode, instance_str: str) -> None:
+        """This function creates a cloud task to schedule the next job for a given state code and instance.
         Requires:
         - state_code: (required) State code to start ingest for (i.e. "US_ID")
         - instance: (required) Which instance to start ingest for (either PRIMARY or SECONDARY)
