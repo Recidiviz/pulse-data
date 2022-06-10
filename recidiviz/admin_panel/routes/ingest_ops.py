@@ -99,16 +99,17 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         state_code_info = fetch_state_codes(all_state_codes)
         return jsonify(state_code_info), HTTPStatus.OK
 
-    # Start an ingest run for a specific instance
+    # Trigger the task scheduler for a specific instance
     @bp.route(
-        "/api/ingest_operations/<state_code_str>/start_ingest_run", methods=["POST"]
+        "/api/ingest_operations/<state_code_str>/trigger_task_scheduler",
+        methods=["POST"],
     )
     @requires_gae_auth
-    def _start_ingest_run(state_code_str: str) -> Tuple[str, HTTPStatus]:
+    def _trigger_task_scheduler(state_code_str: str) -> Tuple[str, HTTPStatus]:
         request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
         instance = request_json["instance"]
-        get_ingest_operations_store().start_ingest_run(state_code, instance)
+        get_ingest_operations_store().trigger_task_scheduler(state_code, instance)
         return "", HTTPStatus.OK
 
     # Update ingest queues

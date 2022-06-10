@@ -36,7 +36,7 @@ import {
   getIngestInstanceSummary,
   getIngestQueuesState,
   pauseDirectIngestInstance,
-  startIngestRun,
+  triggerTaskScheduler,
   unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
@@ -155,9 +155,9 @@ const IngestOperationsView = (): JSX.Element => {
       setActionConfirmed(false);
       const unsupportedIngestAction = "Unsupported ingest action";
       switch (ingestActionToExecute) {
-        case IngestActions.StartIngestRun:
+        case IngestActions.TriggerTaskScheduler:
           if (ingestInstance) {
-            await startIngestRun(stateCode, ingestInstance);
+            await triggerTaskScheduler(stateCode, ingestInstance);
             setActionConfirmed(true);
           }
           break;

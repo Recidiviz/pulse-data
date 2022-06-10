@@ -25,13 +25,13 @@ export const fetchIngestStateCodes = async (): Promise<Response> => {
   return postWithURLAndBody("/api/ingest_operations/fetch_ingest_state_codes");
 };
 
-// Start Ingest
-export const startIngestRun = async (
+//  Trigger task scheduler
+export const triggerTaskScheduler = async (
   regionCode: string,
   instance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(
-    `/api/ingest_operations/${regionCode}/start_ingest_run`,
+    `/api/ingest_operations/${regionCode}/trigger_task_scheduler`,
     { instance }
   );
 };

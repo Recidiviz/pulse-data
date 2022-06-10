@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 export enum IngestActions {
-  StartIngestRun = "start",
+  TriggerTaskScheduler = "trigger_task_scheduler",
   PauseIngestQueues = "pause",
   ResumeIngestQueues = "resume",
 
@@ -27,7 +27,7 @@ export enum IngestActions {
 }
 
 export const actionNames = {
-  [IngestActions.StartIngestRun]: "Start Ingest Run",
+  [IngestActions.TriggerTaskScheduler]: "Trigger Task Scheduler",
   [IngestActions.PauseIngestQueues]: "Pause Queues",
   [IngestActions.ResumeIngestQueues]: "Resume Queues",
 

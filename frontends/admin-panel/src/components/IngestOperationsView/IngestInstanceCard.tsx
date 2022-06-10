@@ -69,10 +69,10 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
                 : { marginRight: 5 }
             }
             onClick={() => {
-              handleOnClick(IngestActions.StartIngestRun, data.instance);
+              handleOnClick(IngestActions.TriggerTaskScheduler, data.instance);
             }}
           >
-            {actionNames[IngestActions.StartIngestRun]}
+            {actionNames[IngestActions.TriggerTaskScheduler]}
           </Button>
           <Button
             onClick={() => {
