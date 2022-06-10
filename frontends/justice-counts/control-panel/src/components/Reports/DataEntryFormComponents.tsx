@@ -229,6 +229,7 @@ export const AdditionalContextInput = observer(
         }
         additionalContext
         error={contexts?.[reportID]?.[metric.key]?.[context.key]?.error}
+        required={context.required}
         onFocus={updateFieldDescription}
         onBlur={clearFieldDescription}
       />

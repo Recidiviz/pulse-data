@@ -37,6 +37,7 @@ import {
   MetricSectionTitle,
   OpacityGradient,
   PreTitle,
+  RequiredChip,
   TabbedDisaggregations,
   Title,
 } from "../Forms";
@@ -97,6 +98,10 @@ const DataEntryFormPublishButton = styled(PublishButton)`
     display: block;
     flex: 0 1 ${DATA_ENTRY_WIDTH}px;
   }
+`;
+
+const DataEntryFormRequiredChip = styled(RequiredChip)`
+  margin-right: 16px;
 `;
 
 const DataEntryForm: React.FC<{
@@ -281,6 +286,7 @@ const DataEntryForm: React.FC<{
                       onMouseLeave={() => updateFieldDescription(undefined)}
                     >
                       <BinaryRadioGroupQuestion>
+                        {context.required && <DataEntryFormRequiredChip />}
                         {context.display_name}
                       </BinaryRadioGroupQuestion>
 

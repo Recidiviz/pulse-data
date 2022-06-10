@@ -161,6 +161,10 @@ export const RequiredChip = styled.span`
   height: 24px;
   padding: 4px 8px;
   color: ${palette.solid.white};
+
+  &::after {
+    content: "Required";
+  }
 `;
 
 export const AdditionalContextLabel = styled.div`
@@ -221,7 +225,7 @@ export const TextInput: React.FC<TextInputProps> = ({
       {/* Chip: Required */}
       {required && !error && !value && (
         <LabelChipPosition>
-          <RequiredChip>Required</RequiredChip>
+          <RequiredChip />
         </LabelChipPosition>
       )}
 
