@@ -56,13 +56,14 @@ export const MetricTextInput = observer(
         type="text"
         name={metric.key}
         valueLabel={metric.unit}
-        context={metric.reporting_note}
         onChange={handleMetricChange}
         value={
           metricsValues[reportID]?.[metric.key]?.value !== undefined
             ? metricsValues[reportID][metric.key].value
             : metric.value?.toString() || ""
         }
+        persistLabel
+        placeholder="Enter value"
         required
         autoFocus={autoFocus}
         onFocus={updateFieldDescription}
@@ -118,7 +119,6 @@ export const DisaggregationDimensionTextInput = observer(
         name={dimension.key}
         id={dimension.key}
         valueLabel={metric.unit}
-        context={dimension.reporting_note}
         onChange={handleDisaggregationDimensionChange}
         value={
           disaggregations?.[reportID]?.[metric.key]?.[disaggregation.key]?.[
@@ -131,6 +131,8 @@ export const DisaggregationDimensionTextInput = observer(
                 dimensionIndex
               ].value?.toString() || ""
         }
+        persistLabel
+        placeholder="Enter value"
         required={disaggregation.required}
         onFocus={updateFieldDescription}
         onBlur={clearFieldDescription}
@@ -204,7 +206,9 @@ export const AdditionalContextInput = observer(
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
 
-    const handleContextChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    const handleContextChange = (
+      e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
+    ) =>
       updateContextValue(
         reportID,
         metric.key,
@@ -220,14 +224,13 @@ export const AdditionalContextInput = observer(
         name={context.key}
         id={context.key}
         label="Type here..."
-        context={context.reporting_note || ""}
         onChange={handleContextChange}
         value={
           contexts?.[reportID]?.[metric.key]?.[context.key]?.value !== undefined
             ? contexts[reportID]?.[metric.key][context.key].value
             : metric.contexts[contextIndex].value?.toString() || ""
         }
-        additionalContext
+        multiline={context.type === "TEXT"}
         error={contexts?.[reportID]?.[metric.key]?.[context.key]?.error}
         required={context.required}
         onFocus={updateFieldDescription}

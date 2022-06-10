@@ -26,7 +26,6 @@ test("Optional input label without value expected to be default position, font-s
       type="text"
       label="Total Staff"
       valueLabel="People"
-      context="Measures the number of full-time staff employed by the agency."
       value=""
       readOnly
     />
@@ -47,7 +46,6 @@ test("Required input label with value expected to shrink position, font-size and
       type="text"
       label="Total Staff"
       valueLabel="People"
-      context="Measures the number of full-time staff employed by the agency."
       value="100"
       readOnly
       required
@@ -92,7 +90,6 @@ test("Error state changes text input colors to red", () => {
       id="Total Staff"
       label="Total Staff"
       valueLabel="People"
-      context="Measures the number of full-time staff employed by the agency."
       value=""
       readOnly
       required

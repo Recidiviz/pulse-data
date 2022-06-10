@@ -44,6 +44,10 @@ const GlobalStyle = createGlobalStyle`
     background-color: ${palette.solid.white};
     color: ${palette.solid.darkgrey};
   }
+
+  input, textarea {
+    font-family: "Inter", sans-serif;
+  }
 `;
 
 ReactDOM.render(
