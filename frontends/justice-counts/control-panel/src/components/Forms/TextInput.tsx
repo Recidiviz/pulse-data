@@ -18,6 +18,7 @@
 import React, { InputHTMLAttributes } from "react";
 import styled from "styled-components/macro";
 
+import { rem } from "../../utils";
 import statusCheckIcon from "../assets/status-check-icon.png";
 import statusErrorIcon from "../assets/status-error-icon.png";
 import { palette, typography } from "../GlobalStyles";
@@ -31,14 +32,18 @@ export const InputWrapper = styled.div`
 
 type InputProps = {
   error?: string;
-  additionalContext?: boolean;
+  placeholder?: string;
+  multiline?: boolean;
+  persistLabel?: boolean;
 };
 
 export const Input = styled.input<InputProps>`
   ${typography.sizeCSS.large}
-  height: 71px;
-  padding: ${({ additionalContext }) =>
-    additionalContext ? "16px 55px 10px 16px" : "42px 90px 16px 16px"};
+  line-height: ${rem("30px")};
+  resize: none;
+  height: ${({ multiline }) => (multiline ? "200px;" : "71px;")};
+  padding: ${({ persistLabel }) =>
+    persistLabel ? "42px 90px 16px 16px" : "16px 55px 10px 16px"}};
   background: ${({ value, error }) => {
     if (error) {
       return palette.highlight.red;
@@ -74,7 +79,7 @@ export const Input = styled.input<InputProps>`
 
   &:focus ~ label {
     ${typography.sizeCSS.small}
-    ${({ additionalContext }) => additionalContext && "display: none"};
+    ${({ persistLabel }) => !persistLabel && "display: none"};
     top: 12px;
     color: ${({ error }) => {
       if (error) {
@@ -103,17 +108,19 @@ export const Input = styled.input<InputProps>`
 type InputLabelProps = {
   inputHasValue?: boolean;
   isDisabled?: boolean;
-  additionalContext?: boolean;
   error?: string;
+  persistLabel?: boolean;
 };
 
 export const InputLabel = styled.label<InputLabelProps>`
   ${({ inputHasValue }) =>
     inputHasValue ? typography.sizeCSS.small : typography.sizeCSS.large}
 
-  /* For Additional Context input: we only need this label visible when the input is not focused and has no input */
-  ${({ additionalContext, inputHasValue }) =>
-    additionalContext && inputHasValue && "display: none;"}
+  /* If persistLabel is false, the label is visible only when the input has no value
+   * If persistLabel is true, when the input has value, show the label above the value
+   */
+  ${({ persistLabel, inputHasValue }) =>
+    !persistLabel && inputHasValue && "display: none;"}
 
   position: absolute;
   top: ${({ inputHasValue }) => (inputHasValue ? "12px" : "26px")};
@@ -135,7 +142,7 @@ export const InputLabel = styled.label<InputLabelProps>`
 type ErrorLabelProps = {
   isDisabled?: boolean;
   error?: string;
-  binaryContext?: boolean;
+  multiline?: boolean;
 };
 
 export const ErrorLabel = styled.span<ErrorLabelProps>`
@@ -144,7 +151,7 @@ export const ErrorLabel = styled.span<ErrorLabelProps>`
   ${({ isDisabled }) => isDisabled && `color: ${palette.highlight.grey8};`}
   margin-top: 8px;
   position: absolute;
-  top: ${({ binaryContext }) => (binaryContext ? `161px` : `71px`)};
+  ${({ multiline }) => `top: ${multiline ? "200" : "71"}px;`};
 `;
 
 export const LabelChipPosition = styled.span`
@@ -167,26 +174,21 @@ export const RequiredChip = styled.span`
   }
 `;
 
-export const AdditionalContextLabel = styled.div`
-  ${typography.sizeCSS.medium}
-  margin-top: 40px;
-  margin-bottom: 16px;
-`;
-
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  context?: string;
   error?: string;
   valueLabel?: string;
-  additionalContext?: boolean;
+  multiline?: boolean;
+  persistLabel?: boolean;
 }
 
 export const TextInput: React.FC<TextInputProps> = ({
   label,
-  context,
   error,
   valueLabel,
-  additionalContext,
+  multiline,
+  placeholder,
+  persistLabel,
   ...props
 }): JSX.Element => {
   const { name, required, value, disabled } = props;
@@ -196,10 +198,13 @@ export const TextInput: React.FC<TextInputProps> = ({
       {/* Text Input */}
       <Input
         {...props}
+        disabled={disabled}
+        as={multiline ? "textarea" : "input"}
+        multiline={multiline}
         error={error}
         id={`input-${name}`}
-        additionalContext={additionalContext}
-        placeholder={additionalContext ? "" : "Enter value"}
+        placeholder={placeholder}
+        persistLabel={persistLabel}
       />
 
       {/* Text Input Label (appears inside of text input) */}
@@ -207,7 +212,7 @@ export const TextInput: React.FC<TextInputProps> = ({
         htmlFor={`input-${name}`}
         inputHasValue={Boolean(value)}
         isDisabled={disabled}
-        additionalContext={additionalContext}
+        persistLabel={persistLabel}
         error={error}
       >
         {label}
@@ -215,7 +220,7 @@ export const TextInput: React.FC<TextInputProps> = ({
 
       {/* Error Description (appears below text input) */}
       {error && (
-        <ErrorLabel isDisabled={disabled} error={error}>
+        <ErrorLabel isDisabled={disabled} error={error} multiline={multiline}>
           {error}
         </ErrorLabel>
       )}

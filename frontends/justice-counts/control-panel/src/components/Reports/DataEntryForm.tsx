@@ -24,7 +24,6 @@ import styled from "styled-components/macro";
 import { useStore } from "../../stores";
 import { printReportTitle } from "../../utils";
 import {
-  AdditionalContextLabel,
   BinaryRadioGroupClearButton,
   BinaryRadioGroupContainer,
   BinaryRadioGroupQuestion,
@@ -41,7 +40,7 @@ import {
   TabbedDisaggregations,
   Title,
 } from "../Forms";
-import { palette } from "../GlobalStyles";
+import { palette, typography } from "../GlobalStyles";
 import { showToast } from "../Toast";
 import {
   AdditionalContextInput,
@@ -102,6 +101,16 @@ const DataEntryFormPublishButton = styled(PublishButton)`
 
 const DataEntryFormRequiredChip = styled(RequiredChip)`
   margin-right: 16px;
+`;
+
+const DataEntryFormErrorLabel = styled(ErrorLabel)`
+  top: 161px;
+`;
+
+const AdditionalContextLabel = styled.div`
+  ${typography.sizeCSS.medium}
+  margin-top: 40px;
+  margin-bottom: 16px;
 `;
 
 const DataEntryForm: React.FC<{
@@ -331,20 +340,19 @@ const DataEntryForm: React.FC<{
                       {formStore.contexts?.[reportID]?.[metric.key]?.[
                         context.key
                       ]?.error && (
-                        <ErrorLabel
+                        <DataEntryFormErrorLabel
                           error={
                             formStore.contexts?.[reportID]?.[metric.key]?.[
                               context.key
                             ]?.error
                           }
-                          binaryContext
                         >
                           {
                             formStore.contexts?.[reportID]?.[metric.key]?.[
                               context.key
                             ]?.error
                           }
-                        </ErrorLabel>
+                        </DataEntryFormErrorLabel>
                       )}
                     </BinaryRadioGroupContainer>
                   );
