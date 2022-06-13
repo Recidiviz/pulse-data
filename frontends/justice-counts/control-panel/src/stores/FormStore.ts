@@ -24,7 +24,11 @@ import {
   Metric,
   UpdatedMetricsValues,
 } from "../shared/types";
-import { removeCommaSpaceAndTrim, sanitizeInputValue } from "../utils";
+import {
+  normalizeToString,
+  removeCommaSpaceAndTrim,
+  sanitizeInputValue,
+} from "../utils";
 import ReportStore from "./ReportStore";
 
 class FormStore {
@@ -45,6 +49,47 @@ class FormStore {
     this.disaggregations = {};
   }
 
+  validatePreviouslySavedInputs(reportID: number) {
+    /** Runs validation of previously saved inputs on load */
+    this.reportStore.reportMetrics[reportID].forEach((metric) => {
+      if (metric.value !== null && metric.value !== undefined) {
+        this.updateMetricsValues(
+          reportID,
+          metric.key,
+          normalizeToString(metric.value)
+        );
+      }
+
+      metric.disaggregations.forEach((disaggregation) => {
+        disaggregation.dimensions.forEach((dimension) => {
+          if (dimension.value !== null && dimension.value !== undefined) {
+            this.updateDisaggregationDimensionValue(
+              reportID,
+              metric.key,
+              disaggregation.key,
+              dimension.key,
+              normalizeToString(dimension.value),
+              disaggregation.required
+            );
+          }
+        });
+      });
+
+      metric.contexts.forEach((context) => {
+        if (context.value !== null && context.value !== undefined) {
+          this.updateContextValue(
+            reportID,
+            metric.key,
+            context.key,
+            normalizeToString(context.value),
+            context.required,
+            context.type
+          );
+        }
+      });
+    });
+  }
+
   validateAndGetAllMetricFormValues(reportID: number): {
     metrics: Metric[];
     isPublishable: boolean;
@@ -54,12 +99,6 @@ class FormStore {
      * @returns "" empty strings for falsy values or value converted to string type if truthy
      */
     let isPublishable = true;
-    const normalizeToString = (
-      value: string | number | boolean | null | undefined
-    ): string => {
-      const stringValue = value?.toString();
-      return !stringValue ? "" : stringValue;
-    };
 
     const updatedMetrics = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
