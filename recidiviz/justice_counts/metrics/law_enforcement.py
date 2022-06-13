@@ -55,7 +55,7 @@ residents = MetricDefinition(
         Context(
             key=ContextKey.JURISDICTION_AREA,
             value_type=ValueType.NUMBER,
-            label="Please provide the land size (area) of the jurisdiction.",
+            label="Please provide the land size (area) of the jurisdiction in square miles.",
             required=False,
         )
     ],

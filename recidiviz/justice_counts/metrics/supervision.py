@@ -92,7 +92,7 @@ total_staff = MetricDefinition(
     description="Measures the number of full-time staff employed by your agency.",
     definitions=[
         Definition(
-            term="Full time staff",
+            term="Full-time staff",
             definition="Number of people employed in a full-time (0.9+) capacity.",
         )
     ],

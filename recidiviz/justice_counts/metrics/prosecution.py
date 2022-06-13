@@ -83,13 +83,13 @@ total_staff = MetricDefinition(
     description="Measures the number of full-time staff employed by your office.",
     definitions=[
         Definition(
-            term="Full time staff",
+            term="Full-time staff",
             definition="Number of people employed in a full-time (0.9+) capacity.",
         )
     ],
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full time staff position filled.",
+    reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full-time staff position filled.",
     aggregated_dimensions=[
         AggregatedDimension(dimension=ProsecutionAndDefenseStaffType, required=False)
     ],
@@ -203,7 +203,7 @@ violations = MetricDefinition(
             definition="A complaint filed against an attorney pertaining to an error in judgment or other prosecutorial misconduct.",
         )
     ],
-    description="Measures the percent of violations filed against attorneys in your office that result in disciplinary actions.",
+    description="Measures the percent of violations filed against attorneys in your office that have resulted in disciplinary actions.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
 )
