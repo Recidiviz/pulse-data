@@ -36,6 +36,7 @@ import {
   Title,
 } from "../Forms";
 import { palette, typography } from "../GlobalStyles";
+import HelperText from "./HelperText";
 import {
   FieldDescription,
   FieldDescriptionProps,
@@ -64,6 +65,23 @@ export const ReportSummaryWrapper = styled.div`
 
 export const ReportSummaryProgressIndicatorWrapper = styled.div`
   margin-top: 28px;
+
+  @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
+    height: 30vh;
+    overflow-y: scroll;
+
+    &::-webkit-scrollbar {
+      -webkit-appearance: none;
+      width: 5px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background-color: ${palette.solid.blue};
+      box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+      -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+  }
 `;
 
 const ReportSummarySection = styled.a`
@@ -312,7 +330,10 @@ const ReportSummaryPanel: React.FC<{
       </EditDetails>
 
       <PublishContainer>
-        {/* Displays the description of the field currently hovered */}
+        {/* Metric Description, Definitions and Reporting Notes */}
+        <HelperText reportID={reportID} activeMetric={activeMetric} />
+
+        {/* Displays the description of the field currently focused */}
         {fieldDescription && (
           <FieldDescription fieldDescription={fieldDescription} />
         )}
