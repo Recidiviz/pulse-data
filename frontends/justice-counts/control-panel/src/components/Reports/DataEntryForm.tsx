@@ -191,6 +191,7 @@ const DataEntryForm: React.FC<{
         ? "PUBLISHED"
         : "DRAFT";
 
+    showToast("Saving...", false, "grey", -1, true);
     const response = (await reportStore.updateReport(
       reportID,
       updatedMetrics,
@@ -232,7 +233,6 @@ const DataEntryForm: React.FC<{
   return (
     <Form
       onChange={() => {
-        showToast("Saving...", false, "grey", undefined, true);
         debouncedSave();
       }}
     >
