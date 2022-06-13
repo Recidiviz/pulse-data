@@ -795,34 +795,33 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             metrics = ReportInterface.get_metrics_by_report_id(
                 session=session, report_id=report_id
             )
-            self.assertEqual(len(metrics), 4)
+            self.assertEqual(len(metrics), 3)
             calls_for_service = [
                 metric
                 for metric in metrics
-                if metric.key
-                == self.test_schema_objects.reported_calls_for_service_metric.key
+                if metric.key == law_enforcement.calls_for_service.key
             ].pop()
 
-            population = [
+            arrests = [
                 metric
                 for metric in metrics
-                if metric.key == self.test_schema_objects.reported_residents_metric.key
+                if metric.key == law_enforcement.total_arrests.key
             ].pop()
 
             self.assertIsNotNone(calls_for_service)
-            self.assertIsNotNone(population)
+            self.assertIsNotNone(arrests)
 
             # Population metric should be blank
-            self.assertEqual(population.value, None)
+            self.assertEqual(arrests.value, None)
             self.assertEqual(
-                population.contexts,
+                arrests.contexts,
                 [
                     ReportedContext(key=c.key, value=None)
-                    for c in law_enforcement.residents.contexts
+                    for c in law_enforcement.total_arrests.contexts
                 ],
             )
             self.assertEqual(
-                population.aggregated_dimensions,
+                arrests.aggregated_dimensions,
                 [
                     ReportedAggregatedDimension(
                         dimension_to_value={
@@ -832,7 +831,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                             ]
                         }
                     )
-                    for a in law_enforcement.residents.aggregated_dimensions or []
+                    for a in law_enforcement.total_arrests.aggregated_dimensions or []
                 ],
             )
 

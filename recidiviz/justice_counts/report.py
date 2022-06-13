@@ -477,4 +477,5 @@ class ReportInterface:
             metric
             for metric in metrics
             if report_type in {freq.value for freq in metric.reporting_frequencies}
+            and not metric.disabled
         ]

@@ -134,11 +134,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
         self.assertEqual(response_json["year"], 2022)
         metrics = assert_type(response_json["metrics"], list)
-        self.assertEqual(len(metrics), 4)
-        self.assertEqual(metrics[0]["key"], law_enforcement.residents.key)
-        self.assertEqual(metrics[1]["key"], law_enforcement.calls_for_service.key)
-        self.assertEqual(metrics[2]["key"], law_enforcement.reported_crime.key)
-        self.assertEqual(metrics[3]["key"], law_enforcement.total_arrests.key)
+        self.assertEqual(len(metrics), 3)
+        self.assertEqual(metrics[0]["key"], law_enforcement.calls_for_service.key)
+        self.assertEqual(metrics[1]["key"], law_enforcement.reported_crime.key)
+        self.assertEqual(metrics[2]["key"], law_enforcement.total_arrests.key)
 
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A

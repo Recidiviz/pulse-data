@@ -151,6 +151,9 @@ class MetricDefinition:
     # Dimensions that this metric should be disaggregated by in the reporting
     aggregated_dimensions: Optional[List[AggregatedDimension]] = None
 
+    # If disabled, don't send to the frontend to render
+    disabled: bool = False
+
     @property
     def key(self) -> str:
         """Returns a unique identifier across all Justice Counts metrics.
