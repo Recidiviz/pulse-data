@@ -34,6 +34,7 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
+    PrisonToSupervisionTransitions,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -98,11 +99,18 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.metric_path = "/pathways/US_TN/LibertyToPrisonTransitionsCount"
+        self.count_by_dimension_metric_path = (
+            "/pathways/US_TN/LibertyToPrisonTransitionsCount"
+        )
+        self.person_level_metric_path = (
+            "/pathways/US_TN/PrisonToSupervisionTransitionsPersonLevel"
+        )
 
         with SessionFactory.using_database(self.database_key) as session:
             for metric in load_metrics_fixture(LibertyToPrisonTransitions):
                 session.add(LibertyToPrisonTransitions(**metric))
+            for metric in load_metrics_fixture(PrisonToSupervisionTransitions):
+                session.add(PrisonToSupervisionTransitions(**metric))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -133,7 +141,8 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
 
         # Requesting real metric without group
         response = self.test_client.get(
-            self.metric_path, headers={"Origin": "http://localhost:3000"}
+            self.count_by_dimension_metric_path,
+            headers={"Origin": "http://localhost:3000"},
         )
         self.assertEqual(
             HTTPStatus.BAD_REQUEST, response.status_code, response.get_json()
@@ -141,12 +150,12 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(
             response.get_json(),
             (response.get_json() or {})
-            | {"description": {"group": ["Field may not be null."]}},
+            | {"description": {"group": ["Missing data for required field."]}},
         )
 
         # Requesting real metric with fake grouping column
         response = self.test_client.get(
-            self.metric_path,
+            self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string={"group": "fake"},
         )
@@ -159,9 +168,24 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             | {"description": {"group": ["Invalid enum value fake"]}},
         )
 
+        # Requesting person-level metric with group
+        response = self.test_client.get(
+            self.person_level_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+            query_string={"group": Dimension.AGE_GROUP.value},
+        )
+        self.assertEqual(
+            HTTPStatus.BAD_REQUEST, response.status_code, response.get_json()
+        )
+        self.assertEqual(
+            response.get_json(),
+            (response.get_json() or {})
+            | {"description": {"group": ["Unknown field."]}},
+        )
+
     def test_metrics_base(self) -> None:
         response = self.test_client.get(
-            self.metric_path,
+            self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string={"group": Dimension.AGE_GROUP.value},
         )
@@ -175,7 +199,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         )
 
         response = self.test_client.get(
-            self.metric_path,
+            self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string={
                 "group": Dimension.RACE.value,
@@ -190,11 +214,100 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             response.get_json(),
         )
 
+    def test_person_level_metrics(self) -> None:
+        response = self.test_client.get(
+            self.person_level_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
+        self.assertEqual(
+            response.get_json(),
+            [
+                {
+                    "year": 2022,
+                    "month": 1,
+                    "personId": "1",
+                    "ageGroup": "20-25",
+                    "age": 22,
+                    "gender": "MALE",
+                    "facility": "ABC",
+                },
+                {
+                    "year": 2022,
+                    "month": 2,
+                    "personId": "2",
+                    "ageGroup": "60+",
+                    "age": 61,
+                    "gender": "MALE",
+                    "facility": "DEF",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "personId": "3",
+                    "ageGroup": "60+",
+                    "age": 62,
+                    "gender": "FEMALE",
+                    "facility": "ABC",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "personId": "4",
+                    "ageGroup": "60+",
+                    "age": 63,
+                    "gender": "MALE",
+                    "facility": "DEF",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "personId": "5",
+                    "ageGroup": "60+",
+                    "age": 64,
+                    "gender": "MALE",
+                    "facility": "ABC",
+                },
+            ],
+        )
+
+        response = self.test_client.get(
+            self.person_level_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+            query_string={
+                f"filters[{Dimension.FACILITY.value}]": "DEF",
+            },
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        self.assertEqual(
+            [
+                {
+                    "year": 2022,
+                    "month": 2,
+                    "personId": "2",
+                    "ageGroup": "60+",
+                    "age": 61,
+                    "gender": "MALE",
+                    "facility": "DEF",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "personId": "4",
+                    "ageGroup": "60+",
+                    "age": 63,
+                    "gender": "MALE",
+                    "facility": "DEF",
+                },
+            ],
+            response.get_json(),
+        )
+
     def test_multiple_filters(self) -> None:
         # Filters for the same attribute are combined using boolean OR
         # Filters across attributes are combined using AND
         response = self.test_client.get(
-            self.metric_path,
+            self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string=f"group={Dimension.RACE.value}"
             f"&filters[{Dimension.RACE.value}]=BLACK"
@@ -213,7 +326,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
 
     def test_metrics_since(self) -> None:
         response = self.test_client.get(
-            self.metric_path,
+            self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string={
                 "group": Dimension.YEAR_MONTH.value,

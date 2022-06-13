@@ -16,18 +16,25 @@
 # ============================================================================
 """ Contains the configuration for which Pathways metrics are enabled """
 
-from recidiviz.case_triage.pathways.metric_mappers import (
+from typing import Dict, List
+
+from recidiviz.case_triage.pathways.metric_queries import (
+    CountByDimensionMetricQueryBuilder,
     LibertyToPrisonTransitionsCount,
+    MetricQueryBuilder,
+    PersonLevelMetricQueryBuilder,
     PrisonToSupervisionTransitionsCount,
+    PrisonToSupervisionTransitionsPersonLevel,
 )
 from recidiviz.common.constants.states import StateCode
 
-ALL_METRICS = [
+ALL_METRICS: List[MetricQueryBuilder] = [
     LibertyToPrisonTransitionsCount,
     PrisonToSupervisionTransitionsCount,
+    PrisonToSupervisionTransitionsPersonLevel,
 ]
 
-ENABLED_METRICS_BY_STATE = {
+ENABLED_METRICS_BY_STATE: Dict[StateCode, List[MetricQueryBuilder]] = {
     StateCode.US_ID: ALL_METRICS,
     StateCode.US_ME: ALL_METRICS,
     StateCode.US_ND: ALL_METRICS,
@@ -38,4 +45,22 @@ ENABLED_METRICS_BY_STATE = {
 ENABLED_METRICS_BY_STATE_BY_NAME = {
     state_code: {metric.name: metric for metric in metrics}
     for state_code, metrics in ENABLED_METRICS_BY_STATE.items()
+}
+
+ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE = {
+    state_code: [
+        metric_mapper
+        for metric_mapper in metric_mappers
+        if isinstance(metric_mapper, CountByDimensionMetricQueryBuilder)
+    ]
+    for state_code, metric_mappers in ENABLED_METRICS_BY_STATE.items()
+}
+
+ENABLED_PERSON_LEVEL_METRICS_BY_STATE = {
+    state_code: [
+        metric_mapper
+        for metric_mapper in metric_mappers
+        if isinstance(metric_mapper, PersonLevelMetricQueryBuilder)
+    ]
+    for state_code, metric_mappers in ENABLED_METRICS_BY_STATE.items()
 }

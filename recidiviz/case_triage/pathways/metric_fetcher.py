@@ -21,10 +21,9 @@ from typing import List, Mapping, Union
 import attr
 from sqlalchemy.orm import sessionmaker
 
-from recidiviz.case_triage.pathways.metric_mappers import CountByDimensionMetricMapper
 from recidiviz.case_triage.pathways.metric_queries import (
     FetchMetricParams,
-    PathwaysCountByDimensionQueryBuilder,
+    MetricQueryBuilder,
 )
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
@@ -47,12 +46,10 @@ class PathwaysMetricFetcher:
         return self.database_manager.get_pathways_session(self.state_code)
 
     def fetch(
-        self, mapper: CountByDimensionMetricMapper, params: FetchMetricParams
+        self, mapper: MetricQueryBuilder, params: FetchMetricParams
     ) -> List[Mapping[str, Union[str, int]]]:
-        query_builder = PathwaysCountByDimensionQueryBuilder(mapper)
-
         with self.database_session() as session:
-            query = query_builder.build(params).with_session(session)
+            query = mapper.build_query(params).with_session(session)
 
             return [
                 {
