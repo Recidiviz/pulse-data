@@ -117,7 +117,7 @@ describe("test create report button", () => {
     );
 
     runInAction(() => {
-      rootStore.userStore.permissions = ["create:report:all"];
+      rootStore.userStore.permissions = ["recidiviz_admin"];
     });
 
     const selectButton = screen.queryByText(/Select/i);

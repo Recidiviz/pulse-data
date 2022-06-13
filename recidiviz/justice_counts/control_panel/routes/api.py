@@ -193,7 +193,7 @@ def get_api_blueprint(
             permissions = g.user_context.permissions
             if (
                 not permissions
-                or ControlPanelPermission.CREATE_REPORT.value not in permissions
+                or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
             ):
                 raise JusticeCountsPermissionError(
                     code="justice_counts_create_report_permission",

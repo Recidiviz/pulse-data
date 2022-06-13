@@ -169,7 +169,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
-                permissions=[ControlPanelPermission.CREATE_REPORT.value],
+                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
             )
 
             response = self.client.post(
@@ -436,7 +436,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user_account.auth0_user_id,
-                permissions=[ControlPanelPermission.CREATE_REPORT.value],
+                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
             )
             user_response = self.client.post(
                 "/api/users",
@@ -449,7 +449,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertIsNotNone(user_response.json)
         self.assertEqual(
             user_response.json["permissions"] if user_response.json else [],
-            [ControlPanelPermission.CREATE_REPORT.value],
+            [ControlPanelPermission.RECIDIVIZ_ADMIN.value],
         )
 
     def test_session(self) -> None:

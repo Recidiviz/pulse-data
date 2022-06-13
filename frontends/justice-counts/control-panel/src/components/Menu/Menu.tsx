@@ -105,7 +105,7 @@ const Menu = () => {
       </MenuItem>
 
       {/* Agencies Dropdown */}
-      {userStore.permissions.includes(Permission.SWITCH_AGENCY) &&
+      {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) &&
         location.pathname === "/" && (
           <MenuItem active={activeMenuItem === MenuItems.Agencies}>
             <Dropdown>
@@ -144,7 +144,7 @@ const Menu = () => {
           </ExtendedDropdownToggle>
 
           <DropdownMenu alignment="right">
-            {userStore.permissions.includes(Permission.SWITCH_AGENCY) && (
+            {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
               <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
                 Account Settings
               </ExtendedDropdownMenuItem>
