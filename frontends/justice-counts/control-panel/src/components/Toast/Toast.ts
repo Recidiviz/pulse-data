@@ -100,17 +100,19 @@ export const showToast = (
     easing: "ease",
   });
 
-  setTimeout(() => {
-    toastElementWrapper.animate(animationTransformReverse, {
-      duration: 600,
-      fill: "forwards",
-      easing: "ease",
-    });
-
-    Promise.all(
-      toastElementWrapper
-        .getAnimations({ subtree: true })
-        .map((animation) => animation.finished)
-    ).then(() => toastElementWrapper.remove());
-  }, timeout);
+  // a timeout of -1 keeps the toast from timing out
+  if (timeout !== -1) {
+    setTimeout(() => {
+      toastElementWrapper.animate(animationTransformReverse, {
+        duration: 600,
+        fill: "forwards",
+        easing: "ease",
+      });
+      Promise.all(
+        toastElementWrapper
+          .getAnimations({ subtree: true })
+          .map((animation) => animation.finished)
+      ).then(() => toastElementWrapper.remove());
+    }, timeout);
+  }
 };
