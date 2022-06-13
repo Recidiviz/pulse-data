@@ -18,6 +18,7 @@
 import abc
 import csv
 import os
+from datetime import date
 from typing import Dict, List, Optional, Union
 from unittest.case import TestCase
 
@@ -25,12 +26,14 @@ import pytest
 
 from recidiviz.case_triage.pathways.dimension import Dimension
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
-from recidiviz.case_triage.pathways.metric_mappers import (
-    CountByDimensionMetricMapper,
+from recidiviz.case_triage.pathways.metric_queries import (
+    CountByDimensionMetricParams,
+    FetchMetricParams,
     LibertyToPrisonTransitionsCount,
+    MetricQueryBuilder,
     PrisonToSupervisionTransitionsCount,
+    PrisonToSupervisionTransitionsPersonLevel,
 )
-from recidiviz.case_triage.pathways.metric_queries import FetchMetricParams
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
@@ -74,12 +77,7 @@ class PathwaysMetricTestBase:
 
     @property
     @abc.abstractmethod
-    def mapper(self) -> CountByDimensionMetricMapper:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+    def query_builder(self) -> MetricQueryBuilder:
         ...
 
     @classmethod
@@ -103,20 +101,43 @@ class PathwaysMetricTestBase:
             cls.temp_db_dir
         )
 
+
+class PathwaysCountByMetricTestBase(PathwaysMetricTestBase):
+    @property
+    @abc.abstractmethod
+    def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+        ...
+
     def test_metrics_base(self) -> None:
         results = {}
         metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
-        for dimension_mapping in self.mapper.dimension_mappings:
+        for dimension_mapping in self.query_builder.dimension_mappings:
             results[dimension_mapping.dimension] = metric_fetcher.fetch(
-                self.mapper,
-                FetchMetricParams(group=dimension_mapping.dimension),
+                self.query_builder,
+                self.query_builder.build_params({"group": dimension_mapping.dimension}),
             )
 
         self.test.assertEqual(self.all_expected_counts, results)
 
 
-class TestLibertyToPrisonTransitions(PathwaysMetricTestBase, TestCase):
-    """Test for LibertyToPrisonTransitions metric."""
+class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
+    @property
+    @abc.abstractmethod
+    def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
+        ...
+
+    def test_metrics_base(self) -> None:
+        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
+        results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
+
+        self.test.assertEqual(
+            self.all_expected_rows,
+            results,
+        )
+
+
+class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCase):
+    """Test for LibertyToPrisonTransitionsCount metric."""
 
     @property
     def test(self) -> TestCase:
@@ -127,7 +148,7 @@ class TestLibertyToPrisonTransitions(PathwaysMetricTestBase, TestCase):
         return LibertyToPrisonTransitions
 
     @property
-    def mapper(self) -> CountByDimensionMetricMapper:
+    def query_builder(self) -> MetricQueryBuilder:
         return LibertyToPrisonTransitionsCount
 
     @property
@@ -169,8 +190,8 @@ class TestLibertyToPrisonTransitions(PathwaysMetricTestBase, TestCase):
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
-            self.mapper,
-            FetchMetricParams(
+            self.query_builder,
+            CountByDimensionMetricParams(
                 group=Dimension.GENDER,
                 filters={
                     Dimension.RACE: ["WHITE"],
@@ -182,8 +203,8 @@ class TestLibertyToPrisonTransitions(PathwaysMetricTestBase, TestCase):
 
     def test_filter_since(self) -> None:
         results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
-            self.mapper,
-            FetchMetricParams(group=Dimension.GENDER, since="2022-03-01"),
+            self.query_builder,
+            CountByDimensionMetricParams(group=Dimension.GENDER, since="2022-03-01"),
         )
 
         self.test.assertEqual(
@@ -191,8 +212,8 @@ class TestLibertyToPrisonTransitions(PathwaysMetricTestBase, TestCase):
         )
 
 
-class TestPrisonToSupervisionTransitions(PathwaysMetricTestBase, TestCase):
-    """Test for PrisonToSupervisionTransitions metric."""
+class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, TestCase):
+    """Test for PrisonToSupervisionTransitionsCount metric."""
 
     @property
     def test(self) -> TestCase:
@@ -203,7 +224,7 @@ class TestPrisonToSupervisionTransitions(PathwaysMetricTestBase, TestCase):
         return PrisonToSupervisionTransitions
 
     @property
-    def mapper(self) -> CountByDimensionMetricMapper:
+    def query_builder(self) -> MetricQueryBuilder:
         return PrisonToSupervisionTransitionsCount
 
     @property
@@ -230,8 +251,8 @@ class TestPrisonToSupervisionTransitions(PathwaysMetricTestBase, TestCase):
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
-            self.mapper,
-            FetchMetricParams(
+            self.query_builder,
+            CountByDimensionMetricParams(
                 group=Dimension.GENDER,
                 filters={
                     Dimension.FACILITY: ["ABC"],
@@ -245,10 +266,160 @@ class TestPrisonToSupervisionTransitions(PathwaysMetricTestBase, TestCase):
 
     def test_filter_since(self) -> None:
         results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
-            self.mapper,
-            FetchMetricParams(group=Dimension.GENDER, since="2022-03-01"),
+            self.query_builder,
+            CountByDimensionMetricParams(group=Dimension.GENDER, since="2022-03-01"),
         )
 
         self.test.assertEqual(
             [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}], results
+        )
+
+
+class TestPrisonToSupervisionTransitionsPersonLevel(
+    PathwaysPersonLevelMetricTestBase, TestCase
+):
+    """Test for PrisonToSupervisionTransitionsPersonLevel metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return PrisonToSupervisionTransitions
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return PrisonToSupervisionTransitionsPersonLevel
+
+    @property
+    def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
+        return [
+            {
+                "year": 2022,
+                "month": 1,
+                "person_id": "1",
+                "age_group": "20-25",
+                "age": 22,
+                "gender": "MALE",
+                "facility": "ABC",
+            },
+            {
+                "year": 2022,
+                "month": 2,
+                "person_id": "2",
+                "age_group": "60+",
+                "age": 61,
+                "gender": "MALE",
+                "facility": "DEF",
+            },
+            {
+                "year": 2022,
+                "month": 3,
+                "person_id": "3",
+                "age_group": "60+",
+                "age": 62,
+                "gender": "FEMALE",
+                "facility": "ABC",
+            },
+            {
+                "year": 2022,
+                "month": 3,
+                "person_id": "4",
+                "age_group": "60+",
+                "age": 63,
+                "gender": "MALE",
+                "facility": "DEF",
+            },
+            {
+                "year": 2022,
+                "month": 3,
+                "person_id": "5",
+                "age_group": "60+",
+                "age": 64,
+                "gender": "MALE",
+                "facility": "ABC",
+            },
+        ]
+
+    def test_metrics_filter(self) -> None:
+        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+            self.query_builder,
+            FetchMetricParams(
+                filters={
+                    Dimension.FACILITY: ["ABC"],
+                },
+            ),
+        )
+
+        self.test.assertEqual(
+            [
+                {
+                    "year": 2022,
+                    "month": 1,
+                    "person_id": "1",
+                    "age_group": "20-25",
+                    "age": 22,
+                    "gender": "MALE",
+                    "facility": "ABC",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "person_id": "3",
+                    "age_group": "60+",
+                    "age": 62,
+                    "gender": "FEMALE",
+                    "facility": "ABC",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "person_id": "5",
+                    "age_group": "60+",
+                    "age": 64,
+                    "gender": "MALE",
+                    "facility": "ABC",
+                },
+            ],
+            results,
+        )
+
+    def test_filter_since(self) -> None:
+        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+            self.query_builder,
+            FetchMetricParams(since="2022-03-01"),
+        )
+
+        self.test.assertEqual(
+            [
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "person_id": "3",
+                    "age_group": "60+",
+                    "age": 62,
+                    "gender": "FEMALE",
+                    "facility": "ABC",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "person_id": "4",
+                    "age_group": "60+",
+                    "age": 63,
+                    "gender": "MALE",
+                    "facility": "DEF",
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "person_id": "5",
+                    "age_group": "60+",
+                    "age": 64,
+                    "gender": "MALE",
+                    "facility": "ABC",
+                },
+            ],
+            results,
         )

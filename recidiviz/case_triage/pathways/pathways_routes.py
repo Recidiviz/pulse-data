@@ -18,7 +18,7 @@
 import re
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import werkzeug.wrappers
 from flask import Blueprint, Response, jsonify, make_response, request
@@ -26,7 +26,6 @@ from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas import load_api_schema
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
-from recidiviz.case_triage.pathways.metric_queries import FetchMetricParams
 from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE_BY_NAME
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
@@ -121,15 +120,19 @@ def create_pathways_api_blueprint() -> Blueprint:
                 status_code=HTTPStatus.BAD_REQUEST,
             ) from e
 
+        source_data: Dict[str, Any] = {
+            "filters": load_filters_from_query_string(),
+        }
+        for arg in ["group", "since"]:
+            arg_value = request.args.get(arg)
+            if arg_value:
+                source_data[arg] = arg_value
+
         fetch_metric_params_schema = load_api_schema(
             FETCH_METRIC_SCHEMAS_BY_NAME[metric_name],
-            source_data={
-                "group": request.args.get("group"),
-                "since": request.args.get("since"),
-                "filters": load_filters_from_query_string(),
-            },
+            source_data=source_data,
         )
-        fetch_metric_params = FetchMetricParams(**fetch_metric_params_schema)
+        fetch_metric_params = metric_mapper.build_params(fetch_metric_params_schema)
 
         return jsonify(
             [
