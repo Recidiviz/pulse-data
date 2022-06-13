@@ -110,6 +110,7 @@ const ReportDataEntry = () => {
       />
       <PublishDataPanel
         reportID={reportID}
+        activeMetric={activeMetric}
         fieldDescription={fieldDescription}
         toggleConfirmationDialogue={toggleConfirmationDialogue}
       />

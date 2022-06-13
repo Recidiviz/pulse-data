@@ -148,7 +148,7 @@ const DataEntryForm: React.FC<{
       const observerOptions: IntersectionObserverInit = {
         root: null,
         rootMargin: "0px",
-        threshold: 0.5,
+        threshold: 0.7,
       };
 
       const observerCallback = (entries: IntersectionObserverEntry[]) => {
@@ -266,10 +266,6 @@ const DataEntryForm: React.FC<{
               reportID={reportID}
               metric={metric}
               autoFocus={index === 0}
-              updateFieldDescription={() =>
-                updateFieldDescription(metric.display_name, metric.description)
-              }
-              clearFieldDescription={() => updateFieldDescription(undefined)}
             />
 
             {/* Disaggregations */}
@@ -289,16 +285,7 @@ const DataEntryForm: React.FC<{
               metric.contexts.map((context, contextIndex) => {
                 if (context.type === "MULTIPLE_CHOICE") {
                   return (
-                    <BinaryRadioGroupContainer
-                      key={context.key}
-                      onMouseEnter={() =>
-                        updateFieldDescription(
-                          context.display_name as string,
-                          context.reporting_note as string
-                        )
-                      }
-                      onMouseLeave={() => updateFieldDescription(undefined)}
-                    >
+                    <BinaryRadioGroupContainer key={context.key}>
                       <BinaryRadioGroupQuestion>
                         {context.required && <DataEntryFormRequiredChip />}
                         {context.display_name}

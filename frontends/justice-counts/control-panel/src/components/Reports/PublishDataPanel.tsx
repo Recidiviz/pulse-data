@@ -21,6 +21,7 @@ import React from "react";
 import PreviewDataObject from "../../mocks/PreviewDataObject";
 import { useStore } from "../../stores";
 import { Title } from "../Forms";
+import HelperText from "./HelperText";
 import {
   FieldDescription,
   FieldDescriptionProps,
@@ -30,27 +31,30 @@ import {
 
 const PublishDataPanel: React.FC<{
   reportID: number;
+  activeMetric: string;
   fieldDescription?: FieldDescriptionProps;
   toggleConfirmationDialogue: () => void;
-}> = ({ reportID, fieldDescription, toggleConfirmationDialogue }) => {
+}> = ({
+  reportID,
+  activeMetric,
+  fieldDescription,
+  toggleConfirmationDialogue,
+}) => {
   const { formStore } = useStore();
 
   return (
     <>
       <PublishDataWrapper>
-        {/* Replace with autosave */}
         <Title>
-          <PublishButton
-            onClick={() => {
-              /** Should trigger a confirmation dialogue before submitting */
-              toggleConfirmationDialogue();
-            }}
-          >
+          <PublishButton onClick={() => toggleConfirmationDialogue()}>
             Publish Data (Review)
           </PublishButton>
         </Title>
 
-        {/* Displays the description of the field currently hovered */}
+        {/* Metric Description, Definitions and Reporting Notes */}
+        <HelperText reportID={reportID} activeMetric={activeMetric} />
+
+        {/* Displays the description of the field currently focused */}
         {fieldDescription && (
           <FieldDescription fieldDescription={fieldDescription} />
         )}
