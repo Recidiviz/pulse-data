@@ -63,6 +63,7 @@ residents = MetricDefinition(
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
         AggregatedDimension(dimension=GenderRestricted, required=True),
     ],
+    disabled=True,
 )
 
 annual_budget = MetricDefinition(
