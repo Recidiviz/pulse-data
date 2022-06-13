@@ -255,7 +255,7 @@ const Reports: React.FC = () => {
           </FilterOptions>
 
           {/* Admin Only: Manage Reports */}
-          {userStore.permissions.includes(Permission.CREATE_REPORT) && (
+          {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
             <ReportActions>
               <ReportActionsItem>
                 Select <ReportActionsSelectIcon />

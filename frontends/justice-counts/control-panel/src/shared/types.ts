@@ -16,8 +16,7 @@
 // =============================================================================
 
 export enum Permission {
-  CREATE_REPORT = "create:report:all",
-  SWITCH_AGENCY = "switch:agency",
+  RECIDIVIZ_ADMIN = "recidiviz_admin",
 }
 
 export type ReportFrequency = "MONTHLY" | "ANNUAL";

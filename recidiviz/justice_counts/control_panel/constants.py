@@ -19,4 +19,4 @@ import enum
 
 
 class ControlPanelPermission(enum.Enum):
-    CREATE_REPORT = "create:report:all"
+    RECIDIVIZ_ADMIN = "recidiviz_admin"
