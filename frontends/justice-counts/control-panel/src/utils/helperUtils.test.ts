@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { sanitizeInputValue } from "./helperUtils";
+import { normalizeToString, sanitizeInputValue } from "./helperUtils";
 
 describe("sanitizeInputValue", () => {
   test("return previous value if input value is undefined", () => {
@@ -58,5 +58,21 @@ describe("sanitizeInputValue", () => {
   test("return value as string if not convertible to number", () => {
     const nonNumber = sanitizeInputValue("0.123abc", null);
     expect(typeof nonNumber).toBe("string");
+  });
+});
+
+describe("normalizeToString", () => {
+  test("return string version of value", () => {
+    const undefinedInput = normalizeToString(undefined);
+    const nullInput = normalizeToString(null);
+    const booleanInput = normalizeToString(false);
+    const numberInput = normalizeToString(22);
+    const stringInput = normalizeToString("Hello");
+
+    expect(undefinedInput).toBe("");
+    expect(nullInput).toBe("");
+    expect(booleanInput).toBe("false");
+    expect(numberInput).toBe("22");
+    expect(stringInput).toBe("Hello");
   });
 });

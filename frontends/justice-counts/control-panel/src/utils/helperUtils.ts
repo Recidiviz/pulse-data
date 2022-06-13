@@ -108,6 +108,18 @@ export const sanitizeInputValue = (
 };
 
 /**
+ * Converts string | number | boolean | null | undefined into string equivalents that conforms to a text input
+ *
+ * @returns a string, "" empty string to represent null and undefined, stringified version of number and boolean
+ */
+export const normalizeToString = (
+  value: string | number | boolean | null | undefined
+): string => {
+  const stringValue = value?.toString();
+  return !stringValue ? "" : stringValue;
+};
+
+/**
  * Group a list of objects based on property value
  * @param arr list of objects
  * @param key name of the property on which to perform the grouping
