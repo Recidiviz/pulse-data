@@ -105,7 +105,7 @@ class SQLAlchemyDatabaseKey:
         # https://www.postgresql.org/docs/9.1/applevel-consistency.html.
         #
         # TODO(#3734): Consider doing this for all databases.
-        if self.schema_type in (SchemaType.STATE, SchemaType.JUSTICE_COUNTS):
+        if self.schema_type == SchemaType.STATE:
             return "SERIALIZABLE"
         return None
 
