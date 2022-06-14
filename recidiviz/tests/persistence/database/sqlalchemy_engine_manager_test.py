@@ -133,7 +133,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                             "host": "/cloudsql/justice_counts_cloudsql_instance_id_value"
                         },
                     ),
-                    isolation_level="SERIALIZABLE",
+                    isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
@@ -321,7 +321,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                             "host": "/cloudsql/justice_counts_cloudsql_instance_id_value"
                         },
                     ),
-                    isolation_level="SERIALIZABLE",
+                    isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
