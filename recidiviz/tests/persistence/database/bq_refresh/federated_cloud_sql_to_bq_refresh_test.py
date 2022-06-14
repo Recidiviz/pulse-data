@@ -78,8 +78,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = self.fake_gcs
         yaml_contents = """
-    region_codes_to_exclude:
-    - US_ND
+    region_codes_to_exclude: []
     county_columns_to_exclude:
     person:
     - full_name

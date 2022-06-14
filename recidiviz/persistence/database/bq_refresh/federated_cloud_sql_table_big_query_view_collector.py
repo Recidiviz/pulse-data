@@ -50,6 +50,18 @@ class StateSegmentedSchemaFederatedBigQueryViewCollector(
             if state_code.value not in self.config.region_codes_to_exclude
         ]
 
+        direct_ingest_region_codes = {
+            state_code.value for state_code in get_existing_direct_ingest_states()
+        }
+        invalid_region_codes = (
+            set(self.config.region_codes_to_exclude) - direct_ingest_region_codes
+        )
+        if invalid_region_codes:
+            raise ValueError(
+                f"Found disabled region(s) [{invalid_region_codes}] which are not valid "
+                f"direct ingest state codes."
+            )
+
     def collect_view_builders(self) -> List[FederatedCloudSQLTableBigQueryViewBuilder]:
         views = []
         for table in self.config.get_tables_to_export():

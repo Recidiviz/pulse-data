@@ -103,7 +103,9 @@ class CloudSqlToBQConfig:
         self.metadata_base = schema_type_to_schema_base(schema_type)
         self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
         self.columns_to_exclude = columns_to_exclude
-        self.region_codes_to_exclude = region_codes_to_exclude
+        self.region_codes_to_exclude = [
+            region_code.upper() for region_code in region_codes_to_exclude
+        ]
 
     def is_state_segmented_refresh_schema(self) -> bool:
         """Returns True if the data for the config's schema can and should be refreshed
