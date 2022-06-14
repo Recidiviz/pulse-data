@@ -250,6 +250,11 @@ PrisonToSupervisionTransitionsCount = CountByDimensionMetricQueryBuilder(
             columns=[PrisonToSupervisionTransitions.gender],
         ),
         DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonToSupervisionTransitions.race],
+        ),
+        DimensionMapping(
             dimension=Dimension.FACILITY,
             operations=DimensionOperation.ALL,
             columns=[PrisonToSupervisionTransitions.facility],
@@ -271,6 +276,11 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
             dimension=Dimension.GENDER,
             operations=DimensionOperation.FILTER,
             columns=[PrisonToSupervisionTransitions.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonToSupervisionTransitions.race],
         ),
         DimensionMapping(
             dimension=Dimension.FACILITY,

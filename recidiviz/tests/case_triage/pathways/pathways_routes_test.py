@@ -230,6 +230,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "ageGroup": "20-25",
                     "age": 22,
                     "gender": "MALE",
+                    "race": "WHITE",
                     "facility": "ABC",
                 },
                 {
@@ -239,6 +240,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "ageGroup": "60+",
                     "age": 61,
                     "gender": "MALE",
+                    "race": "WHITE",
                     "facility": "DEF",
                 },
                 {
@@ -248,6 +250,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "ageGroup": "60+",
                     "age": 62,
                     "gender": "FEMALE",
+                    "race": "BLACK",
                     "facility": "ABC",
                 },
                 {
@@ -257,6 +260,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "ageGroup": "60+",
                     "age": 63,
                     "gender": "MALE",
+                    "race": "BLACK",
                     "facility": "DEF",
                 },
                 {
@@ -266,6 +270,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "ageGroup": "60+",
                     "age": 64,
                     "gender": "MALE",
+                    "race": "ASIAN",
                     "facility": "ABC",
                 },
             ],
@@ -288,6 +293,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "ageGroup": "60+",
                     "age": 61,
                     "gender": "MALE",
+                    "race": "WHITE",
                     "facility": "DEF",
                 },
                 {
@@ -297,6 +303,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "ageGroup": "60+",
                     "age": 63,
                     "gender": "MALE",
+                    "race": "BLACK",
                     "facility": "DEF",
                 },
             ],
