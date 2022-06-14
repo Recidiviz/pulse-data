@@ -47,6 +47,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             sessions.age_end AS age,
             {age_group}
             sessions.gender,
+            prioritized_race_or_ethnicity AS race,
             SPLIT(sessions.compartment_location_end, "|")[OFFSET(0)] AS level_1_location_external_id,
         FROM
             `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
@@ -67,6 +68,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             sessions_data.age,
             sessions_data.age_group,
             sessions_data.gender,
+            sessions_data.race,
             IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
         FROM sessions_data
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
@@ -97,6 +99,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuil
         "age_group",
         "age",
         "gender",
+        "race",
         "facility",
         "state_code",
     ],

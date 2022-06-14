@@ -81,6 +81,8 @@ class PrisonToSupervisionTransitions(PathwaysBase):
     age = Column(Integer, nullable=True)
     # Gender of the person
     gender = Column(String, nullable=True)
+    # `prioritized_race_or_ethnicity` of the person
+    race = Column(String, nullable=True)
     # Facility the transition occurred from
     facility = Column(String, nullable=True)
     # State code for the transition

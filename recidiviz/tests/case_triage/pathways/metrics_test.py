@@ -247,6 +247,11 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
                 {"facility": "ABC", "count": 3},
                 {"facility": "DEF", "count": 2},
             ],
+            Dimension.RACE: [
+                {"race": "ASIAN", "count": 1},
+                {"race": "BLACK", "count": 2},
+                {"race": "WHITE", "count": 2},
+            ],
         }
 
     def test_metrics_filter(self) -> None:
@@ -302,6 +307,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 "age_group": "20-25",
                 "age": 22,
                 "gender": "MALE",
+                "race": "WHITE",
                 "facility": "ABC",
             },
             {
@@ -311,6 +317,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 "age_group": "60+",
                 "age": 61,
                 "gender": "MALE",
+                "race": "WHITE",
                 "facility": "DEF",
             },
             {
@@ -320,6 +327,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 "age_group": "60+",
                 "age": 62,
                 "gender": "FEMALE",
+                "race": "BLACK",
                 "facility": "ABC",
             },
             {
@@ -329,6 +337,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 "age_group": "60+",
                 "age": 63,
                 "gender": "MALE",
+                "race": "BLACK",
                 "facility": "DEF",
             },
             {
@@ -338,6 +347,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 "age_group": "60+",
                 "age": 64,
                 "gender": "MALE",
+                "race": "ASIAN",
                 "facility": "ABC",
             },
         ]
@@ -361,6 +371,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                     "age_group": "20-25",
                     "age": 22,
                     "gender": "MALE",
+                    "race": "WHITE",
                     "facility": "ABC",
                 },
                 {
@@ -370,6 +381,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                     "age_group": "60+",
                     "age": 62,
                     "gender": "FEMALE",
+                    "race": "BLACK",
                     "facility": "ABC",
                 },
                 {
@@ -379,6 +391,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                     "age_group": "60+",
                     "age": 64,
                     "gender": "MALE",
+                    "race": "ASIAN",
                     "facility": "ABC",
                 },
             ],
@@ -400,6 +413,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                     "age_group": "60+",
                     "age": 62,
                     "gender": "FEMALE",
+                    "race": "BLACK",
                     "facility": "ABC",
                 },
                 {
@@ -409,6 +423,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                     "age_group": "60+",
                     "age": 63,
                     "gender": "MALE",
+                    "race": "BLACK",
                     "facility": "DEF",
                 },
                 {
@@ -418,6 +433,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                     "age_group": "60+",
                     "age": 64,
                     "gender": "MALE",
+                    "race": "ASIAN",
                     "facility": "ABC",
                 },
             ],
