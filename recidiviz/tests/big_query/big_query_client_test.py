@@ -21,6 +21,7 @@ import random
 import unittest
 
 # pylint: disable=protected-access
+# pylint: disable=unused-argument
 from concurrent import futures
 from typing import Iterator, List
 from unittest import mock
@@ -32,6 +33,8 @@ from google.api_core.retry import Retry
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery import QueryJobConfig, SchemaField
 from google.cloud.bigquery_datatransfer import (
+    CheckValidCredsRequest,
+    CheckValidCredsResponse,
     DataTransferServiceClient,
     StartManualTransferRunsResponse,
     TransferConfig,
@@ -1201,6 +1204,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         updated_mock_table_2.table_id = "my_table_2"
         updated_mock_table_2.modified = datetime.datetime(2020, 1, 2)
 
+        def mock_check_valid_creds(
+            request: CheckValidCredsRequest,
+        ) -> CheckValidCredsResponse:
+            return CheckValidCredsResponse(has_valid_creds=True)
+
+        mock_transfer_client.check_valid_creds.side_effect = mock_check_valid_creds
+
         config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
 
         def mock_create_transfer_config(
@@ -1293,6 +1303,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table_2.table_type = "TABLE"
         mock_table_2.table_id = "my_table_2"
 
+        def mock_check_valid_creds(
+            request: CheckValidCredsRequest,
+        ) -> CheckValidCredsResponse:
+            return CheckValidCredsResponse(has_valid_creds=True)
+
+        mock_transfer_client.check_valid_creds.side_effect = mock_check_valid_creds
+
         config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
 
         def mock_create_transfer_config(
@@ -1377,6 +1394,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table_3 = create_autospec(bigquery.Table)
         mock_table_3.table_type = "TABLE"
         mock_table_3.table_id = "my_table_3"
+
+        def mock_check_valid_creds(
+            request: CheckValidCredsRequest,
+        ) -> CheckValidCredsResponse:
+            return CheckValidCredsResponse(has_valid_creds=True)
+
+        mock_transfer_client.check_valid_creds.side_effect = mock_check_valid_creds
 
         config_name = "projects/12345/locations/us/transferConfigs/61421b53-0000-22d3-8007-001a114e540a"
 

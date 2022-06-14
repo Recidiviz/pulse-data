@@ -31,6 +31,7 @@ import pytz
 from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery_datatransfer import (
+    CheckValidCredsRequest,
     DataTransferServiceClient,
     ScheduleOptions,
     StartManualTransferRunsRequest,
@@ -1893,6 +1894,21 @@ class BigQueryClientImpl(BigQueryClient):
 
         # Start the transfer
         transfer_client = DataTransferServiceClient()
+
+        # Check credentialing
+        logging.info(
+            "Checking credentials for transfer client: %s, %s",
+            self.project_id,
+            CROSS_REGION_COPY_DATA_SOURCE_ID,
+        )
+        data_source_name = (
+            f"projects/{self.project_id}/dataSources/{CROSS_REGION_COPY_DATA_SOURCE_ID}"
+        )
+        credentialing_response = transfer_client.check_valid_creds(
+            request=CheckValidCredsRequest(name=data_source_name),
+        )
+        logging.info("Credentialing response: %s", credentialing_response)
+
         if not self.dataset_exists(self.dataset_ref_for_id(destination_dataset_id)):
             raise ValueError(
                 f"Cannot copy data to dataset [{destination_dataset_id}] which does not exist"
