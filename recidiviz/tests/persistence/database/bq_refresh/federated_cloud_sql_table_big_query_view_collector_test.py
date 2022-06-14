@@ -58,6 +58,25 @@ county_columns_to_exclude:
     - birthdate_inferred_from_age
 """
 
+PAUSED_REGION_LOWERCASE_CLOUD_SQL_CONFIG_YAML = """
+region_codes_to_exclude:
+  - us_nd
+county_columns_to_exclude:
+  person:
+    - full_name
+    - birthdate_inferred_from_age
+"""
+
+
+PAUSED_BAD_REGION_CLOUD_SQL_CONFIG_YAML = """
+region_codes_to_exclude:
+  - us_ab
+county_columns_to_exclude:
+  person:
+    - full_name
+    - birthdate_inferred_from_age
+"""
+
 
 class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
     """Tests for federated_cloud_sql_table_big_query_view_collector.py."""
@@ -229,9 +248,30 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
         self.assertEqual(set(), view_addresses.intersection(materialized_addresses))
 
     def test_state_segmented_collector_paused_regions(self) -> None:
+        self._run_paused_region_test(PAUSED_REGION_CLOUD_SQL_CONFIG_YAML)
+
+    def test_state_segmented_collector_paused_regions_lowercase(self) -> None:
+        self._run_paused_region_test(PAUSED_REGION_LOWERCASE_CLOUD_SQL_CONFIG_YAML)
+
+    def test_state_segmented_collector_bad_paused_regionn(self) -> None:
         self.fake_fs.upload_from_string(
             path=self.fake_config_path,
-            contents=PAUSED_REGION_CLOUD_SQL_CONFIG_YAML,
+            contents=PAUSED_BAD_REGION_CLOUD_SQL_CONFIG_YAML,
+            content_type="text/yaml",
+        )
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found disabled region\(s\) \[{'US_AB'}\] which are not valid direct "
+            r"ingest state codes.",
+        ):
+            _ = StateSegmentedSchemaFederatedBigQueryViewCollector(config)
+
+    def _run_paused_region_test(self, yaml_str: str) -> None:
+        """Runs a test for a config where one region is paused."""
+        self.fake_fs.upload_from_string(
+            path=self.fake_config_path,
+            contents=yaml_str,
             content_type="text/yaml",
         )
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
