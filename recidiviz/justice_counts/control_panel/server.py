@@ -15,12 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Backend entry point for Justice Counts Control Panel backend API."""
+import logging
 import os
 from http import HTTPStatus
 from typing import List, Optional, Tuple
 
 from flask import Blueprint, Flask, Response, send_from_directory
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.error_handlers import (
@@ -60,6 +64,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
     Flask will automatically detect the factory function during `flask run`
     source: https://flask.palletsprojects.com/en/2.0.x/patterns/appfactories/#using-applications
     """
+    logging.getLogger().setLevel(logging.INFO)
+
     # We use Flask to serve not only the backend, but also our React frontend,
     # which lives in ../../frontends/justice_counts/control_panel
     static_folder = os.path.abspath(
@@ -89,8 +95,17 @@ def create_app(config: Optional[Config] = None) -> Flask:
         url_prefix="/auth",
     )
 
+    # Need to silence mypy error `Cannot assign to a method`
+    app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
     CSRFProtect(app)
     register_error_handlers(app)
+
+    Limiter(
+        app,
+        key_func=get_remote_address,
+        default_limits=["15 per second"],
+        # TODO(#13437) Add Redis storage backend for rate limiting
+    )
 
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MiB max body size
 
@@ -136,6 +151,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     @app.route("/auth0_public_config.js")
     def auth0_public_config() -> Response:
+        logging.info("get_remote_address: %s", get_remote_address())
+
         # Expose ONLY the necessary variables to configure our Auth0 frontend
         auth0_config = app.config["AUTH0_CONFIGURATION"]
         return Response(

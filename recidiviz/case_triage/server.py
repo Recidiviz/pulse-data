@@ -24,6 +24,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
@@ -86,6 +87,8 @@ if sessions_redis:
     # `SessionInterface`.
     app.session_interface = RedisSessionInterface(sessions_redis)  # type: ignore[assignment]
 
+# Again, need to silence mypy error `Cannot assign to a method`
+app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
 CSRFProtect(app).exempt(e2e_blueprint)
 register_error_handlers(app)
 
