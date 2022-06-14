@@ -57,10 +57,10 @@ class RematerializationSuccessPersister:
             REMATERIALIZATION_TRACKER_TABLE_ID,
             [
                 {
-                    "cloud_task_id": cloud_task_id,
-                    "num_deployed_views": num_deployed_views,
-                    "num_views_materialized": num_views_materialized,
-                    "runtime_sec": rematerialization_runtime_sec,
+                    CLOUD_TASK_ID_COL: cloud_task_id,
+                    NUM_DEPLOYED_VIEWS_COL: num_deployed_views,
+                    NUM_MATERIALIZED_VIEWS_COL: num_views_materialized,
+                    REMATERIAIZATION_RUNTIME_SEC_COL: rematerialization_runtime_sec,
                 }
             ],
         )
