@@ -30,6 +30,7 @@ from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
+from recidiviz.utils.environment import in_development
 from recidiviz.utils.secrets import get_secret
 
 os.environ.setdefault("APP_URL", "http://localhost:3000")
@@ -91,6 +92,32 @@ def create_app(config: Optional[Config] = None) -> Flask:
     CSRFProtect(app)
     register_error_handlers(app)
 
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MiB max body size
+
+    if not in_development():
+        app.config["SESSION_COOKIE_HTTPONLY"] = True
+        app.config["SESSION_COOKIE_SECURE"] = True
+        app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
+
+    # Security headers
+    @app.after_request  # type: ignore
+    def set_headers(response: Response) -> Response:
+        if not in_development():
+            response.headers[
+                "Strict-Transport-Security"
+            ] = "max-age=63072000; includeSubDomains"  # max age of 2 years
+        response.headers[
+            "Content-Security-Policy"
+        ] = "default-src 'self'; object-src 'none'; child-src 'self'; frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+
+        # Set cache control to no-store if it isn't already set
+        if "Cache-Control" not in response.headers:
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+
+        return response
+
     @app.route("/health")
     def health() -> Tuple[str, HTTPStatus]:
         """This just returns 200, and is used by Docker to verify that the app is running."""
@@ -108,9 +135,12 @@ def create_app(config: Optional[Config] = None) -> Flask:
         return send_from_directory(static_folder, "index.html")
 
     @app.route("/auth0_public_config.js")
-    def auth0_public_config() -> str:
+    def auth0_public_config() -> Response:
         # Expose ONLY the necessary variables to configure our Auth0 frontend
         auth0_config = app.config["AUTH0_CONFIGURATION"]
-        return f"window.AUTH0_CONFIG = {auth0_config.as_public_config()};"
+        return Response(
+            f"window.AUTH0_CONFIG = {auth0_config.as_public_config()};",
+            mimetype="application/javascript",
+        )
 
     return app

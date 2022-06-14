@@ -82,9 +82,8 @@ def get_api_blueprint(
                 session=current_session, agency_ids=agency_ids
             )
             permissions = g.user_context.permissions if "user_context" in g else []
-            return make_response(
+            return jsonify(
                 updated_user.to_json(permissions=permissions, agencies=agencies),
-                200,
             )
         except Exception as e:
             raise _get_error(error=e) from e
@@ -109,7 +108,7 @@ def get_api_blueprint(
             metrics_json = [report_metric.to_json() for report_metric in report_metrics]
             report_definition_json["metrics"] = metrics_json
 
-            return make_response(jsonify(report_definition_json), 200)
+            return jsonify(report_definition_json)
         except Exception as e:
             raise _get_error(error=e) from e
 
@@ -170,13 +169,12 @@ def get_api_blueprint(
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
             )
-            report_json = jsonify(
-                [
-                    ReportInterface.to_json_response(session=current_session, report=r)
-                    for r in reports
-                ]
-            )
-            return make_response(report_json, 200)
+            report_json = [
+                ReportInterface.to_json_response(session=current_session, report=r)
+                for r in reports
+            ]
+
+            return jsonify(report_json)
         except Exception as e:
             raise _get_error(error=e) from e
 
@@ -222,7 +220,7 @@ def get_api_blueprint(
             report_response = ReportInterface.to_json_response(
                 session=current_session, report=report
             )
-            return make_response(report_response, 200)
+            return jsonify(report_response)
         except Exception as e:
             raise _get_error(error=e) from e
 
