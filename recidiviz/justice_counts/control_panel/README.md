@@ -29,13 +29,11 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 
 ## Running the backend
 
-First build the Docker image:
+First build the Docker image with dev dependencies:
 
 ```bash
-docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest
+pipenv run docker-build-dev
 ```
-
-(Or equivalently, `pipenv run docker-build`.)
 
 Then run `docker-compose`:
 
