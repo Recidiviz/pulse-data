@@ -28,8 +28,12 @@ from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
-from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
+from recidiviz.justice_counts.dimensions.law_enforcement import (
+    CallType,
+    SheriffBudgetType,
+)
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
@@ -353,11 +357,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     },
                 )
                 self.assertEqual(response.status_code, 200)
-                report = (
-                    self.session.query(Report)
-                    .filter(Report.id == report.id)
-                    .one_or_none()
-                )
+                report = self.session.query(Report).one_or_none()
                 self.assertEqual(report.status, ReportStatus.DRAFT)
                 self.assertEqual(report.last_modified_at, update_datetime)
                 self.assertEqual(report.datapoints[0].get_value(), value)
@@ -373,6 +373,31 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             {
                                 "key": law_enforcement.calls_for_service.key,
                                 "value": value + 10,
+                                "disaggregations": [
+                                    {
+                                        "key": CallType.dimension_identifier(),
+                                        "dimensions": [
+                                            {
+                                                "key": CallType.EMERGENCY.value,
+                                                "value": value,
+                                            },
+                                            {
+                                                "key": CallType.NON_EMERGENCY.value,
+                                                "value": 10,
+                                            },
+                                            {
+                                                "key": CallType.UNKNOWN.value,
+                                                "value": None,
+                                            },
+                                        ],
+                                    }
+                                ],
+                                "contexts": [
+                                    {
+                                        "key": ContextKey.ALL_CALLS_OR_CALLS_RESPONDED.value,
+                                        "value": CallsRespondedOptions.ALL_CALLS.value,
+                                    },
+                                ],
                             },
                             {
                                 "key": law_enforcement.annual_budget.key,
@@ -396,26 +421,24 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                     {
                                         "key": ContextKey.PRIMARY_FUNDING_SOURCE.value,
                                         "value": "test context",
-                                    }
+                                    },
                                 ],
                             },
                         ],
                     },
                 )
                 self.assertEqual(response.status_code, 200)
-                report = (
-                    self.session.query(Report)
-                    .filter(Report.id == report.id)
-                    .one_or_none()
-                )
+                report = self.session.query(Report).one_or_none()
                 self.assertEqual(report.status, ReportStatus.PUBLISHED)
                 datapoints = report.datapoints
                 self.assertEqual(report.datapoints[0].get_value(), 110)
                 # Empty CallType dimension values
-                self.assertEqual(datapoints[1].get_value(), None)
-                self.assertEqual(datapoints[2].get_value(), None)
+                self.assertEqual(datapoints[1].get_value(), value)
+                self.assertEqual(datapoints[2].get_value(), 10)
                 self.assertEqual(datapoints[3].get_value(), None)
-                self.assertEqual(datapoints[4].get_value(), None)
+                self.assertEqual(
+                    datapoints[4].get_value(), CallsRespondedOptions.ALL_CALLS.value
+                )
                 # Empty contexts from calls_for_service metric
                 self.assertEqual(datapoints[5].get_value(), None)
                 self.assertEqual(datapoints[6].get_value(), None)

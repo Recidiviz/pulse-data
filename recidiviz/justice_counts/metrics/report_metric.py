@@ -31,6 +31,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricDefinition,
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.persistence.database.schema.justice_counts.schema import ReportStatus
 
 ReportedContextT = TypeVar("ReportedContextT", bound="ReportedContext")
 ReportedAggregatedDimensionT = TypeVar(
@@ -172,18 +173,15 @@ class ReportMetric:
         default=None
     )
 
-    # Whether or not to enforce that required fields are populated.
-    # Typically we will validate when a report is published, but not before, because
-    # we want to allow agencies to submit reports in an unfinished, draft state.
     # TODO(#12418) [Backend] Figure out when/when not to validate ReportMetrics
-    enforce_required_fields: Optional[bool] = False
+    enforce_validation: Optional[bool] = False
 
     @value.validator
     def validate_value(self, _attribute: attr.Attribute, value: Any) -> None:
         # Validate that for each reported aggregate dimension for which sum_to_total = True,
         # the reported values for this aggregate dimension sum to the total value metric
 
-        if value is None:
+        if value is None or not self.enforce_validation:
             return
 
         dimension_identifier_to_reported_dimension = {
@@ -215,6 +213,9 @@ class ReportMetric:
     def validate_contexts(self, _attribute: attr.Attribute, value: Any) -> None:
         # Validate that any reported context is of the right type, and that
         # all required contexts have been reported
+        if not self.enforce_validation:
+            return
+
         context_key_to_reported_context = {
             context.key: context for context in value or []
         }
@@ -222,7 +223,7 @@ class ReportMetric:
             reported_context = context_key_to_reported_context.get(context.key)
 
             if not reported_context or not reported_context.value:
-                if context.required and self.enforce_required_fields:
+                if context.required:
                     raise ValueError(f"The required context {context.key} is missing.")
                 continue
 
@@ -236,7 +237,7 @@ class ReportMetric:
     def validate_aggregate_dimensions(
         self, _attribute: attr.Attribute, value: Any
     ) -> None:
-        if not self.enforce_required_fields:
+        if not self.enforce_validation:
             return
 
         # Validate that all required aggregated dimensions have been reported
@@ -295,7 +296,9 @@ class ReportMetric:
         }
 
     @classmethod
-    def from_json(cls: Type[ReportMetricT], json: Dict[str, Any]) -> ReportMetricT:
+    def from_json(
+        cls: Type[ReportMetricT], json: Dict[str, Any], report_status: ReportStatus
+    ) -> ReportMetricT:
         reported_contexts = [
             ReportedContext.from_json(
                 json=context_json,
@@ -313,4 +316,5 @@ class ReportMetric:
             value=json["value"],
             contexts=reported_contexts,
             aggregated_dimensions=disaggregations,
+            enforce_validation=report_status == ReportStatus.PUBLISHED,
         )

@@ -135,7 +135,9 @@ def get_api_blueprint(
             )
 
             for metric_json in request_dict.get("metrics", []):
-                report_metric = ReportMetric.from_json(metric_json)
+                report_metric = ReportMetric.from_json(
+                    json=metric_json, report_status=report.status
+                )
                 ReportInterface.add_or_update_metric(
                     session=current_session,
                     report=report,
