@@ -47,8 +47,8 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             sessions.age_end AS age,
             {age_group}
             sessions.gender,
-            prioritized_race_or_ethnicity AS race,
             SPLIT(sessions.compartment_location_end, "|")[OFFSET(0)] AS level_1_location_external_id,
+            sessions.prioritized_race_or_ethnicity as race,
         FROM
             `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
         WHERE

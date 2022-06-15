@@ -19,16 +19,10 @@
 To generate the BQ view, run:
 python -m recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_time_series
 """
-from recidiviz.calculator.query.bq_utils import (
-    deduped_supervision_sessions,
-    filter_to_enabled_states,
-)
+from recidiviz.calculator.query.bq_utils import filter_to_enabled_states
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
-)
-from recidiviz.calculator.query.state.state_specific_query_strings import (
-    pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
@@ -48,38 +42,29 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_DESCRIPTION = (
     """Supervision population count time series."""
 )
 
-SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
-    WITH cte AS (
-        /*
-        Use equivalent logic from compartment_sessions to deduplicate individuals who have more than
-        one supervision location on a given day.
-        */
-        SELECT 
-            s.state_code,
-            s.person_id,
-            date_of_supervision,
-            EXTRACT(YEAR FROM date_of_supervision) AS year,
-            EXTRACT(MONTH FROM date_of_supervision) AS month,
-            IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
-            CASE
-                WHEN s.state_code="US_ND" THEN NULL
-                ELSE {{state_specific_supervision_level}}
-            END AS supervision_level,
-        FROM {deduped_supervision_sessions()}
+SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
+    /*{description}*/
+
+    WITH filtered_rows AS (
+        SELECT
+            state_code,
+            year,
+            month,
+            district,
+            supervision_level,
+            race,
+            person_id
+        FROM  `{project_id}.{dashboard_views_dataset}.pathways_deduped_supervision_sessions`
+        WHERE {state_specific_district_filter}
     )
-    , filtered_rows AS (
-        SELECT *
-        FROM cte
-        WHERE {{state_specific_district_filter}}
-    ),
-    full_time_series as (
+    , full_time_series as (
         SELECT 
             state_code,
             year,
             month,
             district,
             supervision_level,
+            race,
             COUNT(person_id) AS person_count
         FROM filtered_rows
         FULL OUTER JOIN
@@ -89,10 +74,11 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = f"""
                 year,
                 month,
                 district,
-                supervision_level
-            FROM `{{project_id}}.{{dashboard_views_dataset}}.{{dimension_combination_view}}`
-        ) USING (state_code, year, month, district, supervision_level)
-        GROUP BY 1,2,3,4,5
+                supervision_level,
+                race
+            FROM `{project_id}.{dashboard_views_dataset}.{dimension_combination_view}`
+        ) USING (state_code, year, month, district, supervision_level, race)
+        GROUP BY 1,2,3,4,5, 6
     )
     SELECT
         state_code,
@@ -100,13 +86,15 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = f"""
         month,
         district,
         supervision_level,
+        race,
         SUM(person_count) AS person_count,
     FROM full_time_series,
     UNNEST([district, "ALL"]) AS district,
-    UNNEST([supervision_level, "ALL"]) AS supervision_level
-    {{filter_to_enabled_states}}
+    UNNEST([supervision_level, "ALL"]) AS supervision_level,
+    UNNEST([race, "ALL"]) AS race
+    {filter_to_enabled_states}
     AND DATE(year, month, 1) <= CURRENT_DATE('US/Eastern')
-    GROUP BY 1, 2, 3, 4, 5
+    GROUP BY 1, 2, 3, 4, 5, 6
     ORDER BY year, month
     """
 
@@ -115,20 +103,14 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuil
     view_id=SUPERVISION_POPULATION_TIME_SERIES_VIEW_NAME,
     view_query_template=SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE,
     # year must come before month to export correctly
-    dimensions=("state_code", "year", "month", "district", "supervision_level"),
+    dimensions=("state_code", "year", "month", "district", "supervision_level", "race"),
     metric_stats=("person_count",),
     description=SUPERVISION_POPULATION_TIME_SERIES_VIEW_DESCRIPTION,
-    dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=get_pathways_enabled_states()
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     dimension_combination_view=PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_NAME,
-    state_specific_supervision_level=pathways_state_specific_supervision_level(
-        "s.state_code",
-        "session_attributes.correctional_level",
-    ),
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 

@@ -24,17 +24,20 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions import (
-    SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_to_supervision_transitions import (
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions import (
+    SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_count_by_month import (
     LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_population_snapshot_by_dimension import (
     LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_deduped_supervision_sessions import (
+    PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_incarceration_location_name_map import (
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
@@ -151,4 +154,5 @@ PATHWAYS_HELPER_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
     PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER,
     PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER,
+    PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_BUILDER,
 ]

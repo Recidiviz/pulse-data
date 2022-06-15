@@ -47,13 +47,14 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             gender,
             age_group,
             facility,
+            race,
             COUNT(1) as event_count,
         FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions,
             UNNEST ([gender, 'ALL']) AS gender,
             UNNEST ([age_group, 'ALL']) AS age_group,
-            UNNEST ([facility, 'ALL']) AS facility
-
-        GROUP BY 1, 2, 3, 4, 5
+            UNNEST ([facility, 'ALL']) AS facility,
+            UNNEST ([race, 'ALL']) AS race
+        GROUP BY 1, 2, 3, 4, 5, 6
     )
     SELECT
         last_updated,
@@ -68,13 +69,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_NAME,
     view_query_template=PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE,
-    dimensions=(
-        "state_code",
-        "time_period",
-        "gender",
-        "age_group",
-        "facility",
-    ),
+    dimensions=("state_code", "time_period", "gender", "age_group", "facility", "race"),
     metric_stats=(
         "last_updated",
         "event_count",
