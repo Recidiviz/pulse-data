@@ -29,6 +29,7 @@ import {
   GoBackToReportsOverviewLink,
   MetricSectionSubTitle,
   MetricSectionTitle,
+  OnePanelBackLinkContainer,
   PageWrapper,
   PreTitle,
   Title,
@@ -37,7 +38,11 @@ import {
 import { Dropdown } from "../Forms/Dropdown";
 import { palette, typography } from "../GlobalStyles";
 import { showToast } from "../Toast";
-import { PublishButton, PublishDataWrapper } from "./ReportDataEntry.styles";
+import {
+  PublishButton,
+  PublishDataWrapper,
+  TWO_PANEL_MAX_WIDTH,
+} from "./ReportDataEntry.styles";
 import { ReportSummaryWrapper } from "./ReportSummaryPanel";
 
 function createIntegerRange(start: number, end: number) {
@@ -61,6 +66,22 @@ const CreateReportInfoContainer = styled.div`
 
 const BoldFont = styled.span`
   font-weight: 700;
+`;
+
+const CreateButton = styled(PublishButton)`
+  &::after {
+    content: "Create Report";
+  }
+`;
+
+const FormCreateButton = styled(CreateButton)`
+  display: none;
+  width: auto;
+  margin-top: 48px;
+
+  @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
+    display: block;
+  }
 `;
 
 const initialCreateReportFormValues: CreateReportFormValuesType = {
@@ -146,6 +167,9 @@ const CreateReport = () => {
       {/* Create Report Form */}
       <Form>
         {/* Form Title */}
+        <OnePanelBackLinkContainer>
+          <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
+        </OnePanelBackLinkContainer>
         <PreTitle>Create Report</PreTitle>
         <Title>New Report</Title>
         <TitleWrapper underlined>
@@ -262,19 +286,24 @@ const CreateReport = () => {
           </BoldFont>
           .
         </CreateReportInfoContainer>
+        <FormCreateButton
+          onClick={(e) => {
+            e.preventDefault();
+            /** Should trigger a confirmation dialogue before submitting */
+            createNewReport();
+          }}
+        />
       </Form>
 
       {/* Create Report Review Panel */}
       <PublishDataWrapper>
         <Title>
-          <PublishButton
+          <CreateButton
             onClick={() => {
               /** Should trigger a confirmation dialogue before submitting */
               createNewReport();
             }}
-          >
-            Create Report
-          </PublishButton>
+          />
         </Title>
       </PublishDataWrapper>
     </PageWrapper>

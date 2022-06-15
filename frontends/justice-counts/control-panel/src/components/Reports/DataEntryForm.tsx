@@ -34,13 +34,14 @@ import {
   Metric,
   MetricSectionSubTitle,
   MetricSectionTitle,
+  OnePanelBackLinkContainer,
   OpacityGradient,
   PreTitle,
   RequiredChip,
   TabbedDisaggregations,
   Title,
 } from "../Forms";
-import { palette, typography } from "../GlobalStyles";
+import { typography } from "../GlobalStyles";
 import { showToast } from "../Toast";
 import {
   AdditionalContextInput,
@@ -53,33 +54,6 @@ import {
   PublishButton,
   SIDE_PANEL_HORIZONTAL_PADDING,
 } from "./ReportDataEntry.styles";
-
-const DataEntryFormBackLinkContainer = styled(PreTitle)`
-  display: none;
-  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
-    display: block;
-    position: fixed;
-    top: 0;
-    padding-top: 96px;
-    width: 100%;
-    margin-right: -1px;
-    margin-left: -1px;
-    background-color: ${palette.solid.white};
-    z-index: 1;
-  }
-`;
-
-const DataEntryFormPreTitle = styled(PreTitle)`
-  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
-    margin-top: 48px;
-  }
-`;
-
-const DataEntryFormTitle = styled(Title)`
-  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
-    top: 118px;
-  }
-`;
 
 const DataEntryFormPublishButtonContainer = styled.div`
   position: fixed;
@@ -237,18 +211,18 @@ const DataEntryForm: React.FC<{
       }}
     >
       {/* Form Title */}
-      <DataEntryFormBackLinkContainer>
+      <OnePanelBackLinkContainer>
         <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
-      </DataEntryFormBackLinkContainer>
-      <DataEntryFormPreTitle>Enter Data</DataEntryFormPreTitle>
-      <DataEntryFormTitle scrolled={scrolled} sticky>
+      </OnePanelBackLinkContainer>
+      <PreTitle>Enter Data</PreTitle>
+      <Title scrolled={scrolled} sticky>
         {reportOverview &&
           printReportTitle(
             reportOverview.month,
             reportOverview.year,
             reportOverview.frequency
           )}
-      </DataEntryFormTitle>
+      </Title>
 
       {/* Metrics */}
       {reportMetrics.map((metric, index) => {
@@ -382,9 +356,7 @@ const DataEntryForm: React.FC<{
             e.preventDefault();
             toggleConfirmationDialogue();
           }}
-        >
-          Publish Data (Review)
-        </DataEntryFormPublishButton>
+        />
       </DataEntryFormPublishButtonContainer>
       <OpacityGradient />
     </Form>

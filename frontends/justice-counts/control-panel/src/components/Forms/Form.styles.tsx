@@ -67,6 +67,20 @@ export const PreTitle = styled.div`
   ${typography.sizeCSS.normal}
 `;
 
+export const OnePanelBackLinkContainer = styled(PreTitle)`
+  display: none;
+  @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
+    display: block;
+    top: 0;
+    width: 100%;
+    margin-right: -1px;
+    margin-left: -1px;
+    margin-bottom: 26px;
+    background-color: ${palette.solid.white};
+    z-index: 1;
+  }
+`;
+
 export const MetricsSectionTitle = styled.div`
   ${typography.sizeCSS.normal}
   margin-top: 6px;

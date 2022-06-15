@@ -67,6 +67,10 @@ export const PublishButton = styled.button<{
     background: ${({ disabled }) =>
       disabled ? "none" : palette.solid.darkblue};
   }
+
+  &::after {
+    content: "Review and Publish";
+  }
 `;
 
 export const FieldDescriptionTitle = styled.div`

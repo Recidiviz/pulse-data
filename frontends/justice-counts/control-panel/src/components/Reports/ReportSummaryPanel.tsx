@@ -342,9 +342,7 @@ const ReportSummaryPanel: React.FC<{
             /** Should trigger a confirmation dialogue before submitting */
             toggleConfirmationDialogue();
           }}
-        >
-          Publish Data (Review)
-        </LeftPublishButton>
+        />
       </PublishContainer>
     </ReportSummaryWrapper>
   );
