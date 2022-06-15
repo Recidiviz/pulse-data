@@ -34,6 +34,7 @@ from recidiviz.justice_counts.metrics.report_metric import (
     ReportedContext,
     ReportMetric,
 )
+from recidiviz.persistence.database.schema.justice_counts.schema import ReportStatus
 from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 
 
@@ -52,7 +53,7 @@ class TestJusticeCountsReportMetric(TestCase):
             self.reported_budget.metric_definition.display_name, "Annual Budget"
         )
 
-    def test_value_validation(self) -> None:
+    def test_dimension_value_validation(self) -> None:
         with self.assertRaisesRegex(
             ValueError, "Not all dimension instances belong to the same class"
         ):
@@ -64,7 +65,7 @@ class TestJusticeCountsReportMetric(TestCase):
                         dimension_to_value={
                             SheriffBudgetType.DETENTION: 50000,
                             GenderRestricted.FEMALE: 100,
-                        }
+                        },
                     )
                 ],
             )
@@ -79,7 +80,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 value=100000,
                 contexts=[],
                 aggregated_dimensions=[],
-                enforce_required_fields=True,
+                enforce_validation=True,
             )
 
         with self.assertRaisesRegex(
@@ -96,6 +97,7 @@ class TestJusticeCountsReportMetric(TestCase):
                     )
                 ],
                 aggregated_dimensions=[],
+                enforce_validation=True,
             )
 
     def test_aggregated_dimensions_validation(self) -> None:
@@ -113,7 +115,7 @@ class TestJusticeCountsReportMetric(TestCase):
                     )
                 ],
                 aggregated_dimensions=[],
-                enforce_required_fields=True,
+                enforce_validation=True,
             )
 
     def test_budget_report_metric_json(self) -> None:
@@ -417,7 +419,9 @@ class TestJusticeCountsReportMetric(TestCase):
                     )
                 ],
             ),
-            ReportMetric.from_json(json=response_json),
+            ReportMetric.from_json(
+                json=response_json, report_status=ReportStatus.DRAFT
+            ),
         )
 
     def test_police_officer_metric_json_to_report_metric(self) -> None:
@@ -466,11 +470,14 @@ class TestJusticeCountsReportMetric(TestCase):
                             LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: 100,
                             LawEnforcementStaffType.CIVILIAN_STAFF: 50,
                             LawEnforcementStaffType.UNKNOWN: 0,
-                        }
+                        },
                     )
                 ],
+                enforce_validation=True,
             ),
-            ReportMetric.from_json(json=response_json),
+            ReportMetric.from_json(
+                json=response_json, report_status=ReportStatus.PUBLISHED
+            ),
         )
 
     def test_complaints_sustained_metric_json_to_report_metric(self) -> None:
@@ -488,8 +495,11 @@ class TestJusticeCountsReportMetric(TestCase):
                 value=100,
                 contexts=[],
                 aggregated_dimensions=[],
+                enforce_validation=True,
             ),
-            ReportMetric.from_json(json=response_json),
+            ReportMetric.from_json(
+                json=response_json, report_status=ReportStatus.PUBLISHED
+            ),
         )
 
     def test_boolean_reported_complaint(self) -> None:
