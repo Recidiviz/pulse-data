@@ -156,6 +156,7 @@ admissions = MetricDefinition(
             key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
             value_type=ValueType.MULTIPLE_CHOICE,
             label="Does your count include individuals admitted for violation of conditions?",
+            multiple_choice_options=YesNoContext,
             required=False,
         ),
     ],
