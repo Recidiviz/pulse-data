@@ -46,9 +46,7 @@ const PublishDataPanel: React.FC<{
     <>
       <PublishDataWrapper>
         <Title>
-          <PublishButton onClick={() => toggleConfirmationDialogue()}>
-            Publish Data (Review)
-          </PublishButton>
+          <PublishButton onClick={() => toggleConfirmationDialogue()} />
         </Title>
 
         {/* Metric Description, Definitions and Reporting Notes */}
