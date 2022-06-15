@@ -277,7 +277,7 @@ const ReportSummaryPanel: React.FC<{
       <ReportSummaryProgressIndicatorWrapper>
         {Object.entries(metricsBySystem).map(([system, metrics]) => {
           return (
-            <>
+            <React.Fragment key={system}>
               {showMetricSectionTitles ? (
                 <MetricsSectionTitle>{system}</MetricsSectionTitle>
               ) : null}
@@ -295,7 +295,7 @@ const ReportSummaryPanel: React.FC<{
                   />
                 );
               })}
-            </>
+            </React.Fragment>
           );
         })}
       </ReportSummaryProgressIndicatorWrapper>
