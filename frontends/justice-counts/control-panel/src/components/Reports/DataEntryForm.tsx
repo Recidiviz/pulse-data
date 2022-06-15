@@ -41,7 +41,7 @@ import {
   TabbedDisaggregations,
   Title,
 } from "../Forms";
-import { typography } from "../GlobalStyles";
+import { palette, typography } from "../GlobalStyles";
 import { showToast } from "../Toast";
 import {
   AdditionalContextInput,
@@ -63,6 +63,8 @@ const DataEntryFormPublishButtonContainer = styled.div`
   right: 0;
   padding: 0 ${SIDE_PANEL_HORIZONTAL_PADDING}px;
   justify-content: center;
+  padding: 0 24px 8px;
+  background: ${palette.solid.white};
 `;
 
 const DataEntryFormPublishButton = styled(PublishButton)`

@@ -63,7 +63,7 @@ export const PublishButton = styled.button<{
   transition: 0.2s ease;
 
   &:hover {
-    cursor: pointer;
+    cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
     background: ${({ disabled }) =>
       disabled ? "none" : palette.solid.darkblue};
   }
