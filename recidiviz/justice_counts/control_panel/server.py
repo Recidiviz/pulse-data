@@ -121,9 +121,18 @@ def create_app(config: Optional[Config] = None) -> Flask:
             response.headers[
                 "Strict-Transport-Security"
             ] = "max-age=63072000; includeSubDomains"  # max age of 2 years
-        response.headers[
-            "Content-Security-Policy"
-        ] = "default-src 'self'; object-src 'none'; child-src 'self'; frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content"
+        response.headers["Content-Security-Policy-Report-Only"] = (
+            "default-src 'self'; "
+            "object-src 'none'; "
+            "child-src 'self'; "
+            # TODO(#13507) Replace unsafe-inline with a nonce
+            "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "frame-ancestors 'none'; "
+            "upgrade-insecure-requests; "
+            "block-all-mixed-content"
+        )
+
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
 
