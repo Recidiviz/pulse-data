@@ -45,7 +45,8 @@ WITH race_or_ethnicity_cte AS  (
     SELECT 
         state_code,
         person_id,
-        ethnicity as race_or_ethnicity,
+        -- If a person only has "NOT_HISPANIC" ethnicity and no race then remap to "EXTERNAL_UNKNOWN"
+        IF(ethnicity = "NOT_HISPANIC", "EXTERNAL_UNKNOWN", ethnicity) as race_or_ethnicity,
     FROM
         `{project_id}.{base_dataset}.state_person_ethnicity`
 )
@@ -70,7 +71,7 @@ SELECT
     person_id,
     birthdate,
     gender,
-    prioritized_race_or_ethnicity,
+    COALESCE(prioritized_race_or_ethnicity, "EXTERNAL_UNKNOWN") AS prioritized_race_or_ethnicity,
 FROM
     `{project_id}.{base_dataset}.state_person`
 FULL OUTER JOIN 
