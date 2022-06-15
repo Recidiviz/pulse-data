@@ -201,7 +201,7 @@ const Reports: React.FC = () => {
 
                         {showAdditionalEditorsTooltip === report.id && (
                           <AdditionalEditorsTooltip>
-                            {printCommaSeparatedList(report.editors.slice(1))}
+                            {printCommaSeparatedList(report.editors)}
                           </AdditionalEditorsTooltip>
                         )}
                       </>
