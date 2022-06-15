@@ -122,9 +122,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
                 "Strict-Transport-Security"
             ] = "max-age=63072000; includeSubDomains"  # max age of 2 years
         response.headers["Content-Security-Policy-Report-Only"] = (
-            "default-src 'self'; "
+            "default-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com;"
             "object-src 'none'; "
-            "child-src 'self'; "
+            "img-src *;"
             # TODO(#13507) Replace unsafe-inline with a nonce
             "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
             "font-src 'self' https://fonts.gstatic.com; "
