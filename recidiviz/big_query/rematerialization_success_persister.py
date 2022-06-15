@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class that persists runtime of successful view rematerialization jobs to BQ."""
+import datetime
 from typing import List
 
+import pytz
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
@@ -29,6 +31,7 @@ VIEW_UPDATE_METADATA_DATASET = "view_update_metadata"
 REMATERIALIZATION_TRACKER_TABLE_ID = "rematerialization_tracker"
 
 CLOUD_TASK_ID_COL = "cloud_task_id"
+SUCCESS_TIMESTAMP_COL = "success_timestamp"
 NUM_DEPLOYED_VIEWS_COL = "num_deployed_views"
 NUM_MATERIALIZED_VIEWS_COL = "num_materialized_views"
 REMATERIAIZATION_RUNTIME_SEC_COL = "rematerializaton_runtime_sec"
@@ -58,6 +61,9 @@ class RematerializationSuccessPersister:
             [
                 {
                     CLOUD_TASK_ID_COL: cloud_task_id,
+                    SUCCESS_TIMESTAMP_COL: datetime.datetime.now(
+                        tz=pytz.UTC
+                    ).isoformat(),
                     NUM_DEPLOYED_VIEWS_COL: num_deployed_views,
                     NUM_MATERIALIZED_VIEWS_COL: num_views_materialized,
                     REMATERIAIZATION_RUNTIME_SEC_COL: rematerialization_runtime_sec,
@@ -78,6 +84,11 @@ class RematerializationSuccessPersister:
                     bigquery.SchemaField(
                         name=CLOUD_TASK_ID_COL,
                         field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                        mode="REQUIRED",
+                    ),
+                    bigquery.SchemaField(
+                        name=SUCCESS_TIMESTAMP_COL,
+                        field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
                         mode="REQUIRED",
                     ),
                     bigquery.SchemaField(
