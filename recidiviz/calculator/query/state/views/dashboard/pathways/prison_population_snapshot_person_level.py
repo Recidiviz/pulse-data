@@ -58,6 +58,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
             pop.age,
             person_external_id AS state_id,
             {formatted_name} AS full_name,
+            prioritized_race_or_ethnicity as race,
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` pop
         LEFT JOIN get_last_updated USING (state_code)
         LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
@@ -76,6 +77,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
         age,
         state_id,
         IFNULL(full_name, "Unknown") AS full_name,
+        race
     FROM all_rows
     WHERE {facility_filter}
     AND state_id IS NOT NULL
@@ -93,6 +95,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryVie
         "facility",
         "age_group",
         "state_id",
+        "race",
     ),
     metric_stats=("last_updated",),
     metric_metadata=("age", "full_name"),

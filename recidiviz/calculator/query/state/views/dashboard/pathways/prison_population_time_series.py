@@ -51,6 +51,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             admission_reason,
             IFNULL(aggregating_location_id, pop.facility) AS facility,
             {add_age_groups}
+            prioritized_race_or_ethnicity as race,
             COUNT(DISTINCT person_id) AS person_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` pop
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
@@ -58,7 +59,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             AND pop.facility = name_map.location_id
         WHERE date_of_stay >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
         AND date_of_stay = DATE(year, month, 1)
-        GROUP BY 1, 2, 3, 4, 5, 6, 7
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
     )
     , filtered_rows AS (
         SELECT *
@@ -74,6 +75,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             admission_reason as legal_status,
             facility,
             age_group,
+            race,
             IFNULL(person_count, 0) as person_count
         FROM filtered_rows
         FULL OUTER JOIN
@@ -83,11 +85,12 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
                 year,
                 month,
                 gender,
+                admission_reason,
                 facility,
                 age_group,
-                admission_reason,
+                race
             FROM `{project_id}.{dashboard_views_dataset}.{dimension_combination_view}`
-        ) USING (state_code, year, month, gender, facility, age_group, admission_reason)
+        ) USING (state_code, year, month, gender, admission_reason, facility, age_group, race)
     )
     SELECT
         state_code,
@@ -98,16 +101,18 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
         legal_status,
         facility,
         age_group,
+        race,
         SUM(person_count) as person_count,
     FROM full_time_series,
     UNNEST ([age_group, 'ALL']) as age_group,
     UNNEST ([legal_status, 'ALL']) as legal_status,
     UNNEST ([facility, 'ALL']) as facility,
-    UNNEST ([gender, 'ALL']) as gender
+    UNNEST ([gender, 'ALL']) as gender,
+    UNNEST ([race, 'ALL']) as race
     LEFT JOIN get_last_updated  USING (state_code)
     {filter_to_enabled_states}
     AND DATE(year, month, 1) <= CURRENT_DATE('US/Eastern')
-    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     ORDER BY year, month
 """
 
@@ -125,6 +130,7 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
         "legal_status",
         "facility",
         "age_group",
+        "race",
     ),
     metric_stats=("last_updated", "person_count"),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,

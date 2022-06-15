@@ -55,6 +55,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
             age_group,
             {transition_time_period} AS time_period,
             facility,
+            race,
         FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions
         LEFT JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
             ON transitions.person_id = pei.person_id
@@ -71,6 +72,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
         time_period,
         state_id,
         {formatted_name} AS full_name,
+        race,
     FROM transitions
     LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (state_code, person_id)
     LEFT JOIN data_freshness USING (state_code)
@@ -91,6 +93,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMe
         "age_group",
         "time_period",
         "state_id",
+        "race",
     ),
     metric_stats=("last_updated",),
     metric_metadata=(

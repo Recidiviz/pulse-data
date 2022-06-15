@@ -43,19 +43,17 @@ aggregate_query = """
         gender,
         age_group,
         facility,
+        race,
         COUNT(1) as event_count,
     FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions,
         UNNEST ([gender, 'ALL']) AS gender,
         UNNEST ([age_group, 'ALL']) AS age_group,
-        UNNEST ([facility, "ALL"]) AS facility
-    GROUP BY 1, 2, 3, 4, 5, 6
+        UNNEST ([facility, "ALL"]) AS facility,
+        UNNEST ([race, "ALL"]) AS race
+    GROUP BY 1, 2, 3, 4, 5, 6, 7
 """
 
-dimensions = [
-    "gender",
-    "age_group",
-    "facility",
-]
+dimensions = ["gender", "age_group", "facility", "race"]
 
 PRISON_TO_SUPERVISION_COUNT_BY_MONTH_QUERY_TEMPLATE = (
     transition_monthly_aggregate_template(

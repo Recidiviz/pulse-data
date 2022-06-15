@@ -73,13 +73,14 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             IFNULL(aggregating_location_id, metrics.facility) AS facility,
             {add_age_groups}
             length_of_stay,
+            prioritized_race_or_ethnicity as race,
             COUNT(DISTINCT person_id) as person_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` metrics
         LEFT JOIN length_of_stay_bins USING (person_id)
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
             ON metrics.state_code = name_map.state_code
             AND metrics.facility = name_map.location_id
-        group by 1, 2, 3, 4, 5, 6
+        group by 1, 2, 3, 4, 5, 6, 7
     ),
     filtered_rows AS (
         SELECT *
@@ -94,16 +95,18 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         facility,
         age_group,
         length_of_stay,
+        race,
         SUM(person_count) as person_count
     FROM filtered_rows,
     UNNEST ([age_group, 'ALL']) as age_group,
     UNNEST ([legal_status, 'ALL']) as legal_status,
     UNNEST ([facility, 'ALL']) as facility,
     UNNEST ([gender, 'ALL']) as gender,
-    UNNEST ([length_of_stay, 'ALL']) as length_of_stay
+    UNNEST ([length_of_stay, 'ALL']) as length_of_stay,
+    UNNEST ([race, 'ALL']) as race
     LEFT JOIN get_last_updated  USING (state_code)
     {filter_to_enabled_states}
-    group by 1, 2, 3, 4, 5, 6, 7
+    group by 1, 2, 3, 4, 5, 6, 7, 8
 """
 
 PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
@@ -118,6 +121,7 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryVie
         "facility",
         "age_group",
         "length_of_stay",
+        "race",
     ),
     metric_stats=(
         "last_updated",
