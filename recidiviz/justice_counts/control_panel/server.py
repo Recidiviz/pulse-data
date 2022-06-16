@@ -124,10 +124,11 @@ def create_app(config: Optional[Config] = None) -> Flask:
         response.headers["Content-Security-Policy-Report-Only"] = (
             "default-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com;"
             "object-src 'none'; "
-            "img-src *;"
+            "img-src * data:; "
             # TODO(#13507) Replace unsafe-inline with a nonce
             "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
             "font-src 'self' https://fonts.gstatic.com; "
+            "worker-src blob:; "
             "frame-ancestors 'none'; "
             "upgrade-insecure-requests; "
             "block-all-mixed-content"
