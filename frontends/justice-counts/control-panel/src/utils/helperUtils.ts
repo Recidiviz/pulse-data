@@ -73,6 +73,45 @@ export const removeCommaSpaceAndTrim = (
 };
 
 /**
+ * Formats string version of numbers into string format with thousands separator
+ *
+ * @returns a string representation of a number with commas
+ * @example "   1231223,23,23,3,3.123123123 11  " " becomes "1,231,223,232,333.12312312311"
+ */
+
+export const formatNumberInput = (
+  value: string | undefined
+): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const maxNumber = 999_999_999_999_999; // 1 quadrillion
+  const cleanValue = removeCommaSpaceAndTrim(value) as string;
+  const splitValues = cleanValue.split(".");
+
+  if (Number(cleanValue) > maxNumber) {
+    return Number(cleanValue.slice(0, 15)).toLocaleString();
+  }
+
+  if (splitValues && splitValues.length === 2) {
+    if (cleanValue[cleanValue.length - 1] === ".") {
+      return Number(splitValues[0]) !== 0 && Number(splitValues[0])
+        ? `${Number(splitValues[0]).toLocaleString()}.`
+        : value;
+    }
+
+    if (cleanValue.includes(".")) {
+      const [wholeNumber, decimal] = cleanValue.split(".");
+      return Number(wholeNumber)
+        ? `${Number(wholeNumber).toLocaleString()}.${decimal}`
+        : value;
+    }
+  }
+  return Number(cleanValue) ? Number(cleanValue).toLocaleString() : value;
+};
+
+/**
  * Sanitize by formatting and converting string input to appropriate value for backend.
  *
  * @param value input value
