@@ -17,6 +17,7 @@
 
 export enum Permission {
   RECIDIVIZ_ADMIN = "recidiviz_admin",
+  SWITCH_AGENCIES = "switch_agencies",
 }
 
 export type ReportFrequency = "MONTHLY" | "ANNUAL";

@@ -20,3 +20,4 @@ import enum
 
 class ControlPanelPermission(enum.Enum):
     RECIDIVIZ_ADMIN = "recidiviz_admin"
+    SWITCH_AGENCIES = "switch_agencies"
