@@ -106,7 +106,8 @@ const Menu = () => {
       </MenuItem>
 
       {/* Agencies Dropdown */}
-      {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) &&
+      {(userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) ||
+        userStore.permissions.includes(Permission.SWITCH_AGENCIES)) &&
         location.pathname === "/" && (
           <MenuItem active={activeMenuItem === MenuItems.Agencies}>
             <Dropdown>
