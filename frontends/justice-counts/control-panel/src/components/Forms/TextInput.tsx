@@ -122,6 +122,7 @@ export const InputLabel = styled.label<InputLabelProps>`
   ${({ persistLabel, inputHasValue }) =>
     !persistLabel && inputHasValue && "display: none;"}
 
+  min-height: 50px;
   position: absolute;
   top: ${({ inputHasValue }) => (inputHasValue ? "12px" : "26px")};
   left: 16px;

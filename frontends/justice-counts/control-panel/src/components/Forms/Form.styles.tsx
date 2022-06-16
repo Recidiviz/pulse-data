@@ -158,25 +158,22 @@ export const TabItem = styled.div<{ active?: boolean }>`
 
 export const DisaggregationHasInputIndicator = styled.div<{
   active?: boolean;
-  inputHasValue?: boolean;
+  hasInput?: boolean;
+  error?: boolean;
 }>`
   height: 16px;
   width: 16px;
-  background-color: ${({ active, inputHasValue }) => {
-    if (!inputHasValue) {
-      return "transparent";
-    }
-    if (active && inputHasValue) {
-      return palette.solid.blue;
-    }
-    return palette.highlight.grey4;
-  }};
-
-  ${({ inputHasValue }) =>
-    !inputHasValue && `border: 1px solid ${palette.highlight.grey4}`};
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 50%;
   margin-left: 8px;
   align-self: center;
+  border: 1px solid ${palette.highlight.grey4};
+  ${({ active, hasInput, error }) =>
+    !active &&
+    (hasInput || error) &&
+    `border: none; filter: grayscale(1) opacity(0.3);`}
 `;
 
 export const TabDisplay = styled.div`

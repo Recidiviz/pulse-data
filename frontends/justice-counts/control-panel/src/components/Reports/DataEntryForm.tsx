@@ -80,7 +80,7 @@ const DataEntryFormRequiredChip = styled(RequiredChip)`
 `;
 
 const DataEntryFormErrorLabel = styled(ErrorLabel)`
-  top: 161px;
+  top: 140px;
 `;
 
 const AdditionalContextLabel = styled.div`

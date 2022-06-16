@@ -90,15 +90,44 @@ class FormStore {
     });
   }
 
+  isMetricEmpty(reportID: number, metricKey: string) {
+    let isEmpty = true;
+    const metricToCheck = this.reportStore.reportMetrics[reportID].find(
+      (metric) => metric.key === metricKey
+    );
+
+    if (this.metricsValues[reportID]?.[metricKey]?.value) {
+      return false;
+    }
+
+    metricToCheck?.contexts.forEach((context) => {
+      if (this.contexts[reportID]?.[metricKey]?.[context.key]?.value) {
+        isEmpty = false;
+      }
+    });
+
+    metricToCheck?.disaggregations.forEach((disaggregation) => {
+      disaggregation.dimensions.forEach((dimension) => {
+        if (
+          this.disaggregations[reportID]?.[metricKey]?.[disaggregation.key]?.[
+            dimension.key
+          ]?.value
+        ) {
+          isEmpty = false;
+        }
+      });
+    });
+
+    return isEmpty;
+  }
+
   validateAndGetAllMetricFormValues(reportID: number): {
     metrics: Metric[];
     isPublishable: boolean;
   } {
-    /**
-     * Converts value to normalized string
-     * @returns "" empty strings for falsy values or value converted to string type if truthy
-     */
     let isPublishable = true;
+    let errorFound = false;
+    let allMetricsAreEmpty = true;
 
     const updatedMetrics = this.reportStore.reportMetrics[reportID]?.map(
       (metric) => {
@@ -106,18 +135,28 @@ class FormStore {
         const contexts = this.contexts[reportID]?.[metric.key];
         const disaggregationForMetric =
           this.disaggregations[reportID]?.[metric.key];
+        const metricIsEmpty = this.isMetricEmpty(reportID, metric.key);
+
+        if (metricIsEmpty) {
+          return metric;
+        }
+
+        allMetricsAreEmpty = false;
 
         /** Touch & validate metric field */
-        this.updateMetricsValues(
-          reportID,
-          metric.key,
-          normalizeToString(metricValues?.value) ||
-            normalizeToString(metric.value)
-        );
+        if (metricValues?.value !== "") {
+          this.updateMetricsValues(
+            reportID,
+            metric.key,
+            normalizeToString(metricValues?.value) ||
+              normalizeToString(metric.value)
+          );
+        }
 
         const metricError = this.metricsValues[reportID]?.[metric.key]?.error;
+
         if (metricError) {
-          isPublishable = false;
+          errorFound = true;
         }
 
         return {
@@ -126,20 +165,23 @@ class FormStore {
           error: metricError,
           contexts: metric.contexts.map((context) => {
             /** Touch & validate context field */
-            this.updateContextValue(
-              reportID,
-              metric.key,
-              context.key,
-              normalizeToString(contexts?.[context.key]?.value) ||
-                normalizeToString(context.value),
-              context.required,
-              context.type
-            );
+            if (metricValues?.value !== "") {
+              this.updateContextValue(
+                reportID,
+                metric.key,
+                context.key,
+                normalizeToString(contexts?.[context.key]?.value) ||
+                  normalizeToString(context.value),
+                context.required,
+                context.type
+              );
+            }
 
             const contextError =
               this.contexts[reportID]?.[metric.key]?.[context.key]?.error;
+
             if (contextError) {
-              isPublishable = false;
+              errorFound = true;
             }
 
             return {
@@ -156,26 +198,13 @@ class FormStore {
             return {
               ...disaggregation,
               dimensions: disaggregation.dimensions?.map((dimension) => {
-                /** Touch & validate disaggregation dimension field */
-                this.updateDisaggregationDimensionValue(
-                  reportID,
-                  metric.key,
-                  disaggregation.key,
-                  dimension.key,
-                  normalizeToString(
-                    disaggregationForMetric?.[disaggregation.key]?.[
-                      dimension.key
-                    ]?.value
-                  ) || normalizeToString(dimension.value),
-                  disaggregation.required
-                );
-
                 const disaggregationError =
                   this.disaggregations[reportID]?.[metric.key]?.[
                     disaggregation.key
                   ]?.[dimension.key]?.error;
+
                 if (disaggregationError) {
-                  isPublishable = false;
+                  errorFound = true;
                 }
 
                 return {
@@ -194,6 +223,10 @@ class FormStore {
         };
       }
     );
+
+    if (errorFound || allMetricsAreEmpty) {
+      isPublishable = false;
+    }
 
     return { metrics: updatedMetrics || [], isPublishable };
   }
@@ -275,10 +308,10 @@ class FormStore {
     const isPositiveNumber =
       (cleanValue !== "" && Number(cleanValue) === 0) || Number(cleanValue) > 0;
     const isRequiredButEmpty = required && cleanValue === "";
+    const metricIsEmpty = this.isMetricEmpty(reportID, metricKey);
 
-    /** Need to find a cleaner & clearer way to do this */
     const updateFieldErrorMessage = (
-      operation: "ADD" | "DELETE",
+      operation: "ADD" | "DELETE" | "ADD TO METRIC",
       message?: string
     ) => {
       /**
@@ -295,6 +328,9 @@ class FormStore {
           this.metricsValues[reportID][metricKey].error = message;
         }
       }
+      if (operation === "ADD TO METRIC") {
+        this.metricsValues[reportID][metricKey].error = message;
+      }
       if (operation === "DELETE") {
         if (key1 && key2) {
           delete this.disaggregations[reportID][metricKey][key1][key2].error;
@@ -306,9 +342,40 @@ class FormStore {
       }
     };
 
+    if (metricIsEmpty) {
+      if (this.metricsValues?.[reportID]?.[metricKey]?.error)
+        delete this.metricsValues[reportID][metricKey].error;
+
+      if (this.contexts?.[reportID]?.[metricKey])
+        Object.keys(this.contexts[reportID][metricKey]).forEach(
+          (contextKey) => {
+            delete this.contexts[reportID][metricKey][contextKey].error;
+          }
+        );
+
+      updateFieldErrorMessage("DELETE");
+      return;
+    }
+
+    if (key1 && !this.metricsValues?.[reportID]?.[metricKey]?.value) {
+      if (!this.metricsValues[reportID]) {
+        this.metricsValues[reportID] = {};
+      }
+      if (!this.metricsValues[reportID][metricKey]) {
+        this.metricsValues[reportID][metricKey] = {};
+      }
+      updateFieldErrorMessage(
+        "ADD TO METRIC",
+        "You are also required to enter a value for the metric."
+      );
+    }
+
     /** Raise Error */
     if (isRequiredButEmpty) {
-      updateFieldErrorMessage("ADD", "This is a required field.");
+      updateFieldErrorMessage(
+        "ADD",
+        "You are also required to enter a value for this field."
+      );
       return;
     }
 
@@ -346,8 +413,8 @@ class FormStore {
       this.metricsValues[reportID][metricKey] = {};
     }
 
-    this.validate("NUMBER", updatedValue, true, reportID, metricKey);
     this.metricsValues[reportID][metricKey].value = updatedValue;
+    this.validate("NUMBER", updatedValue, true, reportID, metricKey);
   };
 
   updateDisaggregationDimensionValue = (
@@ -384,6 +451,10 @@ class FormStore {
       ] = {};
     }
 
+    this.disaggregations[reportID][metricKey][disaggregationKey][
+      dimensionKey
+    ].value = updatedValue;
+
     this.validate(
       "NUMBER",
       updatedValue,
@@ -393,10 +464,6 @@ class FormStore {
       disaggregationKey,
       dimensionKey
     );
-
-    this.disaggregations[reportID][metricKey][disaggregationKey][
-      dimensionKey
-    ].value = updatedValue;
   };
 
   updateContextValue = (
@@ -423,6 +490,8 @@ class FormStore {
       this.contexts[reportID][metricKey][contextKey] = {};
     }
 
+    this.contexts[reportID][metricKey][contextKey].value = updatedValue;
+
     this.validate(
       contextType,
       updatedValue,
@@ -431,8 +500,6 @@ class FormStore {
       metricKey,
       contextKey
     );
-
-    this.contexts[reportID][metricKey][contextKey].value = updatedValue;
   };
 
   resetBinaryInput = (
@@ -457,8 +524,8 @@ class FormStore {
       this.contexts[reportID][metricKey][contextKey] = {};
     }
 
-    this.validate("TEXT", "", required, reportID, metricKey, contextKey);
     this.contexts[reportID][metricKey][contextKey].value = "";
+    this.validate("TEXT", "", required, reportID, metricKey, contextKey);
   };
 }
 

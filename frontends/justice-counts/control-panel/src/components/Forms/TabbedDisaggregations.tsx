@@ -19,6 +19,8 @@ import React, { useEffect, useState } from "react";
 
 import { Metric as MetricType } from "../../shared/types";
 import { useStore } from "../../stores";
+import successIcon from "../assets/status-check-icon.png";
+import errorIcon from "../assets/status-error-icon.png";
 import { DisaggregationDimensionTextInput } from "../Reports/DataEntryFormComponents";
 import {
   DisaggregationHasInputIndicator,
@@ -65,6 +67,27 @@ export const TabbedDisaggregations: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
+
+  const checkMetricForErrorsInUpdatedValues = (
+    metricKey: string,
+    disaggregationKey: string
+  ) => {
+    let foundErrors = false;
+
+    if (
+      formStore.disaggregations?.[reportID]?.[metricKey]?.[disaggregationKey]
+    ) {
+      Object.values(
+        formStore.disaggregations?.[reportID]?.[metricKey]?.[disaggregationKey]
+      ).forEach((dimension) => {
+        if (dimension.error) {
+          foundErrors = true;
+        }
+      });
+    }
+
+    return foundErrors;
+  };
 
   const searchDimensionsForInput = (
     disaggregationKey: string,
@@ -135,6 +158,10 @@ export const TabbedDisaggregations: React.FC<{
     <DisaggregationTabsContainer>
       <TabsRow>
         {metric.disaggregations.map((disaggregation, disaggregationIndex) => {
+          const foundError = checkMetricForErrorsInUpdatedValues(
+            metric.key,
+            disaggregation.key
+          );
           return (
             <TabItem
               key={disaggregation.key}
@@ -160,10 +187,20 @@ export const TabbedDisaggregations: React.FC<{
                   activeDisaggregation[metric.key]?.disaggregationKey ===
                     disaggregation.key
                 }
-                inputHasValue={
-                  disaggregationHasInput[disaggregation.key]?.hasInput
-                }
-              />
+                error={foundError}
+                hasInput={disaggregationHasInput[disaggregation.key]?.hasInput}
+              >
+                {/* Error State Icon */}
+                {foundError && (
+                  <img src={errorIcon} alt="" width="16px" height="16px" />
+                )}
+
+                {/* Success State Icon */}
+                {disaggregationHasInput[disaggregation.key]?.hasInput &&
+                  !foundError && (
+                    <img src={successIcon} alt="" width="16px" height="16px" />
+                  )}
+              </DisaggregationHasInputIndicator>
             </TabItem>
           );
         })}

@@ -104,7 +104,7 @@ export const DisaggregationDimensionTextInput = observer(
         disaggregation.key,
         dimension.key,
         e.target.value,
-        disaggregation.required
+        false
       );
 
     return (
@@ -138,7 +138,7 @@ export const DisaggregationDimensionTextInput = observer(
         }
         persistLabel
         placeholder="Enter value"
-        required={disaggregation.required}
+        // required={disaggregation.required}
         onFocus={updateFieldDescription}
         onBlur={clearFieldDescription}
       />
