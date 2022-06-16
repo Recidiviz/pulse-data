@@ -34,7 +34,7 @@ import { palette } from "../GlobalStyles";
 import { showToast } from "../Toast";
 import { PublishButton } from "./ReportDataEntry.styles";
 
-const CONTAINER_WIDTH = 864;
+const CONTAINER_WIDTH = 912;
 const CONTAINER_HORIZONTAL_PADDING = 24;
 
 const ConfirmationDialogueWrapper = styled.div`
@@ -59,7 +59,7 @@ const ConfirmHeaderContainer = styled.div`
   background: white;
   top: 64px;
   z-index: 1;
-  padding-top: 24px;
+  padding-top: ${CONTAINER_HORIZONTAL_PADDING}px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -67,21 +67,16 @@ const ConfirmHeaderContainer = styled.div`
 
 const ConfirmHeader = styled.div`
   max-width: ${CONTAINER_WIDTH}px;
-  margin: 0 24px;
-  border-bottom: 2px solid ${palette.solid.darkgrey};
-
-  @media only screen and (max-width: ${CONTAINER_WIDTH +
-    CONTAINER_HORIZONTAL_PADDING * 2}px) {
-    border-bottom: 1px solid ${palette.solid.darkgrey};
-  }
+  padding: 0 ${CONTAINER_HORIZONTAL_PADDING}px;
 `;
 
 const ConfirmationDialogue = styled.div`
   max-width: ${CONTAINER_WIDTH}px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   text-align: left;
-  margin: 0 ${CONTAINER_HORIZONTAL_PADDING}px;
+  padding: 0 ${CONTAINER_HORIZONTAL_PADDING}px;
   padding-top: 176px;
 `;
 
@@ -227,6 +222,7 @@ const ButtonContainer = styled.div`
   flex: 1 1 auto;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 2px solid ${palette.solid.darkgrey};
 
   @media only screen and (max-width: ${CONTAINER_WIDTH +
     CONTAINER_HORIZONTAL_PADDING * 2}px) {
@@ -341,7 +337,7 @@ const MobileButtonContainer = styled.div`
   display: none;
   justify-content: space-between;
   width: 100%;
-  padding: 0 24px 8px;
+  padding: 0 ${CONTAINER_HORIZONTAL_PADDING}px 8px;
 
   @media only screen and (max-width: ${CONTAINER_WIDTH +
     CONTAINER_HORIZONTAL_PADDING * 2}px) {
