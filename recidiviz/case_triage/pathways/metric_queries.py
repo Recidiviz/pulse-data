@@ -287,6 +287,11 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
             operations=DimensionOperation.FILTER,
             columns=[PrisonToSupervisionTransitions.facility],
         ),
+        DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonToSupervisionTransitions.time_period],
+        ),
     ],
     exclude_columns=[
         PrisonToSupervisionTransitions.state_code,
