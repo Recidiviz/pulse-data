@@ -15,7 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { normalizeToString, sanitizeInputValue } from "./helperUtils";
+import {
+  formatNumberInput,
+  normalizeToString,
+  sanitizeInputValue,
+} from "./helperUtils";
 
 describe("sanitizeInputValue", () => {
   test("return previous value if input value is undefined", () => {
@@ -74,5 +78,27 @@ describe("normalizeToString", () => {
     expect(booleanInput).toBe("false");
     expect(numberInput).toBe("22");
     expect(stringInput).toBe("Hello");
+  });
+});
+
+describe("formatNumberInput", () => {
+  test("return formatted number with commas and decimals", () => {
+    const inputWithCommasSpaces = formatNumberInput(
+      "   1231223,23,23,3,3.123123123 11  "
+    );
+    const inputWithSeriesOfNumbers = formatNumberInput("123122323233312");
+
+    expect(inputWithCommasSpaces).toBe("1,231,223,232,333.12312312311");
+    expect(inputWithSeriesOfNumbers).toBe("123,122,323,233,312");
+  });
+
+  test("return formatted number on first decimal instance", () => {
+    const inputWithDecimalAtEnd = formatNumberInput("2,32,3,23,2.");
+    expect(inputWithDecimalAtEnd).toBe("2,323,232.");
+  });
+
+  test("return input value if not valid", () => {
+    const invalidInput = formatNumberInput("12xyz!");
+    expect(invalidInput).toBe("12xyz!");
   });
 });

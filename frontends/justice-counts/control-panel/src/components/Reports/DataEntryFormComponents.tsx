@@ -25,6 +25,7 @@ import {
   MetricDisaggregations,
 } from "../../shared/types";
 import { useStore } from "../../stores";
+import { formatNumberInput } from "../../utils";
 import { BinaryRadioButton, TextInput } from "../Forms";
 
 interface MetricTextInputProps {
@@ -59,8 +60,8 @@ export const MetricTextInput = observer(
         onChange={handleMetricChange}
         value={
           metricsValues[reportID]?.[metric.key]?.value !== undefined
-            ? metricsValues[reportID][metric.key].value
-            : metric.value?.toString() || ""
+            ? formatNumberInput(metricsValues[reportID][metric.key].value)
+            : formatNumberInput(metric.value?.toString()) || ""
         }
         persistLabel
         placeholder="Enter value"
@@ -124,12 +125,16 @@ export const DisaggregationDimensionTextInput = observer(
           disaggregations?.[reportID]?.[metric.key]?.[disaggregation.key]?.[
             dimension.key
           ]?.value !== undefined
-            ? disaggregations[reportID][metric.key][disaggregation.key][
-                dimension.key
-              ].value
-            : metric.disaggregations?.[disaggregationIndex]?.dimensions?.[
-                dimensionIndex
-              ].value?.toString() || ""
+            ? formatNumberInput(
+                disaggregations[reportID][metric.key][disaggregation.key][
+                  dimension.key
+                ].value
+              )
+            : formatNumberInput(
+                metric.disaggregations?.[disaggregationIndex]?.dimensions?.[
+                  dimensionIndex
+                ].value?.toString()
+              ) || ""
         }
         persistLabel
         placeholder="Enter value"
@@ -205,6 +210,20 @@ export const AdditionalContextInput = observer(
   }: AdditionalContextInputsProps) => {
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
+    const getContextValue = () => {
+      if (
+        contexts?.[reportID]?.[metric.key]?.[context.key]?.value !== undefined
+      ) {
+        return context.type === "NUMBER"
+          ? formatNumberInput(
+              contexts[reportID]?.[metric.key][context.key].value
+            )
+          : contexts[reportID]?.[metric.key][context.key].value;
+      }
+
+      return metric.contexts[contextIndex].value?.toString() || "";
+    };
+    const contextValue = getContextValue();
 
     const handleContextChange = (
       e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
@@ -225,11 +244,7 @@ export const AdditionalContextInput = observer(
         id={context.key}
         label="Type here..."
         onChange={handleContextChange}
-        value={
-          contexts?.[reportID]?.[metric.key]?.[context.key]?.value !== undefined
-            ? contexts[reportID]?.[metric.key][context.key].value
-            : metric.contexts[contextIndex].value?.toString() || ""
-        }
+        value={contextValue}
         multiline={context.type === "TEXT"}
         error={contexts?.[reportID]?.[metric.key]?.[context.key]?.error}
         required={context.required}
