@@ -85,5 +85,11 @@ class PrisonToSupervisionTransitions(PathwaysBase):
     race = Column(String, nullable=True)
     # Facility the transition occurred from
     facility = Column(String, nullable=True)
+    # Full name of the person
+    full_name = Column(String, nullable=True)
+    # Bin of when the transition occurred (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
+    time_period = Column(String, nullable=True)
+    # External ID of the person
+    state_id = Column(String, nullable=True)
     # State code for the transition
     state_code = Column(String, nullable=False)
