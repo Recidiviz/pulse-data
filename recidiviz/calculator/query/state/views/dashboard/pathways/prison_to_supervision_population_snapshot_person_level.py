@@ -15,17 +15,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Prison to supervision person level population snapshot by dimension"""
-from recidiviz.calculator.query.bq_utils import (
-    get_binned_time_period_months,
-    get_person_full_name,
-)
-from recidiviz.calculator.query.state import (
-    dataset_config,
-    state_specific_query_strings,
-)
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
-    state_specific_external_id_type,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -44,40 +36,22 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_DESCRIPTION = """
 PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
     /*{description}*/
     WITH 
-    data_freshness AS ({last_updated_query}),
-    transitions AS (
-        SELECT
-            transitions.state_code, 
-            transitions.person_id,
-            external_id AS state_id,
-            gender,
-            age,
-            age_group,
-            {transition_time_period} AS time_period,
-            facility,
-            race,
-        FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions
-        LEFT JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
-            ON transitions.person_id = pei.person_id
-            AND {state_id_type} = pei.id_type
-    )
+    data_freshness AS ({last_updated_query})
 
     SELECT
         state_code,
         last_updated,
         facility,
-        transitions.gender,
+        gender,
         age,
         age_group,
         time_period,
         state_id,
-        {formatted_name} AS full_name,
+        full_name,
         race,
-    FROM transitions
-    LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (state_code, person_id)
+    FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions
     LEFT JOIN data_freshness USING (state_code)
-    WHERE {facility_filter}
-    AND time_period IS NOT NULL
+    WHERE time_period IS NOT NULL
         
 """
 
@@ -101,12 +75,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMe
         "full_name",
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    formatted_name=get_person_full_name("person.full_name"),
     last_updated_query=get_pathways_incarceration_last_updated_date(),
-    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    state_id_type=state_specific_external_id_type("transitions"),
-    transition_time_period=get_binned_time_period_months("transition_date"),
-    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":

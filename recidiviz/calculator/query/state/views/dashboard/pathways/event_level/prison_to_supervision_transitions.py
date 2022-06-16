@@ -19,7 +19,11 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.bq_utils import add_age_groups
+from recidiviz.calculator.query.bq_utils import (
+    add_age_groups,
+    get_binned_time_period_months,
+    get_person_full_name,
+)
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
@@ -70,14 +74,29 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             sessions_data.gender,
             sessions_data.race,
             IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
+            {formatted_name} AS full_name,
+            pei.external_id AS state_id,
+            {transition_time_period} AS time_period,
+            -- Deduplicate people who have multiple external_ids
+            ROW_NUMBER() OVER (
+                PARTITION BY sessions_data.state_code, sessions_data.person_id, sessions_data.transition_date
+                ORDER BY pei.external_id
+            ) as rn,
         FROM sessions_data
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
             ON sessions_data.state_code = location.state_code 
             AND level_1_location_external_id = location_id
+        LEFT JOIN `{project_id}.{state_dataset}.state_person` person
+            ON sessions_data.state_code = person.state_code
+            AND sessions_data.person_id = person.person_id
+        LEFT JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
+            ON sessions_data.person_id = pei.person_id
+            AND {state_id_type} = pei.id_type
     )
     SELECT {columns}
     FROM all_rows
     WHERE {facility_filter}
+    AND rn = 1
 """
 
 PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -91,6 +110,12 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuil
     age_group=add_age_groups("sessions.age_end"),
     enabled_states=str(tuple(get_pathways_enabled_states())),
     facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
+    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    formatted_name=get_person_full_name("person.full_name"),
+    state_id_type=state_specific_query_strings.state_specific_external_id_type(
+        "sessions_data"
+    ),
+    transition_time_period=get_binned_time_period_months("transition_date"),
     columns=[
         "transition_date",
         "year",
@@ -101,6 +126,9 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuil
         "gender",
         "race",
         "facility",
+        "full_name",
+        "time_period",
+        "state_id",
         "state_code",
     ],
 )
