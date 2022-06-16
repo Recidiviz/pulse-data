@@ -27,7 +27,7 @@ import {
   printDateRangeFromMonthYear,
   printElapsedDaysMonthsYearsSinceDate,
 } from "../../utils";
-// import successIcon from "../assets/status-check-icon.png";
+import successIcon from "../assets/status-check-icon.png";
 import errorIcon from "../assets/status-error-icon.png";
 import {
   GoBackToReportsOverviewLink,
@@ -181,10 +181,11 @@ const LeftPublishButton = styled(PublishButton)`
 `;
 
 const ReportStatusIconComponent: React.FC<{
+  metricHasValidInput: boolean;
   metricHasError: boolean;
   activeMetric: string;
   metric: Metric;
-}> = ({ metricHasError, metric, activeMetric }) => {
+}> = ({ metricHasError, metricHasValidInput, metric, activeMetric }) => {
   return (
     <ReportSummarySection
       onClick={() => {
@@ -200,9 +201,9 @@ const ReportStatusIconComponent: React.FC<{
         )}
 
         {/* Validated State [Placeholder] */}
-        {/* {!metricHasError && (
+        {!metricHasError && metricHasValidInput && (
           <img src={successIcon} alt="" width="16px" height="16px" />
-        )} */}
+        )}
       </ReportStatusIcon>
       <MetricDisplayName activeSection={metric.key === activeMetric}>
         {metric.display_name}
@@ -291,6 +292,9 @@ const ReportSummaryPanel: React.FC<{
                     key={metric.key}
                     activeMetric={activeMetric}
                     metricHasError={foundErrors}
+                    metricHasValidInput={Boolean(
+                      formStore.metricsValues?.[reportID]?.[metric.key]?.value
+                    )}
                     metric={metric}
                   />
                 );
