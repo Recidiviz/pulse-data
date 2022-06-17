@@ -106,13 +106,6 @@ class IngestViewResultsParser:
         if not os.path.exists(json_schema_dir_path):
             raise ValueError(f"Unsupported language version: [{version}]")
 
-        if not environment.in_gcp():
-            # Run schema validation in tests / CI
-            manifest_dict.validate(
-                json_schema_path=os.path.join(
-                    os.path.dirname(yaml_schema.__file__), version, "schema.json"
-                )
-            )
         _ = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
 
         # TODO(#8981): Add logic to enforce that version changes are accompanied with
@@ -163,6 +156,19 @@ class IngestViewResultsParser:
             input_variables=set(variable_manifests.keys()),
             referenced_variables=output_manifest.variables_referenced(),
         )
+
+        # Validates the original manifest file against our JSON schema. We do this last
+        # because these errors are very cryptic and its much easier to debug errors
+        # from crashes in the EntityTreeManifestFactory.from_raw_manifest() call.
+        # However, we still want to do this validation so that we don't forget to add
+        # JSON schema (and therefore IDE) support for new features in the language.
+        if not environment.in_gcp():
+            # Run schema validation in tests / CI
+            YAMLDict.from_path(manifest_path).validate(
+                json_schema_path=os.path.join(
+                    os.path.dirname(yaml_schema.__file__), version, "schema.json"
+                )
+            )
 
         return output_manifest, set(input_columns)
 
