@@ -270,14 +270,35 @@ class ReportInterface:
         )
 
     @staticmethod
-    def to_json_response(session: Session, report: schema.Report) -> Dict[str, Any]:
-        editor_names = [
-            UserAccountInterface.get_user_by_id(
+    def get_editor_ids_to_names(
+        session: Session, reports: List[schema.Report]
+    ) -> Dict[str, str]:
+        editor_ids = set(
+            itertools.chain(*[report.modified_by or [] for report in reports])
+        )
+        editor_ids_to_names = {
+            id: UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=id
             ).name_or_email()
-            for id in report.modified_by or []
-        ]
+            for id in editor_ids
+        }
+        return editor_ids_to_names
 
+    @staticmethod
+    def to_json_response(
+        session: Session,
+        report: schema.Report,
+        editor_ids_to_names: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, Any]:
+        if editor_ids_to_names is None:
+            editor_names = [
+                UserAccountInterface.get_user_by_id(
+                    session=session, user_account_id=id
+                ).name_or_email()
+                for id in report.modified_by or []
+            ]
+        else:
+            editor_names = [editor_ids_to_names[id] for id in report.modified_by or []]
         reporting_frequency = report.get_reporting_frequency()
         return {
             "id": report.id,
@@ -359,10 +380,8 @@ class ReportInterface:
         session.commit()
 
     @staticmethod
-    def get_metrics_by_report_id(
-        session: Session, report_id: int
-    ) -> List[ReportMetric]:
-        """Given a report_id, determine all MetricDefinitions that must be populated
+    def get_metrics_by_report(report: schema.Report) -> List[ReportMetric]:
+        """Given a report, determine all MetricDefinitions that must be populated
         on this report, and convert them to ReportMetrics. If the agency has already
         started filling out the report, populate the ReportMetrics with those values.
         This method will be used to send a list of Metrics to the frontend to render
@@ -379,8 +398,6 @@ class ReportInterface:
            metric, its values will be None; otherwise they will be populated from the data
            already stored in our database.
         """
-
-        report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
         # We determine which metrics to include on this report based on:
         #   - Agency system (e.g. only law enforcement)
         #   - Report frequency (e.g. only annual metrics)
