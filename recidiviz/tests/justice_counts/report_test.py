@@ -746,11 +746,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ]
             )
             session.flush()
-            report_id = self.test_schema_objects.test_report_monthly.id
             metrics = sorted(
-                ReportInterface.get_metrics_by_report_id(
-                    session=session,
-                    report_id=report_id,
+                ReportInterface.get_metrics_by_report(
+                    report=self.test_schema_objects.test_report_monthly,
                 ),
                 key=lambda x: x.key,
             )
@@ -792,9 +790,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
-            metrics = ReportInterface.get_metrics_by_report_id(
-                session=session, report_id=report_id
-            )
+            metrics = ReportInterface.get_metrics_by_report(report=report)
             self.assertEqual(len(metrics), 3)
             calls_for_service = [
                 metric
@@ -991,20 +987,16 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ]
             )
             session.flush()
-            supervision_report_id = self.test_schema_objects.test_report_supervision.id
-            parole_report_id = self.test_schema_objects.test_report_parole.id
 
             supervision_metrics = sorted(
-                ReportInterface.get_metrics_by_report_id(
-                    session=session,
-                    report_id=supervision_report_id,
+                ReportInterface.get_metrics_by_report(
+                    report=self.test_schema_objects.test_report_supervision,
                 ),
                 key=lambda x: x.key,
             )
             parole_metrics = sorted(
-                ReportInterface.get_metrics_by_report_id(
-                    session=session,
-                    report_id=parole_report_id,
+                ReportInterface.get_metrics_by_report(
+                    report=self.test_schema_objects.test_report_parole,
                 ),
                 key=lambda x: x.key,
             )

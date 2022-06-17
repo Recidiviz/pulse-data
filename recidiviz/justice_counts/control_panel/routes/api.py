@@ -97,13 +97,13 @@ def get_api_blueprint(
             report = ReportInterface.get_report_by_id(
                 session=current_session, report_id=report_id_int
             )
-            report_metrics = ReportInterface.get_metrics_by_report_id(
-                session=current_session,
-                report_id=report_id_int,
+            report_metrics = ReportInterface.get_metrics_by_report(
+                report=report,
             )
 
             report_definition_json = ReportInterface.to_json_response(
-                session=current_session, report=report
+                session=current_session,
+                report=report,
             )
             metrics_json = [report_metric.to_json() for report_metric in report_metrics]
             report_definition_json["metrics"] = metrics_json
@@ -171,8 +171,15 @@ def get_api_blueprint(
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
             )
+            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
+                session=current_session, reports=reports
+            )
             report_json = [
-                ReportInterface.to_json_response(session=current_session, report=r)
+                ReportInterface.to_json_response(
+                    session=current_session,
+                    report=r,
+                    editor_ids_to_names=editor_ids_to_names,
+                )
                 for r in reports
             ]
 
