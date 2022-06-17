@@ -473,7 +473,9 @@ class TestJusticeCountsReportMetric(TestCase):
                         },
                     )
                 ],
-                enforce_validation=True,
+                # TODO(#13556) Backend validation needs to match new frontend validation
+                # enforce_validation=True
+                enforce_validation=False,
             ),
             ReportMetric.from_json(
                 json=response_json, report_status=ReportStatus.PUBLISHED
@@ -495,7 +497,9 @@ class TestJusticeCountsReportMetric(TestCase):
                 value=100,
                 contexts=[],
                 aggregated_dimensions=[],
-                enforce_validation=True,
+                # TODO(#13556) Backend validation needs to match new frontend validation
+                # enforce_validation=True
+                enforce_validation=False,
             ),
             ReportMetric.from_json(
                 json=response_json, report_status=ReportStatus.PUBLISHED

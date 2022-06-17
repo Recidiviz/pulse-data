@@ -297,7 +297,9 @@ class ReportMetric:
 
     @classmethod
     def from_json(
-        cls: Type[ReportMetricT], json: Dict[str, Any], report_status: ReportStatus
+        cls: Type[ReportMetricT],
+        json: Dict[str, Any],
+        report_status: ReportStatus,  # pylint: disable=unused-argument
     ) -> ReportMetricT:
         reported_contexts = [
             ReportedContext.from_json(
@@ -316,5 +318,8 @@ class ReportMetric:
             value=json["value"],
             contexts=reported_contexts,
             aggregated_dimensions=disaggregations,
-            enforce_validation=report_status == ReportStatus.PUBLISHED,
+            # TODO(#13556) Backend validation needs to match new frontend validation
+            # Right now, if you only publish a subset of the metrics, this will error
+            # enforce_validation=report_status=ReportStatus.PUBLISHED
+            enforce_validation=False,
         )
