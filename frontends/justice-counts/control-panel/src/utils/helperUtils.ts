@@ -66,10 +66,8 @@ export const combineTwoKeyNames = (
  * @example "   1,000,00  0 " becomes "1000000"
  */
 
-export const removeCommaSpaceAndTrim = (
-  value: string | undefined
-): string | undefined => {
-  return value?.replaceAll(",", "").replaceAll(" ", "").trim();
+export const removeCommaSpaceAndTrim = (string: string) => {
+  return string?.replaceAll(",", "").replaceAll(" ", "").trim();
 };
 
 /**
@@ -87,7 +85,7 @@ export const formatNumberInput = (
   }
 
   const maxNumber = 999_999_999_999_999; // 1 quadrillion
-  const cleanValue = removeCommaSpaceAndTrim(value) as string;
+  const cleanValue = removeCommaSpaceAndTrim(value);
   const splitValues = cleanValue.split(".");
 
   if (Number(cleanValue) > maxNumber) {
@@ -129,11 +127,10 @@ export const sanitizeInputValue = (
   previousValue: string | number | boolean | null | undefined,
   type?: MetricContext["type"]
 ): string | number | boolean | null | undefined => {
-  const cleanValue = removeCommaSpaceAndTrim(value);
-
   if (value === undefined) {
     return previousValue;
   }
+  const cleanValue = removeCommaSpaceAndTrim(value);
   if (cleanValue === "") {
     return null;
   }
@@ -164,6 +161,7 @@ export const normalizeToString = (
  * @param key name of the property on which to perform the grouping
  * @returns dictionary of property value to list of objects with that value
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const groupBy = <T, K extends keyof any>(arr: T[], key: (i: T) => K) => {
   const result = {} as Record<K, T[]>;
   arr.forEach((item) => {
