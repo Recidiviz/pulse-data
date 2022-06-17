@@ -22,8 +22,6 @@ import unittest
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Type
 
-import jsonschema
-
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
@@ -2207,8 +2205,8 @@ class IngestViewFileParserTest(unittest.TestCase):
 
     def test_duplicate_unused_col(self) -> None:
         with self.assertRaisesRegex(
-            jsonschema.exceptions.ValidationError,
-            r"Failed validating 'uniqueItems' in schema\['properties'\]\['unused_columns'\]",
+            ValueError,
+            r"Found item listed multiple times in |unused_columns|: \[DOB\]",
         ):
             _ = self._run_parse_manifest_for_ingest_view("duplicate_unused_column")
 
@@ -2248,8 +2246,9 @@ class IngestViewFileParserTest(unittest.TestCase):
 
     def test_input_cols_do_not_start_with_dollar_sign(self) -> None:
         with self.assertRaisesRegex(
-            jsonschema.exceptions.ValidationError,
-            r"'\$DOB' is not of type",
+            ValueError,
+            r"Found column \[\$DOB\] that starts with protected character '\$'. "
+            r"Adjust ingest view output column naming to remove the '\$'.",
         ):
             _ = self._run_parse_manifest_for_ingest_view(
                 "column_starts_with_dollar_sign"
