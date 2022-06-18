@@ -239,7 +239,6 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             max(case when unknown_offense_flag = 1 and expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) AS all_unknown_offenses_expired,
             max(case when domestic_flag = 1 OR sex_offense_flag = 1 OR assaultive_offense_flag = 1 OR dui_flag = 1 OR young_victim_flag = 1 OR dui_last_5_years = 1 OR maybe_assaultive_flag = 1 then expiration_date END) AS latest_expiration_date_for_excluded_offenses,
             ARRAY_AGG(offense_description IGNORE NULLS) AS lifetime_offenses,
-            ARRAY_AGG(docket_number IGNORE NULLS) AS docket_numbers,
         FROM sent_union_isc
         WHERE sentence_source != 'PriorRecord'
         GROUP BY 1
@@ -276,6 +275,8 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             max(maybe_assaultive_flag) AS maybe_assaultive_flag,
             max(unknown_offense_flag) AS unknown_offense_flag,
             ARRAY_AGG(offense_description IGNORE NULLS) AS active_offenses,
+            -- This ensures only docket numbers for active sentences are shown. If there are no active sentences, this is left as null
+            ARRAY_AGG(docket_number IGNORE NULLS) AS docket_numbers,
         FROM sent_union_isc
         WHERE sentence_status not in ('IN','Prior')
         GROUP BY 1
@@ -338,8 +339,10 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
     LEFT JOIN (
         SELECT 
             Offender_ID,
-            CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode) 
-                 ELSE conviction_county END AS conviction_county,
+            STRING_AGG(
+                CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode) 
+                 ELSE conviction_county END, ', '
+                  ) AS conviction_county,
         FROM sent_union_isc
         LEFT JOIN (
             SELECT *
@@ -347,8 +350,9 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             WHERE CodesTableID = 'TDPD130'
         ) codes 
             ON conviction_county = codes.Code
-        WHERE TRUE
-        QUALIFY ROW_NUMBER() OVER(partition by Offender_ID ORDER BY sentence_effective_date DESC) = 1 
+        -- This limits to only pulling conviction county for active sentences
+        WHERE sentence_status not in ('IN','Prior')
+        GROUP BY 1
     )
         USING(Offender_ID)
 """
