@@ -50,8 +50,6 @@ output:
                   $enum_mapping:
                     $raw_text: movement_reason_id
                     $mappings:
-                      StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION:
-                        - "18" # Returned While on Parole Sentenced In Michigan
                       StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                         - "3" # Other Movement
                       StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
@@ -72,6 +70,7 @@ output:
                         - "81" # Returned from Temporary Release
                       StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
                         - "17" # Returned as Parole Technical Rule Violator
+                        - "18" # Returned While on Parole Sentenced In Michigan
                       # Movement reasons that are for releases are often followed by actual releases
                       # therefore, we indicate this as a status change
                       StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
@@ -251,5 +250,12 @@ output:
                     - movement_reason_id
                     - $literal("106")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY)
+              - $else_if:
+                  $in:
+                    $value: movement_reason_id
+                    $options:
+                      - $literal("18")
+                      - $literal("17")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
               - $else: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
           custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
