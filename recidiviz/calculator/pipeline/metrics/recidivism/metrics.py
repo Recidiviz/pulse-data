@@ -36,8 +36,6 @@ class ReincarcerationRecidivismMetricType(RecidivizMetricType):
     REINCARCERATION_RATE = "REINCARCERATION_RATE"
 
 
-# TODO(#1841): Implement rearrest recidivism metrics
-# TODO(#1842): Implement reconviction recidivism metrics
 @attr.s
 class ReincarcerationRecidivismMetric(
     RecidivizMetric[ReincarcerationRecidivismMetricType], PersonLevelMetric
