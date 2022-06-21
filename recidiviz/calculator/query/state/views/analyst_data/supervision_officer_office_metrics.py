@@ -466,7 +466,7 @@ WITH date_array AS (
     ON
         a.state_code = e.state_code
         AND a.person_id = e.person_id
-        AND IFNULL(e.employment_end_date, "9999-01-01") > a.start_date 
+        AND IFNULL(e.employment_end_date, "9999-01-01") > a.start_date
         AND e.employment_start_date < DATE_ADD(a.start_date, INTERVAL 365 DAY)
     # Keep first assignment of officer-office to client within SSS only
     QUALIFY
@@ -496,7 +496,7 @@ WITH date_array AS (
         COUNT(DISTINCT IF(compartment_level_2 IN ("PROBATION", "INFORMAL_PROBATION"), 
             c.person_id, NULL)) AS caseload_probation,
         COUNT(DISTINCT IF(compartment_level_2 IN ("BENCH_WARRANT", "ABSCONSION",
-            "INTERNAL_UNKNOWN"), c.person_id, NULL)) AS caseload_other_supervision_type,
+            "INTERNAL_UNKNOWN", "COMMUNITY_CONFINEMENT"), c.person_id, NULL)) AS caseload_other_supervision_type,
         COUNT(DISTINCT IF(c.gender = "FEMALE", c.person_id, NULL)
             ) AS caseload_female,
         COUNT(DISTINCT IF(c.prioritized_race_or_ethnicity != "WHITE", c.person_id, NULL)
