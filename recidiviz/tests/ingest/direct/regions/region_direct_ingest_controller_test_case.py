@@ -344,6 +344,13 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         now = datetime.datetime.now(tz=pytz.UTC)
         yesterday = now - datetime.timedelta(days=1)
         file_tag, _ext = os.path.splitext(filename)
+
+        if file_tag not in self.controller.get_ingest_view_rank_list():
+            raise ValueError(
+                f"Cannot run test for tag [{file_tag}] which is not returned by the "
+                f"controller's get_ingest_view_rank_list() function."
+            )
+
         if not is_rerun:
             self.file_tags_processed.append(file_tag)
 
