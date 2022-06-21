@@ -333,7 +333,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_multiple_filters(self) -> None:
@@ -616,7 +616,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_aggregated(self) -> None:
@@ -1044,7 +1044,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_multiple_sources_same_data(self) -> None:
@@ -1217,7 +1217,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_multiple_tables_same_source(self) -> None:
@@ -1387,7 +1387,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_prefer_instant(self) -> None:
@@ -1551,7 +1551,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_aggregate_with_nulls(self) -> None:
@@ -1725,7 +1725,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_delta_less_than_month(self) -> None:
@@ -1916,7 +1916,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_delta_more_than_month(self) -> None:
@@ -2247,7 +2247,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
 
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_average_more_than_month(self) -> None:
@@ -2567,7 +2567,8 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_comparisons(self) -> None:
@@ -2677,7 +2678,7 @@ class MonthlyMetricViewTest(BigQueryViewTestCase):
                 "compare_value",
             ],
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
 
@@ -2884,14 +2885,17 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         )
 
         # Assert
+        # TODO(https://github.com/pandas-dev/pandas/issues/40077): Remove the explicit
+        #  index argument once this issue is resolved.
         expected = pd.DataFrame(
             [],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
+            index=pd.RangeIndex(start=0, stop=0, step=1),
         )
         expected = expected.astype(
             {"time_window_start": _npd, "time_window_end": _npd, "value": int}
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_delta_quarters(self) -> None:
@@ -3083,7 +3087,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         expected = expected.astype(
             {"time_window_start": _npd, "time_window_end": _npd, "value": int}
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_instant(self) -> None:
@@ -3271,7 +3275,7 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)
 
     def test_delta_overlapping(self) -> None:
@@ -3516,5 +3520,5 @@ class AnnualMetricViewTest(BigQueryViewTestCase):
         expected = expected.astype(
             {"time_window_start": _npd, "time_window_end": _npd, "value": int}
         )
-        expected = expected.set_index(dimensions)
+        expected = expected[results.columns]
         assert_frame_equal(expected, results)

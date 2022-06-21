@@ -327,7 +327,6 @@ class CorrectionsOutputViewTest(BigQueryViewTestCase):
                 "percentage_change",
             ],
         )
-        expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
     def test_comparisons(self) -> None:
@@ -495,7 +494,6 @@ class CorrectionsOutputViewTest(BigQueryViewTestCase):
                 "percentage_change",
             ],
         )
-        expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
 
@@ -812,7 +810,6 @@ class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
                 "percentage_change",
             ],
         )
-        monthly_expected = monthly_expected.set_index(dimensions)
         assert_frame_equal(monthly_expected, monthly_results)
 
         annual_expected = pd.DataFrame(
@@ -882,5 +879,4 @@ class CorrectionsMetricsIntegrationTest(BigQueryViewTestCase):
                 "percentage_change",
             ],
         )
-        annual_expected = annual_expected.set_index(dimensions)
         assert_frame_equal(annual_expected, annual_results)

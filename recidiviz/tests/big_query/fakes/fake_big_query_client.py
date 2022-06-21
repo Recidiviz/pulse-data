@@ -210,9 +210,7 @@ class FakeBigQueryClient(BigQueryClient):
         query_parameters: List[bigquery.ScalarQueryParameter] = None,
     ) -> bigquery.QueryJob:
         def run_query_fn() -> DataFrame:
-            return self.database.run_query(
-                query_str=query_str, data_types=None, dimensions=None
-            )
+            return self.database.run_query(query_str=query_str)
 
         return FakeQueryJob(run_query_fn=run_query_fn)
 

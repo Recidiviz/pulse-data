@@ -18,7 +18,6 @@
 a backing database.
 """
 import logging
-from typing import Dict, List, Optional, Type, Union
 
 import pandas as pd
 from sqlalchemy import create_engine
@@ -224,12 +223,7 @@ class FakeBigQueryDatabase:
         )
         logging.debug("Results for `%s`:\n%s", table_location, results.to_string())
 
-    def run_query(
-        self,
-        query_str: str,
-        data_types: Optional[Union[Type, Dict[str, Type]]],
-        dimensions: Optional[List[str]],
-    ) -> pd.DataFrame:
+    def run_query(self, query_str: str) -> pd.DataFrame:
         """Query the PG tables with the Postgres formatted query string and return the
         results as a DataFrame.
         """
@@ -238,23 +232,4 @@ class FakeBigQueryDatabase:
                 "Found null query rewriter - did you call setup_databases()?."
             )
         query_str = self._query_rewriter.rewrite_to_postgres(query_str)
-
-        # TODO(#5533): Instead of using read_sql_query, we can use
-        # `create_view` and `read_sql_table`. That can take a schema which will
-        # solve some of the issues. As part of adding `dimensions` to builders
-        # (below) we should likely just define a full output schema.
-        results = pd.read_sql_query(query_str, con=self._postgres_engine)
-        # If data types are not provided or all columns will be strings, transform 'nan'
-        # values to empty strings. These occur when reading null values into a dataframe
-        if not data_types or data_types == str:
-            results = results.fillna("")
-        if data_types:
-            results = results.astype(data_types)
-        # TODO(#5533): If we add `dimensions` to all `BigQueryViewBuilder`, instead of just
-        # `MetricBigQueryViewBuilder`, then we can reuse that here instead of forcing
-        # the caller to specify them manually.
-        if dimensions:
-            results = results.set_index(dimensions)
-        results = results.sort_index()
-
-        return results
+        return pd.read_sql_query(query_str, con=self._postgres_engine)

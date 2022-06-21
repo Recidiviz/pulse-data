@@ -810,10 +810,14 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             axis=1,
         )
 
+        # TODO(https://github.com/pandas-dev/pandas/issues/40077): Remove the explicit
+        #  index argument once this issue is resolved.
         expected = pd.DataFrame(
-            [], columns=["label", "a", "b", "c", "error_rate", "error_type"], dtype=int
+            [],
+            columns=["label", "a", "b", "c", "error_rate", "error_type"],
+            dtype=int,
+            index=pd.RangeIndex(start=0, stop=0, step=1),
         )
-        expected = expected.set_index(["label"])
         print(result.columns)
         assert_frame_equal(expected, result, check_dtype=False)
 
@@ -864,7 +868,6 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
             dtype=int,
         )
-        expected = expected.set_index(["label"])
         assert_frame_equal(expected, result, check_dtype=False)
 
     def test_sameness_check_numbers_one_null_value(self) -> None:
@@ -900,8 +903,8 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
 
         result = self.query_view_for_builder(
             validation.error_view_builder,
-            None,
-            ["label"],
+            data_types={"label": int, "a": int, "b": object, "c": int},
+            dimensions=["label"],
         )
 
         # need to drop since Postgres doesn't properly remove columns with EXCEPT
@@ -911,10 +914,9 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
         )
 
         expected = pd.DataFrame(
-            [[0, 10, "", 10, 1, "hard"]],
+            [[0, 10, None, 10, 1, "hard"]],
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
         )
-        expected = expected.set_index(["label"])
         assert_frame_equal(expected, result, check_dtype=False, check_column_type=False)
 
     def test_sameness_check_numbers_null_values(self) -> None:
@@ -960,13 +962,14 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             axis=1,
         )
 
+        # TODO(https://github.com/pandas-dev/pandas/issues/40077): Remove the explicit
+        #  index argument once this issue is resolved.
         expected = pd.DataFrame(
             [],
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
             dtype=int,
+            index=pd.RangeIndex(start=0, stop=0, step=1),
         )
-        expected = expected.set_index(["label"])
-
         assert_frame_equal(expected, result, check_dtype=False)
 
     def test_sameness_check_numbers_soft_failure(self) -> None:
@@ -1017,7 +1020,6 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             [[0, 10, 5, 10, 0.5, "soft"]],
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
         )
-        expected = expected.set_index(["label"])
         assert_frame_equal(expected, result, check_dtype=False)
 
     def test_sameness_check_numbers_region_config_override(self) -> None:
@@ -1092,7 +1094,6 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             [[0, 10, 5, 10, "US_XX", 0.5, "soft"]],
             columns=["label", "a", "b", "c", "region_code", "error_rate", "error_type"],
         )
-        expected = expected.set_index(["label"])
         assert_frame_equal(expected, result, check_dtype=False)
 
     def test_sameness_check_numbers_multiple_values(self) -> None:
@@ -1150,7 +1151,6 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
             dtype=int,
         )
-        error_expected = error_expected.set_index(["label"])
         assert_frame_equal(error_expected, error_result, check_dtype=False)
 
         original_expected = pd.DataFrame(
@@ -1158,7 +1158,6 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             columns=["label", "a", "b", "c"],
             dtype=int,
         )
-        original_expected = original_expected.set_index(["label"])
         assert_frame_equal(original_expected, original_result, check_dtype=False)
 
 
@@ -1225,12 +1224,17 @@ class SamenessPerViewValidationChecker(BigQueryViewTestCase):
             axis=1,
         )
 
-        error_expected = pd.DataFrame([], columns=["label", "a", "b", "c"], dtype=str)
-        error_expected = error_expected.set_index(["label"])
+        # TODO(https://github.com/pandas-dev/pandas/issues/40077): Remove the explicit
+        #  index argument once this issue is resolved.
+        error_expected = pd.DataFrame(
+            [],
+            columns=["label", "a", "b", "c"],
+            dtype=str,
+            index=pd.RangeIndex(start=0, stop=0, step=1),
+        )
         assert_frame_equal(error_expected, error_result, check_dtype=False)
 
         original_expected = pd.DataFrame(mock_data, columns=columns)
-        original_expected = original_expected.set_index(["label"])
         assert_frame_equal(original_expected, original_result, check_dtype=False)
 
     def test_sameness_check_dates_different_values(self) -> None:
@@ -1311,11 +1315,9 @@ class SamenessPerViewValidationChecker(BigQueryViewTestCase):
             columns=["label", "a", "b", "c"],
             dtype=str,
         )
-        error_expected = error_expected.set_index(["label"])
         assert_frame_equal(error_expected, error_result, check_dtype=False)
 
         original_expected = pd.DataFrame(mock_data, columns=columns)
-        original_expected = original_expected.set_index(["label"])
         assert_frame_equal(original_expected, original_result, check_dtype=False)
 
     def test_sameness_check_empty_value(self) -> None:
@@ -1396,11 +1398,9 @@ class SamenessPerViewValidationChecker(BigQueryViewTestCase):
             columns=["label", "a", "b", "c"],
             dtype=str,
         )
-        error_expected = error_expected.set_index(["label"])
         assert_frame_equal(error_expected, error_result)
 
         original_expected = pd.DataFrame(mock_data, columns=columns)
-        original_expected = original_expected.set_index(["label"])
         assert_frame_equal(original_expected, original_result)
 
 
