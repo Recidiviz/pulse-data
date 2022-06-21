@@ -18,12 +18,11 @@
 ingest view queries.
 """
 from datetime import datetime, timedelta
-from typing import Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Iterable, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import pytest
-from pandas._testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import BigQueryView
@@ -76,58 +75,25 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         ).get_view_builder_by_view_name(ingest_view_name)
 
     def run_ingest_view_test(self, fixtures_files_name: str) -> None:
+        """Reads in the expected output CSV file from the ingest view fixture path and
+        asserts that the results from the raw data ingest view query are equal. Prints
+        out the dataframes for both expected rows and results.
+        """
         self.create_mock_raw_bq_tables_from_fixtures(
             region_code=self.region_code,
             ingest_view_builder=self.view_builder,
             raw_fixtures_name=fixtures_files_name,
         )
 
-        self.compare_results_to_expected_output(
-            region_code=self.region_code,
-            view_builder=self.view_builder,
-            expected_output_fixture_file_name=fixtures_files_name,
-            data_types=self.data_types,
-        )
-
-    def compare_results_to_expected_output(
-        self,
-        region_code: str,
-        view_builder: DirectIngestPreProcessedIngestViewBuilder,
-        expected_output_fixture_file_name: str,
-        data_types: Optional[Union[Type, Dict[str, Type]]] = None,
-    ) -> None:
-        """Reads in the expected output CSV file from the ingest view fixture path and asserts that the results
-        from the raw data ingest view query are equal. Prints out the dataframes for both expected rows and results."""
         expected_output_fixture_path = direct_ingest_fixture_path(
-            region_code=region_code,
+            region_code=self.region_code,
             fixture_file_type=DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
-            file_tag=view_builder.ingest_view_name,
-            file_name=expected_output_fixture_file_name,
+            file_tag=self.view_builder.ingest_view_name,
+            file_name=fixtures_files_name,
         )
-        print(
-            f"Loading expected results for ingest view "
-            f"[{view_builder.ingest_view_name}] from path "
-            f"[{expected_output_fixture_path}]"
-        )
-        expected_output = list(
-            csv.get_rows_as_tuples(expected_output_fixture_path, skip_header_row=False)
-        )
-        expected_columns = [column.lower() for column in expected_output.pop(0)]
+        results = self.query_ingest_view_for_builder(self.view_builder)
 
-        results = self.query_ingest_view_for_builder(
-            view_builder,
-            dimensions=expected_columns,
-            data_types=data_types,
-        )
-        expected = pd.DataFrame(expected_output, columns=expected_columns)
-        expected = expected.astype(self.data_types)
-        expected = expected.astype(self.data_types)
-        expected = expected.set_index(expected_columns)
-        print("**** EXPECTED ****")
-        print(expected)
-        print("**** ACTUAL ****")
-        print(results)
-        assert_frame_equal(expected, results)
+        self.compare_results_to_fixture(results, expected_output_fixture_path)
 
     def create_mock_raw_bq_tables_from_fixtures(
         self,
@@ -200,10 +166,7 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         )
 
     def query_ingest_view_for_builder(
-        self,
-        view_builder: DirectIngestPreProcessedIngestViewBuilder,
-        dimensions: List[str],
-        data_types: Optional[Union[Type, Dict[str, Type]]] = None,
+        self, view_builder: DirectIngestPreProcessedIngestViewBuilder
     ) -> pd.DataFrame:
         """Uses the ingest view diff query from DirectIngestIngestViewExportManager.debug_query_for_args to query
         raw data for ingest view tests."""
@@ -224,9 +187,4 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
             )
         )
 
-        return self.query_view(
-            view.table_for_query,
-            view_query,
-            data_types=data_types,
-            dimensions=dimensions,
-        )
+        return self.query_view(view.table_for_query, view_query)

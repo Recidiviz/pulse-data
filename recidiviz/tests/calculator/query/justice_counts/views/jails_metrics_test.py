@@ -251,7 +251,6 @@ class JailsOutputViewTest(BigQueryViewTestCase):
                 "date_published",
             ],
         )
-        expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
 
@@ -889,7 +888,6 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
                 "date_published",
             ],
         )
-        expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
     def test_metrics_with_state_comparison(self) -> None:
@@ -1584,5 +1582,4 @@ class JailsMetricsIntegrationTest(BigQueryViewTestCase):
                 "date_published",
             ],
         )
-        expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results, check_less_precise=True)
