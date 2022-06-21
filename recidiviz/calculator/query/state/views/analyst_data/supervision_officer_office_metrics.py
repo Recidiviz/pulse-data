@@ -458,6 +458,8 @@ WITH date_array AS (
             `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized`
         WHERE 
             is_unemployed = FALSE
+            AND employment_start_date <= COALESCE(employment_end_date, "9999-01-01")
+            AND employment_start_date <= CURRENT_DATE("US/Eastern")
         QUALIFY 
             ROW_NUMBER() OVER (PARTITION BY state_code, person_id, employer_name, employment_start_date) = 1
     ) e
