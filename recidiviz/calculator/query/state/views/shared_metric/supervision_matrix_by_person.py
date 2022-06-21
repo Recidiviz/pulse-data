@@ -21,6 +21,9 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -32,11 +35,20 @@ SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION = """
  violations and the most severe violation while on supervision.
  """
 
+SUPPORTED_SUPERVISION_TYPES = [
+    StateSupervisionPeriodSupervisionType.DUAL,
+    # INTERNAL_UNKNOWN is included for historical consistency, they are only counted in
+    # the "ALL" supervision_type group for US_MO
+    StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+    StateSupervisionPeriodSupervisionType.PAROLE,
+    StateSupervisionPeriodSupervisionType.PROBATION,
+]
+
 SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision_with_agent_info AS (
         SELECT
-            * EXCEPT(state_code),
+            * EXCEPT(state_code, supervision_type),
             metric.state_code,
             {age_bucket},
             -- We drop commas in agent names since we use commas as the delimiters in the export
@@ -44,6 +56,13 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             -- once the FE is using the officer_full_name field for names
             REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
             REPLACE(COALESCE(agent.full_name, 'UNKNOWN'), ',', '') AS officer_full_name,
+            -- Use the most recent supported supervision type in place of absconsion/bench warrant periods
+            LAST_VALUE(IF(supervision_type IN ('{supported_supervision_types}'), supervision_type, NULL) IGNORE NULLS)
+              OVER (PARTITION BY metric.state_code, person_id
+                    ORDER BY date_of_supervision, supervision_type, supervision_level, case_type,
+                         level_1_supervision_location_external_id, level_2_supervision_location_external_id,
+                         supervising_officer_external_id
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS supervision_type,
             FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` metric
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
         ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.external_id 
@@ -100,16 +119,6 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
       SELECT * FROM supervision_matrix
         UNION ALL
       SELECT * FROM revocations_matrix
-    ), supervision_with_ranking AS (
-      SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
-                           ORDER BY is_revocation DESC, date_of_supervision DESC,
-                                    supervision_type, supervision_level, case_type, level_1_supervision_location,
-                                    level_2_supervision_location, officer) as ranking
-      FROM revocations_and_supervisions,
-      {metric_period_dimension}
-      WHERE {metric_period_condition}
     ), person_based_supervision AS (
       SELECT
         state_code,
@@ -129,8 +138,13 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         age_bucket,
         {state_specific_assessment_bucket},
         IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
-      FROM supervision_with_ranking
-      WHERE ranking = 1
+      FROM revocations_and_supervisions,
+      {metric_period_dimension}
+      WHERE {metric_period_condition}
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
+                           ORDER BY is_revocation DESC, date_of_supervision DESC,
+                                    supervision_type, supervision_level, case_type, level_1_supervision_location,
+                                    level_2_supervision_location, officer) = 1
     ), unnested_supervision AS (
       SELECT
         state_code,
@@ -222,6 +236,9 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
     state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(),
     age_bucket=bq_utils.age_bucket_grouping(age_column="metric.age"),
+    supported_supervision_types=(
+        "','".join([start_reason.value for start_reason in SUPPORTED_SUPERVISION_TYPES])
+    ),
 )
 
 if __name__ == "__main__":
