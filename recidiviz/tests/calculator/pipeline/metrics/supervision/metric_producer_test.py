@@ -80,7 +80,6 @@ _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 _PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 
-# TODO(#2732): Implement more full test coverage of the officer, district, the supervision success functionality
 class TestProduceSupervisionMetrics(unittest.TestCase):
     """Tests the produce_supervision_metrics function."""
 

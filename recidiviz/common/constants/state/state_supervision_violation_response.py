@@ -202,7 +202,6 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_VALUE_DESCRIPTIONS: Dict[
 
 # TODO(#8905): Delete _get_default_map() once all state ingest views have been
 #  migrated to v2 mappings.
-# TODO(#3108): Transition this enum to use StateActingBodyType
 @unique
 class StateSupervisionViolationResponseDecidingBodyType(StateEntityEnum):
     COURT = (

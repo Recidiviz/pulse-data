@@ -173,8 +173,6 @@ DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST = list(
 )
 
 
-# TODO(#2732): Implement more full test coverage of the officer and district
-#  functionality and the supervision success classification
 class TestClassifySupervisionEvents(unittest.TestCase):
     """Tests for the find_supervision_events function."""
 
