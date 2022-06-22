@@ -129,7 +129,7 @@ def get_api_blueprint(
             )
             ReportInterface.update_report_metadata(
                 session=current_session,
-                report_id=report_id_int,
+                report=report,
                 editor_id=user_account_id,
                 status=request_dict["status"],
             )
