@@ -1,5 +1,6 @@
 transition_date,year,month,person_id,age_group,age,gender,race,facility,full_name,time_period,state_id,state_code
 2022-01-01,2022,1,1,20-25,22,MALE,WHITE,ABC,"TEST, PERSON",months_25_60,0001,US_XX
+2022-02-01,2022,2,1,20-25,23,MALE,WHITE,DEF,"TEST, PERSON",months_25_60,0001,US_XX
 2022-02-01,2022,2,2,60+,61,MALE,WHITE,DEF,"TEST, PERSON2",months_0_6,0002,US_XX
 2022-03-01,2022,3,3,60+,62,FEMALE,BLACK,ABC,"FAKE, USER",months_0_6,0003,US_XX
 2022-03-01,2022,3,4,60+,63,MALE,BLACK,DEF,"FAKE2, USER2",months_0_6,0004,US_XX
