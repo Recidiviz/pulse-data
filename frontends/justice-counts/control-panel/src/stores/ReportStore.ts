@@ -169,16 +169,13 @@ class ReportStore {
         throw new Error("There was an issue updating this report.");
       }
 
+      /** Update the editor details (editors & last modified details) in real time within the report after autosave. */
+      runInAction(() => this.getReportOverviews());
+
       return response;
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }
-  }
-
-  updateReportStatusManually(reportID: number, status: ReportStatus) {
-    runInAction(() => {
-      this.reportOverviews[reportID].status = status;
-    });
   }
 
   resetState() {
