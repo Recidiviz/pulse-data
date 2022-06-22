@@ -55,7 +55,7 @@ class Auth0ClientTest(TestCase):
         self.mock_get_token.return_value.client_credentials.return_value = {
             "access_token": "API access token"
         }
-        self.assertEqual(self.auth0_client.access_token, "API access token")
+        self.assertEqual(self.auth0_client.fetch_new_access_token(), "API access token")
 
     def test_get_all_users_by_email_addresses(self) -> None:
         email_addresses = ["one@test.gov", "two@test.gov"]
