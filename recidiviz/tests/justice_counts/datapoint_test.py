@@ -69,7 +69,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user = session.query(UserAccount).one()
                 ReportInterface.update_report_metadata(
                     session=session,
-                    report_id=monthly_report.id,
+                    report=monthly_report,
                     editor_id=user.id,
                     status=ReportStatus.PUBLISHED.value,
                 )

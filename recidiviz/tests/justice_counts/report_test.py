@@ -284,7 +284,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 self.assertEqual(report.status, schema.ReportStatus.NOT_STARTED)
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
-                    report_id=report.id,
+                    report=report,
                     editor_id=user_a_id,
                     status=schema.ReportStatus.DRAFT.value,
                 )
@@ -297,7 +297,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ).id
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
-                    report_id=report.id,
+                    report=updated_report,
                     editor_id=user_c_id,
                     status=schema.ReportStatus.DRAFT.value,
                 )
@@ -305,7 +305,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 self.assertEqual(updated_report.modified_by, [user_a_id, user_c_id])
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
-                    report_id=report.id,
+                    report=updated_report,
                     status=schema.ReportStatus.PUBLISHED.value,
                     editor_id=user_a_id,
                 )
@@ -319,7 +319,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             with freeze_time(update_datetime):
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
-                    report_id=report.id,
+                    report=updated_report,
                     status=schema.ReportStatus.PUBLISHED.value,
                     editor_id=user_a_id,
                 )

@@ -522,7 +522,7 @@ class Datapoint(JusticeCountsBase):
         "DatapointHistory",
         back_populates="datapoint",
         cascade="all, delete",
-        lazy="selectin",
+        lazy="select",
         passive_deletes=True,
     )
 

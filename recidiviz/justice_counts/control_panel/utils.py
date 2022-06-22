@@ -101,7 +101,7 @@ def raise_if_user_is_unauthorized(route: Callable) -> Callable:
         if not agency_id and "report_id" in kwargs:
             report_id: int = kwargs["report_id"]  # type: ignore[assignment]
             report = ReportInterface.get_report_by_id(
-                session=current_session, report_id=report_id
+                session=current_session, report_id=report_id, include_datapoints=False
             )
             agency_id = report.source_id
 

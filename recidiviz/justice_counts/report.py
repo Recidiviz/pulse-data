@@ -20,7 +20,7 @@ import itertools
 from typing import Any, Dict, List, Optional, Set
 
 import attr
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session, lazyload
 
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.base import DimensionBase
@@ -151,16 +151,37 @@ class ReportInterface:
             ]
 
     @staticmethod
-    def get_report_by_id(session: Session, report_id: int) -> schema.Report:
-        return session.query(schema.Report).filter(schema.Report.id == report_id).one()
+    def _get_report_query(session: Session, include_datapoints: bool = True) -> Query:
+        q = session.query(schema.Report)
+
+        # Always lazily load report table instances -- we never need those for the Control Panel
+        q = q.options(lazyload(schema.Report.report_table_instances))
+
+        if not include_datapoints:
+            # If we don't need the datapoints for a given report in this query
+            # (e.g. we're just showing the reports page, so we only need report metadata),
+            # then we should lazily load them too
+            q = q.options(lazyload(schema.Report.datapoints))
+        return q
+
+    @staticmethod
+    def get_report_by_id(
+        session: Session, report_id: int, include_datapoints: bool = True
+    ) -> schema.Report:
+        q = ReportInterface._get_report_query(
+            session, include_datapoints=include_datapoints
+        )
+        return q.filter(schema.Report.id == report_id).one()
 
     @staticmethod
     def get_reports_by_agency_id(
-        session: Session, agency_id: int
+        session: Session, agency_id: int, include_datapoints: bool = False
     ) -> List[schema.Report]:
+        q = ReportInterface._get_report_query(
+            session, include_datapoints=include_datapoints
+        )
         return (
-            session.query(schema.Report)
-            .filter(schema.Report.source_id == agency_id)
+            q.filter(schema.Report.source_id == agency_id)
             .order_by(schema.Report.date_range_end.desc())
             .all()
         )
@@ -168,12 +189,10 @@ class ReportInterface:
     @staticmethod
     def update_report_metadata(
         session: Session,
-        report_id: int,
+        report: schema.Report,
         editor_id: int,
         status: Optional[str] = None,
     ) -> schema.Report:
-        report = ReportInterface.get_report_by_id(session=session, report_id=report_id)
-
         if status and report.status.value != status:
             report.status = schema.ReportStatus[status]
 
