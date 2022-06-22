@@ -18,8 +18,6 @@
 import { observer } from "mobx-react-lite";
 import React from "react";
 
-import PreviewDataObject from "../../mocks/PreviewDataObject";
-import { useStore } from "../../stores";
 import { Title } from "../Forms";
 import HelperText from "./HelperText";
 import {
@@ -40,8 +38,6 @@ const PublishDataPanel: React.FC<{
   fieldDescription,
   toggleConfirmationDialogue,
 }) => {
-  const { formStore } = useStore();
-
   return (
     <>
       <PublishDataWrapper>
@@ -57,14 +53,6 @@ const PublishDataPanel: React.FC<{
           <FieldDescription fieldDescription={fieldDescription} />
         )}
       </PublishDataWrapper>
-
-      <PreviewDataObject
-        description="This is the request body that will be sent to the backend:"
-        objectToDisplay={{
-          status: "DRAFT",
-          metrics: formStore.reportUpdatedValuesForBackend(reportID),
-        }}
-      />
     </>
   );
 };
