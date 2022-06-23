@@ -27,6 +27,9 @@ julian_format_lower_bound_update_date = 0
 # M?MDDYY e.g. January 1, 2016 --> 10116; November 2, 1982 --> 110282;
 mmddyy_format_lower_bound_update_date = 0
 
+# YYYY-MM-DD e.g. January 1, 2016 --> 2016-01-01; November 2, 1982 --> 1982-11-02;
+iso_format_lower_bound_update_date = 0
+
 FOCTEST_ORAS_ASSESSMENTS_WEEKLY = """
     SELECT *
     FROM
@@ -55,6 +58,24 @@ LBAKRDTA_TAK001 = f"""
     WHERE
         MAX(COALESCE(EK$DLU, 0),
             COALESCE(EK$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK017 = f"""
+    SELECT *
+    FROM
+        LBAKRDTA.TAK017
+    WHERE
+        MAX(COALESCE(BN$DLU, 0),
+            COALESCE(BN$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK020 = f"""
+    SELECT *
+    FROM
+        LBAKRDTA.TAK020
+    WHERE
+        MAX(COALESCE(BQ$DLU, 0),
+            COALESCE(BQ$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
 LBAKRDTA_TAK022 = f"""
@@ -147,6 +168,15 @@ LBAKRDTA_TAK042 = f"""
             COALESCE(CF$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK065 = f"""
+    SELECT *
+    FROM
+        LBAKRDTA.TAK065
+    WHERE
+        MAX(COALESCE(CS$DLU, 0),
+            COALESCE(CS$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK076 = f"""
     SELECT *
     FROM
@@ -156,6 +186,15 @@ LBAKRDTA_TAK076 = f"""
             COALESCE(CZ$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK090 = f"""
+    SELECT *
+    FROM
+        LBAKRDTA.TAK090
+    WHERE
+        MAX(COALESCE(DD$DLU, 0),
+            COALESCE(DD$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK142 = f"""
     SELECT *
     FROM
@@ -163,6 +202,24 @@ LBAKRDTA_TAK142 = f"""
     WHERE
         MAX(COALESCE(E6$DLU, 0),
             COALESCE(E6$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK222 = f"""
+    SELECT *
+    FROM
+        LBAKRDTA.TAK222
+    WHERE
+        MAX(COALESCE(IB$DLU, 0),
+            COALESCE(IB$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK223 = f"""
+    SELECT *
+    FROM
+        LBAKRDTA.TAK223
+    WHERE
+        MAX(COALESCE(IE$DLU, 0),
+            COALESCE(IE$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
 LBAKRDTA_TAK158 = """
@@ -221,6 +278,75 @@ OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = """
         OFNDR_PDB.FOC_SUPERVISION_ENHANCEMENTS_VW;
     """
 
+MO_CASEPLANS_DB2 = """
+    SELECT *
+    FROM
+        ORAS.MO_CASEPLANS_DB2
+    WHERE
+        COALESCE(CREATED_AT, '1900-01-01') >= {iso_format_lower_bound_update_date};
+    """
+
+# Note: for this table without time bounds, there is no date field or ordering field to allow for only new rows to
+# be pulled weekly. Therefore, each time we pull the table, it will be a full historical pull. There is effort to add
+# in a date column from the MO side, but until that is done, these will not be pulled in the regular weekly upload
+# and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
+# when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
+# unless specifically asked to do so.
+# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+MO_CASEPLAN_INFO_DB2 = """
+    SELECT *
+    FROM
+        ORAS.MO_CASEPLAN_INFO_DB2;
+    """
+
+# Note: for this table without time bounds, there is no date field or ordering field to allow for only new rows to
+# be pulled weekly. Therefore, each time we pull the table, it will be a full historical pull. There is effort to add
+# in a date column from the MO side, but until that is done, these will not be pulled in the regular weekly upload
+# and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
+# when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
+# unless specifically asked to do so.
+# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+MO_CASEPLAN_TARGETS_DB2 = """
+    SELECT *
+    FROM
+        ORAS.MO_CASEPLAN_TARGETS_DB2;
+    """
+
+MO_CASEPLAN_GOALS_DB2 = """
+    SELECT *
+    FROM
+        ORAS.MO_CASEPLAN_GOALS_DB2
+    WHERE
+        MAX(COALESCE(CREATED_AT, '1900-01-01'),
+            COALESCE(CREATED_AT, '1900-01-01')) >= {iso_format_lower_bound_update_date};
+    """
+
+# Note: for this table without time bounds, there is no date field or ordering field to allow for only new rows to
+# be pulled weekly. Therefore, each time we pull the table, it will be a full historical pull. There is effort to add
+# in a date column from the MO side, but until that is done, these will not be pulled in the regular weekly upload
+# and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
+# when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
+# unless specifically asked to do so.
+# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+MO_CASEPLAN_OBJECTIVES_DB2 = """
+    SELECT *
+    FROM
+        ORAS.MO_CASEPLAN_OBJECTIVES_DB2;
+    """
+
+# Note: for this table without time bounds, there is no date field or ordering field to allow for only new rows to
+# be pulled weekly. Therefore, each time we pull the table, it will be a full historical pull. There is effort to add
+# in a date column from the MO side, but until that is done, these will not be pulled in the regular weekly upload
+# and instead pulled only in a one-off capacity when a refesh of the data is needed. Genevieve will inform Josh
+# when to pull these files while she is awaiting MO Warehouse Access and the default will be to NOT pull them
+# unless specifically asked to do so.
+# TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
+MO_CASEPLAN_TECHNIQUES_DB2 = """
+    SELECT *
+    FROM
+        ORAS.MO_CASEPLAN_TECHNIQUES_DB2;
+    """
+
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
@@ -228,6 +354,8 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LANTERN_DA_RA_LIST", LANTERN_DA_RA_LIST),
         ("LBAKRCOD_TAK146", LBAKRCOD_TAK146),
         ("LBAKRDTA_TAK001", LBAKRDTA_TAK001),
+        ("LBAKRDTA_TAK017", LBAKRDTA_TAK017),
+        ("LBAKRDTA_TAK020", LBAKRDTA_TAK020),
         ("LBAKRDTA_TAK022", LBAKRDTA_TAK022),
         ("LBAKRDTA_TAK023", LBAKRDTA_TAK023),
         ("LBAKRDTA_TAK024", LBAKRDTA_TAK024),
@@ -238,9 +366,13 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK039", LBAKRDTA_TAK039),
         ("LBAKRDTA_TAK040", LBAKRDTA_TAK040),
         ("LBAKRDTA_TAK042", LBAKRDTA_TAK042),
+        ("LBAKRDTA_TAK065", LBAKRDTA_TAK065),
         ("LBAKRDTA_TAK076", LBAKRDTA_TAK076),
+        ("LBAKRDTA_TAK090", LBAKRDTA_TAK090),
         ("LBAKRDTA_TAK142", LBAKRDTA_TAK142),
         ("LBAKRDTA_TAK158", LBAKRDTA_TAK158),
+        ("LBAKRDTA_TAK222", LBAKRDTA_TAK222),
+        ("LBAKRDTA_TAK223", LBAKRDTA_TAK223),
         ("LBAKRDTA_TAK291", LBAKRDTA_TAK291),
         ("LBAKRDTA_TAK292", LBAKRDTA_TAK292),
         ("LBAKRDTA_VAK003", LBAKRDTA_VAK003),
@@ -250,6 +382,13 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
             "OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW",
             OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW,
         ),
+        # These queries should only be run ad-hoc for now. See above for more details.
+        # ("MO_CASEPLANS_DB2", MO_CASEPLANS_DB2),
+        # ("MO_CASEPLAN_INFO_DB2", MO_CASEPLAN_INFO_DB2),
+        # ("MO_CASEPLAN_TARGETS_DB2", MO_CASEPLAN_TARGETS_DB2),
+        # ("MO_CASEPLAN_GOALS_DB2", MO_CASEPLAN_GOALS_DB2),
+        # ("MO_CASEPLAN_OBJECTIVES_DB2", MO_CASEPLAN_OBJECTIVES_DB2),
+        # ("MO_CASEPLAN_TECHNIQUES_DB2", MO_CASEPLAN_TECHNIQUES_DB2),
     ]
 
 

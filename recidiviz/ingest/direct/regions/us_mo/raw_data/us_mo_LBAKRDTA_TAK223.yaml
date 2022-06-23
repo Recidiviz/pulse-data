@@ -1,0 +1,51 @@
+file_tag: LBAKRDTA_TAK223
+file_description: |-
+  Parole Board Violation Decisions. Column prefix: IE # TODO(#13474) Fill in definition with more details.
+data_classification: source
+primary_key_cols:
+  - IE_DOC
+  - IE_CYC
+  - IE_BDS
+columns:
+  - name: IE_DOC
+    is_pii: True
+    description: |-
+      DOC ID
+  - name: IE_CYC
+    description: |-
+      Cycle Number
+  - name: IE_BDS
+    description: |-
+      Board Violation Decision Sequence Number
+  - name: IE_BDT
+    description: |-
+      Board Violation Decision Association Type
+  - name: IE_BDX
+    description: |-
+      Board Decision Association Cross-Reference Sequence
+  - name: IE_BDA
+    description: |-
+      Board Violation Decision Association
+  - name: IE_BT
+    description: |-
+      Board Violation Decision Change Date
+  - name: IE_TCR
+    description: |-
+      Time Created
+  - name: IE_DCR
+    description: |-
+      Date Created
+  - name: IE_UID
+    is_pii: True
+    description: |-
+      User ID
+  - name: IE_DLU
+    description: |-
+      Date Updated
+  - name: IE_TLU
+    description: |-
+      Time Updated
+  - name: IE_UIU
+    is_pii: True
+    description: |-
+      Update User Id

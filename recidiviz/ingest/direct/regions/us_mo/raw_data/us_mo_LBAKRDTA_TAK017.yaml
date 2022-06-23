@@ -1,0 +1,63 @@
+file_tag: LBAKRDTA_TAK017
+file_description: |-
+  Housing Details. Column prefix: BN. # TODO(#13474) Fill in definition with more details.
+data_classification: source
+primary_key_cols:
+  - BN_DOC
+  - BN_CYC
+columns:
+  - name: BN_DOC
+    is_pii: True
+    description: |-
+      DOC ID Number
+  - name: BN_CYC
+    description: |-
+      Cycle Number
+  - name: BN_OR0
+    description: |-
+      Ordinal Field Date 0
+  - name: BN_HE
+    description: |-
+      Assignment End Date
+  - name: BN_HS
+    description: |-
+      Assignment Start Date
+  - name: BN_TCR
+    description: |-
+      Row Creation Time
+  - name: BN_DCR
+    description: |-
+      Row Creation Date
+  - name: BN_PIN
+    description: |-
+      DOC Location
+  - name: BN_PLN
+    description: |-
+      Location Acronym
+  - name: BN_HPT
+    description: |-
+      Housing Permanent / Temporary
+  - name: BN_LOC
+    description: |-
+      Building Number
+  - name: BN_COM
+    description: |-
+      Complex Number
+  - name: BN_LRM
+    description: |-
+      Room Number
+  - name: BN_LBD
+    description: |-
+      Bed
+  - name: BN_LRU
+    description: |-
+      Use
+  - name: BN_HDS
+    description: |-
+      Reason
+  - name: BN_DLU
+    description: |-
+      Row Modify Date
+  - name: BN_TLU
+    description: |-
+      Row Modify Time

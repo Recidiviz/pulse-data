@@ -1,0 +1,48 @@
+file_tag: MO_CASEPLAN_OBJECTIVES_DB2
+file_description: |-
+  Supervision Case Plan Objectives. This table contains the objectives connected to a persons's goals in a Case Plan. 
+  They are defined as short-term steps to reach broad goal and many will have several objectives to reach ultimate goal.
+data_classification: source
+primary_key_cols:
+  - OFFENDER_ID
+  - CASE_PLAN_ID
+  - CASE_PLAN_NEED_ID
+  - CASE_PLAN_NEED_GOAL_ID
+columns:
+  - name: OFFENDER_ID
+    is_pii: True
+    description: |-
+      UCCI ID Number
+  - name: CASE_PLAN_ID
+    is_pii: True
+    description: |-
+      Unique Identifer for Case Plan
+  - name: CASE_PLAN_NEED_ID
+    description: |-
+      Unique Identifier for Need
+  - name: CASE_PLAN_NEED_GOAL_ID
+    description: |-
+      Unique Identifer for Need Goal
+  - name: CASE_PLAN_OBJECTIVE_ID
+    description: |-
+      Unique Identifier for Objective
+  - name: FOCLIST
+    description: |-
+      Assessment Sequence Number
+  - name: OBJECTIVE_TEXT
+    is_pii: True
+    description: |-
+      Free text of OBJECTIVE
+  - name: FREQUENCY
+    description: |-
+      Frequency with which an objective is to be aimed for
+  - name: START_DATE
+    description: |-
+      Beginning date of objective
+  - name: END_DATE
+    description: |-
+      End date of objective
+  - name: CREATED_BY
+    is_pii: True
+    description: |-
+      User that entered information

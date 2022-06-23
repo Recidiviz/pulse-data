@@ -1,0 +1,61 @@
+file_tag: LBAKRDTA_TAK222
+file_description: |-
+  Parole Board Violation Decision Cross Reference. Column prefix: IB # TODO(#13474) Fill in definition with more details.
+data_classification: source
+primary_key_cols:
+  - IB_DOC
+  - IB_CYC
+  - IB_BDS
+columns:
+  - name: IB_DOC
+    is_pii: True
+    description: |-
+      DOC ID
+  - name: IB_CYC
+    description: |-
+      Cycle Number
+  - name: IB_BDS
+    description: |-
+      Board Violation Decision Sequence Number
+  - name: IB_BT
+    description: |-
+      Board Violation Change Date
+  - name: IB_BS
+    description: |-
+      Board Violation Decision Date
+  - name: IB_BVD
+    description: |-
+      Board Violation Decision
+  - name: IB_PON
+    is_pii: True
+    description: |-
+      Employee ID Card Number
+  - name: IB_STO
+    description: |-
+      Sent to Location
+  - name: IB_BDC
+    description: |-
+      BSA Violation Change Reason
+  - name: IB_DON
+    description: |-
+      Document Name
+  - name: IB_DCR
+    description: |-
+      Date Created
+  - name: IB_TCR
+    description: |-
+      Time Created
+  - name: IE_UID
+    is_pii: true
+    description: |-
+      User ID
+  - name: IB_DLU
+    description: |-
+      Date Updated
+  - name: IB_TLU
+    description: |-
+      Time Updated
+  - name: IB_UIU
+    is_pii: True
+    description: |-
+      Update User Id
