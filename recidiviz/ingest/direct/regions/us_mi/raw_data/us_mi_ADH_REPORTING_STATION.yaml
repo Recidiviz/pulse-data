@@ -12,7 +12,15 @@ columns:
       The ID of the location of the reporting station, as referenced by the LOCATION table.
   - name: building_id
   - name: name
+    description: The human-readable name for this reporting station.
   - name: housing_unit_flag
+    description: |-
+      Whether or not the current reporting station is a housing unit versus some other function.
+    known_values:
+      - value: "1"
+        description: True - this reporting station is a housing unit.
+      - value: "0"
+        description: False - this reporting station is not a housing unit.
   - name: notes
   - name: begin_date
   - name: end_date
