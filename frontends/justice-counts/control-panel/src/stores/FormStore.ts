@@ -240,57 +240,67 @@ class FormStore {
    * @returns updated array of metrics (in the required data structure)
    */
 
-  reportUpdatedValuesForBackend(reportID: number): UpdatedMetricsValues[] {
-    const updatedMetricValues = this.reportStore.reportMetrics[reportID]?.map(
-      (metric) => {
-        /** Note: all empty inputs will be represented by null */
-        const metricValue = sanitizeInputValue(
-          this.metricsValues[reportID]?.[metric.key]?.value,
-          metric.value
+  reportUpdatedValuesForBackend(
+    reportID: number,
+    metricKey?: string
+  ): UpdatedMetricsValues[] {
+    const allMetrics = this.reportStore.reportMetrics[reportID];
+    // If `metricKey` is not undefined, only update the corresponding metric.
+    // Else, update all metrics.
+    const metricsToUpdate =
+      metricKey !== undefined
+        ? this.reportStore.reportMetrics[reportID].filter(
+            (metric) => metric.key === metricKey
+          )
+        : allMetrics;
+    const updatedMetricValues = metricsToUpdate?.map((metric) => {
+      /** Note: all empty inputs will be represented by null */
+      const metricValue = sanitizeInputValue(
+        this.metricsValues[reportID]?.[metric.key]?.value,
+        metric.value
+      );
+
+      const combinedMetricValues: UpdatedMetricsValues = {
+        key: metric.key,
+        value: metricValue,
+        contexts: [],
+        disaggregations: [],
+      };
+
+      metric.contexts.forEach((context) => {
+        const contextValue = sanitizeInputValue(
+          this.contexts[reportID]?.[metric.key]?.[context.key]?.value,
+          context.value,
+          context.type
         );
 
-        const combinedMetricValues: UpdatedMetricsValues = {
-          key: metric.key,
-          value: metricValue,
-          contexts: [],
-          disaggregations: [],
-        };
-
-        metric.contexts.forEach((context) => {
-          const contextValue = sanitizeInputValue(
-            this.contexts[reportID]?.[metric.key]?.[context.key]?.value,
-            context.value,
-            context.type
-          );
-
-          combinedMetricValues.contexts.push({
-            key: context.key,
-            value: contextValue,
-          });
+        combinedMetricValues.contexts.push({
+          key: context.key,
+          value: contextValue,
         });
+      });
 
-        metric.disaggregations.forEach((disaggregation) => {
-          combinedMetricValues.disaggregations.push({
-            key: disaggregation.key,
-            dimensions: disaggregation.dimensions.map((dimension) => {
-              const dimensionValue = sanitizeInputValue(
-                this.disaggregations[reportID]?.[metric.key]?.[
-                  disaggregation.key
-                ]?.[dimension.key]?.value,
-                dimension.value
-              );
+      metric.disaggregations.forEach((disaggregation) => {
+        combinedMetricValues.disaggregations.push({
+          key: disaggregation.key,
+          dimensions: disaggregation.dimensions.map((dimension) => {
+            const dimensionValue = sanitizeInputValue(
+              this.disaggregations[reportID]?.[metric.key]?.[
+                disaggregation.key
+              ]?.[dimension.key]?.value,
+              dimension.value
+            );
 
-              return {
-                key: dimension.key,
-                value: dimensionValue,
-              };
-            }),
-          });
+            return {
+              key: dimension.key,
+              value: dimensionValue,
+            };
+          }),
         });
+      });
 
-        return combinedMetricValues;
-      }
-    );
+      return combinedMetricValues;
+    });
 
     return updatedMetricValues || [];
   }

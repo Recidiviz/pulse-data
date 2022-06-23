@@ -190,6 +190,7 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   valueLabel?: string;
   multiline?: boolean;
   persistLabel?: boolean;
+  metricKey?: string;
 }
 
 export const TextInput: React.FC<TextInputProps> = ({
@@ -199,6 +200,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   multiline,
   placeholder,
   persistLabel,
+  metricKey,
   ...props
 }): JSX.Element => {
   const [showTooltip, setShowTooltip] = useState<boolean>();
@@ -223,6 +225,7 @@ export const TextInput: React.FC<TextInputProps> = ({
       {/* Text Input */}
       <Input
         {...props}
+        data-metric-key={metricKey}
         disabled={disabled}
         as={multiline ? "textarea" : "input"}
         multiline={multiline}
