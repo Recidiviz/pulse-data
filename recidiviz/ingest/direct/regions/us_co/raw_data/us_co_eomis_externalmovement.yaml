@@ -98,7 +98,7 @@ columns:
       - value: "78"
         description: Returned to Parole
       - value: "79"
-        description: Returned to  ISP-I
+        description: Returned to ISP-I
       - value: "80"
         description: Escaped
       - value: "81"
@@ -220,6 +220,8 @@ columns:
         description: Jail Treatment
       - value: "59"
         description: Finished serving Sentence
+      - value: "5A"
+        description: Absconder in Custody Out of State
       - value: "5C"
         description: Escapee in Custody in State
       - value: "5D"

@@ -104,7 +104,7 @@ columns:
       - value: I2
         description: Other State Court
       - value: I4
-        description: Other State Law Enforc. Agency
+        description: Other State Law Enforcement Agency
       - value: I5
         description: Other State DOC
       - value: I8
@@ -141,7 +141,7 @@ columns:
         description: TODO(#12372)
   - name: ORGANIZATIONSTATUS
     description: |-
-      ORGSTATUS code for the current status of facility ie closed or open.
+      ORGSTATUS code for the current status of facility - for example, closed or open.
     known_values:
       - value: A
         description: Active
@@ -153,10 +153,10 @@ columns:
         description: Temporarily Closed
   - name: ORGSTATUSDATE
     description: |-
-      Date of the ORGSTATUS (ie date it became active, closed, etc)
+      Date of the ORGSTATUS (Date closed, date active since, etc)
   - name: ORGCOMMONID
     description: |-
-      TODO(#12372)
+      Common abbreviation for the the organization.
   - name: ORGDEPTCODE
     description: |-
       TODO(#12372)

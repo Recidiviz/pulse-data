@@ -1,0 +1,315 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - period_id
+  - start_datetime
+  - start_code
+  - start_reason
+  - end_datetime
+  - end_code
+  - end_reason
+  - JURISDICTIONALAGENCY
+  - OTHERLOCATIONCODE
+  - p_facility_id
+  - p_facility_name
+  - p_facility_type
+  - p_unit_id
+  - p_unit_name
+  - p_unit_type
+  - LOCATIONREPORTMOVEMENT
+unused_columns:
+  - JURISDICTIONALAGENCY
+  - OTHERLOCATIONCODE
+  - p_facility_name
+  - p_unit_id
+  - p_unit_type
+  - LOCATIONREPORTMOVEMENT
+  - end_reason
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_PID")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - period_id
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: p_facility_type #ORGANIZATIONTYPE from ORGANIZATIONPROF
+              $mappings:
+                StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                  - C9 # Parole Interstate Compact
+                StateCustodialAuthority.STATE_PRISON:
+                  - AI # Correctional Complex (of Facilities)
+                  - A6 # Central Office Time & Release
+                  - P3 # Dept. of (MH) Institutions
+                  - B8 # County Jail Backlog
+                StateCustodialAuthority.OTHER_STATE:
+                  - I4 # Other State Law Enforcement Agency
+          admission_date: start_datetime
+          release_date: end_datetime
+          facility: p_facility_id
+          housing_unit: p_unit_name
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text: start_reason #REASONFORMOVEMENT from EXTERNALMOVEMENT
+              $mappings:
+                StateSpecializedPurposeForIncarceration.GENERAL:
+                  - "01" # Approved Transfer Request
+                  - "02" # Closer To Home
+                  - "04" # Spend Time in Quarantine
+                  - "07" # Custody Change
+                  - "08" # Discipline Problem
+                  - "09" # Emergency
+                  - "11" # Voluntarily Returned
+                  - "12" # Placed in Jail Temporarily (CO call on general)
+                  - "13" # Initial Classification
+                  - "16" # Close Status
+                  - "17" # Program Placement
+                  - "19" # GP Placement
+                  - "20" # YOS Placement
+                  - "21" # Work Assignment
+                  - "22" # Progression
+                  - "23" # Regressive
+                  - "24" # Lateral
+                  - "25" # Community Placement
+                  - "26" # Off-site Appointment
+                  - "31" # Court Appearance
+                  - "32" # Completed
+                  - "33" # Court Trial
+                  - "35" # New Charge
+                  - "36" # New Charge/Short Term
+                  - "37" # Released In Error
+                  - "39" # Arrested and Placed in Jail
+                  - "51" # In State Supervision
+                  - "52" # Out Of State Parole Supervision
+                  - "53" # Parole Violator
+                  - "55" # Technical Parole Violator
+                  - "56" # Absconder in Custody In-State
+                  - "58" # Jail Treatment (CO call for general because this code has to do with YOS failures, not really treatment)
+                  - "5A" # Absconder in Custody Out of State
+                  - "5C" # Escapee in Custody in State
+                  - "5D" # Escapee in Custody Out of State
+                  - "5M" # Enroute to Another Institution
+                  - "60" # Accidental
+                  - "70" # Completed Treatment
+                  - "71" # Dental Needs
+                  - "72" # Improved Health
+                  - "73" # Medical Needs
+                  - "74" # Mental Health Needs
+                  - "75" # Bed Assignment (between Facilities in same Complex)
+                  - "81" # Escaped from CDOC
+                  - "82" # PC Movement
+                  - "85" # Temp. Move - Out-to-Court
+                  - "86" # Temp. Move - Return from Court
+                  - "87" # Temp. Move - Out to Infirmary
+                  - "88" # Temp. Move - Return from Infirmary
+                  - "89" # Temp. Move - Other
+                  - "90" # Temp. Move - Return from Other
+                  - "93" # Recaptured
+                  - "99" # Not Specified
+                  - "A1" # CO Discharge Return
+                  - "A2" # CO Discharge Return with NC
+                  - "A4" # Probation Violator
+                  - "A5" # Returned from Bond
+                  - "A7" # Probation Violator with NC
+                  - "A8" # New Conviction
+                  - "A9" # Possible Parole Violator (PPV)
+                  - "AB" # YOS Offender
+                  - "AE" # Adult Offender Commitment
+                  - "AF" # Court Order Return
+                  - "AG" # Dual Commitment
+                  - "AH" # Meets Criteria for Placement
+                  - "AI" # Community Center Regression
+                  - "AJ" # ISP-I Violator
+                  - "AN" # Community Transition
+                  - "AP" # YOS Failure/NC
+                  - "AQ" # CO State Hospital Hold
+                  - "AT" # Unauthorized Release
+                  - "AW" # Regress from Comm. Center
+                  - "AX" # Resume Supervision in CO Facility
+                  - "D4" # Interstate Compact
+                  - "D6" # Regular or Medical
+                  - "D7" # YOS Failure
+                  - "D9" # Fire Crew Deployment
+                  - "DA" # Heavy Equipment Crew Deployment
+                  - "DB" # Parolee Serving Time in another State D
+                  - "DC" # Out-of-State Detainer
+                  - "DE" # U.S. Immigration and Naturalization
+                  - "DF" # In Custody - Other than Revocation Process
+                  - "DK" # Parole to Charges
+                  - "DN" # Community Supervision Offender
+                  - "JB" # Jail Backlog
+                  - "P1" # Awaiting Transfer from Parole to Jail
+                  - "P2" # Parolee at non-CDOC Facility (see movement comments)
+                  - "P3" # Parole Revocation to Comm. Return to Custody
+                  - "P6" # Parole Revocation to Comm. Return to Custody Regress
+                  - "P7" # See External Movement Comments
+                  - "P8" # Community  Regressive - Awaiting Transfer to Facility
+                  - "P9" # Special Custody
+                  - "PA" # Technical Parolee Awaiting Transfer to Facility
+                  - "PB" # Parole Revocation Back to Jail
+                  - "PC" # Parole Revocation to Community Center
+                  - "PD" # Awaiting Transportation to a Facility
+                  - "PF" # Jail Backlog Awaiting Discharge
+                  - "PG" # ISP - Inmate
+                  - "PK" # Community Jail Transfer
+                  - "T1" # DAY TRIP / STERLING REGIONAL MEDICAL CENTER
+                  - "T2" # DAY TRIP TO BUENA VISTA MINIMUM CENTER
+                  - "T3" # DAY TRIP BVCF MEDICAL
+                  - "T4" # DAY TRIP TRINIDAD
+                  - "T5" # DAY TRIP - BRUSH MEDICAL
+                  - "T6" # DAY TRIP CASTLEROCK
+                  - "T7" # DAY TRIP ROCKY MOUNTAIN ORTHO/FT. COLLINS
+                  - "TA" # DAY TRIP AURORA
+                  - "TB" # DAY TRIP CANON CITY
+                  - "TC" # DAY TRIP CEDARIDGEs
+                  - "TD" # DAY TRIP COLORADO SPRINGS
+                  - "TE" # DAY TRIP DELTA
+                  - "TF" # DAY TRIP DENVER
+                  - "TG" # DAY TRIP GLENWOOD SPRINGS
+                  - "TH" # DAY TRIP HUGO
+                  - "TI" # DAY TRIP LA JUNTA
+                  - "TJ" # DAY TRIP LAKEWOOD
+                  - "TK" # DAY TRIP LEADVILLE
+                  - "TL" # DAY TRIP LIMON
+                  - "TM" # DAY TRIP MONTROSE
+                  - "TN" # DAY TRIP PUEBLO
+                  - "TO" # DAY TRIP RIFLE
+                  - "TP" # DAY TRIP SALIDA
+                  - "TQ" # DAY TRIP RANGELY
+                  - "TR" # DAY TRIP TO BUENA VISTA
+                  - "TS" # DAY TRIP TO AVCF
+                  - "TT" # DAY TRIP TO ARKANSAS VALLEY REGIONAL MEDICAL CENTR
+                  - "TU" # DAY TRIP TO SANCARLOS
+                  - "TV" # DAY TRIP TO FREMONT CORRECTIONAL FACILITY
+                  - "TW" # DAY TRIP TO CTCF INFIRMARY
+                  - "TX" # DAY TRIP TO DRDC INFIRMARY
+                  - "TY" # DAY TRIP TO COLORADO MENTAL HEALTH INST IN PUEBLO
+                  - "TZ" # DAY TRIP/LAS ANIMAS
+                  - "V1" # From Jail
+                  - "V2" # From Hospital
+                  - "V3" # From ICC
+                  - "V4" # From Other Jurisdiction
+                  - "V5" # From ISP-I
+          admission_reason:
+            $enum_mapping:
+              $raw_text: start_code
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - "80" # Escaped - TODO(#13602) Update after schema change
+                  - "81" # Out to Court - TODO(#13602) Update after schema change
+                  - "82" # Out on Escorted Leave - TODO(#13602) Update after schema change
+                  - "83" # Out to Hospital - TODO(#13602) Update after schema change
+                  - "84" # Out on Bond - TODO(#13602) Update after schema change
+                  - "86" # Out on Furlough - TODO(#13602) Update after schema change
+                  - "8B" # Out on Work Crew - TODO(#13602) Update after schema change
+                  - "8C" # Absent without Leave (AWOL) - TODO(#13602) Update after schema change
+                  - "8E" # AWOL from ISP-I - TODO(#13602) Update after schema change
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - "01" # New CO Commitment
+                  - "03" # YOS Commitment
+                  - "06" # Recommitment
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
+                  - "56" # Unauthorized Release (Would this go better in internal unknown since not technically return?)
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - "20" # Return from Escape
+                  - "2C" # Returned from AWOL
+                  - "33" # Escapee in Custody - Other Jurisdiction
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - "21" # Returned from Court
+                  - "22" # Returned from Escorted Leave
+                  - "23" # Returned from Hospital
+                  - "24" # Returned from Bond
+                  - "25" # Returned from ICC
+                  - "26" # Returned from Furlough
+                  - "2B" # Returned from Work Crew
+                  - "39" # Day Trip (to)
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - "10" # Returned from Parole
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - "13" # Terminated from ISP-I
+                  - "32" # Received at County/City Jail  (Often for regression or YOS failure or new charge)
+                  - "36" # Offender situation changed
+                  - "37" # Halfway-In (at CCC)
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - "3A" # Reassigned to another Facility
+                  - "30" # Received at DOC Facility
+                  - "31" # Received at Community Center
+                  - "63" # To Intensive Supervision Program (ISP)
+                  - "90" # Transferred to DOC Facility (added bc saw in start codes)
+                  - "91" # Transferred to Community Center
+                  - "92" # Transferred to County/City Jail
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - "2D" # Returned from Other Jurisdiction
+                  - "07" # ICC Commitment
+          release_reason:
+            $enum_mapping:
+              $raw_text: end_code
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - "78" # Returned to Parole
+                StateIncarcerationPeriodReleaseReason.COMMUTED:
+                  - "50" # Commutation
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - "30" # Received at DOC Facility
+                  - "31" # Received at Community Center
+                  - "32" # Received at County/City Jail
+                  - "3A" # Reassigned to another Facility
+                  - "79" # Returned to ISP-I
+                  - "90" # Transferred to DOC Facility
+                  - "91" # Transferred to Community Center
+                  - "92" # Transferred to County/City Jail
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - "33" # Escapee In Custody - Other Jurisdiction
+                  - "80" # Escaped
+                  - "88" # Absconded from Parole
+                  - "8C" # Absent without Leave (AWOL)
+                  - "8E" # AWOL from ISP-I
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                  - "39" # Day Trip (to)
+                  - "81" # Out To Court
+                  - "82" # Out on Escorted Leave
+                  - "83" # Out to Hospital
+                  - "84" # Out on Bond
+                  - "86" # Out on Furlough
+                  - "8B" # Out on Work Crew
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - "85" # Transferred Out-of-State (ICC)
+                  - "8D" # Out to Other Jurisdiction
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - "40" # Discharged
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - "01" # New CO Commitment - TODO(#13602) Update after schema change
+                  - "06" # Recommitment - TODO(#13602) Update after schema change
+                  - "10" # Returned from Parole - TODO(#13602) Update after schema change
+                  - "20" # Return from Escape - TODO(#13602) Update after schema change
+                  - "21" # Returned from Court - TODO(#13602) Update after schema change
+                  - "22" # Returned from Escorted Leave - TODO(#13602) Update after schema change
+                  - "23" # Returned from Hospital - TODO(#13602) Update after schema change
+                  - "24" # Return from Bond - TODO(#13602) Update after schema change
+                  - "26" # Returned from Furlough - TODO(#13602) Update after schema change
+                  - "2B" # Returned from Work Crew - TODO(#13602) Update after schema change
+                  - "2C" # Returned from AWOL - TODO(#13602) Update after schema change
+                  - "2D" # Returned from Other Jurisdiction - TODO(#13602) Update after schema change
+                  - "37" # Halfway-In (at CCC) - TODO(#13602) Update after schema change
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - "60" # Paroled
+                StateIncarcerationPeriodReleaseReason.COURT_ORDER:
+                  - "52" # Released by Court
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - "75" # Death
+                StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
+                  - "56" # Unauthorized Release
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - "13" # Terminated from ISP-I
+                  - "36" # Offender Situation Changed
+                  - "63" # To Intensive Supervision Program (ISP)
