@@ -104,6 +104,7 @@ SELECT
     JOCharge.OffenseDate,
     JOCharge.PleaDate,
     JOCharge.ChargeOffense,
+    JOCharge.ConvictionOffense,
     JOCharge.CrimeType,
     JOCharge.ConvictionClass,
     JOCharge.Verdict,

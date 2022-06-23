@@ -29,6 +29,7 @@ input_columns:
   - OffenseDate
   - PleaDate
   - ChargeOffense
+  - ConvictionOffense
   - CrimeType
   - ConvictionClass
   - Verdict
@@ -37,7 +38,8 @@ input_columns:
   - OffenseDescription
   - AssaultiveOffenseFlag
   - SexOffenderFlag
-unused_columns: []
+unused_columns:
+  - ChargeOffense
 variables:
   - is_incarceration_sentence:
       $or:
@@ -182,7 +184,7 @@ output:
                       offense_date: OffenseDate
                       date_charged: PleaDate
                       county_code: ConvictionCounty
-                      statute: ChargeOffense
+                      statute: ConvictionOffense
                       description: OffenseDescription
                       classification_type: $variable(charge_classification_type)
                       classification_subtype: ConvictionClass
@@ -243,7 +245,7 @@ output:
                       offense_date: OffenseDate
                       date_charged: PleaDate
                       county_code: ConvictionCounty
-                      statute: ChargeOffense
+                      statute: ConvictionOffense
                       description: OffenseDescription
                       classification_type: $variable(charge_classification_type)
                       classification_subtype: ConvictionClass

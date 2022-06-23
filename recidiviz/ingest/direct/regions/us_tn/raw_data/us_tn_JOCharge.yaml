@@ -39,6 +39,9 @@ columns:
   - name: ChargeOffense
     description: |-
       The code for the offense that a person is originally charged.
+  - name: ConvictionOffender
+    description: |-
+      The offender for which a conviction applies.
   - name: OffenseCounty
     description: |-
       The county in which a person commits the offense for a judgment order.
