@@ -15,14 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import debounce from "lodash.debounce";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components/macro";
 
 import { useStore } from "../../stores";
-import { printReportTitle } from "../../utils";
+import { memoizeDebounce, printReportTitle } from "../../utils";
 import {
   BinaryRadioGroupClearButton,
   BinaryRadioGroupContainer,
@@ -160,8 +159,11 @@ const DataEntryForm: React.FC<{
     formStore.validatePreviouslySavedInputs(reportID);
   }, [formStore, reportID]);
 
-  const saveUpdatedMetrics = async () => {
-    const updatedMetrics = formStore.reportUpdatedValuesForBackend(reportID);
+  const saveUpdatedMetrics = async (metricKey?: string | undefined) => {
+    const updatedMetrics = formStore.reportUpdatedValuesForBackend(
+      reportID,
+      metricKey
+    );
     const status =
       reportStore.reportOverviews[reportID].status === "PUBLISHED"
         ? "PUBLISHED"
@@ -181,7 +183,9 @@ const DataEntryForm: React.FC<{
     }
   };
 
-  const debouncedSave = useRef(debounce(saveUpdatedMetrics, 1500)).current;
+  const debouncedSave = useRef(
+    memoizeDebounce(saveUpdatedMetrics, 1500)
+  ).current;
 
   /** Saves metrics before tab/window close or page refreshes */
   useEffect(
@@ -208,8 +212,14 @@ const DataEntryForm: React.FC<{
 
   return (
     <Form
-      onChange={() => {
-        debouncedSave();
+      onChange={(e) => {
+        // When the form has changed, check the changed element for a `data-metric-key`
+        // data attribute. If present, pass to the `debouncedSave` function, which will
+        // then only save that metric. If not present, `metricKey` will be undefined,
+        // in which case `debouncedSave` will save all metrics.
+        const target = e.target as HTMLFormElement;
+        const metricKey = target.getAttribute("data-metric-key") ?? undefined;
+        debouncedSave(metricKey);
       }}
     >
       {/* Form Title */}
@@ -297,7 +307,7 @@ const DataEntryForm: React.FC<{
                               undefined,
                               true
                             );
-                            debouncedSave();
+                            debouncedSave(metric.key);
                           }
                         }}
                       >

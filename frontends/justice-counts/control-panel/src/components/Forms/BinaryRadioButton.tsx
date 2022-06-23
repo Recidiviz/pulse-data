@@ -104,17 +104,19 @@ export const BinaryRadioGroupClearButton = styled.div`
 interface RadioButtonProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   context?: string;
+  metricKey?: string;
 }
 
 /** Single radio button in the style of a regular button */
 export const BinaryRadioButton: React.FC<RadioButtonProps> = ({
   label,
   context,
+  metricKey,
   ...props
 }): JSX.Element => {
   return (
     <RadioButtonWrapper>
-      <RadioButtonElement {...props} />
+      <RadioButtonElement {...props} data-metric-key={metricKey} />
       <RadioButtonLabel htmlFor={props.id}>{label}</RadioButtonLabel>
     </RadioButtonWrapper>
   );

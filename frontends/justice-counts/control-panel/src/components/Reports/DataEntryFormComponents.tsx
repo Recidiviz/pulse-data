@@ -56,6 +56,7 @@ export const MetricTextInput = observer(
         error={metricsValues[reportID]?.[metric.key]?.error}
         type="text"
         name={metric.key}
+        metricKey={metric.key}
         valueLabel={metric.unit}
         onChange={handleMetricChange}
         value={
@@ -117,6 +118,7 @@ export const DisaggregationDimensionTextInput = observer(
           ]?.error
         }
         type="text"
+        metricKey={metric.key}
         name={dimension.key}
         id={dimension.key}
         valueLabel={metric.unit}
@@ -184,6 +186,7 @@ export const BinaryRadioButtonInputs = observer(
             key={option}
             id={`${context.key}-${option}`}
             name={context.key}
+            metricKey={metric.key}
             label={option}
             value={option}
             onChange={handleContextChange}
@@ -240,6 +243,7 @@ export const AdditionalContextInput = observer(
     return (
       <TextInput
         type="text"
+        metricKey={metric.key}
         name={context.key}
         id={context.key}
         label="Type here..."

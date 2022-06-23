@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { debounce, memoize } from "lodash";
+
 import { MetricContext } from "../shared/types";
 
 /**
@@ -172,3 +174,45 @@ export const groupBy = <T, K extends keyof any>(arr: T[], key: (i: T) => K) => {
   });
   return result;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface MemoizeDebouncedFunction<F extends (...args: any[]) => any> {
+  (...args: Parameters<F>): void;
+  flush: (...args: Parameters<F>) => void;
+}
+
+/**
+ * This method should be used instead of the standard `debounce` if we want to
+ * debounce *only* if the arguments to the function are the same.
+ * For instance, consider a function `click(param: str)`. With standard debounce,
+ * calling `click('foo')` and `click('bar')` in quick succession will only result
+ * in the execution of `click('bar')`. However, using memoized debounce, both
+ * functions will execute, because their parameters are different.
+ * Taken from https://github.com/lodash/lodash/issues/2403#issuecomment-816137402
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function memoizeDebounce<F extends (...args: any[]) => any>(
+  func: F,
+  wait = 0,
+  options: _.DebounceSettings = {},
+  resolver?: (...args: Parameters<F>) => unknown
+): MemoizeDebouncedFunction<F> {
+  const debounceMemo = memoize<(...args: Parameters<F>) => _.DebouncedFunc<F>>(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (..._args: Parameters<F>) => debounce(func, wait, options),
+    resolver
+  );
+
+  function wrappedFunction(
+    this: MemoizeDebouncedFunction<F>,
+    ...args: Parameters<F>
+  ): ReturnType<F> | undefined {
+    return debounceMemo(...args)(...args);
+  }
+
+  wrappedFunction.flush = (...args: Parameters<F>): void => {
+    debounceMemo(...args).flush();
+  };
+
+  return wrappedFunction as unknown as MemoizeDebouncedFunction<F>;
+}
