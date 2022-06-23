@@ -18,7 +18,11 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -62,7 +66,7 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 ELSE Location_Name 
             END AS level_1_incarceration_location_name,
             facility_code AS level_1_incarceration_location_alias
-        FROM `{project_id}.us_me_raw_data_up_to_date_views.CIS_908_CCS_LOCATION_latest` raw
+        FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_908_CCS_LOCATION_latest` raw
         LEFT JOIN `{project_id}.{external_reference_dataset}.us_me_incarceration_facility_names` map
             ON raw.Location_Name = map.facility_name
         -- Filter to adult facilities and re-entry centers
@@ -130,6 +134,9 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=INCARCERATION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
+    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_ME.value
+    ),
 )
 
 if __name__ == "__main__":

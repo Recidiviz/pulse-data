@@ -60,7 +60,7 @@ case_notes AS (
             other,
             new_investigation
         )) AS case_notes_flag
-    FROM `{project_id}.analyst_data_scratch_space.us_id_case_notes_flag_24`
+    FROM `{project_id}.{analyst_data_scratch_space_dataset}.us_id_case_notes_flag_24`
     WHERE SAFE_CAST(create_dt AS date) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 YEAR)
     GROUP BY 1, 2
 ),
@@ -71,7 +71,7 @@ cis_ftrd AS (
         UPPER(status_description) AS cis_status,
         cis_ftrd,
         life_death_flag AS cis_life_death_flag,
-    FROM `{project_id}.analyst_data_scratch_space.us_id_cis_ftrd_20211130`
+    FROM `{project_id}.{analyst_data_scratch_space_dataset}.us_id_cis_ftrd_20211130`
 )
 SELECT
     CURRENT_DATE('US/Eastern') AS date_of_exclusion,
@@ -98,6 +98,7 @@ OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_QUERY_TEMPLATE,
     description=OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_DESCRIPTION,
     analyst_data_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    analyst_data_scratch_space_dataset=dataset_config.ANALYST_DATA_SCRATCH_SPACE_DATASET,
 )
 
 if __name__ == "__main__":
