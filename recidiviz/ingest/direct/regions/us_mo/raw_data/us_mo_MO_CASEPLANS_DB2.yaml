@@ -1,0 +1,42 @@
+file_tag: MO_CASEPLANS_DB2
+file_description: |-
+  MO Supervision Case Plans - Main Table. This tables lists all case plans for people who have been assessed with ORAS assessment tool.
+data_classification: source
+primary_key_cols:
+  - OFFENDER_ID
+  - CASE_PLAN_ID
+columns:
+  - name: OFFENDER_ID
+    description: |-
+      UCCI ID Number
+  - name: CASE_PLAN_ID
+    description: |-
+      Unique Identifer for Case Plan
+  - name: ASSESSMENT_ID
+    description: |-
+      Unique Identifier for Assessment
+  - name: DOC_ID
+    description: |-
+      Unique Identifer for DOC ID
+  - name: MOCIS_DOC_ID
+    description: |-
+      Unique Identifier for MOCIS DOC
+  - name: FOCLIST
+    description: |-
+      Assessment Sequence Number
+  - name: AGENCY_NAME
+    description: |-
+      Name of Agency
+  - name: INSTRUMENT_NAME
+    description: |-
+      Name of Instrument
+  - name: CREATED_BY
+    is_pii: True
+    description: |-
+      User that entered information
+  - name: CREATED_AT
+    description: |-
+      Date information was entered
+  - name: CASE_PLAN_DATE
+    description: |-
+      Date of Case Plan

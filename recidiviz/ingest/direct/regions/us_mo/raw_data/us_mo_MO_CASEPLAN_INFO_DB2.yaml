@@ -1,0 +1,36 @@
+file_tag: MO_CASEPLAN_INFO_DB2
+file_description: |-
+  Supervision Case Plan Information. This table shows the specific needs and domains for a person's case plan ID.
+data_classification: source
+primary_key_cols:
+  - OFFENDER_ID
+  - CASE_PLAN_ID
+  - CASE_PLAN_NEED_ID
+columns:
+  - name: OFFENDER_ID
+    is_pii: True
+    description: |-
+      UCCI ID Number
+  - name: CASE_PLAN_ID
+    is_pii: True
+    description: |-
+      Unique Identifer for Case Plan
+  - name: CASE_PLAN_NEED_ID
+    description: |-
+      Unique Identifier for Need
+  - name: FOCLIST
+    description: |-
+      Assessment Sequence Number
+  - name: DOMAIN_NAME
+    description: |-
+      Area of focus
+  - name: PRIORITY_NAME
+    description: |-
+      Level of priority
+  - name: RISK_LEVEL
+    description: |-
+      Assessed level of risk
+  - name: CREATED_BY
+    is_pii: True
+    description: |-
+      User that entered information

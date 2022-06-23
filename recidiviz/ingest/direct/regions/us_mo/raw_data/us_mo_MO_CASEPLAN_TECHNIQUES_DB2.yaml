@@ -1,0 +1,52 @@
+file_tag: MO_CASEPLAN_TECHNIQUES_DB2
+file_description: |-
+  Supervision Case Plan Techniques. This table lists the techniques connected to objectives in a persons's Case Plan. 
+  Techniques are provider responsibilities to assist offender with change. Each objective should have a corresponding technique.
+data_classification: source
+primary_key_cols:
+  - OFFENDER_ID
+  - CASE_PLAN_ID
+  - OBJECTIVE_ID
+  - TECHNIQUE_ID
+columns:
+  - name: OFFENDER_ID
+    is_pii: True
+    description: |-
+      UCCI ID Number
+  - name: CASE_PLAN_ID
+    is_pii: True
+    description: |-
+      Unique Identifer for Case Plan
+  - name: OBJECTIVE_ID
+    description: |-
+      Unique Identifier for Objective
+  - name: TECHNIQUE_ID
+    description: |-
+      Unique Identifer for Tecnique
+  - name: FOCLIST
+    description: |-
+      Assessment Sequence Number
+  - name: TECHNIQUE_TEXT
+    is_pii: True
+    description: |-
+      Free text of technique
+  - name: HOURS_ASSIGNED
+    description: |-
+      Hours required for technique
+  - name: HOURS_COMPLETED
+    description: |-
+      Hours completed on technique
+  - name: OFFENDER_PROGRAM_ASSIGNMENT_ID
+    description: |-
+      Unique identifier for program assignment
+  - name: TECHNIQUE_TYPE
+    description: |-
+      Type of technique
+  - name: TECHNIQUE_DETAIL
+    is_pii: True
+    description: |-
+      Details of technique
+  - name: CREATED_BY
+    is_pii: True
+    description: |-
+      User that entered information

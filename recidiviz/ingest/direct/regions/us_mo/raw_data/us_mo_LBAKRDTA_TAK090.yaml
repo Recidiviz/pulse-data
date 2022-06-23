@@ -1,0 +1,66 @@
+file_tag: LBAKRDTA_TAK090
+file_description: |-
+  Fines and Fees for Presumptive Release Dates. Column prefix: DD. # TODO(#13474) Fill in definition with more details.
+data_classification: source
+primary_key_cols:
+  - DD_DOC
+  - DD_CYC
+columns:
+  - name: DD_DOC
+    is_pii: True
+    description: |-
+      DOC ID Number
+  - name: DD_CYC
+    description: |-
+      Cycle Number
+  - name: DD_JAS
+    description: |-
+      Community Service Hours
+  - name: DD_JAC
+    description: |-
+      Court Costs
+  - name: DD_JAV
+    description: |-
+      Crime Victim Compensation
+  - name: DD_JAF
+    description: |-
+      Fine
+  - name: DD_JAR
+    description: |-
+      Restitution
+  - name: DD_JAA
+    description: |-
+      Attorney's Fee
+  - name: DD_JCS
+    description: |-
+      Community Service Hours Balance
+  - name: DD_JCT
+    description: |-
+      Community Service Minutes Balance
+  - name: DD_JCC
+    description: |-
+      Court Costs Balance
+  - name: DD_JCV
+    description: |-
+      Crime Victim Compensation Balance
+  - name: DD_JCF
+    description: |-
+      Fine Balance
+  - name: DD_JCR
+    description: |-
+      Restitution Balance
+  - name: DD_JCA
+    description: |-
+      Attorney's Fee Balance
+  - name: DD_DCR
+    description: |-
+      Row Creation Date
+  - name: DD_TCR
+    description: |-
+      Row Creation Time
+  - name: DD_DLU
+    description: |-
+      Row Modify Date
+  - name: DD_TLU
+    description: |-
+      Row Modify Time

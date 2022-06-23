@@ -1,0 +1,132 @@
+file_tag: LBAKRDTA_TAK020
+file_description: |-
+  Parole Board Actions. Column prefix: BQ # TODO(#13474) Fill in definition with more details.
+data_classification: source
+primary_key_cols:
+  - BQ_DOC
+  - BQ_CYC
+columns:
+  - name: BQ_DOC
+    is_pii: True
+    description: |-
+      DOC ID Number
+  - name: BQ_CYC
+    description: |-
+      Cycle Number
+  - name: BQ_BSN
+    description: |-
+      Sequence Number
+  - name: BQ_BAV
+    description: |-
+      P&P Board Action Sheet Version Number
+  - name: BQ_PBA
+    description: |-
+      Parole Board Action Type
+  - name: BQ_PH
+    description: |-
+      Parole Board Action Date
+  - name: BQ_HRN
+    description: |-
+      Parole Board Hearing Number
+  - name: BQ_TPN
+    description: |-
+      Parole Board Hearing Tape Number
+  - name: BQ_GUD
+    description: |-
+      Parole Board Type of Decisions
+  - name: BQ_PRV
+    description: |-
+      Parole Board Violation Flag
+  - name: BQ_PR
+    description: |-
+      Parole Presumptive Release Date
+  - name: BQ_RRS
+    description: |-
+      Parole Board Release Strategy Flag
+  - name: BQ_SCN
+    description: |-
+      Parole Board Special Conditions
+  - name: BQ_PDS
+    description: |-
+      Parole Drug Sale
+  - name: BQ_ESN
+    description: |-
+      Eligibility Sequence Number
+  - name: BQ_SDS
+    description: |-
+      Salient Factor Sequence Number
+  - name: BQ_SEO
+    description: |-
+      Sentence Sequence Number
+  - name: BQ_SOC
+    description: |-
+      Parole Most Serious Offense Class
+  - name: BQ_RFB
+    description: |-
+      Parole Board Referral
+  - name: BQ_VCN
+    description: |-
+      Parole Victims Notified
+  - name: BQ_VCP
+    description: |-
+      Parole Victims Present
+  - name: BQ_OFN
+    description: |-
+      Parole Officials Notified
+  - name: BQ_OFP
+    description: |-
+      Parole Officials Present
+  - name: BQ_PBN
+    description: |-
+      Parole Board Next Action Type
+  - name: BQ_NA
+    description: |-
+      Parole Board Next Action Date
+  - name: BQ_PA
+    description: |-
+      CPAR Dictation Due / IPO Action Date
+  - name: BQ_HRF
+    description: |-
+      High Risk Flag
+  - name: BQ_RTC
+    description: |-
+      Parole Board Type of Release
+  - name: BQ_RV
+    description: |-
+      Parole Board Review Date
+  - name: BQ_OAP
+    description: |-
+      Parole Board Offender Appeal
+  - name: BQ_AO
+    description: |-
+      Parole Order for Arrest Date
+  - name: BQ_OR
+    description: |-
+      Parole Offender New Sentence/CR Max Date
+  - name: BQ_OM
+    description: |-
+      Max Parole Date
+  - name: BQ_ON
+    description: |-
+      New Max Parole Date
+  - name: BQ_ABF
+    description: |-
+      Parole Absconder Flag
+  - name: BQ_SOF
+    description: |-
+      Parole Sentence Outside DAI Flag
+  - name: BQ_SS
+    description: |-
+      P&P Strategy Stipulation Date
+  - name: BQ_DCR
+    description: |-
+      Row Creation Date
+  - name: BQ_TCR
+    description: |-
+      Row Creation Time
+  - name: BQ_DLU
+    description: |-
+      Row Modify Date
+  - name: BQ_TLU
+    description: |-
+      Row Modify Time
