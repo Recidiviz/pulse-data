@@ -1,4 +1,4 @@
-# Recidiviz - a data platform for criminal justice reform
+# recidiviz - a data platform for criminal justice reform
 # Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
