@@ -44,8 +44,10 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = f"""
         REPLACE(JSON_EXTRACT(full_name, '$.given_names'), '"', '')  AS given_names,
         REPLACE(JSON_EXTRACT(full_name, '$.surname'), '"', '') AS surname,
         -- TODO(#5445): We are currently shoving in a hack to pick one possible name for the agent.
-        -- We should come up with a smarter way to have a single name for the agent.
-        ROW_NUMBER() OVER (PARTITION BY state_code, agent_type, external_id ORDER BY CHAR_LENGTH(full_name) DESC NULLS LAST) AS rn
+        -- We should come up with a smarter way to have a single name for the agent. 
+        -- Using CHAR_LENGTH(full_name) generally picks the agent's name rather than shortcode i.e. `Agent One` over `AONE`
+        -- Ties go to the latest record. 
+        ROW_NUMBER() OVER (PARTITION BY state_code, agent_type, external_id ORDER BY CHAR_LENGTH(full_name) DESC, agent_id DESC NULLS LAST) AS rn
       FROM `{{project_id}}.{{base_dataset}}.state_agent` agent
     ),
     agent_names AS (
