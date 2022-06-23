@@ -10,7 +10,9 @@ mypy-protobuf = "<3.0.0"
 "autopep8" = "*"
 mock = "*"
 pytest = "*"
-pylint = "*"
+# TODO(https://github.com/PyCQA/pylint/issues/7005): Unpin this once a solution is found to the
+#  bad-plugin-value error that appears in version 2.14.2 and beyond.
+pylint = "==2.14.1"
 pytest-cov = "*"
 mypy = "*"
 bandit = "*"
