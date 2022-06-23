@@ -55,7 +55,12 @@ _DATASET_NAME = "my_views_dataset"
 _DATASET_NAME_2 = "my_views_dataset_2"
 _DATASET_NAME_3 = "my_views_dataset_3"
 
-RAW_DATASET_ID_QUERY_REGEX = re.compile(r"`[a-z_{}]+\.([a-zA-Z_]+)\.[a-zA-Z_]+`")
+# Regex to find datasets that are referenced directly in a query template, rather that
+# being injected via a query argument. E.g. if the query contains
+# `{project_id}.my_dataset.my_table` instead of `{project_id}.{dataset}.my_table`.
+DIRECTLY_REFERENCED_DATASET_ID_REGEX = re.compile(
+    r"`[a-z_{}]+\.([a-zA-Z_\d]+)\.[a-zA-Z_\d]+`"
+)
 
 
 class ViewManagerTest(unittest.TestCase):
@@ -1081,12 +1086,15 @@ class ViewManagerTest(unittest.TestCase):
                 # to allow for raw dataset_id strings in the view query template
                 continue
 
-            match = re.search(RAW_DATASET_ID_QUERY_REGEX, view.view_query_template)
+            match = re.search(
+                DIRECTLY_REFERENCED_DATASET_ID_REGEX, view.view_query_template
+            )
 
             if match:
                 raise ValueError(
-                    f"Found raw dataset_id [{match.group(1)}] in view query template for "
-                    f"view: [{view.dataset_id}.{view.view_id}]. Must replace with query argument."
+                    f"Found dataset_id [{match.group(1)}] referenced directly in view "
+                    f"query template for view: [{view.dataset_id}.{view.view_id}]. "
+                    f"Must replace with query argument."
                 )
 
 

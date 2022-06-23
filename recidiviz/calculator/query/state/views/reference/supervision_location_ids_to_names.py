@@ -59,7 +59,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 r'(R\\1)'
                 )
             ) AS level_1_supervision_location_name
-        FROM `{project_id}.us_me_raw_data_up_to_date_views.CIS_908_CCS_LOCATION_latest`
+        FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_908_CCS_LOCATION_latest`
         -- Adult Supervision Office Location Type
         WHERE Cis_9080_Ccs_Location_Type_Cd = '4'
     ),
@@ -174,6 +174,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         StateCode.US_PA.value
+    ),
+    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_ME.value
     ),
 )
 
