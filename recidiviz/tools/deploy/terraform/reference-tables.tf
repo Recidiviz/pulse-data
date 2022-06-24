@@ -403,3 +403,28 @@ module "us_tn_incarceration_facility_map_table" {
 ]
 EOF
 }
+
+module "us_mi_incarceration_facility_names_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "us_mi_incarceration_facility_names"
+  schema     = <<EOF
+[
+  {
+    "name": "facility_code",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "facility_name",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
