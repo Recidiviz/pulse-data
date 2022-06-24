@@ -94,6 +94,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_pr
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER,
 )
 
+# If adding a PRISON module specific view builder to this list, also add it to the PATHWAYS_PRISON export in products.yaml
 PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,

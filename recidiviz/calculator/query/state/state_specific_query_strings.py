@@ -60,6 +60,7 @@ STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode.US_ME: "CIS_309_MOVEMENT",
     StateCode.US_ND: "elite_externalmovements",
     StateCode.US_TN: "OffenderMovement",
+    StateCode.US_MI: "ADH_OFFENDER_EXTERNAL_MOVEMENT",
 }
 
 # Select the raw table that ultimately powers a state's supervision pathways calculations.
@@ -478,6 +479,8 @@ def pathways_state_specific_facility_filter() -> str:
                 facility not in ("CJ","WH", "GENERAL")
             WHEN state_code = "US_ME" THEN
                 facility not in ("BANGOR (MAIN OFFICE), ADULT")
+            WHEN state_code = "US_MI" THEN
+                facility not in ("COUNTY JAILS", "JLS", "SPECIAL ALTERNATIVE INCARCERATION/MEN'S", "SPECIAL ALTERNATIVE INCARCERATION/WOMEN'S", "ZLI", "ZLW")
             ELSE true
         END
     """

@@ -118,6 +118,19 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         LEFT OUTER JOIN
             `{project_id}.{external_reference_dataset}.us_tn_incarceration_facility_names`
         ON level_2_incarceration_location_external_id = facility_code
+    ),
+    mi_location_names AS (
+        SELECT
+            DISTINCT
+                'US_MI' AS state_code,
+                'NOT_APPLICABLE' AS level_3_incarceration_location_external_id,
+                'NOT_APPLICABLE' AS level_3_incarceration_location_name,
+                'NOT_APPLICABLE' AS level_2_incarceration_location_external_id,
+                'NOT_APPLICABLE' AS level_2_incarceration_location_name,
+                facility_code AS level_1_incarceration_location_external_id,
+                facility_name AS level_1_incarceration_location_name,
+                facility_code AS level_1_incarceration_location_alias
+        FROM `{project_id}.{external_reference_dataset}.us_mi_incarceration_facility_names`
     )
     SELECT * FROM me_location_names
     UNION ALL
@@ -126,6 +139,8 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     SELECT * FROM id_location_names
     UNION ALL
     SELECT * FROM tn_location_names
+    UNION ALL
+    SELECT * FROM mi_location_names
     """
 
 INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
