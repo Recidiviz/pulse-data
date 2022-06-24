@@ -42,6 +42,10 @@ from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
 )
+from recidiviz.common.constants.state.state_drug_screen import (
+    StateDrugScreenResult,
+    StateDrugScreenSampleType,
+)
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
@@ -877,6 +881,30 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             end_reason_raw_text="PERSONAL",
             employer_name="ACME, INC.",
             job_title=None,
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateDrugScreen(self) -> None:
+        result = deserialize_entity_factories.StateDrugScreenFactory.deserialize(
+            state_code="us_xx",
+            external_id="12356",
+            drug_screen_date="2022-05-08",
+            drug_screen_result=StateDrugScreenResult.NEGATIVE,
+            drug_screen_result_raw_text="DRUN",
+            sample_type=StateDrugScreenSampleType.BREATH,
+            sample_type_raw_text="BREATH",
+        )
+
+        # Assert
+        expected_result = entities.StateDrugScreen(
+            state_code="US_XX",
+            external_id="12356",
+            drug_screen_date=datetime.date(2022, 5, 8),
+            drug_screen_result=StateDrugScreenResult.NEGATIVE,
+            drug_screen_result_raw_text="DRUN",
+            sample_type=StateDrugScreenSampleType.BREATH,
+            sample_type_raw_text="BREATH",
         )
 
         self.assertEqual(expected_result, result)

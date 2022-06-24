@@ -24,6 +24,10 @@ import attr
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
+from recidiviz.common.constants.state.state_drug_screen import (
+    StateDrugScreenResult,
+    StateDrugScreenSampleType,
+)
 from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
     StateEmploymentPeriodEndReason,
@@ -202,6 +206,7 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
         )
     ],
     schema.StateCourtCase: [schema.StateCourtCase(state_code=StateCode.US_XX.value)],
+    schema.StateDrugScreen: [schema.StateDrugScreen(state_code=StateCode.US_XX.value)],
     schema.StateEmploymentPeriod: [
         schema.StateEmploymentPeriod(state_code=StateCode.US_XX.value)
     ],
@@ -311,6 +316,11 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
     ],
     schema.StateCourtCase: [
         schema.StateCourtCase(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateDrugScreen: [
+        schema.StateDrugScreen(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
@@ -479,6 +489,17 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         schema.StateCourtCase(
             state_code=StateCode.US_XX.value, county_code="my county"
         ),
+    ],
+    schema.StateDrugScreen: [
+        schema.StateDrugScreen(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            drug_screen_date=datetime.date(2022, 5, 8),
+            drug_screen_result=StateDrugScreenResult.NEGATIVE.value,
+            drug_screen_result_raw_text="DRUN",
+            sample_type=StateDrugScreenSampleType.BREATH.value,
+            sample_type_raw_text="BREATH",
+        )
     ],
     schema.StateEmploymentPeriod: [
         schema.StateEmploymentPeriod(

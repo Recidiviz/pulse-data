@@ -43,6 +43,10 @@ from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
 )
+from recidiviz.common.constants.state.state_drug_screen import (
+    StateDrugScreenResult,
+    StateDrugScreenSampleType,
+)
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
@@ -1576,6 +1580,50 @@ class StateEmploymentPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     employment_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateDrugScreen(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """The StateDrugScreen object represents information about a person's drug screen results for a given date."""
+
+    # State Code
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Status
+    drug_screen_result: Optional[StateDrugScreenResult] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateDrugScreenResult),
+    )
+    drug_screen_result_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Attributes
+    #   - When
+    drug_screen_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_date
+    )
+
+    #   - What
+    sample_type: Optional[StateDrugScreenSampleType] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateDrugScreenSampleType),
+    )
+    sample_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    #   - Who
+    # See |person| in entity relationships below.
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    drug_screen_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 

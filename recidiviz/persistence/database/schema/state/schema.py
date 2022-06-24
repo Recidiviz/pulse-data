@@ -628,6 +628,30 @@ state_employment_period_end_reason = Enum(
     name="state_employment_period_end_reason",
 )
 
+state_drug_screen_result = Enum(
+    state_enum_strings.state_drug_screen_result_positive,
+    state_enum_strings.state_drug_screen_result_negative,
+    state_enum_strings.state_drug_screen_result_admitted_positive,
+    state_enum_strings.state_drug_screen_result_medical_exemption,
+    state_enum_strings.state_drug_screen_result_no_result,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_drug_screen_result",
+)
+
+state_drug_screen_sample_type = Enum(
+    state_enum_strings.state_drug_screen_sample_type_urine,
+    state_enum_strings.state_drug_screen_sample_type_sweat,
+    state_enum_strings.state_drug_screen_sample_type_saliva,
+    state_enum_strings.state_drug_screen_sample_type_blood,
+    state_enum_strings.state_drug_screen_sample_type_hair,
+    state_enum_strings.state_drug_screen_sample_type_breath,
+    state_enum_strings.state_drug_screen_sample_type_no_sample,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_drug_screen_sample_type",
+)
+
 # Join tables
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
@@ -997,6 +1021,7 @@ class StatePerson(StateBase):
     employment_periods = relationship(
         "StateEmploymentPeriod", backref="person", lazy="selectin"
     )
+    drug_screens = relationship("StateDrugScreen", backref="person", lazy="selectin")
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
@@ -2791,4 +2816,68 @@ class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     )
     end_reason_raw_text = Column(
         String(255), comment="The raw text value of the end reason."
+    )
+
+
+class StateDrugScreen(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateDrugScreen in the SQL schema."""
+
+    __tablename__ = "state_drug_screen"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="state_drug_screen_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": (
+                "The StateDrugScreen object represents information about the results of a particular drug screen."
+            )
+        },
+    )
+
+    drug_screen_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="drug screen"
+        ),
+    )
+    external_id = Column(
+        String(255),
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateDrugScreen"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    drug_screen_date = Column(
+        Date,
+        nullable=False,
+        comment=(
+            "Date the drug screen was administered. This is the date the sample was collected or a positive admission was recorded."
+        ),
+    )
+    drug_screen_result = Column(
+        state_drug_screen_result,
+        comment=(
+            "Enum indicating whether the test result was positive, negative or other."
+        ),
+    )
+    drug_screen_result_raw_text = Column(
+        String(255), comment="Raw text for the result field."
+    )
+    sample_type = Column(
+        state_drug_screen_sample_type,
+        comment="Type of sample collected for the drug screen.",
+    )
+    sample_type_raw_text = Column(
+        String(255), comment="Raw text for the sample_type field."
     )
