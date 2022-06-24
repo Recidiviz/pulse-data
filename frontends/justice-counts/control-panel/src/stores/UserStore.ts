@@ -28,12 +28,6 @@ class UserStore {
 
   api: API;
 
-  name: string | undefined;
-
-  email: string | undefined;
-
-  nameOrEmail: string | undefined;
-
   auth0UserID: string | undefined;
 
   userAgencies: UserAgency[] | undefined;
@@ -50,8 +44,6 @@ class UserStore {
     makeAutoObservable(this);
     this.authStore = authStore;
     this.api = api;
-    this.name = this.authStore.user?.name;
-    this.email = this.authStore.user?.email;
     this.auth0UserID = this.authStore.user?.id;
     this.userAgencies = undefined;
     this.userInfoLoaded = false;
@@ -61,7 +53,7 @@ class UserStore {
 
     when(
       () => api.isSessionInitialized,
-      () => this.retrieveUserPermissionsAndAgencies()
+      () => this.updateAndRetrieveUserPermissionsAndAgencies()
     );
   }
 
@@ -72,6 +64,18 @@ class UserStore {
       return this.userAgencies[0].id;
     }
     return undefined;
+  }
+
+  get name(): string | undefined {
+    return this.authStore.user?.name;
+  }
+
+  get email(): string | undefined {
+    return this.authStore.user?.email;
+  }
+
+  get nameOrEmail(): string | undefined {
+    return this.name || this.email;
   }
 
   get currentAgency(): UserAgency | undefined {
@@ -86,16 +90,13 @@ class UserStore {
     });
   }
 
-  async retrieveUserPermissionsAndAgencies() {
+  async updateAndRetrieveUserPermissionsAndAgencies() {
     try {
-      if (!this.authStore.user) {
-        Promise.reject(new Error("No user information exists."));
-      }
       const response = (await this.api.request({
         path: "/api/users",
         method: "POST",
         body: {
-          name: this.authStore.user?.name,
+          name: this.name,
         },
       })) as Response;
       const {
@@ -104,15 +105,11 @@ class UserStore {
         has_seen_onboarding: hasSeenOnboarding, // will be used in future
       } = await response.json();
       runInAction(() => {
-        this.nameOrEmail =
-          this.authStore.user?.name || this.authStore.user?.email;
         this.userAgencies = userAgencies;
         this.permissions = permissions;
         this.hasSeenOnboarding = hasSeenOnboarding; // will be used in future
         this.currentAgencyId = this.getInitialAgencyId();
-        if (this.userAgencies) {
-          this.userInfoLoaded = true;
-        }
+        this.userInfoLoaded = true;
       });
     } catch (error) {
       if (error instanceof Error) return error.message;
