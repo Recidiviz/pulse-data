@@ -121,7 +121,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
             response.headers[
                 "Strict-Transport-Security"
             ] = "max-age=63072000; includeSubDomains"  # max age of 2 years
-        response.headers["Content-Security-Policy-Report-Only"] = (
+        response.headers["Content-Security-Policy"] = (
             "default-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com;"
             "object-src 'none'; "
             "img-src * data:; "
