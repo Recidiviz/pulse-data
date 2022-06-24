@@ -39,16 +39,10 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
     data_freshness AS ({last_updated_query})
 
     SELECT
-        state_code,
+        {dimensions_clause},
         last_updated,
-        facility,
-        gender,
         age,
-        age_group,
-        time_period,
-        state_id,
         full_name,
-        race,
     FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions
     LEFT JOIN data_freshness USING (state_code)
     WHERE time_period IS NOT NULL
@@ -68,11 +62,6 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMe
         "time_period",
         "state_id",
         "race",
-    ),
-    metric_stats=("last_updated",),
-    metric_metadata=(
-        "age",
-        "full_name",
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     last_updated_query=get_pathways_incarceration_last_updated_date(),

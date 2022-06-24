@@ -54,14 +54,8 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     get_last_updated AS ({get_pathways_incarceration_last_updated_date})
 
     SELECT
-        transitions.state_code,
+        {dimensions_clause},
         get_last_updated.last_updated,
-        time_period,
-        gender,
-        age_group,
-        race,
-        judicial_district,
-        prior_length_of_incarceration,
         COUNT(1) AS event_count,
     FROM transitions,
     UNNEST([gender, 'ALL']) AS gender,
@@ -87,10 +81,6 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetric
         "race",
         "judicial_district",
         "prior_length_of_incarceration",
-    ),
-    metric_stats=(
-        "last_updated",
-        "event_count",
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),

@@ -17,35 +17,12 @@
 
 """An extension of MetricBigQueryViewBuilder with extra functionality related to pathways views specifically."""
 
-from typing import List, Literal, Mapping, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.utils.string import StrictStringFormatter
 
-MetricStat = Literal[
-    "aggregating_location_id",
-    "last_updated",
-    "event_count",
-    "full_name",
-    "person_count",
-]
-
-
-# Contains aggregate functions to collapse disjointed metrics into one row
-METRIC_STAT_AGGS: Mapping[MetricStat, str] = {
-    "event_count": "SUM(event_count) AS event_count,",
-    "last_updated": "MAX(last_updated) AS last_updated,",
-    "person_count": "SUM(person_count) AS person_count,",
-}
-
-
-DIMENSIONS_WITHOUT_UNKNOWNS = {"state_code", "year", "month"}
-
-MetricMetadata = Literal["age", "aggregating_location_id", "caseload", "full_name"]
-# Metadata values are assumed to be one-to-one with a given aggregate row. i.e. for a person level view, a person's age
-# does not change as the aggregate only contains one row.
-METADATA_TEMPLATE = "ANY_VALUE({metadata_column}) AS {metadata_column},"
+NON_STRING_DIMENSIONS = ("year", "month")
 
 
 class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
@@ -64,8 +41,6 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
         view_query_template: str,
         dimensions: Tuple[str, ...],
         should_materialize: bool = False,
-        metric_stats: Optional[Tuple[MetricStat, ...]] = None,
-        metric_metadata: Optional[Tuple[MetricMetadata, ...]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
         clustering_fields: Optional[List[str]] = None,
         # All keyword args must have string values
@@ -75,71 +50,30 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
             dataset_id=dataset_id,
             view_id=view_id,
             description=description,
-            view_query_template=self._view_query_template_with_updated_dimensions(
-                view_query_template=view_query_template,
-                dimensions=dimensions,
-                metric_metadata=metric_metadata,
-                metric_stats=metric_stats,
-            ),
+            view_query_template=view_query_template,
             dimensions=dimensions,
             should_materialize=should_materialize,
             materialized_address_override=materialized_address_override,
             clustering_fields=clustering_fields,
+            dimensions_clause=self.replace_unknowns(dimensions),
             **query_format_kwargs,
         )
 
     @classmethod
-    def _replace_unknowns(cls, dimensions: Tuple[str, ...]) -> str:
-        clauses = [
-            f"""
-            CASE COALESCE(UPPER(CAST({dimension} AS STRING)), 'EXTERNAL_UNKNOWN')
-                WHEN 'EXTERNAL_UNKNOWN' THEN 'UNKNOWN'
-                WHEN 'INTERNAL_UNKNOWN' THEN 'OTHER'
-                ELSE CAST({dimension} AS STRING)
-                END
-            AS {dimension}"""
-            for dimension in dimensions
-            if dimension not in DIMENSIONS_WITHOUT_UNKNOWNS
-        ]
-        return ",\n".join(clauses)
-
-    @classmethod
-    def _view_query_template_with_updated_dimensions(
-        cls,
-        view_query_template: str,
-        dimensions: Tuple[str, ...],
-        metric_stats: Optional[Tuple[MetricStat, ...]] = None,
-        metric_metadata: Optional[Tuple[MetricMetadata, ...]] = None,
-    ) -> str:
-        """Given a `view_query_template`, pessimistically re-aggregate rows by their dimensions,
-        apply aggregate functions against `metric_stats` columns,
-        and include any additional `metric_metadata` columns as specified by the view
-        """
-        dimensions_clause = ",\n".join(dimensions)
-        stats_clause = "\n".join(
-            METRIC_STAT_AGGS[stat] for stat in tuple(metric_stats or ())
-        )
-        metadata_clause = "\n".join(
-            StrictStringFormatter().format(
-                METADATA_TEMPLATE, metadata_column=metadata_column
-            )
-            for metadata_column in tuple(metric_metadata or ())
-        )
-
-        return f"""
-            WITH pathways_view AS ( {view_query_template} ),
-            coalesced_dimensions AS ( 
-                SELECT *
-                REPLACE (
-                    {cls._replace_unknowns(dimensions)}
+    def replace_unknowns(cls, dimensions: Union[List[str], Tuple[str, ...]]) -> str:
+        clauses = []
+        for dimension in dimensions:
+            if dimension in NON_STRING_DIMENSIONS:
+                clauses.append(dimension)
+            else:
+                clauses.append(
+                    f"""
+                    CASE COALESCE(UPPER(CAST({dimension} AS STRING)), 'EXTERNAL_UNKNOWN')
+                        WHEN 'EXTERNAL_UNKNOWN' THEN 'UNKNOWN'
+                        WHEN 'INTERNAL_UNKNOWN' THEN 'OTHER'
+                        ELSE CAST({dimension} AS STRING)
+                        END
+                    AS {dimension}"""
                 )
-                FROM pathways_view
-            )
-            SELECT
-                {dimensions_clause},
-                {metadata_clause}
-                {stats_clause}
-            FROM coalesced_dimensions
-            GROUP BY {dimensions_clause}
-            ORDER BY {dimensions_clause}
-        """
+
+        return ",\n".join(clauses)

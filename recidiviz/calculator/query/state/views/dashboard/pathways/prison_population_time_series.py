@@ -93,15 +93,8 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
         ) USING (state_code, year, month, gender, admission_reason, facility, age_group, race)
     )
     SELECT
-        state_code,
+        {dimensions_clause},
         get_last_updated.last_updated,
-        year,
-        month,
-        gender,
-        legal_status,
-        facility,
-        age_group,
-        race,
         SUM(person_count) as person_count,
     FROM full_time_series,
     UNNEST ([age_group, 'ALL']) as age_group,
@@ -121,7 +114,6 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
     view_id=PRISON_POPULATION_TIME_SERIES_VIEW_NAME,
     view_query_template=PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE,
     description=PRISON_POPULATION_TIME_SERIES_DESCRIPTION,
-    # year must come before month to export correctly
     dimensions=(
         "state_code",
         "year",
@@ -132,7 +124,6 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
         "age_group",
         "race",
     ),
-    metric_stats=("last_updated", "person_count"),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     add_age_groups=add_age_groups(),

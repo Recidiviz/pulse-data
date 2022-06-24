@@ -65,17 +65,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     ),
     event_counts AS (
         SELECT
-            state_code,
-            time_period,
-            gender,
-            supervision_type,
-            age_group,
-            race,
-            district,
-            length_of_stay,
-            supervision_level,
-            most_severe_violation,
-            number_of_violations,
+            {dimensions_clause},
             COUNT(1) as event_count,
         FROM filtered_rows,
             UNNEST ([gender, 'ALL']) AS gender,
@@ -85,6 +75,8 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             UNNEST ([race, "ALL"]) AS race,
             UNNEST ([district, "ALL"]) AS district,
             UNNEST ([length_of_stay, "ALL"]) AS length_of_stay
+        WHERE time_period IS NOT NULL
+        AND length_of_stay IS NOT NULL
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     )
 
@@ -93,9 +85,6 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         event_counts.*,
     FROM event_counts
     LEFT JOIN data_freshness USING (state_code)
-    WHERE 
-        time_period IS NOT NULL
-        AND length_of_stay IS NOT NULL
 """
 
 SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
@@ -115,7 +104,6 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
         "most_severe_violation",
         "number_of_violations",
     ),
-    metric_stats=("last_updated", "event_count"),
     description=SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,

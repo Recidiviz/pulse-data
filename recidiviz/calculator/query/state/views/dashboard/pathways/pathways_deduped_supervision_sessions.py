@@ -49,7 +49,7 @@ PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_QUERY_TEMPLATE = """
             s.end_date,
             EXTRACT(YEAR FROM date_of_supervision) AS year,
             EXTRACT(MONTH FROM date_of_supervision) AS month,
-            IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
+            COALESCE(name_map.location_name,session_attributes.supervision_office, 'EXTERNAL_UNKNOWN') AS district,
             CASE
                 WHEN s.state_code="US_ND" THEN NULL
                 ELSE {state_specific_supervision_level}
@@ -78,7 +78,7 @@ PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_QUERY_TEMPLATE = """
     )
     SELECT
         cte.* EXCEPT(dataflow_session_id),
-        s.prioritized_race_or_ethnicity as race
+        COALESCE(s.prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') as race
     FROM cte
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` s
         ON cte.state_code = s.state_code

@@ -68,16 +68,10 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
         {filter_to_enabled_states}
     )
     SELECT
-        state_code,
+        {dimensions_clause},
         last_updated,
-        gender,
-        legal_status,
-        facility,
-        age_group,
         age,
-        state_id,
         IFNULL(full_name, "Unknown") AS full_name,
-        race
     FROM all_rows
     WHERE {facility_filter}
     AND state_id IS NOT NULL
@@ -97,8 +91,6 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryVie
         "state_id",
         "race",
     ),
-    metric_stats=("last_updated",),
-    metric_metadata=("age", "full_name"),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
