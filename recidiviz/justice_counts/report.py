@@ -187,6 +187,14 @@ class ReportInterface:
         )
 
     @staticmethod
+    def delete_reports_by_id(session: Session, report_ids: List[int]) -> None:
+        return (
+            session.query(schema.Report)
+            .filter(schema.Report.id.in_(report_ids))
+            .delete()
+        )
+
+    @staticmethod
     def update_report_metadata(
         session: Session,
         report: schema.Report,
