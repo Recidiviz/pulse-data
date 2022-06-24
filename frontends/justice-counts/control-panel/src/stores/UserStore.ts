@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { User } from "@auth0/auth0-spa-js";
 import { makeAutoObservable, runInAction, when } from "mobx";
 
 import { AuthStore } from "../components/Auth";
@@ -35,8 +34,6 @@ class UserStore {
 
   nameOrEmail: string | undefined;
 
-  userID: string | undefined;
-
   auth0UserID: string | undefined;
 
   userAgencies: UserAgency[] | undefined;
@@ -51,13 +48,11 @@ class UserStore {
 
   constructor(authStore: AuthStore, api: API) {
     makeAutoObservable(this);
-
     this.authStore = authStore;
     this.api = api;
-    this.name = undefined;
-    this.email = undefined;
-    this.userID = undefined;
-    this.auth0UserID = undefined;
+    this.name = this.authStore.user?.name;
+    this.email = this.authStore.user?.email;
+    this.auth0UserID = this.authStore.user?.id;
     this.userAgencies = undefined;
     this.userInfoLoaded = false;
     this.hasSeenOnboarding = true;
@@ -66,7 +61,7 @@ class UserStore {
 
     when(
       () => api.isSessionInitialized,
-      () => this.updateAndRetrieveUserInfo()
+      () => this.retrieveUserPermissionsAndAgencies()
     );
   }
 
@@ -91,45 +86,31 @@ class UserStore {
     });
   }
 
-  async updateAndRetrieveUserInfo() {
+  async retrieveUserPermissionsAndAgencies() {
     try {
       if (!this.authStore.user) {
         Promise.reject(new Error("No user information exists."));
       }
-
-      const { email, sub: auth0ID } = this.authStore.user as User;
-
       const response = (await this.api.request({
         path: "/api/users",
         method: "POST",
         body: {
-          email_address: email,
-          auth0_user_id: auth0ID,
+          name: this.authStore.user?.name,
         },
       })) as Response;
-
       const {
-        name,
-        email_address: emailAddress,
-        id: userID,
-        auth0_user_id: auth0UserID,
         agencies: userAgencies,
         permissions,
         has_seen_onboarding: hasSeenOnboarding, // will be used in future
       } = await response.json();
-
       runInAction(() => {
-        this.name = name;
-        this.email = emailAddress;
-        this.nameOrEmail = name || emailAddress;
-        this.userID = userID;
-        this.auth0UserID = auth0UserID;
+        this.nameOrEmail =
+          this.authStore.user?.name || this.authStore.user?.email;
         this.userAgencies = userAgencies;
         this.permissions = permissions;
         this.hasSeenOnboarding = hasSeenOnboarding; // will be used in future
         this.currentAgencyId = this.getInitialAgencyId();
-
-        if (this.userID && this.userAgencies) {
+        if (this.userAgencies) {
           this.userInfoLoaded = true;
         }
       });

@@ -40,7 +40,6 @@ from recidiviz.utils.types import assert_type, non_optional
 
 @attr.define()
 class JusticeCountsUser:
-    email_address: str
     name: Optional[str] = None
     auth0_user_id: Optional[str] = None
     db_id: Optional[int] = None
@@ -49,7 +48,6 @@ class JusticeCountsUser:
 
     def to_json(self) -> Dict[str, Any]:
         return {
-            "email_address": self.email_address,
             "name": self.name,
             "auth0_user_id": self.auth0_user_id,
             "id": self.db_id,
@@ -152,14 +150,12 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
-            email = assert_type(request_json.get("email"), str)
             name = request_json.get("name")
             auth0_user_id = request_json.get("auth0_user_id")
             agency_ids = request_json.get("agency_ids")
             try:
                 user = UserAccountInterface.create_or_update_user(
                     session=session,
-                    email_address=email,
                     name=name,
                 )
                 _update_auth0_user_app_metadata(
@@ -184,21 +180,20 @@ def _merge_auth0_and_db_users(
 ) -> List[JusticeCountsUser]:
     """Given a list of users who have signed up via Auth0, and a list of
     users whom we have registered in our DB, perform a union and merge based on
-    email address. Users who have the same email address will be considered
+    auth0 user id. Users who have the same auth0 user id will be considered
     the same user, and their Auth0 + DB metadata will be merged into one
     object. Users who only appear in one place will have their own object.
     """
     agency_ids_to_fetch = set()
-    auth0_users_by_email = {user["email"]: user for user in auth0_users}
-    all_users_by_email = {}
+    auth0_users_by_id = {user["user_id"]: user for user in auth0_users}
+    all_users_by_auth0_id = {}
 
     for db_user in db_users:
-        email = db_user.email_address
-        matching_auth0_user = auth0_users_by_email.get(email)
+        auth0_user_id = db_user.auth0_user_id
+        matching_auth0_user = auth0_users_by_id.get(auth0_user_id)
         if matching_auth0_user:
             # User appears in both Auth0 and our DB
-            all_users_by_email[email] = JusticeCountsUser(
-                email_address=email,
+            all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
                 name=db_user.name,
                 auth0_user_id=matching_auth0_user["user_id"],
                 db_id=db_user.id,
@@ -208,24 +203,23 @@ def _merge_auth0_and_db_users(
             )
         else:
             # User just appears in our DB
-            all_users_by_email[email] = JusticeCountsUser(
-                email_address=email,
+            all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
+                auth0_user_id=auth0_user_id,
                 name=db_user.name,
                 db_id=db_user.id,
             )
 
-    for email, auth0_user in auth0_users_by_email.items():
-        if email not in all_users_by_email:
+    for auth0_user_id, auth0_user in auth0_users_by_id.items():
+        if auth0_user_id not in all_users_by_auth0_id:
             # User just appears in Auth0
-            all_users_by_email[email] = JusticeCountsUser(
-                email_address=email,
+            all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
                 auth0_user_id=auth0_user["user_id"],
                 agency_ids=auth0_user.get("app_metadata", {}).get("agency_ids", []),  # type: ignore[arg-type]
             )
 
     # Now fetch the Agencies that were referenced in any users metadata
     agency_ids_to_fetch = set(
-        itertools.chain(*[user.agency_ids for user in all_users_by_email.values()])
+        itertools.chain(*[user.agency_ids for user in all_users_by_auth0_id.values()])
     )
     agencies_by_id = {
         agency.id: agency
@@ -233,14 +227,14 @@ def _merge_auth0_and_db_users(
             session=session, agency_ids=list(agency_ids_to_fetch)
         )
     }
-    for _, user in all_users_by_email.items():
+    for _, user in all_users_by_auth0_id.items():
         user.agencies = [
             agencies_by_id[agency_id].to_json()
             for agency_id in user.agency_ids
             if agency_id in agencies_by_id
         ]
 
-    return list(all_users_by_email.values())
+    return list(all_users_by_auth0_id.values())
 
 
 def _update_auth0_user_app_metadata(

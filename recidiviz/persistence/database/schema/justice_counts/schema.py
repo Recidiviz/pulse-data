@@ -279,7 +279,6 @@ class UserAccount(JusticeCountsBase):
     id = Column(Integer, autoincrement=True)
 
     # Name that will be displayed in the Control Panel
-    # If null, we can show email address instead
     name = Column(String(255), nullable=True)
 
     # Auth0 is an authentication and authorization platform we use for users of the Control Panel.
@@ -289,15 +288,10 @@ class UserAccount(JusticeCountsBase):
     # after they sign in for the first time
     auth0_user_id = Column(String(255), nullable=True)
 
-    # Should be the same email address that the user signed with in via Auth0
-    # Used to match up users added manually with users who later sign in via Auth0
-    email_address = Column(String(255), nullable=False)
-
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
-            UniqueConstraint(auth0_user_id),
-            UniqueConstraint(email_address, name="unique_email_address"),
+            UniqueConstraint(auth0_user_id, name="unique_auth0_user_id"),
         ]
     )
 
@@ -309,14 +303,10 @@ class UserAccount(JusticeCountsBase):
         return {
             "id": self.id,
             "auth0_user_id": self.auth0_user_id,
-            "email_address": self.email_address,
             "name": self.name,
             "agencies": [agency.to_json() for agency in agencies or []],
             "permissions": permissions or [],
         }
-
-    def name_or_email(self) -> str:
-        return self.name or self.email_address
 
 
 class Report(JusticeCountsBase):
