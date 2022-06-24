@@ -83,6 +83,50 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(reports_agency_B[0].source_id, agency_B.id)
 
+    def test_delete_reports(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            monthly_report = self.test_schema_objects.test_report_monthly
+            annual_report = self.test_schema_objects.test_report_annual
+            session.add_all(
+                [
+                    monthly_report,
+                    annual_report,
+                ]
+            )
+
+            session.flush()
+            session.refresh(monthly_report)
+            session.refresh(annual_report)
+            monthly_report_id = monthly_report.id
+            annual_report_id = annual_report.id
+
+        with SessionFactory.using_database(self.database_key) as session:
+            monthly_report = ReportInterface.get_report_by_id(
+                session, report_id=monthly_report_id
+            )
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=monthly_report,
+                report_metric=self.test_schema_objects.reported_budget_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+
+            datapoints = session.query(schema.Datapoint).all()
+            self.assertEqual(len(datapoints), 5)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            ReportInterface.delete_reports_by_id(
+                session, report_ids=[monthly_report_id, annual_report_id]
+            )
+
+            reports = session.query(schema.Report).all()
+            self.assertEqual(len(reports), 0)
+
+            # Datapoints on the report should be automatically deleted
+            # via `cascade`
+            datapoints = session.query(schema.Datapoint).all()
+            self.assertEqual(len(datapoints), 0)
+
     def test_create_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add_all(
@@ -734,8 +778,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             contexts = [d for d in queried_datapoints if d.context_key is not None]
             self.assertEqual(len(contexts), 2)
-            self.assertEqual(contexts[0].get_value(), "All calls")
-            self.assertEqual(contexts[1].get_value(), "agency0, agency1")
+            self.assertEqual(
+                {c.get_value() for c in contexts}, {"All calls", "agency0, agency1"}
+            )
 
     def test_get_metrics_for_empty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

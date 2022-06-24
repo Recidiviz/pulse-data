@@ -21,7 +21,7 @@ import { AuthStore } from "../components/Auth";
 
 export interface RequestProps {
   path: string;
-  method: "GET" | "POST" | "PUT";
+  method: "GET" | "POST" | "PUT" | "DELETE";
   body?: Record<string, unknown>;
 }
 

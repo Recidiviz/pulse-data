@@ -178,6 +178,26 @@ class ReportStore {
     }
   }
 
+  async deleteReports(
+    reportIDs: number[]
+  ): Promise<Response | Error | undefined> {
+    try {
+      const response = (await this.api.request({
+        path: `/api/reports`,
+        body: { reportIDs },
+        method: "DELETE",
+      })) as Response;
+
+      if (response.status !== 200) {
+        throw new Error("There was an issue deleting these reports.");
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
   resetState() {
     // reset the state when switching agencies
     runInAction(() => {

@@ -233,6 +233,37 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/reports", methods=["DELETE"])
+    @auth_decorator
+    def delete_reports() -> Response:
+        try:
+            request_json = assert_type(request.json, dict)
+            report_ids = request_json.get("report_ids")
+            user_id = get_user_account_id(request_dict=request_json)
+            permissions = g.user_context.permissions
+            if (
+                not permissions
+                or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
+            ):
+                raise JusticeCountsPermissionError(
+                    code="justice_counts_delete_report_permission",
+                    description=(
+                        f"User {user_id} does not have permission to delete reports."
+                    ),
+                )
+
+            if report_ids is None or len(report_ids) == 0:
+                raise JusticeCountsBadRequestError(
+                    code="justice_counts_bad_request",
+                    description="Empty list of report_ids passed to delete reports endpoint.",
+                )
+
+            report_ids = map(int, report_ids)
+            ReportInterface.delete_reports_by_id(current_session, report_ids=report_ids)
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     return api_blueprint
 
 
