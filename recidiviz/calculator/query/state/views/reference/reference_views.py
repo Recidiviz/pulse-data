@@ -54,6 +54,9 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_to_agen
 from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.us_mi_housing_unit_metadata import (
+    US_MI_HOUSING_UNIT_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
@@ -76,4 +79,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
     US_TN_REIDENTIFIED_USERS_VIEW_BUILDER,
     NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
+    US_MI_HOUSING_UNIT_METADATA_VIEW_BUILDER,
 ]
