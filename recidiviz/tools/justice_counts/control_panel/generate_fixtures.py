@@ -162,8 +162,8 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
         [
             schema.UserAccount(
                 id=i,
-                email_address=f"{FAKE.name().replace(' ','').lower()}@gmail.com",
-                name=None,
+                auth0_user_id=f"auth0|{i}",
+                name=FAKE.name(),
             )
             for i in range(num_users)
         ]

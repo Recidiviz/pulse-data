@@ -55,53 +55,27 @@ class TestUserInterface(JusticeCountsDatabaseTestCase):
 
             UserAccountInterface.create_or_update_user(
                 session=session,
-                email_address="user@gmail.com",
                 name="User",
                 auth0_user_id="id0",
             )
 
     def test_create_or_update_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            # Can create user with just email address
+            # Can create user with auth0_user_id and name
             UserAccountInterface.create_or_update_user(
-                session=session,
-                email_address="user2@gmail.com",
+                session=session, auth0_user_id="auth0|user2", name="Test User 2"
             )
 
-            # can update user with auth0_user_id
+            # Can update name
             UserAccountInterface.create_or_update_user(
-                session=session,
-                email_address="user2@gmail.com",
-                auth0_user_id="auth0_id",
+                session=session, auth0_user_id="auth0|user2", name="Test User 3"
             )
-
-            # Cannot create user with invalid email address
-            with self.assertRaisesRegex(ValueError, "Invalid email address"):
-                UserAccountInterface.create_or_update_user(
-                    session=session,
-                    email_address="xyz",
-                )
-
-    def test_get_user_by_email_address(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            user = UserAccountInterface.get_user_by_email_address(
-                session=session, email_address="user@gmail.com"
-            )
-            self.assertEqual(user.auth0_user_id, "id0")
-            self.assertEqual(user.name, "User")
-
-            # Raise error if no user found
-            with self.assertRaises(NoResultFound):
-                UserAccountInterface.get_user_by_email_address(
-                    session=session, email_address="abc"
-                )
 
     def get_user_by_auth0_user_id(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = UserAccountInterface.get_user_by_auth0_user_id(
                 session=session, auth0_user_id="id0"
             )
-            self.assertEqual(user.email_address, "user@gmail.com")
             self.assertEqual(user.name, "User")
             self.assertEqual(
                 {a.name for a in user.agencies}, {"Agency Alpha", "Agency Beta"}

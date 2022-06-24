@@ -23,7 +23,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import coalesce
 
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
-from recidiviz.reporting.email_reporting_utils import validate_email_address
 
 
 class UserAccountInterface:
@@ -32,17 +31,15 @@ class UserAccountInterface:
     @staticmethod
     def create_or_update_user(
         session: Session,
-        email_address: str,
         name: Optional[str] = None,
         auth0_user_id: Optional[str] = None,
     ) -> UserAccount:
         """Creates a user or updates an existing user"""
-        validate_email_address(email_address)
         insert_statement = insert(UserAccount).values(
-            email_address=email_address, name=name, auth0_user_id=auth0_user_id
+            name=name, auth0_user_id=auth0_user_id
         )
         insert_statement = insert_statement.on_conflict_do_update(
-            constraint="unique_email_address",
+            constraint="unique_auth0_user_id",
             set_=dict(
                 auth0_user_id=coalesce(  # coalesce chooses the first non-null item on the list
                     insert_statement.excluded.auth0_user_id,  # excluded refers to the row that failed to insert due to the conflict
@@ -62,19 +59,11 @@ class UserAccountInterface:
         return session.query(UserAccount).order_by(UserAccount.id).all()
 
     @staticmethod
-    def get_user_by_email_address(session: Session, email_address: str) -> UserAccount:
-        return (
-            session.query(UserAccount)
-            .filter(UserAccount.email_address == email_address)
-            .one()
-        )
-
-    @staticmethod
     def get_user_by_auth0_user_id(session: Session, auth0_user_id: str) -> UserAccount:
         return (
             session.query(UserAccount)
             .filter(UserAccount.auth0_user_id == auth0_user_id)
-            .one()
+            .one_or_none()
         )
 
     @staticmethod

@@ -306,7 +306,7 @@ class ReportInterface:
         editor_ids_to_names = {
             id: UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=id
-            ).name_or_email()
+            ).name
             for id in editor_ids
         }
         return editor_ids_to_names
@@ -321,7 +321,7 @@ class ReportInterface:
             editor_names = [
                 UserAccountInterface.get_user_by_id(
                     session=session, user_account_id=id
-                ).name_or_email()
+                ).name
                 for id in report.modified_by or []
             ]
         else:

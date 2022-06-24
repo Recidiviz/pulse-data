@@ -28,6 +28,7 @@ from sqlalchemy.exc import IntegrityError
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
+    get_auth0_user_id,
     get_user_account_id,
     raise_if_user_is_unauthorized,
 )
@@ -39,7 +40,6 @@ from recidiviz.justice_counts.exceptions import (
 from recidiviz.justice_counts.metrics.report_metric import ReportMetric
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -60,22 +60,15 @@ def get_api_blueprint(
 
     @api_blueprint.route("/users", methods=["POST"])
     @auth_decorator
-    def create_or_update_user() -> Response:
-        """Creates a new user in the JC DB"""
+    def create_user_if_necessary() -> Response:
+        """Returns user agencies and permissions"""
         try:
-            request_json = assert_type(request.json, dict)
-            email_address = request_json["email_address"]
-            name = request_json.get("name")
-            auth0_user_id = request_json.get("auth0_user_id")
-            UserAccountInterface.create_or_update_user(
+            request_dict = assert_type(request.json, dict)
+            auth0_user_id = get_auth0_user_id(request_dict)
+            user_account = UserAccountInterface.create_or_update_user(
                 session=current_session,
-                email_address=email_address,
-                name=name,
+                name=request_dict.get("name"),
                 auth0_user_id=auth0_user_id,
-            )
-
-            updated_user: UserAccount = UserAccountInterface.get_user_by_email_address(
-                session=current_session, email_address=email_address
             )
             agency_ids = g.user_context.agency_ids if "user_context" in g else []
             agencies = AgencyInterface.get_agencies_by_id(
@@ -83,7 +76,11 @@ def get_api_blueprint(
             )
             permissions = g.user_context.permissions if "user_context" in g else []
             return jsonify(
-                updated_user.to_json(permissions=permissions, agencies=agencies),
+                {
+                    "id": user_account.id,
+                    "agencies": [agency.to_json() for agency in agencies or []],
+                    "permissions": permissions or [],
+                }
             )
         except Exception as e:
             raise _get_error(error=e) from e
