@@ -83,19 +83,14 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         group by 1, 2, 3, 4, 5, 6, 7
     ),
     filtered_rows AS (
-        SELECT *
+        SELECT all_dimensions.*, get_last_updated.last_updated
         FROM all_dimensions
+        LEFT JOIN get_last_updated  USING (state_code)
         WHERE {facility_filter}
     )
     SELECT
-        state_code,
-        get_last_updated.last_updated,
-        gender,
-        legal_status,
-        facility,
-        age_group,
-        length_of_stay,
-        race,
+        {dimensions_clause},
+        last_updated,
         SUM(person_count) as person_count
     FROM filtered_rows,
     UNNEST ([age_group, 'ALL']) as age_group,
@@ -104,7 +99,6 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     UNNEST ([gender, 'ALL']) as gender,
     UNNEST ([length_of_stay, 'ALL']) as length_of_stay,
     UNNEST ([race, 'ALL']) as race
-    LEFT JOIN get_last_updated  USING (state_code)
     {filter_to_enabled_states}
     group by 1, 2, 3, 4, 5, 6, 7, 8
 """
@@ -122,10 +116,6 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQueryVie
         "age_group",
         "length_of_stay",
         "race",
-    ),
-    metric_stats=(
-        "last_updated",
-        "person_count",
     ),
     dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,

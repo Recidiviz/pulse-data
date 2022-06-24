@@ -90,22 +90,29 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             surname,
             ROW_NUMBER() OVER (PARTITION BY state_code, external_id ORDER BY surname DESC,given_names DESC) AS rn,
         FROM `{project_id}.{reference_dataset}.agent_external_id_to_full_name`
+    ), data AS (
+        SELECT
+            last_updated,
+            event_counts.* EXCEPT (supervising_officer),
+            IFNULL(INITCAP(given_names || ' ' || surname), supervising_officer) AS officer_name,
+            IFNULL(o.caseload, 0) AS caseload
+        FROM event_counts
+        LEFT JOIN data_freshness USING (state_code)
+        LEFT JOIN `{project_id}.{shared_metric_views_dataset}.supervision_officer_caseload` o
+            USING(state_code,time_period,gender,supervision_type,age_group,race,district,supervision_level,supervising_officer)
+        LEFT JOIN officer_names ON
+            event_counts.state_code = officer_names.state_code
+            AND event_counts.supervising_officer = officer_names.external_id
+            AND officer_names.rn = 1
+        WHERE supervising_officer IS NOT NULL
+        AND time_period IS NOT NULL
     )
     SELECT
+        {dimensions_clause},
         last_updated,
-        event_counts.* EXCEPT (supervising_officer),
-        IFNULL(INITCAP(given_names || ' ' || surname), supervising_officer) AS officer_name,
-        IFNULL(o.caseload, 0) AS caseload
-    FROM event_counts
-    LEFT JOIN data_freshness USING (state_code)
-    LEFT JOIN `{project_id}.{shared_metric_views_dataset}.supervision_officer_caseload` o
-        USING(state_code,time_period,gender,supervision_type,age_group,race,district,supervision_level,supervising_officer)
-    LEFT JOIN officer_names ON
-        event_counts.state_code = officer_names.state_code
-        AND event_counts.supervising_officer = officer_names.external_id
-        AND officer_names.rn = 1
-    WHERE supervising_officer IS NOT NULL
-    AND time_period IS NOT NULL
+        caseload,
+        event_count
+    FROM data
 """
 
 SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
@@ -123,8 +130,6 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetr
         "supervision_level",
         "officer_name",
     ),
-    metric_metadata=("caseload",),
-    metric_stats=("last_updated", "event_count"),
     description=SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_DESCRIPTION,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,

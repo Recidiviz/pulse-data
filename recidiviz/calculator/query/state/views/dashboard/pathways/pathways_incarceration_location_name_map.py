@@ -38,21 +38,27 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION = "Map by state from locati
 
 PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
     /*{description}*/
+    WITH data AS (
+        SELECT
+            state_code,
+            level_1_incarceration_location_external_id AS location_id,
+            CASE
+                WHEN state_code IN {pathways_level_2_incarceration_state_codes}
+                    THEN level_2_incarceration_location_external_id
+                WHEN state_code = 'US_ND'
+                    THEN IF(level_1_incarceration_location_external_id = 'TRCC', 'TRC', level_1_incarceration_location_external_id)
+                WHEN state_code = 'US_ME'
+                    THEN level_1_incarceration_location_alias
+                ELSE level_1_incarceration_location_external_id
+            END AS aggregating_location_id,
+            level_1_incarceration_location_name AS location_name,
+        FROM `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names`
+        WHERE state_code IN ({enabled_states})
+    )
     SELECT
-        state_code,
-        level_1_incarceration_location_external_id AS location_id,
-        CASE
-            WHEN state_code IN {pathways_level_2_incarceration_state_codes}
-                THEN level_2_incarceration_location_external_id
-            WHEN state_code = 'US_ND'
-                THEN IF(level_1_incarceration_location_external_id = 'TRCC', 'TRC', level_1_incarceration_location_external_id)
-            WHEN state_code = 'US_ME'
-                THEN level_1_incarceration_location_alias
-            ELSE level_1_incarceration_location_external_id
-        END AS aggregating_location_id,
-        level_1_incarceration_location_name AS location_name,
-    FROM `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names`
-    WHERE state_code IN ({enabled_states})
+        {dimensions_clause},
+        aggregating_location_id
+    FROM data
 """
 
 PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
@@ -61,7 +67,6 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryVi
     view_query_template=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE,
     description=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION,
     dimensions=("state_code", "location_id", "location_name"),
-    metric_metadata=("aggregating_location_id",),
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     enabled_states=ENABLED_STATE_CODES,
     pathways_level_2_incarceration_state_codes=PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS,

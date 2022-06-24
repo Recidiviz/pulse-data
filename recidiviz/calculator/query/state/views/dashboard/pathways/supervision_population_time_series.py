@@ -81,12 +81,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
         GROUP BY 1,2,3,4,5, 6
     )
     SELECT
-        state_code,
-        year,
-        month,
-        district,
-        supervision_level,
-        race,
+        {dimensions_clause},
         SUM(person_count) AS person_count,
     FROM full_time_series,
     UNNEST([district, "ALL"]) AS district,
@@ -104,7 +99,6 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuil
     view_query_template=SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE,
     # year must come before month to export correctly
     dimensions=("state_code", "year", "month", "district", "supervision_level", "race"),
-    metric_stats=("person_count",),
     description=SUPERVISION_POPULATION_TIME_SERIES_VIEW_DESCRIPTION,
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="state_code", enabled_states=get_pathways_enabled_states()

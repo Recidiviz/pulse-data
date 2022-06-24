@@ -18,6 +18,10 @@
 
 from typing import List
 
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
+
 
 def _get_zero_imputation_query(
     dimensions: List[str],
@@ -25,7 +29,7 @@ def _get_zero_imputation_query(
 ) -> str:
     """Builds a query that calculates all combinations of the provided dimensions
     and imputes the event counts to zero where the aggregates are NULL."""
-
+    dimensions_clause = PathwaysMetricBigQueryViewBuilder.replace_unknowns(dimensions)
     return f"""
     SELECT
         * EXCEPT (event_count),
@@ -38,9 +42,10 @@ def _get_zero_imputation_query(
                 state_code,
                 year,
                 month,
-                {','.join(dimensions)},
+                -- Dimensions need to be coalesced prior to joining with the `aggregate_event_counts`
+                {dimensions_clause}
             FROM `{{project_id}}.{{dashboard_views_dataset}}.{dimension_combination_view}`
-        )USING (state_code, year, month,{','.join(dimensions)})
+        ) USING (state_code, year, month, {",".join(dimensions)})
     """
 
 

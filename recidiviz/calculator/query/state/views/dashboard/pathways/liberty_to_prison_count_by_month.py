@@ -37,13 +37,7 @@ LIBERTY_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION = (
 
 aggregate_query = """
     SELECT
-        transitions.state_code,
-        year,
-        month,
-        gender,
-        age_group,
-        race,
-        judicial_district,
+        {dimensions_clause},
         COUNT(1) as event_count
     FROM
         `{project_id}.{dashboard_views_dataset}.liberty_to_prison_transitions` transitions,
@@ -71,9 +65,7 @@ LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilde
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_NAME,
     view_query_template=LIBERTY_TO_PRISON_COUNT_BY_MONTH_QUERY_TEMPLATE,
-    # year must come before month to export correctly
     dimensions=("state_code", "year", "month", *dimensions),
-    metric_stats=("event_count",),
     description=LIBERTY_TO_PRISON_COUNT_BY_MONTH_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
 )

@@ -37,14 +37,8 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_DESCRIPTION = (
 
 aggregate_query = """
     SELECT 
-        state_code,
-        year,
-        month,
-        gender,
-        age_group,
-        facility,
-        race,
-        COUNT(1) as event_count,
+        {dimensions_clause},
+        COUNT(1) as event_count
     FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions,
         UNNEST ([gender, 'ALL']) AS gender,
         UNNEST ([age_group, 'ALL']) AS age_group,
@@ -68,9 +62,7 @@ PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewBu
     view_id=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_NAME,
     view_query_template=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_QUERY_TEMPLATE,
     description=PRISON_TO_SUPERVISION_COUNT_BY_MONTH_DESCRIPTION,
-    # year must come before month to export correctly
     dimensions=("state_code", "year", "month", *dimensions),
-    metric_stats=("event_count",),
     dashboard_views_dataset=DASHBOARD_VIEWS_DATASET,
 )
 

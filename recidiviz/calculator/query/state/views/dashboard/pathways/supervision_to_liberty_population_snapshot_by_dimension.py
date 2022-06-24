@@ -92,16 +92,8 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     )
     
     SELECT 
-        state_code,
+        {dimensions_clause},
         last_updated,
-        time_period,
-        gender,
-        age_group,
-        race,
-        supervision_type,
-        supervision_level,
-        district,
-        length_of_stay,
         COUNT(1) AS event_count,
     FROM filtered_rows,
         UNNEST([gender, 'ALL']) AS gender,
@@ -130,7 +122,6 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysM
         "district",
         "length_of_stay",
     ),
-    metric_stats=("last_updated", "event_count"),
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     binned_time_periods=get_binned_time_period_months("transition_date"),

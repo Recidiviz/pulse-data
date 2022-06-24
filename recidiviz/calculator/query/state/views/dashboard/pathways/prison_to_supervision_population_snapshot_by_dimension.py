@@ -57,8 +57,9 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         GROUP BY 1, 2, 3, 4, 5, 6
     )
     SELECT
+        {dimensions_clause},
         last_updated,
-        event_counts.*,
+        event_count
     FROM event_counts
     LEFT JOIN data_freshness USING (state_code)
     WHERE 
@@ -69,10 +70,13 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMe
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_NAME,
     view_query_template=PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE,
-    dimensions=("state_code", "time_period", "gender", "age_group", "facility", "race"),
-    metric_stats=(
-        "last_updated",
-        "event_count",
+    dimensions=(
+        "state_code",
+        "time_period",
+        "gender",
+        "age_group",
+        "facility",
+        "race",
     ),
     description=PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,

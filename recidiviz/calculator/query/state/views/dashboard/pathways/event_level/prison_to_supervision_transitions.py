@@ -73,7 +73,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             sessions_data.age_group,
             sessions_data.gender,
             sessions_data.race,
-            IFNULL(aggregating_location_id, level_1_location_external_id) AS facility,
+            COALESCE(aggregating_location_id, level_1_location_external_id, 'EXTERNAL_UNKNOWN') AS facility,
             {formatted_name} AS full_name,
             pei.external_id AS state_id,
             {transition_time_period} AS time_period,

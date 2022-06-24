@@ -65,11 +65,8 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         GROUP BY 1, 2, 3, 4, 5, 6
     )
     SELECT
-        state_code, 
+        {dimensions_clause},
         last_updated,
-        district,
-        supervision_level,
-        race,
         COUNT(DISTINCT person_id) as person_count,
     FROM filtered_rows,
     UNNEST([district, 'ALL']) AS district,
@@ -88,10 +85,6 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
     view_query_template=SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION,
     dimensions=("state_code", "district", "supervision_level", "race"),
-    metric_stats=(
-        "last_updated",
-        "person_count",
-    ),
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     get_pathways_supervision_last_updated_date=state_specific_query_strings.get_pathways_supervision_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
