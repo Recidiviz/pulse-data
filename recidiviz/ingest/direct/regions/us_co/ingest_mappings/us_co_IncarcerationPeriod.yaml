@@ -283,6 +283,7 @@ output:
                   - "86" # Out on Furlough
                   - "8B" # Out on Work Crew
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - "74" # Transferred Interstate
                   - "85" # Transferred Out-of-State (ICC)
                   - "8D" # Out to Other Jurisdiction
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
