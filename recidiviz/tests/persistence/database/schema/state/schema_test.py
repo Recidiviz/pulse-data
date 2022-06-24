@@ -42,6 +42,10 @@ from recidiviz.common.constants.state import (
     state_supervision_violation,
     state_supervision_violation_response,
 )
+from recidiviz.common.constants.state.state_drug_screen import (
+    StateDrugScreenResult,
+    StateDrugScreenSampleType,
+)
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
@@ -100,6 +104,8 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_assessment_type": state_assessment.StateAssessmentType,
             "state_charge_classification_type": state_charge.StateChargeClassificationType,
             "state_charge_status": state_charge.StateChargeStatus,
+            "state_drug_screen_result": StateDrugScreenResult,
+            "state_drug_screen_sample_type": StateDrugScreenSampleType,
             "state_sentence_status": state_sentence.StateSentenceStatus,
             "state_supervision_sentence_supervision_type": state_supervision_sentence.StateSupervisionSentenceSupervisionType,
             "state_acting_body_type": state_shared_enums.StateActingBodyType,

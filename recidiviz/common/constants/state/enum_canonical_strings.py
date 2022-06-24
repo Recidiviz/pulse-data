@@ -463,3 +463,18 @@ state_custodial_authority_other_country = "OTHER_COUNTRY"
 state_custodial_authority_other_state = "OTHER_STATE"
 state_custodial_authority_supervision_authority = "SUPERVISION_AUTHORITY"
 state_custodial_authority_state_prison = "STATE_PRISON"
+
+# state_drug_screen.py
+state_drug_screen_result_positive = "POSITIVE"
+state_drug_screen_result_negative = "NEGATIVE"
+state_drug_screen_result_admitted_positive = "ADMITTED_POSITIVE"
+state_drug_screen_result_medical_exemption = "MEDICAL_EXEMPTION"
+state_drug_screen_result_no_result = "NO_RESULT"
+
+state_drug_screen_sample_type_urine = "URINE"
+state_drug_screen_sample_type_sweat = "SWEAT"
+state_drug_screen_sample_type_saliva = "SALIVA"
+state_drug_screen_sample_type_blood = "BLOOD"
+state_drug_screen_sample_type_hair = "HAIR"
+state_drug_screen_sample_type_breath = "BREATH"
+state_drug_screen_sample_type_no_sample = "NO_SAMPLE"
