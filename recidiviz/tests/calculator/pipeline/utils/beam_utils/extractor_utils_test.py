@@ -19,7 +19,7 @@
 import datetime
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import apache_beam as beam
 import attr
@@ -32,6 +32,9 @@ from recidiviz.calculator.pipeline.utils.beam_utils import extractor_utils
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_incarceration_period import (
+    UsMiIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoIncarcerationSentence,
     UsMoSentenceStatus,
@@ -42,6 +45,9 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 )
 from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
     US_ID_CASE_UPDATE_INFO_VIEW_NAME,
+)
+from recidiviz.calculator.query.state.views.reference.us_mi_housing_unit_metadata import (
+    US_MI_HOUSING_UNIT_METADATA_VIEW_NAME,
 )
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
@@ -1652,7 +1658,7 @@ class TestShallowHydrateEntity(unittest.TestCase):
 
 
 class TestConvertSentenceToStateSpecificType(unittest.TestCase):
-    """Tests the ConvertSentencesToStateSpecificType DoFn."""
+    """Tests the ConvertEntitiesToStateSpecificTypes DoFn for US_MO sentences."""
 
     TEST_PERSON_ID = 456
 
@@ -1866,6 +1872,154 @@ class TestConvertSentenceToStateSpecificType(unittest.TestCase):
         )
 
         test_pipeline.run()
+
+
+class TestConvertIncarcerationPeriodToStateSpecificType(unittest.TestCase):
+    """Tests the ConvertEntitiesToStateSpecificTypes DoFn for US_MI incarceration periods."""
+
+    TEST_PERSON_ID = 456
+
+    TEST_MI_HOUSING_METADATA_ROWS = [
+        {
+            "person_id": TEST_PERSON_ID,
+            "housing_unit": "123",
+            "facility": "ABC",
+            "reporting_station_id": "234",
+            "reporting_station_name": "Housing Unit 0",
+        }
+    ]
+
+    @staticmethod
+    def convert_incarceration_period_output_is_valid(
+        expected_output: List[entities.StateIncarcerationPeriod],
+    ) -> Callable[[List[Tuple[int, Dict[str, List[Any]]]]], None]:
+        """Beam assert matcher for testing the ConvertEntitiesToStateSpecificTypes for MI"""
+
+        def _convert_output_is_valid(
+            output: List[Tuple[int, Dict[str, List[Any]]]]
+        ) -> None:
+            if not expected_output:
+                raise ValueError("Must supply expected_output to validate against.")
+
+            for _, all_entities in output:
+                output = all_entities[entities.StateIncarcerationPeriod.__name__]
+                if len(output) != len(expected_output):
+                    raise ValueError(
+                        f"Exepcted output length [{len(expected_output)}] != output length [{len(output)}]"
+                    )
+                for i, incarceration_period in enumerate(output):
+                    expected_period = expected_output[i]
+
+                    if not isinstance(incarceration_period, type(expected_period)):
+                        raise ValueError(
+                            f"incarceration period is not instance of [{type(expected_period)}]"
+                        )
+                    if incarceration_period != expected_period:
+                        raise ValueError(
+                            f"incarceration period [{incarceration_period}] != expected period [{expected_period}]"
+                        )
+
+        return _convert_output_is_valid
+
+    def run_test_pipeline(
+        self,
+        person_id: int,
+        incarceration_period: entities.StateIncarcerationPeriod,
+        housing_metadata_rows: List[Dict[str, str]],
+        expected_period: entities.StateIncarcerationPeriod,
+    ) -> None:
+        """Runs a test pipeline to test ConvertEntitiesToStateSpecificType and compares
+        output against expected."""
+        person = entities.StatePerson.new_with_defaults(
+            state_code=incarceration_period.state_code, person_id=person_id
+        )
+
+        test_pipeline = TestPipeline()
+
+        us_mi_housing_metadata = (
+            test_pipeline
+            | "Create MI housing rows" >> beam.Create(housing_metadata_rows)
+        )
+
+        housing_metadata_as_kv = (
+            us_mi_housing_metadata
+            | "Convert MI housing metadata table to KV tuples"
+            >> beam.ParDo(ConvertDictToKVTuple(), "person_id")
+        )
+
+        people = test_pipeline | "Create person_id person tuple" >> beam.Create(
+            [(person_id, person)]
+        )
+        incarceration_periods = (
+            test_pipeline
+            | "Create person_id incarceration_period tuple"
+            >> beam.Create([(person_id, incarceration_period)])
+        )
+        entities_and_statuses = {
+            entities.StatePerson.__name__: people,
+            entities.StateIncarcerationPeriod.__name__: incarceration_periods,
+            US_MI_HOUSING_UNIT_METADATA_VIEW_NAME: housing_metadata_as_kv,
+        } | "Group periods to metadata for that person" >> beam.CoGroupByKey()
+
+        output = (
+            entities_and_statuses
+            | "Convert to state-specific incarceration periods"
+            >> beam.ParDo(
+                extractor_utils.ConvertEntitiesToStateSpecificTypes(),
+                state_code=person.state_code,
+            )
+        )
+
+        expected_output = [expected_period]
+        assert_that(
+            output, self.convert_incarceration_period_output_is_valid(expected_output)
+        )
+
+        test_pipeline.run()
+
+    def test_ConvertEntitiesToStateSpecificType_fake_state_not_mi(self):
+        """Tests that we preserve incarceration periods for states not MI."""
+        incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=123,
+            state_code="US_XX",
+            external_id="123-external-id",
+            housing_unit="123",
+            facility="ABC",
+        )
+
+        self.run_test_pipeline(
+            self.TEST_PERSON_ID,
+            incarceration_period,
+            self.TEST_MI_HOUSING_METADATA_ROWS,
+            incarceration_period,
+        )
+
+    def test_ConvertEntitiesToStateSpecificType_incarceration_period_mi(self):
+        """Tests that we convert to proper Michigan-specific incarceration periods."""
+        incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=123,
+            state_code="US_MI",
+            external_id="123-external-id",
+            housing_unit="123",
+            facility="ABC",
+        )
+
+        expected_incarceration_period = UsMiIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=123,
+            state_code="US_MI",
+            external_id="123-external-id",
+            housing_unit="123",
+            facility="ABC",
+            reporting_station_id="234",
+            reporting_station_name="Housing Unit 0",
+        )
+
+        self.run_test_pipeline(
+            self.TEST_PERSON_ID,
+            incarceration_period,
+            self.TEST_MI_HOUSING_METADATA_ROWS,
+            expected_incarceration_period,
+        )
 
 
 class ExtractAssertMatchers:

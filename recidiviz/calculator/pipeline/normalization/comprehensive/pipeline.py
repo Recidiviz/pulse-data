@@ -50,6 +50,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.pipeline_type import (
     COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.us_mi_housing_unit_metadata import (
+    US_MI_HOUSING_UNIT_METADATA_VIEW_NAME,
+)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
@@ -97,7 +100,10 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 # We need to bring in the US_MO sentence status table to do
                 # do state-specific processing of the sentences for normalizing
                 # supervision periods.
-                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
+                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME],
+                # We need to bring in the US_MI housing unit metadata to load
+                # state-specific versions of incarceration periods
+                StateCode.US_MI: [US_MI_HOUSING_UNIT_METADATA_VIEW_NAME],
             },
         )
 

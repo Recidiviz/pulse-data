@@ -20,8 +20,12 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_incarceration_period import (
+    UsMiIncarcerationPeriod,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -45,3 +49,29 @@ class UsMiIncarcerationNormalizationDelegate(
         ):
             return StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
         return incarceration_period.admission_reason
+
+    def period_is_parole_board_hold(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> bool:
+        """A period is considered a parole board hold if the person is being housed in
+        housing unit 6 of the Macomb Correctional Facility. These people are alleged
+        parole violators and are awaiting possible new commitments back to prison."""
+        incarceration_period = sorted_incarceration_periods[
+            incarceration_period_list_index
+        ]
+        if not isinstance(incarceration_period, UsMiIncarcerationPeriod):
+            raise ValueError(
+                f"Unexpected type for incarceration period: {type(incarceration_period)}."
+                f"Found incarceration period: {incarceration_period}."
+            )
+
+        return (
+            (
+                incarceration_period.reporting_station_name == "HU#6"
+                and incarceration_period.facility == "MRF"
+            )
+            or incarceration_period.specialized_purpose_for_incarceration
+            == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        )
