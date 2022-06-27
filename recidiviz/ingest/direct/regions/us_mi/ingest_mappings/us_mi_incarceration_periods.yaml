@@ -257,5 +257,4 @@ output:
                       - $literal("18")
                       - $literal("17")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
-              - $else: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
           custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
