@@ -18,21 +18,7 @@
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateSpecializedPurposeForIncarceration,
-)
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsMiIncarcerationDelegate(StateSpecificIncarcerationDelegate):
     """US_MI implementation of the StateSpecificIncarcerationDelegate."""
-
-    def is_period_included_in_state_population(
-        self, incarceration_period: StateIncarcerationPeriod
-    ) -> bool:
-        """A period should not be counted towards the state population if the person is
-        currently in a parole board hold."""
-        return (
-            incarceration_period.specialized_purpose_for_incarceration
-            != StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
-        )

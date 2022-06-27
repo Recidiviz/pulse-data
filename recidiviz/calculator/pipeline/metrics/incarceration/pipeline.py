@@ -57,10 +57,6 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.us_mi_housing_unit_metadata import (
-    US_MI_HOUSING_UNIT_METADATA_VIEW_NAME,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
@@ -97,11 +93,7 @@ class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 StateSpecificSupervisionDelegate,
                 StateSpecificViolationDelegate,
             ],
-            state_specific_required_reference_tables={
-                # We need to bring in the US_MI housing unit metadata to load
-                # state-specific versions of incarceration periods
-                StateCode.US_MI: [US_MI_HOUSING_UNIT_METADATA_VIEW_NAME]
-            },
+            state_specific_required_reference_tables={},
         )
 
     @classmethod
