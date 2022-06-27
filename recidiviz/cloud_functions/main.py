@@ -48,7 +48,6 @@ from direct_ingest_bucket_name_utils import (  # type: ignore[import]
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
 
-_STATE_AGGREGATE_PATH = "/aggregate/persist_file"
 _DIRECT_INGEST_PATH = "/direct/handle_direct_ingest_file"
 _DIRECT_INGEST_NORMALIZE_RAW_PATH_PATH = "/direct/normalize_raw_file_path"
 
@@ -71,39 +70,6 @@ def _build_url(
     if params is not None:
         url += f"?{urlencode(params)}"
     return url
-
-
-def parse_state_aggregate(
-    data: Dict[str, Any], _: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered when a file is dropped into the state
-    aggregate bucket and makes a request to parse and write the data to the
-    aggregate table database.
-
-    data: A cloud storage object that holds name information and other metadata
-    related to the file that was dropped into the bucket.
-    _: (google.cloud.functions.Context): Metadata of triggering event.
-    """
-    bucket = data["bucket"]
-    state, filename = data["name"].split("/")
-    project_id = os.environ[GCP_PROJECT_ID_KEY]
-    cloud_functions_log(
-        severity="INFO",
-        message=f"Running cloud function for bucket [{bucket}], state [{state}], filename"
-        f" [{filename}]",
-    )
-    url = _build_url(
-        project_id,
-        _STATE_AGGREGATE_PATH,
-        {"bucket": bucket, "state": state, "filename": filename},
-    )
-    # Hit the cloud function backend, which persists the table data to our
-    # database.
-    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    cloud_functions_log(
-        severity="INFO", message=f"The response status is {response.status_code}"
-    )
-    return "", HTTPStatus(response.status_code)
 
 
 def normalize_raw_file_path(
