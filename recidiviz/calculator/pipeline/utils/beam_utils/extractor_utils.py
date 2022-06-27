@@ -56,15 +56,9 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     UnifyingId,
     select_query,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_incarceration_period import (
-    UsMiIncarcerationPeriod,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoIncarcerationSentence,
     UsMoSupervisionSentence,
-)
-from recidiviz.calculator.query.state.views.reference.us_mi_housing_unit_metadata import (
-    US_MI_HOUSING_UNIT_METADATA_VIEW_NAME,
 )
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
@@ -1251,8 +1245,6 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
 
         if state_code == StateCode.US_MO.value:
             self.update_US_MO_sentences(entities_and_reference_tables)
-        if state_code == StateCode.US_MI.value:
-            self.update_US_MI_incarceration_periods(entities_and_reference_tables)
         yield person_id, entities_and_reference_tables
 
     def update_US_MO_sentences(
@@ -1392,102 +1384,6 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
         entities_and_reference_tables[
             state_entities.StateSupervisionSentence.__name__
         ] = cast(List[Entity], updated_supervision_sentences)
-
-    def update_US_MI_incarceration_periods(
-        self,
-        entities_and_reference_tables: Dict[
-            Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
-        ],
-    ) -> None:
-        """Updates US_MI StateIncarcerationPeriod entities to state-specific versions
-        of the classes that store additional information required to perform calculations
-        in this state."""
-        incarceration_periods: List[Entity] = []
-
-        if (
-            state_entities.StateIncarcerationPeriod.__name__
-            in entities_and_reference_tables
-        ):
-            incarceration_periods = cast(
-                List[Entity],
-                entities_and_reference_tables[
-                    state_entities.StateIncarcerationPeriod.__name__
-                ],
-            )
-
-        if not incarceration_periods:
-            return
-
-        if US_MI_HOUSING_UNIT_METADATA_VIEW_NAME not in entities_and_reference_tables:
-            raise ValueError(
-                f"Must hydrate [{US_MI_HOUSING_UNIT_METADATA_VIEW_NAME}] to use incarceration periods in a US_MI pipeline."
-            )
-
-        housing_metadata_rows: Union[
-            List[Entity], List[TableRow]
-        ] = entities_and_reference_tables.pop(US_MI_HOUSING_UNIT_METADATA_VIEW_NAME)
-        housing_metadata_by_facility_and_unit: Dict[
-            Tuple[str, str], Dict[str, str]
-        ] = defaultdict(dict)
-
-        if housing_metadata_rows:
-            # Find the appropriate metadata row for the given unit and facility
-            for metadata_dict in housing_metadata_rows:
-                if not isinstance(metadata_dict, Dict):
-                    raise ValueError(
-                        f"Expected housing metadata element to be of type Dict. Found {type(metadata_dict)}."
-                    )
-                housing_unit = metadata_dict["housing_unit"]
-                facility = metadata_dict["facility"]
-
-                if housing_unit and facility:
-                    housing_metadata_by_facility_and_unit[
-                        (housing_unit, facility)
-                    ] = metadata_dict
-
-        updated_incarceration_periods: List[UsMiIncarcerationPeriod] = []
-
-        for incarceration_period in incarceration_periods:
-            if not isinstance(
-                incarceration_period, state_entities.StateIncarcerationPeriod
-            ):
-                raise ValueError(
-                    f"Expected entity to be of type StateIncarcerationPeriod. Found {type(incarceration_period)}."
-                )
-
-            if incarceration_period.state_code != StateCode.US_MI.value:
-                raise ValueError(
-                    f"Found incarceration period that isn't of US_MI: {incarceration_period}"
-                )
-
-            reporting_station_id: Optional[str] = None
-            reporting_station_name: Optional[str] = None
-
-            housing_unit = incarceration_period.housing_unit
-            facility = incarceration_period.facility
-
-            if (
-                housing_unit
-                and facility
-                and (housing_unit, facility) in housing_metadata_by_facility_and_unit
-            ):
-                result_dict = housing_metadata_by_facility_and_unit[
-                    (housing_unit, facility)
-                ]
-                reporting_station_id = result_dict["reporting_station_id"]
-                reporting_station_name = result_dict["reporting_station_name"]
-
-            updated_incarceration_periods.append(
-                UsMiIncarcerationPeriod.from_incarceration_period(
-                    incarceration_period,
-                    reporting_station_id,
-                    reporting_station_name,
-                )
-            )
-
-        entities_and_reference_tables[
-            state_entities.StateIncarcerationPeriod.__name__
-        ] = cast(List[Entity], updated_incarceration_periods)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
