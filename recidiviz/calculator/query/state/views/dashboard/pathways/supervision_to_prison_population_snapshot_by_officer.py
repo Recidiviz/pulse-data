@@ -49,7 +49,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             transitions.supervision_type,
             transitions.age_group,
             transitions.race,
-            transitions.district,
+            transitions.supervision_district AS district,
             transitions.supervision_level,
             transitions.supervising_officer
         FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions` transitions

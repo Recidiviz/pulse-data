@@ -52,7 +52,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             transitions.supervision_type,
             transitions.age_group,
             transitions.race,
-            transitions.district,
+            transitions.supervision_district AS district,
             transitions.length_of_stay,
             transitions.supervision_level,
             "ALL" AS most_severe_violation,

@@ -32,3 +32,6 @@ class Dimension(enum.Enum):
     JUDICIAL_DISTRICT = "judicial_district"
     PRIOR_LENGTH_OF_INCARCERATION = "prior_length_of_incarceration"
     FACILITY = "facility"
+    SUPERVISION_DISTRICT = "supervision_district"
+    # TODO(#13552): Remove this once FE uses supervision_district
+    DISTRICT = "district"

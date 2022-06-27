@@ -33,12 +33,14 @@ from recidiviz.case_triage.pathways.metric_queries import (
     MetricQueryBuilder,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
+    SupervisionToPrisonTransitionsCount,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
     PrisonToSupervisionTransitions,
+    SupervisionToPrisonTransitions,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -277,6 +279,103 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
         self.test.assertEqual(
             [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}], results
+        )
+
+
+class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCase):
+    """Test for SupervisionToPrisonTransitionsCount metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return SupervisionToPrisonTransitions
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return SupervisionToPrisonTransitionsCount
+
+    @property
+    def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+        return {
+            Dimension.YEAR_MONTH: [
+                {"year": 2022, "month": 1, "count": 1},
+                {"year": 2022, "month": 2, "count": 2},
+                {"year": 2022, "month": 3, "count": 1},
+            ],
+            Dimension.GENDER: [
+                {"gender": "FEMALE", "count": 2},
+                {"gender": "MALE", "count": 1},
+                {"gender": "NON_BINARY", "count": 1},
+            ],
+            Dimension.AGE_GROUP: [
+                {"age_group": "20-25", "count": 1},
+                {"age_group": "26-35", "count": 2},
+                {"age_group": "60+", "count": 1},
+            ],
+            Dimension.RACE: [
+                {"race": "ASIAN", "count": 1},
+                {"race": "BLACK", "count": 1},
+                {"race": "WHITE", "count": 2},
+            ],
+            Dimension.SUPERVISION_TYPE: [
+                {"supervision_type": "PAROLE", "count": 1},
+                {"supervision_type": "PROBATION", "count": 3},
+            ],
+            Dimension.SUPERVISION_LEVEL: [
+                {"supervision_level": "MEDIUM", "count": 2},
+                {"supervision_level": "MINIMUM", "count": 2},
+            ],
+            Dimension.SUPERVISION_DISTRICT: [
+                {"supervision_district": "DISTRICT_10", "count": 2},
+                {"supervision_district": "DISTRICT_18", "count": 2},
+            ],
+            Dimension.DISTRICT: [
+                {"district": "DISTRICT_10", "count": 2},
+                {"district": "DISTRICT_18", "count": 2},
+            ],
+            Dimension.SUPERVISING_OFFICER: [
+                {"supervising_officer": "3456", "count": 1},
+                {"supervising_officer": "4567", "count": 1},
+                {"supervising_officer": "7890", "count": 2},
+            ],
+            Dimension.LENGTH_OF_STAY: [
+                {"length_of_stay": "months_0_3", "count": 1},
+                {"length_of_stay": "months_3_6", "count": 1},
+                {"length_of_stay": "months_6_9", "count": 2},
+            ],
+        }
+
+    def test_metrics_filter(self) -> None:
+        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.DISTRICT,
+                filters={
+                    Dimension.RACE: ["WHITE"],
+                },
+            ),
+        )
+
+        self.test.assertEqual(
+            [
+                {"district": "DISTRICT_10", "count": 1},
+                {"district": "DISTRICT_18", "count": 1},
+            ],
+            results,
+        )
+
+    def test_filter_since(self) -> None:
+        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(group=Dimension.GENDER, since="2022-02-15"),
+        )
+
+        self.test.assertEqual(
+            [{"gender": "FEMALE", "count": 1}, {"gender": "NON_BINARY", "count": 1}],
+            results,
         )
 
 
