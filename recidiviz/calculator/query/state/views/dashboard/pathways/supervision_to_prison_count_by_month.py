@@ -43,13 +43,13 @@ aggregate_query = """
     WITH base_data AS (
         SELECT
             transitions.state_code,
-            EXTRACT(YEAR FROM transitions.transition_date) as year,
-            EXTRACT(MONTH FROM transitions.transition_date) as month,
+            year,
+            month,
             transitions.gender,
             transitions.supervision_type,
             transitions.age_group,
             transitions.race,
-            transitions.district,
+            transitions.supervision_district AS district,
             # TODO(#11020) Re-enable supervision_level once BE has been updated to handle larger metric files
             "ALL" AS supervision_level,
             # transitions.supervision_level,

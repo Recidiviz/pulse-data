@@ -29,6 +29,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
     PrisonToSupervisionTransitions,
+    SupervisionToPrisonTransitions,
 )
 
 
@@ -319,5 +320,69 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
     aggregate_columns=[
         PrisonToSupervisionTransitions.age,
         PrisonToSupervisionTransitions.facility,
+    ],
+)
+
+SupervisionToPrisonTransitionsCount = CountByDimensionMetricQueryBuilder(
+    name="SupervisionToPrisonTransitionsCount",
+    model=SupervisionToPrisonTransitions,
+    timestamp_column=SupervisionToPrisonTransitions.transition_date,
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.YEAR_MONTH,
+            operations=DimensionOperation.GROUP,
+            columns=[
+                SupervisionToPrisonTransitions.year,
+                SupervisionToPrisonTransitions.month,
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.AGE_GROUP,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.age_group],
+        ),
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.race],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_TYPE,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.supervision_type],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_LEVEL,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.supervision_level],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_DISTRICT,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.supervision_district],
+        ),
+        # TODO(#13552): Remove this once FE uses supervision_district
+        DimensionMapping(
+            dimension=Dimension.DISTRICT,
+            operations=DimensionOperation.ALL,
+            columns=[
+                SupervisionToPrisonTransitions.supervision_district.label("district")
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISING_OFFICER,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.supervising_officer],
+        ),
+        DimensionMapping(
+            dimension=Dimension.LENGTH_OF_STAY,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToPrisonTransitions.length_of_stay],
+        ),
     ],
 )
