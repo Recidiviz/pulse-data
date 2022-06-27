@@ -49,6 +49,12 @@ module "justice_counts_database" {
   zone              = "us-east1-c"
   tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user = local.is_production
+  insights_config = {
+    query_insights_enabled  = true
+    query_string_length     = 1024
+    record_application_tags = false
+    record_client_address   = false
+  }
 }
 
 

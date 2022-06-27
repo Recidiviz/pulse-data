@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+terraform {
+  experiments = [module_variable_optional_attrs]
+}
 
 # The project for the related database instance
 variable "project_id" {
@@ -69,6 +72,16 @@ variable "zone" {
 variable "additional_databases" {
   type = set(string)
   default = []
+}
+
+variable "insights_config" {
+  type = object({
+    query_insights_enabled  = optional(bool)
+    query_string_length     = optional(number)
+    record_application_tags = optional(bool)
+    record_client_address   = optional(bool)
+  })
+  default = null
 }
 
 # Used for allowing access from `prod-data-client` to the CloudSQL instance
@@ -145,6 +158,22 @@ resource "google_sql_database_instance" "data" {
       day  = 1
       hour = 0
     }
+
+    dynamic insights_config {
+      # The var.insights_config[*] syntax is a special mode of the splat operator [*]
+      # when applied to a non-list value: if var.insights_config is null then it will
+      # produce an empty list, and otherwise it will produce a single-element list
+      # containing the value.
+      for_each = var.insights_config[*]
+
+      content {
+        query_insights_enabled  = var.insights_config.query_insights_enabled
+        query_string_length     = var.insights_config.query_string_length
+        record_application_tags = var.insights_config.record_application_tags
+        record_client_address   = var.insights_config.record_client_address
+      }
+    }
+
   }
 }
 
