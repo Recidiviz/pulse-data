@@ -262,9 +262,18 @@ WITH date_array AS (
         district,
         office,
         date,
+        # Get previous assessment within officer-assignment session
         a.assessment_score - LAG(a.assessment_score) OVER (
-            PARTITION BY a.state_code, a.person_id, supervising_officer_external_id, district, office ORDER BY date
+            PARTITION BY 
+                a.state_code, a.person_id, b.start_date, b.supervising_officer_external_id, b.district, b.office, sss.supervision_super_session_id 
+            ORDER BY date
         ) AS lsir_score_change,
+        # Get previous assessment within supervision super session
+        a.assessment_score - LAG(a.assessment_score) OVER (
+            PARTITION BY 
+                a.state_code, a.person_id, sss.supervision_super_session_id 
+            ORDER BY date
+        ) AS lsir_score_change_any_officer,
     FROM `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` a
     INNER JOIN 
         officer_office_sessions_unnested b
@@ -272,6 +281,11 @@ WITH date_array AS (
         a.state_code = b.state_code
         AND a.person_id = b.person_id
         AND a.assessment_date = b.date
+    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` sss
+    ON
+        a.state_code = sss.state_code
+        AND a.person_id = sss.person_id
+        AND a.assessment_date BETWEEN sss.start_date AND COALESCE(sss.end_date, "9999-01-01")
     WHERE a.assessment_type = "LSIR"
 )
 , contacts AS (
@@ -359,6 +373,17 @@ WITH date_array AS (
             supervising_officer_external_id, district, office, date, 
             d.employment_status_start_date, e.employer_name, e.employment_start_date
         ) AS days_incarcerated_1yr,
+        
+        # Number of days from officer assignment to first incarceration, within a year of first assignment
+        DATE_DIFF(
+            MIN(COALESCE(c.start_date, DATE_ADD(a.start_date, INTERVAL 365 DAY)))
+            OVER (
+                PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
+                supervising_officer_external_id, district, office, date, 
+                d.employment_status_start_date, e.employer_name, e.employment_start_date
+            )
+        , a.start_date, DAY) 
+         AS days_to_first_incarceration_1yr,
 
         # Number of days employed within a year of first assignment to officer
         SUM(
@@ -405,6 +430,10 @@ WITH date_array AS (
             supervising_officer_external_id, district, office, date, 
             c.start_date, d.employment_status_start_date
         ) AS num_unique_employers_1yr,
+        
+        # Change in risk score within first year of client-assignment, for clients who were reassessed
+        # at least once within the year.
+        g.assessment_score - f.assessment_score AS lsir_score_change_1yr,
 
     # first date client associated with officer-office during SSS
     FROM
@@ -468,11 +497,27 @@ WITH date_array AS (
         AND a.person_id = e.person_id
         AND IFNULL(e.employment_end_date, "9999-01-01") > a.start_date
         AND e.employment_start_date < DATE_ADD(a.start_date, INTERVAL 365 DAY)
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` f
+    ON
+        a.person_id = f.person_id
+        AND a.start_date BETWEEN f.assessment_date AND COALESCE(f.score_end_date, "9999-01-01")
+    # Get assessment score recorded one year after client-officer assignment, if the assessment happened
+    # during the same client-officer session, and if the person was reassessed at least once during that year.
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` g
+    ON
+        a.person_id = g.person_id
+        AND DATE_ADD(a.start_date, INTERVAL 365 DAY) BETWEEN g.assessment_date AND 
+           IFNULL(g.score_end_date, "9999-01-01")
+        AND DATE_ADD(a.start_date, INTERVAL 365 DAY) <= IFNULL(a.end_date, "9999-01-01")
+        AND f.assessment_date < g.assessment_date
+        
     # Keep first assignment of officer-office to client within SSS only
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY sss.supervision_super_session_id, a.state_code, 
             a.person_id, supervising_officer_external_id, district, office 
-            ORDER BY date
+            ORDER BY a.start_date
         ) = 1
 )
 
@@ -665,6 +710,9 @@ event_metrics_agg AS (
         COUNT(DISTINCT IF(lsir_assessments.lsir_score_change > 0, lsir_assessments.person_id, NULL)) AS lsir_risk_increase,
         COUNT(DISTINCT IF(lsir_assessments.lsir_score_change < 0, lsir_assessments.person_id, NULL)) AS lsir_risk_decrease,
         AVG(lsir_score_change) AS lsir_score_change,
+        COUNT(DISTINCT IF(lsir_assessments.lsir_score_change_any_officer > 0, lsir_assessments.person_id, NULL)) AS lsir_risk_increase_any_officer,
+        COUNT(DISTINCT IF(lsir_assessments.lsir_score_change_any_officer < 0, lsir_assessments.person_id, NULL)) AS lsir_risk_decrease_any_officer,
+        AVG(lsir_score_change_any_officer) AS lsir_score_change_any_officer,
 
         # contacts
         COUNT(DISTINCT IF(contacts.any_completed_contact, contacts.person_id, NULL)) AS contacts_completed,
@@ -710,17 +758,19 @@ window_metrics_agg AS
         SUM(window_metrics.num_unique_employers_1yr) AS num_unique_employers_1yr,
 
         IFNULL(SUM(window_metrics.days_incarcerated_1yr), 0) AS days_incarcerated_1yr,
+        IFNULL(SUM(window_metrics.days_to_first_incarceration_1yr), 0) AS days_to_first_incarceration_1yr,
         COUNT(window_metrics.person_id) * DATE_DIFF(
             LEAST(
                 CURRENT_DATE("US/Eastern"),
                 DATE_ADD(date, INTERVAL 365 DAY)
             ), date, DAY) AS days_since_assignment_1yr,
+        SUM(window_metrics.lsir_score_change_1yr) AS lsir_score_change_1yr,
+        COUNT(window_metrics.lsir_score_change_1yr) AS new_clients_assessed_after_assigned_1yr,
 
     FROM caseload_attributes
     LEFT JOIN window_metrics USING({join_columns})
     GROUP BY 1, 2, 3, 4, 5
 )
-
 
 # Join caseload attributes, event metrics, and window metrics
 SELECT
