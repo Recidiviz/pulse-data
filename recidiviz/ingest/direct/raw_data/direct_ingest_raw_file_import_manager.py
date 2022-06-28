@@ -22,7 +22,7 @@ import os
 import re
 from enum import Enum
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
 import pandas as pd
@@ -756,9 +756,7 @@ class DirectIngestRawFileImportManager:
         if not isinstance(df, pd.DataFrame):
             raise ValueError(f"Unexpected type for DataFrame: [{type(df)}]")
 
-        columns_from_file_config = [
-            normalize_column_name_for_bq(column.name) for column in file_config.columns
-        ]
+        columns_from_file_config = [column.name for column in file_config.columns]
 
         if file_config.infer_columns_from_config:
             if len(columns_from_file_config) != len(df.columns):
@@ -818,23 +816,45 @@ class DirectIngestRawFileImportManager:
                     f"upload."
                 )
 
-        # Check that all of the columns that are in the raw data config are also in the
-        # columns found in the CSV. If there are columns that are not in the raw data
-        # configuration but found in the CSV, then we throw an error to have both match
-        # (unless we are in a state where we allow incomplete configurations, like testing).
-        if not self.allow_incomplete_configs and not normalized_csv_columns.issubset(
-            set(columns_from_file_config)
-        ):
-            extra_columns = normalized_csv_columns.difference(
-                set(columns_from_file_config)
-            )
-            raise ValueError(
-                f"Found columns in raw file {sorted(extra_columns)} that are not defined in "
-                "the raw data configuration. Make sure that all columns from CSV are defined in "
-                "the raw data configuration."
+        if not self.allow_incomplete_configs:
+            self.check_found_columns_are_subset_of_config(
+                raw_file_config=file_config, found_columns=normalized_csv_columns
             )
 
         return csv_columns
+
+    @staticmethod
+    def check_found_columns_are_subset_of_config(
+        raw_file_config: DirectIngestRawFileConfig, found_columns: Iterable[str]
+    ) -> None:
+        """Check that all of the columns that are in the raw data config are also in
+        the columns found in the CSV. If there are columns that are not in the raw data
+        configuration but found in the CSV, then we throw an error to have both match
+        (unless we are in a state where we allow incomplete configurations, like
+        testing).
+        """
+
+        # BQ is case-agnostic when evaluating column names so we can be as well.
+        columns_from_file_config_lower = {
+            column.name.lower() for column in raw_file_config.columns
+        }
+        found_columns_lower = set(c.lower() for c in found_columns)
+
+        if len(found_columns_lower) != len(list(found_columns)):
+            raise ValueError(
+                f"Found duplicate columns in found_columns list: {list(found_columns)}"
+            )
+
+        if not found_columns_lower.issubset(columns_from_file_config_lower):
+            extra_columns = found_columns_lower.difference(
+                columns_from_file_config_lower
+            )
+            raise ValueError(
+                f"Found columns in raw file {sorted(extra_columns)} that are not "
+                f"defined in the raw data configuration for "
+                f"[{raw_file_config.file_tag}]. Make sure that all columns from CSV "
+                f"are defined in the raw data configuration."
+            )
 
     @staticmethod
     def _create_raw_table_schema_from_columns(
