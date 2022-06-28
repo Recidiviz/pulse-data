@@ -21,7 +21,6 @@ import re
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Type
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
@@ -135,6 +134,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     supervision_period_admission_reason_mapper,
     supervision_period_termination_reason_mapper,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
@@ -447,8 +447,8 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def region_code(cls) -> str:
         return StateCode.US_MO.value.lower()
 
-    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
-        super().__init__(ingest_bucket_path)
+    def __init__(self, ingest_instance: DirectIngestInstance):
+        super().__init__(ingest_instance)
 
         self.enum_overrides = self.generate_enum_overrides()
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {}

@@ -26,7 +26,6 @@ from urllib.parse import urlencode
 import attr
 from google.cloud import tasks_v2
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
@@ -43,9 +42,6 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
-    DirectIngestInstanceFactory,
-)
 from recidiviz.utils.regions import Region
 
 SCHEDULER_TASK_ID_TAG = "scheduler"
@@ -379,7 +375,7 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
         """Creates a scheduler task for direct ingest for a given region.
@@ -388,9 +384,7 @@ class DirectIngestCloudTaskManager:
 
         Args:
             region: `Region` direct ingest region.
-            ingest_bucket: `GcsfsBucketPath` of the ingest bucket (e.g.
-                gs://recidiviz-staging-direct-ingest-state-us-xx) corresponding to the
-                ingest instance that work should be scheduled for.
+            ingest_instance: The ingest instance that work should be scheduled for.
             just_finished_job: True if this schedule is coming as a result
                 of just having finished a job.
         """
@@ -399,7 +393,7 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_handle_new_files_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
         """Creates a Cloud Task for for a given region that identifies and registers
@@ -407,8 +401,7 @@ class DirectIngestCloudTaskManager:
 
         Args:
             region: `Region` direct ingest region.
-            ingest_bucket: `GcsfsBucketPath` of the ingest bucket (e.g.
-                gs://recidiviz-staging-direct-ingest-state-us-xx) to look for new files.
+            ingest_instance: The ingest instance to look for new files in.
             can_start_ingest: True if the controller can proceed with scheduling
                 more jobs to process the data once the files have been properly named
                 and registered.
@@ -621,15 +614,14 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
-        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_scheduler_task_id(region, ingest_instance)
 
         params = {
             "region": region.region_code.lower(),
-            "bucket": ingest_bucket.bucket_name,
+            "ingest_instance": ingest_instance.value.lower(),
             "just_finished_job": just_finished_job,
         }
 
@@ -644,15 +636,14 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_handle_new_files_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
-        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_handle_new_files_task_id(region, ingest_instance)
 
         params = {
             "region": region.region_code.lower(),
-            "bucket": ingest_bucket.bucket_name,
+            "ingest_instance": ingest_instance.value.lower(),
             "can_start_ingest": can_start_ingest,
         }
         relative_uri = f"/direct/handle_new_files?{urlencode(params)}"

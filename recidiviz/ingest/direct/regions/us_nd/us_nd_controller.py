@@ -19,7 +19,6 @@
 import json
 from typing import Dict, List, Optional, Tuple, cast
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.external_id_types import (
@@ -73,6 +72,7 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_referenc
 from recidiviz.ingest.direct.regions.us_nd.us_nd_legacy_enum_helpers import (
     generate_enum_overrides,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import (
     AncestorChainOverridesCallable,
     IngestFieldCoordinates,
@@ -105,8 +105,8 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def region_code(cls) -> str:
         return StateCode.US_ND.value.lower()
 
-    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
-        super().__init__(ingest_bucket_path)
+    def __init__(self, ingest_instance: DirectIngestInstance):
+        super().__init__(ingest_instance)
 
         self.enum_overrides = generate_enum_overrides()
 

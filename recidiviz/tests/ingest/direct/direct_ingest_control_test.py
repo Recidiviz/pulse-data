@@ -30,11 +30,9 @@ from paramiko.hostkeys import HostKeyEntry
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     build_ingest_bucket_name,
-    get_region_code_from_direct_ingest_bucket,
-    is_primary_ingest_bucket,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct import direct_ingest_control
@@ -159,7 +157,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         request_args = {
             "region": self.region_code,
-            "bucket": self.primary_bucket.bucket_name,
+            "ingest_instance": DirectIngestInstance.PRIMARY.value,
         }
         task_id = "us_nd-primary-scheduler-b1f5a25c-07d2-408e-b9e9-2825be145263"
         headers = {
@@ -172,7 +170,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         self.mock_controller_factory.build.assert_called_with(
-            ingest_bucket_path=self.primary_bucket, allow_unlaunched=False
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            allow_unlaunched=False,
         )
         mock_controller.schedule_next_ingest_task.assert_called_with(
             current_task_id=task_id, just_finished_job=False
@@ -195,7 +195,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
         request_args = {
             "region": self.region_code,
-            "bucket": self.primary_bucket.bucket_name,
+            "ingest_instance": DirectIngestInstance.PRIMARY.value,
         }
         headers = APP_ENGINE_HEADERS
         response = self.client.get(
@@ -203,7 +203,9 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
         self.mock_controller_factory.build.assert_called_with(
-            ingest_bucket_path=self.primary_bucket, allow_unlaunched=False
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            allow_unlaunched=False,
         )
 
         self.assertEqual(400, response.status_code)
@@ -491,7 +493,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         request_args = {
             "region": self.region_code,
-            "bucket": self.primary_bucket.bucket_name,
+            "ingest_instance": DirectIngestInstance.PRIMARY.value,
             "can_start_ingest": "True",
         }
         task_id = "us_nd-primary-handle_new_files-b1f5a25c-07d2-408e-b9e9-2825be145263"
@@ -505,7 +507,9 @@ class TestDirectIngestControl(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         self.mock_controller_factory.build.assert_called_with(
-            ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            allow_unlaunched=True,
         )
         mock_controller.handle_new_files.assert_called_with(
             current_task_id=task_id, can_start_ingest=True
@@ -524,7 +528,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         request_args = {
             "region": self.region_code,
-            "bucket": self.primary_bucket.bucket_name,
+            "ingest_instance": DirectIngestInstance.PRIMARY.value,
             "can_start_ingest": "False",
         }
         task_id = "us_nd-primary-handle_new_files-b1f5a25c-07d2-408e-b9e9-2825be145263"
@@ -538,7 +542,9 @@ class TestDirectIngestControl(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         self.mock_controller_factory.build.assert_called_with(
-            ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            allow_unlaunched=True,
         )
         mock_controller.handle_new_files.assert_called_with(
             current_task_id=task_id, can_start_ingest=False
@@ -631,7 +637,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         request_args = {
             "region": self.region_code,
-            "bucket": self.primary_bucket.bucket_name,
+            "ingest_instance": DirectIngestInstance.PRIMARY.value,
             "can_start_ingest": "False",
         }
         task_id = "us_nd-primary-handle_new_files-b1f5a25c-07d2-408e-b9e9-2825be145263"
@@ -645,7 +651,9 @@ class TestDirectIngestControl(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         self.mock_controller_factory.build.assert_called_with(
-            ingest_bucket_path=self.primary_bucket, allow_unlaunched=True
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            allow_unlaunched=True,
         )
         mock_controller.schedule_next_ingest_task.assert_not_called()
         mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_not_called()
@@ -675,23 +683,16 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_controllers_by_region_code = {}
 
         def mock_build_controller(
-            ingest_bucket_path: GcsfsBucketPath,
+            region_code: str,
+            ingest_instance: DirectIngestInstance,
             allow_unlaunched: bool,
         ) -> BaseDirectIngestController:
             self.assertTrue(allow_unlaunched)
-            self.assertTrue(is_primary_ingest_bucket(ingest_bucket_path.bucket_name))
+            self.assertEqual(DirectIngestInstance.PRIMARY, ingest_instance)
 
             mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager = mock_cloud_task_manager
-            mock_controller.ingest_bucket_path = ingest_bucket_path
-            region_code = get_region_code_from_direct_ingest_bucket(
-                ingest_bucket_path.bucket_name
-            )
-            if not region_code:
-                raise ValueError(
-                    f"Unable to parse region_code from bucket "
-                    f"[{ingest_bucket_path.bucket_name}]"
-                )
+            mock_controller.ingest_instance = ingest_instance
             mock_controller.region = fake_supported_regions[region_code.lower()]
             mock_controller.ingest_instance = DirectIngestInstance.PRIMARY
 
@@ -720,16 +721,16 @@ class TestDirectIngestControl(unittest.TestCase):
             [
                 call(
                     fake_supported_regions["us_mo"],
-                    ingest_bucket=mock_controllers_by_region_code[
+                    ingest_instance=mock_controllers_by_region_code[
                         "us_mo"
-                    ].ingest_bucket_path,
+                    ].ingest_instance,
                     can_start_ingest=False,
                 ),
                 call(
                     fake_supported_regions[self.region_code],
-                    ingest_bucket=mock_controllers_by_region_code[
+                    ingest_instance=mock_controllers_by_region_code[
                         self.region_code
-                    ].ingest_bucket_path,
+                    ].ingest_instance,
                     can_start_ingest=True,
                 ),
             ]
@@ -941,18 +942,14 @@ class TestDirectIngestControl(unittest.TestCase):
         region_to_mock_controller = defaultdict(list)
 
         def mock_build_controller(
-            ingest_bucket_path: GcsfsBucketPath,
+            region_code: str,
+            ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
             allow_unlaunched: bool,
         ) -> BaseDirectIngestController:
             self.assertFalse(allow_unlaunched)
-            region_code_ = get_region_code_from_direct_ingest_bucket(
-                ingest_bucket_path.bucket_name
-            )
-            if region_code_ is None:
-                raise ValueError("Expected nonnull region code")
             mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
-            region_to_mock_controller[region_code_.lower()].append(mock_controller)
+            region_to_mock_controller[region_code.lower()].append(mock_controller)
             return mock_controller
 
         self.mock_controller_factory.build.side_effect = mock_build_controller
@@ -1006,18 +1003,16 @@ class TestDirectIngestControl(unittest.TestCase):
         region_to_mock_controller = defaultdict(list)
 
         def mock_build_controller(
-            ingest_bucket_path: GcsfsBucketPath,
+            region_code: str,
+            ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
             allow_unlaunched: bool,
         ) -> BaseDirectIngestController:
             self.assertFalse(allow_unlaunched)
-            region_code_ = get_region_code_from_direct_ingest_bucket(
-                ingest_bucket_path.bucket_name
-            )
-            if region_code_ is None:
+            if region_code is None:
                 raise ValueError("Expected nonnull region code")
             mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
-            region_to_mock_controller[region_code_.lower()].append(mock_controller)
+            region_to_mock_controller[region_code.lower()].append(mock_controller)
             return mock_controller
 
         self.mock_controller_factory.build.side_effect = mock_build_controller
@@ -1063,18 +1058,14 @@ class TestDirectIngestControl(unittest.TestCase):
         region_to_mock_controller = {}
 
         def mock_build_controller(
-            ingest_bucket_path: GcsfsBucketPath,
+            region_code: str,
+            ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
             allow_unlaunched: bool,
         ) -> BaseDirectIngestController:
             self.assertFalse(allow_unlaunched)
-            region_code_ = get_region_code_from_direct_ingest_bucket(
-                ingest_bucket_path.bucket_name
-            )
-            if region_code_ is None:
-                raise ValueError("Expected nonnull region code")
             mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
-            region_to_mock_controller[region_code_.lower()] = mock_controller
+            region_to_mock_controller[region_code.lower()] = mock_controller
             return mock_controller
 
         self.mock_controller_factory.build = mock_build_controller

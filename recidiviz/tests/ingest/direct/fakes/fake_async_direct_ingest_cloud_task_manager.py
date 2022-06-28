@@ -18,7 +18,6 @@
 asynchronously on background threads."""
 from typing import Any, Callable
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     ExtractAndMergeCloudTaskQueueInfo,
     IngestViewMaterializationCloudTaskQueueInfo,
@@ -38,9 +37,6 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
-    DirectIngestInstanceFactory,
-)
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskManager,
 )
@@ -95,18 +91,17 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        if not self.controller.ingest_bucket_path == ingest_bucket:
+        if not self.controller.ingest_instance == ingest_instance:
             raise ValueError(
-                f"Task request for ingest bucket [{ingest_bucket}] that does not match "
-                f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
+                f"Task request for ingest instance [{ingest_instance}] that does not match "
+                f"registered controller instance [{self.controller.ingest_instance}]."
             )
 
-        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_scheduler_task_id(region, ingest_instance)
         self.scheduler_queue.add_task(
             f"projects/path/to/{task_id}",
@@ -122,25 +117,24 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_handle_new_files_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        if not self.controller.ingest_bucket_path == ingest_bucket:
+        if not self.controller.ingest_instance == ingest_instance:
             raise ValueError(
-                f"Task request for ingest bucket [{ingest_bucket}] that does not match "
-                f"registered controller ingest bucket [{self.controller.ingest_bucket_path}]."
+                f"Task request for instance [{ingest_instance}] that does not match "
+                f"registered controller instance [{self.controller.ingest_instance}]."
             )
 
-        ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
         task_id = build_handle_new_files_task_id(region, ingest_instance)
 
         self.scheduler_queue.add_task(
             f"projects/path/to/{task_id}",
             with_monitoring(
                 region.region_code,
-                DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket),
+                ingest_instance,
                 self.controller.handle_new_files,
             ),
             current_task_id=task_id,

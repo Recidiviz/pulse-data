@@ -19,7 +19,6 @@ synchronously, when prompted."""
 import os.path
 from typing import List, Tuple
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     ExtractAndMergeCloudTaskQueueInfo,
     IngestViewMaterializationCloudTaskQueueInfo,
@@ -39,9 +38,6 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
-    DirectIngestInstanceFactory,
-)
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskManager,
 )
@@ -57,7 +53,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         super().__init__()
         self.extract_and_merge_tasks: List[Tuple[str, ExtractAndMergeArgs]] = []
         self.num_finished_extract_and_merge_tasks = 0
-        self.scheduler_tasks: List[Tuple[str, GcsfsBucketPath, bool]] = []
+        self.scheduler_tasks: List[Tuple[str, DirectIngestInstance, bool]] = []
         self.num_finished_scheduler_tasks = 0
 
         self.raw_data_import_tasks: List[Tuple[str, GcsfsRawDataBQImportArgs]] = []
@@ -126,35 +122,31 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
         """Queues *but does not run* a scheduler task."""
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = build_scheduler_task_id(
-            region, DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
-        )
+        task_id = build_scheduler_task_id(region, ingest_instance)
         self.scheduler_tasks.append(
-            (f"projects/path/to/{task_id}", ingest_bucket, just_finished_job)
+            (f"projects/path/to/{task_id}", ingest_instance, just_finished_job)
         )
 
     def create_direct_ingest_handle_new_files_task(
         self,
         region: Region,
-        ingest_bucket: GcsfsBucketPath,
+        ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        task_id = build_handle_new_files_task_id(
-            region, DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket)
-        )
+        task_id = build_handle_new_files_task_id(region, ingest_instance)
         self.scheduler_tasks.append(
             (
                 f"projects/path/to/{task_id}",
-                ingest_bucket,
+                ingest_instance,
                 can_start_ingest,
             )
         )
@@ -242,12 +234,12 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         with monitoring.push_region_tag(
             self.controller.region.region_code, self.controller.ingest_instance.value
         ):
-            ingest_bucket_path = task[1]
-            if not self.controller.ingest_bucket_path == ingest_bucket_path:
+            ingest_instance = task[1]
+            if not self.controller.ingest_instance == ingest_instance:
                 raise ValueError(
-                    f"Task request [{task_name}] for ingest bucket [{ingest_bucket_path}]"
-                    f"that does not match registered controller ingest bucket"
-                    f"[{self.controller.ingest_bucket_path}]."
+                    f"Task request [{task_name}] for instance [{ingest_instance}]"
+                    f"that does not match registered controller instance"
+                    f"[{self.controller.ingest_instance}]."
                 )
             if task_id.startswith(
                 build_scheduler_task_id(

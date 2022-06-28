@@ -18,7 +18,6 @@
 from enum import Enum
 from typing import Dict, List, Optional, Type
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
@@ -144,6 +143,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_legacy_enum_helpers import (
     supervision_period_supervision_type_mapper,
     supervision_termination_reason_mapper,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAgent,
@@ -174,8 +174,8 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def region_code(cls) -> str:
         return StateCode.US_ID.value.lower()
 
-    def __init__(self, ingest_bucket_path: GcsfsBucketPath):
-        super().__init__(ingest_bucket_path)
+    def __init__(self, ingest_instance: DirectIngestInstance):
+        super().__init__(ingest_instance)
         self.enum_overrides = self.generate_enum_overrides()
         early_discharge_deleted_rows_processors = [
             gen_label_single_external_id_hook(US_ID_DOC),
