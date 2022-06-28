@@ -23,10 +23,11 @@
 #   more time depending on e.g. # results for query 'John Doe'.
 import logging
 import time
-from typing import Callable, TypeVar
+from typing import Any, Callable, TypeVar
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.cloud import pubsub
+from google.protobuf import json_format
 
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.ingest.models.scrape_key import ScrapeKey
@@ -34,6 +35,14 @@ from recidiviz.utils import environment, metadata
 
 ACK_DEADLINE_SECONDS = 300
 NUM_GRPC_RETRIES = 2
+
+# https://cloud.google.com/pubsub/docs/push#receive_push
+MESSAGE = "message"
+
+# https://cloud.google.com/storage/docs/pubsub-notifications
+BUCKET_ID = "bucketId"
+OBJECT_ID = "objectId"
+
 
 _publisher = None
 _subscriber = None
@@ -136,3 +145,14 @@ def publish_message_to_topic(message: str, topic: str) -> None:
     publisher = get_publisher()
     topic_path = publisher.topic_path(metadata.project_id(), topic)
     publisher.publish(topic_path, data=message.encode("utf-8"))
+
+
+def extract_pubsub_message_from_json(json: Any) -> pubsub.types.PubsubMessage:
+    if not isinstance(json, dict):
+        raise TypeError("Invalid Pub/Sub message")
+    if MESSAGE not in json:
+        raise ValueError("Invalid Pub/Sub message")
+
+    message = json_format.ParseDict(json[MESSAGE], pubsub.types.PubsubMessage())
+
+    return message

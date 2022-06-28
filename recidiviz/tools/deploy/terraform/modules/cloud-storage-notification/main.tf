@@ -15,6 +15,15 @@ variable "filter" {
   default = ""
 }
 
+# https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
+# The audience identifies the recipients that the JWT is intended for. If unset, this will default
+# to the value of push_endpoint. For Cloud Run, that is sufficient. For App Engine, this should be
+# set to the IAP Client ID.
+variable "oidc_audience" {
+  type    = string
+  default = ""
+}
+
 resource "google_storage_notification" "notification" {
   bucket         = var.bucket_name
   payload_format = "JSON_API_V1"
@@ -47,6 +56,7 @@ resource "google_pubsub_subscription" "subscription" {
     push_endpoint = var.push_endpoint
     oidc_token {
       service_account_email = var.service_account_email
+      audience              = var.oidc_audience
     }
   }
 }

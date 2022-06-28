@@ -23,9 +23,6 @@ from typing import Tuple
 
 from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
-from google.cloud import pubsub
-from google.protobuf import json_format
-from google.protobuf.json_format import ParseError
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
@@ -51,6 +48,11 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
+from recidiviz.utils.pubsub_helper import (
+    BUCKET_ID,
+    OBJECT_ID,
+    extract_pubsub_message_from_json,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 app = Flask(__name__)
@@ -116,22 +118,18 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
 @app.route("/import/trigger_pathways", methods=["POST"])
 def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint to trigger standard GCS imports."""
-    data = request.get_json()
-    if not isinstance(data, dict) or "message" not in data:
-        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
 
     try:
-        message = json_format.ParseDict(data["message"], pubsub.types.PubsubMessage())
-    except ParseError:
-        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
-    else:
-        if not message.attributes:
-            return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
 
+    if not message.attributes:
+        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
     attributes = message.attributes
 
-    bucket_id = attributes["bucketId"]
-    object_id = attributes["objectId"]
+    bucket_id = attributes[BUCKET_ID]
+    object_id = attributes[OBJECT_ID]
     if "gs://" + bucket_id != _dashboard_event_level_bucket():
         return (
             f"/trigger_pathways is only configured for the dashboard-event-level-data bucket, saw {bucket_id}",

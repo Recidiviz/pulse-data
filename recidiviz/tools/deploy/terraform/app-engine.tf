@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# Make it easy for other resources to access the service account that App Engine runs as
+data "google_app_engine_default_service_account" "default" {}
+
 resource "google_app_engine_application_url_dispatch_rules" "request_routes" {
   # Scrapers
   dispatch_rules {
