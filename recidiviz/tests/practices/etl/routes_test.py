@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the practices_etl blueprint."""
+import base64
 import unittest
 from unittest.mock import patch
 
@@ -69,7 +70,16 @@ class TestPracticesETLRoutes(unittest.TestCase):
 
         with self.test_app.test_client() as client:
             response = client.post(
-                "/practices-etl/archive-file", json={"filename": test_filename}
+                "/practices-etl/archive-file",
+                json={
+                    "message": {
+                        "data": base64.b64encode(b"anything").decode(),
+                        "attributes": {
+                            "bucketId": "recidiviz-test-practices-etl-data",
+                            "objectId": test_filename,
+                        },
+                    }
+                },
             )
             self.assertEqual(response.status_code, 200)
 
@@ -83,7 +93,7 @@ class TestPracticesETLRoutes(unittest.TestCase):
                 test_data,
             )
 
-    def test_archive_file_missing_filename(self) -> None:
+    def test_archive_file_invalid_request(self) -> None:
         with self.test_app.test_client() as client:
             self.assertEqual(
                 client.post("/practices-etl/archive-file").status_code, 400
@@ -91,7 +101,56 @@ class TestPracticesETLRoutes(unittest.TestCase):
 
             self.assertEqual(
                 client.post(
-                    "/practices-etl/archive-file", json={"name": "test_file.json"}
+                    "/practices-etl/archive-file",
+                    json={
+                        "message": {
+                            "attributes": {},
+                        }
+                    },
                 ).status_code,
                 400,
+            )
+
+            self.assertEqual(
+                client.post(
+                    "/practices-etl/archive-file",
+                    json={"filename": "US_XX/test_file.json"},
+                ).status_code,
+                400,
+            )
+
+    @freeze_time("2022-03-15 06:15")
+    def test_archive_file_ignore_staging(self) -> None:
+        test_filename = "staging/US_XX/test_file.json"
+        test_data = "\n".join(['{"a": "b"}', '{"a": "z"}'])
+        self.fake_gcs.upload_from_string(
+            GcsfsFilePath.from_absolute_path(
+                f"gs://recidiviz-test-practices-etl-data/{test_filename}"
+            ),
+            test_data,
+            "text/json",
+        )
+
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/archive-file",
+                json={
+                    "message": {
+                        "data": base64.b64encode(b"anything").decode(),
+                        "attributes": {
+                            "bucketId": "recidiviz-test-practices-etl-data",
+                            "objectId": test_filename,
+                        },
+                    }
+                },
+            )
+
+            # We should get a successful response code, but nothing should actually happen.
+            self.assertEqual(response.status_code, 200)
+            self.assertFalse(
+                self.fake_gcs.exists(
+                    GcsfsFilePath.from_absolute_path(
+                        f"gs://recidiviz-test-practices-etl-data-archive/2022-03-15/{test_filename}"
+                    )
+                )
             )
