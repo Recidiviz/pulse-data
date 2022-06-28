@@ -16,7 +16,18 @@
 # =============================================================================
 """Utilities for working with CSV files."""
 import csv
-from typing import Dict, Iterator, Tuple
+from typing import Dict, Iterator, List, Tuple
+
+
+def get_csv_columns(csv_filename: str) -> List[str]:
+    """Returns the list of columns in the provided CSV, assuming the columns are
+    the first row of the file.
+    """
+    with open(csv_filename, mode="r", encoding="utf-8") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        if csv_reader.fieldnames is None:
+            raise ValueError(f"Found fieldnames is None for [{csv_filename}]")
+        return list(csv_reader.fieldnames)
 
 
 def get_rows_as_key_value_pairs(csv_filename: str) -> Iterator[Dict[str, str]]:

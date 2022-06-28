@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
+    DirectIngestRawFileImportManager,
     augment_raw_data_df_with_metadata_columns,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
@@ -95,6 +96,16 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
 
         self.compare_results_to_fixture(results, expected_output_fixture_path)
 
+    @staticmethod
+    def _check_valid_fixture_columns(
+        raw_file_config: DirectIngestRawFileConfig, fixture_file: str
+    ) -> None:
+        fixture_columns = csv.get_csv_columns(fixture_file)
+
+        DirectIngestRawFileImportManager.check_found_columns_are_subset_of_config(
+            raw_file_config=raw_file_config, found_columns=fixture_columns
+        )
+
     def create_mock_raw_bq_tables_from_fixtures(
         self,
         region_code: str,
@@ -115,6 +126,8 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
             print(
                 f"Loading fixture data for raw file [{raw_file_config.file_tag}] from file path [{raw_fixture_path}]."
             )
+
+            self._check_valid_fixture_columns(raw_file_config, raw_fixture_path)
 
             self.create_mock_raw_file(
                 region_code=region_code,
