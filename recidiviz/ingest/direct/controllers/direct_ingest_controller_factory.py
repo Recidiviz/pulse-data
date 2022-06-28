@@ -16,16 +16,14 @@
 # =============================================================================
 """Factory class for building DirectIngestControllers of various types."""
 import importlib
-from typing import Type
+from types import ModuleType
+from typing import Optional, Type
 
-from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
-    get_region_code_from_direct_ingest_bucket,
-)
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
     check_is_region_launched_in_env,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
@@ -39,20 +37,21 @@ class DirectIngestControllerFactory:
 
     @classmethod
     def build(
-        cls, *, ingest_bucket_path: GcsfsBucketPath, allow_unlaunched: bool
+        cls,
+        *,
+        region_code: str,
+        ingest_instance: DirectIngestInstance,
+        allow_unlaunched: bool,
+        region_module_override: Optional[ModuleType] = None,
     ) -> BaseDirectIngestController:
         """Retrieve a direct ingest BaseDirectIngestController associated with a
-        particular ingest bucket.
+        particular ingest instance.
 
         Returns:
             An instance of the region's direct ingest controller class (e.g.,
              UsNdController) that can run ingest operations for the ingest instance
-             associated with the input bucket.
+             specified.
         """
-        region_code = get_region_code_from_direct_ingest_bucket(
-            ingest_bucket_path.bucket_name
-        )
-
         if (
             region_code is None
             or region_code not in get_supported_direct_ingest_region_codes()
@@ -63,30 +62,20 @@ class DirectIngestControllerFactory:
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        region = cls._region_for_bucket(ingest_bucket_path)
+        region = regions.get_region(
+            region_code=region_code.lower(),
+            is_direct_ingest=True,
+            region_module_override=region_module_override,
+        )
         if not allow_unlaunched and not region.is_ingest_launched_in_env():
             check_is_region_launched_in_env(region)
 
         controller_class = cls.get_controller_class(region)
-        controller = controller_class(ingest_bucket_path=ingest_bucket_path)
+        controller = controller_class(ingest_instance=ingest_instance)
         if not isinstance(controller, BaseDirectIngestController):
             raise ValueError(f"Unexpected controller class type [{type(controller)}]")
 
         return controller
-
-    @staticmethod
-    def _region_for_bucket(ingest_bucket_path: GcsfsBucketPath) -> Region:
-        region_code = get_region_code_from_direct_ingest_bucket(
-            ingest_bucket_path.bucket_name
-        )
-        if not region_code:
-            raise ValueError(
-                f"Found no region code for bucket [{ingest_bucket_path.uri()}]"
-            )
-        return regions.get_region(
-            region_code=region_code.lower(),
-            is_direct_ingest=True,
-        )
 
     @classmethod
     def get_controller_class(cls, region: Region) -> Type[BaseDirectIngestController]:

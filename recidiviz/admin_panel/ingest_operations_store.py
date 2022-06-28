@@ -109,13 +109,6 @@ class IngestOperationsStore(AdminPanelStore):
         formatted_state_code = state_code.value.lower()
         region = get_region(formatted_state_code, is_direct_ingest=True)
 
-        # Get the ingest bucket for this region and instance
-        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
-            region_code=formatted_state_code,
-            ingest_instance=instance,
-            project_id=metadata.project_id(),
-        )
-
         logging.info(
             "Creating cloud task to schedule next job and kick ingest for %s instance in %s.",
             instance,
@@ -123,7 +116,7 @@ class IngestOperationsStore(AdminPanelStore):
         )
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
             region=region,
-            ingest_bucket=ingest_bucket_path,
+            ingest_instance=instance,
             can_start_ingest=can_start_ingest,
         )
 

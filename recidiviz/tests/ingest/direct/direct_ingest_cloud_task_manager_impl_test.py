@@ -371,6 +371,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_uuid.uuid4.return_value = uuid
         queue_name = "direct-ingest-state-us-xx-scheduler"
         queue_path = f"{queue_name}-path"
+        ingest_instance = DirectIngestInstance.PRIMARY
 
         task_name = queue_name + f"/{_REGION.region_code}-2019-07-20-{uuid}"
         task = tasks_v2.types.task_pb2.Task(
@@ -378,7 +379,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             app_engine_http_request={
                 "http_method": "POST",
                 "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                f"bucket={_PRIMARY_INGEST_BUCKET.bucket_name}&just_finished_job=False",
+                f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
                 "body": body_encoded,
             },
         )
@@ -389,7 +390,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
-            ingest_bucket=_PRIMARY_INGEST_BUCKET,
+            ingest_instance=ingest_instance,
             just_finished_job=False,
         )
 
@@ -415,6 +416,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_uuid.uuid4.return_value = uuid
         queue_path = "us_xx-scheduler-queue-path"
         queue_name = "direct-ingest-state-us-xx-scheduler-secondary"
+        ingest_instance = DirectIngestInstance.SECONDARY
 
         task_name = f"{queue_name}/{_REGION.region_code}-2019-07-20-{uuid}"
         task = tasks_v2.types.task_pb2.Task(
@@ -422,7 +424,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             app_engine_http_request={
                 "http_method": "POST",
                 "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                f"bucket={_SECONDARY_INGEST_BUCKET.bucket_name}&just_finished_job=False",
+                f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
                 "body": body_encoded,
             },
         )
@@ -433,7 +435,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
-            ingest_bucket=_SECONDARY_INGEST_BUCKET,
+            ingest_instance=ingest_instance,
             just_finished_job=False,
         )
 

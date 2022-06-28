@@ -32,9 +32,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_state,
-)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializer,
 )
@@ -384,13 +381,7 @@ def build_fake_direct_ingest_controller(
                 "regions",
                 new=regions_module,
             ):
-                controller = controller_cls(
-                    ingest_bucket_path=gcsfs_direct_ingest_bucket_for_state(
-                        region_code=controller_cls.region_code(),
-                        ingest_instance=ingest_instance,
-                        project_id="recidiviz-xxx",
-                    )
-                )
+                controller = controller_cls(ingest_instance=ingest_instance)
                 controller.csv_reader = GcsfsCsvReader(fake_fs)
                 controller.raw_file_import_manager.csv_reader = controller.csv_reader
 

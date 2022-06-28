@@ -41,9 +41,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
-from recidiviz.ingest.direct.gcs.directory_path_utils import (
-    gcsfs_direct_ingest_bucket_for_state,
-)
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
@@ -65,7 +62,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.utils.environment import GCPEnvironment
-from recidiviz.utils.regions import Region, get_region
+from recidiviz.utils.regions import get_region
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
 
@@ -181,27 +178,18 @@ class DirectIngestRegionDirStructureBase:
                 self.test.assertIsNotNone(controller_class)
                 self.test.assertEqual(region_code, controller_class.region_code())
 
-    def primary_ingest_bucket_for_region(self, region: Region) -> GcsfsBucketPath:
-        return gcsfs_direct_ingest_bucket_for_state(
-            region_code=region.region_code,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
-
     def test_region_controller_builds(
         self,
     ) -> None:
         for region_code in self.region_dir_names:
-            region = get_region(
-                region_code,
-                is_direct_ingest=True,
-                region_module_override=self.region_module_override,
-            )
             with patch(
                 "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
             ):
                 controller = DirectIngestControllerFactory.build(
-                    ingest_bucket_path=self.primary_ingest_bucket_for_region(region),
+                    region_code=region_code,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=True,
+                    region_module_override=self.region_module_override,
                 )
                 self.test.assertIsNotNone(controller)
                 self.test.assertIsInstance(controller, BaseDirectIngestController)
@@ -218,8 +206,10 @@ class DirectIngestRegionDirStructureBase:
                 "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
             ):
                 controller = DirectIngestControllerFactory.build(
-                    ingest_bucket_path=self.primary_ingest_bucket_for_region(region),
+                    region_code=region_code,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=True,
+                    region_module_override=self.region_module_override,
                 )
 
             builders = DirectIngestPreProcessedIngestViewCollector(
@@ -227,7 +217,7 @@ class DirectIngestRegionDirStructureBase:
             ).collect_view_builders()
 
             raw_file_manager = DirectIngestRegionRawFileConfig(
-                region_code=region.region_code,
+                region_code=region_code,
                 region_module=self.region_module_override,
             )
 
@@ -285,10 +275,10 @@ class DirectIngestRegionDirStructureBase:
                         return_value="recidiviz-456",
                     ):
                         controller = DirectIngestControllerFactory.build(
-                            ingest_bucket_path=self.primary_ingest_bucket_for_region(
-                                region
-                            ),
+                            region_code=region_code,
+                            ingest_instance=DirectIngestInstance.PRIMARY,
                             allow_unlaunched=True,
+                            region_module_override=self.region_module_override,
                         )
 
                     builders = DirectIngestPreProcessedIngestViewCollector(
