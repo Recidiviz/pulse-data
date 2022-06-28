@@ -29,6 +29,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
     PrisonToSupervisionTransitions,
+    SupervisionToLibertyTransitions,
     SupervisionToPrisonTransitions,
 )
 
@@ -320,6 +321,65 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
     aggregate_columns=[
         PrisonToSupervisionTransitions.age,
         PrisonToSupervisionTransitions.facility,
+    ],
+)
+
+SupervisionToLibertyTransitionsCount = CountByDimensionMetricQueryBuilder(
+    name="SupervisionToLibertyTransitionsCount",
+    model=SupervisionToLibertyTransitions,
+    timestamp_column=SupervisionToLibertyTransitions.transition_date,
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.YEAR_MONTH,
+            operations=DimensionOperation.GROUP,
+            columns=[
+                SupervisionToLibertyTransitions.year,
+                SupervisionToLibertyTransitions.month,
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.AGE_GROUP,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.age_group],
+        ),
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.race],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_TYPE,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.supervision_type],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_LEVEL,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.supervision_level],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_DISTRICT,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.supervision_district],
+        ),
+        # TODO(#13552): Remove this once FE uses supervision_district
+        DimensionMapping(
+            dimension=Dimension.DISTRICT,
+            operations=DimensionOperation.ALL,
+            columns=[
+                SupervisionToLibertyTransitions.supervision_district.label("district")
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISING_OFFICER,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.supervising_officer],
+        ),
     ],
 )
 
