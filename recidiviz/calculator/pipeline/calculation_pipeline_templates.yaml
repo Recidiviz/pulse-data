@@ -11,6 +11,11 @@
 normalization_pipelines:
   # Comprehensive normalization pipelines
   - pipeline: comprehensive_normalization
+    job_name: us-co-normalization
+    state_code: US_CO
+    region: us-west3
+    staging_only: True
+  - pipeline: comprehensive_normalization
     job_name: us-id-normalization
     state_code: US_ID
     region: us-west1
@@ -41,6 +46,14 @@ normalization_pipelines:
     staging_only: True
 
 incremental_metric_pipelines:
+  # Daily US_CO calculations
+  - pipeline: incarceration_metrics
+    job_name: us-co-incarceration-metrics-36
+    state_code: US_CO
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    calculation_month_count: 36
+    region: us-west3
+
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
     job_name: full-us-nd-recidivism-metrics
@@ -172,6 +185,12 @@ incremental_metric_pipelines:
     staging_only: True
 
 historical_metric_pipelines:
+  - pipeline: incarceration_metrics
+    job_name: us-co-historical-incarceration-metrics-240
+    state_code: US_CO
+    calculation_month_count: 240
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
+    region: us-west3
   - pipeline: incarceration_metrics
     job_name: us-id-historical-incarceration-metrics-240
     state_code: US_ID
