@@ -73,6 +73,13 @@ class ReportStore {
   async getReportOverviews(): Promise<void | Error> {
     try {
       const { currentAgency } = this.userStore;
+      if (currentAgency === undefined) {
+        // If user is not attached to an agency,
+        // no need to bother trying to load reports.
+        runInAction(() => {
+          this.loadingOverview = false;
+        });
+      }
       if (currentAgency !== undefined) {
         const response = (await this.api.request({
           path: `/api/reports?agency_id=${currentAgency.id}`,
@@ -91,8 +98,6 @@ class ReportStore {
           const error = await response.json();
           throw new Error(error.description);
         }
-      } else {
-        throw new Error("No user or agency information initialized.");
       }
     } catch (error) {
       runInAction(() => {

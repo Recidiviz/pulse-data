@@ -144,7 +144,7 @@ const Reports: React.FC = () => {
     [reportStore.reportOverviewList, reportsFilter]
   );
 
-  const renderReports = () => {
+  const renderReports = (userHasNoAgency: boolean) => {
     if (reportStore.loadingOverview) {
       return <Loading />;
     }
@@ -228,7 +228,11 @@ const Reports: React.FC = () => {
             )
           )
         ) : (
-          <NoReportsDisplay>No reports to display.</NoReportsDisplay>
+          <NoReportsDisplay>
+            {userHasNoAgency
+              ? "It looks like no agency is tied to this account. Please reach out to the Justice Counts team for assistance."
+              : "No reports to display."}
+          </NoReportsDisplay>
         )}
       </>
     );
@@ -276,15 +280,7 @@ const Reports: React.FC = () => {
       </ReportsHeader>
 
       {/* Reports List Table */}
-      <Table>
-        {renderReports()}
-        {userStore.userAgencies?.length === 0 && (
-          <NoReportsDisplay>
-            It looks like no agency is tied to this account. Please reach out to
-            your Recidiviz contact for assistance.
-          </NoReportsDisplay>
-        )}
-      </Table>
+      <Table>{renderReports(userStore.userAgencies?.length === 0)}</Table>
     </>
   );
 };
