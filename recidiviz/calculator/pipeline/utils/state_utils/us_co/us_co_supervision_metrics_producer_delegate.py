@@ -15,12 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_CO implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
+from typing import Optional
+
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
+from recidiviz.common.constants.state.external_id_types import US_CO_DOC, US_CO_PID
 
 
 class UsCoSupervisionMetricsProducerDelegate(
     StateSpecificSupervisionMetricsProducerDelegate
 ):
     """US_CO implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
+
+    def primary_person_external_id_to_include(self) -> Optional[str]:
+        return US_CO_DOC
+
+    def secondary_person_external_id_to_include(self) -> Optional[str]:
+        return US_CO_PID
