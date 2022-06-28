@@ -52,12 +52,10 @@ aggregate_query = """
             "ALL" AS supervision_level,
             # IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
             age_group,
-            prioritized_race_or_ethnicity AS race,
-            IFNULL(location_name, district_id) AS district,
-        FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_liberty_transitions` transitions
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
-        ON transitions.state_code = location.state_code 
-        AND transitions.district_id = location.location_id
+            race,
+            # TODO(#13552): Change to supervision_district once the FE can support it
+            supervision_district AS district,
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_liberty_transitions` transitions
     ),
     filtered_rows AS (
         SELECT * FROM transitions
@@ -80,6 +78,7 @@ dimensions = [
     "gender",
     "age_group",
     "race",
+    # TODO(#13552): Change to supervision_district once the FE can support it
     "district",
     "supervision_level",
 ]
@@ -100,7 +99,6 @@ SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER = PathwaysMetricBigQueryViewB
     dimensions=("state_code", "year", "month", *dimensions),
     description=SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_DESCRIPTION,
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 

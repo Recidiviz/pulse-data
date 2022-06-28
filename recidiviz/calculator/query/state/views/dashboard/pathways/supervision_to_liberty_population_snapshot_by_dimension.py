@@ -54,15 +54,16 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             age_group,
             supervision_type,
             IFNULL(supervision_level, "EXTERNAL_UNKNOWN") AS supervision_level,
-            district_id,
-            prioritized_race_or_ethnicity AS race,
+            # TODO(#13552): Change to supervision_district once the FE can support it
+            supervision_district AS district,
+            race,
             {binned_time_periods} AS time_period,
             {length_of_stay_binned} AS length_of_stay,
         FROM (
             SELECT
                 *,
                 DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
-            FROM `{project_id}.{shared_metric_views_dataset}.supervision_to_liberty_transitions`
+            FROM `{project_id}.{dashboards_dataset}.supervision_to_liberty_transitions`
         )
         WHERE transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),
@@ -77,13 +78,11 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             race,
             supervision_type,
             supervision_level,
-            IFNULL(location_name, district_id) AS district,
+            # TODO(#13552): Change to supervision_district once the FE can support it
+            district,
             length_of_stay,
         FROM transitions
         LEFT JOIN get_last_updated USING (state_code)
-        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` locations
-            ON district_id = location_id
-            AND transitions.state_code = locations.state_code
        
     ),
     filtered_rows AS (
@@ -119,11 +118,11 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysM
         "race",
         "supervision_type",
         "supervision_level",
+        # TODO(#13552): Change to supervision_district once the FE can support it
         "district",
         "length_of_stay",
     ),
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     binned_time_periods=get_binned_time_period_months("transition_date"),
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     length_of_stay_binned=length_of_stay_month_groups(),
