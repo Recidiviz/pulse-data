@@ -86,7 +86,7 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
         self.can_start_ingest = can_start_ingest
 
     def on_file_added(self, path: GcsfsFilePath) -> None:
-        if path.abs_path().startswith(self.controller.ingest_bucket_path.abs_path()):
+        if path.bucket_path == self.controller.instance_bucket_path:
             self.controller.handle_file(path, start_ingest=self.can_start_ingest)
 
 

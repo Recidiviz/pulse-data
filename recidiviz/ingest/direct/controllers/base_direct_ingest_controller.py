@@ -142,13 +142,21 @@ class BaseDirectIngestController:
             ingest_instance=self.ingest_instance,
         )
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-        self.ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
+        self.instance_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region.region_code, ingest_instance=self.ingest_instance
         )
-        self.storage_directory_path = (
+        # TODO(#12794): This will have to change based on which instance is the raw data
+        #  source instance.
+        raw_data_source_instance = DirectIngestInstance.PRIMARY
+
+        self.raw_data_bucket_path = gcsfs_direct_ingest_bucket_for_state(
+            region_code=self.region.region_code,
+            ingest_instance=raw_data_source_instance,
+        )
+        self.raw_data_storage_directory_path = (
             gcsfs_direct_ingest_storage_directory_path_for_state(
                 region_code=self.region_code(),
-                ingest_instance=self.ingest_instance,
+                ingest_instance=raw_data_source_instance,
             )
         )
 
@@ -158,8 +166,8 @@ class BaseDirectIngestController:
 
         self.raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
-            # TODO(#12794): Change to be based on the instance the raw file is processed in once we can ingest in
-            # multiple instances.
+            # TODO(#12794): Change to be based on the instance the raw file is
+            #  processed in once we can import data from both PRIMARY and SECONDARY.
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
@@ -403,7 +411,7 @@ class BaseDirectIngestController:
 
         for raw_file_metadata in raw_files_pending_import:
             raw_data_file_path = GcsfsFilePath.from_directory_and_file_name(
-                self.ingest_bucket_path, raw_file_metadata.normalized_file_name
+                self.raw_data_bucket_path, raw_file_metadata.normalized_file_name
             )
             is_unrecognized_tag = (
                 raw_file_metadata.file_tag
@@ -736,7 +744,7 @@ class BaseDirectIngestController:
         self._prune_redundant_tasks(current_task_id=current_task_id)
 
         unnormalized_paths = self.fs.get_unnormalized_file_paths(
-            self.ingest_bucket_path
+            self.instance_bucket_path
         )
 
         for path in unnormalized_paths:
@@ -761,7 +769,7 @@ class BaseDirectIngestController:
         check_is_region_launched_in_env(self.region)
 
         unprocessed_raw_paths = self.fs.get_unprocessed_raw_file_paths(
-            self.ingest_bucket_path
+            self.instance_bucket_path
         )
         if (
             unprocessed_raw_paths
@@ -769,7 +777,7 @@ class BaseDirectIngestController:
         ):
             raise ValueError(
                 f"Raw data import not supported from SECONDARY ingest bucket "
-                f"[{self.ingest_bucket_path}], but found {len(unprocessed_raw_paths)} "
+                f"[{self.instance_bucket_path}], but found {len(unprocessed_raw_paths)} "
                 f"raw files. All raw files should be removed from this bucket and "
                 f"uploaded to the primary ingest bucket, if appropriate."
             )
@@ -851,7 +859,9 @@ class BaseDirectIngestController:
             data_import_args.raw_data_file_path
         )
 
-        self.fs.mv_raw_file_to_storage(processed_path, self.storage_directory_path)
+        self.fs.mv_raw_file_to_storage(
+            processed_path, self.raw_data_storage_directory_path
+        )
         self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_materialization(
