@@ -43,7 +43,9 @@ os.environ.setdefault("APP_URL", "http://localhost:3000")
 def get_blueprints_for_justice_counts_documentation() -> List[Tuple[Blueprint, str]]:
     return [
         (
-            get_api_blueprint(auth_decorator=passthrough_authorization_decorator()),
+            get_api_blueprint(
+                auth_decorator=passthrough_authorization_decorator(), auth0_client=None
+            ),
             "/justice_counts/api",
         ),
         (
@@ -84,7 +86,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
     )
     app.register_blueprint(
         get_api_blueprint(
-            auth_decorator=config.AUTH_DECORATOR, secret_key=app.secret_key
+            auth_decorator=config.AUTH_DECORATOR,
+            auth0_client=config.AUTH0_CLIENT,
+            secret_key=app.secret_key,
         ),
         url_prefix="/api",
     )

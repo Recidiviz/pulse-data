@@ -21,7 +21,7 @@ import styled from "styled-components/macro";
 
 import {
   Button,
-  GoBackToReportsOverviewLink,
+  GoBack,
   TextInput,
   Title,
   TitleWrapper,
@@ -50,24 +50,46 @@ const ButtonWrapper = styled.div`
 const AccountSettings = () => {
   const { userStore } = useStore();
   const navigate = useNavigate();
-
+  const [email, setEmail] = React.useState<string>(userStore?.email || "");
+  const [name, setName] = React.useState<string>(userStore?.name || "");
   return (
     <AccountSettingsPage>
-      <GoBackToReportsOverviewLink
+      <GoBack
         style={{ position: "absolute", top: 100, left: 20 }}
-        onClick={() => navigate("/")}
+        onClick={() => navigate(-1)}
       />
       <SettingsFormPanel>
         <TitleWrapper underlined>
           <Title>Settings</Title>
         </TitleWrapper>
 
-        <TextInput label="Full Name" value={userStore?.name} />
-        <TextInput label="Email" value={userStore?.email} />
+        <TextInput
+          label="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <TextInput
+          label="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
         <ButtonWrapper>
-          <Button>Cancel</Button>
-          <Button>Save & Close</Button>
+          <Button
+            onClick={() => {
+              navigate(-1);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              userStore.updateUserNameAndEmail(name, email);
+              navigate(-1);
+            }}
+          >
+            Save & Close
+          </Button>
         </ButtonWrapper>
       </SettingsFormPanel>
     </AccountSettingsPage>

@@ -21,8 +21,10 @@ from http import HTTPStatus
 import pytest
 from flask import g, session
 from freezegun import freeze_time
+from mock import patch
 from sqlalchemy.engine import Engine
 
+from recidiviz.auth.auth0_client import JusticeCountsAuth0AppMetadata
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
@@ -36,6 +38,7 @@ from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
+    Agency,
     Report,
     ReportingFrequency,
     ReportStatus,
@@ -57,11 +60,22 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     """Implements tests for the Justice Counts Control Panel backend API."""
 
     def setUp(self) -> None:
+        self.client_patcher = patch("recidiviz.auth.auth0_client.Auth0")
+        self.test_auth0_client = self.client_patcher.start().return_value
+        self.secrets_patcher = patch("recidiviz.auth.auth0_client.secrets")
+        self.mock_secrets = self.secrets_patcher.start()
+        self.secrets = {
+            "auth0_api_domain": "fake_api_domain",
+            "auth0_api_client_id": "fake client id",
+            "auth0_api_client_secret": "fake client secret",
+        }
+        self.mock_secrets.get_secret.side_effect = self.secrets.get
         test_config = Config(
             DB_URL=local_postgres_helpers.on_disk_postgres_db_url(),
             WTF_CSRF_ENABLED=False,
             AUTH_DECORATOR=passthrough_authorization_decorator(),
             AUTH0_CONFIGURATION=get_test_auth0_config(),
+            AUTH0_CLIENT=self.test_auth0_client,
         )
         self.app = create_app(config=test_config)
         self.client = self.app.test_client()
@@ -263,6 +277,45 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         db_item = self.session.query(UserAccount).one()
         self.assertEqual(db_item.name, name)
         self.assertEqual(db_item.auth0_user_id, auth0_user_id)
+
+    def test_update_user_name_and_email(self) -> None:
+        new_email_address = "newuser@fake.com"
+        new_name = "NEW NAME"
+        auth0_user = self.test_schema_objects.test_auth0_user
+        db_user = self.test_schema_objects.test_user_A
+        self.session.add_all([self.test_schema_objects.test_agency_A, db_user])
+        self.session.commit()
+        agency = self.session.query(Agency).one_or_none()
+        auth0_user["name"] = new_name
+        auth0_user["email"] = new_email_address
+        auth0_user["app_metadata"] = JusticeCountsAuth0AppMetadata(
+            agency_ids=[agency.id], has_seen_onboarding={}
+        )
+        self.test_auth0_client.update_user_name_and_email.return_value = auth0_user
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=auth0_user["user_id"], user_account=db_user
+            )
+            response = self.client.post(
+                "/api/users/update",
+                json={
+                    "name": new_name,
+                    "email": new_email_address,
+                    "auth0_user_id": auth0_user.get("id"),
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        self.test_auth0_client.update_user_name_and_email.assert_called_once_with(
+            user_id=auth0_user.get("user_id"),
+            name=new_name,
+            email=new_email_address,
+            email_verified=False,
+        )
+        self.test_auth0_client.send_verification_email.assert_called_once_with(
+            user_id=auth0_user.get("user_id")
+        )
+        db_user = self.session.query(UserAccount).one()
+        self.assertEqual(db_user.name, new_name)
 
     def test_update_report(self) -> None:
         update_datetime = datetime.datetime(2022, 2, 1, 0, 0, 0)

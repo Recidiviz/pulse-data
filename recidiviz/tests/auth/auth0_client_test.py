@@ -18,7 +18,7 @@
 from unittest import TestCase
 from unittest.mock import patch
 
-from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0Client
+from recidiviz.auth.auth0_client import Auth0Client, CaseTriageAuth0AppMetadata
 
 
 class Auth0ClientTest(TestCase):
@@ -79,7 +79,7 @@ class Auth0ClientTest(TestCase):
         self.assertEqual(returned_users, expected_users)
 
     def test_update_user_app_metadata(self) -> None:
-        app_metadata: Auth0AppMetadata = {
+        app_metadata: CaseTriageAuth0AppMetadata = {
             "allowed_supervision_location_ids": ["12", "AP"],
             "allowed_supervision_location_level": "level_1_supervision_location",
             "can_access_leadership_dashboard": False,

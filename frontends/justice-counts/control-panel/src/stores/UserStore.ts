@@ -23,6 +23,11 @@ type UserAgency = {
   name: string;
   id: number;
 };
+
+type UserSettingsRequestBody = {
+  name: string | null;
+  email: string | null;
+};
 class UserStore {
   authStore: AuthStore;
 
@@ -55,6 +60,32 @@ class UserStore {
       () => api.isSessionInitialized,
       () => this.updateAndRetrieveUserPermissionsAndAgencies()
     );
+  }
+
+  async updateUserNameAndEmail(
+    name: string,
+    email: string
+  ): Promise<string | undefined> {
+    try {
+      const body: UserSettingsRequestBody = { name: null, email: null };
+      if (name !== this.authStore.user?.name) {
+        body.name = name;
+      }
+      if (email !== this.authStore.user?.email) {
+        body.email = email;
+      }
+      await this.api.request({
+        path: "/api/users/update",
+        method: "POST",
+        body,
+      });
+      runInAction(() => {
+        this.authStore.user = { ...this.authStore.user, name, email };
+      });
+    } catch (error) {
+      if (error instanceof Error) return error.message;
+      return String(error);
+    }
   }
 
   getInitialAgencyId(): number | undefined {

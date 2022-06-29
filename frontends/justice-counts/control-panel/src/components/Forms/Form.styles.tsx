@@ -218,7 +218,7 @@ export const Button = styled.button`
   }
 `;
 
-export const GoBackToReportsOverviewLink = styled.a`
+export const GoBack = styled.a`
   color: ${palette.solid.blue};
   transition: 0.2s ease;
 
@@ -227,6 +227,12 @@ export const GoBackToReportsOverviewLink = styled.a`
     opacity: 0.85;
   }
 
+  &::after {
+    content: "← Back";
+  }
+`;
+
+export const GoBackToReportsOverviewLink = styled(GoBack)`
   &::after {
     content: "← Back to Reports Overview";
   }

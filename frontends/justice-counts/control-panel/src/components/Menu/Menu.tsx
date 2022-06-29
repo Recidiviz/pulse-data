@@ -38,7 +38,7 @@ enum MenuItems {
 }
 
 const Menu = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState<MenuItems>(
+  const [activeMenuItem, setActiveMenuItem] = useState<MenuItems | undefined>(
     MenuItems.Reports
   );
   const { authStore, api, userStore } = useStore();
@@ -67,15 +67,16 @@ const Menu = () => {
     }
   };
 
-  const updateActiveMenuItem = (menuItem: MenuItems) =>
-    setActiveMenuItem(menuItem);
-
   useEffect(() => {
-    if (location.pathname === "/") updateActiveMenuItem(MenuItems.Reports);
-    if (location.pathname === "/reports/create")
-      updateActiveMenuItem(MenuItems.CreateReport);
-    if (location.pathname === "/settings")
-      updateActiveMenuItem(MenuItems.Settings);
+    if (location.pathname === "/") {
+      setActiveMenuItem(MenuItems.Reports);
+    } else if (location.pathname === "/reports/create") {
+      setActiveMenuItem(MenuItems.CreateReport);
+    } else if (location.pathname === "/settings") {
+      setActiveMenuItem(MenuItems.Settings);
+    } else {
+      setActiveMenuItem(undefined);
+    }
   }, [location]);
 
   return (
@@ -132,6 +133,14 @@ const Menu = () => {
             </Dropdown>
           </MenuItem>
         )}
+
+      {/* Settings */}
+      <MenuItem
+        onClick={() => navigate("/settings")}
+        active={activeMenuItem === MenuItems.Settings}
+      >
+        Settings
+      </MenuItem>
 
       <MenuItem onClick={logout} highlight>
         Log Out

@@ -25,6 +25,7 @@ from flask_wtf.csrf import generate_csrf
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
 
+from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
@@ -45,7 +46,9 @@ from recidiviz.utils.types import assert_type
 
 
 def get_api_blueprint(
-    auth_decorator: Callable, secret_key: Optional[str] = None
+    auth_decorator: Callable,
+    secret_key: Optional[str] = None,
+    auth0_client: Optional[Auth0Client] = None,
 ) -> Blueprint:
     """Api endpoints for Justice Counts control panel and admin panel"""
     api_blueprint = Blueprint("api", __name__)
@@ -57,6 +60,38 @@ def get_api_blueprint(
             return make_response("Unable to find secret key", 500)
 
         return jsonify({"csrf": generate_csrf(secret_key)})
+
+    @api_blueprint.route("/users/update", methods=["POST"])
+    @auth_decorator
+    def update_user_email_and_name() -> Response:
+        """
+        This endpoint updates name and email in Auth0 and name in UserAccount table
+        """
+        try:
+            request_json = assert_type(request.json, dict)
+            auth0_user_id = get_auth0_user_id(request_dict=request_json)
+            name = request_json.get("name")
+            email = request_json.get("email")
+            if auth0_client is None:
+                return make_response(
+                    "auth0_client could not be initialized. Environment is not development or gcp.",
+                    500,
+                )
+            auth0_client.update_user_name_and_email(
+                user_id=auth0_user_id,
+                name=name,
+                email=email,
+                email_verified=email is None,
+            )
+            UserAccountInterface.create_or_update_user(
+                session=current_session, name=name, auth0_user_id=auth0_user_id
+            )
+
+            if email is not None:
+                auth0_client.send_verification_email(user_id=auth0_user_id)
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
 
     @api_blueprint.route("/users", methods=["POST"])
     @auth_decorator
