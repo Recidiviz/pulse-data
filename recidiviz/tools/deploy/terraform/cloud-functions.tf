@@ -28,33 +28,6 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
   secret = "po_report_cdn_static_IP"
 }
 
-# Cloud Functions that trigger file name normalization and nothing else for buckets designated as automatic upload
-# test beds.
-resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" {
-  # Buckets ending in `upload-testing` are only present in prod.
-  for_each = local.is_production ? toset(["US_MO", "US_TN", "US_MI"]) : toset([])
-
-  name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
-  runtime = "python38"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  event_trigger {
-    event_type = "google.storage.object.finalize"
-    resource   = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
-  }
-
-  entry_point = "normalize_raw_file_path"
-  environment_variables = {
-    "GCP_PROJECT" = var.project_id
-  }
-
-  source_repository {
-    url = local.repo_url
-  }
-}
-
 
 resource "google_cloudfunctions_function" "export_metric_view_data" {
   name    = "export_metric_view_data"

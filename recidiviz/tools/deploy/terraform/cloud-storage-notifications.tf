@@ -21,6 +21,20 @@ module "archive_practices_file" {
   oidc_audience = local.app_engine_iap_client
 }
 
+# Trigger file name normalization and nothing else for buckets designated as automatic upload
+# test beds.
+module "direct_ingest_states_upload_testing" {
+  # Buckets ending in `upload-testing` are only present in prod.
+  for_each = local.is_production ? toset(["US_MO", "US_TN", "US_MI"]) : toset([])
+  source   = "./modules/cloud-storage-notification"
+
+  bucket_name           = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
+  push_endpoint         = "${local.app_engine_url}/direct/normalize_raw_file_path"
+  service_account_email = data.google_app_engine_default_service_account.default.email
+  # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
+  oidc_audience = local.app_engine_iap_client
+}
+
 locals {
   app_engine_url = "https://${var.project_id}.appspot.com"
   # These client IDs come from the app engine service we want to authenticate to, and can be found

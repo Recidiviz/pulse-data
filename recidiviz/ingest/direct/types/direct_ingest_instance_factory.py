@@ -20,11 +20,11 @@ Separated out into its own file to avoid introducing cloud storage / cloud funct
 imports to the DirectIngestInstance definition file.
 """
 
-from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     is_primary_ingest_bucket,
     is_secondary_ingest_bucket,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
