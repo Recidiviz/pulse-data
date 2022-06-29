@@ -44,8 +44,6 @@ from recidiviz.tests.ingest.scrape.scraper_cloud_task_manager_test import (
     CLOUD_TASK_MANAGER_PACKAGE_NAME,
 )
 from recidiviz.utils.environment import GCPEnvironment
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
 @mock.patch(
@@ -268,12 +266,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         self.assertEqual(expected_view_config_list, export_configs_for_filter)
 
-    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage(
-        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
+        self, mock_view_exporter: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted."""
         view_export_manager.export_view_data_to_cloud_storage(
@@ -309,7 +306,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 ],
             )
         ]
-        mock_view_update_manager_rematerialize.assert_called()
         mock_view_exporter.export_and_validate.assert_has_calls(
             [
                 mock.call([]),  # CSV export
@@ -332,14 +328,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         )
 
     @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
-    def test_raise_exception_no_export_matched(
-        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
-    ) -> None:
+    def test_raise_exception_no_export_matched(self, mock_view_exporter: Mock) -> None:
         # pylint: disable=unused-argument
         """Tests the table is created from the view and then extracted."""
         self.mock_export_config.NAMESPACE_TO_UPDATE_FOR_EXPORT_FILTER = {
@@ -353,12 +344,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 export_job_name="JOBZZZ", override_view_exporter=mock_view_exporter
             )
 
-    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_state_agnostic(
-        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
+        self, mock_view_exporter: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted, where the export is not state-specific."""
         state_agnostic_dataset_export_configs = {
@@ -405,8 +395,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ),
         ]
 
-        mock_view_update_manager_rematerialize.assert_called()
-
         mock_view_exporter.export_and_validate.assert_has_calls(
             [
                 mock.call([]),  # CSV export
@@ -423,12 +411,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             any_order=True,
         )
 
-    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_value_error(
-        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
+        self, mock_view_exporter: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted."""
 
@@ -438,15 +425,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 self.mock_export_name, override_view_exporter=mock_view_exporter
             )
 
-        # Just the metric export is attempted and then the raise stops subsequent checks from happening
-        mock_view_update_manager_rematerialize.assert_called_once()
-
-    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_validation_error(
-        self, mock_view_exporter: Mock, mock_view_update_manager_rematerialize: Mock
+        self, mock_view_exporter: Mock
     ) -> None:
         """Tests the table is created from the view and then extracted."""
 
@@ -457,32 +440,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             self.mock_export_name, override_view_exporter=mock_view_exporter
         )
 
-        # Just the metric export is attempted and then the raise stops subsequent checks from happening
-        mock_view_update_manager_rematerialize.assert_called_once()
-
-    @mock.patch("recidiviz.metrics.export.view_export_manager.deployed_views")
-    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
     def test_export_dashboard_data_to_cloud_storage_update_materialized_views_only(
         self,
         mock_view_exporter: Mock,
-        mock_view_update_manager_rematerialize: Mock,
-        mock_deployed_views: Mock,
     ) -> None:
         """Tests that only materialized views are updated before the export."""
-        deployed_views = deployed_view_builders("test-project")
-        mock_deployed_views.deployed_view_builders.return_value = deployed_views
-
         view_export_manager.export_view_data_to_cloud_storage(
             self.mock_export_name, override_view_exporter=mock_view_exporter
-        )
-
-        mock_view_update_manager_rematerialize.assert_called_with(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            all_view_builders=deployed_views,
-            views_to_update=[view.build() for view in self.view_builders_for_dataset],
         )
 
     @mock.patch(

@@ -273,6 +273,9 @@ def _handle_state_direct_ingest_file(
     return "", HTTPStatus(response.status_code)
 
 
+# TODO(#4593): We might be able to get rid of this function entirely once we run the
+#  metric export endpoints directly in Airflow, rather than just triggering the tasks
+#  with Pub/Sub topics.
 def export_metric_view_data(
     event: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
