@@ -15,88 +15,183 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Unit test to ensure that the DAG is valid and will be properly loaded into the Airflow UI.
+Unit test to test the calculation pipeline DAG logic.
 """
+import os
 import unittest
+from typing import Set
 from unittest.mock import patch
 
-from airflow.models import DagBag
+from airflow.models.dagbag import DagBag
+from more_itertools import one
 
-from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
+from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
+    RecidivizDataflowTemplateOperator,
+)
+from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
+from recidiviz.calculator import pipeline
 
-dag_folder = "dags"
+_PROJECT_ID = "recidiviz-testing"
+CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
+    os.path.relpath(
+        os.path.dirname(pipeline.__file__),
+        start=AIRFLOW_WORKING_DIRECTORY,
+    ),
+    "calculation_pipeline_templates.yaml",
+)
 
-
-# Exports that do not rely on the completion of pipelines
-NORMALIZED_STATE_AGNOSTIC_EXPORTS = [
-    f"trigger_{export_name.lower()}_bq_metric_export"
-    for export_name in PIPELINE_AGNOSTIC_EXPORTS
-]
+_TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
+_WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
 
 
 @patch(
     "os.environ",
     {
-        "GCP_PROJECT": "recidiviz-testing",
-        "CONFIG_FILE": "../calculator/pipeline/calculation_pipeline_templates.yaml",
+        "GCP_PROJECT": _PROJECT_ID,
+        "CONFIG_FILE": CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
     },
 )
-class TestDagIntegrity(unittest.TestCase):
-    """Tests the dags defined in the /dags package."""
+class TestCalculationPipelineDags(unittest.TestCase):
+    """Tests the calculation pipeline DAGs."""
 
-    def test_dag_bag_import(self) -> None:
-        """
-        Verify that Airflow will be able to import all DAGs in the repository without errors
-        """
-        dag_bag = DagBag(dag_folder=dag_folder, include_examples=False)
-        self.assertEqual(
-            len(dag_bag.import_errors),
-            0,
-            f"There should be no DAG failures. Got: {dag_bag.import_errors}",
-        )
+    INCREMENTAL_DAG_ID = f"{_PROJECT_ID}_incremental_calculation_pipeline_dag"
+    HISTORICAL_DAG_ID = f"{_PROJECT_ID}_historical_calculation_pipeline_dag"
 
-    def test_correct_dag(self) -> None:
-        """
-        Verify that the DAGs discovered have the correct name
-        """
-        dag_bag = DagBag(dag_folder=dag_folder, include_examples=False)
-        self.assertEqual(len(dag_bag.dag_ids), 2)
-        self.assertEqual(
-            dag_bag.dag_ids,
-            [
-                "recidiviz-testing_incremental_calculation_pipeline_dag",
-                "recidiviz-testing_historical_calculation_pipeline_dag",
-            ],
-        )
+    def setUp(self) -> None:
+        self.calc_pipeline_dag_ids = [
+            self.INCREMENTAL_DAG_ID,
+            self.HISTORICAL_DAG_ID,
+        ]
 
-    def test_exports_rely_on_normalized_state(self) -> None:
-        """Tests that all BQ metric exports that rely on an updated normalized_state
-        dataset are downstream of the task that updates the normalized_state dataset."""
-        dag_bag = DagBag(dag_folder=dag_folder, include_examples=False)
+    def test_update_normalized_state_upstream_of_rematerialization(self) -> None:
+        """Tests that the `normalized_state` dataset update happens before views
+        are rematerialized (and therefore before metric export, where relevant)."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
 
-        for dag_id in dag_bag.dags:
-            if dag_id != "recidiviz-testing_incremental_calculation_pipeline_dag":
-                continue
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
 
-            incremental_dag = dag_bag.dags[dag_id]
-
-            normalized_state_downstream_dag = incremental_dag.partial_subset(
+            normalized_state_downstream_dag = dag.partial_subset(
                 task_ids_or_regex=["update_normalized_state"],
                 include_downstream=True,
                 include_upstream=False,
             )
 
             self.assertNotEqual(0, len(normalized_state_downstream_dag.task_ids))
-            self.assertNotEqual(0, len(incremental_dag.task_ids))
 
-            bq_metric_export_found = False
-            for task_id in incremental_dag.task_ids:
-                if "bq_metric_export" in task_id:
-                    bq_metric_export_found = True
+            self.assertIn(
+                _TRIGGER_REMATERIALIZATION_TASK_ID,
+                normalized_state_downstream_dag.task_ids,
+            )
 
-                    if task_id not in NORMALIZED_STATE_AGNOSTIC_EXPORTS:
-                        self.assertIn(task_id, normalized_state_downstream_dag.task_ids)
+    def test_update_normalized_state_upstream_of_normalization_pipelines(self) -> None:
+        """Tests that the `normalized_state` dataset update happens after all
+        normalization pipelines are run.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
 
-            # This will fail if we ever change the task_id naming of the BQ metric
-            # export tasks
-            self.assertTrue(bq_metric_export_found)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
+
+            normalization_pipeline_task_ids: Set[str] = {
+                task.task_id
+                for task in dag.tasks
+                if isinstance(task, RecidivizDataflowTemplateOperator)
+                and "normalization" in task.task_id
+            }
+
+            normalized_state_upstream_dag = dag.partial_subset(
+                task_ids_or_regex=["update_normalized_state"],
+                include_downstream=False,
+                include_upstream=True,
+            )
+            self.assertNotEqual(0, len(normalized_state_upstream_dag.task_ids))
+
+            upstream_tasks = set()
+            for task in normalized_state_upstream_dag.tasks:
+                upstream_tasks.update(task.upstream_task_ids)
+
+            pipeline_tasks_not_upstream = (
+                normalization_pipeline_task_ids - upstream_tasks
+            )
+            self.assertEqual(set(), pipeline_tasks_not_upstream)
+
+    def test_rematerialization_upstream_of_all_exports(
+        self,
+    ) -> None:
+        """Tests that view rematerialization happens before any of the metric exports."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            # TODO(#9010): Remove this once the historical and incremental DAGs have
+            #  the same structure and historical triggers exports.
+            if dag_id == self.HISTORICAL_DAG_ID:
+                continue
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
+
+            export_task_id_regex = ".*bq_metric_export.*"
+            export_tasks = dag.partial_subset(
+                task_ids_or_regex=export_task_id_regex,
+                include_downstream=False,
+                include_upstream=True,
+            )
+
+            self.assertNotEqual(0, len(export_tasks.leaves))
+            for task in export_tasks.leaves:
+                self.assertRegex(task.task_id, export_task_id_regex)
+                self.assertIn(
+                    _WAIT_FOR_REMATERIALIZATION_TASK_ID, task.upstream_task_ids
+                )
+
+    def test_rematerialization_downstream_of_all_pipelines(
+        self,
+    ) -> None:
+        """Tests that view rematerialization happens after all pipelines have run."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
+
+            pipeline_task_ids: Set[str] = {
+                task.task_id
+                for task in dag.tasks
+                if isinstance(task, RecidivizDataflowTemplateOperator)
+            }
+
+            self.assertNotEqual(0, len(pipeline_task_ids))
+
+            trigger_task_subdag = dag.partial_subset(
+                task_ids_or_regex=_TRIGGER_REMATERIALIZATION_TASK_ID,
+                include_downstream=False,
+                include_upstream=True,
+            )
+
+            upstream_tasks = set()
+            for task in trigger_task_subdag.tasks:
+                upstream_tasks.update(task.upstream_task_ids)
+
+            pipeline_tasks_not_upstream = pipeline_task_ids - upstream_tasks
+            self.assertEqual(set(), pipeline_tasks_not_upstream)
+
+    def test_trigger_rematerialization_upstream_of_wait(self) -> None:
+        """Tests that view rematerialization trigger happens directly before we wait
+        for the materialization to finish.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
+
+            wait_subdag = dag.partial_subset(
+                task_ids_or_regex=_WAIT_FOR_REMATERIALIZATION_TASK_ID,
+                include_downstream=False,
+                include_upstream=True,
+            )
+            wait_task = one(wait_subdag.leaves)
+
+            self.assertEqual(_WAIT_FOR_REMATERIALIZATION_TASK_ID, wait_task.task_id)
+            self.assertEqual(
+                {_TRIGGER_REMATERIALIZATION_TASK_ID}, wait_task.upstream_task_ids
+            )
