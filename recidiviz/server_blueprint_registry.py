@@ -42,6 +42,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control i
 from recidiviz.practices.etl.routes import get_practices_etl_blueprint
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
+# TODO(#13703): Delete scraper_blueprints_with_url_prefixes and associated endpoints.
 scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (batch_blueprint, "/batch"),
     (infer_release_blueprint, "/infer_release"),

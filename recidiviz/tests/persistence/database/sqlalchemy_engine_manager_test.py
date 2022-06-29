@@ -441,17 +441,15 @@ class SQLAlchemyEngineManagerTest(TestCase):
             "project:region:333",
             "project:region:444",
             "project:region:555",
-            "project:region:666",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666"])
+        self.assertEqual(ids, ["111", "222", "333", "444", "555"])
         mock_secrets.assert_has_calls(
             [
-                mock.call("jails_v2_cloudsql_instance_id"),
                 mock.call("state_v2_cloudsql_instance_id"),
                 mock.call("operations_v2_cloudsql_instance_id"),
                 mock.call("justice_counts_cloudsql_instance_id"),
