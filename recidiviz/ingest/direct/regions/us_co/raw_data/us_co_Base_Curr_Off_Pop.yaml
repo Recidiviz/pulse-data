@@ -3,11 +3,20 @@ file_description: |-
   Contains information about all of the people who are incarcerated as of the current
   date. To be used for validation against our incarceration periods.
 data_classification: validation
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDERID
 columns:
   - name: DOCNO
+    description: |-
+      This is a unique DOC identifier given to each incarcerated person.
+    is_pii: True
   - name: ADCNUMBER
+    description: |-
+      This is the name of the DOCNO in eomis data (same id).
+    is_pii: True
   - name: OFFENDERID
+    description: |-
+      This is a PARTY ID, a unique identifier given to each incarcerated person.
   - name: INCRNO
   - name: STATNO
   - name: STAT_CD
@@ -16,7 +25,14 @@ columns:
   - name: STAT_STRT_SDESC
   - name: FIRST_NAME
   - name: LAST_NAME
+    description: |-
+      This is the last name of a person.
+    is_pii: True
   - name: DOB
+    description: |-
+      This is a person's date of birth.
+    is_pii: True
+    is_datetime: True
   - name: AGE
   - name: SEX
   - name: CIT_SHIP_CD
@@ -32,15 +48,26 @@ columns:
   - name: RACE_CODE
   - name: RACE
   - name: SSN
+    is_pii: True
   - name: FBI
+    is_pii: True
   - name: SID
+    is_pii: True
   - name: YOS_FLAG
   - name: YOS_FAC
   - name: FAC_CD
+    description: |-
+      The facility code of a person's current facility.
   - name: FAC_LDESC
+    description: |-
+      This is the name of the facility a person is currently in or counted towards.
   - name: LU_CD
+    description: |-
+      Number code indicating a person's current unit.
   - name: LU_SDESC
   - name: LU_LDESC
+    description: |-
+      This is the name of the unit a person is currently in or counted towards.
   - name: LU_POP_DESC
   - name: LOC_CD
   - name: JURISDICTION

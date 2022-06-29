@@ -80,7 +80,7 @@ VALIDATION_DATASETS_TO_DESCRIPTIONS = {
         state_code
     ): f"Contains one-off validation data provided directly by {StateCode.get_state(state_code)}."
     for state_code in StateCode
-    if state_code != StateCode.US_MI
+    if state_code not in (StateCode.US_MI, StateCode.US_CO)
 }
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(

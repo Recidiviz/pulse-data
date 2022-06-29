@@ -89,7 +89,11 @@ SELECT
   date_of_stay,
   facility
 FROM `{project_id}.{us_mi_validation_dataset}.oor_report_unified_materialized`
-"""
+UNION ALL
+SELECT
+    region_code, person_external_id, date_of_stay, facility
+FROM `{project_id}.{us_co_validation_dataset}.incarceration_population_person_level` 
+ """
 
 INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
@@ -98,6 +102,9 @@ INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description="Contains external data for person level incarceration population to "
     "validate against. See http://go/external-validations for instructions on adding "
     "new data.",
+    us_co_validation_dataset=dataset_config.validation_dataset_for_state(
+        StateCode.US_CO
+    ),
     us_id_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_ID
     ),
