@@ -329,6 +329,8 @@ class SQLAlchemyEngineManager:
         ids_for_all_schemas = [
             cls.get_stripped_cloudsql_instance_id(schema_type)
             for schema_type in SchemaType
+            # TODO(#13703): Delete this line when we remove the JAILS schema entirely.
+            if schema_type != SchemaType.JAILS
         ]
         return [
             instance_id

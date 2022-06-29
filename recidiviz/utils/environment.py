@@ -181,7 +181,6 @@ def get_version() -> str:
 
 class ServiceType(Enum):
     DEFAULT = "default"
-    SCRAPERS = "scrapers"
 
 
 def get_service_type() -> ServiceType:
