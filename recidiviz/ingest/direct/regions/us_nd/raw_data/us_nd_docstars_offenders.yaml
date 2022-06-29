@@ -213,3 +213,9 @@ columns:
   - name: EARLY_TERMINATION_ACKNOWLEDGED
     description: |-
       Whether this person's supervision was early terminated.
+  - name: PHONE
+    description: |-
+      Primary phone number for this person.
+  - name: PHONE2
+    description: |-
+      Alternate phone number for this person.
