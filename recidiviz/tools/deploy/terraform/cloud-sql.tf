@@ -27,18 +27,6 @@ module "case_triage_database" {
   has_readonly_user = true
 }
 
-module "jails_database_v2" {
-  source = "./modules/cloud-sql-instance"
-
-  project_id        = var.project_id
-  instance_key      = "jails_v2"
-  base_secret_name  = "jails_v2"
-  region            = "us-east4"
-  zone              = "us-east4-b"
-  tier              = coalesce(var.default_sql_tier, "db-custom-4-15360") # 4 vCPU, 15GB Memory
-  has_readonly_user = true
-}
-
 module "justice_counts_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -110,7 +98,6 @@ locals {
       module.justice_counts_database.connection_name,
       module.pathways_database.connection_name,
       # v2 modules
-      module.jails_database_v2.connection_name,
       module.operations_database_v2.connection_name,
       module.state_database_v2.connection_name,
     ]
