@@ -338,7 +338,7 @@ class DirectIngestRegionDirStructureBase:
                             list(migration.filters.items()),
                             list(migration.updates.items()),
                         )
-                        self.test.failIf(update_values in distinct_update_values)
+                        self.test.assertFalse(update_values in distinct_update_values)
                         distinct_update_values.append(update_values)
                     if isinstance(migration, DeleteFromRawTableMigration):
                         distinct_deletion_values: List[
@@ -348,7 +348,9 @@ class DirectIngestRegionDirStructureBase:
                             migration.update_datetime_filters,
                             list(migration.filters.items()),
                         )
-                        self.test.failIf(deletion_values in distinct_deletion_values)
+                        self.test.assertFalse(
+                            deletion_values in distinct_deletion_values
+                        )
                         distinct_deletion_values.append(deletion_values)
 
     def assertColumnIsDocumented(
