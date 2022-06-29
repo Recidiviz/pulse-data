@@ -129,7 +129,7 @@ USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 LEFT JOIN special_conditions_aggregation JOSpecialConditions 
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 LEFT JOIN {OffenderStatute} OffenderStatute
-ON JOCharge.ChargeOffense = OffenderStatute.Offense
+ON JOCharge.ConvictionOffense = OffenderStatute.Offense
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
