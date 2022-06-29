@@ -16,16 +16,117 @@ columns:
   - name: charge_number
   - name: offense_id
   - name: charge_status_id
+    known_values:
+      - value: "1912"
+        description: Closed
+      - value: "74"
+        description: Active - Pending Sentence
+      - value: "75"
+        description: Active - Sentenced
+      - value: "76"
+        description: Active - Warrant Issued
+      # 77 appears in the reference code table (ADH_REFERENCE_CODE) but not in the data
+      - value: "77"
+        description: Warrant
   - name: court_file_no
   - name: offense_date
   - name: conviction_date
   - name: conviction_type_id
+    known_values:
+      - value: "1918"
+        description: Parole
+      - value: "1919"
+        # Assuming 7411 is this first-time drug offence deferral program: https://www.monroecountylawyers.com/blog/2018/12/what-is-michigans-7411-deferral-program/
+        description: 7411 deferral program
+      - value: "1920"
+        description: HYTA
+      - value: "1921"
+        description: Nolo Contendere
+      - value: "7273"
+        description: Unknown
+      - value: "916"
+        description: Jury
+      - value: "917"
+        description: Bench
+      - value: "918"
+        description: Plea
+      - value: "919"
+        description: Plea Under Advisement
   - name: convict_investigation_type_id
+    known_values:
+      - value: "1923"
+        description: Juvenile Waiver Presentence
+      - value: "1924"
+        # Assuming 7411 is this first-time drug offence deferral program: https://www.monroecountylawyers.com/blog/2018/12/what-is-michigans-7411-deferral-program/
+        description: 7411 deferral program
+      - value: "1925"
+        description: HYTA
+      - value: "1926"
+        description: Delay Update
+      - value: "1927"
+        description: Presentence Update
+      - value: "1928"
+        description: Presentence
   - name: firearms_involved_flag
   - name: attempted_id
+    known_values:
+      - value: "11781"
+        description: Attempt Cont. Sub. Violation
+      - value: "11946"
+        description: Habitual Criminal
+      - value: "1929"
+        description: Not Applicable
+      - value: "1930"
+        description: Aid and Abet
+      - value: "1931"
+        description: Solicit
+      - value: "1932"
+        description: Conspiracy
+      - value: "1933"
+        description: Attempt
+      - value: "5646"
+        description: Both Attempt and Conspiracy
+      - value: "7469"
+        description: Both Attempt and Solicitation
   - name: charge_bond_bail_amount
   - name: bond_bail_type_id
+    known_values:
+      - value: "1935"
+        description: "10%"
+      - value: "1936"
+        description: None
+      - value: "33"
+        description: Cash
+      - value: "37"
+        description: Personal Recognizance
+      - value: "38"
+        description: Surety
+      # the following 5 bond bail type codes appear in the ref table but not in the data
+      - value: "31"
+        description: Bond
+      - value: "32"
+        description: Cash/Surety
+      - value: "34"
+        description: High Bail
+      - value: "35"
+        description: No Bail Required
+      - value: "36"
+        description: No Bail
   - name: bond_bail_status_id
+    known_values:
+      - value: "10010"
+        description: Revoked
+      - value: "1937"
+        description: Not Applicable
+      - value: "1938"
+        description: Not Posted
+      - value: "29"
+        description: Posted
+      # the following 2 bond bail status codes appear in the ref table but not in the data
+      - value: "28"
+        description: Breached
+      - value: "30"
+        description: Set
   - name: bond_bail_date
   - name: criminal_tracking_number
   - name: date_of_arrest
@@ -35,6 +136,70 @@ columns:
   - name: enhanced_offense_id
   - name: docket_number_lookup
   - name: closing_reason_code
+    known_values:
+      - value: "12020"
+        description: Sentence Suspended by Court
+      - value: "19484"
+        description: Conviction Reversed by Court
+      - value: "19485"
+        description: Termination for Classification
+      - value: "19486"
+        description: Court Discharged with Time Served
+      - value: "19490"
+        description: Discharged by Court, Nollo Prosequi"
+      - value: "5260"
+        description: Other (Inactive)
+      - value: "5261"
+        description: Probation Violation Technical Violation
+      - value: "5262"
+        description: Probation Violation New Sentence
+      - value: "5263"
+        description: Commuted
+      - value: "5265"
+        description: Parole Violation Technical Violation
+      - value: "5266"
+        description: Parole Violation New Sentence
+      - value: "5267"
+        description: Sentence Extended
+      - value: "5268"
+        description: Resentenced on Appeal
+      - value: "5269"
+        description: Reversal on Appeal
+      - value: "5270"
+        description: Discharged Without Improvement
+      - value: "5271"
+        description: Sentence Term Modified
+      - value: "5272"
+        description: Death
+      - value: "5273"
+        description: Early Discharge
+      - value: "5274"
+        description: Completed Satisfactorily
+      - value: "5275"
+        description: Vacated due to Habitual Offender Conviction
+      - value: "5464"
+        description: Closed Legal Order
+      - value: "5771"
+        description: Charge Reduced to Misdemeanor
+      - value: "7120"
+        description: Other
+      - value: "7154"
+        description: Closed due to Accompanying 333.7413 Charge
+      - value: "7155"
+        description: Closed due to Accompanying  750.520F Charge  CSC 2nd Notice
+      - value: "7157"
+        description: Combination Sentence Imposed
+      - value: "7215"
+        description: Vacated
+      - value: "7581"
+        description: Plea Withdrawn
+      - value: "8333"
+        description: Closed, serving other charge"
+      - value: "8506"
+        description: Dismissed by Court
+      # The following closing reason code appears in the reference table but not in the data
+      - value: "5264"
+        description: Pardoned
   - name: closing_autohrity_id
   - name: closing_date
   - name: closing_notes
