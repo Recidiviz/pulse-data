@@ -26,7 +26,7 @@ import sqlalchemy.orm.exc
 from flask import Blueprint, request
 from sqlalchemy import func
 
-from recidiviz.auth.auth0_client import Auth0AppMetadata
+from recidiviz.auth.auth0_client import CaseTriageAuth0AppMetadata
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
@@ -140,7 +140,7 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
 @auth_endpoint_blueprint.route("/dashboard_user_restrictions_by_email", methods=["GET"])
 @requires_gae_auth
 def dashboard_user_restrictions_by_email() -> Tuple[
-    Union[Auth0AppMetadata, str], HTTPStatus
+    Union[CaseTriageAuth0AppMetadata, str], HTTPStatus
 ]:
     """This endpoint is accessed by a service account used by an Auth0 hook that is called at the pre-registration when
     a user first signs up for an account. Given a user email address in the request, it responds with
@@ -219,7 +219,7 @@ def dashboard_user_restrictions_by_email() -> Tuple[
 
 def _format_db_results(
     user_restrictions: Dict[str, Any],
-) -> Auth0AppMetadata:
+) -> CaseTriageAuth0AppMetadata:
     return {
         "allowed_supervision_location_ids": _format_allowed_supervision_location_ids(
             user_restrictions["allowed_supervision_location_ids"]

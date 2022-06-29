@@ -341,6 +341,7 @@ def main() -> int:
                 "recidiviz.common",
                 "recidiviz.persistence",
                 "recidiviz.utils",
+                "recidiviz.auth",
             }
         ),
     )

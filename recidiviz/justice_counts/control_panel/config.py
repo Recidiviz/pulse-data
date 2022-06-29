@@ -21,6 +21,7 @@ from typing import Callable, Optional
 
 import attr
 
+from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.control_panel.utils import on_successful_authorization
 from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -28,6 +29,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.utils import environment
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     build_auth0_authorization_decorator,
@@ -48,6 +50,7 @@ class Config:
     DB_URL: str = attr.field()
     AUTH0_CONFIGURATION: Auth0Config = attr.field()
     AUTH_DECORATOR: Callable = attr.field()
+    AUTH0_CLIENT: Auth0Client = attr.field()
 
     @DB_URL.default
     def _db_url_factory(self) -> str:
@@ -79,3 +82,13 @@ class Config:
                 description="You are not authorized to access this application.",
             )
         return Auth0Config.from_config_json(json.loads(auth0_configuration))
+
+    @AUTH0_CLIENT.default
+    def auth0_client_factory(self) -> Optional[Auth0Client]:
+        if environment.in_development() or environment.in_gcp():
+            return Auth0Client(  # nosec
+                domain_secret_name="justice_counts_auth0_api_domain",
+                client_id_secret_name="justice_counts_auth0_api_client_id",
+                client_secret_secret_name="justice_counts_auth0_api_client_secret",
+            )
+        return None

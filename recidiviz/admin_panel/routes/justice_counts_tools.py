@@ -197,9 +197,7 @@ def _merge_auth0_and_db_users(
                 name=db_user.name,
                 auth0_user_id=matching_auth0_user["user_id"],
                 db_id=db_user.id,
-                agency_ids=matching_auth0_user.get("app_metadata", {}).get(
-                    "agency_ids", []  # type: ignore[arg-type]
-                ),
+                agency_ids=matching_auth0_user.get("app_metadata", {}).get("agency_ids", []),  # type: ignore[arg-type]
             )
         else:
             # User just appears in our DB

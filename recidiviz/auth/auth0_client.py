@@ -19,7 +19,7 @@
 import logging
 from functools import wraps
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List, Optional, TypedDict
+from typing import Any, Callable, Dict, List, Optional, TypedDict, Union
 
 from auth0.v3.authentication import GetToken
 from auth0.v3.exceptions import Auth0Error
@@ -31,22 +31,34 @@ from recidiviz.utils import secrets
 
 AUTH0_QPS_LIMIT = 2
 
-Auth0AppMetadata = TypedDict(
-    "Auth0AppMetadata",
+
+class CaseTriageAuth0AppMetadata(TypedDict):
+    allowed_supervision_location_ids: List[str]
+    allowed_supervision_location_level: Optional[str]
+    can_access_leadership_dashboard: bool
+    can_access_case_triage: bool
+    should_see_beta_charts: bool
+    routes: Optional[dict]
+    user_hash: str
+
+
+class JusticeCountsAuth0AppMetadata(TypedDict, total=False):
+    has_seen_onboarding: Optional[Dict[str, bool]]
+    agency_ids: List[int]
+
+
+Auth0User = TypedDict(
+    "Auth0User",
     {
-        "allowed_supervision_location_ids": List[str],
-        "allowed_supervision_location_level": Optional[str],
-        "can_access_leadership_dashboard": bool,
-        "can_access_case_triage": bool,
-        "should_see_beta_charts": bool,
-        "routes": Optional[dict],
-        "user_hash": str,
+        "email": str,
+        "user_id": str,
+        "name": str,
+        "app_metadata": Union[
+            JusticeCountsAuth0AppMetadata, CaseTriageAuth0AppMetadata
+        ],
     },
 )
 
-Auth0User = TypedDict(
-    "Auth0User", {"email": str, "user_id": str, "app_metadata": Auth0AppMetadata}
-)
 
 # The max results the API allows per page is 50, but the lucene query can become too long, so we limit it by 25.
 MAX_RESULTS_PER_PAGE = 25
@@ -166,11 +178,47 @@ class Auth0Client:
         return all_users
 
     @sleep_and_retry
+    @limits(calls=AUTH0_QPS_LIMIT, period=1)
+    @_refresh_token_if_needed
+    def update_user_name_and_email(
+        self,
+        user_id: str,
+        name: Optional[str] = None,
+        email: Optional[str] = None,
+        email_verified: Optional[bool] = False,
+    ) -> Auth0User:
+        """Updates a single Auth0 user's name and email fields.
+        This function is limited to two calls per second. Any calls beyond that will cause the function to sleep until
+        it is safe to call again."""
+
+        body: Dict[str, Any] = {}
+        if email:
+            body["email"] = email
+            body["email_verified"] = email_verified
+
+        if name:
+            body["name"] = name
+        return self.client.users.update(id=user_id, body=body)
+
+    @sleep_and_retry
+    @limits(calls=AUTH0_QPS_LIMIT, period=1)
+    @_refresh_token_if_needed
+    def send_verification_email(
+        self,
+        user_id: str,
+    ) -> None:
+        """Sends verification email to user."""
+
+        return self.client.jobs.send_verification_email(body={"user_id": user_id})
+
+    @sleep_and_retry
     @_refresh_token_if_needed
     @limits(calls=AUTH0_QPS_LIMIT, period=1)
     def update_user_app_metadata(
-        self, user_id: str, app_metadata: Auth0AppMetadata
-    ) -> None:
+        self,
+        user_id: str,
+        app_metadata: Union[JusticeCountsAuth0AppMetadata, CaseTriageAuth0AppMetadata],
+    ) -> Auth0User:
         """Updates a single Auth0 user's app_metadata field. Root-level properties are merged, and any nested properties
         are replaced. To delete an app_metadata property, send None as the value. To delete the app_metadata entirely,
         send an empty dictionary.
