@@ -23,6 +23,7 @@ from typing import Set
 from unittest.mock import patch
 
 from airflow.models.dagbag import DagBag
+from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from more_itertools import one
 
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
@@ -194,4 +195,24 @@ class TestCalculationPipelineDags(unittest.TestCase):
             self.assertEqual(_WAIT_FOR_REMATERIALIZATION_TASK_ID, wait_task.task_id)
             self.assertEqual(
                 {_TRIGGER_REMATERIALIZATION_TASK_ID}, wait_task.upstream_task_ids
+            )
+
+    def test_rematerialization_endpoint(self) -> None:
+        """Tests that rematerialization triggers the proper endpoint."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            trigger_cloud_task_task = dag.get_task(_TRIGGER_REMATERIALIZATION_TASK_ID)
+
+            if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+                raise ValueError(
+                    f"Expected type CloudTasksTaskCreateOperator, found "
+                    f"[{type(trigger_cloud_task_task)}]."
+                )
+
+            self.assertEqual("bq-view-update", trigger_cloud_task_task.queue_name)
+
+            self.assertEqual(
+                trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
+                "/view_update/rematerialize_all_deployed_views",
             )

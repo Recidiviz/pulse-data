@@ -23,7 +23,6 @@ from flask import Blueprint, request
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
-from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_export_validator import (
@@ -58,8 +57,6 @@ from recidiviz.metrics.export.view_export_cloud_task_manager import (
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
-from recidiviz.view_registry import deployed_views
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -96,6 +93,9 @@ monitoring.register_views(
 export_blueprint = Blueprint("export", __name__)
 
 
+# TODO(#4593): We might be able to get rid of this endpoint entirely once we run the
+#  metric export endpoints directly in Airflow, rather than just triggering the tasks
+#  with Pub/Sub topics.
 @export_blueprint.route("/create_metric_view_data_export_tasks")
 @requires_gae_auth
 def create_metric_view_data_export_tasks() -> Tuple[str, HTTPStatus]:
@@ -208,7 +208,6 @@ def export_view_data_to_cloud_storage(
     export_job_name: str,
     state_code: Optional[str] = None,
     override_view_exporter: Optional[BigQueryViewExporter] = None,
-    should_materialize_views: Optional[bool] = True,
     destination_override: Optional[str] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> None:
@@ -228,15 +227,6 @@ def export_view_data_to_cloud_storage(
         destination_override=destination_override,
         address_overrides=address_overrides,
     )
-
-    if should_materialize_views:
-        # The view deploy will only have rematerialized views that had been updated since
-        # the last deploy, this call will ensure that all materialized tables get refreshed.
-        view_update_manager.rematerialize_views(
-            views_to_update=[config.view for config in export_configs_for_filter],
-            all_view_builders=deployed_views.deployed_view_builders(project_id),
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        )
 
     do_metric_export_for_configs(
         export_configs={export_job_name: export_configs_for_filter},

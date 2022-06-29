@@ -17,8 +17,6 @@
 """Provides utilities for updating views within a live BigQuery instance."""
 import datetime
 import logging
-import random
-import time
 from concurrent import futures
 from enum import Enum
 from http import HTTPStatus
@@ -131,40 +129,6 @@ def rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@view_update_manager_blueprint.route(
-    "/test_rematerialize_all_deployed_views", methods=["POST"]
-)
-@requires_gae_auth
-def test_rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
-    """TEST ONLY ENDPOINT THAT CAN BE USED TO TEST AIRFLOW ORCHESTRATION AROUND
-    TRIGGERING /rematerialize_all_deployed_views.
-
-    TODO(#13307): Delete this endpoint once Airflow orchestration is complete.
-    """
-
-    start = datetime.datetime.now()
-    view_builders = deployed_view_builders(metadata.project_id())
-
-    # Mock waiting for rematerialization by sleeping here
-    time.sleep(random.randint(1, 10))
-
-    end = datetime.datetime.now()
-
-    runtime_sec = int((end - start).total_seconds())
-
-    success_persister = RematerializationSuccessPersister(
-        bq_client=BigQueryClientImpl()
-    )
-    success_persister.record_success_in_bq(
-        deployed_view_builders=view_builders,
-        rematerialization_runtime_sec=runtime_sec,
-        cloud_task_id=get_current_cloud_task_id(),
-    )
-    logging.info("All deployed views successfully rematerialized.")
-
-    return "", HTTPStatus.OK
-
-
 def rematerialize_views_for_view_builders(
     views_to_update_builders: Sequence[BigQueryViewBuilder],
     all_view_builders: Sequence[BigQueryViewBuilder],
@@ -194,42 +158,7 @@ def rematerialize_views_for_view_builders(
         candidate_view_builders=views_to_update_builders,
         address_overrides=address_overrides,
     )
-    rematerialize_views(
-        views_to_update=views_to_update,
-        all_view_builders=all_view_builders,
-        view_source_table_datasets=view_source_table_datasets,
-        address_overrides=address_overrides,
-        skip_missing_views=skip_missing_views,
-    )
 
-
-def rematerialize_views(
-    views_to_update: List[BigQueryView],
-    all_view_builders: Sequence[BigQueryViewBuilder],
-    view_source_table_datasets: Set[str],
-    address_overrides: Optional[BigQueryAddressOverrides] = None,
-    skip_missing_views: bool = False,
-    bq_region_override: Optional[str] = None,
-) -> None:
-    """For all views in the provided |views_to_update| list, re-materializes any
-    materialized views, as well as any views upstream or downstream of those views. This
-    should be called only when we want to refresh the data in the materialized view(s),
-    not when we want to update the underlying query of the view(s).
-
-    Args:
-        views_to_update: List of views to re-materialize
-        all_view_builders: Superset of the views_to_update that contains all views that
-            either depend on or are dependents of the list of input views.
-        view_source_table_datasets: Set of datasets containing tables that can be
-            treated as root nodes in the view dependency graph.
-        address_overrides: A class that provides a mapping of table/view addresses
-            and the address they should be replaced with for the given list of
-            views_to_update.
-        skip_missing_views: If True, ignores any input views that do not exist. If
-            False, crashes if tries to materialize a view that does not exist.
-        bq_region_override: If set, overrides the region (e.g. us-east1) associated with
-            all BigQuery operations.
-    """
     default_table_expiration_for_new_datasets = None
     if address_overrides:
         default_table_expiration_for_new_datasets = (
@@ -241,7 +170,7 @@ def rematerialize_views(
         )
 
     try:
-        bq_client = BigQueryClientImpl(region_override=bq_region_override)
+        bq_client = BigQueryClientImpl()
 
         all_views_dag_walker = BigQueryViewDagWalker(
             build_views_to_update(

@@ -165,9 +165,7 @@ def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
         name=task_path,
         app_engine_http_request={
             "http_method": "POST",
-            # TODO(#13307): Change to /view_update/rematerialize_all_deployed_views
-            #  once we're ready to actaully run full rematerialization.
-            "relative_uri": "/view_update/test_rematerialize_all_deployed_views",
+            "relative_uri": "/view_update/rematerialize_all_deployed_views",
             "body": json.dumps({}).encode(),
         },
     )

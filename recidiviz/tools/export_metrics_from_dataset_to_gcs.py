@@ -90,7 +90,6 @@ def export_metrics_from_dataset_to_gcs(
     export_view_data_to_cloud_storage(
         export_job_name=export_name,
         state_code=state_code,
-        should_materialize_views=False,
         destination_override=destination_bucket,
         address_overrides=sandbox_address_overrides,
     )
