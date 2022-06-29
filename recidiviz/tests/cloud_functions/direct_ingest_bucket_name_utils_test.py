@@ -17,10 +17,10 @@
 """Tests for direct_ingest_bucket_name_utils.py."""
 from unittest import TestCase
 
-from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
+from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
-    is_secondary_ingest_bucket,
     is_primary_ingest_bucket,
+    is_secondary_ingest_bucket,
 )
 
 

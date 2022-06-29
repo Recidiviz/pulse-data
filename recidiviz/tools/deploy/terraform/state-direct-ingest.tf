@@ -20,16 +20,18 @@ module "state_direct_ingest_buckets_and_accounts" {
   for_each = toset(keys(local.direct_ingest_state_manifests))
   source   = "./modules/state-direct-ingest-resources"
 
-  state_code                      = each.key
-  region                          = var.direct_ingest_region
-  is_production                   = local.is_production
-  project_id                      = var.project_id
-  state_admin_role                = google_project_iam_custom_role.state-admin-role.name
-  repo_url                        = local.repo_url
-  region_manifest                 = local.direct_ingest_state_manifests[each.key]
-  v2_cloudsql_instance_name           = module.state_database_v2.instance_name
-  v2_cloudsql_instance_id             = module.state_database_v2.cloudsql_instance_id
-  v2_cloudsql_instance_region         = module.state_database_v2.region
-  v2_cloudsql_instance_user_name      = module.state_database_v2.database_user_name
-  v2_cloudsql_instance_user_password  = module.state_database_v2.database_user_password
+  state_code                                 = each.key
+  region                                     = var.direct_ingest_region
+  is_production                              = local.is_production
+  project_id                                 = var.project_id
+  state_admin_role                           = google_project_iam_custom_role.state-admin-role.name
+  region_manifest                            = local.direct_ingest_state_manifests[each.key]
+  v2_cloudsql_instance_name                  = module.state_database_v2.instance_name
+  v2_cloudsql_instance_id                    = module.state_database_v2.cloudsql_instance_id
+  v2_cloudsql_instance_region                = module.state_database_v2.region
+  v2_cloudsql_instance_user_name             = module.state_database_v2.database_user_name
+  v2_cloudsql_instance_user_password         = module.state_database_v2.database_user_password
+  storage_notification_service_account_email = data.google_app_engine_default_service_account.default.email
+  storage_notification_oidc_audience         = local.app_engine_iap_client
+  storage_notification_endpoint_base_url     = local.app_engine_url
 }

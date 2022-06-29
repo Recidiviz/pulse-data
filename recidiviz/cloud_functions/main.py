@@ -41,15 +41,9 @@ from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
     TRIGGER_HISTORICAL_DAG_FLAG,
     UPDATE_MANAGED_VIEWS_REQUEST_ARG,
 )
-from direct_ingest_bucket_name_utils import (  # type: ignore[import]
-    get_region_code_from_direct_ingest_bucket,
-)
 
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
-
-_DIRECT_INGEST_PATH = "/direct/handle_direct_ingest_file"
-_DIRECT_INGEST_NORMALIZE_RAW_PATH_PATH = "/direct/normalize_raw_file_path"
 
 _METRIC_VIEW_EXPORT_PATH = "/export/create_metric_view_data_export_tasks"
 _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH = (
@@ -69,76 +63,6 @@ def _build_url(
     if params is not None:
         url += f"?{urlencode(params)}"
     return url
-
-
-def normalize_raw_file_path(
-    data: Dict[str, Any], _: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """Cloud functions can be configured to trigger this function on any bucket that is being used as a test bed for
-    automatic uploads. This will just rename the incoming files to have a normalized path with a timestamp so
-    subsequent uploads do not have naming conflicts."""
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        error_str = (
-            "No project id set for call to direct ingest cloud function, returning."
-        )
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    bucket = data["bucket"]
-    relative_file_path = data["name"]
-
-    url = _build_url(
-        project_id,
-        _DIRECT_INGEST_NORMALIZE_RAW_PATH_PATH,
-        {
-            "bucket": bucket,
-            "relative_file_path": relative_file_path,
-        },
-    )
-
-    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
-
-    # Hit the cloud function backend, which will schedule jobs to parse
-    # data for unprocessed files in this bucket and persist to our database.
-    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    cloud_functions_log(
-        severity="INFO", message=f"The response status is " f"{response.status_code}."
-    )
-    return "", HTTPStatus(response.status_code)
-
-
-def handle_state_direct_ingest_file(
-    data: Dict[str, Any], _: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered when a file is dropped into any of the state
-    direct ingest buckets and makes a request to parse and write the data to
-    the database.
-
-    data: A cloud storage object that holds name information and other metadata
-    related to the file that was dropped into the bucket.
-    _: (google.cloud.functions.Context): Metadata of triggering event.
-
-    """
-    return _handle_state_direct_ingest_file(data, start_ingest=True)
-
-
-def handle_state_direct_ingest_file_rename_only(
-    data: Dict[str, Any], _: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """Cloud functions can be configured to trigger this function instead of
-    handle_state_direct_ingest_file when a region has turned on nightly/weekly
-    automatic data transfer before we are ready to schedule and process ingest
-    jobs for that region (e.g. before ingest is "launched"). This will just
-    rename the incoming files to have a normalized path with a timestamp
-    so subsequent nightly uploads do not have naming conflicts.
-
-    data: A cloud storage object that holds name information and other metadata
-    related to the file that was dropped into the bucket.
-    _: (google.cloud.functions.Context): Metadata of triggering event.
-
-    """
-    return _handle_state_direct_ingest_file(data, start_ingest=False)
 
 
 def handle_new_case_triage_etl(
@@ -228,49 +152,6 @@ def handle_state_dashboard_user_restrictions_file(
         )
 
     return "", HTTPStatus.OK
-
-
-def _handle_state_direct_ingest_file(
-    data: Dict[str, Any], start_ingest: bool
-) -> Tuple[str, HTTPStatus]:
-    """Calls direct ingest cloud function when a new file is dropped into a
-    bucket."""
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        error_str = (
-            "No project id set for call to direct ingest cloud function, returning."
-        )
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    bucket = data["bucket"]
-    relative_file_path = data["name"]
-    region_code = get_region_code_from_direct_ingest_bucket(bucket)
-    if not region_code:
-        error_str = f"Cannot parse region code from bucket {bucket}, returning."
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    url = _build_url(
-        project_id,
-        _DIRECT_INGEST_PATH,
-        {
-            "region": region_code,
-            "bucket": bucket,
-            "relative_file_path": relative_file_path,
-            "start_ingest": str(start_ingest),
-        },
-    )
-
-    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
-
-    # Hit the cloud function backend, which will schedule jobs to parse
-    # data for unprocessed files in this bucket and persist to our database.
-    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    cloud_functions_log(
-        severity="INFO", message=f"The response status is {response.status_code}"
-    )
-    return "", HTTPStatus(response.status_code)
 
 
 # TODO(#4593): We might be able to get rid of this function entirely once we run the

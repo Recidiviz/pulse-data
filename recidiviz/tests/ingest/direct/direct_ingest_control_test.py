@@ -28,9 +28,6 @@ from flask import Flask
 from mock import Mock, call, create_autospec, patch
 from paramiko.hostkeys import HostKeyEntry
 
-from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
-    build_ingest_bucket_name,
-)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResultWithSkipped
@@ -38,6 +35,9 @@ from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
+    build_ingest_bucket_name,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
@@ -397,14 +397,22 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
         request_args = {
-            "region": self.region_code,
-            "bucket": path.bucket_name,
-            "relative_file_path": path.blob_name,
             "start_ingest": "false",
         }
+        pubsub_message = {
+            "message": {
+                "attributes": {
+                    "bucketId": path.bucket_name,
+                    "objectId": path.blob_name,
+                },
+            }
+        }
         headers = APP_ENGINE_HEADERS
-        response = self.client.get(
-            "/handle_direct_ingest_file", query_string=request_args, headers=headers
+        response = self.client.post(
+            "/handle_direct_ingest_file",
+            query_string=request_args,
+            headers=headers,
+            json=pubsub_message,
         )
 
         mock_controller.handle_file.assert_called_with(path, False)
@@ -429,14 +437,22 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
         request_args = {
-            "region": self.region_code,
-            "bucket": path.bucket_name,
-            "relative_file_path": path.blob_name,
             "start_ingest": "True",
         }
+        pubsub_message = {
+            "message": {
+                "attributes": {
+                    "bucketId": path.bucket_name,
+                    "objectId": path.blob_name,
+                },
+            }
+        }
         headers = APP_ENGINE_HEADERS
-        response = self.client.get(
-            "/handle_direct_ingest_file", query_string=request_args, headers=headers
+        response = self.client.post(
+            "/handle_direct_ingest_file",
+            query_string=request_args,
+            headers=headers,
+            json=pubsub_message,
         )
 
         mock_controller.handle_file.assert_called_with(path, True)
@@ -461,15 +477,23 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
         request_args = {
-            "region": self.region_code,
-            "bucket": path.bucket_name,
-            "relative_file_path": path.blob_name,
             "start_ingest": "False",
+        }
+        pubsub_message = {
+            "message": {
+                "attributes": {
+                    "bucketId": path.bucket_name,
+                    "objectId": path.blob_name,
+                },
+            }
         }
         headers = APP_ENGINE_HEADERS
 
-        response = self.client.get(
-            "/handle_direct_ingest_file", query_string=request_args, headers=headers
+        response = self.client.post(
+            "/handle_direct_ingest_file",
+            query_string=request_args,
+            headers=headers,
+            json=pubsub_message,
         )
 
         mock_controller.handle_file.assert_called_with(path, False)
@@ -564,14 +588,17 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_fs.test_add_path(path, local_path=None)
 
-        request_args = {
-            "bucket": path.bucket_name,
-            "relative_file_path": path.blob_name,
+        pubsub_message = {
+            "message": {
+                "attributes": {
+                    "bucketId": path.bucket_name,
+                    "objectId": path.blob_name,
+                },
+            }
         }
-
         headers = APP_ENGINE_HEADERS
-        response = self.client.get(
-            "/normalize_raw_file_path", query_string=request_args, headers=headers
+        response = self.client.post(
+            "/normalize_raw_file_path", headers=headers, json=pubsub_message
         )
 
         self.assertEqual(200, response.status_code)
@@ -600,14 +627,18 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_fs.test_add_path(path, local_path=None)
         normalized_path = fs.mv_raw_file_to_normalized_path(path)
 
-        request_args = {
-            "bucket": normalized_path.bucket_name,
-            "relative_file_path": normalized_path.blob_name,
+        pubsub_message = {
+            "message": {
+                "attributes": {
+                    "bucketId": normalized_path.bucket_name,
+                    "objectId": normalized_path.blob_name,
+                },
+            }
         }
 
         headers = APP_ENGINE_HEADERS
-        response = self.client.get(
-            "/normalize_raw_file_path", query_string=request_args, headers=headers
+        response = self.client.post(
+            "/normalize_raw_file_path", headers=headers, json=pubsub_message
         )
 
         self.assertEqual(200, response.status_code)

@@ -36,6 +36,9 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
+from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
+    get_region_code_from_direct_ingest_bucket,
+)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
     DirectIngestCloudTaskManagerImpl,
@@ -77,6 +80,11 @@ from recidiviz.utils import metadata, monitoring, regions
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_bool_param_value, get_str_param_value
+from recidiviz.utils.pubsub_helper import (
+    BUCKET_ID,
+    OBJECT_ID,
+    extract_pubsub_message_from_json,
+)
 from recidiviz.utils.regions import Region, get_supported_direct_ingest_region_codes
 
 m_sftp_attempts = measure.MeasureInt(
@@ -108,18 +116,27 @@ monitoring.register_views([sftp_attempts_view, sftp_errors_view])
 direct_ingest_control = Blueprint("direct_ingest_control", __name__)
 
 
-@direct_ingest_control.route("/normalize_raw_file_path")
+@direct_ingest_control.route("/normalize_raw_file_path", methods=["POST"])
 @requires_gae_auth
 def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
-    """Called from a Cloud Function when a new file is added to a bucket that is configured to rename files but not
-    ingest them. For example, a bucket that is being used for automatic data transfer testing.
+    """Called from a Cloud Storage Notification when a new file is added to a bucket that is
+    configured to rename files but not ingest them. For example, a bucket that is being used for
+    automatic data transfer testing.
     """
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    if not message.attributes:
+        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+
+    attributes = message.attributes
+
     # The bucket name for the file to normalize
-    bucket = get_str_param_value("bucket", request.args)
+    bucket = attributes[BUCKET_ID]
     # The relative path to the file, not including the bucket name
-    relative_file_path = get_str_param_value(
-        "relative_file_path", request.args, preserve_case=True
-    )
+    relative_file_path = attributes[OBJECT_ID]
 
     if not bucket or not relative_file_path:
         return f"Bad parameters [{request.args}]", HTTPStatus.BAD_REQUEST
@@ -141,20 +158,39 @@ def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@direct_ingest_control.route("/handle_direct_ingest_file")
+@direct_ingest_control.route("/handle_direct_ingest_file", methods=["POST"])
 @requires_gae_auth
 def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
-    """Called from a Cloud Function when a new file is added to a direct ingest
+    """Called from a Cloud Storage Notification when a new file is added to a direct ingest
     bucket. Will trigger a job that deals with normalizing and splitting the
     file as is appropriate, then start the scheduler if allowed.
+
+    `start_ingest` can be set to `false` when a region has turned on nightly/weekly
+    automatic data transfer before we are ready to schedule and process ingest
+    jobs for that region (e.g. before ingest is "launched"). This will just
+    rename the incoming files to have a normalized path with a timestamp
+    so subsequent nightly uploads do not have naming conflicts.
     """
-    region_code = get_str_param_value("region", request.args)
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    if not message.attributes:
+        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+
+    attributes = message.attributes
     # The bucket name for the file to ingest
-    bucket = get_str_param_value("bucket", request.args)
+    bucket = attributes[BUCKET_ID]
+    region_code = get_region_code_from_direct_ingest_bucket(bucket)
+    if not region_code:
+        response = f"Cannot parse region code from bucket {bucket}, returning."
+        logging.error(response)
+        return response, HTTPStatus.BAD_REQUEST
+
     # The relative path to the file, not including the bucket name
-    relative_file_path = get_str_param_value(
-        "relative_file_path", request.args, preserve_case=True
-    )
+    relative_file_path = attributes[OBJECT_ID]
+
     start_ingest = get_bool_param_value("start_ingest", request.args, default=False)
 
     if not region_code or not bucket or not relative_file_path or start_ingest is None:

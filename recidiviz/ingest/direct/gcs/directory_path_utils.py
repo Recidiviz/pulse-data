@@ -17,14 +17,14 @@
 """Helpers related to building bucket/directory paths for use in ingest."""
 from typing import Optional
 
-from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
+from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     INGEST_PRIMARY_BUCKET_SUFFIX,
     INGEST_SECONDARY_BUCKET_SUFFIX,
     INGEST_SFTP_BUCKET_SUFFIX,
     build_ingest_bucket_name,
     build_ingest_storage_bucket_name,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 

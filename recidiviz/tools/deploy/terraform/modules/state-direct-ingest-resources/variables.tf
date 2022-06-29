@@ -65,10 +65,6 @@ variable "v2_cloudsql_instance_user_password" {
   type = string
 }
 
-variable "repo_url" {
-  type = string
-}
-
 # Object containing info from this state's manifest.yaml
 variable "region_manifest" {
   type = object({
@@ -76,8 +72,25 @@ variable "region_manifest" {
   })
 }
 
+# Service account email that the storage notification pubsub subscription should authenticate as.
+variable "storage_notification_service_account_email" {
+  type = string
+}
+
+# OIDC audience that the storage notification pubsub subscription should use for authentication.
+# https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
+variable "storage_notification_oidc_audience" {
+  type = string
+}
+
+# Base endpoint URL to call from the storage notification pubsub subscription.
+variable "storage_notification_endpoint_base_url" {
+  type = string
+}
+
+
 locals {
   lower_state_code            = replace(lower(var.state_code), "_", "-")
   direct_ingest_formatted_str = "direct-ingest-state-${local.lower_state_code}"
-  is_ingest_launched = (!var.is_production || var.region_manifest.environment == "production")
+  is_ingest_launched          = (!var.is_production || var.region_manifest.environment == "production")
 }
