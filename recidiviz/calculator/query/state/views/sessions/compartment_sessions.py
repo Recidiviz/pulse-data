@@ -475,7 +475,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 AND prev_end_reason IN (
                         'SENTENCE_SERVED','COMMUTED','DISCHARGE','EXPIRATION','PARDONED',
                         'RELEASED_FROM_ERRONEOUS_ADMISSION', 'RELEASED_FROM_TEMPORARY_CUSTODY',
-                        'TEMPORARY_RELEASE'
+                        'TEMPORARY_RELEASE', 'DISMISSED', 'VACATED'
                     )  AS inferred_release,
             metric_source = 'INFERRED' 
                 AND (prev_end_reason IN ('ABSCONSION','ESCAPE')
