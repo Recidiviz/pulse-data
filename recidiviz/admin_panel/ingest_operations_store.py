@@ -25,6 +25,9 @@ from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
@@ -43,6 +46,9 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
     DirectIngestInstancePauseStatusManager,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
@@ -376,3 +382,23 @@ class IngestOperationsStore(AdminPanelStore):
                 if summary is not None
             ],
         }
+
+    def get_all_current_ingest_instance_statuses(
+        self,
+    ) -> Dict[StateCode, Dict[DirectIngestInstance, Optional[DirectIngestStatus]]]:
+        """Returns the current status of each ingest instance for states in the given project."""
+
+        ingest_statuses = {}
+        for state_code in get_direct_ingest_states_launched_in_env():
+            instance_to_status_dict = {}
+            for i_instance in DirectIngestInstance:  # new direct ingest instance
+                status_manager = DirectIngestInstanceStatusManager(
+                    region_code=state_code.value, ingest_instance=i_instance
+                )
+                curr_status = status_manager.get_current_status()
+
+                instance_to_status_dict[i_instance] = curr_status
+
+            ingest_statuses[state_code] = instance_to_status_dict
+
+        return ingest_statuses
