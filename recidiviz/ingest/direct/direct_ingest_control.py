@@ -145,6 +145,7 @@ def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
         bucket_name=bucket, blob_name=relative_file_path
     )
 
+    logging.info("Handling file %s", path.abs_path())
     if not isinstance(path, GcsfsFilePath):
         raise ValueError(f"Incorrect type [{type(path)}] for path: {path.uri()}")
 
@@ -202,6 +203,7 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
     path = GcsfsPath.from_bucket_and_blob_name(
         bucket_name=bucket, blob_name=relative_file_path
     )
+    logging.info("Handling file %s", path.abs_path())
 
     ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(bucket_path)
 
