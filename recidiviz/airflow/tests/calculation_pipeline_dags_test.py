@@ -26,6 +26,9 @@ from airflow.models.dagbag import DagBag
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from more_itertools import one
 
+from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
+    IAPHTTPRequestOperator,
+)
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowTemplateOperator,
 )
@@ -43,6 +46,7 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 
 _TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
 _WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
+_RUN_VALIDATIONS_TASK_ID = "run_all_validations"
 
 
 @patch(
@@ -146,6 +150,34 @@ class TestCalculationPipelineDags(unittest.TestCase):
                     _WAIT_FOR_REMATERIALIZATION_TASK_ID, task.upstream_task_ids
                 )
 
+    def test_rematerialization_upstream_of_validation(
+        self,
+    ) -> None:
+        """Tests that view rematerialization happens before the validations run."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            # TODO(#9010): Remove this once the historical and incremental DAGs have
+            #  the same structure and historical triggers exports.
+            if dag_id == self.HISTORICAL_DAG_ID:
+                continue
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
+
+            wait_for_materialization_downstream_dag = dag.partial_subset(
+                task_ids_or_regex=[_WAIT_FOR_REMATERIALIZATION_TASK_ID],
+                include_downstream=True,
+                include_upstream=False,
+            )
+
+            self.assertNotEqual(
+                0, len(wait_for_materialization_downstream_dag.task_ids)
+            )
+
+            self.assertIn(
+                _RUN_VALIDATIONS_TASK_ID,
+                wait_for_materialization_downstream_dag.task_ids,
+            )
+
     def test_rematerialization_downstream_of_all_pipelines(
         self,
     ) -> None:
@@ -215,4 +247,22 @@ class TestCalculationPipelineDags(unittest.TestCase):
             self.assertEqual(
                 trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
                 "/view_update/rematerialize_all_deployed_views",
+            )
+
+    def test_validations_endpoint(self) -> None:
+        """Tests that the validations task triggers the proper endpoint."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            validations_task = dag.get_task(_RUN_VALIDATIONS_TASK_ID)
+
+            if not isinstance(validations_task, IAPHTTPRequestOperator):
+                raise ValueError(
+                    f"Expected type IAPHTTPRequestOperator, found "
+                    f"[{type(validations_task)}]."
+                )
+
+            self.assertEqual(
+                validations_task.op_kwargs["url"],
+                "https://recidiviz-testing.appspot.com/validation_manager/validate",
             )
