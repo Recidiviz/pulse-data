@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test schema definitions for use in tests"""
+"""Fake schema definitions for use in tests"""
 
-from typing import Optional, List
+from typing import List, Optional
 
 import attr
 

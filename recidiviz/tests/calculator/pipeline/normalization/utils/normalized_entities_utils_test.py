@@ -63,7 +63,7 @@ from recidiviz.tests.calculator.pipeline.normalization.utils.normalization_manag
     kw_only=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
-class TestNormalizedStateSupervisionSentence(
+class FakeNormalizedStateSupervisionSentence(
     entities.StateSupervisionSentence, NormalizedStateEntity
 ):
     """Fake NormalizedStateSupervisionSentence to use in tests."""
@@ -74,7 +74,7 @@ class TestNormalizedStateSupervisionSentence(
     kw_only=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
-class TestNormalizedStateCharge(entities.StateCharge, NormalizedStateEntity):
+class FakeNormalizedStateCharge(entities.StateCharge, NormalizedStateEntity):
     """Fake NormalizedStateCharge to use in tests."""
 
 
@@ -83,7 +83,7 @@ class TestNormalizedStateCharge(entities.StateCharge, NormalizedStateEntity):
     kw_only=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
-class TestNormalizedStateCourtCase(entities.StateCourtCase, NormalizedStateEntity):
+class FakeNormalizedStateCourtCase(entities.StateCourtCase, NormalizedStateEntity):
     """Fake NormalizedStateCourtCase to use in tests."""
 
 

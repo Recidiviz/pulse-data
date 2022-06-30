@@ -36,7 +36,7 @@ PARTIAL_RATIO_MATCHER = ScoringFuzzyMatcher(
 )
 
 
-class TestTextEntity(TextEntity):
+class FakeTextEntity(TextEntity):
     HELLO = [REGEX_MATCHER, DEFAULT_MATCHER]
     GOODBYE = [PARTIAL_RATIO_MATCHER]
 
@@ -47,25 +47,25 @@ class TestTextAnalyzer(unittest.TestCase):
     def setUp(self) -> None:
         self.text_matching_delegate = TextMatchingConfiguration(
             stop_words_to_remove={"in", "out"},
-            text_entities=[TestTextEntity.HELLO, TestTextEntity.GOODBYE],
+            text_entities=[FakeTextEntity.HELLO, FakeTextEntity.GOODBYE],
         )
         self.text_analyzer = TextAnalyzer(self.text_matching_delegate)
 
     @parameterized.expand(
         [
-            ("default_match", "hello", {TestTextEntity.HELLO}),
-            ("partial_ratio", "GoodBye ", {TestTextEntity.GOODBYE}),
-            ("regex", "HI", {TestTextEntity.HELLO}),
+            ("default_match", "hello", {FakeTextEntity.HELLO}),
+            ("partial_ratio", "GoodBye ", {FakeTextEntity.GOODBYE}),
+            ("regex", "HI", {FakeTextEntity.HELLO}),
             ("no_match", "unrelated text", set()),
             (
                 "multiple_matches",
                 "Hello Goodbye",
-                {TestTextEntity.HELLO, TestTextEntity.GOODBYE},
+                {FakeTextEntity.HELLO, FakeTextEntity.GOODBYE},
             ),
         ]
     )
     def test_text_analyzer_extract_entities(
-        self, _name: str, text: str, expected: Set[TestTextEntity]
+        self, _name: str, text: str, expected: Set[FakeTextEntity]
     ) -> None:
         result = self.text_analyzer.extract_entities(text)
         self.assertEqual(result, expected)
