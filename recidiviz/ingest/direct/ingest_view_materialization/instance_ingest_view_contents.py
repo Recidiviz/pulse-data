@@ -128,13 +128,17 @@ FROM
 """
 
 MAX_DATE_OF_DATA_PROCESSED_FOR_SCHEMA_TEMPLATE = f"""
-SELECT "{{ingest_view_name}}" AS ingest_view_name, MAX({_UPPER_BOUND_DATETIME_COL_NAME}) as {_UPPER_BOUND_DATETIME_COL_NAME}
+SELECT
+    "{{ingest_view_name}}" AS ingest_view_name,
+    MAX({_UPPER_BOUND_DATETIME_COL_NAME}) as max_processed_upper_bound_date
 FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
 WHERE {_PROCESSED_TIME_COL_NAME} IS NOT NULL AND {_PROCESSED_TIME_COL_NAME} < DATETIME("{{datetime_utc}}")
 """
 
 MIN_DATE_OF_UNPROCESSED_DATA_FOR_SCHEMA_TEMPLATE = f"""
-SELECT "{{ingest_view_name}}" AS ingest_view_name, MIN({_UPPER_BOUND_DATETIME_COL_NAME}) as {_UPPER_BOUND_DATETIME_COL_NAME}
+SELECT
+    "{{ingest_view_name}}" AS ingest_view_name,
+    MIN({_UPPER_BOUND_DATETIME_COL_NAME}) as min_unprocessed_upper_bound_date
 FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
 WHERE {_PROCESSED_TIME_COL_NAME} IS NULL
 """
@@ -641,9 +645,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
         for row in row_iterator:
             ingest_view_name = row["ingest_view_name"]
-            result[ingest_view_name] = assert_type(
-                row[_UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
-            )
+            result[ingest_view_name] = row["max_processed_upper_bound_date"]
 
         return result
 
@@ -689,7 +691,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
         for row in row_iterator:
             ingest_view_name = row["ingest_view_name"]
-            result[ingest_view_name] = row[_UPPER_BOUND_DATETIME_COL_NAME]
+            result[ingest_view_name] = row["min_unprocessed_upper_bound_date"]
 
         return result
 
