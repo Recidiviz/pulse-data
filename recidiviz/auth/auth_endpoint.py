@@ -52,21 +52,40 @@ from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value
+from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
 from recidiviz.utils.string import StrictStringFormatter
 
 auth_endpoint_blueprint = Blueprint("auth_endpoint_blueprint", __name__)
 
 
 @auth_endpoint_blueprint.route(
-    "/handle_import_user_restrictions_csv_to_sql", methods=["GET"]
+    "/handle_import_user_restrictions_csv_to_sql", methods=["POST"]
 )
 @requires_gae_auth
 def handle_import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
-    region_code = get_only_str_param_value(
-        "region_code", request.args, preserve_case=True
-    )
+    """Called from a Cloud Storage Notification when a new file is created in the user restrictions
+    bucket. It enqueues a task to import the file into Cloud SQL."""
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    if not message.attributes:
+        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+
+    attributes = message.attributes
+    region_code, filename = os.path.split(attributes[OBJECT_ID])
+
     if not region_code:
-        return "Missing region_code param", HTTPStatus.BAD_REQUEST
+        logging.info("Missing region, ignoring")
+        return "", HTTPStatus.OK
+
+    # It would be nice if we could do this as a filter in the GCS notification instead of as logic
+    # here, but as of June 2022, the available filters are not expressive enough for our needs:
+    # https://cloud.google.com/pubsub/docs/filtering#filtering_syntax
+    if filename != "dashboard_user_restrictions.csv":
+        logging.info("Unknown filename %s, ignoring", filename)
+        return "", HTTPStatus.OK
 
     cloud_task_manager = CloudTaskQueueManager(
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
