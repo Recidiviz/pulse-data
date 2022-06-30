@@ -73,7 +73,6 @@ class TestScraperStop(TestCase):
 def _mock_region() -> Region:
     return Region(
         region_code=_REGION_CODE,
-        shared_queue="queue",
         agency_name="the agency",
         agency_type="benevolent",
         base_url="localhost:3000",

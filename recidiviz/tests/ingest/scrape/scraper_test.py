@@ -19,7 +19,6 @@
 
 import datetime
 import unittest
-from typing import Optional
 
 import requests
 from mock import Mock, patch
@@ -51,10 +50,10 @@ class TestAbstractScraper(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     def test_init(self, mock_get_region: Mock) -> None:
         region = "us_nd"
-        queue_name = "us_nd_scraper"
+        queue_name = "us-nd-scraper-v2"
         initial_task = "buy_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region)
         scraper = FakeScraper(region, initial_task)
 
         mock_get_region.assert_called_with(region)
@@ -82,10 +81,10 @@ class TestStartScrape(unittest.TestCase):
         docket_item = ("Dog", "Cat")
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_nd_scraper"
+        queue_name = "us-nd-scraper-v2"
         initial_task = "use_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region)
         mock_tracker.return_value = docket_item
         mock_task_manager.return_value.create_scrape_task.return_value = None
         mock_datetime.now.return_value = _DATETIME
@@ -133,10 +132,9 @@ class TestStartScrape(unittest.TestCase):
     ) -> None:
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_nd_scraper"
         initial_task = "trash_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region)
         mock_tracker.return_value = None
         mock_sessions.return_value = None
 
@@ -163,12 +161,10 @@ class TestStopScraper(unittest.TestCase):
     ) -> None:
         region = "us_sd"
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_sd_scraper"
+        queue_name = "us-sd-scraper-v2"
         initial_task = "change_it"
 
-        mock_get_region.return_value = mock_region(
-            region, queue_name, is_stoppable=True
-        )
+        mock_get_region.return_value = mock_region(region, is_stoppable=True)
         open_session = ScrapeSession.new(
             key=None,
             scrape_type=scrape_type,
@@ -195,12 +191,9 @@ class TestStopScraper(unittest.TestCase):
     ) -> None:
         region = "us_sd"
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_sd_scraper"
         initial_task = "change_it"
 
-        mock_get_region.return_value = mock_region(
-            region, queue_name, is_stoppable=False
-        )
+        mock_get_region.return_value = mock_region(region, is_stoppable=False)
         open_session = ScrapeSession.new(
             key=None,
             scrape_type=scrape_type,
@@ -232,12 +225,10 @@ class TestStopScraper(unittest.TestCase):
         didn't mean to stop."""
         region = "us_sd"
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_sd_scraper"
+        queue_name = "us-sd-scraper-v2"
         initial_task = "mail_upgrade_it"
 
-        mock_get_region.return_value = mock_region(
-            region, queue_name, is_stoppable=True
-        )
+        mock_get_region.return_value = mock_region(region, is_stoppable=True)
         open_session_other = ScrapeSession.new(
             key=None,
             scrape_type=constants.ScrapeType.SNAPSHOT,
@@ -279,10 +270,10 @@ class TestResumeScrape(unittest.TestCase):
         """Tests the resume_scrape flow for background scraping."""
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_nd_scraper"
+        queue_name = "us-nd-scraper-v2"
         initial_task = "charge_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region)
         recent_session_none_scraped = ScrapeSession.new(
             key=None,
             scrape_type=constants.ScrapeType.BACKGROUND,
@@ -357,10 +348,9 @@ class TestResumeScrape(unittest.TestCase):
     ) -> None:
         region = "us_nd"
         scrape_type = constants.ScrapeType.BACKGROUND
-        queue_name = "us_nd_scraper"
         initial_task = "zoom_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region)
         mock_sessions.return_value = []
 
         scraper = FakeScraper(region, initial_task)
@@ -384,10 +374,10 @@ class TestResumeScrape(unittest.TestCase):
         docket_item = (41620, ["daft", "punk"])
         region = "us_nd"
         scrape_type = constants.ScrapeType.SNAPSHOT
-        queue_name = "us_nd_scraper"
+        queue_name = "us-nd-scraper-v2"
         initial_task = "press_it"
 
-        mock_get_region.return_value = mock_region(region, queue_name)
+        mock_get_region.return_value = mock_region(region)
         mock_tracker.return_value = docket_item
         mock_task_manager.return_value.create_scrape_task.return_value = None
         mock_datetime.now.return_value = _DATETIME
@@ -600,12 +590,9 @@ class TestFetchPage(unittest.TestCase):
             )
 
 
-def mock_region(
-    region_code: str, queue_name: Optional[str] = None, is_stoppable: bool = False
-) -> Region:
+def mock_region(region_code: str, is_stoppable: bool = False) -> Region:
     return Region(
         region_code=region_code,
-        shared_queue=queue_name or None,
         agency_name="the agency",
         agency_type="benevolent",
         base_url="localhost:3000",

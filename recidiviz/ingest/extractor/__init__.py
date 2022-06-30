@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""The core models specific to the ingest platform, but agnostic across
-scraper vendors and regions.
+"""The legacy core models specific to the ingest platform, but agnostic across
+regions.
 
-TODO(#8905): Move this package inside recidiviz/ingest/direct once mappings v2 migration
- is complete.
+TODO(#8905): Delete this package once mappings v2 migration is complete.
 """

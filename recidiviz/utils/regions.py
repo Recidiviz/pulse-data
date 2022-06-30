@@ -77,10 +77,6 @@ class Region:
             is in multiple timezones, this is the timezone in which most of the
             region resides, where "most" is whatever is most useful for that
             region, e.g. population count versus land size.
-        shared_queue: (string) The name of an existing queue to use instead of
-            creating one for this region.
-        queue: (dict) Any parameters to override when creating the queue for
-            this region.
         removed_from_website: (string) Value to use when a person is removed
             from a website (converted to `RemovedFromWebsite`).
         names_file: (string) Optional filename of names file for this region
@@ -99,15 +95,13 @@ class Region:
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
     base_url: str = attr.ib(default=None)
-    shared_queue: Optional[str] = attr.ib(default=None)
-    queue: Optional[Dict[str, Any]] = attr.ib(default=None)
     removed_from_website: RemovedFromWebsite = attr.ib(
         default=RemovedFromWebsite.RELEASED, converter=RemovedFromWebsite
     )
     names_file: Optional[str] = attr.ib(default=None)
     should_proxy: Optional[bool] = attr.ib(default=False)
     is_stoppable: Optional[bool] = attr.ib(default=False)
-    is_direct_ingest: bool = attr.ib(default=False)
+    is_direct_ingest: bool = attr.ib(default=True)
     stripe: Optional[str] = attr.ib(default="0")
     facility_id: Optional[str] = attr.ib(default=None)
 
@@ -118,12 +112,6 @@ class Region:
         pass
 
     def __attrs_post_init__(self):
-        if self.queue and self.shared_queue:
-            raise ValueError("Only one of `queue` and `shared_queue` can be set.")
-        if self.is_direct_ingest and (self.queue or self.shared_queue):
-            raise ValueError(
-                "Direct ingest regions may not have queues configured via yaml."
-            )
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
             raise ValueError(f"Invalid environment: {self.environment}")
         if self.facility_id and len(self.facility_id) != 16:
@@ -175,11 +163,7 @@ class Region:
 
     def get_queue_name(self) -> str:
         """Returns the name of the queue to be used for the region"""
-        return (
-            self.shared_queue
-            if self.shared_queue
-            else f"{self.region_code.replace('_', '-')}-scraper-v2"
-        )
+        return f"{self.region_code.replace('_', '-')}-scraper-v2"
 
     def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current

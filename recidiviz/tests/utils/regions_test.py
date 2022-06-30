@@ -33,8 +33,6 @@ US_NY_MANIFEST_CONTENTS = """
     agency_type: prison
     base_url: http://nysdoccslookup.doccs.ny.gov
     names_file: us_ny_names.csv
-    queue:
-      rate: 18/m
     timezone: America/New_York
     environment: production
     jurisdiction_id: jid_ny
@@ -45,7 +43,6 @@ US_IN_MANIFEST_CONTENTS = """
     agency_type: prison
     base_url: https://www.in.gov/apps/indcorrection/ofs/ofs
     names_file: us_in_names.csv
-    shared_queue: some-vendor-queue
     timezone: America/Indiana/Indianapolis
     environment: production
     jurisdiction_id: jid_in
@@ -65,10 +62,7 @@ BAD_QUEUE_MANIFEST_CONTENTS = """
     agency_type: jail
     base_url: test
     timezone: America/Los_Angeles
-    shared_queue: some-vendor-queue
     environment: production
-    queue:
-      rate: 18/m
     jurisdiction_id: jid_bad
     """
 BAD_ENV_BOOL_MANIFEST_CONTENTS = """
@@ -77,8 +71,6 @@ BAD_ENV_BOOL_MANIFEST_CONTENTS = """
     base_url: test
     timezone: America/Los_Angeles
     environment: true
-    queue:
-      rate: 18/m
     jurisdiction_id: jid_bad
     """
 BAD_ENV_STR_MANIFEST_CONTENTS = """
@@ -87,8 +79,6 @@ BAD_ENV_STR_MANIFEST_CONTENTS = """
     base_url: test
     timezone: America/Los_Angeles
     environment: unknown
-    queue:
-      rate: 18/m
     jurisdiction_id: jid_bad
     """
 US_MA_MIDDLESEX_CONTENTS = """
@@ -136,7 +126,6 @@ class TestRegions(TestCase):
             "agency_type": "prison",
             "base_url": "http://nysdoccslookup.doccs.ny.gov",
             "names_file": "us_ny_names.csv",
-            "queue": {"rate": "18/m"},
             "timezone": "America/New_York",
             "environment": "production",
             "jurisdiction_id": "jid_ny",
@@ -244,14 +233,6 @@ class TestRegions(TestCase):
     def test_create_queue_name(self) -> None:
         region = with_manifest(regions.get_region, "us_ny")
         assert region.get_queue_name() == "us-ny-scraper-v2"
-
-    def test_shared_queue_name(self) -> None:
-        region = with_manifest(regions.get_region, "us_in")
-        assert region.get_queue_name() == "some-vendor-queue"
-
-    def test_set_both_queues_error(self) -> None:
-        with self.assertRaisesRegex(ValueError, "queue"):
-            with_manifest(regions.get_region, "bad_queue")
 
     def test_invalid_region_error_bool(self) -> None:
         with self.assertRaisesRegex(ValueError, "environment"):

@@ -42,9 +42,7 @@ def as_string(region_directory: str, filename: str) -> str:
         The contents of the fixture file as a string
     """
     subdir = "scrape/regions"
-    if "vendor" in region_directory:
-        subdir = "scrape"
-    elif any(d in region_directory for d in ("aggregate", "extractor", "direct")):
+    if any(d in region_directory for d in ("aggregate", "extractor", "direct")):
         subdir = ""
 
     relative_path = os.path.join(subdir, region_directory, "fixtures", filename)
