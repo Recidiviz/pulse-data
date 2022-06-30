@@ -362,7 +362,6 @@ class DirectIngestInstanceStatusManager:
         """Add a status (without any validations). Used for testing purposes."""
         self._add_new_status_row(status)
 
-    @environment.test_only
     def get_current_status(self) -> Optional[DirectIngestStatus]:
         """Add a status (without any validations). Used for testing purposes."""
         with SessionFactory.using_database(self.db_key) as session:
