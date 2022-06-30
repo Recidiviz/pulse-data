@@ -40,7 +40,6 @@ _REGIONS = [
         agency_name="agency_name",
         agency_type="jail",
         base_url="base_url",
-        queue={"rate": "5/m"},
         timezone="America/New_York",
         jurisdiction_id="jid",
         environment="production",

@@ -16,6 +16,9 @@
 # =============================================================================
 
 """The core models specific to the ingest platform, but agnostic across
-scraper vendors and regions."""
+regions.
+
+TODO(#8905): Delete this package once mappings v2 migration is complete.
+"""
 
 from recidiviz.ingest.models import scrape_key
