@@ -52,6 +52,7 @@ resource "google_cloud_scheduler_job" "sftp-cloud-scheduler" {
   description      = "${var.state_code} SFTP cloud scheduler cron job"
   time_zone        = "America/Los_Angeles"
   attempt_deadline = "600s" # 10 minutes
+  region           = "us-east1"
 
   retry_config {
     min_backoff_duration = "30s"
