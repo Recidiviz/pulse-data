@@ -54,10 +54,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 STANDARD_YAML_CONTENTS = """
 region_codes_to_exclude: []
-county_columns_to_exclude:
-person:
-- full_name
-- birthdate_inferred_from_age
 """
 
 

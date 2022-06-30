@@ -23,7 +23,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
-from recidiviz.persistence.database.base_schema import JailsBase, OperationsBase
+from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -31,6 +31,7 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
     StateSegmentedSchemaFederatedBigQueryViewCollector,
     UnsegmentedSchemaFederatedBigQueryViewCollector,
 )
+from recidiviz.persistence.database.schema.case_triage.schema import CaseTriageBase
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -43,38 +44,22 @@ from recidiviz.view_registry.deployed_views import (
 
 NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML = """
 region_codes_to_exclude: []
-county_columns_to_exclude:
-  person:
-    - full_name
-    - birthdate_inferred_from_age
 """
 
 PAUSED_REGION_CLOUD_SQL_CONFIG_YAML = """
 region_codes_to_exclude:
   - US_ND
-county_columns_to_exclude:
-  person:
-    - full_name
-    - birthdate_inferred_from_age
 """
 
 PAUSED_REGION_LOWERCASE_CLOUD_SQL_CONFIG_YAML = """
 region_codes_to_exclude:
   - us_nd
-county_columns_to_exclude:
-  person:
-    - full_name
-    - birthdate_inferred_from_age
 """
 
 
 PAUSED_BAD_REGION_CLOUD_SQL_CONFIG_YAML = """
 region_codes_to_exclude:
   - us_ab
-county_columns_to_exclude:
-  person:
-    - full_name
-    - birthdate_inferred_from_age
 """
 
 
@@ -310,17 +295,17 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
         self.assertEqual(len(materialized_addresses), len(builders))
         self.assertEqual(set(), view_addresses.intersection(materialized_addresses))
 
-    def test_unsegmented_collector_jails(self) -> None:
+    def test_unsegmented_collector_case_triage(self) -> None:
         self.fake_fs.upload_from_string(
             path=self.fake_config_path,
             contents=PAUSED_REGION_CLOUD_SQL_CONFIG_YAML,
             content_type="text/yaml",
         )
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.CASE_TRIAGE)
         collector = UnsegmentedSchemaFederatedBigQueryViewCollector(config)
         builders = collector.collect_view_builders()
         self.assertEqual(
-            len(JailsBase.metadata.sorted_tables),
+            len(CaseTriageBase.metadata.sorted_tables),
             len(builders),
         )
         view_addresses = set()
@@ -332,21 +317,19 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
                 raise ValueError(f"Materialized address None for view [{view.address}]")
             materialized_addresses.add(view.materialized_address)
 
-            if view.view_id == "person":
+            if view.view_id == "client_info":
                 # Check that we explicitly select columns
-                self.assertTrue("person.birthdate" in view.view_query)
-                # ... but not excluded ones
-                self.assertTrue("full_name" not in view.view_query)
-                self.assertTrue("birthdate_inferred_from_age" not in view.view_query)
+                self.assertTrue("client_info.state_code" in view.view_query)
 
         self.assertEqual(
-            {"jails_v2_cloudsql_connection"}, {a.dataset_id for a in view_addresses}
+            {"case_triage_cloudsql_connection"}, {a.dataset_id for a in view_addresses}
         )
         self.assertEqual(
-            {"census_regional"}, {a.dataset_id for a in materialized_addresses}
+            {"case_triage_federated_regional"},
+            {a.dataset_id for a in materialized_addresses},
         )
         self.assertEqual(
-            {t.name for t in JailsBase.metadata.sorted_tables},
+            {t.name for t in CaseTriageBase.metadata.sorted_tables},
             {a.table_id for a in materialized_addresses},
         )
 

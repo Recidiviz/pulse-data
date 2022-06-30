@@ -79,10 +79,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.gcs_factory_patcher.start().return_value = self.fake_gcs
         yaml_contents = """
     region_codes_to_exclude: []
-    county_columns_to_exclude:
-    person:
-    - full_name
-    - birthdate_inferred_from_age
     """
         path = GcsfsFilePath.from_absolute_path(
             f"gs://{self.mock_project_id}-configs/cloud_sql_to_bq_config.yaml"
@@ -119,8 +115,10 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.view_update_client_patcher.stop()
 
     def test_unioned_segments_view_unsegmented_config_crashes(self) -> None:
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
-        with self.assertRaisesRegex(ValueError, r"^Unexpected schema type \[JAILS\]$"):
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.CASE_TRIAGE)
+        with self.assertRaisesRegex(
+            ValueError, r"^Unexpected schema type \[CASE_TRIAGE\]$"
+        ):
             _ = UnionedStateSegmentsViewBuilder(
                 config=config,
                 table=JailsBase.metadata.sorted_tables[0],
@@ -444,10 +442,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         yaml_contents = """
 region_codes_to_exclude:
 - US_WW
-county_columns_to_exclude:
-person:
-- full_name
-- birthdate_inferred_from_age
 """
         path = GcsfsFilePath.from_absolute_path(
             f"gs://{self.mock_project_id}-configs/cloud_sql_to_bq_config.yaml"

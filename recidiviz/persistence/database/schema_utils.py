@@ -249,6 +249,7 @@ def historical_table_class_from_obj(
 
 @enum.unique
 class SchemaType(enum.Enum):
+    # TODO(#13703): Delete JAILS schema entirely.
     JAILS = "JAILS"
     STATE = "STATE"
     OPERATIONS = "OPERATIONS"

@@ -52,10 +52,6 @@ class TestDatasetMetadataStore(TestCase):
             contents="""
 region_codes_to_exclude:
   - US_ND
-county_columns_to_exclude:
-  person:
-    - full_name
-    - birthdate_inferred_from_age
 """,
             content_type="text/yaml",
         )
