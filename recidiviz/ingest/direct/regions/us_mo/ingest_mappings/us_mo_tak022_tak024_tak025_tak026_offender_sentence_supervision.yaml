@@ -1,37 +1,69 @@
-key_mappings:
-  BS_CNS: state_supervision_sentence.county_code
-  SENTENCE_TYPE: state_supervision_sentence.supervision_type
-  BU_SF: state_supervision_sentence.start_date
-  BS_PD: state_supervision_sentence.projected_completion_date
-
-child_key_mappings:
-  BS_NCI: state_charge.ncic_code
-  # Sentence Missouri Charge Code (https://www.mshp.dps.missouri.gov/CJ08Client/Home/ChargeCode)
-  # TODO(#2648): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
-  BS_ASO: state_charge.statute
-  BS_CLT: state_charge.classification_type
-  BS_CLA: state_charge.classification_subtype
-  BS_DO: state_charge.offense_date
-  BS_COD: state_charge.description
-
-# Primary key overridden in controller
-
-ancestor_keys:
-  BS_DOC: state_person.state_person_id
-
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
-
-keys_to_ignore:
-  - BS_DOC # Offender DOC Number - Handled manually in the controller
-  - BS_CYC # Offender Cycle Number - Handled manually in the controller
-  - BS_SEO # Sentence Key Sequence Number - Handled manually in the controller
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak022_tak024_tak025_tak026_offender_sentence_supervision` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - BS_DOC
+  - BS_CYC
+  - BS_SEO
+  - BS_LEO
+  - BS_SCF
+  - BS_CRT
+  - BS_NRN
+  - BS_ASO
+  - BS_NCI
+  - BS_OCN
+  - BS_CLT
+  - BS_CNT
+  - BS_CLA
+  - BS_POF
+  - BS_ACL
+  - BS_CCI
+  - BS_CRQ
+  - BS_CNS
+  - BS_CRC
+  - BS_CRD
+  - BS_PD
+  - BS_DO
+  - BS_PLE
+  - BS_COD
+  - BS_AR
+  - BS_UID
+  - BS_DCR
+  - BS_TCR
+  - BS_UIU
+  - BS_DLU
+  - BS_TLU
+  - BU_DOC
+  - BU_CYC
+  - BU_SEO
+  - BU_FSO
+  - BU_SF
+  - BU_SBY
+  - BU_SBM
+  - BU_SBD
+  - BU_PBT
+  - BU_SLY
+  - BU_SLM
+  - BU_SLD
+  - BU_SAI
+  - BU_EMP
+  - BU_FRC
+  - BU_WEA
+  - BU_DEF
+  - BU_DCR
+  - BU_TCR
+  - BU_DLU
+  - BU_TLU
+  - SENTENCE_TYPE
+  - MOST_RECENT_SENTENCE_STATUS_SSO
+  - MOST_RECENT_SENTENCE_STATUS_SCD
+  - MOST_RECENT_SENTENCE_STATUS_DATE
+unused_columns:
   - BS_OCN # Sentence Offense Cycle Number - tracks activity between law enforcement, courts, etc: TODO(#2604): This does not appear to be unique and thus not suitable as an id, but check if it is usable for bespoke entity matching purposes
   - BS_LEO # Unused - Sentence Sequence Number
-  - BS_SCF # Sentence Completed Flag - Handled manually in the controller
   - BS_CRT # TODO(#2604) - Sentence Cause Number (court docket # a la docstars COURT_NUMBER)
   - BS_NRN # Unused - Offender Name Reference Number
-  - BS_CNT # Sentence Offense County - Handled manually in the controller
   - BS_POF # TODO(#2604) - What is this? - not in TAK table index
   - BS_ACL # TODO(#2604) - What is this? - not in TAK table index
   - BS_CCI # Unused - Sentence Concurrent/Consecutive Ind
@@ -50,9 +82,6 @@ keys_to_ignore:
   - BU_CYC # Unused - Duplicate of BS_CYC
   - BU_SEO # Unused - Duplicate of BS_SEO
   - BU_FSO # TODO(#2604) - Field Sentence Key Sequence Number
-  - BU_SBY # Years - Handled manually in the controller
-  - BU_SBM # Months - Handled manually in the controller
-  - BU_SBD # Days - Handled manually in the controller
   - BU_PBT # Unused - Sentence Prob Type
   - BU_SLY # Unused - Refers to incarceration sentence length
   - BU_SLM # Unused - Refers to incarceration sentence length
@@ -67,5 +96,200 @@ keys_to_ignore:
   - BU_DLU # Unused - Date Last Updated (BU_* cols)
   - BU_TLU # Unused - Time Last Updated (BU_* cols)
   - MOST_RECENT_SENTENCE_STATUS_SSO # Unused - Sentence Status Seq Num (Most recent)
-  - MOST_RECENT_SENTENCE_STATUS_SCD # Sentence Status Code (Most recent) - Handled manually in the controller
-  - MOST_RECENT_SENTENCE_STATUS_DATE # Sentence Status Code Date (Most recent) - Handled manually in the controller
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - BS_DOC
+          - BS_CYC
+          - BS_SEO
+  - is_revoked_sentence:
+      $and:
+        - $equal: [SENTENCE_TYPE, $literal("PROBATION")]
+        - $in:
+            $value: MOST_RECENT_SENTENCE_STATUS_SCD
+            $options:
+              - $literal("45O2000") # Prob Rev - Technical
+              - $literal("45O2005") # Prob Rev - New Felony Conv
+              - $literal("45O2015") # Prob Rev - Felony Law Viol
+              - $literal("45O2010") # Prob Rev - New Misd Conv
+              - $literal("45O2020") # Prob Rev - Misd Law Viol
+  - is_suspended_sentence:
+      # TODO(#2806): This might be a bad way to determine if a sentence is
+      #  suspended since there could be, in theory, statuses that come between
+      #  the suspension status and the actual status that means the probation
+      #  has been reinstated (like a a random warrant status)
+      $in:
+        $value: MOST_RECENT_SENTENCE_STATUS_SCD
+        $options:
+          - $literal("35I3500") # Bond Supv-Pb Suspended-Revisit
+          - $literal("65O2015") # Court Probation Suspension
+          - $literal("65O3015") # Court Parole Suspension
+          - $literal("95O3500") # Bond Supv-Pb Susp-Completion
+          - $literal("95O3505") # Bond Supv-Pb Susp-Bond Forfeit
+          - $literal("95O3600") # Bond Supv-Pb Susp-Trm-Tech
+          - $literal("95O7145") # DATA ERROR-Suspended
+  - is_commuted_sentence:
+      $in:
+        $value: MOST_RECENT_SENTENCE_STATUS_SCD
+        $options:
+          - $literal("90O1020") # Institutional Commutation Comp
+          - $literal("95O1025") # Field Commutation
+          - $literal("99O1020") # Institutional Commutation
+          - $literal("99O1025") # Field Commutation
+  - is_completed_sentence:
+      $equal: [BS_SCF, $literal("Y")]
+  - is_not_completed_sentence:
+      $equal: [BS_SCF, $literal("N")]
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: BS_DOC
+          id_type: $literal("US_MO_DOC")
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id: $variable(sentence_external_id)
+          supervision_type:
+            $enum_mapping:
+              $raw_text: SENTENCE_TYPE
+              $mappings:
+                StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN:
+                  - UNKNOWN
+                StateSupervisionSentenceSupervisionType.PAROLE:
+                  - PAROLE
+                StateSupervisionSentenceSupervisionType.PROBATION:
+                  - PROBATION
+              $ignore:
+                - INT
+          status:
+            $conditional: # how will this handle the raw text? does that matter?
+              - $if: $variable(is_suspended_sentence)
+                $then:
+                  $enum_mapping:
+                    $raw_text: MOST_RECENT_SENTENCE_STATUS_SCD
+                    $mappings:
+                      StateSentenceStatus.SUSPENDED:
+                        - 35I3500 # Bond Supv-Pb Suspended-Revisit
+                        - 65O2015 # Court Probation Suspension
+                        - 65O3015 # Court Parole Suspension
+                        - 95O3500 # Bond Supv-Pb Susp-Completion
+                        - 95O3505 # Bond Supv-Pb Susp-Bond Forfeit
+                        - 95O3600 # Bond Supv-Pb Susp-Trm-Tech
+                        - 95O7145 # DATA ERROR-Suspended
+              - $else_if: $variable(is_revoked_sentence)
+                $then:
+                  $enum_mapping:
+                    $raw_text: MOST_RECENT_SENTENCE_STATUS_SCD
+                    $mappings:
+                      StateSentenceStatus.REVOKED:
+                        - 45O2000 # Prob Rev - Technical
+                        - 45O2005 # Prob Rev - New Felony Conv
+                        - 45O2015 # Prob Rev - Felony Law Viol
+                        - 45O2010 # Prob Rev - New Misd Conv
+                        - 45O2020 # Prob Rev - Misd Law Viol
+              - $else_if: $variable(is_commuted_sentence)
+                $then:
+                  $enum_mapping:
+                    $raw_text: MOST_RECENT_SENTENCE_STATUS_SCD
+                    $mappings:
+                      StateSentenceStatus.COMMUTED:
+                        - 90O1020 # Institutional Commutation Comp
+                        - 95O1025 # Field Commutation
+                        - 99O1020 # Institutional Commutation
+                        - 99O1025 # Field Commutation
+              - $else_if: $variable(is_completed_sentence)
+                $then: $literal_enum(StateSentenceStatus.COMPLETED)
+              - $else_if: $variable(is_not_completed_sentence)
+                $then: $literal_enum(StateSentenceStatus.SERVING)
+              - $else: $literal_enum(StateSentenceStatus.EXTERNAL_UNKNOWN)
+          completion_date:
+            $conditional:
+              - $if:
+                  $or:
+                    - $variable(is_commuted_sentence)
+                    - $variable(is_completed_sentence)
+                    - $variable(is_revoked_sentence)
+                $then: MOST_RECENT_SENTENCE_STATUS_DATE
+          county_code:
+            $custom:
+              $function: us_mo_custom_parsers.normalize_county_code
+              $args:
+                county_code: BS_CNS
+          start_date:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: BU_SF
+                    $options:
+                      - $literal("0")
+                      - $literal("19000000")
+                      - $literal("20000000")
+                      - $literal("66666666")
+                      - $literal("77777777")
+                      - $literal("88888888")
+                      - $literal("99999999")
+                $then: BU_SF
+          projected_completion_date:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: BS_PD
+                    $options:
+                      - $literal("0")
+                      - $literal("19000000")
+                      - $literal("20000000")
+                      - $literal("66666666")
+                      - $literal("77777777")
+                      - $literal("88888888")
+                      - $literal("99999999")
+                $then: BS_PD
+          max_length_days:
+            $custom:
+              $function: us_mo_custom_parsers.max_length_days_from_ymd
+              $args:
+                years: BU_SBY
+                months: BU_SBM
+                days: BU_SBD
+          charges:
+            - StateCharge:
+                external_id: $variable(sentence_external_id)
+                status: $literal_enum(StateChargeStatus.PRESENT_WITHOUT_INFO)
+                offense_date:
+                  $conditional:
+                    - $if:
+                        $not_in:
+                          $value: BS_DO
+                          $options:
+                            - $literal("0")
+                      $then: BS_DO
+                county_code:
+                  $custom:
+                    $function: us_mo_custom_parsers.normalize_county_code
+                    $args:
+                      county_code: BS_CNT
+                statute: BS_ASO
+                description: BS_COD
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: BS_CLT
+                    $mappings:
+                      StateChargeClassificationType.INTERNAL_UNKNOWN:
+                        - U
+                      StateChargeClassificationType.INFRACTION:
+                        - L
+                      StateChargeClassificationType.FELONY:
+                        - F
+                      StateChargeClassificationType.MISDEMEANOR:
+                        - M
+                      StateChargeClassificationType.CIVIL:
+                        - I
+                classification_subtype: BS_CLA
+                # Sentence Missouri Charge Code (https://www.mshp.dps.missouri.gov/CJ08Client/Home/ChargeCode)
+                # TODO(#2648): Many/all of these codes all changed in 2016? How do we convert between the two schemes?
+                ncic_code: BS_NCI
+                is_violent:
+                  $custom:
+                    $function: us_mo_custom_parsers.set_charge_is_violent_from_ncic
+                    $args:
+                      ncic_code: BS_NCI

@@ -21,7 +21,6 @@ import re
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Type
 
-from recidiviz.common import ncic
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
@@ -43,14 +42,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
-)
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -62,12 +57,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import munge_date_string
-from recidiviz.common.str_field_utils import (
-    parse_days,
-    parse_days_from_duration_pieces,
-    parse_yyyymmdd_date,
-    sorted_list_from_str,
-)
+from recidiviz.common.str_field_utils import parse_days, sorted_list_from_str
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -84,39 +74,20 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
 from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
     IngestGatingContext,
     gen_convert_person_ids_to_external_id_objects,
-    gen_map_ymd_counts_to_max_length_field_posthook,
-    gen_normalize_county_codes_posthook,
     gen_set_field_as_concatenated_values_hook,
-    gen_set_is_life_sentence_hook,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
-    CHARGE_COUNTY_CODE,
     CITATION_ID_PREFIX,
     CITATION_KEY_SEQ,
     CYCLE_ID,
     DOC_ID,
     FIELD_KEY_SEQ,
-    INCARCERATION_SENTENCE_DATE_IMPOSED,
-    INCARCERATION_SENTENCE_LENGTH_DAYS,
-    INCARCERATION_SENTENCE_LENGTH_MONTHS,
-    INCARCERATION_SENTENCE_LENGTH_YEARS,
-    INCARCERATION_SENTENCE_MIN_RELEASE_TYPE,
-    INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS,
-    INCARCERATION_SENTENCE_START_DATE,
-    MOST_RECENT_SENTENCE_STATUS_CODE,
     MOST_RECENT_SENTENCE_STATUS_DATE,
     ORAS_ASSESSMENT_ID,
     ORAS_ASSESSMENTS_DOC_ID,
     PERIOD_CLOSE_CODE,
     PERIOD_CLOSE_CODE_SUBTYPE,
-    SENTENCE_COMPLETED_FLAG,
-    SENTENCE_COUNTY_CODE,
     SENTENCE_KEY_SEQ,
-    SENTENCE_OFFENSE_DATE,
-    SUPERVISION_SENTENCE_LENGTH_DAYS,
-    SUPERVISION_SENTENCE_LENGTH_MONTHS,
-    SUPERVISION_SENTENCE_LENGTH_YEARS,
-    SUPERVISION_SENTENCE_TYPE,
     SUPERVISION_VIOLATION_RECOMMENDATIONS,
     SUPERVISION_VIOLATION_TYPES,
     SUPERVISION_VIOLATION_VIOLATED_CONDITIONS,
@@ -139,12 +110,9 @@ from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAgent,
-    StateCharge,
     StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponseDecisionEntry,
@@ -170,41 +138,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         "tak291_tak292_tak024_citations": "JT",
     }
 
-    REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
-        "45O2000",  # Prob Rev - Technical
-        "45O2005",  # Prob Rev - New Felony Conv
-        "45O2015",  # Prob Rev - Felony Law Viol
-        "45O2010",  # Prob Rev - New Misd Conv
-        "45O2020",  # Prob Rev - Misd Law Viol
-    }
-
-    SUSPENDED_SENTENCE_STATUS_CODES = {
-        "35I3500",  # Bond Supv-Pb Suspended-Revisit
-        "65O2015",  # Court Probation Suspension
-        "65O3015",  # Court Parole Suspension
-        "95O3500",  # Bond Supv-Pb Susp-Completion
-        "95O3505",  # Bond Supv-Pb Susp-Bond Forfeit
-        "95O3600",  # Bond Supv-Pb Susp-Trm-Tech
-        "95O7145",  # DATA ERROR-Suspended
-    }
-
-    COMMUTED_SENTENCE_STATUS_CODES = {
-        "90O1020",  # Institutional Commutation Comp
-        "95O1025",  # Field Commutation
-        "99O1020",  # Institutional Commutation
-        "99O1025",  # Field Commutation
-    }
-
-    # TODO(#2604): Figure out if we should do anything special with these
-    SENTENCE_MAGICAL_DATES = [
-        "0",
-        "19000000",
-        "20000000",
-        "66666666",
-        "77777777",
-        "88888888",
-        "99999999",
-    ]
     PERIOD_MAGICAL_DATES = ["0", "99999999"]
 
     # TODO(#2898): Complete transition to TAK026 for IncarcerationPeriod statuses
@@ -263,11 +196,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "SHK",  # 120 Day Incarceration
         ],
         StateChargeClassificationType.INFRACTION: ["L"],  # Local/ordinance
-        StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN: ["UNKNOWN"],
-        StateSupervisionSentenceSupervisionType.PAROLE: [
-            "PAROLE",
-        ],
-        StateSupervisionSentenceSupervisionType.PROBATION: ["PROBATION"],
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
             # TODO(#2898) - Use TAK026 statuses to populate release reason
             "BP-FF",  # Board Parole
@@ -434,7 +362,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     }
 
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
-        StateSupervisionSentenceSupervisionType: ["INT"],  # Unknown meaning, rare
         StateSpecializedPurposeForIncarceration: [
             "X",  # Unknown
         ],
@@ -500,8 +427,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # SQL Preprocessing View
-            "tak022_tak023_tak025_tak026_offender_sentence_institution": self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(),
-            "tak022_tak024_tak025_tak026_offender_sentence_supervision": self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(),
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": incarceration_period_row_posthooks,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": incarceration_period_row_posthooks,
             "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods": tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors,
@@ -514,8 +439,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ] = {
             # SQL Preprocessing View
             "oras_assessments_weekly": self._generate_assessment_id_coords,
-            "tak022_tak023_tak025_tak026_offender_sentence_institution": self._generate_incarceration_sentence_id_coords,
-            "tak022_tak024_tak025_tak026_offender_sentence_supervision": self._generate_supervision_sentence_id_coords,
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": self._generate_incarceration_period_id_coords,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": self._generate_incarceration_period_id_coords,
             "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods": self._generate_supervision_period_id_coords,
@@ -612,78 +535,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             return US_MO_DOC
 
         return None
-
-    @classmethod
-    def tak022_tak023_set_parole_eligibility_date(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        sentence_start_date = parse_yyyymmdd_date(
-            row[INCARCERATION_SENTENCE_START_DATE]
-        )
-        if not sentence_start_date:
-            return
-
-        parole_ineligible_days = parse_days_from_duration_pieces(
-            years_str=row[INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS]
-        )
-
-        date = sentence_start_date + datetime.timedelta(days=parole_ineligible_days)
-
-        date_iso = date.isoformat()
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationSentence):
-                obj.parole_eligibility_date = date_iso
-
-    @classmethod
-    def set_charge_id_from_sentence_id(
-        cls,
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationSentence):
-                sentence_id = obj.state_incarceration_sentence_id
-                charges = obj.state_charges
-            elif isinstance(obj, StateSupervisionSentence):
-                sentence_id = obj.state_supervision_sentence_id
-                charges = obj.state_charges
-            else:
-                continue
-
-            if len(charges) > 1:
-                raise ValueError(
-                    f"Expected a maximum of one charge per sentence, but found sentence {sentence_id} "
-                    f"with {str(len(charges))} charges"
-                )
-
-            if charges:
-                charges[0].state_charge_id = sentence_id
-
-    @classmethod
-    def _set_charge_is_violent_from_ncic(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        ncic_code = row.get("BS_NCI", None)
-        if not ncic_code:
-            return
-
-        is_violent = ncic.get_is_violent(ncic_code)
-        if is_violent is None:
-            return
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateCharge):
-                extracted_object.is_violent = str(is_violent)
 
     @classmethod
     def _gen_violation_response_type_posthook(
@@ -938,89 +789,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             surname=surname,
         )
 
-    def _set_completion_date_if_necessary(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-
-        completion_date = row[MOST_RECENT_SENTENCE_STATUS_DATE]
-        for obj in extracted_objects:
-            if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
-                if obj.status in (
-                    StateSentenceStatus.COMMUTED.value,
-                    StateSentenceStatus.COMPLETED.value,
-                    StateSentenceStatus.REVOKED.value,
-                ):
-                    obj.completion_date = completion_date
-
-    def _set_sentence_status(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-
-        status_enum_str = self._sentence_status_enum_str_from_row(row)
-        for obj in extracted_objects:
-            if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
-                obj.status = status_enum_str
-
-    def _sentence_status_enum_str_from_row(self, row: Dict[str, str]) -> str:
-        """Derives an accurate sentence status from the data in the given row."""
-        raw_status_str = row[MOST_RECENT_SENTENCE_STATUS_CODE]
-        sentence_completed_flag = row[SENTENCE_COMPLETED_FLAG]
-        supervision_sentence_type = row.get(SUPERVISION_SENTENCE_TYPE, None)
-
-        is_probation_sentence = (
-            supervision_sentence_type
-            and self.get_enum_overrides().parse(
-                supervision_sentence_type, StateSupervisionSentenceSupervisionType
-            )
-            == StateSupervisionSentenceSupervisionType.PROBATION
-        )
-
-        if (
-            is_probation_sentence
-            and raw_status_str in self.REVOKED_PROBATION_SENTENCE_STATUS_CODES
-        ):
-            return StateSentenceStatus.REVOKED.value
-
-        if sentence_completed_flag == "Y":
-            return StateSentenceStatus.COMPLETED.value
-
-        # TODO(#2806): This might be a bad way to determine if a sentence is
-        #  suspended since there could be, in theory, statuses that come between
-        #  the suspension status and the actual status that means the probation
-        #  has been reinstated (like a a random warrant status)
-        if raw_status_str in self.SUSPENDED_SENTENCE_STATUS_CODES:
-            return StateSentenceStatus.SUSPENDED.value
-        if raw_status_str in self.COMMUTED_SENTENCE_STATUS_CODES:
-            return StateSentenceStatus.COMMUTED.value
-
-        if sentence_completed_flag == "N":
-            return StateSentenceStatus.SERVING.value
-
-        return StateSentenceStatus.EXTERNAL_UNKNOWN.value
-
-    @classmethod
-    def _clear_zero_date_string(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        offense_date = row.get(SENTENCE_OFFENSE_DATE, None)
-
-        if offense_date and offense_date == "0":
-            for obj in extracted_objects:
-                if isinstance(obj, StateCharge):
-                    obj.offense_date = None
-
     @classmethod
     def _replace_invalid_release_date(
         cls,
@@ -1034,21 +802,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date == "99999999":
                     obj.release_date = row.get(MOST_RECENT_SENTENCE_STATUS_DATE, None)
-
-    # TODO(#9185): [US_MO] Ensure correct handling of magic date in start_date of incarceration sentence
-    @classmethod
-    def _replace_invalid_sentence_start_date(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Replaces a magical start date with the date the sentence was created."""
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationSentence):
-                if obj.start_date in cls.SENTENCE_MAGICAL_DATES:
-                    obj.start_date = row.get(INCARCERATION_SENTENCE_DATE_IMPOSED, None)
 
     @classmethod
     def _gen_clear_magical_date_value(
@@ -1249,6 +1002,12 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         )
 
     @classmethod
+    def _generate_sentence_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
+        doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
+        sen_seq_num = row[f"{col_prefix}_{SENTENCE_KEY_SEQ}"]
+        return f"{doc_cycle_id}-{sen_seq_num}"
+
+    @classmethod
     def _generate_supervision_violation_id_coords_for_reports(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
@@ -1286,12 +1045,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             doc_id = row[DOC_ID]
             cyc_id = row[CYCLE_ID]
         return f"{doc_id}-{cyc_id}"
-
-    @classmethod
-    def _generate_sentence_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
-        doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
-        sen_seq_num = row[f"{col_prefix}_{SENTENCE_KEY_SEQ}"]
-        return f"{doc_cycle_id}-{sen_seq_num}"
 
     @classmethod
     def _generate_supervision_violation_id_with_report_prefix(
@@ -1425,79 +1178,3 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _sorted_list_from_col(cls, row: Dict[str, str], col_name: str) -> List[str]:
         value = row.get(col_name, "")
         return sorted_list_from_str(value)
-
-    def get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
-        self,
-    ) -> List[IngestRowPosthookCallable]:
-        return [
-            gen_normalize_county_codes_posthook(
-                self.region.region_code, CHARGE_COUNTY_CODE, StateCharge
-            ),
-            gen_normalize_county_codes_posthook(
-                self.region.region_code,
-                SENTENCE_COUNTY_CODE,
-                StateIncarcerationSentence,
-            ),
-            gen_map_ymd_counts_to_max_length_field_posthook(
-                INCARCERATION_SENTENCE_LENGTH_YEARS,
-                INCARCERATION_SENTENCE_LENGTH_MONTHS,
-                INCARCERATION_SENTENCE_LENGTH_DAYS,
-                StateIncarcerationSentence,
-                test_for_fallback=self._test_length_string,
-                fallback_parser=self._parse_days_with_long_range,
-            ),
-            gen_set_is_life_sentence_hook(
-                INCARCERATION_SENTENCE_MIN_RELEASE_TYPE,
-                "LIF",
-            ),
-            self._replace_invalid_sentence_start_date,
-            self._gen_clear_magical_date_value(
-                "projected_max_release_date",
-                self.SENTENCE_MAGICAL_DATES,
-                StateIncarcerationSentence,
-            ),
-            self._gen_clear_magical_date_value(
-                "projected_min_release_date",
-                self.SENTENCE_MAGICAL_DATES,
-                StateIncarcerationSentence,
-            ),
-            self._set_sentence_status,
-            self._set_completion_date_if_necessary,
-            self._clear_zero_date_string,
-            self.tak022_tak023_set_parole_eligibility_date,
-            self.set_charge_id_from_sentence_id,
-            self._set_charge_is_violent_from_ncic,
-        ]
-
-    def get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
-        self,
-    ) -> List[IngestRowPosthookCallable]:
-        return [
-            gen_normalize_county_codes_posthook(
-                self.region.region_code, CHARGE_COUNTY_CODE, StateCharge
-            ),
-            gen_normalize_county_codes_posthook(
-                self.region.region_code, SENTENCE_COUNTY_CODE, StateSupervisionSentence
-            ),
-            gen_map_ymd_counts_to_max_length_field_posthook(
-                SUPERVISION_SENTENCE_LENGTH_YEARS,
-                SUPERVISION_SENTENCE_LENGTH_MONTHS,
-                SUPERVISION_SENTENCE_LENGTH_DAYS,
-                StateSupervisionSentence,
-                test_for_fallback=self._test_length_string,
-                fallback_parser=self._parse_days_with_long_range,
-            ),
-            self._gen_clear_magical_date_value(
-                "start_date", self.SENTENCE_MAGICAL_DATES, StateSupervisionSentence
-            ),
-            self._gen_clear_magical_date_value(
-                "projected_completion_date",
-                self.SENTENCE_MAGICAL_DATES,
-                StateSupervisionSentence,
-            ),
-            self._set_sentence_status,
-            self._set_completion_date_if_necessary,
-            self._clear_zero_date_string,
-            self.set_charge_id_from_sentence_id,
-            self._set_charge_is_violent_from_ncic,
-        ]
