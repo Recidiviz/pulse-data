@@ -60,9 +60,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities_utils_test import (
-    TestNormalizedStateCharge,
-    TestNormalizedStateCourtCase,
-    TestNormalizedStateSupervisionSentence,
+    FakeNormalizedStateCharge,
+    FakeNormalizedStateCourtCase,
+    FakeNormalizedStateSupervisionSentence,
     get_normalized_violation_tree,
     get_violation_tree,
 )
@@ -245,9 +245,9 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         "recidiviz.calculator.pipeline.normalization.utils."
         "normalized_entities_utils.NORMALIZED_ENTITY_CLASSES",
         [
-            TestNormalizedStateSupervisionSentence,
-            TestNormalizedStateCharge,
-            TestNormalizedStateCourtCase,
+            FakeNormalizedStateSupervisionSentence,
+            FakeNormalizedStateCharge,
+            FakeNormalizedStateCourtCase,
         ],
     )
     def test_convert_entity_trees_to_normalized_versions_invalid_subtree(self) -> None:
@@ -266,7 +266,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             _ = convert_entity_trees_to_normalized_versions(
                 root_entities=[ss],
-                normalized_entity_class=TestNormalizedStateSupervisionSentence,
+                normalized_entity_class=FakeNormalizedStateSupervisionSentence,
                 additional_attributes_map={
                     entities.StateSupervisionSentence.__name__: {},
                     entities.StateCharge.__name__: {},

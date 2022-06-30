@@ -30,15 +30,15 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.tests.persistence.database.schema_entity_converter import (
-    test_entities as entities,
+    fake_entities as entities,
 )
 from recidiviz.tests.persistence.database.schema_entity_converter import (
-    test_schema as schema,
+    fake_schema as schema,
 )
-from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import (
-    TestBase,
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_schema import (
+    FakeBase,
 )
-from recidiviz.tests.persistence.database.schema_entity_converter.test_entities import (
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities import (
     RootType,
 )
 from recidiviz.tests.utils import fakes
@@ -79,7 +79,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
     def setUp(self) -> None:
         self.database_key = create_autospec(SQLAlchemyDatabaseKey)
-        self.database_key.declarative_meta = TestBase
+        self.database_key.declarative_meta = FakeBase
         self.database_key.isolation_level = "SERIALIZABLE"
         self.database_key.poolclass = None
         fakes.use_in_memory_sqlite_database(self.database_key)

@@ -18,8 +18,9 @@
 
 """
 
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 # Base class for all table classes
-TestBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="TestBase")
+FakeBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="FakeBase")

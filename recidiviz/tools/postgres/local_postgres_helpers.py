@@ -47,8 +47,8 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import (
-    TestBase,
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_schema import (
+    FakeBase,
 )
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils import environment
@@ -59,7 +59,7 @@ DECLARATIVE_BASES = [
     StateBase,
     JailsBase,
     JusticeCountsBase,
-    TestBase,
+    FakeBase,
     CaseTriageBase,
     PathwaysBase,
 ]

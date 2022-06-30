@@ -14,22 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test database schema definitions for schema defined in test_entities.py """
-from sqlalchemy import Column, ForeignKey, Integer, String, Table, Enum
+"""Fake database schema definitions for schema defined in test_entities.py """
+from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import relationship
 
-from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import (
-    TestBase,
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_schema import (
+    FakeBase,
 )
-from recidiviz.tests.persistence.database.schema_entity_converter.test_entities import (
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities import (
     RootType,
 )
-
 
 root_type = Enum(RootType.SIMPSONS.value, RootType.FRIENDS.value, name="root_type")
 
 
-class Root(TestBase):
+class Root(FakeBase):
     """Represents a Root object in the test schema"""
 
     __tablename__ = "root"
@@ -43,13 +42,13 @@ class Root(TestBase):
 
 association_table = Table(
     "state_parent_child_association",
-    TestBase.metadata,
+    FakeBase.metadata,
     Column("parent_id", Integer, ForeignKey("parent.parent_id")),
     Column("child_id", Integer, ForeignKey("child.child_id")),
 )
 
 
-class Parent(TestBase):
+class Parent(FakeBase):
     """Represents a Parent object in the test schema"""
 
     __tablename__ = "parent"
@@ -65,7 +64,7 @@ class Parent(TestBase):
     )
 
 
-class Child(TestBase):
+class Child(FakeBase):
     """Represents a Child object in the test schema"""
 
     __tablename__ = "child"
@@ -82,7 +81,7 @@ class Child(TestBase):
     favorite_toy = relationship("Toy", uselist=False)
 
 
-class Toy(TestBase):
+class Toy(FakeBase):
     """Represents a Toy object in the test schema"""
 
     __tablename__ = "toy"
