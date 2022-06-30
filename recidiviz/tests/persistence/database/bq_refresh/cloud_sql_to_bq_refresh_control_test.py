@@ -287,27 +287,29 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
-    def test_refresh_bq_schema_jails(
+    def test_refresh_bq_schema_case_triage(
         self,
         mock_federated_refresh: mock.MagicMock,
         mock_kick_all_schedulers: mock.MagicMock,
     ) -> None:
         # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.JAILS)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id", schema_type=SchemaType.CASE_TRIAGE
+        )
 
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
-            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.JAILS))
+            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(SchemaType.JAILS)
+            self.assertIsOnlySchemaLocked(SchemaType.CASE_TRIAGE)
 
         mock_federated_refresh.side_effect = mock_federated_refresh_fn
 
-        module = SchemaType.JAILS.value
+        module = SchemaType.CASE_TRIAGE.value
         route = f"/refresh_bq_schema/{module}"
 
         response = self.mock_flask_client.post(
@@ -317,9 +319,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_federated_refresh.assert_called_with(schema_type=SchemaType.JAILS)
+        mock_federated_refresh.assert_called_with(schema_type=SchemaType.CASE_TRIAGE)
         self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.JAILS))
+        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.CASE_TRIAGE))
         mock_kick_all_schedulers.assert_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
@@ -379,7 +381,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         # Do not grab lock
         # self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.JAILS)
 
-        route = f"/refresh_bq_schema/{SchemaType.JAILS.value}"
+        route = f"/refresh_bq_schema/{SchemaType.STATE.value}"
 
         response = self.mock_flask_client.post(
             route,
@@ -390,7 +392,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.assertEqual(response.status_code, HTTPStatus.EXPECTATION_FAILED)
         self.assertEqual(
             response.data.decode(),
-            "Expected lock for [JAILS] BQ refresh to already exist.",
+            "Expected lock for [STATE] BQ refresh to already exist.",
         )
         mock_federated_refresh.assert_not_called()
         self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()

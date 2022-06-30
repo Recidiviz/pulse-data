@@ -19,11 +19,10 @@
 
 import string
 import unittest
-from typing import Dict, List
+from typing import List
 from unittest import mock
 
 import sqlalchemy
-from parameterized import parameterized
 
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -62,10 +61,6 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             """
 region_codes_to_exclude:
   - US_ND
-county_columns_to_exclude:
-  person:
-    - full_name
-    - birthdate_inferred_from_age
 """
         )
 
@@ -129,20 +124,6 @@ county_columns_to_exclude:
             self.assertFalse(dataset_with_prefix.endswith("regional"))
             self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
 
-    def test_excluded_columns(self) -> None:
-        for schema_type in self.enabled_schema_types:
-            config = CloudSqlToBQConfig.for_schema_type(schema_type)
-            for table in config.sorted_tables:
-                # pylint: disable=protected-access
-                columns = config._get_table_columns_to_export(table)
-                for column in columns:
-                    self.assertIsInstance(column, str)
-                    self.assertTrue(
-                        column not in config.columns_to_exclude.get(table.name, []),
-                        msg=f"Column {column} should not be included. It is found in "
-                        f"COUNTY_COLUMNS_TO_EXCLUDE` for this table {table.name}.",
-                    )
-
     def test_get_tables_to_export(self) -> None:
         """Assertions for the method get_tables_to_export
         1. Assert that it returns a list of type sqlalchemy.Table
@@ -187,64 +168,6 @@ county_columns_to_exclude:
             config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
             assert config is not None
             self.assertEqual(config.region_codes_to_exclude, [])
-
-    def test_column_to_exclude(self) -> None:
-        """Make sure columns_to_exclude are defined correctly in case of typos.
-
-        1) Check that all tables are defined in tables to export.
-
-        2) Check that all columns are defined in their respective tables.
-        """
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
-        assert config is not None
-        tables = config.get_tables_to_export()
-        table_names = list(map(lambda t: t.name, tables))
-
-        for table, _ in config.columns_to_exclude.items():
-            self.assertTrue(
-                table in table_names,
-                msg=f'Table "{table}" in `cloud_sql_to_bq_export_config.COUNTY_COLUMNS_TO_EXCLUDE`'
-                " not found in in the JailsBase schema."
-                " Did you spell it correctly?",
-            )
-
-    @parameterized.expand(
-        [
-            (
-                SchemaType.JAILS,
-                [],
-                {"person": ["full_name", "birthdate_inferred_from_age"]},
-            ),
-            (SchemaType.OPERATIONS, ["US_ND"], {}),
-            (SchemaType.STATE, ["US_ND"], {}),
-        ]
-    )
-    def test_yaml_config_reads_correctly_JAILS(
-        self,
-        schema: SchemaType,
-        regions_to_exclude: List[str],
-        columns_to_exclude: Dict[str, List[str]],
-    ) -> None:
-        config = CloudSqlToBQConfig.for_schema_type(schema)
-        assert config is not None
-
-        self.assertListsDistinctAndEqual(
-            regions_to_exclude,
-            config.region_codes_to_exclude,
-            msg_prefix="Region codes",
-        )
-
-        self.assertListsDistinctAndEqual(
-            list(columns_to_exclude.keys()),
-            list(config.columns_to_exclude.keys()),
-            msg_prefix="Excluded columns keys",
-        )
-        for k in columns_to_exclude.keys():
-            self.assertListsDistinctAndEqual(
-                columns_to_exclude[k],
-                config.columns_to_exclude[k],
-                msg_prefix=f"Excluded columsn for {k}",
-            )
 
     def test_schema_for_sqlalchemy_table(self) -> None:
         """Assert that we will be able to manage all tables in BigQuery created by the

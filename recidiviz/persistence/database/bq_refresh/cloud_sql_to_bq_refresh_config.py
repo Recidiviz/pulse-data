@@ -26,9 +26,6 @@ The yaml file format for cloud_sql_to_bq_config.yaml is:
 
 region_codes_to_exclude:
   - <list of state region codes>
-county_columns_to_exclude:
-  <map with tables as keys>:
-    - <list of columns for those tables to exclude>
 """
 from typing import Dict, List, Optional, Tuple
 
@@ -36,10 +33,6 @@ import yaml
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.county.dataset_config import (
-    COUNTY_BASE_DATASET,
-    COUNTY_BASE_REGIONAL_DATASET,
-)
 from recidiviz.calculator.query.justice_counts.dataset_config import (
     JUSTICE_COUNTS_BASE_DATASET,
     JUSTICE_COUNTS_BASE_REGIONAL_DATASET,
@@ -79,11 +72,10 @@ from recidiviz.utils import metadata
 class CloudSqlToBQConfig:
     """Configuration class for exporting tables from Cloud SQL to BigQuery
     Args:
-        columns_to_exclude: An optional dictionary of table names and the columns
-            to exclude from the export.
+        region_codes_to_exclude: An optional list of region codes to exclude from the refresh.
 
     Usage:
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
         tables = config.get_tables_to_export()
     """
 
@@ -91,18 +83,14 @@ class CloudSqlToBQConfig:
         self,
         schema_type: SchemaType,
         direct_ingest_instance: Optional[DirectIngestInstance] = None,
-        columns_to_exclude: Optional[Dict[str, List[str]]] = None,
         region_codes_to_exclude: Optional[List[str]] = None,
     ):
-        if columns_to_exclude is None:
-            columns_to_exclude = {}
         if region_codes_to_exclude is None:
             region_codes_to_exclude = []
         self.direct_ingest_instance = direct_ingest_instance
         self.schema_type = schema_type
         self.metadata_base = schema_type_to_schema_base(schema_type)
         self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
-        self.columns_to_exclude = columns_to_exclude
         self.region_codes_to_exclude = [
             region_code.upper() for region_code in region_codes_to_exclude
         ]
@@ -118,7 +106,6 @@ class CloudSqlToBQConfig:
             return True
 
         if self.schema_type in (
-            SchemaType.JAILS,
             SchemaType.JUSTICE_COUNTS,
             SchemaType.CASE_TRIAGE,
         ):
@@ -138,8 +125,6 @@ class CloudSqlToBQConfig:
             dest_dataset = STATE_BASE_REGIONAL_DATASET
         elif self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_REGIONAL_DATASET
-        elif self.schema_type == SchemaType.JAILS:
-            dest_dataset = COUNTY_BASE_REGIONAL_DATASET
         elif self.schema_type == SchemaType.JUSTICE_COUNTS:
             dest_dataset = JUSTICE_COUNTS_BASE_REGIONAL_DATASET
         elif self.schema_type == SchemaType.CASE_TRIAGE:
@@ -165,8 +150,6 @@ class CloudSqlToBQConfig:
             dest_dataset = STATE_BASE_DATASET
         elif self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_DATASET
-        elif self.schema_type == SchemaType.JAILS:
-            dest_dataset = COUNTY_BASE_DATASET
         elif self.schema_type == SchemaType.JUSTICE_COUNTS:
             dest_dataset = JUSTICE_COUNTS_BASE_DATASET
         elif self.schema_type == SchemaType.CASE_TRIAGE:
@@ -265,11 +248,7 @@ class CloudSqlToBQConfig:
 
     def _get_table_columns_to_export(self, table: Table) -> List[str]:
         """Return a List of column objects to export for a given table"""
-        return list(
-            column.name
-            for column in table.columns
-            if column.name not in self.columns_to_exclude.get(table.name, [])
-        )
+        return list(column.name for column in table.columns)
 
     def get_single_state_table_federated_export_query(
         self, table: Table, state_code: StateCode
@@ -362,7 +341,6 @@ class CloudSqlToBQConfig:
     @classmethod
     def is_valid_schema_type(cls, schema_type: SchemaType) -> bool:
         if schema_type in (
-            SchemaType.JAILS,
             SchemaType.STATE,
             SchemaType.OPERATIONS,
             SchemaType.CASE_TRIAGE,
@@ -373,6 +351,7 @@ class CloudSqlToBQConfig:
             #  has shipped to prod and support for Justice Counts schema is in place.
             SchemaType.JUSTICE_COUNTS,
             SchemaType.PATHWAYS,
+            SchemaType.JAILS,
         ):
             return False
 
@@ -409,11 +388,6 @@ class CloudSqlToBQConfig:
         except yaml.YAMLError as e:
             raise ValueError(f"Could not parse YAML in [{yaml_path.abs_path()}]") from e
 
-        if schema_type == SchemaType.JAILS:
-            return CloudSqlToBQConfig(
-                schema_type=SchemaType.JAILS,
-                columns_to_exclude=yaml_config.get("county_columns_to_exclude", {}),
-            )
         if schema_type == SchemaType.OPERATIONS:
             return CloudSqlToBQConfig(
                 schema_type=SchemaType.OPERATIONS,

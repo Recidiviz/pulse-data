@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""County-level dataset configuration."""
+"""County-level dataset configuration.
+
+# TODO(#13703): Delete all jails schema views.
+"""
 
 VIEWS_DATASET: str = "census_managed_views"
 
