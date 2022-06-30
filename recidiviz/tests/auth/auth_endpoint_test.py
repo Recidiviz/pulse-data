@@ -83,6 +83,9 @@ class AuthEndpointTests(TestCase):
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with self.app.test_request_context():
+            self.handle_import_user_restrictions_csv_to_sql = flask.url_for(
+                "auth_endpoint_blueprint.handle_import_user_restrictions_csv_to_sql"
+            )
             self.import_user_restrictions_csv_to_sql_url = flask.url_for(
                 "auth_endpoint_blueprint.import_user_restrictions_csv_to_sql"
             )
@@ -92,6 +95,89 @@ class AuthEndpointTests(TestCase):
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    @patch("recidiviz.auth.auth_endpoint.CloudTaskQueueManager")
+    def test_handle_import_user_restrictions_csv_to_sql(
+        self, mock_task_manager: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.handle_import_user_restrictions_csv_to_sql,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"{self.region_code}/dashboard_user_restrictions.csv",
+                        },
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_called_with(
+                relative_uri=f"/auth{self.import_user_restrictions_csv_to_sql_url}",
+                body={"region_code": self.region_code},
+            )
+
+    def test_handle_import_user_restrictions_csv_to_sql_invalid_pubsub(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.handle_import_user_restrictions_csv_to_sql,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {},
+                    }
+                },
+            )
+            self.assertEqual(b"Invalid Pub/Sub message", response.data)
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    @patch("recidiviz.auth.auth_endpoint.CloudTaskQueueManager")
+    def test_handle_import_user_restrictions_csv_to_sql_missing_region(
+        self, mock_task_manager: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.handle_import_user_restrictions_csv_to_sql,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": "dashboard_user_restrictions.csv",
+                        },
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_not_called()
+
+    @patch("recidiviz.auth.auth_endpoint.CloudTaskQueueManager")
+    def test_handle_import_user_restrictions_csv_to_sql_invalid_file(
+        self, mock_task_manager: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.handle_import_user_restrictions_csv_to_sql,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"{self.region_code}/invalid_file.csv",
+                        },
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_not_called()
 
     @patch("recidiviz.auth.auth_endpoint.import_gcs_csv_to_cloud_sql")
     def test_import_user_restrictions_csv_to_sql_successful(

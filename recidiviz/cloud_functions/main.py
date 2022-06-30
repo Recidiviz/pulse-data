@@ -46,9 +46,6 @@ from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
 ContextType = TypeVar("ContextType", bound=Any)
 
 _METRIC_VIEW_EXPORT_PATH = "/export/create_metric_view_data_export_tasks"
-_APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH = (
-    "/auth/handle_import_user_restrictions_csv_to_sql"
-)
 _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH = (
     "/case_triage_ops/handle_gcs_imports"
 )
@@ -92,66 +89,6 @@ def handle_new_case_triage_etl(
     )
     import_response = make_iap_request(import_url, IAP_CLIENT_ID[project_id])
     return "", HTTPStatus(import_response.status_code)
-
-
-def handle_state_dashboard_user_restrictions_file(
-    data: Dict[str, Any], _: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered when a file is dropped in a
-    `recidiviz-{project_id}-dashboard-user-restrictions/US_XX` bucket.
-
-    If the file matches `dashboard_user_restrictions.csv`, then it makes a request to import the CSV
-    to the Cloud SQL `dashboard_user_restrictions` table in the Case Triage schema.
-
-    Once the CSV import finishes, it makes a request to update the Auth0 users with the user restrictions.
-
-    data: A cloud storage object that holds name information and other metadata
-    related to the file that was dropped into the bucket.
-    _: (google.cloud.functions.Context): Metadata of triggering event.
-
-    """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        cloud_functions_log(
-            severity="ERROR",
-            message="No project id set for call to update auth0 users, returning.",
-        )
-        return "", HTTPStatus.BAD_REQUEST
-
-    filepath = data["name"].split("/")
-
-    # Expected file path structure is US_XX/dashboard_user_restrictions.csv
-    if len(filepath) != 2:
-        cloud_functions_log(
-            severity="INFO",
-            message=f"Skipping filepath, incorrect "
-            f"number of nested directories: {filepath}",
-        )
-        return "", HTTPStatus.OK
-
-    region_code, filename = filepath
-    csv_file = "dashboard_user_restrictions.csv"
-
-    if filename == csv_file:
-        import_user_restrictions_url = _build_url(
-            project_id,
-            _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_PATH,
-            {"region_code": region_code},
-        )
-        cloud_functions_log(
-            severity="INFO", message=f"Calling URL: {import_user_restrictions_url}"
-        )
-
-        # Hit the App Engine endpoint `auth/import_user_restrictions_csv_to_sql`.
-        response = make_iap_request(
-            import_user_restrictions_url, IAP_CLIENT_ID[project_id]
-        )
-        cloud_functions_log(
-            severity="INFO",
-            message=f"The {import_user_restrictions_url} response status is {response.status_code}",
-        )
-
-    return "", HTTPStatus.OK
 
 
 # TODO(#4593): We might be able to get rid of this function entirely once we run the
