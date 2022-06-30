@@ -85,6 +85,11 @@ class Config:
 
     @AUTH0_CLIENT.default
     def auth0_client_factory(self) -> Optional[Auth0Client]:
+        if in_ci():
+            # In our GH Actions CI test workflow, there's no easy way to get
+            # access to a working Auth0 secret, and we don't need one to
+            # prove that the server is working, so just return None
+            return None
         if environment.in_development() or environment.in_gcp():
             return Auth0Client(  # nosec
                 domain_secret_name="justice_counts_auth0_api_domain",
