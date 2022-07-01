@@ -30,7 +30,7 @@ class StaffRecordETLDelegate(PracticesFirestoreETLDelegate):
 
     STATE_CODE = "US_TN"
     EXPORT_FILENAME = "staff_record.json"
-    COLLECTION_NAME = "staff"
+    _COLLECTION_NAME_BASE = "staff"
 
     def transform_row(self, row: str) -> Tuple[str, dict]:
         data = json.loads(row)

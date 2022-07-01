@@ -14,23 +14,24 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Tests for the Firestore ETL Delegate."""
-from datetime import datetime, timezone
+"""Tests for the Firestore Demo ETL Delegate."""
+from datetime import datetime
 from typing import Optional, Tuple
 from unittest import TestCase
 from unittest.mock import patch
 
 import mock.mock
-from freezegun import freeze_time
 
+from recidiviz.practices.etl.practices_demo_etl_delegate import (
+    PracticesFirestoreDemoETLDelegate,
+)
 from recidiviz.practices.etl.practices_etl_delegate import (
     MAX_FIRESTORE_RECORDS_PER_BATCH,
-    PracticesFirestoreETLDelegate,
 )
 from recidiviz.utils.metadata import local_project_id_override
 
 
-class TestETLDelegate(PracticesFirestoreETLDelegate):
+class TestETLDelegate(PracticesFirestoreDemoETLDelegate):
     EXPORT_FILENAME = "test_export.json"
     _COLLECTION_NAME_BASE = "test_collection"
     STATE_CODE = "US_XX"
@@ -83,12 +84,12 @@ class FakeFileStream:
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents")
 @patch(
-    "recidiviz.practices.etl.practices_etl_delegate.PracticesETLDelegate.get_file_stream"
+    "recidiviz.practices.etl.practices_demo_etl_delegate.PracticesFirestoreDemoETLDelegate.get_file_stream"
 )
-class PracticesFirestoreEtlDelegateTest(TestCase):
-    """Tests for the Firestore ETL Delegate."""
+class PracticesFirestoreDemoEtlDelegateTest(TestCase):
+    """Tests for the Firestore Demo ETL Delegate."""
 
-    def test_run_etl_respects_batching(
+    def test_run_etl_uses_demo_collection(
         self,
         mock_get_file_stream: mock.MagicMock,
         mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
@@ -96,49 +97,11 @@ class PracticesFirestoreEtlDelegateTest(TestCase):
         mock_get_collection: mock.MagicMock,
         mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
     ) -> None:
-        """Tests that the ETL Delegate respects the max batch size for writing to Firestore."""
+        """Tests that the ETL Delegate uses collection with a demo prefix"""
         mock_batch_writer.return_value = FakeBatchWriter(verify_batch_size=True)
-        mock_get_file_stream.return_value = [FakeFileStream(3000)]
+        mock_get_file_stream.return_value = [FakeFileStream(1)]
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate()
             delegate.run_etl()
 
-        mock_get_collection.assert_called_once_with("test_collection")
-
-    def test_run_etl_timestamp(
-        self,
-        mock_get_file_stream: mock.MagicMock,
-        mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_batch_writer: mock.MagicMock,
-        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
-    ) -> None:
-        """Tests that the ETL Delegate adds timestamp to each loaded record."""
-        mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
-
-        mock_batch_writer.return_value = FakeBatchWriter(verify_timestamp=mock_now)
-        mock_get_file_stream.return_value = [FakeFileStream(2)]
-        with local_project_id_override("test-project"):
-            delegate = TestETLDelegate()
-            with freeze_time(mock_now):
-                delegate.run_etl()
-
-    def test_run_etl_delete_outdated(
-        self,
-        mock_get_file_stream: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_delete_old_documents: mock.MagicMock,
-        mock_batch_writer: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
-    ) -> None:
-        """Tests that the ETL Delegate deletes records with outdated timestamps"""
-        mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
-
-        with local_project_id_override("test-project"):
-            delegate = TestETLDelegate()
-            with freeze_time(mock_now):
-                delegate.run_etl()
-
-        mock_delete_old_documents.assert_called_once_with(
-            "test_collection", "__loadedAt", mock_now
-        )
+        mock_get_collection.assert_called_once_with("DEMO_test_collection")

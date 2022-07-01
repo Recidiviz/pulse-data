@@ -41,7 +41,7 @@ class ClientRecordETLDelegate(PracticesFirestoreETLDelegate):
 
     STATE_CODE = "US_TN"
     EXPORT_FILENAME = "client_record.json"
-    COLLECTION_NAME = "clients"
+    _COLLECTION_NAME_BASE = "clients"
 
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
