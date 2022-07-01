@@ -1,21 +1,96 @@
-key_mappings:
-  SEX_CODE: state_person.gender
-
-primary_key:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-
-child_key_mappings:
-  LAST_NAME: state_alias.surname
-  FIRST_NAME: state_alias.given_names
-  MIDDLE_NAME: state_alias.middle_names
-  SUFFIX: state_alias.name_suffix
-  ALIAS_NAME_TYPE: state_alias.alias_type
-  RACE_CODE: state_person_race.race
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_EliteAlias` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - SEX_CODE
+  - ROOT_OFFENDER_ID
+  - LAST_NAME
+  - FIRST_NAME
+  - MIDDLE_NAME
+  - SUFFIX
+  - ALIAS_NAME_TYPE
+  - RACE_CODE
+  - OFFENDER_ID
+  - ALIAS_OFFENDER_ID
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+unused_columns:
   - OFFENDER_ID # This particular id appears unused elsewhere
   - ALIAS_OFFENDER_ID # This particular id appears unused elsewhere
-  - RACE_CODE # Handled manually in us_nd_controller
-  - SEX_CODE # Handled manually in us_nd_controller
   - CREATE_DATETIME # No apparent use for these at the moment
   - MODIFY_DATETIME # No apparent use for these at the moment
+
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id:
+            $custom:
+              $function: us_nd_custom_parsers.decimal_str_as_int_str
+              $args:
+                dec_str: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: FIRST_NAME
+              $middle_names: MIDDLE_NAME
+              $surname: LAST_NAME
+              $name_suffix: SUFFIX
+          alias_type:
+            $enum_mapping:
+              $raw_text: ALIAS_NAME_TYPE
+              $mappings:
+                StatePersonAliasType.AFFILIATION_NAME:
+                  - GNG
+                StatePersonAliasType.ALIAS:
+                  - A
+                  - O
+                StatePersonAliasType.GIVEN_NAME:
+                  - G
+                  - CN
+                StatePersonAliasType.MAIDEN_NAME:
+                  - M
+                StatePersonAliasType.NICKNAME:
+                  - N
+    gender:
+      $enum_mapping:
+        $raw_text: SEX_CODE
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+    races:
+      - $conditional:
+          - $if:
+              $not_null: RACE_CODE
+            $then:
+              StatePersonRace:
+                race:
+                  $enum_mapping:
+                    $raw_text: RACE_CODE
+                    $mappings:
+                      StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: NAT
+                      StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: HAW
+                      StateRace.ASIAN: ASIAN
+                      StateRace.BLACK: BLACK
+                      StateRace.WHITE: CAUCASIAN
+                    $ignore: [HIS]
+    ethnicities:
+      - $conditional:
+          - $if:
+              $not_null: RACE_CODE
+            $then:
+              StatePersonEthnicity:
+                ethnicity:
+                  $enum_mapping:
+                    $raw_text: RACE_CODE
+                    $mappings:
+                      StateEthnicity.HISPANIC: HIS
+                    $ignore:
+                      - NAT
+                      - HAW
+                      - CAUCASIAN
+                      - BLACK
+                      - ASIAN

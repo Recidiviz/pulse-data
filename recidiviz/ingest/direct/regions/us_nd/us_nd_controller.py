@@ -112,7 +112,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         self.row_pre_processors_by_file: Dict[str, List[IngestRowPrehookCallable]] = {
             "elite_offenderidentifier": [self._normalize_id_fields],
-            "elite_alias": [self._normalize_id_fields],
             "elite_offendersentences": [self._normalize_id_fields],
             "elite_offenderchargestable": [self._normalize_id_fields],
             "elite_orderstable": [self._normalize_id_fields],
@@ -275,7 +274,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag.startswith("elite"):
             if file_tag in (
-                "elite_alias",
                 "elite_offenderbookingstable",
                 "elite_offenderidentifier",
                 "elite_offenders",
