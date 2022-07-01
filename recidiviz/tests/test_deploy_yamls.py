@@ -93,6 +93,20 @@ class TestDeployYamls(unittest.TestCase):
             production_vpc_connector,
         )
 
+        # We expect the AIRFLOW_URI values to be different, with no meaningful relation to the
+        # project IDs.
+        airflow_uri_diff = diff["values_changed"].pop(
+            "root['env_variables']['AIRFLOW_URI']"
+        )
+        staging_airflow_uri = airflow_uri_diff["old_value"]
+        production_airflow_uri = airflow_uri_diff["new_value"]
+        self.assertEqual(
+            staging_airflow_uri.split("-", 1)[
+                1
+            ],  # URIs should be the same after the first "-"
+            production_airflow_uri.split("-", 1)[1],
+        )
+
         # There should be no other values changed between the two
         self.assertFalse(diff.pop("values_changed"))
         # Aside from the few values changed, there should be no other changes
