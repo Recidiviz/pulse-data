@@ -29,7 +29,7 @@ class CompliantReportingReferralRecordETLDelegate(PracticesFirestoreETLDelegate)
 
     STATE_CODE = "US_TN"
     EXPORT_FILENAME = "compliant_reporting_referral_record.json"
-    COLLECTION_NAME = "compliantReportingReferrals"
+    _COLLECTION_NAME_BASE = "compliantReportingReferrals"
 
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)

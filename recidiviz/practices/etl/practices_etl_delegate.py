@@ -86,8 +86,8 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
 
     @property
     @abc.abstractmethod
-    def COLLECTION_NAME(self) -> str:
-        """Name of the Firestore collection this delegate will ETL into."""
+    def _COLLECTION_NAME_BASE(self) -> str:
+        """Base name of the target Firestore collection. May be augmented for different environment targets."""
 
     @abc.abstractmethod
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
@@ -99,15 +99,24 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
         """Name of the key this delegate will insert into each document to record when it was loaded."""
         return "__loadedAt"
 
+    @property
+    def collection_name(self) -> str:
+        """Name of the Firestore collection this delegate will ETL into."""
+        return self._COLLECTION_NAME_BASE
+
+    @property
+    def filepath_url(self) -> str:
+        return f"gs://{self.get_filepath().abs_path()}"
+
     def run_etl(self) -> None:
         logging.info(
-            'Starting export of gs://%s to the Firestore collection "%s".',
-            self.get_filepath().abs_path(),
-            self.COLLECTION_NAME,
+            'Starting export of %s to the Firestore collection "%s".',
+            self.filepath_url,
+            self.collection_name,
         )
         firestore_client = FirestoreClientImpl()
         batch = firestore_client.batch()
-        firestore_collection = firestore_client.get_collection(self.COLLECTION_NAME)
+        firestore_collection = firestore_client.get_collection(self.collection_name)
         num_records_to_write = 0
         total_records_written = 0
 
@@ -133,10 +142,10 @@ class PracticesFirestoreETLDelegate(PracticesETLDelegate):
         logging.info(
             '%d records written to Firestore collection "%s".',
             total_records_written,
-            self.COLLECTION_NAME,
+            self.collection_name,
         )
 
         # step 2: delete any pre-existing documents that we didn't just overwrite
         firestore_client.delete_old_documents(
-            self.COLLECTION_NAME, self.timestamp_key, etl_timestamp
+            self.collection_name, self.timestamp_key, etl_timestamp
         )
