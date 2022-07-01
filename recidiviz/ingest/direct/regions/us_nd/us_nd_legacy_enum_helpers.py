@@ -38,7 +38,6 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_person import StateRace
-from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -144,12 +143,6 @@ def generate_enum_overrides() -> EnumOverrides:
         StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: ["NAT"],
         StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["HAW"],
         StateRace.OTHER: ["MUL"],
-        StatePersonAliasType.AFFILIATION_NAME: ["GNG"],
-        StatePersonAliasType.ALIAS: ["A", "O"],
-        StatePersonAliasType.GIVEN_NAME: ["G", "CN"],
-        StatePersonAliasType.MAIDEN_NAME: ["M"],
-        StatePersonAliasType.NICKNAME: ["N"],
-        StateSentenceStatus.COMPLETED: ["C"],
         StateSentenceStatus.SERVING: ["O"],
         StateChargeClassificationType.FELONY: ["IF"],
         StateChargeClassificationType.MISDEMEANOR: ["IM"],
