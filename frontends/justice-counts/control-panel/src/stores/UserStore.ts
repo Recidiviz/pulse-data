@@ -17,6 +17,7 @@
 import { makeAutoObservable, runInAction, when } from "mobx";
 
 import { AuthStore } from "../components/Auth";
+import { showToast } from "../components/Toast";
 import API from "./API";
 
 type UserAgency = {
@@ -68,13 +69,15 @@ class UserStore {
   ): Promise<string | undefined> {
     try {
       const body: UserSettingsRequestBody = { name: null, email: null };
-      if (name !== this.authStore.user?.name) {
+      const isNameUpdated = name !== this.authStore.user?.name;
+      const isEmailUpdated = email !== this.authStore.user?.email;
+      if (isNameUpdated) {
         body.name = name;
       }
-      if (email !== this.authStore.user?.email) {
+      if (isEmailUpdated) {
         body.email = email;
       }
-      await this.api.request({
+      const response = await this.api.request({
         path: "/api/users/update",
         method: "POST",
         body,
@@ -82,9 +85,45 @@ class UserStore {
       runInAction(() => {
         this.authStore.user = { ...this.authStore.user, name, email };
       });
+
+      if (response && response instanceof Response) {
+        if (response.status === 200 && isNameUpdated && !isEmailUpdated) {
+          showToast(`Name was successfully updated to ${name}.`, true);
+          return;
+        }
+        if (response.status === 200 && isNameUpdated && isEmailUpdated) {
+          showToast(
+            `Name and email were successfully updated. You will be logged out. Please check your email at ${email} to verify your new email before logging in again.`,
+            /* check  */ true,
+            /* color */ undefined,
+            /* timeout */ 4500
+          );
+          return;
+        }
+        if (response.status === 200 && !isNameUpdated && isEmailUpdated) {
+          showToast(
+            `Email was successfully updated. You will be logged out. Please check your email at ${email} to verify your new email before logging in again.`,
+            /* check  */ true,
+            /* color */ undefined,
+            /* timeout */ 4500
+          );
+          return;
+        }
+        if (response.status !== 200) {
+          showToast("Failed to update user details.", false, "red");
+          return;
+        }
+      }
     } catch (error) {
-      if (error instanceof Error) return error.message;
-      return String(error);
+      let errorMessage = "";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = String(error);
+      }
+
+      showToast(`Failed to update user details. ${errorMessage}`, false, "red");
+      return errorMessage;
     }
   }
 
