@@ -32,7 +32,6 @@ from cloud_function_utils import (  # type: ignore[import]
     IAP_CLIENT_ID,
     cloud_functions_log,
     make_iap_request,
-    trigger_dag,
 )
 from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
     PIPELINE_RUN_TYPE_HISTORICAL_VALUE,
@@ -95,43 +94,6 @@ def export_metric_view_data(
         severity="INFO", message=f"The response status is {response.status_code}"
     )
     return "", HTTPStatus(response.status_code)
-
-
-def trigger_calculation_pipeline_dag(
-    data: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
-    the calculation pipelines (either daily or historical) run simultaneously.
-    """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
-    if not project_id:
-        error_str = (
-            "No project id set for call to run the calculation pipelines, returning."
-        )
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    airflow_uri = os.environ.get("AIRFLOW_URI")
-    if not airflow_uri:
-        error_str = "The environment variable 'AIRFLOW_URI' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    pipeline_dag_type = os.environ.get("PIPELINE_DAG_TYPE")
-    if not pipeline_dag_type:
-        error_str = "The environment variable 'PIPELINE_DAG_TYPE' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    # The name of the DAG you wish to trigger
-    dag_name = f"{project_id}_{pipeline_dag_type}_calculation_pipeline_dag"
-
-    monitor_response = trigger_dag(airflow_uri, dag_name, data)
-    cloud_functions_log(
-        severity="INFO",
-        message=f"The monitoring Airflow response is {monitor_response}",
-    )
-    return "", HTTPStatus(monitor_response.status_code)
 
 
 def trigger_post_deploy_cloudsql_to_bq_refresh(
