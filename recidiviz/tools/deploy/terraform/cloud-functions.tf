@@ -110,28 +110,6 @@ resource "google_cloudfunctions_function" "trigger_historical_calculation_pipeli
   }
 }
 
-resource "google_cloudfunctions_function" "handle_new_case_triage_etl" {
-  name    = "handle_new_case_triage_etl"
-  runtime = "python38"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  event_trigger {
-    event_type = "google.storage.object.finalize"
-    resource   = "${var.project_id}-case-triage-data"
-  }
-
-  entry_point = "handle_new_case_triage_etl"
-  environment_variables = {
-    "GCP_PROJECT" = var.project_id
-  }
-
-  source_repository {
-    url = local.repo_url
-  }
-}
-
 resource "google_cloudfunctions_function" "trigger_post_deploy_cloudsql_to_bq_refresh_state" {
   name    = "trigger_post_deploy_cloudsql_to_bq_refresh_state"
   runtime = "python38"

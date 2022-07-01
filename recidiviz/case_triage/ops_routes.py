@@ -45,7 +45,7 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.params import get_only_str_param_value
+from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
 from recidiviz.utils.string import StrictStringFormatter
 
 CASE_TRIAGE_DB_OPERATIONS_QUEUE = "case-triage-db-operations-queue"
@@ -87,13 +87,29 @@ def _run_gcs_imports() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@case_triage_ops_blueprint.route("/handle_gcs_imports", methods=["GET"])
+@case_triage_ops_blueprint.route("/handle_gcs_imports", methods=["POST"])
 @requires_gae_auth
 def _handle_gcs_imports() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint that enqueues a Cloud Task to trigger the GCS imports."""
-    filename = get_only_str_param_value("filename", request.args, preserve_case=True)
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    if not message.attributes:
+        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+
+    attributes = message.attributes
+    filename = attributes[OBJECT_ID]
     if not filename:
-        return "Must include a filename query parameter", HTTPStatus.BAD_REQUEST
+        return (
+            f"Pub/Sub message must include an {OBJECT_ID} attribute",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    if not filename.startswith("etl_") or not filename.endswith(".csv"):
+        logging.info("Ignoring file %s", filename)
+        return "", HTTPStatus.OK
 
     cloud_task_manager = CloudTaskQueueManager(
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
