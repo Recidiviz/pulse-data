@@ -94,15 +94,16 @@ config_integration.trace_integrations(
     ]
 )
 if environment.in_development():
-    # We can connect to the justice counts / case triage database using the default `init_engine` configurations,
-    # which uses secrets in `recidiviz/local`. If you are missing these secrets, run these scripts:
-    # ./recidiviz/tools/case_triage/initialize_development_environment.sh
-    # ./recidiviz/tools/justice_counts/control_panel/initialize_development_environment.sh
+    # We can connect to the development versions of our databases database using the
+    # default `init_engine` configurations, which uses secrets in `recidiviz/local`. If
+    # you are missing these secrets, run this script:
+    # ./recidiviz/tools/admin_panel/initialize_development_environment.sh
 
     # If we fail to connect a message will be logged but we won't raise an error.
     enabled_development_schema_types = [
         SchemaType.CASE_TRIAGE,
         SchemaType.JUSTICE_COUNTS,
+        SchemaType.OPERATIONS,
     ]
 
     for schema_type in enabled_development_schema_types:

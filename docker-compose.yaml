@@ -56,6 +56,32 @@ services:
       - SQLALCHEMY_DB_USER=justice_counts_user
       - SQLALCHEMY_DB_PASSWORD=example
 
+  operations_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: operations_user
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - operations_db_data:/var/lib/postgresql/data
+      - operations_db_socket:/var/run/postgresql/
+
+  operations_migrations:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - operations_db
+    command: pipenv run alembic -c recidiviz/persistence/database/migrations/operations_alembic.ini upgrade head
+    environment:
+      - SQLALCHEMY_DB_HOST=operations_db
+      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_USE_SSL=0
+      - SQLALCHEMY_DB_USER=operations_user
+      - SQLALCHEMY_DB_PASSWORD=example
+
   pathways_db:
     image: postgres:13.1-alpine
     environment:
@@ -79,5 +105,7 @@ volumes:
   case_triage_db_socket:
   justice_counts_db_data:
   justice_counts_db_socket:
+  operations_db_data:
+  operations_db_socket:
   pathways_db_data:
   pathways_db_socket:

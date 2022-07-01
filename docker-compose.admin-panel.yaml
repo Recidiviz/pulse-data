@@ -11,9 +11,11 @@ services:
       - "~/.config:/root/.config"
       - case_triage_db_socket:/cloudsql/case_triage
       - justice_counts_db_socket:/cloudsql/justice_counts
+      - operations_db_socket:/cloudsql/operations
     depends_on:
       - case_triage_db
       - justice_counts_db
+      - operations_db
       - redis
     ports:
       - "5050:5000"

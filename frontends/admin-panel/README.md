@@ -14,7 +14,17 @@ brew install yarn
 2. Make sure you have launched the `Docker` application.
 3. Run `docker pull us.gcr.io/recidiviz-staging/appengine/default:latest` to pull the
 latest Docker image for `main` if you have not done so recently.
-4. Run `docker-compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up`.
+4. Run `./recidiviz/tools/admin_panel/initialize_development_environment.sh` (if you 
+have not done so recently or the script has changed). 
+5. Run `docker-compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up`.
+
+As needed:
+6. Follow the instructions in `recidiviz/tools/admin_panel/load_operations_db_fixtures.py`
+   to load fixture data into the local operations DB.
+7. Follow the instructions in `recidiviz/tools/case_triage/load_fixtures.py`
+   to load fixture data into the local case triage DB.
+8. Follow the instructions in `recidiviz/tools/justice_counts/control_panel/load_fixtures.py`
+   to load fixture data into the local justice counts DB.
 
 If your local development environment is failing to build properly on main, try
 running `docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest`
