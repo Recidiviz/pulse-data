@@ -18,7 +18,25 @@
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsMiIncarcerationDelegate(StateSpecificIncarcerationDelegate):
     """US_MI implementation of the StateSpecificIncarcerationDelegate."""
+
+    def is_period_included_in_state_population(  # pylint: disable=unused-argument
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> bool:
+        """In Michigan, a parole board hold is someone who is awaiting court mandate as
+        to whether or not they've violated their terms of parole. In this case, while they
+        are waiting in a facility, they are not to be counted towards the incarceration
+        population.
+        """
+        return (
+            incarceration_period.specialized_purpose_for_incarceration
+            != StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        )

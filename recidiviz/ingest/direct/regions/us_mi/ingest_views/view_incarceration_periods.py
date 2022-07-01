@@ -52,7 +52,7 @@ deduped_lock_records AS (
         o.location_id,
         o.date_in,
         o.date_out,
-        MAX(o.unit_lock_id) AS unit_lock_id
+        MAX(CAST(o.unit_lock_id AS INT64)) AS unit_lock_id
     FROM {ADH_OFFENDER_LOCK} o
     JOIN max_date_outs
     ON max_date_outs.offender_id = o.offender_id
@@ -74,13 +74,13 @@ final_lock_records AS (
         o.offender_id,
         o.location_id,
         o.unit_lock_id,
-        DATE(o.date_in) AS date_in,
-        DATE(o.date_out) AS date_out
+        DATETIME(o.date_in) AS date_in,
+        DATETIME(o.date_out) AS date_out
     FROM {ADH_OFFENDER_LOCK} o
     JOIN deduped_lock_records
     ON deduped_lock_records.offender_id = o.offender_id
     AND deduped_lock_records.location_id = o.location_id
-    AND deduped_lock_records.unit_lock_id = o.unit_lock_id
+    AND deduped_lock_records.unit_lock_id = CAST(o.unit_lock_id AS INT64)
     AND COALESCE(deduped_lock_records.date_out,'9999-12-31') = COALESCE(o.date_out, '9999-12-31')
     WHERE o.permanent_temporary_flag = '1'
 ),
@@ -91,6 +91,8 @@ internal_movements AS (
         o1.offender_number,
         o.offender_lock_id,
         o.unit_lock_id,
+        rs.reporting_station_id,
+        rs.name AS reporting_station_name,
         l.location_id,
         l.location_code,
         l.name,
@@ -108,6 +110,10 @@ internal_movements AS (
     ON l.location_type_id = r1.reference_code_id
     JOIN {ADH_REFERENCE_CODE} r3
     ON l.county_id = r3.reference_code_id
+    JOIN {ADH_UNIT_LOCK} u
+    ON u.unit_lock_id = o.unit_lock_id
+    LEFT JOIN {ADH_REPORTING_STATION} rs
+    ON u.reporting_station_id = rs.reporting_station_id
 ),"""
 
 MOVEMENTS_CTE = """
@@ -121,7 +127,7 @@ deduped_movement_records AS (
         offender_booking_id,
         source_location_id,
         destination_location_id,
-        MAX(offender_external_movement_id) AS offender_external_movement_id
+        MAX(CAST(offender_external_movement_id AS INT64)) AS offender_external_movement_id
     FROM {ADH_OFFENDER_EXTERNAL_MOVEMENT} o
     GROUP BY
         offender_booking_id,
@@ -141,7 +147,7 @@ final_movement_records AS (
         o.movement_date
     FROM deduped_movement_records
     JOIN {ADH_OFFENDER_EXTERNAL_MOVEMENT} o
-    USING (offender_external_movement_id)
+    ON CAST(o.offender_external_movement_id AS INT64) = deduped_movement_records.offender_external_movement_id
 ),
 final_movements AS (
     -- Obtain all of the needed metadata for the movements, including the location info
@@ -152,7 +158,7 @@ final_movements AS (
         e.offender_external_movement_id,
         m.movement_reason_id,
         mr.description AS movement_description,
-        DATE(e.movement_date) AS movement_date,
+        DATETIME(e.movement_date) AS movement_date,
         m.source_location_id,
         la.location_code AS source_location_code,
         la.name AS source_location_name,
@@ -186,6 +192,8 @@ final_movements AS (
     ON la.county_id = rc1.reference_code_id
     LEFT JOIN {ADH_REFERENCE_CODE} rc2
     ON lb.county_id = rc2.reference_code_id
+    -- Omitting certain movement reason ids that are not considered incarceration admissions
+    WHERE m.movement_reason_id NOT IN ('16', '158', '2', '131', '18', '106')
     ORDER BY
         o.offender_number,
         e.offender_external_movement_id,
@@ -209,6 +217,8 @@ external_movements_in AS (
         i.offender_id,
         i.offender_number,
         i.unit_lock_id,
+        i.reporting_station_id,
+        i.reporting_station_name,
         i.location_id,
         i.location_code,
         i.name,
@@ -230,9 +240,10 @@ external_movements_in AS (
     JOIN final_movements e
     ON i.offender_id = e.offender_id
     AND i.location_id = e.destination_location_id
+    WHERE ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) < 24
     QUALIFY ROW_NUMBER() OVER (PARTITION BY 
         i.offender_id, e.offender_external_movement_id, i.location_id 
-        ORDER BY ABS(DATE_DIFF(i.date_in, e.movement_date, DAY)) ASC) = 1
+        ORDER BY ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) ASC) = 1
 ),
 external_movements_out AS (
     -- By joining internal movements (lock spans) with movements of the day,
@@ -247,6 +258,8 @@ external_movements_out AS (
         i.offender_id,
         i.offender_number,
         i.unit_lock_id,
+        i.reporting_station_id,
+        i.reporting_station_name,
         i.location_id,
         i.location_code,
         i.name,
@@ -269,9 +282,10 @@ external_movements_out AS (
     ON i.offender_id = e.offender_id
     AND i.date_out IS NOT NULL
     AND i.location_id = e.source_location_id
+    WHERE ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) < 24
     QUALIFY ROW_NUMBER() OVER (PARTITION BY 
         i.offender_id, e.offender_external_movement_id, i.location_id
-        ORDER BY ABS(DATE_DIFF(i.date_out, e.movement_date, DAY)) ASC) = 1
+        ORDER BY ABS(DATETIME_DIFF(i.date_out, e.movement_date, DAY)) ASC) = 1
 ),
 internal_movements_without_external_movements_in AS (
     -- A person may transfer units within facilities, therefore, these movements would
@@ -282,6 +296,8 @@ internal_movements_without_external_movements_in AS (
         i.offender_id,
         i.offender_number,
         i.unit_lock_id,
+        i.reporting_station_id,
+        i.reporting_station_name,
         i.location_id,
         i.location_code,
         i.name,
@@ -314,6 +330,8 @@ internal_movements_without_external_movements_out AS (
         i.offender_id,
         i.offender_number,
         i.unit_lock_id,
+        i.reporting_station_id,
+        i.reporting_station_name,
         i.location_id,
         i.location_code,
         i.name,
@@ -348,6 +366,8 @@ external_movements_without_internal_movements_out AS (
         e.offender_id,
         e.offender_number,
         i.unit_lock_id,
+        CAST(NULL AS STRING) AS reporting_station_id,
+        CAST(NULL AS STRING) AS reporting_station_name,
         e.source_location_id AS location_id,
         e.source_location_code AS location_code,
         e.source_location_name AS name,
@@ -392,6 +412,8 @@ periods AS (
         status,
         movement_date,
         unit_lock_id,
+        reporting_station_id,
+        reporting_station_name,
         location_id,
         location_code,
         name,
@@ -410,6 +432,8 @@ periods AS (
         LEAD(status) {PARTITION_STATEMENT} AS next_status,
         LEAD(movement_date) {PARTITION_STATEMENT} AS next_movement_date,
         LEAD(unit_lock_id) {PARTITION_STATEMENT} AS next_unit_lock_id,
+        LEAD(reporting_station_id) {PARTITION_STATEMENT} AS next_reporting_station_id,
+        LEAD(reporting_station_name) {PARTITION_STATEMENT} AS next_reporting_station_name,
         LEAD(location_id) {PARTITION_STATEMENT} AS next_location_id,
         LEAD(location_code) {PARTITION_STATEMENT} AS next_location_code,
         LEAD(name) {PARTITION_STATEMENT} AS next_name,
@@ -431,6 +455,7 @@ SELECT
   offender_external_movement_id,
   movement_date,
   unit_lock_id,
+  reporting_station_name,
   location_code,
   location_type_id,
   county,

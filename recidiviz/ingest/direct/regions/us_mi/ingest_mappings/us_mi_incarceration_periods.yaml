@@ -8,6 +8,7 @@ input_columns:
   - offender_external_movement_id
   - movement_date
   - unit_lock_id
+  - reporting_station_name
   - location_code
   - location_type_id
   - county
@@ -57,23 +58,18 @@ output:
                         - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
                         - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
                         - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
-                        - "10" # New Commitment - While Under Sentence (Rec Ctr Only)
                         - "159" # New Commitment - HYTA Prisoner
-                        - "16" # New Commitment, (SAI Only)
-                        - "158" # New Commitment - HYTA Probationer
                         - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
-                        - "2" # Intake
-                        - "131" # Sentenced to Prison
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
                         - "80" # Escaper Returned to the Institution
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
                         - "81" # Returned from Temporary Release
                       StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
                         - "17" # Returned as Parole Technical Rule Violator
-                        - "18" # Returned While on Parole Sentenced In Michigan
                       # Movement reasons that are for releases are often followed by actual releases
                       # therefore, we indicate this as a status change
                       StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                        - "10" # New Commitment - While Under Sentence (Rec Ctr Only)
                         - "86" # First Parole
                         - "87" # Reinstated on Parole from the Institution
                         - "89" # Reinstated on Parole While at Large
@@ -117,8 +113,6 @@ output:
                         - "116" # Terminated, Continued on Additional Prefix
                         - "111" # Out of State Case Transfered Out of Michigan
                         - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
-                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
-                        - "106" # Held Under Custody
                       StateIncarcerationPeriodAdmissionReason.TRANSFER:
                         - "117" # Transfer In ... Institutional or Caseload
                         - "6" # Visitor In
@@ -189,14 +183,11 @@ output:
                               - "116" # Terminated, Continued on Additional Prefix
                             StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                               - "17" # Returned as Parole Technical Rule Violator
-                              - "106" # Held Under Custody
                               - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
                               - "112" # Absconder from Parole
                               - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
                               - "13" # New Commitment (Reception Center Only)
                               - "81" # Returned from Temporary Release
-                              - "2" # Intake
-                              - "18" # Returned While on Parole Sentenced In Michigan
                               - "121" # Discharged from Probation
                               - "119" # Absconder from Probation
                               - "26" # Returned from Court
@@ -207,13 +198,10 @@ output:
                               - "10" # New Commitment - While Under Sentence (Rec Ctr Only)
                               - "129" # Discharged from Probation - Probation Revoked
                               - "30" # Early Discharge from Parole
-                              - "131" # Sentenced to Prison
                               - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
                               - "128" # Held Under Custody - Probation Violation Processing
                               - "118" # Client Number Reassignment
                               - "82" # Returned from County Jail
-                              - "16" # New Commitment, (SAI Only)
-                              - "158" # New Commitment - HYTA Probationer
                               - "156" # Probationer Held Under Custody
                             StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                               - "95" # Temporary Release - Outside Hospital/Funerals Only
@@ -248,13 +236,15 @@ output:
               - $if:
                   $equal:
                     - movement_reason_id
-                    - $literal("106")
-                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY)
-              - $else_if:
-                  $in:
-                    $value: movement_reason_id
-                    $options:
-                      - $literal("18")
-                      - $literal("17")
+                    - $literal("17")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - reporting_station_name
+                        - $literal("HU#6")
+                    - $equal:
+                        - location_code
+                        - $literal("PRF")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
           custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
