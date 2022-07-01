@@ -29,7 +29,7 @@ class UsCoIncarcerationMetricsProducerDelegate(
     """US_CO implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> Optional[str]:
-        return US_CO_DOC
+        return US_CO_PID
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return US_CO_PID
+        return US_CO_DOC
