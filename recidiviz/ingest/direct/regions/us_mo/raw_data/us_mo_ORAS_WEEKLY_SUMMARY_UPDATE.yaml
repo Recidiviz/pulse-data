@@ -1,0 +1,62 @@
+file_tag: ORAS_WEEKLY_SUMMARY_UPDATE
+file_description: |-
+  ORAS assessment scores (updated weekly)
+data_classification: source
+primary_key_cols:
+  - DOC_ID
+  - CREATED_DATE
+columns:
+  - name: OFFENDER_NAME
+    description: |-
+      Person Full Name
+  - name: AGENCY_NAME
+    description: |-
+      Agency Name
+  - name: DATE_OF_BIRTH
+    description: |-
+      Person Birthdate
+  - name: GENDER
+    description: |-
+      Person Gender
+  - name: ETHNICITY
+    description: |-
+      Person Ethnicity
+  - name: DOC_ID
+    git description: |-
+      DOC ID Number
+  - name: ASSESSMENT_TYPE
+    description: |-
+      Assessment Type
+  - name: RISK_LEVEL
+    description: |-
+      Assessment Level
+  - name: OVERRIDE_RISK_LEVEL
+    description: |-
+      Override Risk Level (not uniform in data)
+  - name: OVERRIDE_RISK_REASON
+    description: |-
+      Override Risk Reason
+  - name: ASSESSMENT_OUTCOME
+    description: |-
+      Assessment Outcome
+  - name: ASSESSMENT_STATUS
+    description: |-
+      Assessment Status (all Complete)
+  - name: SCORE
+    description: |-
+      Assessment Score
+  - name: DATE_CREATED
+    description: |-
+      Assessment Date (Date entered into UCCI system).
+  - name: USER_CREATED
+    description: |-
+      Full name of the person who administered the assessment
+  - name: RACE
+    description: |-
+      Race of Person receiving assessment
+  - name: BIRTH_DATE
+    description: |-
+      Duplicate of DATE_OF_BIRTH
+  - name: CREATED_DATE
+    description: |-
+      Date that entry was created in system
