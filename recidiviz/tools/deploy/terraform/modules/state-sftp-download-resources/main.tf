@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
+data "google_app_engine_default_service_account" "default" {}
 module "sftp-storage-bucket" {
   source = "../cloud-storage-bucket"
 
@@ -59,13 +59,14 @@ resource "google_cloud_scheduler_job" "sftp-cloud-scheduler" {
     max_doublings        = 5
   }
 
-  app_engine_http_target {
+  http_target {
+    uri         = "https://${var.project_id}.appspot.com/direct/handle_sftp_files?region=${lower(var.state_code)}"
     http_method = "POST"
 
-    app_engine_routing {
-      service = "default"
+    oidc_token {
+      service_account_email = data.google_app_engine_default_service_account.default.email
+      # Only for production
+      audience = "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com"
     }
-
-    relative_uri = "/direct/handle_sftp_files?region=${lower(var.state_code)}"
   }
 }
