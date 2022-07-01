@@ -46,9 +46,6 @@ from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
 ContextType = TypeVar("ContextType", bound=Any)
 
 _METRIC_VIEW_EXPORT_PATH = "/export/create_metric_view_data_export_tasks"
-_APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH = (
-    "/case_triage_ops/handle_gcs_imports"
-)
 
 
 def _build_url(
@@ -60,35 +57,6 @@ def _build_url(
     if params is not None:
         url += f"?{urlencode(params)}"
     return url
-
-
-def handle_new_case_triage_etl(
-    data: Dict[str, Any], _: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered when a file is dropped in the
-    `{project_id}-case-triage-data` bucket. If the file matches `etl_*.csv`,
-    then it makes a request to import the CSV to Cloud SQL.
-    """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        cloud_functions_log(
-            severity="ERROR",
-            message="No project id set for call to update auth0 users, returning.",
-        )
-        return "", HTTPStatus.BAD_REQUEST
-
-    filename = data["name"]
-    if not filename.startswith("etl_") or not filename.endswith(".csv"):
-        cloud_functions_log(severity="INFO", message=f"Ignoring file {filename}")
-        return "", HTTPStatus.OK
-
-    import_url = _build_url(
-        project_id,
-        _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_PATH,
-        {"filename": filename},
-    )
-    import_response = make_iap_request(import_url, IAP_CLIENT_ID[project_id])
-    return "", HTTPStatus(import_response.status_code)
 
 
 # TODO(#4593): We might be able to get rid of this function entirely once we run the
