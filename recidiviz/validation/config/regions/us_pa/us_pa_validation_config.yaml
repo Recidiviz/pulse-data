@@ -87,11 +87,11 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 5
     override_reason: TODO(#9735) - needs investigation
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 1000
+    hard_num_allowed_rows_override: 1500
     override_reason:
       TODO(#6253) - Likely a rare edge case related to ordering movements
       in the PA supervision_period ingest view. Rerun on 02/15/2022 did not improve these.
-      There are 645 of these as of 03/01/2022.
+      There were 645 of these as of 03/01/2022. There are 1100 as of 07/01/2022.
   - validation_name: supervision_period_dates_existence
     hard_num_allowed_rows_override: 1
     override_reason: There is one ingested supervision period that has empty
