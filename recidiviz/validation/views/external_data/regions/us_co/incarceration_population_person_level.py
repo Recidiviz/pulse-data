@@ -28,7 +28,7 @@ VIEW_QUERY_TEMPLATE = """
   SELECT 
     'US_CO' as region_code,
     offenderid AS person_external_id, 
-    update_datetime AS date_of_stay, 
+    EXTRACT(DATE FROM UPDATE_DATETIME) AS date_of_stay, 
     FAC_LDESC AS facility, 
   FROM `{project_id}.{us_co_raw_data_dataset}.Base_Curr_Off_Pop`
 """
