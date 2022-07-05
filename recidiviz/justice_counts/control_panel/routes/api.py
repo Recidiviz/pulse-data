@@ -72,23 +72,35 @@ def get_api_blueprint(
             auth0_user_id = get_auth0_user_id(request_dict=request_json)
             name = request_json.get("name")
             email = request_json.get("email")
+            has_seen_onboarding = request_json.get("has_seen_onboarding")
             if auth0_client is None:
                 return make_response(
                     "auth0_client could not be initialized. Environment is not development or gcp.",
                     500,
                 )
-            auth0_client.update_user_name_and_email(
-                user_id=auth0_user_id,
-                name=name,
-                email=email,
-                email_verified=email is None,
-            )
-            UserAccountInterface.create_or_update_user(
-                session=current_session, name=name, auth0_user_id=auth0_user_id
-            )
+
+            if name is not None or email is not None:
+                auth0_client.update_user_name_and_email(
+                    user_id=auth0_user_id,
+                    name=name,
+                    email=email,
+                    email_verified=email is None,
+                )
+
+            if name is not None:
+                UserAccountInterface.create_or_update_user(
+                    session=current_session, name=name, auth0_user_id=auth0_user_id
+                )
 
             if email is not None:
                 auth0_client.send_verification_email(user_id=auth0_user_id)
+
+            if has_seen_onboarding is not None:
+                auth0_client.update_user_app_metadata(
+                    user_id=auth0_user_id,
+                    app_metadata={"has_seen_onboarding": has_seen_onboarding},
+                )
+
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             raise _get_error(error=e) from e
