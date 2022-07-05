@@ -1,0 +1,28 @@
+file_tag: CIS_112_CUSTODY_LEVEL
+file_description: |-
+  This table lists the history of custody levels for persons under MEDOC jurisdiction.
+  Each record represents a period of time during which the specified custody level was active.
+data_classification: source
+primary_key_cols:
+  - LEVEL_ID
+columns:
+  - name: LEVEL_ID
+    description: Primary key for this table.
+  - name: CUSTODY_DATE
+    is_datetime: True
+    description: The effective date for this custody level period.
+  - name: NOTES_TX
+    is_pii: True
+  - name: CIS_100_CLIENT_ID
+    description: The client for whom this custody level applies.
+  - name: CIS_1017_CLIENT_SYS_CD
+    description: The code for this custody level. Can be joined to CIS_1017_CLIENT_SYS.CLIENT_SYS_CD for a description.
+  - name: CIS_900_EMPLOYEE_ID
+  - name: CIS_908_CCS_LOCATION_ID
+  - name: LOGICAL_DELETE_IND
+  - name: CREATED_BY_TX
+    is_pii: True
+  - name: CREATED_ON_DATE
+  - name: MODIFIED_BY_TX
+    is_pii: True
+  - name: MODIFIED_ON_DATE
