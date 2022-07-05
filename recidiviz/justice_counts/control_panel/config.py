@@ -51,6 +51,7 @@ class Config:
     AUTH0_CONFIGURATION: Auth0Config = attr.field()
     AUTH_DECORATOR: Callable = attr.field()
     AUTH0_CLIENT: Auth0Client = attr.field()
+    SEGMENT_KEY: Optional[str] = attr.field()
 
     @DB_URL.default
     def _db_url_factory(self) -> str:
@@ -97,3 +98,7 @@ class Config:
                 client_secret_secret_name="justice_counts_auth0_api_client_secret",
             )
         return None
+
+    @SEGMENT_KEY.default
+    def _segment_key_factory(self) -> Optional[str]:
+        return get_secret("justice_counts_segment_key")

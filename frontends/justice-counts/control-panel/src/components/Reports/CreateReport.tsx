@@ -19,7 +19,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components/macro";
 
-import { CreateReportFormValuesType } from "../../shared/types";
+import { trackReportCreated } from "../../analytics";
+import { CreateReportFormValuesType, ReportOverview } from "../../shared/types";
 import { useStore } from "../../stores";
 import { monthsByName, printDateRangeFromMonthYear } from "../../utils";
 import {
@@ -140,6 +141,8 @@ const CreateReport = () => {
       if (response.status === 200) {
         navigate("/");
         showToast("The report was successfully created", true);
+        const report = (await response.json()) as ReportOverview;
+        trackReportCreated(report.id);
         return;
       }
       if (response.status === 400) {

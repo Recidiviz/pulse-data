@@ -24,6 +24,8 @@ import createAuth0Client, {
 import { makeAutoObservable, runInAction } from "mobx";
 import qs from "qs";
 
+import { identify } from "../../analytics";
+
 interface AuthStoreProps {
   authSettings: Auth0ClientOptions | undefined;
 }
@@ -89,6 +91,12 @@ export class AuthStore {
 
     if (await auth0.isAuthenticated()) {
       const user = await auth0.getUser();
+      if (user?.sub) {
+        identify(user.sub, {
+          name: user.name,
+          email: user.email,
+        });
+      }
 
       runInAction(() => {
         this.isLoading = false;

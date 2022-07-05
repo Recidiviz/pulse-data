@@ -21,6 +21,9 @@ write_to_file "$AUTH0_DOMAIN" recidiviz/local/gsm/justice_counts_auth0_api_domai
 write_to_file "$AUTH0_CLIENT_ID" recidiviz/local/gsm/justice_counts_auth0_api_client_id
 write_to_file "$AUTH0_CLIENT_SECRET" recidiviz/local/gsm/justice_counts_auth0_api_client_secret
 
+# Load the Segment analytics public key so the Control Panel frontend can send analytics to the right destination
+SEGMENT_KEY=$(echo $(gcloud secrets versions access latest --secret=justice_counts_segment_key --project recidiviz-staging))
+write_to_file "$AUTH0_CONFIGURATION" recidiviz/local/gsm/justice_counts_segment_key
 
 # Database secrets
 write_to_file 'justice_counts' recidiviz/local/gsm/justice_counts_cloudsql_instance_id

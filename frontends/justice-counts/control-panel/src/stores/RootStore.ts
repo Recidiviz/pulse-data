@@ -23,12 +23,12 @@ import ReportStore from "./ReportStore";
 import UserStore from "./UserStore";
 
 const getAuthSettings = (): Auth0ClientOptions | undefined => {
-  if (window.AUTH0_CONFIG) {
+  if (window.APP_CONFIG) {
     return {
-      domain: window.AUTH0_CONFIG.domain,
-      client_id: window.AUTH0_CONFIG.clientId,
+      domain: window.APP_CONFIG.domain,
+      client_id: window.APP_CONFIG.clientId,
       redirect_uri: window.location.origin,
-      audience: window.AUTH0_CONFIG.audience,
+      audience: window.APP_CONFIG.audience,
       useRefreshTokens: true,
     };
   }

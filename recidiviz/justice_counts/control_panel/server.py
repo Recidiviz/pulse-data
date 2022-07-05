@@ -163,14 +163,15 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
         return send_from_directory(static_folder, "index.html")
 
-    @app.route("/auth0_public_config.js")
-    def auth0_public_config() -> Response:
+    @app.route("/app_public_config.js")
+    def app_public_config() -> Response:
         logging.info("get_remote_address: %s", get_remote_address())
 
         # Expose ONLY the necessary variables to configure our Auth0 frontend
         auth0_config = app.config["AUTH0_CONFIGURATION"]
+        segment_key = app.config["SEGMENT_KEY"]
         return Response(
-            f"window.AUTH0_CONFIG = {auth0_config.as_public_config()};",
+            f"window.APP_CONFIG = {auth0_config.as_public_config()}; window.SEGMENT_KEY = '{segment_key}';",
             mimetype="application/javascript",
         )
 

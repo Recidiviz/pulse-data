@@ -140,19 +140,19 @@ class ReportStore {
     try {
       const { currentAgency } = this.userStore;
 
-      if (currentAgency !== undefined) {
-        const response = (await this.api.request({
-          path: "/api/reports",
-          method: "POST",
-          body: { agency_id: currentAgency.id, ...body },
-        })) as Response;
-
-        return response;
+      if (currentAgency === undefined) {
+        throw new Error(
+          "Either invalid user/agency information or no user or agency information initialized."
+        );
       }
 
-      throw new Error(
-        "Either invalid user/agency information or no user or agency information initialized."
-      );
+      const response = (await this.api.request({
+        path: "/api/reports",
+        method: "POST",
+        body: { agency_id: currentAgency.id, ...body },
+      })) as Response;
+
+      return response;
     } catch (error) {
       if (error instanceof Error) return new Error(error.message);
     }

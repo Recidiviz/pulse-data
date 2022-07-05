@@ -18,6 +18,7 @@ The following application secrets are stored in Google Secrets Manager (GSM):
 
 - justice_counts_auth0: A JSON blob containing Auth0 clientID, audience, domain, and algorithm
 - justice_counts_secret_key: A Flask secret key used for securely signing the session cookie
+- justice_counts_segment_key: Public key the backend serves to the control panel frontend to send analytics to the right Segment destination
 
 When running locally, we pull these secrets from GSM and write them to our local filesystem. The application code detects if we are in development, and if so, reads the secrets from our filesystem instead of GSM (see the `get_secret` method).
 

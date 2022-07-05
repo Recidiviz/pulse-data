@@ -27,7 +27,7 @@ const StoreContext = React.createContext<typeof rootStore | undefined>(
 export const StoreProvider: React.FC<React.ReactNode> = ({
   children,
 }): React.ReactElement => {
-  if (window.AUTH0_CONFIG) {
+  if (window.APP_CONFIG) {
     return (
       <StoreContext.Provider value={rootStore}>
         {children}
