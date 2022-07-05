@@ -26,9 +26,12 @@ from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
 from flask import Blueprint
+from google.cloud.bigquery.job.query import QueryJob
 from opencensus.stats import aggregation, measure, view
 
+from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.utils import metadata, monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.validation.configured_validations import (
@@ -48,6 +51,7 @@ from recidiviz.validation.validation_result_storage import (
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 m_failed_to_run_validations = measure.MeasureInt(
@@ -94,12 +98,13 @@ validation_manager_blueprint = Blueprint("validation_manager", __name__)
 @requires_gae_auth
 def handle_validation_request() -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
-    execute_validation()
+    execute_validation(rematerialize_views=True)
 
     return "", HTTPStatus.OK
 
 
 def execute_validation(
+    rematerialize_views: bool,
     region_code_filter: Optional[str] = None,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
@@ -113,6 +118,7 @@ def execute_validation(
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _get_validations_jobs(
+        rematerialize_views=rematerialize_views,
         region_code_filter=region_code_filter,
         validation_name_filter=validation_name_filter,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
@@ -197,7 +203,37 @@ def execute_validation(
     )
 
 
+def get_validations_table(
+    rematerialize_views: bool,
+    region_code_filter: Optional[str] = None,
+    validation_name_filter: Optional[Pattern] = None,
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> Optional[QueryJob]:
+
+    validation_table: Optional[QueryJob] = None
+    validation_jobs = _get_validations_jobs(
+        rematerialize_views=rematerialize_views,
+        region_code_filter=region_code_filter,
+        validation_name_filter=validation_name_filter,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+    )
+
+    if len(validation_jobs) != 1:
+        logging.error(
+            "Can only get validation table for one validation. Currently, %s validations match the criteria.",
+            len(validation_jobs),
+        )
+    else:
+        validation_job = validation_jobs[0]
+        validation_table = BigQueryClientImpl().run_query_async(
+            validation_job.original_builder_query_str(), []
+        )
+
+    return validation_table
+
+
 def _get_validations_jobs(
+    rematerialize_views: bool,
     region_code_filter: Optional[str] = None,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
@@ -208,6 +244,20 @@ def _get_validations_jobs(
     if sandbox_dataset_prefix:
         sandbox_address_overrides = address_overrides_for_view_builders(
             sandbox_dataset_prefix, view_builders
+        )
+
+    if rematerialize_views:
+        logging.info(
+            'Received query param "should_update_views" = true, updating validation dataset and views... '
+        )
+
+        view_update_manager.rematerialize_views_for_view_builders(
+            views_to_update_builders=view_builders,
+            all_view_builders=view_builders,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            address_overrides=sandbox_address_overrides,
+            # If a given view hasn't been loaded to the sandbox it will skip it
+            skip_missing_views=True,
         )
 
     # Fetch collection of validation jobs to perform
