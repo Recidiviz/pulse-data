@@ -267,6 +267,7 @@ resource "google_cloud_run_service" "application-data-import" {
         # instances when it's not being used.
         "autoscaling.knative.dev/maxScale"      = var.max_application_import_instances
         "run.googleapis.com/cloudsql-instances" = local.application_data_connection_string
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.name
       }
 
       # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When

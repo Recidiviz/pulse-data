@@ -24,13 +24,18 @@ write_to_file "$INTERCOM_APP_KEY" recidiviz/local/gsm/case_triage_intercom_app_k
 
 write_to_file $(python -c 'import uuid; print(uuid.uuid4().hex)') recidiviz/local/gsm/case_triage_secret_key
 
-# References hostname specified in `services.case_triage_backend.links` from `docker-compose.yml`
+# References hostname specified in `services.case_triage_backend.links` from `docker-compose.case-triage.yml`
 write_to_file 'rate_limit_cache' recidiviz/local/gsm/case_triage_rate_limiter_redis_host
 write_to_file '6379' recidiviz/local/gsm/case_triage_rate_limiter_redis_port
 
-# References hostname specified in `services.case_triage_backend.links` from `docker-compose.yml`
+# References hostname specified in `services.case_triage_backend.links` from `docker-compose.case-triage.yml`
 write_to_file 'sessions_cache' recidiviz/local/gsm/case_triage_sessions_redis_host
 write_to_file '6379' recidiviz/local/gsm/case_triage_sessions_redis_port
+
+# References hostname specified in `services.case_triage_backend.links` from `docker-compose.case-triage.yml`
+write_to_file 'pathways_metric_cache' recidiviz/local/gsm/pathways_metric_redis_host
+write_to_file '6379' recidiviz/local/gsm/pathways_metric_redis_port
+
 
 # Database secrets
 write_to_file 'case_triage' recidiviz/local/gsm/case_triage_cloudsql_instance_id
@@ -45,6 +50,7 @@ write_to_file 'localhost' recidiviz/local/gsm/pathways_db_host
 write_to_file 'pathways_user' recidiviz/local/gsm/pathways_db_user
 write_to_file 'example' recidiviz/local/gsm/pathways_db_password
 write_to_file '5432' recidiviz/local/gsm/pathways_db_port
+
 
 
 # Set up application-specific configuration in GCS
