@@ -36,6 +36,14 @@ resource "google_redis_instance" "case_triage_sessions_cache" {
   redis_version  = "REDIS_5_0"
 }
 
+resource "google_redis_instance" "pathways_metric_cache" {
+  name           = "pathways-metric-cache"
+  region         = var.app_engine_region
+  memory_size_gb = 1
+  tier           = "BASIC"
+  redis_version  = "REDIS_5_0"
+}
+
 resource "google_project_service" "vpc_access_connector" {
   service = "vpcaccess.googleapis.com"
 
@@ -84,6 +92,17 @@ resource "google_secret_manager_secret_version" "case_triage_sessions_redis_host
   secret_data = google_redis_instance.case_triage_rate_limiter_cache.host
 }
 
+
+resource "google_secret_manager_secret" "pathways_metric_redis_host" {
+  secret_id = "pathways_metric_redis_host"
+  replication { automatic = true }
+}
+
+resource "google_secret_manager_secret_version" "pathways_metric_redis_host" {
+  secret      = google_secret_manager_secret.pathways_metric_redis_host.name
+  secret_data = google_redis_instance.pathways_metric_cache.host
+}
+
 # Store port in a secret
 
 resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_port" {
@@ -105,4 +124,14 @@ resource "google_secret_manager_secret" "case_triage_sessions_redis_port" {
 resource "google_secret_manager_secret_version" "case_triage_sessions_redis_port" {
   secret      = google_secret_manager_secret.case_triage_sessions_redis_port.name
   secret_data = google_redis_instance.case_triage_sessions_cache.port
+}
+
+resource "google_secret_manager_secret" "pathways_metric_redis_port" {
+  secret_id = "pathways_metric_redis_port"
+  replication { automatic = true }
+}
+
+resource "google_secret_manager_secret_version" "pathways_metric_redis_port" {
+  secret      = google_secret_manager_secret.pathways_metric_redis_port.name
+  secret_data = google_redis_instance.pathways_metric_cache.port
 }
