@@ -45,9 +45,8 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.utils import metadata
+from recidiviz.utils import pubsub_helper
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.composer import trigger_dag
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
@@ -199,8 +198,9 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
         ):
             logging.info("Triggering %s pipeline DAG.", pipeline_run_type_arg)
 
-            trigger_dag(
-                f"{metadata.project_id()}_{pipeline_run_type_arg.lower()}_calculation_pipeline_dag"
+            pubsub_helper.publish_message_to_topic(
+                message="State export to BQ complete",
+                topic=f"v1.calculator.trigger_{pipeline_run_type_arg.lower()}_pipelines",
             )
 
     # Unlock export lock when all BQ exports complete
