@@ -20,6 +20,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components/macro";
 
+import { trackReportPublished } from "../../analytics";
 import {
   MetricContextWithErrors,
   MetricDisaggregationDimensionsWithErrors,
@@ -492,6 +493,7 @@ const PublishConfirmation: React.FC<{
           )} report!`,
           true
         );
+        trackReportPublished(reportID, finalMetricsToPublish);
       } else {
         showToast(
           `Something went wrong publishing the ${printReportTitle(

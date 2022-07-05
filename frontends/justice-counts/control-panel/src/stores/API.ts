@@ -17,6 +17,7 @@
 
 import { makeAutoObservable, runInAction, when } from "mobx";
 
+import { trackNetworkError } from "../analytics";
 import { AuthStore } from "../components/Auth";
 
 export interface RequestProps {
@@ -85,9 +86,24 @@ class API {
         },
       });
 
+      if (response.status >= 400) {
+        const responseCopy = response.clone();
+        const responseJson = await responseCopy.json();
+        trackNetworkError(
+          path,
+          method,
+          response.status,
+          responseJson.description
+        );
+      }
+
       return response;
     } catch (error) {
-      if (error instanceof Error) return error.message;
+      if (error instanceof Error) {
+        trackNetworkError(path, method, 0, error.message);
+        return error.message;
+      }
+      trackNetworkError(path, method, 0, String(error));
       return String(error);
     }
   }

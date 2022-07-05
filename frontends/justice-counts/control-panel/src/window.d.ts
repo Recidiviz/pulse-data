@@ -22,6 +22,10 @@ export {};
 
 declare global {
   interface Window {
-    AUTH0_CONFIG: Record<string, string>; // values added from `auth0_public_config.js`
+    // values added from `app_public_config.js`
+    APP_CONFIG: Record<string, string>;
+
+    // Segment's analytics.js
+    analytics: SegmentAnalytics.AnalyticsJS;
   }
 }

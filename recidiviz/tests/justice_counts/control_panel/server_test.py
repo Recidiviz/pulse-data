@@ -76,6 +76,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             AUTH_DECORATOR=passthrough_authorization_decorator(),
             AUTH0_CONFIGURATION=get_test_auth0_config(),
             AUTH0_CLIENT=self.test_auth0_client,
+            SEGMENT_KEY="fake_segment_key",
         )
         self.app = create_app(config=test_config)
         self.client = self.app.test_client()
@@ -100,11 +101,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 self.assertEqual(0, len(session.keys()))
 
     def test_auth0_config(self) -> None:
-        response = self.client.get("/auth0_public_config.js")
+        response = self.client.get("/app_public_config.js")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data,
-            b"window.AUTH0_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'};",
+            b"window.APP_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'}; window.SEGMENT_KEY = 'fake_segment_key';",
         )
 
     def test_get_all_reports(self) -> None:

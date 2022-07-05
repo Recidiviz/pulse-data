@@ -16,9 +16,10 @@
 // =============================================================================
 
 import { observer } from "mobx-react-lite";
-import React, { ReactElement } from "react";
-import { Route, Routes } from "react-router-dom";
+import React, { ReactElement, useEffect } from "react";
+import { Route, Routes, useLocation } from "react-router-dom";
 
+import { trackNavigation } from "./analytics";
 import Header from "./components/Header";
 import CreateReports from "./components/Reports/CreateReport";
 import ReportDataEntry from "./components/Reports/ReportDataEntry";
@@ -26,6 +27,11 @@ import AccountSettings from "./pages/AccountSettings";
 import Reports from "./pages/Reports";
 
 const App: React.FC = (): ReactElement => {
+  const location = useLocation();
+  useEffect(() => {
+    trackNavigation(location.pathname + location.search);
+  }, [location]);
+
   return (
     <>
       <Header />

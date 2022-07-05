@@ -20,6 +20,11 @@ import React, { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components/macro";
 
+import {
+  trackAutosaveFailed,
+  trackAutosaveTriggered,
+  trackReportNotStartedToDraft,
+} from "../../analytics";
 import { useStore } from "../../stores";
 import { memoizeDebounce, printReportTitle } from "../../utils";
 import {
@@ -164,12 +169,14 @@ const DataEntryForm: React.FC<{
       reportID,
       metricKey
     );
+    const oldStatus = reportStore.reportOverviews[reportID].status;
     const status =
       reportStore.reportOverviews[reportID].status === "PUBLISHED"
         ? "PUBLISHED"
         : "DRAFT";
 
     showToast("Saving...", false, "grey", -1, true);
+    trackAutosaveTriggered(reportID);
     const response = (await reportStore.updateReport(
       reportID,
       updatedMetrics,
@@ -178,8 +185,12 @@ const DataEntryForm: React.FC<{
 
     if (response.status === 200) {
       showToast("Saved", false, "grey");
+      if (oldStatus === "NOT_STARTED" && status === "DRAFT") {
+        trackReportNotStartedToDraft(reportID);
+      }
     } else {
       showToast("Failed to save", false, "red");
+      trackAutosaveFailed(reportID);
     }
   };
 

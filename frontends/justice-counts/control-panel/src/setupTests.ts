@@ -8,7 +8,7 @@ import { enableFetchMocks } from "jest-fetch-mock";
 
 enableFetchMocks();
 
-window.AUTH0_CONFIG = {
+window.APP_CONFIG = {
   domain: "",
   client_id: "",
   audience: "",
