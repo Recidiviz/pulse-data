@@ -28,7 +28,6 @@ env_variables:
   FROM_EMAIL_NAME: Recidiviz Reports
   ALERTS_FROM_EMAIL_ADDRESS: serena@recidiviz.org
   ALERTS_FROM_EMAIL_NAME: Serena Chang
-  AIRFLOW_URI: https://b4a60f85d5ff4352a4385fcd9294f7a4-dot-us-central1.composer.googleusercontent.com
 
 # Per zenhub-tasks#358, our app engine needs egress traffic to be issued on a static IP address:
 # Reference doc: https://cloud.google.com/appengine/docs/standard/python/outbound-ip-addresses#static-ip
