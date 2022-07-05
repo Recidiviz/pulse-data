@@ -149,6 +149,7 @@ output:
                               - "37" # Released to Court on Writ
                               - "79" # Returned to Court from Bond
                               - "1" # Report to Office
+                              - "21" # CRP Additional Felony Out to Court (REP Only)
                             StateIncarcerationPeriodReleaseReason.DEATH:
                               - "40" # Death on Temporary Release
                               - "38" # Death in Institution
@@ -203,6 +204,8 @@ output:
                               - "118" # Client Number Reassignment
                               - "82" # Returned from County Jail
                               - "156" # Probationer Held Under Custody
+                              - "105" # Held Under Custody - Parole Violation Processing
+                              - "109" # Returned From Mntl Hlth Hospital/ Othr Crimnl Justce Agncies
                             StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                               - "95" # Temporary Release - Outside Hospital/Funerals Only
                               - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
