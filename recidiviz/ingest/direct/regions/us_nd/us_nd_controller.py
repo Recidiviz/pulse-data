@@ -54,7 +54,6 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
     IngestGatingContext,
-    copy_name_to_alias,
     gen_convert_person_ids_to_external_id_objects,
     gen_normalize_county_codes_posthook,
     gen_set_agent_type,
@@ -117,7 +116,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_orderstable": [self._normalize_id_fields],
         }
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
-            "elite_offenders": [copy_name_to_alias],
             "elite_offenderidentifier": [self._normalize_external_id_type],
             "elite_offenderbookingstable": [self._add_person_external_id],
             "elite_offendersentences": [
@@ -276,7 +274,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             if file_tag in (
                 "elite_offenderbookingstable",
                 "elite_offenderidentifier",
-                "elite_offenders",
                 "elite_offense_in_custody_and_pos_report_data",
             ):
                 return US_ND_ELITE

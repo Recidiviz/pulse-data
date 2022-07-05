@@ -1,18 +1,54 @@
-key_mappings:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-  LAST_NAME: state_person.surname
-  FIRST_NAME: state_person.given_names
-  BIRTH_DATE: state_person.birthdate
-  SEX_CODE: state_person.gender
-
-child_key_mappings:
-  RACE_CODE: state_person_race.race
-
-primary_key:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-
-keys_to_ignore:
-  - ALIAS_NAME_TYPE # Provided by Aliases file
-  - CREATE_DATETIME # No apparent use for these at the moment
-  - MODIFY_DATETIME # No apparent use for these at the moment
-  - ModifyDate # No apparent use for these at the moment
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `[VIEW NAME]` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ROOT_OFFENDER_ID
+  - LAST_NAME
+  - FIRST_NAME
+  - BIRTH_DATE
+  - SEX_CODE
+  - RACE_CODE
+  - ALIAS_NAME_TYPE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+  - ModifyDate
+unused_columns:
+  - ALIAS_NAME_TYPE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+  - ModifyDate
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+    birthdate: BIRTH_DATE
+    full_name:
+      $person_name:
+        $given_names: FIRST_NAME
+        $surname: LAST_NAME
+    gender:
+      $enum_mapping:
+        $raw_text: SEX_CODE
+        $mappings:
+          StateGender.MALE: "M"
+          StateGender.FEMALE: "F"
+    races:
+      - $conditional:
+          - $if:
+              $not_null: RACE_CODE
+            $then:
+              StatePersonRace:
+                race:
+                  $enum_mapping:
+                    $raw_text: RACE_CODE
+                    $mappings:
+                      StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: NAT
+                      StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: HAW
+                      StateRace.ASIAN: ASIAN
+                      StateRace.BLACK: [BLACK, AFRICAN_AMER]
+                      StateRace.WHITE: CAUCASIAN
+                      StateRace.OTHER: MUL
+                    $ignore: [HIS]
