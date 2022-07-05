@@ -270,7 +270,6 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow",
-                "recidiviz.cloud_functions.cloud_function_utils",
             }
         ),
     )

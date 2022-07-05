@@ -209,18 +209,7 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
         ),
     )
 
-    run_validations = IAPHTTPRequestOperator(
-        task_id="run_all_validations",
-        url=f"https://{project_id}.appspot.com/validation_manager/validate",
-        trigger_rule=TriggerRule.ALL_DONE,
-    )
-
-    (
-        update_normalized_state
-        >> trigger_view_rematerialize
-        >> wait_for_rematerialize
-        >> run_validations
-    )
+    update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
 
     # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
     #  calculation month counts

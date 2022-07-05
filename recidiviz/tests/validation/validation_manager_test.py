@@ -22,11 +22,12 @@ from unittest import TestCase
 
 import attr
 from flask import Flask
-from mock import MagicMock, patch
+from mock import MagicMock, call, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tests.utils.matchers import UnorderedCollection
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -56,6 +57,8 @@ from recidiviz.validation.validation_models import (
     ValidationResultStatus,
 )
 from recidiviz.validation.views import view_config as validation_view_config
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
 def get_test_validations() -> List[DataValidationJob]:
@@ -195,6 +198,9 @@ class TestHandleRequest(TestCase):
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
 
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -207,6 +213,7 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_rematerialize_views: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
@@ -225,11 +232,15 @@ class TestHandleRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
+        mock_rematerialize_views.assert_called()
         mock_emit_opencensus_failure_events.assert_not_called()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(5, len(results))
 
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -242,6 +253,7 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_rematerialize_views: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
@@ -283,6 +295,7 @@ class TestHandleRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
+        mock_rematerialize_views.assert_called()
         mock_emit_opencensus_failure_events.assert_called_with(
             UnorderedCollection([self._TEST_VALIDATIONS[4]]),
             UnorderedCollection([first_failure, second_failure]),
@@ -291,6 +304,9 @@ class TestHandleRequest(TestCase):
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(5, len(results))
 
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -303,6 +319,7 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_rematerialize_views: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
 
@@ -351,6 +368,7 @@ class TestHandleRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
+        mock_rematerialize_views.assert_called()
         mock_emit_opencensus_failure_events.assert_called_with(
             [], UnorderedCollection([first_failure, second_failure])
         )
@@ -359,6 +377,9 @@ class TestHandleRequest(TestCase):
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(5, len(results))
 
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -371,6 +392,7 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_rematerialize_views: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = []
 
@@ -379,12 +401,16 @@ class TestHandleRequest(TestCase):
 
         self.assertEqual(200, response.status_code)
 
+        mock_rematerialize_views.assert_called()
         mock_run_job.assert_not_called()
         mock_emit_opencensus_failure_events.assert_not_called()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(0, len(results))
 
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -397,6 +423,7 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_rematerialize_views: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = []
 
@@ -408,7 +435,18 @@ class TestHandleRequest(TestCase):
         mock_run_job.assert_not_called()
         mock_emit_opencensus_failure_events.assert_not_called()
 
+        view_builders = deployed_view_builders(metadata.project_id())
         self.maxDiff = None
+        expected_update_calls = [
+            call(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                views_to_update_builders=view_builders,
+                all_view_builders=view_builders,
+            ),
+        ]
+        self.assertEqual(
+            len(mock_rematerialize_views.call_args_list), len(expected_update_calls)
+        )
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(0, len(results))
