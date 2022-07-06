@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Utils for working with Redis """
+import json
 import time
 from datetime import datetime, timedelta
-from typing import List, Iterator, Set
+from typing import Any, Callable, Iterator, List, Set
 
 import redis
 
@@ -50,3 +51,15 @@ def await_redis_keys(
 
     if remaining_keys:
         raise RedisKeyTimeoutError(missing_keys=list(remaining_keys))
+
+
+def get_or_set_json(cache: redis.Redis, cache_key: str, fetch_value: Callable) -> Any:
+    cached_value = cache.get(cache_key)
+
+    if cached_value:
+        return json.loads(cached_value)
+
+    cached_value = fetch_value()
+    cache.set(cache_key, json.dumps(cached_value))
+
+    return cached_value

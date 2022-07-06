@@ -18,10 +18,16 @@
 import base64
 from http import HTTPStatus
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
+
+from fakeredis import FakeRedis
 
 from recidiviz.application_data_import.server import app
+from recidiviz.case_triage.pathways.metric_queries import (
+    LibertyToPrisonTransitionsCount,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
 )
@@ -119,7 +125,19 @@ class TestApplicationDataImportRoutes(TestCase):
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
         autospec=True,
     )
-    def test_import_pathways_successful(self, mock_import_csv: MagicMock) -> None:
+    @patch(
+        "recidiviz.case_triage.pathways.metric_cache.PathwaysMetricCache", autospec=True
+    )
+    @patch(
+        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_pathways_successful(
+        self,
+        mock_redis: MagicMock,
+        mock_metric_cache: MagicMock,
+        mock_import_csv: MagicMock,
+    ) -> None:
         with self.app.test_request_context():
             response = self.client.post(
                 f"/import/pathways/US_XX/{self.pathways_view}.csv",
@@ -134,6 +152,14 @@ class TestApplicationDataImportRoutes(TestCase):
                 ),
                 columns=self.columns,
             )
+            mock_redis.assert_called()
+            mock_metric_cache.assert_called_with(
+                state_code=StateCode.US_XX, metric_fetcher=ANY, redis=ANY
+            )
+            mock_metric_cache.return_value.reset_cache.assert_called_with(
+                LibertyToPrisonTransitionsCount
+            )
+
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
     def test_import_pathways_invalid_state(self) -> None:

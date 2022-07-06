@@ -29,6 +29,7 @@ from recidiviz.case_triage.pathways.metric_queries import (
     SupervisionToPrisonTransitionsCount,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 
 ALL_METRICS: List[MetricQueryBuilder] = [
     LibertyToPrisonTransitionsCount,
@@ -68,3 +69,7 @@ ENABLED_PERSON_LEVEL_METRICS_BY_STATE = {
     ]
     for state_code, metric_mappers in ENABLED_METRICS_BY_STATE.items()
 }
+
+
+def get_metrics_for_entity(db_entity: PathwaysBase) -> List[MetricQueryBuilder]:
+    return [metric for metric in ALL_METRICS if metric.model == db_entity]

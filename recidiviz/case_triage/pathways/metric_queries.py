@@ -17,7 +17,7 @@
 """ Contains functionality to map metrics to our relational models inside the query builders"""
 import abc
 import enum
-from typing import Dict, Generic, List, TypeVar, Union
+from typing import Dict, Generic, List, Tuple, TypeVar, Union
 
 import attr
 from attrs import validators
@@ -65,10 +65,25 @@ class FetchMetricParams:
     )
     filters: Dict[Dimension, Union[str, List[str]]] = attr.field(factory=dict)
 
+    @property
+    def sorted_filters(self) -> List[Tuple[str, List[str]]]:
+        return sorted(
+            (dimension.value, sorted(values))
+            for dimension, values in self.filters.items()
+        )
+
+    @property
+    def cache_fragment(self) -> str:
+        return f"time_period={repr(self.time_period.value)} filters={repr(self.sorted_filters)}"
+
 
 @attr.s(auto_attribs=True)
 class CountByDimensionMetricParams(FetchMetricParams):
     group: Dimension = attr.attrib(default=Dimension.YEAR_MONTH)
+
+    @property
+    def cache_fragment(self) -> str:
+        return f"{super().cache_fragment} group={repr(self.group.value)}"
 
 
 @attr.s(auto_attribs=True)
@@ -132,12 +147,17 @@ class MetricQueryBuilder(Generic[ParamsType]):
                 f"Dimension {dimension.value} is not allowed for {self}"
             ) from e
 
+    @property
+    def cache_fragment(self) -> str:
+        return self.name
+
     @abc.abstractmethod
     def build_query(self, params: ParamsType) -> Query:
         ...
 
+    @classmethod
     @abc.abstractmethod
-    def build_params(self, schema: Dict) -> ParamsType:
+    def build_params(cls, schema: Dict) -> ParamsType:
         ...
 
 
@@ -145,7 +165,8 @@ class MetricQueryBuilder(Generic[ParamsType]):
 class CountByDimensionMetricQueryBuilder(
     MetricQueryBuilder[CountByDimensionMetricParams]
 ):
-    """Builder for Pathways postgres queries that return the count of entries matching a filter and grouped by a dimension."""
+    """Builder for Pathways postgres queries that return the count of entries matching a filter and grouped by a
+    dimension."""
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
@@ -188,7 +209,8 @@ class CountByDimensionMetricQueryBuilder(
             .order_by(*grouped_columns)
         )
 
-    def build_params(self, schema: Dict) -> CountByDimensionMetricParams:
+    @classmethod
+    def build_params(cls, schema: Dict) -> CountByDimensionMetricParams:
         return CountByDimensionMetricParams(**schema)
 
 
@@ -238,7 +260,8 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder[FetchMetricParams]):
             .order_by(*grouped_columns)
         )
 
-    def build_params(self, schema: Dict) -> FetchMetricParams:
+    @classmethod
+    def build_params(cls, schema: Dict) -> FetchMetricParams:
         return FetchMetricParams(**schema)
 
 

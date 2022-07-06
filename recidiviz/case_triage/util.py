@@ -117,3 +117,15 @@ def get_sessions_redis() -> Optional[Redis]:
         return None
 
     return Redis(host=host, port=int(port), **get_redis_connection_options())
+
+
+def get_pathways_metric_redis() -> Redis:
+    host = get_secret("pathways_metric_redis_host")
+    port = get_secret("pathways_metric_redis_port")
+
+    if host is None or port is None:
+        raise ValueError(
+            f"Unable to create Pathways metric cache with host: {host} port: {port}"
+        )
+
+    return Redis(host=host, port=int(port), **get_redis_connection_options())
