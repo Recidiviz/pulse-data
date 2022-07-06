@@ -64,16 +64,18 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             USING(Offense)
     ),
     sentences AS (
-        SELECT offender_id,
-              offense_description,
-              expiration_date,
-              full_expiration_date,
-              sentence_effective_date,
-              sentence_status,
-              offense_date,
-              CAST(conviction_county AS STRING) as conviction_county,
-              case_number AS docket_number,
-              'SENTENCE' AS sentence_source,
+        --TODO(#11448): Exclude ISCSentence, Diversion, and PriorRecord sentences when those are ingested
+        SELECT
+            SPLIT(external_id, '-')[OFFSET(0)] AS offender_id,
+            description AS offense_description,
+            completion_date AS expiration_date,
+            projected_completion_date_max AS full_expiration_date,
+            effective_date AS sentence_effective_date,
+            status_raw_text AS sentence_status,
+            offense_date,
+            SPLIT(external_id, '-')[OFFSET(1)] AS conviction_county,
+            SPLIT(external_id, '-')[OFFSET(3)] AS docket_number,
+            'SENTENCE' AS sentence_source
         FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
     ),
     prior_record AS (
