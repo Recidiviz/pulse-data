@@ -106,7 +106,22 @@ movements_with_direction as (
         org.PARTYID != org.ORGAREACODE AND
         area.PARTYID = org.ORGAREACODE
     )
-), classified_movements as (
+), isp as (
+SELECT OFFENDERID, direction, movement_datetime, LOCATIONREPORTMOVEMENT, OTHERLOCATIONCODE, REASONFORMOVEMENT, JURISDICTIONALAGENCY, facility_id, facility_name, facility_type, unit_id, unit_name, unit_type,
+    CASE 
+        WHEN EXTERNALMOVEMENTCODE = '63' # To Intensive Supervision Program (ISP)
+        AND (REASONFORMOVEMENT = 'PG' # ISP - Inmate
+        OR (REASONFORMOVEMENT = '99' # Not Specified
+            AND unit_type IN ('B0', 'BK') # Incarceration Facilities
+        )) THEN '63-I'
+        WHEN EXTERNALMOVEMENTCODE = '63' # To Intensive Supervision Program (ISP)
+        THEN '63-P' # Mark any ISP that doesn't match the conditions above for ISP-I as ISP-P instead
+        ELSE EXTERNALMOVEMENTCODE
+    END AS EXTERNALMOVEMENTCODE
+    FROM movements
+),
+
+classified_movements as (
   SELECT *,
   CASE 
     WHEN unit_name LIKE '%Intake%' THEN 'TEMPORARY'
@@ -129,7 +144,7 @@ movements_with_direction as (
     # Out to Other Jurisdiction
     # AWOL from ISP-I
   END as torpmovement
-FROM movements
+FROM isp
 ), ordered_movements as (
     select
         *,
@@ -223,6 +238,7 @@ WHERE start_code IN (
     '39', # Day Trip (to)
     '3A', # Reassigned to another Facility
     '56', # Unauthorized Release
+    '63-I', # ISP-INMATE
     '79', # Returned to ISP-I
     '80', # Escaped
     '81', # Out To Court
@@ -236,16 +252,7 @@ WHERE start_code IN (
     '90', # Transferred to DOC Facility
     '91', # Transferred to Community Center
     '92' # Transferred to County/City Jail
-) OR (
-    start_code = '63' # To Intensive Supervision Program (ISP)
-    AND (
-        start_reason = 'PG' # ISP - Inmate
-        OR (
-            start_reason = '99' # Not Specified
-            AND p_unit_type IN ('B0', 'BK') # Incarceration Facilities
-        )
-    )
-)
+) 
 )
 select ROW_NUMBER() OVER (PARTITION BY OFFENDERID ORDER BY start_datetime) AS period_id, OFFENDERID, final.start_datetime, final.start_code, final.start_reason, final.end_datetime, final.end_code, final.end_reason, final.JURISDICTIONALAGENCY, final.OTHERLOCATIONCODE, final.LOCATIONREPORTMOVEMENT, final.p_facility_id, final.p_facility_name, final.p_facility_type, final.p_unit_id, final.p_unit_name, final.p_unit_type
 FROM final;
