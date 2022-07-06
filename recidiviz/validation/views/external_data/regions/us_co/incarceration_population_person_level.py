@@ -29,7 +29,34 @@ VIEW_QUERY_TEMPLATE = """
     'US_CO' as region_code,
     offenderid AS person_external_id, 
     EXTRACT(DATE FROM UPDATE_DATETIME) AS date_of_stay, 
-    FAC_LDESC AS facility, 
+    CASE 
+        WHEN FAC_CD ='AC' THEN 'ACC'
+        WHEN FAC_CD ='AV' THEN 'AVCF'
+        WHEN FAC_CD ='LF' THEN 'LCF'
+        WHEN FAC_CD ='LV' THEN 'LVCF'
+        WHEN FAC_CD ='BF' THEN 'BCCF'
+        WHEN FAC_CD ='BM' THEN 'BVMC'
+        WHEN FAC_CD ='DU' THEN 'DRDC'
+        WHEN FAC_CD ='DW' THEN 'DWCF'
+        WHEN FAC_CD ='BV' THEN 'BVCF'
+        WHEN FAC_CD ='C3' THEN 'CM YOS PH3'
+        WHEN FAC_CD ='CF' THEN 'CCF'
+        WHEN FAC_CD ='CL' THEN 'CCCF'
+        WHEN FAC_CD ='DC' THEN 'DCC'
+        WHEN FAC_CD ='FF' THEN 'FCF'
+        WHEN FAC_CD ='FI' THEN 'FUG-INMATE'
+        WHEN FAC_CD ='IS' THEN 'ISP-INMATE'
+        WHEN FAC_CD ='JB' THEN 'JAIL BCKLG'
+        WHEN FAC_CD ='RC' THEN 'RCC'
+        WHEN FAC_CD ='SA' THEN 'SCCF'
+        WHEN FAC_CD ='SF' THEN 'SCF'
+        WHEN FAC_CD ='YP' THEN 'YOS'
+        WHEN FAC_CD ='CS' THEN 'CSP'
+        WHEN FAC_CD ='CT' THEN 'CTCF'
+        WHEN FAC_CD ='FC' THEN 'FMCC'
+        WHEN FAC_CD ='TF' THEN 'TCF'
+    ELSE FAC_CD 
+    END AS facility, 
   FROM `{project_id}.{us_co_raw_data_dataset}.Base_Curr_Off_Pop`
 """
 
