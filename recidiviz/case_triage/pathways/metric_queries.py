@@ -348,6 +348,11 @@ SupervisionToLibertyTransitionsCount = CountByDimensionMetricQueryBuilder(
             columns=[SupervisionToLibertyTransitions.gender],
         ),
         DimensionMapping(
+            dimension=Dimension.LENGTH_OF_STAY,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionToLibertyTransitions.length_of_stay],
+        ),
+        DimensionMapping(
             dimension=Dimension.RACE,
             operations=DimensionOperation.ALL,
             columns=[SupervisionToLibertyTransitions.race],
