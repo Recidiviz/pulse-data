@@ -39,6 +39,7 @@ VIEW_QUERY_TEMPLATE = """
         WHEN FAC_CD ='DU' THEN 'DRDC'
         WHEN FAC_CD ='DW' THEN 'DWCF'
         WHEN FAC_CD ='BV' THEN 'BVCF'
+        WHEN FAC_CD ='BW' THEN 'BVCF' # Buena Vista Work Center to General BV in new system
         WHEN FAC_CD ='C3' THEN 'CM YOS PH3'
         WHEN FAC_CD ='CF' THEN 'CCF'
         WHEN FAC_CD ='CL' THEN 'CCCF'
