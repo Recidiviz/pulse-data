@@ -565,15 +565,20 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
                 {"year": 2022, "month": 2, "count": 2},
                 {"year": 2022, "month": 3, "count": 1},
             ],
+            Dimension.AGE_GROUP: [
+                {"age_group": "20-25", "count": 1},
+                {"age_group": "26-35", "count": 2},
+                {"age_group": "60+", "count": 1},
+            ],
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 2},
                 {"gender": "MALE", "count": 1},
                 {"gender": "NON_BINARY", "count": 1},
             ],
-            Dimension.AGE_GROUP: [
-                {"age_group": "20-25", "count": 1},
-                {"age_group": "26-35", "count": 2},
-                {"age_group": "60+", "count": 1},
+            Dimension.LENGTH_OF_STAY: [
+                {"length_of_stay": "months_0_3", "count": 1},
+                {"length_of_stay": "months_3_6", "count": 1},
+                {"length_of_stay": "months_6_9", "count": 2},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
