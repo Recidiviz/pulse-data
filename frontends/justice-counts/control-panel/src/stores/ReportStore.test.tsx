@@ -59,8 +59,8 @@ test("loading reports", async () => {
     </StoreProvider>
   );
 
-  const noReportsLoaded = await screen.findByText(/Loading data.../i);
-  expect(noReportsLoaded).toBeInTheDocument();
+  const loader = screen.getByTestId("loading");
+  expect(loader).toBeInTheDocument();
 
   expect.hasAssertions();
 });

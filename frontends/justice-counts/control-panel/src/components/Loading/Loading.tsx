@@ -15,21 +15,46 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Loading as LoadingComponent } from "@recidiviz/design-system";
 import React from "react";
-import styled from "styled-components/macro";
+import styled, { keyframes } from "styled-components/macro";
+
+import sprite from "../assets/loader-sprite-horizontal.svg";
+
+const loaderWidth = 144;
+const spriteFrames = 104;
 
 const LoadingWrapper = styled.div`
-  height: 100%;
+  height: 100vh;
+  width: 100vw;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+`;
+
+const loadingSpriteAnimation = keyframes`
+  to {
+    background-position: -${loaderWidth * spriteFrames}px 0px;
+  }
+`;
+
+const Loader = styled.div`
+  height: ${loaderWidth}px;
+  width: ${loaderWidth}px;
+  background-image: url(${sprite});
+  background-repeat: no-repeat;
+  background-size: ${loaderWidth * spriteFrames}px ${loaderWidth}px;
+  background-position: 0px 0px;
+  animation: ${loadingSpriteAnimation} 1.5s steps(${spriteFrames}) infinite
+    alternate;
 `;
 
 const Loading = () => {
   return (
     <LoadingWrapper>
-      <LoadingComponent />
+      <Loader data-testid="loading" />
     </LoadingWrapper>
   );
 };
