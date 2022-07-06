@@ -184,8 +184,8 @@ export const BinaryRadioButtonInputs = observer(
           <BinaryRadioButton
             type="radio"
             key={option}
-            id={`${context.key}-${option}`}
-            name={context.key}
+            id={`${metric.key}-${context.key}-${option}`}
+            name={`${metric.key}-${context.key}`}
             metricKey={metric.key}
             label={option}
             value={option}
