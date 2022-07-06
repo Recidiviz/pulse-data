@@ -33,7 +33,9 @@ def state_specific_dataflow_facility_name_transformation() -> str:
                 WHEN state_code = 'US_ME' 
                     THEN IF(facility = "SOUTHERN MAINE WOMEN'S REENTRY CENTER", "MAINE CORRECTIONAL CENTER", facility)
                  WHEN state_code = 'US_CO' 
-                    AND facility IN ('ARTS','ATC','CM/DEN/CBT','COMCOR CC','CORECIVIC','DNVRGENHOS','GCCC','GEO RS','HILLTOP CC','ICCS-C','LCCC','MESA','RRK')  THEN 'COMMUNITY CORRECTIONS'  
+                    AND facility IN ('ARTS','ATC','CM/DEN/CBT','COMCOR CC','CORECIVIC','DNVRGENHOS','GCCC','GEO RS','HILLTOP CC','ICCS-C','LCCC','MESA','RRK')  THEN 'COMMUNITY CORRECTIONS' 
+                 WHEN state_code = 'US_CO' 
+                    AND facility = 'ACCC' THEN 'FUG-INMATE' 
             ELSE facility END,
             'EXTERNAL_UNKNOWN'
         ) AS facility
