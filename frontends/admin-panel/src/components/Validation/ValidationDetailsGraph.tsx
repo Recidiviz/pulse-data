@@ -18,7 +18,7 @@
 import { ChartWrapper, palette } from "@recidiviz/design-system";
 import { Badge, Card, Descriptions } from "antd";
 import { scaleTime } from "d3-scale";
-import React from "react";
+import * as React from "react";
 import XYFrame from "semiotic/lib/XYFrame";
 import ColorLegend from "../Utilities/ColorLegend";
 import { ValidationDetailsGraphProps } from "./constants";

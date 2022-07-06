@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Alert, Col, PageHeader, Row, Space } from "antd";
-import * as React from "react";
+import { useState } from "react";
 import { fetchEmailStateCodes } from "../AdminPanelAPI/LineStaffTools";
 import { StateCodeInfo } from "./IngestOperationsView/constants";
 import GenerateEmails from "./POEmails/GenerateEmails";
@@ -25,10 +25,9 @@ import SendEmails from "./POEmails/SendEmails";
 import StateSelector from "./Utilities/StateSelector";
 
 const POEmailsView = (): JSX.Element => {
-  const [reportType, setReportType] =
-    React.useState<string | undefined>(undefined);
+  const [reportType, setReportType] = useState<string | undefined>(undefined);
   const [stateCode, setStateCode] =
-    React.useState<StateCodeInfo | undefined>(undefined);
+    useState<StateCodeInfo | undefined>(undefined);
 
   return (
     <>

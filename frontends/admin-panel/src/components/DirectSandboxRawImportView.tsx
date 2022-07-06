@@ -27,7 +27,7 @@ import {
   Select,
   Spin,
 } from "antd";
-import * as React from "react";
+import { useState, useCallback, useEffect } from "react";
 
 import {
   importRawDataToSandbox,
@@ -51,22 +51,22 @@ interface SandboxFormData {
 const DirectSandboxRawImport = (): JSX.Element => {
   const [form] = Form.useForm();
   const [formData, setFormData] =
-    React.useState<SandboxFormData | undefined>(undefined);
+    useState<SandboxFormData | undefined>(undefined);
   const [stateInfo, setStateInfo] =
-    React.useState<StateCodeInfo | undefined>(undefined);
+    useState<StateCodeInfo | undefined>(undefined);
   const [sourceBucketList, setSourceBucketList] =
-    React.useState<string[] | undefined>(undefined);
+    useState<string[] | undefined>(undefined);
   const [fileStatusList, setFileStatusList] =
-    React.useState<FileStatus[] | undefined>(undefined);
-  const [statusTableSpinner, setStatusTableSpinner] = React.useState(false);
-  const [rawFilesSpinner, setRawFilesSpinner] = React.useState(false);
+    useState<FileStatus[] | undefined>(undefined);
+  const [statusTableSpinner, setStatusTableSpinner] = useState(false);
+  const [rawFilesSpinner, setRawFilesSpinner] = useState(false);
   const [errorList, setErrorList] =
-    React.useState<FileStatus[] | undefined>(undefined);
-  const [visible, setVisible] = React.useState(false);
+    useState<FileStatus[] | undefined>(undefined);
+  const [visible, setVisible] = useState(false);
   const [rawFileUploadList, setRawFileUploadList] =
-    React.useState<FileUploadInfo[] | undefined>(undefined);
+    useState<FileUploadInfo[] | undefined>(undefined);
   const [tempSourceBucket, setTempSourceBucket] =
-    React.useState<string | undefined>(undefined);
+    useState<string | undefined>(undefined);
 
   const onFinish = (values?: SandboxFormData | undefined) => {
     setFormData(values);
@@ -77,7 +77,7 @@ const DirectSandboxRawImport = (): JSX.Element => {
     setTempSourceBucket(values?.sourceBucket);
   };
 
-  const getRawFilesList = React.useCallback(() => {
+  const getRawFilesList = useCallback(() => {
     if (!stateInfo?.code || !tempSourceBucket) return;
 
     setRawFileUploadList(undefined);
@@ -157,7 +157,7 @@ const DirectSandboxRawImport = (): JSX.Element => {
     setVisible(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const getBucketList = async () => {
       form.setFieldsValue({
         sourceBucket: undefined,
@@ -169,7 +169,7 @@ const DirectSandboxRawImport = (): JSX.Element => {
     getBucketList();
   }, [form]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     getRawFilesList();
   }, [getRawFilesList]);
 

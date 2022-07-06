@@ -68,14 +68,17 @@ const StateSelector: React.FC<StateSelectorProps> = ({
       onChange={handleOnChange}
       value={value}
       filterOption={(input, option) =>
-        option?.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
-          0 ||
-        option?.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+        (option?.children as unknown as string)
+          .toLowerCase()
+          .indexOf(input.toLowerCase()) >= 0 ||
+        (option?.value as unknown as string)
+          .toLowerCase()
+          .indexOf(input.toLowerCase()) >= 0
       }
       filterSort={(optionA, optionB) =>
-        optionA.children
+        (optionA?.children as unknown as string)
           .toLowerCase()
-          .localeCompare(optionB.children.toLowerCase())
+          .localeCompare((optionB?.children as unknown as string).toLowerCase())
       }
       showSearch
     >

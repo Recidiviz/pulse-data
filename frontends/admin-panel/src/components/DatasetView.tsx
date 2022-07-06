@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Breadcrumb, PageHeader, Spin } from "antd";
-import * as React from "react";
+import { useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { fetchObjectCountsByTable } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
@@ -30,7 +30,7 @@ interface MatchParams {
 const DatasetView = (): JSX.Element => {
   const { dataset: metadataDataset } = useParams<MatchParams>();
 
-  const fetchValues = React.useCallback(async (): Promise<Response> => {
+  const fetchValues = useCallback(async (): Promise<Response> => {
     return fetchObjectCountsByTable(metadataDataset);
   }, [metadataDataset]);
   const { loading, data } = useFetchedDataJSON<MetadataAPIResult>(fetchValues);

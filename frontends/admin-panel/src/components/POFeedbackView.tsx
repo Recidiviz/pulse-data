@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { PageHeader, Spin, Table } from "antd";
-import * as React from "react";
 import { getPOFeedback } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
 

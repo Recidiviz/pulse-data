@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import * as React from "react";
+import { useState } from "react";
 import { Checkbox, Empty, Table } from "antd";
 import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { ColumnsType } from "antd/es/table";
@@ -58,8 +58,7 @@ interface MetadataTableProps {
 
 const MetadataTable = (props: MetadataTableProps): JSX.Element => {
   const { data, initialColumnLink, initialColumnTitle } = props;
-  const [nonplaceholdersOnly, setNonplaceholdersOnly] =
-    React.useState<boolean>(true);
+  const [nonplaceholdersOnly, setNonplaceholdersOnly] = useState<boolean>(true);
 
   if (data === undefined) {
     return <Empty className="buffer" />;

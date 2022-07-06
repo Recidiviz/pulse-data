@@ -3,5 +3,9 @@
   "ignorePatterns": [
     // Ignore generated protobuf typescript files
     "**/*_pb.d.ts"
-  ]
+  ],
+  "rules": {
+    "react/jsx-uses-react": "off",
+    "react/react-in-jsx-scope": "off"
+  }
 }

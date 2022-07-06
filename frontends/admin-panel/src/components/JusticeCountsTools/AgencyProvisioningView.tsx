@@ -28,7 +28,7 @@ import {
   Typography,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
-import * as React from "react";
+import { useState } from "react";
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
@@ -44,8 +44,8 @@ import {
 } from "./constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
-  const [showSpinner, setShowSpinner] = React.useState(false);
-  const [selectedStateCode, setSelectedStateCode] = React.useState<string>("");
+  const [showSpinner, setShowSpinner] = useState(false);
+  const [selectedStateCode, setSelectedStateCode] = useState<string>("");
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
 
@@ -227,7 +227,9 @@ const AgencyProvisioningView = (): JSX.Element => {
             optionFilterProp="children"
             disabled={showSpinner}
             filterOption={(input, option) =>
-              option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              (option?.children as unknown as string)
+                .toLowerCase()
+                .indexOf(input.toLowerCase()) >= 0
             }
             onSelect={(stateCode: string) => {
               setSelectedStateCode(stateCode);
@@ -250,7 +252,9 @@ const AgencyProvisioningView = (): JSX.Element => {
             optionFilterProp="children"
             disabled={showSpinner || !selectedStateCode}
             filterOption={(input, option) =>
-              option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              (option?.children as unknown as string)
+                .toLowerCase()
+                .indexOf(input.toLowerCase()) >= 0
             }
           >
             {Object.keys(FipsCountyCode)

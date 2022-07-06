@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Layout, Menu, Typography } from "antd";
-import * as React from "react";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";

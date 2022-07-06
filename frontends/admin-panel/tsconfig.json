@@ -1,4 +1,9 @@
 {
   "extends": "@recidiviz/tsconfig/react",
-  "include": ["src"]
+  "include": [
+    "src"
+  ],
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
 }

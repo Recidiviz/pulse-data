@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { Alert, Breadcrumb, PageHeader } from "antd";
-import * as React from "react";
+import { useState } from "react";
 import { Link, useHistory, useLocation, useParams } from "react-router-dom";
 import { fetchValidationStateCodes } from "../../AdminPanelAPI";
 import { VALIDATION_STATUS_ROUTE } from "../../navigation/DatasetMetadata";
@@ -45,7 +45,7 @@ const ValidationDetailView = (): JSX.Element => {
   };
 
   const [stateCodesData, setStateCodesData] =
-    React.useState<StateCodeInfo[] | undefined>();
+    useState<StateCodeInfo[] | undefined>();
 
   const state = stateCodesData?.find(
     (value: StateCodeInfo) => value.code === params.get("stateCode")

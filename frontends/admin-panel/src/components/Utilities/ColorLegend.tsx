@@ -17,7 +17,7 @@
 
 import { palette } from "@recidiviz/design-system";
 import { rem } from "polished";
-import React from "react";
+import * as React from "react";
 import styled from "styled-components/macro";
 
 const ColorLegendWrapper = styled.div`

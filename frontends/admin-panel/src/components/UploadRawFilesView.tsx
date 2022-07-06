@@ -27,15 +27,15 @@ import {
   Spin,
   Upload,
 } from "antd";
-import * as React from "react";
+import { useState } from "react";
 import moment, { Moment } from "moment";
 import StateSelector from "./Utilities/StateSelector";
 import { fetchRawFilesStateCodes } from "../AdminPanelAPI";
 import { formLayout } from "./constants";
 
 const UploadRawFilesView = (): JSX.Element => {
-  const [uploadResult, setUploadResult] = React.useState<AlertProps | void>();
-  const [showSpinner, setShowSpinner] = React.useState(false);
+  const [uploadResult, setUploadResult] = useState<AlertProps | void>();
+  const [showSpinner, setShowSpinner] = useState(false);
   const [form] = Form.useForm();
 
   interface UploadRawFilesFormData {
