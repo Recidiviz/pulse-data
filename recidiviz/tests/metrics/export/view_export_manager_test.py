@@ -17,6 +17,7 @@
 
 """Tests for view_export_manager.py."""
 
+import base64
 import unittest
 from http import HTTPStatus
 from typing import Any, Dict
@@ -584,10 +585,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_create_metric_view_data_export_task.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.create_metric_view_data_export_tasks_url,
                 headers=self.headers,
-                query_string="export_job_filter=US_XX",
+                json={"message": {"data": base64.b64encode(b"US_XX").decode()}},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_create_metric_view_data_export_task.assert_has_calls(
@@ -598,10 +599,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 any_order=True,
             )
 
-            response = self.client.get(
+            response = self.client.post(
                 self.create_metric_view_data_export_tasks_url,
                 headers=self.headers,
-                query_string="export_job_filter=us_xx",
+                json={"message": {"data": base64.b64encode(b"us_xx").decode()}},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_create_metric_view_data_export_task.assert_has_calls(
@@ -620,10 +621,12 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_create_metric_view_data_export_task.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.create_metric_view_data_export_tasks_url,
                 headers=self.headers,
-                query_string="export_job_filter=MOCK_EXPORT_NAME",
+                json={
+                    "message": {"data": base64.b64encode(b"MOCK_EXPORT_NAME").decode()}
+                },
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_create_metric_view_data_export_task.assert_has_calls(
@@ -634,10 +637,12 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             )
 
             # case insensitive
-            response = self.client.get(
+            response = self.client.post(
                 self.create_metric_view_data_export_tasks_url,
                 headers=self.headers,
-                query_string="export_job_filter=mock_export_name",
+                json={
+                    "message": {"data": base64.b64encode(b"mock_export_name").decode()}
+                },
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_create_metric_view_data_export_task.assert_has_calls(
@@ -655,10 +660,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_create_metric_view_data_export_task.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.create_metric_view_data_export_tasks_url,
                 headers=self.headers,
-                query_string="export_job_filter=EXPORT",
+                json={"message": {"data": base64.b64encode(b"EXPORT").decode()}},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_create_metric_view_data_export_task.assert_has_calls(
@@ -670,10 +675,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             )
 
             # case insensitive
-            response = self.client.get(
+            response = self.client.post(
                 self.create_metric_view_data_export_tasks_url,
                 headers=self.headers,
-                query_string="export_job_filter=export",
+                json={"message": {"data": base64.b64encode(b"export").decode()}},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_create_metric_view_data_export_task.assert_has_calls(
@@ -682,4 +687,17 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                     mock.call(export_job_name="EXPORT", state_code="US_WW"),
                 ],
                 any_order=True,
+            )
+
+    def test_create_metric_view_data_export_tasks_invalid_request(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.create_metric_view_data_export_tasks_url,
+                headers=self.headers,
+                json={"message": {}},
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Missing required export_job_filter in data of the Pub/Sub message.",
+                response.data,
             )
