@@ -45,8 +45,6 @@ from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
 
-_METRIC_VIEW_EXPORT_PATH = "/export/create_metric_view_data_export_tasks"
-
 
 def _build_url(
     project_id: str,
@@ -57,44 +55,6 @@ def _build_url(
     if params is not None:
         url += f"?{urlencode(params)}"
     return url
-
-
-# TODO(#4593): We might be able to get rid of this function entirely once we run the
-#  metric export endpoints directly in Airflow, rather than just triggering the tasks
-#  with Pub/Sub topics.
-def export_metric_view_data(
-    event: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery metric views to
-    files in cloud storage buckets.
-    """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        error_str = "No project id set for call to export view data, returning."
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    if "data" in event:
-        cloud_functions_log(severity="INFO", message="data found")
-        url = _build_url(
-            project_id,
-            _METRIC_VIEW_EXPORT_PATH,
-            {"export_job_filter": b64decode(event["data"]).decode("utf-8")},
-        )
-    else:
-        error_str = "Missing required export_job_filter in data of the Pub/Sub message."
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    cloud_functions_log(severity="INFO", message=f"project_id: {project_id}")
-    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
-
-    # Hit the cloud function backend, which exports view data to their assigned cloud storage bucket
-    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    cloud_functions_log(
-        severity="INFO", message=f"The response status is {response.status_code}"
-    )
-    return "", HTTPStatus(response.status_code)
 
 
 def trigger_calculation_pipeline_dag(

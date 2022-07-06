@@ -57,6 +57,7 @@ from recidiviz.metrics.export.view_export_cloud_task_manager import (
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.pubsub_helper import extract_pubsub_message_from_json
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -96,17 +97,17 @@ export_blueprint = Blueprint("export", __name__)
 # TODO(#4593): We might be able to get rid of this endpoint entirely once we run the
 #  metric export endpoints directly in Airflow, rather than just triggering the tasks
 #  with Pub/Sub topics.
-@export_blueprint.route("/create_metric_view_data_export_tasks")
+@export_blueprint.route("/create_metric_view_data_export_tasks", methods=["POST"])
 @requires_gae_auth
 def create_metric_view_data_export_tasks() -> Tuple[str, HTTPStatus]:
     """Queues a task to export data in BigQuery metric views to cloud storage buckets.
 
     Example:
-        export/create_metric_view_data_export_tasks?export_job_filter=US_ID
-    URL parameters:
-        export_job_filter: Job name to initiate export for (e.g. US_ID or LANTERN).
-                           If state_code, will create tasks for all products that have launched for that state_code.
-                           If product name, will create tasks for all states that have launched for that product.
+        gcloud pubsub topics publish v1.export.view.data --mesage="US_ID"
+    Request body:
+        data: Base64-encoded job name to initiate export for (e.g. US_ID or LANTERN).
+                If state_code, will create tasks for all products that have launched for that state_code.
+                If product name, will create tasks for all states that have launched for that product.
     Args:
         N/A
     Returns:
@@ -114,11 +115,18 @@ def create_metric_view_data_export_tasks() -> Tuple[str, HTTPStatus]:
     """
     logging.info("Queueing a task to export view data to cloud storage")
 
-    export_job_filter = get_str_param_value("export_job_filter", request.args)
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    # We don't need to b64-decode here because the protobuf parser does it automatically, so just
+    # convert from bytes to string
+    export_job_filter = message.data.decode()
 
     if not export_job_filter:
         return (
-            "Missing required export_job_filter URL parameter",
+            "Missing required export_job_filter in data of the Pub/Sub message.",
             HTTPStatus.BAD_REQUEST,
         )
 

@@ -29,34 +29,6 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
 }
 
 
-resource "google_cloudfunctions_function" "export_metric_view_data" {
-  name    = "export_metric_view_data"
-  runtime = "python38"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  event_trigger {
-    event_type = "google.pubsub.topic.publish"
-    resource   = "projects/${var.project_id}/topics/v1.export.view.data"
-  }
-
-  entry_point = "export_metric_view_data"
-  environment_variables = {
-    "GCP_PROJECT" = var.project_id
-  }
-
-  source_repository {
-    url = local.repo_url
-  }
-
-  # TODO(#4379): This should be removed when we have a more scalable solution
-  # for preventing 499s in the metric export pipeline. Longer term, we want this
-  # cloud function to issue an async request and return an id that can be queried
-  # by another process.
-  timeout = 540
-}
-
 resource "google_cloudfunctions_function" "trigger_incremental_calculation_pipeline_dag" {
   name    = "trigger_incremental_calculation_pipeline_dag"
   runtime = "python38"
