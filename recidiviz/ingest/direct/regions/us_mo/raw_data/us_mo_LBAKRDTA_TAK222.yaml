@@ -45,7 +45,7 @@ columns:
   - name: IB_TCR
     description: |-
       Time Created
-  - name: IE_UID
+  - name: IB_UID
     is_pii: true
     description: |-
       User ID

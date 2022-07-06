@@ -52,12 +52,19 @@ columns:
   - name: DD_JCA
     description: |-
       Attorney's Fee Balance
+  - name: DD_UID
+    is_pii: True
+    description: |-
+      User ID
   - name: DD_DCR
     description: |-
       Row Creation Date
   - name: DD_TCR
     description: |-
       Row Creation Time
+  - name: DD_UIU
+    description: |-
+      Update User ID
   - name: DD_DLU
     description: |-
       Row Modify Date

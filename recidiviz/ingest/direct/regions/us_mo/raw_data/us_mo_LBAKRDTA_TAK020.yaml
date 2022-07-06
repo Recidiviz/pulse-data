@@ -46,6 +46,9 @@ columns:
   - name: BQ_SCN
     description: |-
       Parole Board Special Conditions
+  - name: BQ_REF
+    description: |-
+      Parole Board Reference
   - name: BQ_PDS
     description: |-
       Parole Drug Sale
