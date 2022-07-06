@@ -240,11 +240,11 @@ output:
                   - "32" # Received at County/City Jail  (Often for regression or YOS failure or new charge)
                   - "36" # Offender situation changed
                   - "37" # Halfway-In (at CCC)
+                  - "63-I" # To Intensive Supervision Program (ISP) - INMATE
                 StateIncarcerationPeriodAdmissionReason.TRANSFER:
                   - "3A" # Reassigned to another Facility
                   - "30" # Received at DOC Facility
                   - "31" # Received at Community Center
-                  - "63" # To Intensive Supervision Program (ISP)
                   - "90" # Transferred to DOC Facility (added bc saw in start codes)
                   - "91" # Transferred to Community Center
                   - "92" # Transferred to County/City Jail
@@ -304,6 +304,7 @@ output:
                   - "37" # Halfway-In (at CCC) - TODO(#13602) Update after schema change
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
                   - "60" # Paroled
+                  - "63-P" # To Intensive Supervision (ISP) - Parole
                 StateIncarcerationPeriodReleaseReason.COURT_ORDER:
                   - "52" # Released by Court
                 StateIncarcerationPeriodReleaseReason.DEATH:
@@ -313,4 +314,4 @@ output:
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - "13" # Terminated from ISP-I
                   - "36" # Offender Situation Changed
-                  - "63" # To Intensive Supervision Program (ISP)
+                  - "63-I" # To Intensive Supervision Program (ISP) - INMATE
