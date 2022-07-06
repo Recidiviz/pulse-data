@@ -40,14 +40,14 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
     WITH sentences AS (
         SELECT 
             pp.person_id,
-            pp.offender_id,
+            SPLIT(pp.external_id, '-')[OFFSET(0)] AS offender_id,
             COALESCE(CAST(vic.TotalRestitution AS FLOAT64),0) AS TotalRestitution,
             COALESCE(CAST(vic.MonthlyRestitution AS FLOAT64 ),0) AS MonthlyRestitution,
             vic.VictimName,
-            FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` pp
-            LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.JOVictim_latest` vic
-                ON CAST(pp.external_id AS STRING) = CONCAT(vic.OffenderID, vic.ConvictionCounty, vic.CaseYear, vic.CaseNumber, FORMAT('%03d', CAST(vic.CountNumber AS INT64)))
-            WHERE pp.sentence_status !='IN'
+        FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` pp
+        LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.JOVictim_latest` vic
+            ON pp.external_id = CONCAT(vic.OffenderID, '-', vic.ConvictionCounty,'-', vic.CaseYear, '-', vic.CaseNumber, '-', vic.CountNumber)
+        WHERE pp.status_raw_text !='IN'
         ),
         aggregated_restitution AS (
             SELECT  person_id, 

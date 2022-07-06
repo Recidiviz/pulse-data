@@ -18,6 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
     US_TN_RAW_DATASET,
@@ -33,67 +34,196 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = (
 
 US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     /*{description}*/
-    -- TODO(#10746): Remove sentencing pre-processing when TN sentences are ingested  
+    WITH raw_data_cte AS
+    (
     SELECT 
-        person_lk.person_id,
-        person_lk.state_code,
-        COALESCE(inc_sen.incarceration_sentence_id, sup_sen.supervision_sentence_id) AS sentence_id,
-        CONCAT(js.OffenderID, js.ConvictionCounty, js.CaseYear, js.CaseNumber, FORMAT('%03d', CAST(js.CountNumber AS INT64))) AS external_id,
-        js.OffenderID AS offender_id,
-        js.ConvictionCounty AS conviction_county,
-        CAST(js.CaseYear AS INT64) AS case_year,
-        js.CaseNumber AS case_number,
-        CAST(js.CountNumber AS INT64) AS count_number,
-        CAST(jo_id.JudicialDistrict AS INT64) AS judicial_district,
-        CAST(CAST(s.SentenceEffectiveDate AS datetime) AS DATE) AS sentence_effective_date,
-        CAST(CAST(charge.OffenseDate AS datetime) AS DATE) AS offense_date,
-        CAST(CAST(charge.PleaDate AS datetime) AS DATE) AS plea_date,
-        COALESCE(CAST(CAST(misc.AlternateSentenceImposeDate AS datetime) AS DATE), CAST(CAST(charge.SentenceImposedDate AS datetime) AS DATE)) AS sentence_imposed_date,
-        CAST(CAST(s.ExpirationDate AS datetime) AS DATE) AS expiration_date,
-        CAST(CAST(s.ReleaseEligibilityDate AS datetime) AS DATE) AS release_eligibility_date,
-        CAST(CAST(s.EarliestPossibleReleaseDate AS datetime) AS DATE) AS earliest_possible_release_date,
-        CAST(CAST(s.FullExpirationDate AS datetime) AS DATE) AS full_expiration_date,
-        CAST(js.MaximumSentenceYears AS INT64)*365 + CAST(js.MaximumSentenceMonths AS INT64)*30 + CAST(js.MaximumSentenceDays AS INT64) AS max_sentence_length_days_calculated,
-        CAST(RangePercent AS NUMERIC)*.01 AS parole_eligibility_percent,
-        CAST(js.PretrialJailCredits AS INT64) AS pretrial_jail_credits,
-        CAST(js.CalculatedPretrialCredits AS INT64) AS calculated_pretrial_jail_credits,
+        CONCAT(js.OffenderID, '-', js.ConvictionCounty,'-', js.CaseYear, '-', js.CaseNumber, '-', js.CountNumber) AS external_id,
+        jo_id.JudicialDistrict AS judicial_district,
+        s.SentenceStatus AS status_raw_text,
+        NULLIF(CAST(js.MinimumSentenceYears AS INT64)*365 + CAST(js.MinimumSentenceMonths AS INT64)*30 + CAST(js.MinimumSentenceDays AS INT64),0) AS min_sentence_length_days_calculated,
+        NULLIF(CAST(js.MaximumSentenceYears AS INT64)*365 + CAST(js.MaximumSentenceMonths AS INT64)*30 + CAST(js.MaximumSentenceDays AS INT64),0) AS max_sentence_length_days_calculated,
         CAST(s.TotalProgramCredits AS INT64) AS total_program_credits,
         CAST(s.TotalBehaviorCredits AS INT64) AS total_behavior_credits,
         CAST(s.TotalPPSCCredits AS INT64) AS total_ppsc_credits,        
-        CAST(TotalGEDCredits AS INT64) total_ged_credits,
-        CAST(TotalLiteraryCredits AS INT64) total_literary_credits,
-        CAST(TotalDrugAlcoholCredits AS INT64) total_drug_alcohol_credits,
-        CAST(TotalEducationAttendanceCredits AS INT64) total_education_attendance_credits,
-        CAST(TotalTreatmentCredits AS INT64) total_treatment_credits,
-        s.ConsecutiveCaseNumber AS consecutive_case_number,
-        CAST(s.ConsecutiveCountNumber AS INT64) AS consecutive_count_number,
-        COALESCE(inc_sen_consec.incarceration_sentence_id, sup_sen_consec.supervision_sentence_id) AS consecutive_sentence_id,
-        CONCAT(js.OffenderID, s.ConsecutiveConvictionCounty, s.ConsecutiveCaseYear, s.ConsecutiveCaseNumber, FORMAT('%03d', CAST(s.ConsecutiveCountNumber AS INT64))) AS consecutive_sentence_external_id,
-        charge.ConvictionOffense as conviction_offense,
-        charge.ConvictionClass AS conviction_class,
-        conviction_offense.OffenseDescription AS offense_description,
-        s.SentenceStatus AS sentence_status,
-    FROM `{project_id}.{raw_dataset}.JOSentence_latest`js
+        CAST(s.TotalGEDCredits AS INT64) total_ged_credits,
+        CAST(s.TotalLiteraryCredits AS INT64) total_literary_credits,
+        CAST(s.TotalDrugAlcoholCredits AS INT64) total_drug_alcohol_credits,
+        CAST(s.TotalEducationAttendanceCredits AS INT64) total_education_attendance_credits,
+        CAST(s.TotalTreatmentCredits AS INT64) total_treatment_credits,
+    FROM `{project_id}.{raw_dataset}.JOSentence_latest` js
     JOIN `{project_id}.{raw_dataset}.Sentence_latest` s
-        USING(OffenderID, ConvictionCounty,CaseYear,CaseNumber, CountNumber)
-    JOIN  `{project_id}.{raw_dataset}.JOCharge_latest` charge
-        USING (OffenderID, ConvictionCounty,CaseYear,CaseNumber, CountNumber)
-    JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` conviction_offense
-        ON conviction_offense.Offense = charge.ConvictionOffense
+        USING(OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
     JOIN `{project_id}.{raw_dataset}.JOIdentification_latest` jo_id
-        USING(OffenderID, ConvictionCounty,CaseYear,CaseNumber, CountNumber)
-    LEFT JOIN `{project_id}.{raw_dataset}.SentenceMiscellaneous_latest` misc
-        USING(OffenderID, ConvictionCounty,CaseYear,CaseNumber, CountNumber)
-    JOIN `{project_id}.{state_base_dataset}.state_person_external_id` person_lk
-        ON js.OffenderID = person_lk.external_id
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_incarceration_sentence` inc_sen
-        ON inc_sen.external_id = CONCAT(js.OffenderID, '-', js.ConvictionCounty,'-', js.CaseYear, '-', js.CaseNumber, '-', js.CountNumber)
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_supervision_sentence` sup_sen
-        ON sup_sen.external_id = CONCAT(js.OffenderID, '-', js.ConvictionCounty,'-', js.CaseYear, '-', js.CaseNumber, '-', js.CountNumber)
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_incarceration_sentence` inc_sen_consec
-        ON inc_sen_consec.external_id = CONCAT(s.OffenderID, '-', s.ConsecutiveConvictionCounty,'-', s.ConsecutiveCaseYear, '-', s.ConsecutiveCaseNumber, '-', s.ConsecutiveCountNumber)
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_supervision_sentence` sup_sen_consec
-        ON sup_sen_consec.external_id = CONCAT(s.OffenderID, '-', s.ConsecutiveConvictionCounty,'-', s.ConsecutiveCaseYear, '-', s.ConsecutiveCaseNumber, '-', s.ConsecutiveCountNumber)
+        USING(OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
+    )
+    ,
+    sentences_cte AS 
+    (
+    /*
+    Unions together incarceration and supervision sentences from the ingested data, joins to raw data to pull in specific fields that we 
+    are not currently ingesting, renames some fields to fit the state-agostic schema, and joins to the state charge data to pull
+    in offense type information.
+    */
+    SELECT 
+        sis.person_id,
+        sis.state_code,
+        sis.incarceration_sentence_id AS sentence_id,
+        sis.external_id AS external_id,
+        'INCARCERATION' AS sentence_type,
+        JSON_EXTRACT_SCALAR(sis.sentence_metadata, '$.CONSECUTIVE_SENTENCE_ID') AS consecutive_sentence_external_id,
+        sis.start_date AS effective_date,
+        sis.date_imposed,
+        sis.completion_date,
+        sis.status,
+        --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
+        sis.projected_min_release_date AS projected_completion_date_min,
+        sis.projected_max_release_date AS projected_completion_date_max,
+        sis.initial_time_served_days,
+        COALESCE(sis.is_life, FALSE) AS life_sentence,
+        charge.charge_id,
+        charge.offense_date,
+        charge.is_violent,
+        charge.classification_type,
+        charge.classification_subtype,
+        COALESCE(charge.description, statute.OffenseDescription) AS description,
+        charge.offense_type,
+        charge.ncic_code,
+        charge.statute,
+    FROM `state.state_incarceration_sentence` AS sis
+    LEFT JOIN `state.state_charge_incarceration_sentence_association` assoc
+        ON assoc.state_code = sis.state_code
+        AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
+    LEFT JOIN `state.state_charge` charge
+        ON charge.state_code = assoc.state_code
+        AND charge.charge_id = assoc.charge_id
+    LEFT JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` statute
+        ON charge.statute = statute.Offense
+    WHERE sis.external_id IS NOT NULL
+        AND sis.state_code = 'US_TN'
+           
+    UNION ALL
+     
+    SELECT 
+        sss.person_id,
+        sss.state_code,
+        sss.supervision_sentence_id AS sentence_id,
+        sss.external_id AS external_id,
+        'SUPERVISION' AS sentence_type,
+        JSON_EXTRACT_SCALAR(sss.sentence_metadata, '$.CONSECUTIVE_SENTENCE_ID') AS consecutive_sentence_external_id,
+        sss.start_date AS effective_date,
+        sss.date_imposed,
+        sss.completion_date,
+        sss.status,
+        --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
+        sss.projected_completion_date AS projected_completion_date_min,
+        sss.projected_completion_date AS projected_completion_date_max,
+        CAST(NULL AS INT64) AS initial_time_served_days,
+        FALSE AS life_sentence,
+        charge.charge_id,
+        charge.offense_date,
+        charge.is_violent,
+        charge.classification_type,
+        charge.classification_subtype,
+        COALESCE(charge.description, statute.OffenseDescription) AS description,
+        charge.offense_type,
+        charge.ncic_code,
+        charge.statute,
+    FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
+    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
+        ON assoc.state_code = sss.state_code
+        AND assoc.supervision_sentence_id = sss.supervision_sentence_id
+    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge` charge
+        ON charge.state_code = assoc.state_code
+        AND charge.charge_id = assoc.charge_id
+    LEFT JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` statute
+        ON charge.statute = statute.Offense
+    WHERE sss.external_id IS NOT NULL
+        AND sss.state_code = 'US_TN'
+    )
+    ,
+    dedup_external_id_fields AS
+    --TODO(#13745): Further investigate de-duplication of sentence external id in TN sentences
+    (
+    /*
+    In prep for deduping based on external id, this view aggregates to the external id level taking the relevant date
+    fields (min for start states and max for end dates). This gets joined in to the final sentence table so that we use 
+    these values instead.
+    */
+    SELECT
+        external_id,
+        MIN(effective_date) AS effective_date,
+        MIN(date_imposed) AS date_imposed,
+        MAX(completion_date) AS completion_date,
+        MAX(projected_completion_date_min) AS projected_completion_date_min,
+        MAX(projected_completion_date_max) AS projected_completion_date_max,
+    FROM sentences_cte
+    GROUP BY 1
+    )
+    /*
+    Joins back to sessions to create a "session_id_imposed" field as well as back to itself to pull in the consecutive
+    sentence internal id.
+    */
+    SELECT 
+        sen.person_id,
+        sen.state_code,
+        sen.sentence_id,
+        sen.external_id AS external_id,
+        sen.sentence_type,
+        raw.judicial_district,
+        sen.consecutive_sentence_external_id,
+        dedup.effective_date,
+        dedup.date_imposed,
+        dedup.completion_date,
+        sen.status,
+        raw.status_raw_text,
+        dedup.projected_completion_date_min,
+        dedup.projected_completion_date_max,
+        sen.initial_time_served_days,
+        sen.life_sentence,
+        raw.min_sentence_length_days_calculated,
+        raw.max_sentence_length_days_calculated,
+        sen.charge_id,
+        sen.offense_date,
+        sen.is_violent,
+        sen.classification_type,
+        sen.classification_subtype,
+        sen.description,
+        sen.offense_type,
+        sen.ncic_code,
+        sen.statute,
+        COALESCE(offense_type_ref.offense_type_short,'UNCATEGORIZED') AS offense_type_short,
+        
+        --these are TN specific fields which are not included in the state-agnostic schema at this point
+        raw.total_program_credits,
+        raw.total_behavior_credits,
+        raw.total_ppsc_credits,        
+        raw.total_ged_credits,
+        raw.total_literary_credits,
+        raw.total_drug_alcohol_credits,
+        raw.total_education_attendance_credits,
+        raw.total_treatment_credits,
+        
+        consecutive_sentence.sentence_id AS consecutive_sentence_id,
+        ses.session_id AS session_id_imposed
+    FROM sentences_cte sen
+    JOIN dedup_external_id_fields dedup
+        USING(external_id)
+    LEFT JOIN raw_data_cte AS raw
+        USING(external_id)
+    --TODO(#13012): Revisit join logic condition to see if we can improve hydration of imposed session id
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` ses
+        ON ses.person_id = sen.person_id
+        AND ses.state_code = sen.state_code
+        AND ses.start_date = sen.date_imposed
+    LEFT JOIN sentences_cte consecutive_sentence
+        ON sen.consecutive_sentence_external_id = consecutive_sentence.external_id
+    ---TODO(#13829): Investigate options for consecutive sentence relationship where supervision sentences are consecutive to incarceration sentences
+        AND sen.sentence_type = consecutive_sentence.sentence_type
+    LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
+        ON sen.state_code = offense_type_ref.state_code
+        AND sen.description = offense_type_ref.offense_type
+    --dedup to a single external id value
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id ORDER BY effective_date) = 1
 """
 
 US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -103,6 +233,8 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_TN_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
     raw_dataset=US_TN_RAW_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

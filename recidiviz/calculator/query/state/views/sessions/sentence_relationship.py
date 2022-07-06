@@ -14,22 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View that summarizes the relationship of TN sentences and defines sentence groups"""
+"""View that summarizes the relationship of sentences and defines sentence groups"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TN_SENTENCE_RELATIONSHIP_VIEW_NAME = "us_tn_sentence_relationship"
+SENTENCE_RELATIONSHIP_VIEW_NAME = "sentence_relationship"
 
-US_TN_SENTENCE_RELATIONSHIP_VIEW_DESCRIPTION = """View that summarizes the relationship of TN sentences and defines sentence groups"""
+SENTENCE_RELATIONSHIP_VIEW_DESCRIPTION = (
+    """View that summarizes the relationship of sentences and defines sentence groups"""
+)
 
-US_TN_SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
+SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
     /*{description}*/
-    /*
-    -- TODO(#10746): Remove sentencing pre-processing when TN sentences are ingested  
-    */
     WITH cte AS
     /*
     This cte does a series of self-joins based on the consecutive sentence id field to create a view that has a record
@@ -41,7 +40,8 @@ US_TN_SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
         l1.person_id,
         l1.state_code,
         l1.sentence_id AS level_1_sentence_id,
-        l1.sentence_imposed_date,
+        l1.date_imposed,
+        l1.sentence_type,
         l2.sentence_id AS level_2_sentence_id,
         l3.sentence_id AS level_3_sentence_id,
         l4.sentence_id AS level_4_sentence_id,
@@ -49,23 +49,28 @@ US_TN_SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
         l6.sentence_id AS level_6_sentence_id,
         ROW_NUMBER() OVER(PARTITION BY l1.person_id
             ORDER BY l1.sentence_id, l2.sentence_id, l3.sentence_id, l4.sentence_id, l5.sentence_id, l6.sentence_id) AS sentence_chain_id
-    FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` l1
+    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` l1
     --TODO(#11164): Replace self joins with recursive CTE
-    LEFT JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` l2
+    LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` l2
         ON l1.sentence_id = l2.consecutive_sentence_id
         AND l1.person_id = l2.person_id
-    LEFT JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` l3
+        AND l1.sentence_type = l2.sentence_type
+    LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` l3
         ON l2.sentence_id = l3.consecutive_sentence_id
         AND l2.person_id = l3.person_id
-    LEFT JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` l4
+        AND l2.sentence_type = l3.sentence_type
+    LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` l4
         ON l3.sentence_id = l4.consecutive_sentence_id
         AND l3.person_id = l4.person_id
-    LEFT JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` l5
+        AND l3.sentence_type = l4.sentence_type
+    LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` l5
         ON l4.sentence_id = l5.consecutive_sentence_id
         AND l4.person_id = l5.person_id
-    LEFT JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` l6
+        AND l4.sentence_type = l5.sentence_type
+    LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` l6
         ON l5.sentence_id = l6.consecutive_sentence_id
         AND l5.person_id = l6.person_id
+        AND l5.sentence_type = l6.sentence_type
     --indicates a parent sentence because it has no parent
     WHERE l1.consecutive_sentence_id IS NULL
     )
@@ -89,12 +94,13 @@ US_TN_SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
         person_id,
         state_code,
         level_1_sentence_id,
-        sentence_imposed_date,
+        sentence_type,
+        date_imposed,
         sentence_chain_id,
         ROW_NUMBER() OVER(PARTITION BY person_id, sentence_chain_id
             ORDER BY level_1_sentence_id, level_2_sentence_id, level_3_sentence_id, level_4_sentence_id, level_5_sentence_id, level_6_sentence_id) AS sentence_level,
         --every case of a unique sentence imposed date represents a new sentence group
-        DENSE_RANK() OVER(PARTITION BY person_id ORDER BY sentence_imposed_date) AS sentence_group_id,
+        DENSE_RANK() OVER(PARTITION BY person_id ORDER BY date_imposed) AS sentence_group_id,
         sentence_id,
     FROM cte,
     UNNEST([level_1_sentence_id, level_2_sentence_id, level_3_sentence_id, level_4_sentence_id, level_5_sentence_id, level_6_sentence_id]) AS sentence_id
@@ -107,23 +113,30 @@ US_TN_SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
     each sentence group. 
     */
     SELECT DISTINCT 
-        person_id,
-        state_code,
-        sentence_group_id,
-        sentence_level,
-        sentence_id,
+        a.person_id,
+        a.state_code,
+        a.sentence_group_id,
+        a.sentence_level,
+        a.sentence_id,
+        a.sentence_type,
+        a.date_imposed AS parent_sentence_date_imposed,
+        b.date_imposed AS date_imposed,
+        b.session_id_imposed,
     FROM sentence_chain_cte a
+    JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` b
+        USING(person_id, state_code, sentence_id, sentence_type)
+    ORDER BY person_id, sentence_group_id, sentence_level
 """
 
-US_TN_SENTENCE_RELATIONSHIP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SENTENCE_RELATIONSHIP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    view_id=US_TN_SENTENCE_RELATIONSHIP_VIEW_NAME,
-    view_query_template=US_TN_SENTENCE_RELATIONSHIP_QUERY_TEMPLATE,
-    description=US_TN_SENTENCE_RELATIONSHIP_VIEW_DESCRIPTION,
+    view_id=SENTENCE_RELATIONSHIP_VIEW_NAME,
+    view_query_template=SENTENCE_RELATIONSHIP_QUERY_TEMPLATE,
+    description=SENTENCE_RELATIONSHIP_VIEW_DESCRIPTION,
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_SENTENCE_RELATIONSHIP_VIEW_BUILDER.build_and_print()
+        SENTENCE_RELATIONSHIP_VIEW_BUILDER.build_and_print()

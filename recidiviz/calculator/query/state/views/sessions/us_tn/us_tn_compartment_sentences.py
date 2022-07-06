@@ -42,13 +42,13 @@ US_TN_COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         ss.most_severe_sentence_level AS sentence_level,
         ss.state_code,
         #TODO(#11364): Use `last_sentence_id` to capture expiration date associated with latest child sentences
-        sms.full_expiration_date,
-        sp.sentence_imposed_date,
-        sp.sentence_effective_date,
-        sms.offense_description,
-        sms.expiration_date,
-        sms.earliest_possible_release_date,
-        sms.conviction_class,
+        sms.projected_completion_date_min,
+        sms.projected_completion_date_max,
+        sp.date_imposed,
+        sp.effective_date,
+        sms.description,
+        sms.completion_date AS expiration_date,
+        sms.classification_subtype AS conviction_class,
         sms.max_sentence_length_days_calculated,
         ss.total_max_sentence_length_days_calculated,
     FROM `{project_id}.{sessions_dataset}.us_tn_sentence_summary_materialized` ss
@@ -70,17 +70,17 @@ US_TN_COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         sessions.last_day_of_data,
         offense_type_ref.offense_type_short,
         RANK() OVER(PARTITION BY sessions.person_id, session_id 
-            ORDER BY ABS(date_diff(sentence_imposed_date, sessions.start_date, DAY)) ASC, sentences.sentence_level, sentences.sentence_effective_date, sentences.sentence_group_id) AS date_proximity_rank
+            ORDER BY ABS(date_diff(date_imposed, sessions.start_date, DAY)) ASC, sentences.sentence_level, sentences.effective_date, sentences.sentence_group_id) AS date_proximity_rank
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`  sessions
     JOIN primary_sentences sentences 
         ON sessions.person_id = sentences.person_id
-        AND sessions.start_date < COALESCE(sentences.full_expiration_date, '9999-01-01')
+        AND sessions.start_date < COALESCE(sentences.projected_completion_date_max, '9999-01-01')
         -- Sentence start date (or date imposed for ID) must be before the session end date
-        AND sentences.sentence_imposed_date < COALESCE(sessions.end_date, '9999-01-01')
+        AND sentences.date_imposed < COALESCE(sessions.end_date, '9999-01-01')
         AND REGEXP_CONTAINS(sessions.compartment_level_1, '(INCARCERATION|SUPERVISION)')
     LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
         ON offense_type_ref.state_code = sentences.state_code
-        AND offense_type_ref.offense_type = sentences.offense_description
+        AND offense_type_ref.offense_type = sentences.description
     WHERE TRUE 
     QUALIFY date_proximity_rank = 1
     ORDER by session_id ASC, date_proximity_rank ASC
@@ -93,18 +93,18 @@ US_TN_COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         p.sentence_group_id,
         p.sentence_level,
         CAST(NULL AS STRING) AS sentence_data_source,
-        p.sentence_imposed_date AS sentence_date_imposed,
-        p.sentence_effective_date AS sentence_start_date,
+        p.date_imposed AS sentence_date_imposed,
+        p.effective_date AS sentence_start_date,
         p.expiration_date AS sentence_completion_date,
-        p.earliest_possible_release_date AS projected_completion_date_min,
-        p.full_expiration_date AS projected_completion_date_max,
+        p.projected_completion_date_min,
+        p.projected_completion_date_max,
         CAST(NULL AS DATE) AS parole_eligibility_date,
         CAST(NULL AS BOOLEAN) AS life_sentence,
         CAST(NULL AS INT64) AS offense_count,
         CAST(NULL AS BOOLEAN) AS most_severe_is_violent,
         CAST(NULL AS STRING) AS most_severe_classification_type,
         p.conviction_class AS most_severe_felony_class,
-        p.offense_description AS most_severe_offense_type,
+        p.description AS most_severe_offense_type,
         p.offense_type_short AS most_severe_offense_type_short,
         CAST(NULL AS INT64) AS sentence_length_days,
         CAST(NULL AS INT64) AS min_projected_sentence_length,
@@ -113,13 +113,13 @@ US_TN_COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         COUNT(1) AS sentence_count,
         --TODO(#11174): Update arrays to be structs
         ARRAY_AGG('MISSING') AS classification_type,
-        ARRAY_AGG(DISTINCT COALESCE(all_sentences.conviction_class, 'MISSING')) AS felony_class,
-        ARRAY_AGG(DISTINCT COALESCE(all_sentences.offense_description, 'MISSING')) AS description,
+        ARRAY_AGG(DISTINCT COALESCE(all_sentences.classification_subtype, 'MISSING')) AS felony_class,
+        ARRAY_AGG(DISTINCT COALESCE(all_sentences.description, 'MISSING')) AS description,
         ARRAY_AGG('MISSING') AS ncic_code,
-        ARRAY_AGG(DISTINCT COALESCE(all_sentences.offense_description, 'MISSING')) AS offense_type,
+        ARRAY_AGG(DISTINCT COALESCE(all_sentences.description, 'MISSING')) AS offense_type,
         ARRAY_AGG(DISTINCT COALESCE(offense_type_ref.offense_type_short, 'MISSING')) AS offense_type_short,
     FROM primary_sentences_with_session_id AS p
-    JOIN `{project_id}.{sessions_dataset}.us_tn_sentence_relationship_materialized` lk
+    JOIN `{project_id}.{sessions_dataset}.sentence_relationship_materialized` lk
         ON p.person_id = lk.person_id
         AND p.sentence_group_id = lk.sentence_group_id
     JOIN `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` all_sentences
@@ -127,7 +127,7 @@ US_TN_COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         AND all_sentences.sentence_id = lk.sentence_id 
     LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
         ON offense_type_ref.state_code = all_sentences.state_code
-        AND offense_type_ref.offense_type = all_sentences.offense_description
+        AND offense_type_ref.offense_type = all_sentences.description
     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
 """
 
