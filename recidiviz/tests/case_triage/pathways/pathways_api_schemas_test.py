@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for Pathways API schemas"""
 from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.metric_queries import TimePeriod
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
@@ -27,12 +28,18 @@ from recidiviz.tests.case_triage.api_schemas_test import (
 
 
 class FetchMetricsParamsSchemaTest(SchemaTestCase):
+    camel_case = False
     schema = FETCH_METRIC_SCHEMAS_BY_NAME["LibertyToPrisonTransitionsCount"]
 
-    test_invalid_since = invalid_schema_test({"since": "1_1_2"}, ["since"])
+    test_invalid_time_period = invalid_schema_test(
+        {"time_period": "1_1_2"}, ["time_period"]
+    )
 
-    test_valid_since = valid_schema_test(
-        {"group": Dimension.YEAR_MONTH.value, "since": "2022-03-01"}
+    test_valid_time_period = valid_schema_test(
+        {
+            "group": Dimension.YEAR_MONTH.value,
+            "time_period": TimePeriod.MONTHS_25_60.value,
+        }
     )
 
     test_invalid_by = invalid_schema_test({"group": "asdf"}, ["group"])

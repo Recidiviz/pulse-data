@@ -21,6 +21,7 @@ from marshmallow import Schema, ValidationError, fields, validate
 from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.metric_queries import TimePeriod
 from recidiviz.case_triage.pathways.metrics import (
     ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE,
     ENABLED_PERSON_LEVEL_METRICS_BY_STATE,
@@ -40,7 +41,11 @@ for enabled_metrics in ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE.values():
     for metric_class in enabled_metrics:
         FETCH_METRIC_SCHEMAS_BY_NAME[metric_class.name] = Schema.from_dict(
             {
-                "since": fields.String(allow_none=True, validate=is_date_string),
+                "time_period": EnumField(
+                    TimePeriod,
+                    by_value=True,
+                    default=TimePeriod.MONTHS_0_6.value,
+                ),
                 "group": EnumField(
                     Dimension,
                     by_value=True,
@@ -62,7 +67,11 @@ for enabled_person_metrics in ENABLED_PERSON_LEVEL_METRICS_BY_STATE.values():
     for person_metric_class in enabled_person_metrics:
         FETCH_METRIC_SCHEMAS_BY_NAME[person_metric_class.name] = Schema.from_dict(
             {
-                "since": fields.String(allow_none=True, validate=is_date_string),
+                "time_period": EnumField(
+                    TimePeriod,
+                    by_value=True,
+                    default=TimePeriod.MONTHS_0_6.value,
+                ),
                 "filters": fields.Dict(
                     EnumField(
                         Dimension,

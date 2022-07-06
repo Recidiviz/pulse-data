@@ -35,6 +35,7 @@ from recidiviz.case_triage.pathways.metric_queries import (
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
+    TimePeriod,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
@@ -59,6 +60,7 @@ def load_metrics_fixture(model: PathwaysBase, filename: str = None) -> List[Dict
         reader = csv.DictReader(fixture_file)
         for row in reader:
             results.append(row)
+
     return results
 
 
@@ -121,6 +123,9 @@ class PathwaysCountByMetricTestBase(PathwaysMetricTestBase):
                 self.query_builder.build_params({"group": dimension_mapping.dimension}),
             )
 
+        for dimension, expected_counts in self.all_expected_counts.items():
+            self.test.assertEqual(expected_counts, results.get(dimension))
+
         self.test.assertEqual(self.all_expected_counts, results)
 
 
@@ -159,31 +164,33 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
             Dimension.YEAR_MONTH: [
+                {"year": 2021, "month": 1, "count": 1},
                 {"year": 2022, "month": 1, "count": 1},
                 {"year": 2022, "month": 2, "count": 1},
                 {"year": 2022, "month": 3, "count": 3},
             ],
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 4},
+                {"gender": "MALE", "count": 5},
             ],
             Dimension.AGE_GROUP: [
-                {"age_group": "20-25", "count": 1},
+                {"age_group": "20-25", "count": 2},
                 {"age_group": "60+", "count": 4},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
                 {"race": "BLACK", "count": 2},
-                {"race": "WHITE", "count": 2},
+                {"race": "WHITE", "count": 3},
             ],
             Dimension.JUDICIAL_DISTRICT: [
                 {"judicial_district": "D1", "count": 4},
                 {"judicial_district": "D2", "count": 1},
+                {"judicial_district": "D3", "count": 1},
             ],
             Dimension.PRIOR_LENGTH_OF_INCARCERATION: [
                 {
                     "prior_length_of_incarceration": "months_0_3",
-                    "count": 4,
+                    "count": 5,
                 },
                 {
                     "prior_length_of_incarceration": "months_3_6",
@@ -203,16 +210,19 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
             ),
         )
 
-        self.test.assertEqual([{"gender": "MALE", "count": 2}], results)
+        self.test.assertEqual([{"gender": "MALE", "count": 3}], results)
 
-    def test_filter_since(self) -> None:
+    def test_filter_time_period(self) -> None:
+        """Asserts that person id 6 is dropped from the counts"""
         results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
             self.query_builder,
-            CountByDimensionMetricParams(group=Dimension.GENDER, since="2022-03-01"),
+            CountByDimensionMetricParams(
+                group=Dimension.GENDER, time_period=TimePeriod.MONTHS_0_6
+            ),
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}], results
+            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 4}], results
         )
 
 
@@ -235,26 +245,28 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
             Dimension.YEAR_MONTH: [
+                {"year": 2021, "month": 1, "count": 1},
                 {"year": 2022, "month": 1, "count": 1},
                 {"year": 2022, "month": 2, "count": 2},
                 {"year": 2022, "month": 3, "count": 3},
             ],
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 5},
+                {"gender": "MALE", "count": 6},
             ],
             Dimension.AGE_GROUP: [
                 {"age_group": "20-25", "count": 2},
-                {"age_group": "60+", "count": 4},
+                {"age_group": "60+", "count": 5},
             ],
             Dimension.FACILITY: [
                 {"facility": "ABC", "count": 3},
                 {"facility": "DEF", "count": 3},
+                {"facility": "GHI", "count": 1},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
                 {"race": "BLACK", "count": 2},
-                {"race": "WHITE", "count": 3},
+                {"race": "WHITE", "count": 4},
             ],
         }
 
@@ -273,14 +285,18 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
             [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}], results
         )
 
-    def test_filter_since(self) -> None:
+    def test_filter_time_period(self) -> None:
+        """Asserts that person id 6 is filtered out of the 6 month count"""
         results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
             self.query_builder,
-            CountByDimensionMetricParams(group=Dimension.GENDER, since="2022-03-01"),
+            CountByDimensionMetricParams(
+                group=Dimension.FACILITY,
+                time_period=TimePeriod.MONTHS_0_6,
+            ),
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}], results
+            [{"facility": "ABC", "count": 3}, {"facility": "DEF", "count": 3}], results
         )
 
 
@@ -303,48 +319,52 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
             Dimension.YEAR_MONTH: [
+                {"year": 2021, "month": 1, "count": 1},
                 {"year": 2022, "month": 1, "count": 1},
                 {"year": 2022, "month": 2, "count": 2},
                 {"year": 2022, "month": 3, "count": 1},
             ],
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 2},
-                {"gender": "MALE", "count": 1},
+                {"gender": "MALE", "count": 2},
                 {"gender": "NON_BINARY", "count": 1},
             ],
             Dimension.AGE_GROUP: [
                 {"age_group": "20-25", "count": 1},
-                {"age_group": "26-35", "count": 2},
+                {"age_group": "26-35", "count": 3},
                 {"age_group": "60+", "count": 1},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
                 {"race": "BLACK", "count": 1},
-                {"race": "WHITE", "count": 2},
+                {"race": "WHITE", "count": 3},
             ],
             Dimension.SUPERVISION_TYPE: [
-                {"supervision_type": "PAROLE", "count": 1},
+                {"supervision_type": "PAROLE", "count": 2},
                 {"supervision_type": "PROBATION", "count": 3},
             ],
             Dimension.SUPERVISION_LEVEL: [
+                {"supervision_level": "MAXIMUM", "count": 1},
                 {"supervision_level": "MEDIUM", "count": 2},
                 {"supervision_level": "MINIMUM", "count": 2},
             ],
             Dimension.SUPERVISION_DISTRICT: [
                 {"supervision_district": "DISTRICT_10", "count": 2},
-                {"supervision_district": "DISTRICT_18", "count": 2},
+                {"supervision_district": "DISTRICT_18", "count": 3},
             ],
             Dimension.DISTRICT: [
                 {"district": "DISTRICT_10", "count": 2},
-                {"district": "DISTRICT_18", "count": 2},
+                {"district": "DISTRICT_18", "count": 3},
             ],
             Dimension.SUPERVISING_OFFICER: [
                 {"supervising_officer": "3456", "count": 1},
                 {"supervising_officer": "4567", "count": 1},
                 {"supervising_officer": "7890", "count": 2},
+                {"supervising_officer": "9999", "count": 1},
             ],
             Dimension.LENGTH_OF_STAY: [
                 {"length_of_stay": "months_0_3", "count": 1},
+                {"length_of_stay": "months_25_60", "count": 1},
                 {"length_of_stay": "months_3_6", "count": 1},
                 {"length_of_stay": "months_6_9", "count": 2},
             ],
@@ -364,19 +384,25 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
         self.test.assertEqual(
             [
                 {"district": "DISTRICT_10", "count": 1},
-                {"district": "DISTRICT_18", "count": 1},
+                {"district": "DISTRICT_18", "count": 2},
             ],
             results,
         )
 
-    def test_filter_since(self) -> None:
+    def test_filter_time_period(self) -> None:
+        """Tests that person 5 is not included, as the transition occurred more than 6 months ago"""
         results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
             self.query_builder,
-            CountByDimensionMetricParams(group=Dimension.GENDER, since="2022-02-15"),
+            CountByDimensionMetricParams(
+                group=Dimension.GENDER,
+                time_period=TimePeriod.MONTHS_0_6,
+            ),
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "NON_BINARY", "count": 1}],
+            [
+                {"gender": "MALE", "count": 1},
+            ],
             results,
         )
 
@@ -408,7 +434,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 "race": "WHITE",
                 "facility": "ABC, DEF",
                 "full_name": "TEST, PERSON",
-                "time_period": "months_25_60",
+                "time_period": "months_0_6",
                 "state_id": "0001",
             },
             {
@@ -451,6 +477,16 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 "time_period": "months_0_6",
                 "state_id": "0002",
             },
+            {
+                "age": "65",
+                "age_group": "60+",
+                "facility": "GHI",
+                "full_name": "EXAMPLE, TIME",
+                "gender": "MALE",
+                "race": "WHITE",
+                "state_id": "0006",
+                "time_period": "months_25_60",
+            },
         ]
 
     def test_metrics_filter(self) -> None:
@@ -472,7 +508,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                     "race": "WHITE",
                     "facility": "ABC",
                     "full_name": "TEST, PERSON",
-                    "time_period": "months_25_60",
+                    "time_period": "months_0_6",
                     "state_id": "0001",
                 },
                 {
@@ -499,43 +535,64 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
             results,
         )
 
-    def test_filter_since(self) -> None:
+    def test_filter_time_period(self) -> None:
+        """Tests that person id 6 is not included in the response"""
         results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
             self.query_builder,
-            FetchMetricParams(since="2022-03-01"),
+            FetchMetricParams(time_period=TimePeriod.MONTHS_0_6),
         )
 
         self.test.assertEqual(
             [
                 {
-                    "age_group": "60+",
+                    "age": "22, 23",
+                    "age_group": "20-25",
+                    "facility": "ABC, DEF",
+                    "full_name": "TEST, PERSON",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "state_id": "0001",
+                    "time_period": "months_0_6",
+                },
+                {
                     "age": "62",
-                    "gender": "FEMALE",
-                    "race": "BLACK",
+                    "age_group": "60+",
                     "facility": "ABC",
                     "full_name": "FAKE, USER",
-                    "time_period": "months_0_6",
+                    "gender": "FEMALE",
+                    "race": "BLACK",
                     "state_id": "0003",
+                    "time_period": "months_0_6",
                 },
                 {
-                    "age_group": "60+",
                     "age": "64",
-                    "gender": "MALE",
-                    "race": "ASIAN",
+                    "age_group": "60+",
                     "facility": "ABC",
                     "full_name": "EXAMPLE, INDIVIDUAL",
-                    "time_period": "months_0_6",
+                    "gender": "MALE",
+                    "race": "ASIAN",
                     "state_id": "0005",
+                    "time_period": "months_0_6",
                 },
                 {
-                    "age_group": "60+",
                     "age": "63",
-                    "gender": "MALE",
-                    "race": "BLACK",
+                    "age_group": "60+",
                     "facility": "DEF",
                     "full_name": "FAKE2, USER2",
-                    "time_period": "months_0_6",
+                    "gender": "MALE",
+                    "race": "BLACK",
                     "state_id": "0004",
+                    "time_period": "months_0_6",
+                },
+                {
+                    "age": "61",
+                    "age_group": "60+",
+                    "facility": "DEF",
+                    "full_name": "TEST, PERSON2",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "state_id": "0002",
+                    "time_period": "months_0_6",
                 },
             ],
             results,
@@ -561,51 +618,57 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
             Dimension.YEAR_MONTH: [
+                {"year": 2021, "month": 1, "count": 1},
                 {"year": 2022, "month": 1, "count": 1},
                 {"year": 2022, "month": 2, "count": 2},
                 {"year": 2022, "month": 3, "count": 1},
             ],
             Dimension.AGE_GROUP: [
                 {"age_group": "20-25", "count": 1},
-                {"age_group": "26-35", "count": 2},
+                {"age_group": "26-35", "count": 3},
                 {"age_group": "60+", "count": 1},
             ],
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 2},
-                {"gender": "MALE", "count": 1},
+                {"gender": "MALE", "count": 2},
                 {"gender": "NON_BINARY", "count": 1},
             ],
             Dimension.LENGTH_OF_STAY: [
                 {"length_of_stay": "months_0_3", "count": 1},
+                {"length_of_stay": "months_24_36", "count": 1},
                 {"length_of_stay": "months_3_6", "count": 1},
                 {"length_of_stay": "months_6_9", "count": 2},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
                 {"race": "BLACK", "count": 1},
-                {"race": "WHITE", "count": 2},
+                {"race": "WHITE", "count": 3},
             ],
             Dimension.SUPERVISION_TYPE: [
-                {"supervision_type": "PAROLE", "count": 1},
+                {"supervision_type": "PAROLE", "count": 2},
                 {"supervision_type": "PROBATION", "count": 3},
             ],
             Dimension.SUPERVISION_LEVEL: [
+                {"supervision_level": "MAXIMUM", "count": 1},
                 {"supervision_level": "MEDIUM", "count": 2},
                 {"supervision_level": "MINIMUM", "count": 2},
             ],
             Dimension.SUPERVISION_DISTRICT: [
                 {"supervision_district": "DISTRICT_10", "count": 2},
                 {"supervision_district": "DISTRICT_18", "count": 2},
+                {"supervision_district": "DISTRICT_20", "count": 1},
             ],
             # TODO(#13552): Remove this once FE uses supervision_district
             Dimension.DISTRICT: [
                 {"district": "DISTRICT_10", "count": 2},
                 {"district": "DISTRICT_18", "count": 2},
+                {"district": "DISTRICT_20", "count": 1},
             ],
             Dimension.SUPERVISING_OFFICER: [
                 {"supervising_officer": "3456", "count": 1},
                 {"supervising_officer": "4567", "count": 1},
                 {"supervising_officer": "7890", "count": 2},
+                {"supervising_officer": "9999", "count": 1},
             ],
         }
 
@@ -621,18 +684,28 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "NON_BINARY", "count": 1}],
+            [
+                {"gender": "FEMALE", "count": 1},
+                {"gender": "MALE", "count": 1},
+                {"gender": "NON_BINARY", "count": 1},
+            ],
             results,
         )
 
-    def test_filter_since(self) -> None:
+    def test_filter_time_period(self) -> None:
+        """Asserts that person id 5 is not included in the counts"""
         results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
-                group=Dimension.SUPERVISION_DISTRICT, since="2022-02-11"
+                group=Dimension.SUPERVISION_DISTRICT,
+                time_period=TimePeriod.MONTHS_0_6,
             ),
         )
 
         self.test.assertEqual(
-            [{"supervision_district": "DISTRICT_18", "count": 2}], results
+            [
+                {"supervision_district": "DISTRICT_10", "count": 2},
+                {"supervision_district": "DISTRICT_18", "count": 2},
+            ],
+            results,
         )
