@@ -48,8 +48,8 @@ test("renders loading on load", () => {
       </AuthWall>
     </StoreProvider>
   );
-  const loadingText = screen.getByText(/Loading data.../i);
-  expect(loadingText).toBeInTheDocument();
+  const loader = screen.getByTestId("loading");
+  expect(loader).toBeInTheDocument();
 
   expect.hasAssertions();
 });

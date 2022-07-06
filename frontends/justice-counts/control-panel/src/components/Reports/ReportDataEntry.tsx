@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Loading } from "@recidiviz/design-system";
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
@@ -24,6 +23,7 @@ import { useParams } from "react-router-dom";
 import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import { PageWrapper } from "../Forms";
+import Loading from "../Loading";
 import DataEntryForm from "./DataEntryForm";
 import PublishConfirmation from "./PublishConfirmation";
 import PublishDataPanel from "./PublishDataPanel";

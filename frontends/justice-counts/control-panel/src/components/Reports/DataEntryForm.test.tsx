@@ -40,8 +40,8 @@ test("display loading when no reports are loaded", async () => {
     </StoreProvider>
   );
   await waitFor(async () => {
-    const loadingText = await screen.findByText(/Loading data.../i);
-    expect(loadingText).toBeInTheDocument();
+    const loading = screen.getByTestId("loading");
+    expect(loading).toBeInTheDocument();
   });
   expect.hasAssertions();
 });
