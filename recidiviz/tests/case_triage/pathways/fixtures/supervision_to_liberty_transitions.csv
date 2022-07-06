@@ -1,5 +1,6 @@
-state_code,person_id,transition_date,year,month,supervision_type,supervision_level,age,age_group,gender,race,supervising_officer,supervision_start_date,supervision_district,length_of_stay
-US_XX,1,2022-01-01,2022,1,PAROLE,MEDIUM,22,20-25,MALE,ASIAN,7890,2021-10-13,DISTRICT_10,months_0_3
-US_XX,2,2022-02-02,2022,2,PROBATION,MEDIUM,62,60+,FEMALE,WHITE,7890,2021-08-13,DISTRICT_10,months_3_6
-US_XX,3,2022-02-20,2022,2,PROBATION,MINIMUM,28,26-35,FEMALE,BLACK,4567,2020-06-13,DISTRICT_18,months_6_9
-US_XX,4,2022-03-20,2022,3,PROBATION,MINIMUM,28,26-35,NON_BINARY,WHITE,3456,2020-06-23,DISTRICT_18,months_6_9
+state_code,person_id,transition_date,year,month,time_period,supervision_type,supervision_level,age,age_group,gender,race,supervising_officer,supervision_start_date,supervision_district,length_of_stay
+US_XX,1,2022-01-01,2022,1,months_0_6,PAROLE,MEDIUM,22,20-25,MALE,ASIAN,7890,2021-10-13,DISTRICT_10,months_0_3
+US_XX,2,2022-02-02,2022,2,months_0_6,PROBATION,MEDIUM,62,60+,FEMALE,WHITE,7890,2021-08-13,DISTRICT_10,months_3_6
+US_XX,3,2022-02-20,2022,2,months_0_6,PROBATION,MINIMUM,28,26-35,FEMALE,BLACK,4567,2020-06-13,DISTRICT_18,months_6_9
+US_XX,4,2022-03-20,2022,3,months_0_6,PROBATION,MINIMUM,28,26-35,NON_BINARY,WHITE,3456,2020-06-23,DISTRICT_18,months_6_9
+US_XX,5,2021-01-01,2021,1,months_13_24,PAROLE,MAXIMUM,28,26-35,MALE,WHITE,9999,2021-01-01,DISTRICT_20,months_24_36

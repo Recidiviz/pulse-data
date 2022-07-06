@@ -26,6 +26,7 @@ from recidiviz.common.str_field_utils import snake_to_camel
 
 
 class SchemaTestCase(TestCase):
+    camel_case: bool = True
     schema: Type[Schema]
 
 
@@ -51,7 +52,10 @@ def invalid_schema_test(
             for key in invalid_keys:
                 # Catch keys in tests that have not been updated when fields are renamed
                 self.assertIn(key, schema.fields.keys())
-                self.assertIn(snake_to_camel(key), exception_context.exception.messages)
+                self.assertIn(
+                    snake_to_camel(key) if self.camel_case else key,
+                    exception_context.exception.messages,
+                )
 
     return inner
 

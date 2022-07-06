@@ -17,9 +17,10 @@
 """ Contains functionality to map metrics to our relational models inside the query builders"""
 import abc
 import enum
-from typing import Dict, Generic, List, Optional, TypeVar, Union
+from typing import Dict, Generic, List, TypeVar, Union
 
 import attr
+from attrs import validators
 from sqlalchemy import Column, String, cast, func, literal_column
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Query
@@ -34,10 +35,35 @@ from recidiviz.persistence.database.schema.pathways.schema import (
 )
 
 
+class TimePeriod(enum.Enum):
+    MONTHS_0_6 = "months_0_6"
+    MONTHS_7_12 = "months_7_12"
+    MONTHS_13_24 = "months_13_24"
+    MONTHS_25_60 = "months_25_60"
+
+    @classmethod
+    def month_map(cls) -> Dict[str, int]:
+        return {member.value: int(member.value.split("_")[1]) for member in cls}
+
+    @classmethod
+    def period_range(cls, time_period: "TimePeriod") -> List[str]:
+        month_map = cls.month_map()
+
+        return [
+            member.value
+            for member in TimePeriod
+            if month_map[member.value] <= month_map[time_period.value]
+        ]
+
+
 @attr.s(auto_attribs=True)
 class FetchMetricParams:
-    since: Optional[str] = attr.attrib(default=None)
-    filters: Dict[Dimension, Union[str, List[str]]] = attr.attrib(factory=dict)
+    time_period: TimePeriod = attr.field(
+        default=TimePeriod.MONTHS_25_60,
+        converter=TimePeriod,
+        validator=validators.in_(TimePeriod),
+    )
+    filters: Dict[Dimension, Union[str, List[str]]] = attr.field(factory=dict)
 
 
 @attr.s(auto_attribs=True)
@@ -83,7 +109,6 @@ class MetricQueryBuilder(Generic[ParamsType]):
 
     name: str
     model: PathwaysBase
-    timestamp_column: Column
     dimension_mappings: List[DimensionMapping]
 
     def __attrs_post_init__(self) -> None:
@@ -147,13 +172,17 @@ class CountByDimensionMetricQueryBuilder(
             for dimension, value in params.filters.items()
         ]
 
-        if params.since:
-            if not self.timestamp_column:
-                raise MetricQueryError(f"Querying 'since' is not allowed for {self}")
-            conditions.append(self.timestamp_column >= params.since)
+        if params.time_period:
+            if not self.model.time_period:
+                raise MetricQueryError(
+                    f"Querying 'time_period' is not allowed for {self}"
+                )
+
+            time_periods = TimePeriod.period_range(params.time_period)
+            conditions.append(self.model.time_period.in_(time_periods))
 
         return (
-            Query([*grouped_columns, func.count(self.timestamp_column)])
+            Query([*grouped_columns, func.count(self.model.time_period)])
             .filter(*conditions)
             .group_by(*grouped_columns)
             .order_by(*grouped_columns)
@@ -176,10 +205,13 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder[FetchMetricParams]):
             for dimension, value in params.filters.items()
         ]
 
-        if params.since:
-            if not self.timestamp_column:
-                raise MetricQueryError(f"Querying 'since' is not allowed for {self}")
-            conditions.append(self.timestamp_column >= params.since)
+        if params.time_period:
+            if not self.model.time_period:
+                raise MetricQueryError(
+                    f"Querying 'time_period' is not allowed for {self}"
+                )
+            time_periods = TimePeriod.period_range(params.time_period)
+            conditions.append(self.model.time_period.in_(time_periods))
 
         grouped_columns = [
             column
@@ -203,6 +235,7 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder[FetchMetricParams]):
             Query([*grouped_columns, *aggregate_columns])
             .filter(*conditions)
             .group_by(*grouped_columns)
+            .order_by(*grouped_columns)
         )
 
     def build_params(self, schema: Dict) -> FetchMetricParams:
@@ -212,7 +245,6 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder[FetchMetricParams]):
 LibertyToPrisonTransitionsCount = CountByDimensionMetricQueryBuilder(
     name="LibertyToPrisonTransitionsCount",
     model=LibertyToPrisonTransitions,
-    timestamp_column=LibertyToPrisonTransitions.transition_date,
     dimension_mappings=[
         DimensionMapping(
             dimension=Dimension.YEAR_MONTH,
@@ -250,7 +282,6 @@ LibertyToPrisonTransitionsCount = CountByDimensionMetricQueryBuilder(
 PrisonToSupervisionTransitionsCount = CountByDimensionMetricQueryBuilder(
     name="PrisonToSupervisionTransitionsCount",
     model=PrisonToSupervisionTransitions,
-    timestamp_column=PrisonToSupervisionTransitions.transition_date,
     dimension_mappings=[
         DimensionMapping(
             dimension=Dimension.YEAR_MONTH,
@@ -286,7 +317,6 @@ PrisonToSupervisionTransitionsCount = CountByDimensionMetricQueryBuilder(
 PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
     name="PrisonToSupervisionTransitionsPersonLevel",
     model=PrisonToSupervisionTransitions,
-    timestamp_column=PrisonToSupervisionTransitions.transition_date,
     dimension_mappings=[
         DimensionMapping(
             dimension=Dimension.AGE_GROUP,
@@ -327,7 +357,6 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
 SupervisionToLibertyTransitionsCount = CountByDimensionMetricQueryBuilder(
     name="SupervisionToLibertyTransitionsCount",
     model=SupervisionToLibertyTransitions,
-    timestamp_column=SupervisionToLibertyTransitions.transition_date,
     dimension_mappings=[
         DimensionMapping(
             dimension=Dimension.YEAR_MONTH,
@@ -391,7 +420,6 @@ SupervisionToLibertyTransitionsCount = CountByDimensionMetricQueryBuilder(
 SupervisionToPrisonTransitionsCount = CountByDimensionMetricQueryBuilder(
     name="SupervisionToPrisonTransitionsCount",
     model=SupervisionToPrisonTransitions,
-    timestamp_column=SupervisionToPrisonTransitions.transition_date,
     dimension_mappings=[
         DimensionMapping(
             dimension=Dimension.YEAR_MONTH,

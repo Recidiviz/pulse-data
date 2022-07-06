@@ -28,6 +28,7 @@ from flask.testing import FlaskClient
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.metric_queries import TimePeriod
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
@@ -193,7 +194,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(
             response.get_json(),
             [
-                {"count": 1, "ageGroup": "20-25"},
+                {"count": 2, "ageGroup": "20-25"},
                 {"count": 4, "ageGroup": "60+"},
             ],
         )
@@ -231,7 +232,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "race": "WHITE",
                     "facility": "ABC, DEF",
                     "fullName": "TEST, PERSON",
-                    "timePeriod": "months_25_60",
+                    "timePeriod": "months_0_6",
                     "stateId": "0001",
                 },
                 {
@@ -274,6 +275,16 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "timePeriod": "months_0_6",
                     "stateId": "0002",
                 },
+                {
+                    "ageGroup": "60+",
+                    "age": "65",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "facility": "GHI",
+                    "fullName": "EXAMPLE, TIME",
+                    "timePeriod": "months_25_60",
+                    "stateId": "0006",
+                },
             ],
         )
 
@@ -294,7 +305,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "race": "WHITE",
                     "facility": "DEF",
                     "fullName": "TEST, PERSON",
-                    "timePeriod": "months_25_60",
+                    "timePeriod": "months_0_6",
                     "stateId": "0001",
                 },
                 {
@@ -337,24 +348,45 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(
             [
                 {"count": 1, "race": "BLACK"},
-                {"count": 2, "race": "WHITE"},
+                {"count": 3, "race": "WHITE"},
             ],
             response.get_json(),
         )
 
-    def test_metrics_since(self) -> None:
+    def test_metrics_time_period(self) -> None:
         response = self.test_client.get(
             self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string={
                 "group": Dimension.YEAR_MONTH.value,
-                "since": "2022-03-01",
+                "time_period": TimePeriod.MONTHS_0_6.value,
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             [
-                {"count": 3, "year": 2022, "month": 3},
+                {"count": 1, "month": 1, "year": 2022},
+                {"count": 1, "month": 2, "year": 2022},
+                {"count": 3, "month": 3, "year": 2022},
+            ],
+            response.get_json(),
+        )
+
+        response = self.test_client.get(
+            self.count_by_dimension_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+            query_string={
+                "group": Dimension.YEAR_MONTH.value,
+                "time_period": TimePeriod.MONTHS_25_60.value,
+            },
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
+        self.assertEqual(
+            [
+                {"count": 1, "month": 1, "year": 2021},
+                {"count": 1, "month": 1, "year": 2022},
+                {"count": 1, "month": 2, "year": 2022},
+                {"count": 3, "month": 3, "year": 2022},
             ],
             response.get_json(),
         )

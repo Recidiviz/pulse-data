@@ -123,7 +123,7 @@ def create_pathways_api_blueprint() -> Blueprint:
         source_data: Dict[str, Any] = {
             "filters": load_filters_from_query_string(),
         }
-        for arg in ["group", "since"]:
+        for arg in ["group", "time_period"]:
             arg_value = request.args.get(arg)
             if arg_value:
                 source_data[arg] = arg_value
