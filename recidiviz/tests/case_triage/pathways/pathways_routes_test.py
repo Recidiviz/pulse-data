@@ -23,6 +23,7 @@ from unittest.case import TestCase
 from unittest.mock import MagicMock
 
 import pytest
+from fakeredis import FakeRedis
 from flask import Flask
 from flask.testing import FlaskClient
 
@@ -45,12 +46,20 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 
 class PathwaysBlueprintTestCase(TestCase):
+    """Base class for pathways flask tests"""
+
     mock_authorization_handler: MagicMock
     test_app: Flask
     test_client: FlaskClient
 
     def setUp(self) -> None:
         self.mock_authorization_handler = MagicMock()
+
+        self.redis_patcher = mock.patch(
+            "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+            return_value=FakeRedis(),
+        )
+        self.redis_patcher.start()
 
         self.auth_patcher = mock.patch(
             f"{create_pathways_api_blueprint.__module__}.build_authorization_handler",
@@ -68,6 +77,7 @@ class PathwaysBlueprintTestCase(TestCase):
 
     def tearDown(self) -> None:
         self.auth_patcher.stop()
+        self.redis_patcher.stop()
 
 
 @pytest.mark.uses_db

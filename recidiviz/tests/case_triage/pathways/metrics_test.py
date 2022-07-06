@@ -37,6 +37,7 @@ from recidiviz.case_triage.pathways.metric_queries import (
     SupervisionToPrisonTransitionsCount,
     TimePeriod,
 )
+from recidiviz.case_triage.pathways.metrics import get_metrics_for_entity
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
@@ -596,6 +597,14 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
                 },
             ],
             results,
+        )
+
+
+class MetricHelpersTest(TestCase):
+    def test_get_metrics_by_entity(self) -> None:
+        self.assertEqual(
+            [LibertyToPrisonTransitionsCount],
+            get_metrics_for_entity(LibertyToPrisonTransitions),
         )
 
 

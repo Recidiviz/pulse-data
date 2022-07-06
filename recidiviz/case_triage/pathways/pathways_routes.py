@@ -25,7 +25,7 @@ from flask import Blueprint, Response, jsonify, make_response, request
 from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas import load_api_schema
-from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE_BY_NAME
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
@@ -137,7 +137,7 @@ def create_pathways_api_blueprint() -> Blueprint:
         return jsonify(
             [
                 {snake_to_camel(k): v for (k, v) in val.items()}
-                for val in PathwaysMetricFetcher(state_code).fetch(
+                for val in PathwaysMetricCache.build(state_code).fetch(
                     metric_mapper, fetch_metric_params
                 )
             ]

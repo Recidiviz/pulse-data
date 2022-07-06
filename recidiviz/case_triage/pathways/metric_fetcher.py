@@ -36,10 +36,7 @@ class PathwaysMetricFetcher:
     """Interface for fetching metrics from Cloud SQL"""
 
     state_code: StateCode
-
-    @cached_property
-    def database_manager(self) -> PathwaysDatabaseManager:
-        return PathwaysDatabaseManager()
+    database_manager: PathwaysDatabaseManager = attr.ib(factory=PathwaysDatabaseManager)
 
     @cached_property
     def database_session(self) -> sessionmaker:

@@ -325,6 +325,7 @@ def main() -> int:
                 "recidiviz.calculator.pipeline",
                 "recidiviz.calculator.query.state.views.dashboard.pathways",
                 "recidiviz.case_triage",
+                "recidiviz.cloud_memorystore",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
                 "recidiviz.persistence",

@@ -28,6 +28,8 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views im
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
+from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
+from recidiviz.case_triage.pathways.metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
@@ -94,6 +96,7 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         db_entity = get_database_entity_by_table_name(
             pathways_schema, view_builder.view_id
         )
+
     except ValueError as e:
         return str(e), HTTPStatus.BAD_REQUEST
 
@@ -111,6 +114,10 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         view_builder.columns,
     )
     logging.info("View (%s) successfully imported", view_builder.view_id)
+
+    metric_cache = PathwaysMetricCache.build(StateCode(state_code))
+    for metric in get_metrics_for_entity(db_entity):
+        metric_cache.reset_cache(metric)
 
     return "", HTTPStatus.OK
 
