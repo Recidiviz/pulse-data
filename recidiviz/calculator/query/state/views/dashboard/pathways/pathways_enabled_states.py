@@ -21,7 +21,12 @@ from typing import List
 import yaml
 
 import recidiviz
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import (
+    TEST_STATE_CODE,
+    TEST_STATE_CODE_2,
+    StateCode,
+)
+from recidiviz.utils.environment import in_gcp_production
 
 yaml_path = os.path.join(
     os.path.dirname(recidiviz.__file__),
@@ -45,5 +50,9 @@ def get_pathways_enabled_states() -> List[str]:
         for state_code in pathways_enabled_states
         if StateCode.is_state_code(state_code)
     ]
+
+    if not in_gcp_production():
+        # Add demo states to staging for pentesting
+        _pathways_enabled_states += [TEST_STATE_CODE, TEST_STATE_CODE_2]
 
     return _pathways_enabled_states

@@ -86,10 +86,17 @@ module "pathways_database" {
     for value in local.pathways_enabled_states :
     lower(value)
   ]
+  insights_config = {
+    query_insights_enabled  = true
+    query_string_length     = 1024
+    record_application_tags = false
+    record_client_address   = false
+  }
 }
 
 locals {
-  pathways_enabled_states = yamldecode(file("${path.module}/config/pathways_enabled_states.yaml"))
+  # Add demo states to staging for pentesting
+  pathways_enabled_states = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_XX", "US_YY"] : [])
 
   joined_connection_string = join(
     ", ",
