@@ -36,12 +36,14 @@ export const TabbedDisaggregations: React.FC<{
   reportMetrics: MetricType[];
   reportID: number;
   currentIndex: number;
+  disabled?: boolean;
   updateFieldDescription: (title?: string, description?: string) => void;
 }> = ({
   metric,
   reportMetrics,
   reportID,
   currentIndex,
+  disabled,
   updateFieldDescription,
 }) => {
   const [activeDisaggregation, setActiveDisaggregation] = useState<{
@@ -242,6 +244,7 @@ export const TabbedDisaggregations: React.FC<{
                     dimension.reporting_note
                   )
                 }
+                disabled={disabled}
                 clearFieldDescription={() => updateFieldDescription(undefined)}
               />
             </DisaggregationInputWrapper>

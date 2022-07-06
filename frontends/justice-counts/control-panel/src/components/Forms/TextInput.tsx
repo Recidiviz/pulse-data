@@ -74,7 +74,8 @@ export const Input = styled.input<InputProps>`
     }};
 
   &:hover {
-    border-bottom: 1px solid ${palette.solid.blue};
+    border-bottom: ${({ disabled }) =>
+      disabled ? undefined : `1px solid ${palette.solid.blue}`};
   }
 
   &:focus ~ label {
@@ -90,7 +91,8 @@ export const Input = styled.input<InputProps>`
   }
 
   &:hover ~ label {
-    color: ${({ error }) => !error && palette.solid.blue};
+    color: ${({ error, disabled }) =>
+      !error && !disabled && palette.solid.blue};
   }
 
   &::placeholder {

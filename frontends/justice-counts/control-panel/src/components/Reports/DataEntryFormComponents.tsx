@@ -32,6 +32,7 @@ interface MetricTextInputProps {
   reportID: number;
   metric: Metric;
   autoFocus?: boolean;
+  disabled?: boolean;
   updateFieldDescription?: () => void;
   clearFieldDescription?: () => void;
 }
@@ -41,6 +42,7 @@ export const MetricTextInput = observer(
     reportID,
     metric,
     autoFocus,
+    disabled,
     updateFieldDescription,
     clearFieldDescription,
   }: MetricTextInputProps) => {
@@ -70,6 +72,7 @@ export const MetricTextInput = observer(
         autoFocus={autoFocus}
         onFocus={updateFieldDescription}
         onBlur={clearFieldDescription}
+        disabled={disabled}
       />
     );
   }
@@ -80,6 +83,7 @@ interface DisaggregationDimensionTextInputProps extends MetricTextInputProps {
   disaggregationIndex: number;
   dimension: MetricDisaggregationDimensions;
   dimensionIndex: number;
+  disabled?: boolean;
 }
 
 export const DisaggregationDimensionTextInput = observer(
@@ -92,6 +96,7 @@ export const DisaggregationDimensionTextInput = observer(
     dimensionIndex,
     updateFieldDescription,
     clearFieldDescription,
+    disabled,
   }: DisaggregationDimensionTextInputProps) => {
     const { formStore } = useStore();
     const { disaggregations, updateDisaggregationDimensionValue } = formStore;
@@ -143,6 +148,7 @@ export const DisaggregationDimensionTextInput = observer(
         // required={disaggregation.required}
         onFocus={updateFieldDescription}
         onBlur={clearFieldDescription}
+        disabled={disabled}
       />
     );
   }
@@ -164,19 +170,23 @@ export const BinaryRadioButtonInputs = observer(
     context,
     contextIndex,
     options,
+    disabled,
   }: BinaryContextProps) => {
     const { formStore } = useStore();
     const { contexts, updateContextValue } = formStore;
 
-    const handleContextChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-      updateContextValue(
-        reportID,
-        metric.key,
-        context.key,
-        e.target.value,
-        context.required,
-        context.type
-      );
+    const handleContextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!disabled) {
+        updateContextValue(
+          reportID,
+          metric.key,
+          context.key,
+          e.target.value,
+          context.required,
+          context.type
+        );
+      }
+    };
 
     return (
       <>
@@ -195,6 +205,7 @@ export const BinaryRadioButtonInputs = observer(
                 ? contexts[reportID][metric.key][context.key].value === option
                 : metric.contexts[contextIndex].value === option
             }
+            disabled={disabled}
           />
         ))}
       </>
@@ -208,6 +219,7 @@ export const AdditionalContextInput = observer(
     metric,
     context,
     contextIndex,
+    disabled,
     updateFieldDescription,
     clearFieldDescription,
   }: AdditionalContextInputsProps) => {
@@ -254,6 +266,7 @@ export const AdditionalContextInput = observer(
         required={context.required}
         onFocus={updateFieldDescription}
         onBlur={clearFieldDescription}
+        disabled={disabled}
       />
     );
   }
