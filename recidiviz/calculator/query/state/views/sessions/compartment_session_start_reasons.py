@@ -58,7 +58,7 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         'INCARCERATION' as compartment_level_1,
         adm.metric_type AS metric_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, admission_date
-                             ORDER BY COALESCE(priority, 999) ASC,
+                             ORDER BY COALESCE(priority, 999) ASC, adm.admission_reason_raw_text ASC,
                                      --This is very rare (2 cases) where a person has more that one revocation (with different reasons) on the same day. 
                                      --In both cases one of the records has a null reason, so here I dedup prioritizing the non-null one.
                                       IF(most_severe_violation_type IS NULL, 1, 0)) AS reason_priority,
