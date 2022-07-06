@@ -109,6 +109,9 @@ const DataEntryForm: React.FC<{
   const { formStore, reportStore } = useStore();
   const navigate = useNavigate();
 
+  const isPublished =
+    reportStore.reportOverviews[reportID].status === "PUBLISHED";
+
   useEffect(() => {
     /** Will need to debounce */
     const updateScrolled = () =>
@@ -263,6 +266,7 @@ const DataEntryForm: React.FC<{
               reportID={reportID}
               metric={metric}
               autoFocus={index === 0}
+              disabled={isPublished}
             />
 
             {/* Disaggregations */}
@@ -273,6 +277,7 @@ const DataEntryForm: React.FC<{
                 reportMetrics={reportMetrics}
                 metric={metric}
                 updateFieldDescription={updateFieldDescription}
+                disabled={isPublished}
               />
             )}
 
@@ -295,15 +300,17 @@ const DataEntryForm: React.FC<{
                           context={context}
                           contextIndex={contextIndex}
                           options={context.multiple_choice_options}
+                          disabled={isPublished}
                         />
                       </BinaryRadioGroupWrapper>
                       <BinaryRadioGroupClearButton
                         onClick={() => {
                           if (
-                            formStore.contexts?.[reportID]?.[metric.key]?.[
+                            !isPublished &&
+                            (formStore.contexts?.[reportID]?.[metric.key]?.[
                               context.key
                             ]?.value ||
-                            context.value
+                              context.value)
                           ) {
                             formStore.resetBinaryInput(
                               reportID,
@@ -321,6 +328,7 @@ const DataEntryForm: React.FC<{
                             debouncedSave(metric.key);
                           }
                         }}
+                        disabled={isPublished}
                       >
                         Clear Input
                       </BinaryRadioGroupClearButton>
@@ -365,6 +373,7 @@ const DataEntryForm: React.FC<{
                       clearFieldDescription={() =>
                         updateFieldDescription(undefined)
                       }
+                      disabled={isPublished}
                     />
                   </Fragment>
                 );
@@ -374,6 +383,7 @@ const DataEntryForm: React.FC<{
       })}
       <DataEntryFormPublishButtonContainer>
         <DataEntryFormPublishButton
+          isPublished={isPublished}
           onClick={(e) => {
             /** Should trigger a confirmation dialogue before submitting */
             e.preventDefault();

@@ -46,6 +46,7 @@ export const PublishDataWrapper = styled.div`
 
 export const PublishButton = styled.button<{
   disabled?: boolean;
+  isPublished?: boolean;
 }>`
   ${typography.sizeCSS.medium}
   width: 315px;
@@ -69,7 +70,8 @@ export const PublishButton = styled.button<{
   }
 
   &::after {
-    content: "Review and Publish";
+    content: ${({ isPublished }) =>
+      isPublished ? "'Unpublish and Edit'" : "'Review and Publish'"};
   }
 `;
 

@@ -22,8 +22,10 @@ import { useParams } from "react-router-dom";
 
 import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
+import { printReportTitle } from "../../utils";
 import { PageWrapper } from "../Forms";
 import Loading from "../Loading";
+import { showToast } from "../Toast";
 import DataEntryForm from "./DataEntryForm";
 import PublishConfirmation from "./PublishConfirmation";
 import PublishDataPanel from "./PublishDataPanel";
@@ -43,8 +45,40 @@ const ReportDataEntry = () => {
   const { reportStore, userStore } = useStore();
   const params = useParams();
   const reportID = Number(params.id);
-  const toggleConfirmationDialogue = () =>
-    setShowConfirmation(!showConfirmation);
+  const reportOverview = reportStore.reportOverviews[reportID] as Report;
+  const reportMetrics = reportStore.reportMetrics[reportID];
+  const toggleConfirmationDialogue = async () => {
+    if (reportOverview.status === "PUBLISHED") {
+      const response = (await reportStore.updateReport(
+        reportID,
+        [],
+        "DRAFT"
+      )) as Response;
+      if (response.status === 200) {
+        showToast(
+          `The ${printReportTitle(
+            reportStore.reportOverviews[reportID].month,
+            reportStore.reportOverviews[reportID].year,
+            reportStore.reportOverviews[reportID].frequency
+          )} report has been unpublished and editing is enabled.`,
+          true,
+          undefined,
+          4000
+        );
+      } else {
+        showToast(
+          `Something went wrong unpublishing the ${printReportTitle(
+            reportStore.reportOverviews[reportID].month,
+            reportStore.reportOverviews[reportID].year,
+            reportStore.reportOverviews[reportID].frequency
+          )} report!`,
+          false
+        );
+      }
+    } else {
+      setShowConfirmation(!showConfirmation);
+    }
+  };
 
   useEffect(
     () =>
@@ -65,9 +99,6 @@ const ReportDataEntry = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
-
-  const reportOverview = reportStore.reportOverviews[reportID] as Report;
-  const reportMetrics = reportStore.reportMetrics[reportID];
 
   const updateActiveMetric = (metricKey: string) => setActiveMetric(metricKey);
   const updateFieldDescription = (title?: string, description?: string) => {
@@ -113,6 +144,7 @@ const ReportDataEntry = () => {
         activeMetric={activeMetric}
         fieldDescription={fieldDescription}
         toggleConfirmationDialogue={toggleConfirmationDialogue}
+        isPublished={reportOverview.status === "PUBLISHED"}
       />
       {showConfirmation && (
         <PublishConfirmation

@@ -231,6 +231,7 @@ const ReportSummaryPanel: React.FC<{
     month,
     year,
     frequency,
+    status,
   } = reportStore.reportOverviews[reportID];
 
   const checkMetricForErrorsInUpdatedValues = (metricKey: string) => {
@@ -342,6 +343,7 @@ const ReportSummaryPanel: React.FC<{
           <FieldDescription fieldDescription={fieldDescription} />
         )}
         <LeftPublishButton
+          isPublished={status === "PUBLISHED"}
           onClick={() => {
             /** Should trigger a confirmation dialogue before submitting */
             toggleConfirmationDialogue();

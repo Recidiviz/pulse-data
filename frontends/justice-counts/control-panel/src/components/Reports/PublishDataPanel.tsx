@@ -32,17 +32,22 @@ const PublishDataPanel: React.FC<{
   activeMetric: string;
   fieldDescription?: FieldDescriptionProps;
   toggleConfirmationDialogue: () => void;
+  isPublished?: boolean;
 }> = ({
   reportID,
   activeMetric,
   fieldDescription,
   toggleConfirmationDialogue,
+  isPublished,
 }) => {
   return (
     <>
       <PublishDataWrapper>
         <Title>
-          <PublishButton onClick={() => toggleConfirmationDialogue()} />
+          <PublishButton
+            isPublished={isPublished}
+            onClick={() => toggleConfirmationDialogue()}
+          />
         </Title>
 
         {/* Metric Description, Definitions and Reporting Notes */}
