@@ -25,7 +25,7 @@ import {
   Spin,
   Tooltip,
 } from "antd";
-import React from "react";
+import * as React from "react";
 import { Link } from "react-router-dom";
 import {
   fetchValidationDetails,

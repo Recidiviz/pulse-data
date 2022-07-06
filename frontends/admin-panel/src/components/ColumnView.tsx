@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Breadcrumb, PageHeader, Spin } from "antd";
-import * as React from "react";
+import { useCallback } from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
 import { fetchColumnObjectCountsByValue } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
@@ -33,7 +33,7 @@ const ColumnView = (): JSX.Element => {
   const { column, table, dataset: metadataDataset } = useParams<MatchParams>();
   const history = useHistory();
 
-  const fetchValues = React.useCallback(async () => {
+  const fetchValues = useCallback(async () => {
     return fetchColumnObjectCountsByValue(metadataDataset, table, column);
   }, [table, column, metadataDataset]);
   const { loading, data } = useFetchedDataJSON<MetadataAPIResult>(fetchValues);

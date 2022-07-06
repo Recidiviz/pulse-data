@@ -15,15 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Alert, Button, Form, PageHeader, Result } from "antd";
-import * as React from "react";
+import { useState } from "react";
 import { generateNonETLExports } from "../AdminPanelAPI";
 
 const CloudSQLExportView = (): JSX.Element => {
   const [exportStatus, setExportStatus] =
-    React.useState<"not-started" | "started" | "done" | "errored">(
-      "not-started"
-    );
-  const [errorText, setErrorText] = React.useState<string>("");
+    useState<"not-started" | "started" | "done" | "errored">("not-started");
+  const [errorText, setErrorText] = useState<string>("");
 
   if (exportStatus === "started") {
     return (

@@ -16,14 +16,14 @@
 // =============================================================================
 import { UploadOutlined } from "@ant-design/icons";
 import { Alert, Button, message, PageHeader, Space, Upload } from "antd";
-import * as React from "react";
+import { useState } from "react";
 import { fetchRosterStateCodes } from "../../AdminPanelAPI";
 import StateSelector from "../Utilities/StateSelector";
 
 const UploadRostersView = (): JSX.Element => {
-  const [stateCode, setStateCode] = React.useState<string | undefined>();
-  const [uploading, setUploading] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState<string | void>();
+  const [stateCode, setStateCode] = useState<string | undefined>();
+  const [uploading, setUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | void>();
 
   const disabled = !stateCode;
 

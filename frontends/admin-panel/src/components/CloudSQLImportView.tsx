@@ -15,17 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Alert, Button, Form, PageHeader, Result, Select, Spin } from "antd";
-import * as React from "react";
+import { useState } from "react";
 import { fetchETLViewIds, runCloudSQLImport } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
 import { formLayout, formTailLayout } from "./constants";
 
 const CloudSQLImportView = (): JSX.Element => {
   const [importStatus, setImportStatus] =
-    React.useState<"not-started" | "started" | "done" | "errored">(
-      "not-started"
-    );
-  const [errorText, setErrorText] = React.useState<string>("");
+    useState<"not-started" | "started" | "done" | "errored">("not-started");
+  const [errorText, setErrorText] = useState<string>("");
   const { loading, data } = useFetchedDataJSON<string[]>(fetchETLViewIds);
 
   if (loading) {

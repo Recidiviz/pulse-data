@@ -17,7 +17,7 @@
 
 import { Card, Empty, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
-import React from "react";
+import * as React from "react";
 import { SamenessPerRowValidationResultDetails } from "../../recidiviz/admin_panel/models/validation_pb";
 import { SamenessPerRowDetailsProps } from "./constants";
 import { formatStatusAmount } from "./utils";

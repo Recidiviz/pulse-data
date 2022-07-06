@@ -29,7 +29,6 @@ import {
 import { ColumnsType, ColumnType } from "antd/es/table";
 import classNames from "classnames";
 import { History } from "history";
-import * as React from "react";
 import { useHistory } from "react-router-dom";
 import { MouseEventHandler } from "react-router/node_modules/@types/react";
 import { fetchValidationStatus } from "../../AdminPanelAPI";

@@ -26,7 +26,7 @@ import {
   Table,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
-import * as React from "react";
+import { useState } from "react";
 import { getAgencies, getUsers } from "../../AdminPanelAPI";
 import { createOrUpdateUser } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
@@ -39,7 +39,7 @@ import {
 } from "./constants";
 
 const UserProvisioningView = (): JSX.Element => {
-  const [showSpinner, setShowSpinner] = React.useState(false);
+  const [showSpinner, setShowSpinner] = useState(false);
   const { data: usersData, setData: setUsersData } =
     useFetchedDataJSON<UsersResponse>(getUsers);
   const { data: agenciesData } =
@@ -151,7 +151,9 @@ const UserProvisioningView = (): JSX.Element => {
             optionFilterProp="children"
             disabled={showSpinner}
             filterOption={(input, option) =>
-              option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              (option?.children as unknown as string)
+                .toLowerCase()
+                .indexOf(input.toLowerCase()) >= 0
             }
             onChange={(agencyIds: number[]) => onChange(user, agencyIds)}
             style={{ minWidth: 250 }}

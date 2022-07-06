@@ -73,9 +73,9 @@ const StateSelector: React.FC<StateSelectorProps> = ({
         option?.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
       }
       filterSort={(optionA, optionB) =>
-        optionA.children
+        (optionA?.children as unknown as string)
           .toLowerCase()
-          .localeCompare(optionB.children.toLowerCase())
+          .localeCompare((optionB?.children as unknown as string).toLowerCase())
       }
       showSearch
     >
