@@ -523,11 +523,11 @@ class Datapoint(JusticeCountsBase):
             return value
         if self.context_key is None or self.value_type == ValueType.NUMBER:
             try:
-                value = int(value)
+                value = float(value)
             except ValueError as e:
                 if status == ReportStatus.PUBLISHED:
                     raise ValueError(
-                        f"Datapoint represents a int value, but is a string. Datapoint ID: {self.id}, value: {value}",
+                        f"Datapoint represents a float value, but is a string. Datapoint ID: {self.id}, value: {value}",
                     ) from e
         return value
 

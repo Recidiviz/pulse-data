@@ -60,12 +60,12 @@ class DatapointInterface:
             and (value_type is None or value_type == ValueType.NUMBER)
         ):
             try:
-                int(value)
+                float(value)
             except ValueError as e:
                 raise JusticeCountsDataError(
                     code="invalid_datapoint_value",
                     description=(
-                        "Datapoint represents a int value, but is a string. "
+                        "Datapoint represents a float value, but is a string. "
                         f"Datapoint ID: {report.id}, value: {value}"
                     ),
                 ) from e
