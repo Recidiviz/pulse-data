@@ -28,11 +28,12 @@ def state_specific_dataflow_facility_name_transformation() -> str:
     their system."""
     return """
         IFNULL(
-            CASE state_code
-                WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
+            CASE WHEN state_code = 'US_PA' THEN UPPER(LEFT(facility, 3))
                 -- TODO(#11192): Remove state-specific facility mapping when we have housing_unit in external validation data
-                WHEN 'US_ME' 
+                WHEN state_code = 'US_ME' 
                     THEN IF(facility = "SOUTHERN MAINE WOMEN'S REENTRY CENTER", "MAINE CORRECTIONAL CENTER", facility)
+                 WHEN state_code = 'US_CO' 
+                    AND facility IN ('ARTS','ATC','CM/DEN/CBT','COMCOR CC','CORECIVIC','DNVRGENHOS','GCCC','GEO RS','HILLTOP CC','ICCS-C','LCCC','MESA','RRK')  THEN 'COMMUNITY CORRECTIONS'  
             ELSE facility END,
             'EXTERNAL_UNKNOWN'
         ) AS facility
