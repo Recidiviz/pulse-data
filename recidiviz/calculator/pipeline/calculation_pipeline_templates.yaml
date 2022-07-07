@@ -14,7 +14,6 @@ normalization_pipelines:
     job_name: us-co-normalization
     state_code: US_CO
     region: us-west3
-    staging_only: True
   - pipeline: comprehensive_normalization
     job_name: us-id-normalization
     state_code: US_ID
