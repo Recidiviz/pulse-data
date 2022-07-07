@@ -2,5 +2,5 @@ agency_name: Colorado Department of Corrections
 agency_type: prison
 base_url: unused
 timezone: America/Denver
-environment: staging
+environment: production
 jurisdiction_id: unknown
