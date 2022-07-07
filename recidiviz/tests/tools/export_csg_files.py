@@ -53,6 +53,7 @@ class TestExportCsgFiles(TestCase):
             "gs://output_bucket",
             ["incarceration_sessions", "supervision_sessions"],
             {"incarceration_sessions": ["charges", "violations"]},
+            {"incarceration_sessions": ["violation_dates"]},
         )
 
         self.assertEqual(
@@ -72,7 +73,7 @@ class TestExportCsgFiles(TestCase):
             sessions_configs[2].query,
         )
         self.assertIn(
-            "SELECT * EXCEPT(charges, violations)",
+            "SELECT * EXCEPT(charges, violations,violation_dates)",
             sessions_configs[1].query,
         )
         self.assertIn(
@@ -81,6 +82,10 @@ class TestExportCsgFiles(TestCase):
         )
         self.assertIn(
             'ARRAY_TO_STRING(violations, "|") AS violations',
+            sessions_configs[1].query,
+        )
+        self.assertIn(
+            'SELECT STRING_AGG(FORMAT_DATE("%Y-%m-%d", d),"|") FROM UNNEST(violation_dates) d) AS violation_dates',
             sessions_configs[1].query,
         )
 

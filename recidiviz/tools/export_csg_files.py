@@ -50,7 +50,7 @@ SESSIONS_TO_EXPORT: List[str] = [
     "revocation_sessions",
     "reincarceration_sessions_from_sessions",
     "supervision_super_sessions",
-    "violations_sessions",
+    "violation_responses",
 ]
 
 # map from sessions views to list of fields to be serialized from array to string
@@ -63,8 +63,15 @@ SESSIONS_FIELDS_TO_SERIALIZE: Dict[str, List[str]] = {
         "ncic_code",
         "felony_class",
     ],
-    "violations_sessions": [
+    "violation_responses": [
         "violations_array",
+    ],
+}
+
+# map from sessions views to list of fields to be serialized from date array to string
+SESSIONS_DATE_FIELDS_TO_SERIALIZE: Dict[str, List[str]] = {
+    "violation_responses": [
+        "violation_dates_array",
     ],
 }
 
@@ -103,6 +110,7 @@ def export_csg_files(
         target_bucket,
         SESSIONS_TO_EXPORT,
         SESSIONS_FIELDS_TO_SERIALIZE,
+        SESSIONS_DATE_FIELDS_TO_SERIALIZE,
     )
     export_configs += generate_state_specific_export_configs(
         project_id, state_code, start_date, target_bucket
@@ -234,10 +242,13 @@ def generate_sessions_export_configs(
     target_bucket: str,
     sessions_to_export: List[str],
     sessions_fields_to_serialize: Dict[str, List[str]],
+    sessions_date_fields_to_serialize: Dict[str, List[str]],
 ) -> List[ExportQueryConfig]:
     """Generate a list of ExportQueryConfigs for the given list of sessions views.
     Serializes any array fields given in `sessions_fields_to_serialize` via
     pipe delimitation.
+    Serializes any date array fields given in `sessions_date_fields_to_serialize` via
+    unnest and pipe delimitation.
     """
     exports = []
 
@@ -262,7 +273,12 @@ def generate_sessions_export_configs(
     # export sessions views defined at top
     exports += [
         session_export_config(
-            project_id, state_code, session, target_bucket, sessions_fields_to_serialize
+            project_id,
+            state_code,
+            session,
+            target_bucket,
+            sessions_fields_to_serialize,
+            sessions_date_fields_to_serialize,
         )
         for session in sessions_to_export
     ]
@@ -275,13 +291,42 @@ def session_export_config(
     state_code: str,
     session_name: str,
     target_bucket: str,
-    sessions_fields_to_serilaize: Dict[str, List[str]],
+    sessions_fields_to_serialize: Dict[str, List[str]],
+    sessions_date_fields_to_serialize: Dict[str, List[str]],
 ) -> ExportQueryConfig:
-    if session_name in sessions_fields_to_serilaize:
-        exploded_fields = sessions_fields_to_serilaize[session_name]
+    """Configures SQL statements based on arrays needed to be serialized and outputs ExportQueryConfig"""
+    if (
+        session_name in sessions_fields_to_serialize
+        and session_name in sessions_date_fields_to_serialize
+    ):
+        exploded_fields = sessions_fields_to_serialize[session_name]
+        exploded_date_fields = sessions_date_fields_to_serialize[session_name]
+        query = f"""
+          SELECT * EXCEPT({", ".join(exploded_fields)},{", ".join(exploded_date_fields)}),
+          {", ".join(f'ARRAY_TO_STRING({field}, "|") AS {field}' for field in exploded_fields)},
+          {", ".join(f'(SELECT STRING_AGG(FORMAT_DATE("%Y-%m-%d", d),"|") FROM UNNEST({field}) d) AS {field}' for field in exploded_date_fields)}
+          FROM `{project_id}.sessions.{session_name}_materialized`
+          WHERE state_code = "{state_code.upper()}"
+        """
+    elif (
+        session_name in sessions_fields_to_serialize
+        and session_name not in sessions_date_fields_to_serialize
+    ):
+        exploded_fields = sessions_fields_to_serialize[session_name]
         query = f"""
           SELECT * EXCEPT({", ".join(exploded_fields)}),
           {", ".join(f'ARRAY_TO_STRING({field}, "|") AS {field}' for field in exploded_fields)}
+          FROM `{project_id}.sessions.{session_name}_materialized`
+          WHERE state_code = "{state_code.upper()}"
+        """
+    elif (
+        session_name not in sessions_fields_to_serialize
+        and session_name in sessions_date_fields_to_serialize
+    ):
+        exploded_date_fields = sessions_date_fields_to_serialize[session_name]
+        query = f"""
+          SELECT * EXCEPT({", ".join(exploded_date_fields)}),
+          {", ".join(f'(SELECT STRING_AGG(FORMAT_DATE("%Y-%m-%d", d),"|") FROM UNNEST({field}) d) AS {field}' for field in exploded_date_fields)}
           FROM `{project_id}.sessions.{session_name}_materialized`
           WHERE state_code = "{state_code.upper()}"
         """
