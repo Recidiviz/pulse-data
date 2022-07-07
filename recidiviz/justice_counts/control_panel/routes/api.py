@@ -72,7 +72,9 @@ def get_api_blueprint(
             auth0_user_id = get_auth0_user_id(request_dict=request_json)
             name = request_json.get("name")
             email = request_json.get("email")
-            has_seen_onboarding = request_json.get("has_seen_onboarding")
+            onboarding_topics_completed = request_json.get(
+                "onboarding_topics_completed"
+            )
             if auth0_client is None:
                 return make_response(
                     "auth0_client could not be initialized. Environment is not development or gcp.",
@@ -95,10 +97,12 @@ def get_api_blueprint(
             if email is not None:
                 auth0_client.send_verification_email(user_id=auth0_user_id)
 
-            if has_seen_onboarding is not None:
+            if onboarding_topics_completed is not None:
                 auth0_client.update_user_app_metadata(
                     user_id=auth0_user_id,
-                    app_metadata={"has_seen_onboarding": has_seen_onboarding},
+                    app_metadata={
+                        "onboarding_topics_completed": onboarding_topics_completed
+                    },
                 )
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})

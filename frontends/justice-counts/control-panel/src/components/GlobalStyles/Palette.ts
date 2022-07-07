@@ -44,5 +44,7 @@ export const palette = {
     grey8: `rgba(23, 28, 43, 0.5)`,
     grey9: `rgba(23, 28, 43, 0.6)`,
     grey10: `rgba(23, 28, 43, 0.7)`,
+    grey11: `rgba(23, 28, 43, 0.8)`,
+    grey12: `rgba(23, 28, 43, 0.9)`,
   },
 };

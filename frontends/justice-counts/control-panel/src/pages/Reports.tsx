@@ -21,6 +21,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Loading from "../components/Loading";
+import { Onboarding } from "../components/Onboarding";
 import {
   AdditionalEditorsTooltip,
   Badge,
@@ -68,6 +69,7 @@ const Reports: React.FC = () => {
   const { reportStore, userStore } = useStore();
   const navigate = useNavigate();
 
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [loadingError, setLoadingError] = useState<string | undefined>(
     undefined
   );
@@ -281,6 +283,15 @@ const Reports: React.FC = () => {
 
       {/* Reports List Table */}
       <Table>{renderReports(userStore.userAgencies?.length === 0)}</Table>
+
+      {/* Onboarding */}
+      {userStore.onboardingTopicsCompleted?.reportsview === false &&
+        showOnboarding && (
+          <Onboarding
+            setShowOnboarding={setShowOnboarding}
+            topic="reportsview"
+          />
+        )}
     </>
   );
 };

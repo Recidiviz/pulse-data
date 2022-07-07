@@ -40,7 +40,7 @@ class UserStore {
 
   userInfoLoaded: boolean;
 
-  hasSeenOnboarding: boolean;
+  onboardingTopicsCompleted: { [topic: string]: boolean } | undefined;
 
   permissions: string[];
 
@@ -53,7 +53,7 @@ class UserStore {
     this.auth0UserID = this.authStore.user?.id;
     this.userAgencies = undefined;
     this.userInfoLoaded = false;
-    this.hasSeenOnboarding = true;
+    this.onboardingTopicsCompleted = undefined;
     this.permissions = [];
     this.currentAgencyId = undefined;
 
@@ -169,18 +169,46 @@ class UserStore {
           name: this.name,
         },
       })) as Response;
-      const {
-        agencies: userAgencies,
-        permissions,
-        has_seen_onboarding: hasSeenOnboarding, // will be used in future
-      } = await response.json();
+      const { agencies: userAgencies, permissions } = await response.json();
       runInAction(() => {
         this.userAgencies = userAgencies;
         this.permissions = permissions;
-        this.hasSeenOnboarding = hasSeenOnboarding; // will be used in future
         this.currentAgencyId = this.getInitialAgencyId();
         this.userInfoLoaded = true;
+        this.onboardingTopicsCompleted = this.authStore.user?.[
+          "https://dashboard.recidiviz.org/app_metadata"
+        ]?.onboarding_topics_completed || {
+          reportsview: false,
+          dataentryview: false,
+        };
       });
+    } catch (error) {
+      if (error instanceof Error) return error.message;
+      return String(error);
+    }
+  }
+
+  async updateOnboardingStatus(topic: string, status: boolean) {
+    try {
+      const response = (await this.api.request({
+        path: "/api/users/update",
+        method: "POST",
+        body: {
+          onboarding_topics_completed: {
+            ...this.onboardingTopicsCompleted,
+            [topic]: status,
+          },
+        },
+      })) as Response;
+
+      runInAction(() => {
+        this.onboardingTopicsCompleted = {
+          ...this.onboardingTopicsCompleted,
+          [topic]: status,
+        };
+      });
+
+      return response;
     } catch (error) {
       if (error instanceof Error) return error.message;
       return String(error);
