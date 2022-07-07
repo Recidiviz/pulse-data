@@ -24,6 +24,19 @@ import uniqueStates from "./Utilities/UniqueStates";
 
 const emptyCell = <div className="center">N/A</div>;
 
+const getCountForCountedRecord = (
+  countedRecord: MetadataCount | undefined,
+  nonplaceholdersOnly: boolean
+): number => {
+  if (!countedRecord) {
+    return 0;
+  }
+
+  return nonplaceholdersOnly && countedRecord.placeholderCount
+    ? countedRecord.totalCount - countedRecord.placeholderCount
+    : countedRecord.totalCount;
+};
+
 const stateColumnsForBreakdown = (
   states: string[],
   nonplaceholdersOnly: boolean
@@ -37,15 +50,18 @@ const stateColumnsForBreakdown = (
         if (countedRecord === undefined) {
           return emptyCell;
         }
-        const count =
-          nonplaceholdersOnly && countedRecord.placeholderCount
-            ? countedRecord.totalCount - countedRecord.placeholderCount
-            : countedRecord.totalCount;
+        const count = getCountForCountedRecord(
+          countedRecord,
+          nonplaceholdersOnly
+        );
         if (count === 0) {
           return emptyCell;
         }
         return <div className="success">{count.toLocaleString()}</div>;
       },
+      sorter: (a, b) =>
+        getCountForCountedRecord(a.resultsByState[s], nonplaceholdersOnly) -
+        getCountForCountedRecord(b.resultsByState[s], nonplaceholdersOnly),
     };
   });
 };
@@ -92,6 +108,14 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
           </div>
         );
       },
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      defaultSortOrder: "ascend",
+      filters: metadataRecords.map(({ name }) => ({
+        text: name,
+        value: name,
+      })),
+      onFilter: (value, content) => content.name === value,
+      filterSearch: true,
     },
   ];
   const columns = initialColumns.concat(

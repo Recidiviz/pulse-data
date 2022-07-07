@@ -38,6 +38,11 @@ import {
   ValidationStatusRecord,
   ValidationStatusRecords,
 } from "../../recidiviz/admin_panel/models/validation_pb";
+import {
+  getUniqueValues,
+  optionalNumberSort,
+  optionalStringSort,
+} from "../Utilities/GeneralUtilities";
 import uniqueStates from "../Utilities/UniqueStates";
 import { RecordStatus } from "./constants";
 import {
@@ -139,6 +144,10 @@ const ValidationStatusView = (): JSX.Element => {
             )}
           </div>
         ),
+        sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+          chooseIdNameForCategory(a.getCategory()).localeCompare(
+            chooseIdNameForCategory(b.getCategory())
+          ),
         filters: categoryIds.map((categoryId: string) => ({
           text: readableNameForCategoryId(categoryId),
           value: categoryId,
@@ -154,6 +163,14 @@ const ValidationStatusView = (): JSX.Element => {
         render: (_: string, record: ValidationStatusRecord) => (
           <div>{record.getName()}</div>
         ),
+        sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+          optionalStringSort(a.getName(), b.getName()),
+        filters: getListOfUniqueRecordNames(statuses, records).map((name) => ({
+          text: name,
+          value: name,
+        })),
+        onFilter: (value, content) => content.getName() === value,
+        filterSearch: true,
       },
       {
         title: "State",
@@ -162,6 +179,9 @@ const ValidationStatusView = (): JSX.Element => {
         render: (_: string, record: ValidationStatusRecord) => (
           <div>{record.getStateCode()}</div>
         ),
+        sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+          optionalStringSort(a.getStateCode(), b.getStateCode()),
+        defaultSortOrder: "ascend",
         filters: allStates.map((state: string) => ({
           text: state,
           value: state,
@@ -176,6 +196,8 @@ const ValidationStatusView = (): JSX.Element => {
         render: (_: string, record: ValidationStatusRecord) => {
           return renderRecordStatus(record);
         },
+        sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+          optionalNumberSort(a.getErrorAmount(), b.getErrorAmount()),
         filters: statuses.map((status: RecordStatus) => ({
           text: RecordStatus[status],
           value: status,
@@ -195,6 +217,11 @@ const ValidationStatusView = (): JSX.Element => {
             )}
           </div>
         ),
+        sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+          optionalNumberSort(
+            a.getSoftFailureAmount(),
+            b.getSoftFailureAmount()
+          ),
       },
       {
         title: "Hard Threshold",
@@ -208,6 +235,11 @@ const ValidationStatusView = (): JSX.Element => {
             )}
           </div>
         ),
+        sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
+          optionalNumberSort(
+            a.getHardFailureAmount(),
+            b.getHardFailureAmount()
+          ),
       },
       {
         title: (
@@ -230,26 +262,71 @@ const ValidationStatusView = (): JSX.Element => {
     ];
   }
 
-  const labelColumns: ColumnsType<MetadataRecord<ValidationStatusRecord>> = [
-    {
-      title: "Validation Name",
-      key: "validation",
-      fixed: "left",
-      width: "55%",
+  function columnTypeForState(
+    categoryId: string,
+    state: string
+  ): ColumnType<MetadataRecord<ValidationStatusRecord>> {
+    return {
+      title: state,
+      key: state,
       onCell: (record) => {
         return {
-          onClick: handleClickToDetails(history, record.name),
+          onClick: handleClickToDetails(history, record.name, state),
         };
       },
-      render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => (
-        <div>{record.name}</div>
-      ),
-    },
-  ];
+      render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => {
+        return renderRecordStatus(record.resultsByState[state]);
+      },
+      sorter: (a, b) =>
+        optionalNumberSort(
+          a.resultsByState[state]?.getErrorAmount(),
+          b.resultsByState[state]?.getErrorAmount()
+        ),
+      filters: getUniqueValues(
+        dictOfCategoryIdsToRecords[categoryId].map((record) =>
+          getRecordStatus(record.resultsByState[state])
+        )
+      ).map((status) => ({
+        text: RecordStatus[status],
+        value: status,
+      })),
+      onFilter: (value, record) =>
+        getRecordStatus(record.resultsByState[state]) === value,
+    };
+  }
 
-  const columns = labelColumns.concat(
-    allStates.map((s) => columnTypeForState(s, history))
-  );
+  function getLabelColumns(
+    categoryId: string
+  ): ColumnsType<MetadataRecord<ValidationStatusRecord>> {
+    const labelColumns: ColumnsType<MetadataRecord<ValidationStatusRecord>> = [
+      {
+        title: "Validation Name",
+        key: "validation",
+        fixed: "left",
+        width: "55%",
+        onCell: (record) => {
+          return {
+            onClick: handleClickToDetails(history, record.name),
+          };
+        },
+        render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => (
+          <div>{record.name}</div>
+        ),
+        sorter: (a, b) => a.name.localeCompare(b.name),
+        defaultSortOrder: "ascend",
+        filters: dictOfCategoryIdsToRecords[categoryId].map(({ name }) => ({
+          text: name,
+          value: name,
+        })),
+        onFilter: (value, content) => content.name === value,
+        filterSearch: true,
+      },
+    ];
+
+    return labelColumns.concat(
+      allStates.map((s) => columnTypeForState(categoryId, s))
+    );
+  }
 
   const initialRecord = records.length > 0 ? records[0] : undefined;
   const metadata: MetadataItem[] = [
@@ -333,7 +410,7 @@ const ValidationStatusView = (): JSX.Element => {
             </Title>
             <Table
               className="validation-table"
-              columns={columns}
+              columns={getLabelColumns(categoryId)}
               loading={loading}
               dataSource={dictOfCategoryIdsToRecords[categoryId]}
               pagination={{
@@ -353,24 +430,6 @@ const ValidationStatusView = (): JSX.Element => {
 };
 
 export default ValidationStatusView;
-
-const columnTypeForState = (
-  state: string,
-  history: History
-): ColumnType<MetadataRecord<ValidationStatusRecord>> => {
-  return {
-    title: state,
-    key: state,
-    onCell: (record) => {
-      return {
-        onClick: handleClickToDetails(history, record.name, state),
-      };
-    },
-    render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => {
-      return renderRecordStatus(record.resultsByState[state]);
-    },
-  };
-};
 
 const renderRecordStatus = (record: ValidationStatusRecord | undefined) => {
   const status = getRecordStatus(record);
@@ -426,4 +485,15 @@ const getListOfFilteredRecords = (
       }
       return (a.getName() || "") > (b.getName() || "") ? 1 : -1;
     });
+};
+
+const getListOfUniqueRecordNames = (
+  filterTypes: RecordStatus[],
+  records: ValidationStatusRecord[]
+): string[] => {
+  return getUniqueValues(
+    getListOfFilteredRecords(filterTypes, records).map(
+      (record) => record.getName() || ""
+    )
+  );
 };
