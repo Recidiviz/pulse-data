@@ -15,8 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Table } from "antd";
+import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
-import { IngestInstanceSummary } from "./constants";
+import { optionalStringSort } from "../Utilities/GeneralUtilities";
+import {
+  IngestInstanceSummary,
+  IngestViewContentsSummary,
+  IngestViewMaterializationSummary,
+} from "./constants";
 
 interface InstanceIngestViewMetadataProps {
   stateCode: string;
@@ -27,55 +33,94 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
   stateCode,
   data,
 }) => {
-  const materializationColumns = [
-    {
-      title: "Ingest View Name",
-      dataIndex: "ingestViewName",
-      key: "ingestViewName",
-    },
-    {
-      title: () => {
-        return (
-          <span title="Number of raw data upload dates with generated results">
-            Completed Jobs
-          </span>
-        );
-      },
-      dataIndex: "numCompletedJobs",
-      key: "numCompletedJobs",
-    },
-    {
-      title: () => {
-        return (
-          <span title="Number of raw data upload dates without generated results">
-            Pending Jobs
-          </span>
-        );
-      },
-      dataIndex: "numPendingJobs",
-      key: "numPendingJobs",
-    },
-    {
-      title: () => {
-        return (
-          <span title="Timestamp associated with the raw data in the next pending job">
-            Next Job (if applicable)
-          </span>
-        );
-      },
-      dataIndex: "pendingJobsMinDatetime",
-      key: "pendingJobsMinDatetime",
-    },
-  ];
-
   const materializationTableData =
     data.operations.ingestViewMaterializationSummaries;
 
-  const contentsColumns = [
+  const materializationColumns: ColumnsType<IngestViewMaterializationSummary> =
+    [
+      {
+        title: "Ingest View Name",
+        dataIndex: "ingestViewName",
+        key: "ingestViewName",
+        sorter: (
+          a: IngestViewMaterializationSummary,
+          b: IngestViewMaterializationSummary
+        ) => a.ingestViewName.localeCompare(b.ingestViewName),
+        defaultSortOrder: "ascend",
+        filters: materializationTableData.map(({ ingestViewName }) => ({
+          text: ingestViewName,
+          value: ingestViewName,
+        })),
+        onFilter: (value, content) => content.ingestViewName === value,
+        filterSearch: true,
+      },
+      {
+        title: () => {
+          return (
+            <span title="Number of raw data upload dates with generated results">
+              Completed Jobs
+            </span>
+          );
+        },
+        dataIndex: "numCompletedJobs",
+        key: "numCompletedJobs",
+        sorter: (
+          a: IngestViewMaterializationSummary,
+          b: IngestViewMaterializationSummary
+        ) => a.numCompletedJobs - b.numCompletedJobs,
+      },
+      {
+        title: () => {
+          return (
+            <span title="Number of raw data upload dates without generated results">
+              Pending Jobs
+            </span>
+          );
+        },
+        dataIndex: "numPendingJobs",
+        key: "numPendingJobs",
+        sorter: (
+          a: IngestViewMaterializationSummary,
+          b: IngestViewMaterializationSummary
+        ) => a.numPendingJobs - b.numPendingJobs,
+      },
+      {
+        title: () => {
+          return (
+            <span title="Timestamp associated with the raw data in the next pending job">
+              Next Job (if applicable)
+            </span>
+          );
+        },
+        dataIndex: "pendingJobsMinDatetime",
+        key: "pendingJobsMinDatetime",
+        sorter: (
+          a: IngestViewMaterializationSummary,
+          b: IngestViewMaterializationSummary
+        ) =>
+          optionalStringSort(
+            a.pendingJobsMinDatetime,
+            b.pendingJobsMinDatetime
+          ),
+      },
+    ];
+
+  const contentsTableData = data.operations.ingestViewContentsSummaries;
+
+  const contentsColumns: ColumnsType<IngestViewContentsSummary> = [
     {
       title: "Ingest View Name",
       dataIndex: "ingestViewName",
       key: "ingestViewName",
+      sorter: (a: IngestViewContentsSummary, b: IngestViewContentsSummary) =>
+        a.ingestViewName.localeCompare(b.ingestViewName),
+      defaultSortOrder: "ascend",
+      filters: contentsTableData.map(({ ingestViewName }) => ({
+        text: ingestViewName,
+        value: ingestViewName,
+      })),
+      onFilter: (value, content) => content.ingestViewName === value,
+      filterSearch: true,
     },
     {
       title: () => {
@@ -87,6 +132,8 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       },
       dataIndex: "numProcessedRows",
       key: "numProcessedRows",
+      sorter: (a: IngestViewContentsSummary, b: IngestViewContentsSummary) =>
+        a.numProcessedRows - b.numProcessedRows,
     },
     {
       title: () => {
@@ -98,6 +145,8 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       },
       dataIndex: "numUnprocessedRows",
       key: "numUnprocessedRows",
+      sorter: (a: IngestViewContentsSummary, b: IngestViewContentsSummary) =>
+        a.numUnprocessedRows - b.numUnprocessedRows,
     },
     {
       title: () => {
@@ -109,6 +158,11 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       },
       dataIndex: "processedRowsMaxDatetime",
       key: "processedRowsMaxDatetime",
+      sorter: (a: IngestViewContentsSummary, b: IngestViewContentsSummary) =>
+        optionalStringSort(
+          a.processedRowsMaxDatetime,
+          b.processedRowsMaxDatetime
+        ),
     },
     {
       title: () => {
@@ -120,10 +174,13 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       },
       dataIndex: "unprocessedRowsMinDatetime",
       key: "unprocessedRowsMinDatetime",
+      sorter: (a: IngestViewContentsSummary, b: IngestViewContentsSummary) =>
+        optionalStringSort(
+          a.unprocessedRowsMinDatetime,
+          b.unprocessedRowsMinDatetime
+        ),
     },
   ];
-
-  const contentsTableData = data.operations.ingestViewContentsSummaries;
 
   return (
     <>
@@ -137,7 +194,13 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         columns={materializationColumns}
         dataSource={materializationTableData}
         rowKey="ingestViewName"
-        pagination={false}
+        pagination={{
+          hideOnSinglePage: true,
+          showSizeChanger: true,
+          defaultPageSize: 50,
+          pageSizeOptions: ["25", "50", "100", "500"],
+          size: "small",
+        }}
         style={{ paddingBottom: 12 }}
       />
       <h3>Ingest View Results Transformed to State Schema</h3>
@@ -150,7 +213,13 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         columns={contentsColumns}
         dataSource={contentsTableData}
         rowKey="ingestViewName"
-        pagination={false}
+        pagination={{
+          hideOnSinglePage: true,
+          showSizeChanger: true,
+          defaultPageSize: 50,
+          pageSizeOptions: ["25", "50", "100", "500"],
+          size: "small",
+        }}
       />
     </>
   );

@@ -15,9 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { PageHeader, Spin, Table } from "antd";
+import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
 import { fetchDataFreshness } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
+import { optionalStringSort } from "./Utilities/GeneralUtilities";
 
 const DataFreshnessView = (): JSX.Element => {
   const { loading, data } =
@@ -31,21 +33,26 @@ const DataFreshnessView = (): JSX.Element => {
     );
   }
 
-  const columns = [
+  const columns: ColumnsType<DataFreshnessResult> = [
     {
       title: "State",
       dataIndex: "state",
       key: "state",
+      sorter: (a, b) => a.state.localeCompare(b.state),
+      defaultSortOrder: "ascend",
     },
     {
       title: "State Dataset Freshness",
       dataIndex: "date",
       key: "date",
+      sorter: (a, b) => a.date.localeCompare(b.date),
     },
     {
       title: "Last State Dataset Reresh",
       dataIndex: "lastRefreshDate",
       key: "lastRefreshDate",
+      sorter: (a, b) =>
+        optionalStringSort(a.lastRefreshDate, b.lastRefreshDate),
     },
     {
       title: "Notes",

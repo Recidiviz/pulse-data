@@ -1,6 +1,7 @@
 {
   "extends": ["@recidiviz"],
   "ignorePatterns": [
+    "node_modules/*",
     // Ignore generated protobuf typescript files
     "**/*_pb.d.ts"
   ],
